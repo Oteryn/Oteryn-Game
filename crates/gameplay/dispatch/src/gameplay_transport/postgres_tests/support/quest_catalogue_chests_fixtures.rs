@@ -766,6 +766,15 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
             let quests = super::quest_container_chests_fixtures::embedded_catalogue()
                 .map_err(|error| error.to_string())?;
             slice_phase("quest_catalogue");
+            // Boot the full pinned World once. Each chest gets independent
+            // mutable map facts as well as its own database and session.
+            let pinned_world = cases
+                .iter()
+                .any(|case| super::qc_pinned_world::COMPLETION_CHEST_UIDS.contains(&case.unique))
+                .then(|| super::qc_pinned_world::world(native))
+                .transpose()
+                .map_err(|error| error.to_string())?;
+            slice_phase("pinned_world");
             let mut template = None;
             super::fixture::run(async |admin| {
                 template = Some(super::fixture::MigratedDatabaseTemplate::create(admin).await?);
@@ -776,6 +785,7 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
             let batch = super::quest_container_chests_fixtures::CatalogueBatch {
                 template: template.as_ref().ok_or("migration template")?,
                 quests,
+                pinned_world: pinned_world.as_ref(),
             };
             for case in cases {
                 for key in std::iter::once(case.root.as_str())
