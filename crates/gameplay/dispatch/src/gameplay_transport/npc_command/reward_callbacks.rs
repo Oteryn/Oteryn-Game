@@ -86,28 +86,28 @@ pub(super) fn prepare(
         intent,
     )?;
     let text = intent.text.trim().to_ascii_lowercase();
-    // Asking for a passage replaces the outstanding ticket question. Retire
-    // its topic before paid travel takes over, including when its quote later expires.
+    // A passage question replaces the ticket offer, even if travel later refuses.
     if phase == Phase::Rewards
-        && let Some(npc) = admission
+        && admission
             .states
             .chat
             .npc_talk()
             .and_then(|book| book.get(&context.2))
-        && npc
-            .travel_routes
-            .iter()
-            .any(|route| text == route.keyword || text == route.route.key.replace('_', " "))
-        && let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
-        && let Some(state) = sessions.get_mut(&command.game_session_id)
+            .is_some_and(|npc| {
+                npc.travel_routes
+                    .iter()
+                    .any(|route| text == route.keyword || text == route.route.key.replace('_', " "))
+            })
     {
-        let topic = state.quest_dialogue.topic(&context).number;
-        if offers.offers.iter().any(|offer| {
-            offer.npc == context.2
-                && offer.next_topic == topic
-                && offer.keywords.iter().any(|keyword| keyword == "ticket")
+        let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
+        let dialogue = &mut sessions.get_mut(&command.game_session_id)?.quest_dialogue;
+        let topic = dialogue.topic(&context).number;
+        if callbacks.iter().any(|callback| {
+            callback.npc == context.2
+                && callback.topic == topic
+                && callback.key.starts_with("oteryn:quest-reward/travora/")
         }) {
-            state.quest_dialogue.retire_for_source(&context);
+            dialogue.retire_for_source(&context);
         }
     }
     if text == "no"
