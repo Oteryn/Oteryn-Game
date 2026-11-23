@@ -12,6 +12,7 @@ use serde_json::{Value, json};
 
 const BIN: &str = env!("CARGO_BIN_EXE_oteryn-world-bundle-compiler");
 const SLUG: &str = "oteryn";
+const TOPOLOGY: &str = "deploy/synology-game/preprod-topology.toml";
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -29,7 +30,7 @@ fn git(dir: &Path, args: &[&str]) -> Output {
     out
 }
 
-/// A scratch repository holding every tracked compiler input of this tree.
+/// A scratch repository holding the tracked compiler inputs and refresh targets.
 struct Scratch(PathBuf);
 
 impl Scratch {
@@ -47,21 +48,25 @@ impl Scratch {
                 "content/world",
                 "content/cyclopedia",
                 "content/encounters/world-changes/layers.json",
+                "content/encounters/world-changes/runtime.json",
                 "content/assets/files",
                 "imports/cipsoft-staticdata/map/subareas",
                 "content/houses",
-                "content/creatures",
-                "content/items",
+                "content/creatures/definitions",
+                "content/items/definitions",
                 "content/npcs/definitions",
+                "content/quests/definitions",
                 "content/dialogues/definitions",
                 "content/services",
                 "tools/world-bundle-compiler",
                 "tools/content-schema/area-authoring/samples/crystal-world-towns-00ce02a5.json",
                 "crates/world-bundle",
+                "crates/client-assets/src/world.rs",
+                "crates/gameplay/content/src/content/activity_static_surface_pin.rs",
                 "Cargo.toml",
                 "Cargo.lock",
                 "rust-toolchain.toml",
-                "deploy/synology-game/preprod-topology.toml",
+                TOPOLOGY,
                 ".cargo",
                 "vendor",
             ],
@@ -117,6 +122,14 @@ impl Scratch {
             .output()
             .expect("compiler runs")
     }
+
+    fn refresh(&self) -> Output {
+        Command::new(BIN)
+            .arg("pin-refresh")
+            .arg(&self.0)
+            .output()
+            .expect("compiler runs")
+    }
 }
 
 impl Drop for Scratch {
@@ -138,28 +151,12 @@ fn word_after(text: &str, marker: &str) -> String {
         .to_owned()
 }
 
-/// The reviewed revision, read from the checked-in identity file so a content bump needs no edit here.
-fn reviewed_revision() -> String {
-    let path =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/world/pins/oteryn.identity.json");
-    let identity: Value =
-        serde_json::from_slice(&fs::read(path).expect("identity file")).expect("identity json");
-    identity["content_revision"]
-        .as_str()
-        .expect("revision")
-        .to_owned()
-}
-
 fn pin(digest: &str) -> Value {
-    json!({
-        "schema": "OTERYN_WORLD_PIN/v2",
-        "digest": digest,
-        "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
-        "world_schema_version": "reference-schema-v1",
-        "content_revision": reviewed_revision(),
-        "production": false,
-        "entry_start": {"x": 32369, "y": 32238, "floor": 7},
-    })
+    let mut reviewed: Value =
+        serde_json::from_slice(include_bytes!("../../../content/world/pins/oteryn.json"))
+            .expect("reviewed pin");
+    reviewed["digest"] = json!(digest);
+    reviewed
 }
 
 #[test]
@@ -423,47 +420,146 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
     );
 }
 
-// Each run compiles the whole World twice; in a debug build that takes tens of minutes, so
-// it runs with `cargo test --release` (the `world_bundle` job runs the real pin-check in release).
 #[test]
-#[cfg_attr(
-    debug_assertions,
-    ignore = "compiles the whole World; run with --release"
-)]
+fn compile_regions_refuses_mismatched_placement_checksums_and_lists() {
+    const INDEX: &str = "content/world/placements/index.json";
+    const REGION: &str = "content/world/placements/region-z07-x126-y126.b3";
+    let dir = Scratch::new("placement-checksums");
+    let compile = || {
+        Command::new(BIN)
+            .arg("compile-regions")
+            .arg(&dir.0)
+            .arg(dir.path("content/world/pins/oteryn.identity.json"))
+            .arg(dir.path("world.otwb"))
+            .arg("126,126")
+            .output()
+            .expect("compiler runs")
+    };
+    let out = compile();
+    assert!(out.status.success(), "{}", stderr(&out));
+
+    let index = dir.json(INDEX);
+    let at = index["regions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .position(|entry| entry["path"] == REGION)
+        .expect("reviewed region");
+    let mut wrong = index.clone();
+    wrong["regions"][at]["sha256"] = json!("0".repeat(64));
+    dir.write_json(INDEX, &wrong);
+    let out = compile();
+    assert!(
+        !out.status.success() && stderr(&out).contains(&format!("{REGION}: sha256")),
+        "status {}: {}",
+        out.status,
+        stderr(&out)
+    );
+
+    let mut missing = index.clone();
+    missing["regions"].as_array_mut().unwrap().remove(at);
+    let mut duplicate = index.clone();
+    duplicate["shards"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!(REGION));
+    let mut extra = index.clone();
+    extra["shards"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|path| path != REGION);
+    for wrong in [missing, duplicate, extra] {
+        dir.write_json(INDEX, &wrong);
+        let out = compile();
+        assert!(
+            !out.status.success()
+                && stderr(&out).contains("shards and regions")
+                && stderr(&out).contains(REGION),
+            "status {}: {}",
+            out.status,
+            stderr(&out)
+        );
+    }
+}
+
+#[test]
+fn pin_refresh_refuses_invalid_topology_before_writing() {
+    let dir = Scratch::new("invalid-topology");
+    let pin_path = dir.pin_file();
+    let unset_digest = pin("");
+    dir.write_json(&pin_path, &unset_digest);
+    let topology = fs::read_to_string(dir.path(TOPOLOGY)).unwrap();
+    let identity = dir.path("content/world/pins/oteryn.identity.json");
+    let original_identity = fs::read(&identity).unwrap();
+    // A refresh normally regenerates this file. Its bytes must survive validation failures.
+    let stale_identity = [original_identity.as_slice(), b"\n"].concat();
+    fs::write(&identity, &stale_identity).unwrap();
+    for invalid in [
+        format!("{topology}\ninvalid = [\n"),
+        topology.replace("start_x = ", "incorrect_x = "),
+        topology.replace("production = false", "production = \"false\""),
+    ] {
+        fs::write(dir.path(TOPOLOGY), &invalid).unwrap();
+        let out = dir.refresh();
+        assert!(
+            !out.status.success() && stderr(&out).contains(TOPOLOGY),
+            "status {}: {}",
+            out.status,
+            stderr(&out)
+        );
+        assert_eq!(dir.json(&pin_path), unset_digest);
+        assert_eq!(fs::read(&identity).unwrap(), stale_identity);
+        assert_eq!(fs::read_to_string(dir.path(TOPOLOGY)).unwrap(), invalid);
+    }
+}
+
+// Use a release build for this regression, which compiles the complete World repeatedly.
+#[test]
 fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     let dir = Scratch::new("check");
+    let good = dir.json(&dir.pin_file());
     let first = pin(&"0".repeat(64));
     dir.write_json(&dir.pin_file(), &first);
     let out = dir.check();
     assert!(!out.status.success());
     let digest = word_after(&stderr(&out), "is not the tree's ");
     assert_eq!(digest.len(), 64, "{}", stderr(&out));
+    assert_eq!(good["digest"], digest);
 
     // The reviewed pin passes (each run builds twice and compares); the artifact name
     // carries the digest.
-    let good = pin(&digest);
     dir.write_json(&dir.pin_file(), &good);
 
     // Refresh migrates v1 and its signed floor while preserving the bundle identity and entry cell.
     let mut legacy = good.clone();
     legacy["schema"] = json!("OTERYN_WORLD_PIN/v1");
+    legacy["digest"] = json!("");
     legacy["inputs_digest"] = json!("0".repeat(64));
-    legacy["entry_start"]["floor"] = json!(-7);
+    let start = &good["entry_start"];
+    let floor = start["floor"].as_i64().unwrap();
+    legacy["entry_start"]["floor"] = json!(-floor);
     dir.write_json(&dir.pin_file(), &legacy);
-    let refresh = Command::new(BIN)
-        .arg("pin-refresh")
-        .arg(&dir.0)
-        .output()
-        .expect("compiler runs");
+    // The manifest can be stale independently of the old pin. A matching digest in an
+    // unrelated field must be preserved along with the rest of the document.
+    let topology = fs::read_to_string(dir.path(TOPOLOGY)).unwrap();
+    let previous_digest = "a".repeat(64);
+    let note = format!("\n# Previous bundle for operator reference: {previous_digest}\n");
+    let stale_topology = topology
+        .replace(&digest, &previous_digest)
+        .replace("production = false", "production = true")
+        .replace(&format!("start_x = {}", start["x"]), "start_x = 32369")
+        .replace(&format!("start_y = {}", start["y"]), "start_y = 32238")
+        .replace(
+            &format!("start_floor = {floor}"),
+            &format!("start_floor = {}", -floor),
+        );
+    fs::write(dir.path(TOPOLOGY), stale_topology + &note).unwrap();
+    let refresh = dir.refresh();
     assert!(refresh.status.success(), "{}", stderr(&refresh));
     assert_eq!(dir.json(&dir.pin_file()), good);
-    let topology = fs::read_to_string(dir.path("deploy/synology-game/preprod-topology.toml"))
-        .expect("refreshed topology");
     assert_eq!(
-        topology
-            .lines()
-            .find(|line| line.starts_with("start_floor = ")),
-        Some("start_floor = 7")
+        fs::read_to_string(dir.path(TOPOLOGY)).unwrap(),
+        topology + &note
     );
     let report: Value = serde_json::from_slice(&refresh.stdout).unwrap();
     assert_eq!(report["pins"][0]["digest"], digest);

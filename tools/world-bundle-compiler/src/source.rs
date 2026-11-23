@@ -7,6 +7,7 @@ use crate::{
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 fn hex(bytes: &[u8]) -> String {
@@ -141,28 +142,68 @@ pub fn project_regions(root: &Path, selected: &[(u16, u16)]) -> Result<Project, 
     project_selected(root, Some(selected))
 }
 
+/// Match the checksum records to the shard list without changing the compiler's shard order.
+fn placement_shards(index: &Value) -> Result<Vec<(&str, &str)>, Error> {
+    let entries = index["regions"]
+        .as_array()
+        .ok_or_else(|| Error::Format("placements index has no regions".into()))?;
+    let disagreement = |path: &str| {
+        Error::Format(format!(
+            "{path}: placements index shards and regions must list the same files exactly once"
+        ))
+    };
+    let mut checksums = BTreeMap::new();
+    for entry in entries {
+        let path = entry["path"]
+            .as_str()
+            .ok_or_else(|| Error::Format("placements region is missing its path".into()))?;
+        let checksum = entry["sha256"]
+            .as_str()
+            .ok_or_else(|| Error::Format(format!("{path}: sha256 is missing or not a string")))?;
+        if checksums.insert(path, checksum).is_some() {
+            return Err(disagreement(path));
+        }
+    }
+    let shards = index["shards"]
+        .as_array()
+        .ok_or_else(|| Error::Format("placements index has no shards".into()))?
+        .iter()
+        .map(|path| {
+            let path = path
+                .as_str()
+                .ok_or_else(|| Error::Format("placements shard is not a path".into()))?;
+            let checksum = checksums.remove(path).ok_or_else(|| disagreement(path))?;
+            Ok((path, checksum))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if let Some((&path, _)) = checksums.first_key_value() {
+        return Err(disagreement(path));
+    }
+    Ok(shards)
+}
+
 fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Project, Error> {
     let mut index = json(
         &read(&root.join("content/world/placements/index.json"))?,
         "placements index",
     )?;
-    let mut regions = index
-        .get("shards")
-        .and_then(Value::as_array)
-        .ok_or_else(|| Error::Format("placements index has no shards".into()))?
-        .iter()
-        .filter(|path| {
+    let mut regions = placement_shards(&index)?
+        .into_iter()
+        .filter(|(path, _)| {
             selected.is_none_or(|selected| {
-                path.as_str().is_none_or(|path| {
-                    selected
-                        .iter()
-                        .any(|&(x, y)| path.ends_with(&format!("-x{x:03}-y{y:03}.b3")))
-                })
+                selected
+                    .iter()
+                    .any(|&(x, y)| path.ends_with(&format!("-x{x:03}-y{y:03}.b3")))
             })
         })
-        .map(|path| match path.as_str() {
-            Some(path) => read(&root.join(path)),
-            None => Err(Error::Format("placements shard is not a path".into())),
+        .map(|(path, checksum)| {
+            let bytes = read(&root.join(path))?;
+            if hex(&Sha256::digest(&bytes)) != checksum {
+                return Err(Error::Format(format!(
+                    "{path}: sha256 does not match the placement index"
+                )));
+            }
+            Ok(bytes)
         })
         .collect::<Result<Vec<_>, _>>()?;
     crate::authored_props::apply(root, &mut index, &mut regions, selected)?;

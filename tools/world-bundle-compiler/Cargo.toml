@@ -17,6 +17,7 @@ oteryn-world-bundle = { version = "=0.1.0", path = "../../crates/world-bundle", 
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true
+toml_edit = "=0.25.13"
 zstd.workspace = true
 
 [lints]

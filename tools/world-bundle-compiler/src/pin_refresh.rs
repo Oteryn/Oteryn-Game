@@ -9,6 +9,7 @@ use std::path::Path;
 use oteryn_world_bundle_compiler::Error;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
+use toml_edit::{DocumentMut, Item, Value as TomlValue};
 
 use super::{
     PIN_SCHEMA, PINS, Pin, build_twice, derive_identity, hex, identity_text, inputs_digest, read,
@@ -21,6 +22,7 @@ const PREPROD_MANIFEST: (&str, &str) = ("oteryn", "deploy/synology-game/preprod-
 /// inputs are staged first). Returns the JSON summary.
 pub(super) fn run(root: &Path) -> Result<Value, Error> {
     let pins = root.join(PINS);
+    let manifest_path = root.join(PREPROD_MANIFEST.1);
     let tree = inputs_digest(root)?;
     let mut reports = Vec::new();
     for slug in super::pin_slugs(&pins)? {
@@ -37,6 +39,9 @@ pub(super) fn run(root: &Path) -> Result<Value, Error> {
             return Err(fail(format!("unsupported schema; expected {PIN_SCHEMA}")));
         }
         let old: Pin = serde_json::from_value(old).map_err(|e| fail(e.to_string()))?;
+        let manifest = (slug == PREPROD_MANIFEST.0)
+            .then(|| read_manifest(&manifest_path, &old))
+            .transpose()?;
         let entry_start = super::EntryStart {
             floor: old
                 .entry_start
@@ -49,10 +54,6 @@ pub(super) fn run(root: &Path) -> Result<Value, Error> {
         let identity = derive_identity(root, &slug)?;
         let (bytes, registry) = build_twice(root, &identity)?;
         super::entry_start::check(&bytes, entry_start, &registry)?;
-        write(
-            &pins.join(format!("{slug}.identity.json")),
-            &identity_text(&identity)?,
-        )?;
         let pin = Pin {
             schema: PIN_SCHEMA.to_owned(),
             digest: hex(&bytes[bytes.len() - 32..]),
@@ -63,9 +64,16 @@ pub(super) fn run(root: &Path) -> Result<Value, Error> {
             entry_start,
         };
         let text = serde_json::to_string_pretty(&pin).map_err(|e| fail(e.to_string()))? + "\n";
+        let manifest = manifest
+            .map(|doc| refresh_manifest(&manifest_path, doc, &pin))
+            .transpose()?;
+        write(
+            &pins.join(format!("{slug}.identity.json")),
+            &identity_text(&identity)?,
+        )?;
         write(&path, &text)?;
-        if slug == PREPROD_MANIFEST.0 {
-            refresh_manifest(&root.join(PREPROD_MANIFEST.1), &old, &pin)?;
+        if let Some(manifest) = manifest {
+            write(&manifest_path, &manifest)?;
         }
         reports.push(json!({"world": slug, "digest": pin.digest, "previous": old.digest}));
     }
@@ -74,47 +82,90 @@ pub(super) fn run(root: &Path) -> Result<Value, Error> {
 }
 
 /// Points the manifest's `[world_bundle]` table and `[readiness] map_revision` at the new pin.
-fn refresh_manifest(path: &Path, old: &Pin, new: &Pin) -> Result<(), Error> {
-    let text = String::from_utf8(read(path)?)
-        .map_err(|_| Error::Format(format!("{}: not UTF-8", path.display())))?;
-    let mut table = String::new();
-    let mut out = String::with_capacity(text.len());
-    for line in text.split_inclusive('\n') {
-        if line.starts_with('[') {
-            table = line.trim().to_owned();
-        }
-        let mut line = line.replace(&old.digest, &new.digest);
-        // A merge can retain the manifest and pin from different parents. Bind
-        // the named fields even when neither still contains the old pin digest.
-        if (table == "[readiness]" && line.starts_with("map_revision = "))
-            || (table == "[world_bundle]" && line.starts_with("digest = "))
-        {
-            let (prefix, value) = line
-                .split_once('"')
-                .ok_or_else(|| Error::Format("preproduction digest field is not quoted".into()))?;
-            let (_, suffix) = value.split_once('"').ok_or_else(|| {
-                Error::Format("preproduction digest field is not terminated".into())
-            })?;
-            line = format!("{prefix}\"{}\"{suffix}", new.digest);
-        }
-
-        if table == "[world_bundle]" {
-            if line.starts_with("start_floor = ") {
-                line = format!("start_floor = {}\n", new.entry_start.floor);
-            }
-            for (key, value) in [
-                ("project_format_version", &new.project_format_version),
-                ("world_schema_version", &new.world_schema_version),
-                ("content_revision", &new.content_revision),
-            ] {
-                if line.starts_with(&format!("{key} = ")) {
-                    line = format!("{key} = \"{value}\"\n");
-                }
-            }
-        }
-        out.push_str(&line);
+fn refresh_manifest(path: &Path, mut doc: DocumentMut, pin: &Pin) -> Result<String, Error> {
+    for (table, key, mut value) in manifest_fields(pin) {
+        let current = manifest_field_mut(path, &mut doc, table, key, &value)?;
+        *value.decor_mut() = current.decor().clone();
+        *current = value;
     }
-    write(path, &out)
+    let output = doc.to_string();
+    parse_manifest(path, &output)?;
+    Ok(output)
+}
+
+fn read_manifest(path: &Path, pin: &Pin) -> Result<DocumentMut, Error> {
+    let text =
+        fs::read_to_string(path).map_err(|e| Error::Format(format!("{}: {e}", path.display())))?;
+    let mut doc = parse_manifest(path, &text)?;
+    for (table, key, value) in manifest_fields(pin) {
+        manifest_field_mut(path, &mut doc, table, key, &value)?;
+    }
+    Ok(doc)
+}
+
+fn manifest_fields(pin: &Pin) -> [(&'static str, &'static str, TomlValue); 9] {
+    let world = "world_bundle";
+    [
+        ("readiness", "map_revision", TomlValue::from(&pin.digest)),
+        (world, "digest", TomlValue::from(&pin.digest)),
+        (
+            world,
+            "project_format_version",
+            TomlValue::from(&pin.project_format_version),
+        ),
+        (
+            world,
+            "world_schema_version",
+            TomlValue::from(&pin.world_schema_version),
+        ),
+        (
+            world,
+            "content_revision",
+            TomlValue::from(&pin.content_revision),
+        ),
+        (world, "production", TomlValue::from(pin.production)),
+        (
+            world,
+            "start_x",
+            TomlValue::from(i64::from(pin.entry_start.x)),
+        ),
+        (
+            world,
+            "start_y",
+            TomlValue::from(i64::from(pin.entry_start.y)),
+        ),
+        (
+            world,
+            "start_floor",
+            TomlValue::from(i64::from(pin.entry_start.floor)),
+        ),
+    ]
+}
+
+fn manifest_field_mut<'a>(
+    path: &Path,
+    doc: &'a mut DocumentMut,
+    table: &str,
+    key: &str,
+    value: &TomlValue,
+) -> Result<&'a mut TomlValue, Error> {
+    doc.get_mut(table)
+        .and_then(Item::as_table_mut)
+        .and_then(|table| table.get_mut(key))
+        .and_then(Item::as_value_mut)
+        .filter(|current| current.type_name() == value.type_name())
+        .ok_or_else(|| {
+            Error::Format(format!(
+                "{}: [{table}] {key} must be a TOML {}",
+                path.display(),
+                value.type_name()
+            ))
+        })
+}
+
+fn parse_manifest(path: &Path, text: &str) -> Result<DocumentMut, Error> {
+    text.parse()
+        .map_err(|e| Error::Format(format!("{}: {e}", path.display())))
 }
 
 /// The client reads the same immutable placement index as the World compiler.
