@@ -26,7 +26,7 @@ enum Scenario {
     GonePrincipal,
     GoneBossPrincipal,
     ParkedBossPrincipal { late: bool },
-    LiveBossPrincipal,
+    LiveBossPrincipal { exhaust_loot: bool },
 }
 
 #[test]
@@ -67,7 +67,18 @@ fn boss_clock_survives_forgetting_a_late_release_park() -> TestResult {
 
 #[test]
 fn live_boss_clock_waits_for_its_corpse_transaction() -> TestResult {
-    run(Scenario::LiveBossPrincipal, "boss_waits_for_corpse")
+    run(
+        Scenario::LiveBossPrincipal { exhaust_loot: false },
+        "boss_waits_for_corpse",
+    )
+}
+
+#[test]
+fn live_boss_clock_survives_exhausted_corpse_loot() -> TestResult {
+    run(
+        Scenario::LiveBossPrincipal { exhaust_loot: true },
+        "live_boss_exhausted_loot",
+    )
 }
 
 fn run(case: Scenario, name: &'static str) -> TestResult {
@@ -164,7 +175,7 @@ async fn scenario(h: &Harness, case: Scenario) -> TestResult {
         case,
         Scenario::GoneBossPrincipal
             | Scenario::ParkedBossPrincipal { .. }
-            | Scenario::LiveBossPrincipal
+            | Scenario::LiveBossPrincipal { .. }
     );
     if boss {
         use crate::durability::boss_encounter::{BossClockClaim, BossClockKey};
@@ -457,7 +468,7 @@ async fn scenario(h: &Harness, case: Scenario) -> TestResult {
     }
     if matches!(
         case,
-        Scenario::LiveBossPrincipal | Scenario::ParkedBossPrincipal { .. }
+        Scenario::LiveBossPrincipal { .. } | Scenario::ParkedBossPrincipal { .. }
     ) {
         use crate::gameplay_transport::kill_reward::{ReleaseEnd, ReleasePhase, Seal};
         let queue = owner.states.attack.lock().await.kills().clone();
@@ -537,11 +548,27 @@ async fn scenario(h: &Harness, case: Scenario) -> TestResult {
             )
             .execute(&h.pool)
             .await?;
-            assert_eq!(
-                owner.drain_kill_rewards(players[1].1).await,
-                DrainOutcome::Deferred
-            );
-            eprintln!("LIVE_BOSS_FAULT_PG_EXECUTED");
+            let exhaust_loot = matches!(case, Scenario::LiveBossPrincipal { exhaust_loot: true });
+            let attempts = if exhaust_loot { 3 } else { 1 };
+            for _ in 0..attempts {
+                owner.root.maintain_ready_once().await.map_err(debug)?;
+                assert_eq!(
+                    owner.drain_kill_rewards(players[1].1).await,
+                    DrainOutcome::Deferred
+                );
+            }
+            if exhaust_loot {
+                let work: i16 = sqlx::query_scalar(
+                    "SELECT work_units_used FROM game_item_mint_reservations
+                     WHERE loot_purpose_key='CORPSE_MATERIALIZATION'",
+                )
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(work, 3);
+                eprintln!("LIVE_BOSS_LOOT_EXHAUSTION_PG_EXECUTED");
+            } else {
+                eprintln!("LIVE_BOSS_FAULT_PG_EXECUTED");
+            }
             assert_eq!(boss_clock(h).await?, ("0".into(), 2));
             assert_eq!(
                 sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")
@@ -568,7 +595,7 @@ async fn scenario(h: &Harness, case: Scenario) -> TestResult {
             assert_eq!(
                 sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION'")
                     .fetch_one(&h.pool).await?,
-                1,
+                i64::from(!exhaust_loot),
             );
             assert_eq!(
                 sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")

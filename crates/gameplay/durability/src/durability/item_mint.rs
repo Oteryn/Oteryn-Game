@@ -60,11 +60,23 @@ const INSTANCE_INTENT_BINDING_VERSION: u8 = 2;
 #[derive(Clone, Copy)]
 enum NewMintFormat {
     Canonical,
+    ElementalClockRecovery,
     // Faithfully create a pre-merge reservation through the same SQL authority,
     // fences, audit and work-budget owner. Never callable in production builds.
     #[cfg(test)]
     LegacyInstanceV1,
 }
+
+enum CorpseMintWork<'a> {
+    Individual,
+    AtomicBatch,
+    ElementalClock(&'a ItemMintCandidate),
+}
+
+// A reservation-only work budget for the altar's clock closure. The
+// reservation binds the exact death and placement, and only the original D3
+// MINT can write an item, receipt or outbox event.
+const ELEMENTAL_CLOCK_RECOVERY_PURPOSE: &str = "ELEMENTAL_BOSS_CLOCK_RECOVERY";
 
 const EVENT_TYPE_ID: i64 = audit::EVENT_TYPE_ID as i64;
 
@@ -708,6 +720,11 @@ impl DurabilityRoot {
         pending_parent: bool,
         format: NewMintFormat,
     ) -> Result<ItemMintCandidate> {
+        if (request.cause.purpose_key == ELEMENTAL_CLOCK_RECOVERY_PURPOSE)
+            != matches!(format, NewMintFormat::ElementalClockRecovery)
+        {
+            return Err(ItemMintError::InvalidInput);
+        }
         validate_request(&request, corpse_entry.as_ref())?;
         let recovery = authority
             .record_for(self)
@@ -740,7 +757,7 @@ impl DurabilityRoot {
                     }
 
                     let (request, encx_v2) = match format {
-                        NewMintFormat::Canonical => {
+                        NewMintFormat::Canonical | NewMintFormat::ElementalClockRecovery => {
                             let request = canonical_native_request(request, corpse_entry.as_ref());
                             let encx_v2 = matches!(
                                 request.cause.death.runtime_scope,
@@ -1065,7 +1082,7 @@ impl DurabilityRoot {
                 boss,
                 None,
                 None,
-                false,
+                CorpseMintWork::Individual,
             )
             .await?;
         outcomes.pop().ok_or(ItemMintError::InvalidInput)
@@ -1098,9 +1115,63 @@ impl DurabilityRoot {
             boss,
             tutorial_corruptor,
             None,
-            true,
+            CorpseMintWork::AtomicBatch,
         )
         .await
+    }
+
+    /// Close an altar clock that still needs its physical corpse. The required
+    /// write has its own durable retry budget even if the loot batch used all
+    /// of the original reservation's work. Both paths use the same corpse
+    /// identity, fenced writer and clock transition.
+    pub async fn commit_required_elemental_boss_corpse(
+        &self,
+        permit: &SpellLanePermit,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        corpse: &mut ItemMintCandidate,
+        top_damage_character_id: [u8; 16],
+        boss: (String, u64, oteryn_gameplay_content::content::BossPolicy),
+    ) -> Result<ItemMintOutcome> {
+        if !boss.0.starts_with("qn1.elemental:") {
+            return Err(ItemMintError::InvalidInput);
+        }
+        permit.check_scope(corpse.request.cause.death.runtime_scope)?;
+        if let Some(committed) = self
+            .reconcile_kill_corpse_mint(authority, corpse, top_damage_character_id)
+            .await?
+        {
+            return Ok(ItemMintOutcome::AlreadyCommitted(committed));
+        }
+
+        let mut request = corpse.request.clone();
+        request.cause.purpose_key = ELEMENTAL_CLOCK_RECOVERY_PURPOSE.into();
+        request.cause.corpse_race = None;
+        let recovery_reservation = self
+            .freeze_mint_format(
+                authority,
+                node,
+                request,
+                None,
+                false,
+                NewMintFormat::ElementalClockRecovery,
+            )
+            .await?;
+        let mut outcomes = self
+            .commit_kill_loot_mints_inner(
+                permit,
+                authority,
+                node,
+                corpse,
+                &mut [],
+                Some(top_damage_character_id),
+                Some(boss),
+                None,
+                None,
+                CorpseMintWork::ElementalClock(&recovery_reservation),
+            )
+            .await?;
+        outcomes.pop().ok_or(ItemMintError::InvalidInput)
     }
 
     /// Internal physical writer port. Its sole source-event facade validates
@@ -1124,7 +1195,7 @@ impl DurabilityRoot {
                 None,
                 None,
                 Some(source),
-                false,
+                CorpseMintWork::Individual,
             )
             .await?;
         result.pop().ok_or(ItemMintError::InvalidInput)
@@ -1151,7 +1222,7 @@ impl DurabilityRoot {
             None,
             None,
             Some(source),
-            false,
+            CorpseMintWork::Individual,
         )
         .await
     }
@@ -1171,7 +1242,7 @@ impl DurabilityRoot {
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
         tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
         source: Option<source_death::SourceCorpseMintProof<'_>>,
-        atomic_budget: bool,
+        work: CorpseMintWork<'_>,
     ) -> Result<Vec<ItemMintOutcome>> {
         if candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY {
             return Err(ItemMintError::InvalidInput);
@@ -1264,13 +1335,34 @@ impl DurabilityRoot {
                 return Err(ItemMintError::InvalidInput);
             }
         }
-        if atomic_budget {
-            self.charge_atomic_kill_work(recovery.clone(), node, candidate, children)
+        match work {
+            CorpseMintWork::Individual => {
+                for mint in std::iter::once(&mut *candidate).chain(children.iter_mut()) {
+                    self.charge_item_mint_work_unit(recovery.clone(), mint)
+                        .await?;
+                }
+            }
+            CorpseMintWork::AtomicBatch => {
+                self.charge_atomic_kill_work(
+                    permit,
+                    recovery.clone(),
+                    node,
+                    candidate,
+                    children,
+                    None,
+                )
                 .await?;
-        } else {
-            for mint in std::iter::once(&mut *candidate).chain(children.iter_mut()) {
-                self.charge_item_mint_work_unit(recovery.clone(), mint)
-                    .await?;
+            }
+            CorpseMintWork::ElementalClock(recovery_reservation) => {
+                self.charge_atomic_kill_work(
+                    permit,
+                    recovery.clone(),
+                    node,
+                    candidate,
+                    children,
+                    Some(recovery_reservation),
+                )
+                .await?;
             }
         }
         let frozen = FrozenMint::of(candidate);
@@ -1496,35 +1588,71 @@ impl DurabilityRoot {
             .await?
     }
 
-    /// A terminal corpse needs no more write work. For fresh batches, charge all causes
-    /// together after checking current ownership. Partial budget charges are rolled back.
+    /// A terminal corpse needs no more write work. Charge all fresh batch
+    /// causes together. For required altar corpses, charge the clock's work
+    /// reservation only after checking for room to write.
     async fn charge_atomic_kill_work(
         &self,
+        permit: &SpellLanePermit,
         recovery: CharacterRecoveryFenceV1,
         node: &NodeIncarnationProof,
         corpse: &mut ItemMintCandidate,
         children: &mut [ItemMintCandidate],
+        recovery_reservation: Option<&ItemMintCandidate>,
     ) -> Result<()> {
-        let causes: Vec<_> = std::iter::once(&*corpse)
-            .chain(children.iter())
-            .map(|mint| (mint.request.cause.clone(), mint.transaction_id))
-            .collect();
+        let root = corpse.request.cause.clone();
+        let placement =
+            recovery_reservation.map(|_| (corpse.request.ground.clone(), corpse.item_instance_id));
+        let causes: Vec<_> = match recovery_reservation {
+            Some(recovery_reservation) => vec![(
+                recovery_reservation.request.cause.clone(),
+                recovery_reservation.transaction_id,
+            )],
+            None => std::iter::once(&*corpse)
+                .chain(children.iter())
+                .map(|mint| (mint.request.cause.clone(), mint.transaction_id))
+                .collect(),
+        };
         let node = node.clone();
+        let mut context = permit;
         let charged = self
             .try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, permit| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    let (root, _) = &causes[0];
-                    lock_cause(&mut tx, root).await?;
-                    if load_receipt(&mut tx, root).await?.is_some() {
+                    lock_cause(&mut tx, &root).await?;
+                    if load_receipt(&mut tx, &root).await?.is_some() {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok(Vec::new()));
                     }
+                    if placement.is_some()
+                        && corpse_cap_recount(&mut tx, &root.death).await?
+                            >= COMBAT01_CORPSES_PER_SCOPE_MAX
+                    {
+                        return Ok(Err(ItemMintError::CapacityExceeded));
+                    }
                     if !fence_is_live(&mut tx, &root.death, &node).await? {
                         return Ok(Err(ItemMintError::AuthorityRejected));
+                    }
+                    if let Some((ground, item)) = &placement
+                        && let Err(error) =
+                            super::ground_cell_limit::check_ground_cell_root_insert_with_recovery(
+                                &mut tx,
+                                permit,
+                                &recovery,
+                                &node,
+                                (
+                                    root.death.runtime_scope,
+                                    root.death.scope_ownership_generation.get(),
+                                ),
+                                ground,
+                                item,
+                            )
+                            .await
+                    {
+                        return Ok(Err(error.into_item_mint_error()));
                     }
                     let mut charged = Vec::with_capacity(causes.len());
                     for (cause, transaction) in causes {
@@ -1541,11 +1669,13 @@ impl DurabilityRoot {
                 })
             })
             .await??;
-        for (mint, used) in std::iter::once(corpse)
-            .chain(children.iter_mut())
-            .zip(charged)
-        {
-            mint.work_units_used = used;
+        if recovery_reservation.is_none() {
+            for (mint, used) in std::iter::once(corpse)
+                .chain(children.iter_mut())
+                .zip(charged)
+            {
+                mint.work_units_used = used;
+            }
         }
         Ok(())
     }

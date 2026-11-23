@@ -709,27 +709,19 @@ pub async fn settle_boss_death_corpse(
         corpse_race,
     )
     .await?;
-    let outcomes = session
+    session
         .root
-        .commit_kill_loot_mints(
+        .commit_required_elemental_boss_corpse(
             permit,
             session.authority,
             session.node,
             &mut corpse,
-            &mut [],
             *facts.top_damage_character.as_bytes(),
-            Some(boss),
-            None,
+            boss,
         )
         .await
-        .map_err(CombatDeathRewardLootError::Corpse)?;
-    outcomes
-        .into_iter()
-        .next()
         .map(committed)
-        .ok_or(CombatDeathRewardLootError::Corpse(
-            ItemMintError::InvalidInput,
-        ))
+        .map_err(CombatDeathRewardLootError::Corpse)
 }
 
 async fn classify_loot_mint_refusal(

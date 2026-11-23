@@ -1894,9 +1894,15 @@ impl TakenKillSettlement {
         self.inflight_before
     }
 
-    /// The settle reached a final result: the entry leaves the queue.
+    /// Reward settlement is final. Keep any outstanding boss clock in death order.
     pub fn finish(mut self) {
-        self.entry = None;
+        if let Some(entry) = self.entry.as_mut()
+            && entry.pending_boss_clock().is_some()
+        {
+            entry.boss_clock_only = true;
+        } else {
+            self.entry = None;
+        }
     }
 
     /// The settle's outcome is unknown: the entry returns to the front of the queue.
@@ -3463,7 +3469,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             DrainOutcome::Drained
         }
     }
-    /// The World respawn owner also drives release-retained clocks when there are no clients.
+    /// The World respawn owner also drives clock-only deaths when there are no clients.
     pub(super) async fn drain_released_boss_clocks(&self) {
         let session = self
             .states
@@ -3674,8 +3680,8 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
         self.admission
             .refresh_native_objective_recipients(entry)
             .await;
-        // Hold the corpse pin through all kill descendants and cache refreshes.
-        if report.verdict == SettleVerdict::Final {
+        // Hold the corpse pin through all kill descendants and any retained boss clock.
+        if report.verdict == SettleVerdict::Final && entry.pending_boss_clock().is_none() {
             release_settled_corpse(
                 &mut *self.admission.runtime.lock().await,
                 entry,

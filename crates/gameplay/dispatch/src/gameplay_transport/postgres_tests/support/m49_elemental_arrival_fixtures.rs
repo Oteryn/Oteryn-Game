@@ -720,7 +720,13 @@ pub(super) async fn exercise(
             ).fetch_one(&h.pool).await?;
             assert_eq!(clocks, (1, 1));
             if name.ends_with("-kill") {
-                Box::pin(settle_altar_boss_death(owner, admitted, h, actor, bosses[0])).await?;
+                let full_scope = if name.contains("-released-exhaustion-") {
+                    Some(Box::pin(fill_corpse_capacity(owner, &source)).await?)
+                } else {
+                    None
+                };
+                Box::pin(settle_altar_boss_death(owner, admitted, h, actor, bosses[0], full_scope))
+                    .await?;
             }
 
         }
@@ -735,12 +741,71 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+async fn fill_corpse_capacity(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    ground: &crate::durability::item_mint::GroundPlacement,
+) -> TestResult<[u8; 16]> {
+    use crate::durability::item_mint::{
+        CORPSE_MATERIALIZATION_PURPOSE_KEY, ItemMintCause, ItemMintOutcome, ItemMintRequest,
+        TypedDefinitionRef,
+    };
+    use crate::foundation::ScopeOwnershipGeneration;
+
+    let cap = u32::try_from(crate::durability::item_decay_retire::COMBAT01_CORPSES_PER_SCOPE)?;
+    let definition = TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: "fixture:m49.capacity_corpse".into(),
+        revision_ref: "definition-r1".into(),
+    };
+    let permit = owner.spell_lane_permit().await.ok_or("capacity fixture lane")?;
+    let mut oldest = None;
+    for actor in 10_000..10_000 + cap {
+        let mut corpse = owner
+            .root
+            .freeze_item_mint(
+                owner.character,
+                owner.holder,
+                ItemMintRequest {
+                    cause: ItemMintCause::for_test(
+                        owner.world_id,
+                        owner.channel_id,
+                        ScopeOwnershipGeneration::new(1).map_err(debug)?,
+                        actor,
+                        1,
+                        definition.clone(),
+                        CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
+                        0,
+                    ),
+                    item: definition.clone(),
+                    quantity: 1,
+                    ground: ground.clone(),
+                    content_revision: "content-1".into(),
+                    ruleset_revision: "ruleset-1".into(),
+                    sim_revision: "sim-1".into(),
+                },
+            )
+            .await
+            .map_err(debug)?;
+        let ItemMintOutcome::Committed(corpse) = owner
+            .root
+            .commit_corpse_mint(&permit, owner.character, owner.holder, &mut corpse, id(41))
+            .await
+            .map_err(debug)?
+        else {
+            return Err("fresh capacity fixture corpse".into());
+        };
+        oldest.get_or_insert(corpse.item_instance_id);
+    }
+    oldest.ok_or_else(|| "first capacity fixture corpse".into())
+}
+
 async fn settle_altar_boss_death(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,
     player: crate::foundation::ExactActorRef,
     boss: crate::foundation::ExactActorRef,
+    full_scope: Option<[u8; 16]>,
 ) -> TestResult {
     use crate::foundation::{CommandId, CommandRef, OwnerDamageCommand};
     use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_creature_kill};
@@ -788,7 +853,67 @@ async fn settle_altar_boss_death(
         );
         assert!(attack.kills().has_session(session));
     }
-    let outcome = owner.drain_kill_rewards(session).await;
+    if let Some(oldest) = full_scope {
+        use crate::durability::item_decay_retire::{CORPSE_DECAY_AFTER_MS, CorpseDecayFence};
+
+        for _ in 0..3 {
+            owner.root.maintain_ready_once().await.map_err(debug)?;
+            assert_eq!(owner.drain_kill_rewards(session).await, DrainOutcome::Deferred);
+        }
+        let work: i16 = sqlx::query_scalar(
+            "SELECT work_units_used FROM game_item_mint_reservations
+             WHERE loot_purpose_key='CORPSE_MATERIALIZATION' AND death_actor_local_id=$1",
+        )
+        .bind(i64::from(boss.actor_local_id()))
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(work, 3);
+        let queue = owner.states.attack.lock().await.kills().clone();
+        assert!(queue.discard_gone(session, None));
+        for _ in 0..4 {
+            owner.root.maintain_ready_once().await.map_err(debug)?;
+            owner.drain_released_boss_clocks().await;
+            assert!(queue.has_session(session));
+        }
+
+        // Age one filler as in the corpse decay harness, then retire it through
+        // the real Channel writer while the other 63 corpses remain on Ground.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(
+            "UPDATE game_item_mint_receipts SET materialized_at =
+                floor(extract(epoch FROM clock_timestamp())*1000)::bigint - $2
+             WHERE item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(oldest.as_slice())
+        .bind(CORPSE_DECAY_AFTER_MS + 1_000)
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        let permit = owner.spell_lane_permit().await.ok_or("corpse retirement lane")?;
+        owner
+            .root
+            .retire_decayed_corpse(
+                &permit,
+                owner.character,
+                owner.holder,
+                CorpseDecayFence {
+                    runtime_scope: boss.runtime_scope(),
+                    scope_ownership_generation: boss.scope_generation(),
+                },
+                oldest,
+            )
+            .await
+            .map_err(debug)?;
+        drop(permit);
+        owner.root.maintain_ready_once().await.map_err(debug)?;
+        owner.drain_released_boss_clocks().await;
+        eprintln!("RELEASED_ELEMENTAL_LOOT_EXHAUSTION_PG_EXECUTED");
+    } else {
+        assert_eq!(owner.drain_kill_rewards(session).await, DrainOutcome::Drained);
+    }
     let settled: (String, i16, i64, i64) = sqlx::query_as(
         "SELECT cycle::text,state,(SELECT count(*) FROM game_elemental_boss_leases),
            (SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION' AND death_actor_local_id=$1)
@@ -799,7 +924,27 @@ async fn settle_altar_boss_death(
     .await?;
     eprintln!("ELEMENTAL_ALTAR_BOSS_KILL_PG_EXECUTED");
     assert_eq!(settled, ("1".into(), 3, 0, 1));
-    assert_eq!(outcome, DrainOutcome::Drained);
+    assert_eq!(owner.drain_kill_rewards(session).await, DrainOutcome::Drained);
+    if full_scope.is_some() {
+        let work: Vec<(String, i16, bool)> = sqlx::query_as(
+            "SELECT r.loot_purpose_key,r.work_units_used,EXISTS (
+                 SELECT 1 FROM game_item_mint_receipts m WHERE m.transaction_id=r.transaction_id)
+             FROM game_item_mint_reservations r
+             WHERE r.death_actor_local_id=$1
+               AND r.loot_purpose_key IN ('CORPSE_MATERIALIZATION','ELEMENTAL_BOSS_CLOCK_RECOVERY')
+             ORDER BY r.loot_purpose_key",
+        )
+        .bind(i64::from(boss.actor_local_id()))
+        .fetch_all(&h.pool)
+        .await?;
+        assert_eq!(
+            work,
+            [
+                ("CORPSE_MATERIALIZATION".into(), 3, true),
+                ("ELEMENTAL_BOSS_CLOCK_RECOVERY".into(), 1, false),
+            ]
+        );
+    }
     Ok(())
 }
 

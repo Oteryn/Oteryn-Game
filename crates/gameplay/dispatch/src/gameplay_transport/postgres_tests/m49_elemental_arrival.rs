@@ -69,3 +69,8 @@ fn m49_current_arrival_recovers_after_lost_projection_response() -> TestResult {
 fn elemental_altar_boss_death_commits_corpse_and_closes_clock() -> TestResult {
     run("m49-fire-kill")
 }
+
+#[test]
+fn released_elemental_altar_boss_recovers_after_corpse_loot_exhaustion() -> TestResult {
+    run("m49-fire-released-exhaustion-kill")
+}
