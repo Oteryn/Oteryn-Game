@@ -41,6 +41,15 @@ impl Drop for NativeAiLastPhase<'_> {
     }
 }
 
+impl ChannelSpellStates {
+    pub(super) fn next_monster_ai_due_us(&self, runtime: &ChannelRuntimeV1) -> u64 {
+        let periodic = self.next_monster_ai_pass_us;
+        self.encounter_phases
+            .next_fire_due_us(runtime)
+            .map_or(periodic, |fire| fire.min(periodic))
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// One coalesced creature think pass, driven by the shared source-owner cycle.
     /// Player count never multiplies monster attack frequency.
@@ -354,6 +363,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let periodic_pass = !retained_work && now.get() >= states.next_monster_ai_pass_us;
         if periodic_pass {
             super::encounter_phases::tick(&mut runtime, &states, now.get());
+        } else if !retained_work {
+            super::encounter_phases::tick_due_fire(&mut runtime, &states, now.get());
         }
         if !periodic_pass
             && !source_due

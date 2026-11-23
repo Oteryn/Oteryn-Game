@@ -2,7 +2,7 @@
 use super::*;
 use crate::gameplay_transport::house_podium::Approach;
 use crate::gameplay_transport::raid_notices::ServerMessageConnection;
-use oteryn_protocol_oteryn::house_podium::{COMMAND_QUERY, decode_item};
+use oteryn_protocol_oteryn::house_podium::{COMMAND_PROJECTION, COMMAND_QUERY, decode_item};
 use oteryn_protocol_oteryn::house_transfer::{
     COMMAND_TYPE_HOUSE_TRANSFER, STATE_DOMAIN_HOUSE_SCOPE,
 };
@@ -340,6 +340,17 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 permit.is_some() && !super::command::guards(authority, admitted, command).await?;
             if guard_deferred {
                 drop(permit.take());
+                if command.command_type == COMMAND_PROJECTION
+                    && selected.command_selected(command.command_type)
+                {
+                    let _ = commands.cancel_undispatched(
+                        command.command_id,
+                        generation,
+                        admitted.continuity.server_sequence,
+                        &[],
+                    );
+                    return Err(ServeEnd::Disconnected);
+                }
             }
             let podium_query = command.command_type == COMMAND_QUERY
                 && selected.command_selected(command.command_type);
@@ -443,7 +454,15 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                             continue;
                         }
                         Approach::NoPath => refused(),
-                        Approach::Unavailable => return Err(ServeEnd::Disconnected),
+                        Approach::Unavailable => {
+                            let _ = commands.cancel_undispatched(
+                                command.command_id,
+                                generation,
+                                admitted.continuity.server_sequence,
+                                &[],
+                            );
+                            return Err(ServeEnd::Disconnected);
+                        }
                     }
                 } else {
                     services

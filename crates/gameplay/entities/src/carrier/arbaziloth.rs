@@ -1,5 +1,7 @@
 //! Shield progression from Crystal 201189f8, no_rest_for_the_wicked/arbaziloth_fight.lua.
 const THRESHOLDS: [i64; 4] = [80, 60, 40, 20];
+// Crystal 201189f8 arbaziloth_fight.lua schedules spawnFire on shield raise.
+const FIRE_DELAY_MS: u64 = 1_500;
 const LEAVE_DELAY_MS: u64 = 3_000;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -13,35 +15,53 @@ pub struct ShieldSequence {
 enum Shield {
     #[default]
     Down,
-    Raised,
+    Raised {
+        fire_due_ms: u64,
+    },
     Cracked,
 }
 
 impl ShieldSequence {
     /// Apply this to positive incoming damage after replay qualification.
-    pub fn limit_damage(&mut self, health: i64, maximum: i64, damage: i64) -> i64 {
+    pub fn limit_damage(
+        &mut self,
+        health: i64,
+        maximum: i64,
+        damage: i64,
+        now_ms: Option<u64>,
+    ) -> Result<i64, CarrierError> {
         if self.shield != Shield::Down {
-            return 0;
+            return Ok(0);
         }
         let Some(&percent) = THRESHOLDS.get(self.cleared) else {
-            return damage;
+            return Ok(damage);
         };
         let threshold = maximum / 100 * percent + maximum % 100 * percent / 100;
         let allowed = health.saturating_sub(threshold).max(0);
         if damage >= allowed {
-            self.shield = Shield::Raised;
+            let now_ms = now_ms.ok_or(CarrierError::InvalidCommitBinding)?;
+            self.shield = Shield::Raised {
+                fire_due_ms: now_ms.saturating_add(FIRE_DELAY_MS),
+            };
         }
-        damage.min(allowed)
+        Ok(damage.min(allowed))
     }
 
     pub fn needs_fire(self) -> bool {
-        self.shield == Shield::Raised
+        self.fire_due_ms().is_some()
+    }
+
+    pub fn fire_due_ms(self) -> Option<u64> {
+        match self.shield {
+            Shield::Raised { fire_due_ms } => Some(fire_due_ms),
+            Shield::Down | Shield::Cracked => None,
+        }
     }
 
     /// The map owner calls this when the exact boss steps onto the active fire.
     /// A true return consumes that fire.
     pub fn step_on_fire(&mut self) -> bool {
-        if self.shield != Shield::Raised {
+        if !self.needs_fire() {
             return false;
         }
         self.shield = Shield::Cracked;
