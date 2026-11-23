@@ -547,7 +547,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         owner,
         super::config::MAX_CONFIG_BYTES,
     )?;
-    let config = NodeConfig::parse(&document).map_err(|error| invalid(error.key))?;
+    let config = NodeConfig::parse_for_startup(&document).map_err(|error| invalid(error.key))?;
     let secret = |key: &'static str, path: &Path, max: usize| {
         read_file(key, path, FileClass::Secret, owner, max)
     };

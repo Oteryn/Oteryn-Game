@@ -154,10 +154,26 @@ pub fn now_utc_ms() -> Option<u64> {
 /// transient file errors or stale reads from moving either owner clock backward.
 #[cfg(feature = "qualification-clock")]
 pub fn qualification_offset_ms() -> u64 {
+    use std::io::Read as _;
+
+    // Leave room for the UTC anchor, elapsed process time and downstream deadline
+    // additions, including when consumers represent time as signed microseconds.
+    const MAX_OFFSET_MS: u64 = i64::MAX as u64 / 2 / 1_000;
+    const MAX_RECORD_BYTES: usize = 64;
     static OFFSET: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let offset = std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE")
-        .and_then(|path| std::fs::read_to_string(path).ok())
-        .and_then(|value| value.trim().parse::<u64>().ok())
+        .and_then(|path| {
+            let file = std::fs::File::open(path).ok()?;
+            let mut record = String::new();
+            file.take((MAX_RECORD_BYTES + 1) as u64)
+                .read_to_string(&mut record)
+                .ok()?;
+            if record.len() > MAX_RECORD_BYTES {
+                return None;
+            }
+            record.trim().parse::<u64>().ok()
+        })
+        .filter(|offset| *offset <= MAX_OFFSET_MS)
         .unwrap_or(0);
     OFFSET
         .fetch_max(offset, std::sync::atomic::Ordering::Relaxed)
@@ -279,24 +295,86 @@ mod tests {
 
     const HOUR_MS: u64 = 3_600_000;
 
-    #[cfg(feature = "qualification-clock")]
     #[test]
-    fn qualification_clock_file_advances_and_never_rewinds()
+    fn qualification_clock_file_is_feature_gated_and_never_rewinds()
     -> Result<(), Box<dyn std::error::Error>> {
         const PROBE: &str = "OTERYN_QUALIFICATION_CLOCK_PROBE";
         if std::env::var_os(PROBE).is_some() {
             let path = std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").ok_or("clock file")?;
             let before = now_utc_ms().ok_or("UTC clock")?;
-            assert_eq!(qualification_offset_ms(), 0);
-            std::fs::write(&path, "75000")?;
-            let after = now_utc_ms().ok_or("advanced UTC clock")?;
-            assert!(after >= before + 75_000);
-            assert_eq!(qualification_offset_ms(), 75_000);
-            std::fs::write(&path, "0")?;
-            assert_eq!(qualification_offset_ms(), 75_000);
-            std::fs::write(&path, "incomplete")?;
-            assert_eq!(qualification_offset_ms(), 75_000);
-            assert!(now_utc_ms().ok_or("retained UTC clock")? >= after);
+            #[cfg(not(feature = "qualification-clock"))]
+            {
+                const OFFSET: u64 = 1_000_000_000;
+                std::fs::write(&path, OFFSET.to_string())?;
+                let after = now_utc_ms().ok_or("ordinary UTC clock")?;
+                assert!((before..before + OFFSET).contains(&after));
+            }
+            #[cfg(feature = "qualification-clock")]
+            {
+                assert_eq!(qualification_offset_ms(), 0);
+                let runtime = tokio::runtime::Builder::new_current_thread()
+                    .enable_time()
+                    .build()?;
+                let after = runtime.block_on(async {
+                    use std::{
+                        future::Future,
+                        task::{Context, Waker},
+                        time::Duration,
+                    };
+                    let period = Duration::from_secs(60);
+                    let mut interval = tokio::time::interval(period);
+                    interval.tick().await;
+                    let mut sleep = std::pin::pin!(tokio::time::sleep(period));
+                    let mut tick = std::pin::pin!(interval.tick());
+                    let mut timeout =
+                        std::pin::pin!(tokio::time::timeout(period, std::future::pending::<()>(),));
+                    let mut context = Context::from_waker(Waker::noop());
+                    assert!(sleep.as_mut().poll(&mut context).is_pending());
+                    assert!(tick.as_mut().poll(&mut context).is_pending());
+                    assert!(timeout.as_mut().poll(&mut context).is_pending());
+
+                    let temporary = std::path::Path::new(&path).with_extension("next");
+                    std::fs::write(&temporary, "75000")?;
+                    std::fs::rename(temporary, &path)?;
+                    let after = now_utc_ms().ok_or("advanced UTC clock")?;
+                    assert!(sleep.as_mut().poll(&mut context).is_pending());
+                    assert!(tick.as_mut().poll(&mut context).is_pending());
+                    assert!(timeout.as_mut().poll(&mut context).is_pending());
+                    Ok::<_, Box<dyn std::error::Error>>(after)
+                })?;
+                assert!(after >= before + 75_000);
+                assert_eq!(qualification_offset_ms(), 75_000);
+                std::fs::write(&path, "0")?;
+                assert_eq!(qualification_offset_ms(), 75_000);
+                std::fs::write(&path, "incomplete")?;
+                assert_eq!(qualification_offset_ms(), 75_000);
+                assert!(now_utc_ms().ok_or("retained UTC clock")? >= after);
+                std::fs::write(&path, u64::MAX.to_string())?;
+                assert_eq!(qualification_offset_ms(), 75_000);
+                std::fs::write(&path, format!("150000{}", " ".repeat(128)))?;
+                assert_eq!(qualification_offset_ms(), 75_000);
+                assert!(now_utc_ms().ok_or("UTC clock after invalid offset")? >= after);
+
+                let temporary = std::path::Path::new(&path).with_extension("next");
+                std::thread::scope(|scope| -> std::io::Result<()> {
+                    let writer = scope.spawn(|| -> std::io::Result<()> {
+                        for offset in 75_001..=75_032 {
+                            std::fs::write(&temporary, offset.to_string())?;
+                            std::fs::rename(&temporary, &path)?;
+                        }
+                        Ok(())
+                    });
+                    let mut previous = 75_000;
+                    for _ in 0..128 {
+                        let observed = qualification_offset_ms();
+                        assert!((previous..=75_032).contains(&observed));
+                        previous = observed;
+                    }
+                    writer.join().expect("offset writer")?;
+                    Ok(())
+                })?;
+                assert_eq!(qualification_offset_ms(), 75_032);
+            }
             return Ok(());
         }
         // A child process isolates the environment and the monotonic singleton
@@ -307,7 +385,7 @@ mod tests {
         let status = std::process::Command::new(std::env::current_exe()?)
             .args([
                 "--exact",
-                "world_clock::tests::qualification_clock_file_advances_and_never_rewinds",
+                "world_clock::tests::qualification_clock_file_is_feature_gated_and_never_rewinds",
                 "--nocapture",
             ])
             .env(PROBE, "1")
