@@ -39,7 +39,7 @@ const GENERAL_STATS_SQL: &str = "SELECT p.level,p.total_experience,b.magic_level
 
 /// Deaths in the history window, newest first. `killer` is the captured final blow (ordinal 0
 /// when its kind matches the death classification), and `most_damage` is the captured top damage
-/// dealer. Unjustified points and guild war frags retain names for older receipts.
+/// dealer. Unjustified points and guild war frags supply the name-ordered PvP cause list.
 const DEATHS_SQL: &str = "SELECT d.committed_at,d.level_before, \
  COALESCE(k.name,'') AS killer, COALESCE(m.name,'') AS most_damage, \
  COALESCE(k.ordinal=m.ordinal,false) AS same_source, \
@@ -183,15 +183,14 @@ impl DurabilityRoot {
                             most_damage: bounded_death_name(&most_damage),
                             unjustified: row.try_get("unjustified")?,
                         });
-                        let mut killers = Vec::with_capacity(2);
-                        if !killer.is_empty() {
-                            killers.push(killer);
-                        }
-                        if !most_damage.is_empty() && !row.try_get::<bool, _>("same_source")? {
-                            killers.push(most_damage);
-                        }
+                        let mut killers: Vec<String> = row.try_get("killers")?;
                         if killers.is_empty() {
-                            killers = row.try_get("killers")?;
+                            if !killer.is_empty() {
+                                killers.push(killer);
+                            }
+                            if !most_damage.is_empty() && !row.try_get::<bool, _>("same_source")? {
+                                killers.push(most_damage);
+                            }
                         }
                         entries.push((row.try_get("committed_at")?, death_cause(narrow(level)?, &killers)));
                     }
