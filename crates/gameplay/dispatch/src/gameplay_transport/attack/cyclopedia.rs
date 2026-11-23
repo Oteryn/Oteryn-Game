@@ -412,9 +412,9 @@ impl Observation<'_> {
         } else {
             let constants = AttackConstants::checked_in().ok_or(TabWireError)?;
             let attack = self.weapon.attack(constants.fist.attack);
-            let (id, skill_index) = match self.weapon {
-                SwingWeapon::Fists => (11, 0),
-                SwingWeapon::Melee { skill, .. } => (
+            let (id, skill_index, physical_attack) = match self.weapon {
+                SwingWeapon::Fists => (11, 0, constants.fist.attack),
+                SwingWeapon::Melee { skill, attack, .. } => (
                     match skill.index() {
                         1 => 9,
                         2 => 8,
@@ -422,6 +422,7 @@ impl Observation<'_> {
                         _ => 11,
                     },
                     skill.index(),
+                    attack,
                 ),
             };
             out.set(Stat::AttackEquipment, i64::from(attack))?;
@@ -447,7 +448,7 @@ impl Observation<'_> {
                 let (total_attack, raw_attack) = attack_totals(flat, attack, skill, self.mode);
                 out.set(Stat::AttackTotal, total_attack)?;
                 out.set(Stat::AttackFightMode, total_attack - raw_attack)?;
-                out.set(Stat::AttackSkill, attack_skill(attack, skill))?;
+                out.set(Stat::AttackSkill, attack_skill(physical_attack, skill))?;
             }
         }
         Ok(())

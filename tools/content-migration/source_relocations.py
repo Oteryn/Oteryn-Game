@@ -8,12 +8,23 @@ transition once: the pinned path and digest, and the exact current path and dige
 A pin resolves through an entry only when it matches the recorded pinned digest and
 the current file matches the recorded current digest exactly. Any further edit to a
 relocated source therefore fails closed until that edit is reviewed and recorded here.
+Receipts that also require the original byte count can use an exact frozen copy.
 """
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 from pathlib import Path
+
+# The successor8 receipt checks both the original digest and byte count.
+# Preserve its exact main-branch packet alongside the live promotion.
+FROZEN_COMPRESSED_SOURCES = {
+    (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
+    ): "tools/content-migration/historical-item-stats-promotion-v2.json.gz",
+}
 
 # (pinned path, pinned sha256) -> (current path, current sha256)
 RELOCATIONS = {
@@ -296,6 +307,15 @@ def read_text(root: Path, path: str) -> str:
 
 def read_pinned(root: Path, path: str, expected: str) -> bytes | None:
     """The current bytes of a pinned source, or None when its pin does not hold."""
+    frozen = FROZEN_COMPRESSED_SOURCES.get((path, expected))
+    if frozen is not None:
+        archive = Path(root) / frozen
+        if archive.is_file():
+            try:
+                data = gzip.decompress(archive.read_bytes())
+            except (OSError, EOFError):
+                return None
+            return data if digest(data) == expected else None
     relocated = RELOCATIONS.get((path, expected))
     current, current_digest = relocated if relocated else (current_path(path), expected)
     target = Path(root) / current

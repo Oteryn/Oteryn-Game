@@ -29,7 +29,13 @@ fn crystal_equipment_melee_intrinsic_attack_projects_to_offence()
         crate::content::native_gameplay_test_world_id()?,
     )?;
     let native = decode(&compile_native_gameplay(room.compiled(), &input)?.server_artifact)?.state;
-    let state = state()?;
+    let mut state = state()?;
+    let build =
+        crate::durability::character_build::DurableBuildState::new("knight", (0, 0), [(100, 0); 7])
+            .map_err(|error| format!("{error:?}"))?;
+    state
+        .load_owned_build(&build)
+        .map_err(|error| format!("{error:?}"))?;
     let offence = EquippedOffence::default();
     let constants = AttackConstants::checked_in().ok_or("attack constants")?;
     for id in [47368, 49523, 53207] {
@@ -42,6 +48,12 @@ fn crystal_equipment_melee_intrinsic_attack_projects_to_offence()
         let (physical_ppm, elemental_ppm, element) =
             weapon.split_damage(1_000_000).ok_or("damage split")?;
         assert!(elemental_ppm > 0);
+        let SwingWeapon::Melee {
+            attack: physical, ..
+        } = weapon
+        else {
+            return Err("expected a melee weapon".into());
+        };
         let observation = Observation {
             state: &state,
             now_micros: 1,
@@ -60,6 +72,11 @@ fn crystal_equipment_melee_intrinsic_attack_projects_to_offence()
         observation
             .offence(&mut wire)
             .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(
+            wire.get(Stat::AttackSkill),
+            Some(attack_skill(physical, 100)),
+            "{id}"
+        );
         assert_eq!(
             wire.get(Stat::AttackEquipment),
             Some(i64::from(attack)),

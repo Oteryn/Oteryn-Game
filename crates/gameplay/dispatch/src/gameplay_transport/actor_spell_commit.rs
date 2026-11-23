@@ -8,6 +8,9 @@ use crate::foundation::StagedSpellBatch;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use crate::spell::cast::PlayerSpellState;
 use crate::spell::combat_batch::{CombatBatchReceipt, Error, OwnerCombatBatch, OwnerCombatChange};
+use oteryn_protocol_oteryn::damage_element::DamageElement;
+
+pub(in crate::gameplay_transport) type DamageSplit = (u16, i64, DamageElement, DamageElement);
 
 #[derive(Debug)]
 struct Replacement {
@@ -25,11 +28,7 @@ pub struct PlayerBatchPreflight {
     batch: OwnerCombatBatch,
     analyser_element: oteryn_protocol_oteryn::damage_element::DamageElement,
     analyser_leech: u32,
-    analyser_parts: Option<(
-        u32,
-        oteryn_protocol_oteryn::damage_element::DamageElement,
-        oteryn_protocol_oteryn::damage_element::DamageElement,
-    )>,
+    analyser_parts: Vec<DamageSplit>,
     replacements: Vec<Replacement>,
     wheel_shielding: Vec<(ExactActorRef, u32)>,
     preprocessed_caster: Option<(usize, ExactActorRef, GameSessionId, PlayerSpellState)>,
@@ -412,6 +411,27 @@ pub fn stage_player_batch_with_magnitude(
     )?;
     if let Some(magnitude) = magnitude {
         prepared.analyser_element = magnitude.analyser_element();
+        let mut components = magnitude.intrinsic_damage_components().collect::<Vec<_>>();
+        for effect in &prepared.batch.effects {
+            if !matches!(
+                effect.change,
+                OwnerCombatChange::Damage { .. } | OwnerCombatChange::DamageWithHealing { .. }
+            ) {
+                continue;
+            }
+            if let Some(index) = components
+                .iter()
+                .position(|(target, _, _)| *target == effect.target)
+            {
+                let (_, primary, secondary_element) = components.remove(index);
+                prepared.analyser_parts.push((
+                    effect.sub_ordinal,
+                    primary,
+                    prepared.analyser_element,
+                    secondary_element,
+                ));
+            }
+        }
     }
     prepared.stage_soul_war_reflection(runtime, states)?;
     Ok(prepared)
@@ -429,13 +449,16 @@ pub fn stage_player_batch_with_attack(
         return Err(SpellCastDisposition::Rejected);
     }
     let mut prepared = stage_player_batch_inner(runtime, states, batch, None, true, Some(attack))?;
-    prepared.analyser_parts = attack.analyser_parts().map(|(primary, a, b)| {
-        (
-            primary,
-            super::super::analyser::element(a),
-            super::super::analyser::element(b),
-        )
-    });
+    if let Some((primary, first, second)) = attack.analyser_parts()
+        && let Some(effect) = prepared.batch.effects.first()
+    {
+        prepared.analyser_parts.push((
+            effect.sub_ordinal,
+            i64::from(primary),
+            super::super::analyser::element(first),
+            super::super::analyser::element(second),
+        ));
+    }
     prepared.stage_soul_war_reflection(runtime, states)?;
     Ok(prepared)
 }
@@ -475,8 +498,13 @@ impl PlayerBatchPreflight {
                 continue;
             }
             let mut lua_reflected = Vec::new();
-            let parts = if let Some((primary, first, second)) = self.analyser_parts {
-                let primary = i64::from(primary).min(magnitude);
+            let parts = if let Some((_, primary, first, second)) = self
+                .analyser_parts
+                .iter()
+                .copied()
+                .find(|split| split.0 == effect.sub_ordinal)
+            {
+                let primary = primary.min(magnitude);
                 [(primary, first), (magnitude - primary, second)]
             } else {
                 [
@@ -894,7 +922,7 @@ fn stage_player_batch_inner(
     }
     let preflight = PlayerBatchPreflight {
         analyser_element: oteryn_protocol_oteryn::damage_element::DamageElement::Physical,
-        analyser_parts: None,
+        analyser_parts: Vec::new(),
         analyser_leech: 0,
         batch: batch.clone(),
         replacements,
@@ -996,7 +1024,7 @@ pub fn install_owner_batch(
     if !staged.will_apply() {
         return runtime.install_spell_batch(staged);
     }
-    let preflight = preflight.expect("checked player preflight");
+    let mut preflight = preflight.expect("checked player preflight");
     staged
         .bind_player_preflight(&preflight)
         .expect("checked matching player preflight");
@@ -1004,11 +1032,11 @@ pub fn install_owner_batch(
     if receipt.applied {
         let element = preflight.analyser_element;
         let leech = preflight.analyser_leech;
-        let split = preflight.analyser_parts;
+        let split = std::mem::take(&mut preflight.analyser_parts);
         let batch = preflight.install(states);
         states.owner_wake.notify_one();
         // Advisory allocation follows both owner installations.
-        states.analyser_batch(runtime, &batch, &receipt, element, split);
+        states.analyser_batch(runtime, &batch, &receipt, element, &split);
         states
             .analyser
             .impact(batch.caster, batch.command.game_session_id(), leech, None);

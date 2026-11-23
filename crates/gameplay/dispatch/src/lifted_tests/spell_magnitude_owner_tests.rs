@@ -327,12 +327,17 @@ fn crystal_equipment_weapon_skill_hit_uses_intrinsic_element_response() {
     input.source_world = None;
     let room = crate::content::qualify_native_entry_room(fixture.runtime.binding().world_id())
         .expect("qualified room");
-    let native = decode(&compile_native_gameplay(room.compiled(), &input).expect("artifact").server_artifact)
-        .expect("decoded artifact")
-        .state;
+    let native = decode(
+        &compile_native_gameplay(room.compiled(), &input)
+            .expect("artifact")
+            .server_artifact,
+    )
+    .expect("decoded artifact")
+    .state;
     let weapon = swing_weapon(&native, |slot| {
         (slot == 5).then_some(("oteryn:item.tibia.i47374", "definition-r1"))
-    }).expect("Amber weapon");
+    })
+    .expect("Amber weapon");
     assert!(weapon.has_elemental_attack());
     let source = plan();
     let NativeCombatPlan::Combat(combat) = &source else {
@@ -340,7 +345,8 @@ fn crystal_equipment_weapon_skill_hit_uses_intrinsic_element_response() {
     };
     let hit = &combat.hits[0];
     let target = &fixture.bindings[1];
-    let energy = qualify(&fixture, &source).expect("ordinary elemental plan")
+    let energy = qualify(&fixture, &source)
+        .expect("ordinary elemental plan")
         .finish_with_damage_healing(&source, hit, target, &mut |low, _| low)
         .expect("elemental response");
     assert_eq!(energy.0, 0);
@@ -351,11 +357,17 @@ fn crystal_equipment_weapon_skill_hit_uses_intrinsic_element_response() {
         combat.element = Element::Physical;
     }
     let mut weapon_owner = qualify(&fixture, &weapon_plan).expect("ordinary weapon-skill plan");
-    assert!(weapon_owner.finish(&weapon_plan, hit, target, &mut |low, _| low)
-        .expect("physical response") > 0);
+    assert!(
+        weapon_owner
+            .finish(&weapon_plan, hit, target, &mut |low, _| low)
+            .expect("physical response")
+            > 0
+    );
     weapon_owner.bind_intrinsic_weapon(weapon);
-    assert_eq!(weapon_owner.finish_with_damage_healing(&weapon_plan, hit, target, &mut |low, _| low),
-        Ok(energy));
+    assert_eq!(
+        weapon_owner.finish_with_damage_healing(&weapon_plan, hit, target, &mut |low, _| low),
+        Ok(energy)
+    );
 }
 
 #[test]
@@ -371,7 +383,9 @@ fn crystal_equipment_spell_wheel_flat_applies_to_each_surviving_weapon_component
     let room = crate::content::qualify_native_entry_room(f.runtime.binding().world_id())
         .expect("qualified room");
     let artifact = compile_native_gameplay(room.compiled(), &input).expect("artifact");
-    let native = decode(&artifact.server_artifact).expect("decoded artifact").state;
+    let native = decode(&artifact.server_artifact)
+        .expect("decoded artifact")
+        .state;
     let weapon = swing_weapon(&native, |slot| {
         (slot == 5).then_some(("oteryn:item.tibia.i49523", "definition-r1"))
     })
@@ -397,6 +411,218 @@ fn crystal_equipment_spell_wheel_flat_applies_to_each_surviving_weapon_component
     let base = finish(&f);
     f.attributes.wheel_flat_damage = Some(11);
     assert_eq!(finish(&f) - base, 22);
+}
+
+#[test]
+fn crystal_equipment_spell_wheel_flat_applies_to_zero_primary_with_surviving_secondary() {
+    use crate::content::native_gameplay::{NativeGameplayInput, compile_native_gameplay, decode};
+    use oteryn_gameplay_combat_rules::resolution::swing_weapon;
+
+    let mut f = fixture();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let mut input = NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))
+        .expect("committed native inputs");
+    input.source_world = None;
+    let room = crate::content::qualify_native_entry_room(f.runtime.binding().world_id())
+        .expect("qualified room");
+    let artifact = compile_native_gameplay(room.compiled(), &input).expect("artifact");
+    let native = decode(&artifact.server_artifact)
+        .expect("decoded artifact")
+        .state;
+    let weapon = swing_weapon(&native, |slot| {
+        (slot == 5).then_some(("oteryn:item.tibia.i47368", "definition-r1"))
+    })
+    .expect("Amber Slayer");
+
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        unreachable!();
+    };
+    combat.element = Element::Physical;
+    combat.block_armor = false;
+    combat.hits[0].side_percent = None;
+    combat.hits[0].magnitude = 250;
+    let hit = combat.hits[0].clone();
+    let finish = |f: &Fixture| {
+        let mut owner = qualify(f, &p).expect("real numerical owner");
+        owner.bind_intrinsic_weapon(weapon);
+        owner
+            .finish(&p, &hit, &f.bindings[1], &mut |low, _| low)
+            .expect("split spell")
+    };
+    f.attributes.wheel_flat_damage = Some(0);
+    let base = finish(&f);
+    f.attributes.wheel_flat_damage = Some(11);
+    assert_eq!(finish(&f) - base, 22);
+}
+
+#[test]
+fn crystal_equipment_spell_wheel_uses_health_after_damage_healing() {
+    use oteryn_gameplay_combat_rules::resolution::{MeleeSkill, SwingWeapon};
+    use oteryn_gameplay_content::content::ProjectV2RangedElement;
+
+    let mut f = fixture_with_damage_healing(100);
+    let target = &f.bindings[1];
+    f.runtime
+        .set_test_creature_health(target.actor, 17)
+        .expect("wounded target");
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        unreachable!();
+    };
+    combat.element = Element::Physical;
+    combat.block_armor = false;
+    combat.hits[0].side_percent = None;
+    combat.hits[0].magnitude = 250;
+    let hit = combat.hits[0].clone();
+    let weapon = SwingWeapon::Melee {
+        attack: 50,
+        skill: MeleeSkill::Sword,
+        elemental: Some((50, ProjectV2RangedElement::Energy)),
+    };
+    let finish = |f: &Fixture| {
+        let mut owner = qualify(f, &p).expect("real numerical owner");
+        owner.bind_intrinsic_weapon(weapon);
+        owner
+            .finish_with_damage_healing(&p, &hit, &f.bindings[1], &mut |low, _| low)
+            .expect("split spell")
+    };
+    let baseline = finish(&f);
+    assert!(baseline.0 > 100);
+    assert!(baseline.1 >= 3);
+    let mut effects = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+    effects.revelation_stages.insert("combat_mastery".into(), 1);
+    assert_eq!(effects.combat_mastery_percent(17, 20, false), 1);
+    f.attributes.wheel_effects = Some(effects);
+    assert_eq!(finish(&f), baseline);
+}
+
+#[test]
+fn crystal_equipment_spell_commit_reflects_each_intrinsic_component() {
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::actor_spell::{
+        ChannelSpellStates, commit_owner_batch, stage_player_batch_with_magnitude,
+    };
+    use crate::spell::combat_batch::{OwnerCombatBatch, SpellOccurrenceBinding, lower_native};
+    use oteryn_gameplay_combat_rules::resolution::swing_weapon;
+    use oteryn_gameplay_content::content::native_gameplay::{
+        NativeGameplayInput, compile_native_gameplay, decode,
+    };
+    use oteryn_gameplay_entities::carrier::soul_war::SoulWarCreatureChange;
+
+    let mut f = fixture_with_source_kind(0, true, true, Some("oteryn:creature.goshnar_s_greed"));
+    f.state = PlayerSpellState::new(FACTS, 0, 0).expect("unbuffed caster");
+    f.attributes.binding.player_revision = f.state.revision();
+    f.attributes.policy = MagnitudePolicy::BaselineTest;
+    f.attributes.owner_revisions = Some((1, 1, Some(1)));
+    let target = f.bindings[1].actor;
+    let current = f.runtime.companion_snapshot(target).expect("source actor");
+    f.runtime
+        .change_soul_war_creature(
+            &current,
+            SoulWarCreatureChange::Buff {
+                defense: 0,
+                reflection: 20,
+                maximum_health: 0,
+                health: 0,
+            },
+        )
+        .expect("source reflection modifier");
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../content/spells.manifest.json");
+    let mut input = NativeGameplayInput::from_manifest(&path).expect("qualified native inputs");
+    input.source_world = None;
+    let room = crate::content::qualify_native_entry_room(f.runtime.binding().world_id())
+        .expect("qualified room");
+    let artifact = compile_native_gameplay(room.compiled(), &input).expect("native artifact");
+    let native = decode(&artifact.server_artifact)
+        .expect("decoded native artifact")
+        .state;
+    let weapon = swing_weapon(&native, |slot| {
+        (slot == 5).then_some(("oteryn:item.tibia.i49523", "definition-r1"))
+    })
+    .expect("Inferniarch Battleaxe");
+    let mut plan = plan();
+    let NativeCombatPlan::Combat(combat) = &mut plan else {
+        unreachable!();
+    };
+    combat.element = Element::Physical;
+    combat.hits.truncate(1);
+    combat.hits[0].magnitude = 3_000;
+    combat.hits[0].side_percent = None;
+    combat.block_armor = false;
+    let mut magnitude = qualify(&f, &plan).expect("real source magnitude owner");
+    magnitude.bind_intrinsic_weapon(weapon);
+    let lowered = lower_native(
+        &f.runtime,
+        OwnerCombatBatch {
+            caster: f.caster,
+            attacker: f.attributes.binding.character,
+            current_lease_generation: 1,
+            command: CommandRef::new(f.session, CommandId::new(84).expect("command")),
+            occurrence: SpellOccurrenceBinding {
+                id: "weapon-skill:split-reflection".into(),
+                revisions: ["rules:1", "content:1", "world:1", "formula:1", "sim:1"]
+                    .map(str::to_owned),
+            },
+            binding: b"weapon-skill:split-reflection".to_vec(),
+            anchor: None,
+            now_us: Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(100_123)),
+            now_ms: 100,
+            effects: Vec::new(),
+            deferred: None,
+        },
+        1,
+        &plan,
+        &f.bindings,
+        0,
+        &mut |plan, hit, binding| {
+            magnitude.finish_with_damage_healing(plan, hit, binding, &mut |low, _| low)
+        },
+    )
+    .expect("lowered damage");
+    let mut states = ChannelSpellStates::default();
+    states
+        .initialize(
+            &f.runtime,
+            f.caster,
+            f.session,
+            FACTS,
+            (0, 0),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+        )
+        .expect("caster owner");
+    assert!(states.replace_owned_player_state_test_fixture(
+        &f.runtime,
+        f.caster,
+        f.session,
+        f.state.clone()
+    ));
+    let before = f.state.vitals();
+    let preflight = stage_player_batch_with_magnitude(
+        &f.runtime,
+        &states,
+        &lowered.batch,
+        None,
+        Some(&magnitude),
+    )
+    .expect("actual player batch");
+    let staged = f
+        .runtime
+        .stage_spell_batch(&lowered.batch)
+        .expect("creature damage staging");
+    let receipt = commit_owner_batch(&mut f.runtime, &mut states, staged, Some(preflight))
+        .expect("actual combat commit");
+    assert!(receipt.applied);
+    let after = states
+        .read_owned_player_state_test_snapshot(&f.runtime, f.caster, f.session)
+        .expect("committed caster")
+        .vitals();
+    assert_eq!(
+        before.health - after.health,
+        2 * before.max_health.div_ceil(100),
+        "each intrinsic component reaches its independent reflection cap"
+    );
 }
 
 #[test]

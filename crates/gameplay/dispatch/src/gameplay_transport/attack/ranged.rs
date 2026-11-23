@@ -819,7 +819,7 @@ pub(super) fn element_key(element: Element) -> &'static str {
     }
 }
 
-fn resolved_damage(
+pub(super) fn resolved_damage(
     damage: RangedDamage,
     magnitude: i64,
     offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
@@ -835,8 +835,8 @@ fn resolved_damage(
 pub(super) fn creature_damage(
     ranged: &RangedLoadout,
     policy: &crate::content::creature_policy::CompiledCreaturePolicy,
-    damage: i64,
-    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+    (physical, elemental, element): (i64, i64, Element),
+    proficiency_damage: impl Fn(i64) -> i64,
     (root, constants, actor, lineage, ordinal): (
         &GameplayDecisionRoot,
         &AttackConstants,
@@ -858,7 +858,6 @@ pub(super) fn creature_damage(
             && state.wheel_equipment().and_then(|hands| hands.ammunition())
                 == Some(crate::content::ReferenceAmmoType::Arrow)
     });
-    let (physical, elemental, element) = resolved_damage(ranged.damage, damage, offence)?;
     let physical = if physical > 0 {
         let physical = swing_mitigated(
             root,
@@ -900,8 +899,11 @@ pub(super) fn creature_damage(
             0
         },
     )?;
-    let [physical, elemental] =
-        native_health_primary_components(ranged.damage, [physical, elemental], health_change)?;
+    let [physical, elemental] = native_health_primary_components(
+        ranged.damage,
+        [physical, elemental].map(proficiency_damage),
+        health_change,
+    )?;
     let physical = super::cruelty_health_component(physical, cruelty_drain)?;
     let elemental = super::cruelty_health_component(elemental, cruelty_drain)?;
     if cruelty_drain.is_some() && physical == 0 && elemental == 0 {

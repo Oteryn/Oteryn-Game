@@ -83,6 +83,7 @@ pub(in crate::gameplay_transport) use training_save::TrainingSave;
 mod owner_commit;
 #[path = "stance_cast.rs"]
 mod stance_cast;
+pub(in crate::gameplay_transport) use owner_commit::DamageSplit;
 pub use owner_commit::{
     CheckedOwnerBatch, PlayerBatchPreflight, check_owner_batch, commit_owner_batch,
     install_owner_batch, stage_player_batch, stage_player_batch_with_attack,

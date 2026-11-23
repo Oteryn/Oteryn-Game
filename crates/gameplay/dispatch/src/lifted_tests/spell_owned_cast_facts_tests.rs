@@ -58,7 +58,9 @@ fn crystal_equipment_weapon_skill_cast_reads_intrinsic_attack() {
     let mut binding = binding();
     binding.player_revision = state.revision();
     binding.content_digest = content.source_digest();
-    let weapon = content.item_policy_for_source_id(47368).expect("Amber Slayer");
+    let weapon = content
+        .item_policy_for_source_id(47368)
+        .expect("Amber Slayer");
     let definition = &weapon.record().production_definition;
     let equipment = EquipmentSnapshot {
         character: binding.character,
@@ -80,7 +82,10 @@ fn crystal_equipment_weapon_skill_cast_reads_intrinsic_attack() {
         }],
     };
     let expected = oteryn_gameplay_combat_rules::resolution::swing_weapon(&content, |slot| {
-        (slot == 5).then_some((definition.production_key.as_str(), definition.revision_ref.as_str()))
+        (slot == 5).then_some((
+            definition.production_key.as_str(),
+            definition.revision_ref.as_str(),
+        ))
     })
     .expect("live melee weapon")
     .attack(0);
@@ -95,7 +100,11 @@ fn crystal_equipment_weapon_skill_cast_reads_intrinsic_attack() {
     .expect("fenced owner reads");
     for name in ["fierce_berserk", "berserk"] {
         let key = format!("candidate:spell/{name}");
-        let spell = content.spell_book().spells.iter().find(|spell| spell.key == key)
+        let spell = content
+            .spell_book()
+            .spells
+            .iter()
+            .find(|spell| spell.key == key)
             .expect("published weapon-skill cast");
         let caster = owned
             .numerical_caster(&state, spell, &content, HarmonyMultiplier::ONE, 1)

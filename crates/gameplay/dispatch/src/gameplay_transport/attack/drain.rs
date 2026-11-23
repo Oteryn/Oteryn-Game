@@ -52,7 +52,7 @@ pub(super) struct PvpSwing {
     pub(super) target: ExactActorRef,
     pub(super) lineage: CommandRef,
     pub(super) ordinal: u16,
-    pub(super) magnitude: u32,
+    pub(super) components: (i64, i64, crate::content::ProjectV2RangedElement),
     pub(super) black: bool,
     pub(super) revision: &'static str,
     pub(super) weapon: WeaponFacts,
@@ -627,14 +627,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         100 + state.virtue_party_bonuses(now.get()).auto_attack,
                     )) / 100;
                 }
-                if let Some(proficiency) = proficiency
-                    && let Ok(target) = runtime.companion_snapshot(selected.target)
+                if let Some(effects) = proficiency
+                    && damage > 0
+                    && effects.flat_attack != 0
+                    && runtime
+                        .companion_snapshot(target)
+                        .is_ok_and(|target| target.maximum_health > 0)
                 {
-                    damage = proficiency.apply(
-                        damage,
-                        u64::try_from(target.health).unwrap_or(0),
-                        u64::try_from(target.maximum_health).unwrap_or(0),
-                    );
+                    damage = damage.saturating_add(effects.flat_attack).max(0);
                 }
                 if damage < 0 {
                     ranged::train_distance(
@@ -648,43 +648,66 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     );
                     continue;
                 }
-                let Some(damage) = (if extension {
-                    let scaled =
+                if extension {
+                    damage =
                         i64::try_from(i128::from(damage) * i128::from(offence.cleave) / 10_000)
                             .unwrap_or(i64::MAX);
-                    // EQMOD2's ordinary extension exclusion remains. D186 permits
-                    // assigned critical charms, using the existing additive skills;
-                    // it grants neither fatal nor damage-proc eligibility.
-                    if charm_critical && scaled > 0 {
-                        u32::try_from(scaled)
-                            .ok()
-                            .map(|damage| i64::from(offence.critical(damage, critical_roll)))
+                }
+                let Some((physical, secondary, element)) =
+                    (if let Some(ranged) = &selected.weapon.ranged {
+                        ranged::resolved_damage(ranged.damage, damage, &offence)
                     } else {
-                        Some(scaled)
-                    }
-                } else {
-                    equipped_offence::critical_swing(
-                        &offence,
-                        &root,
-                        entry.actor,
-                        swing.lineage,
-                        ordinal,
-                        damage,
-                        critical_roll,
-                    )
-                }) else {
+                        selected
+                            .weapon
+                            .weapon
+                            .split_damage(damage)
+                            .and_then(|(p, s, e)| offence.convert_physical(p, s, e))
+                    })
+                else {
                     continue;
                 };
-                let damage = super::super::hazard::outgoing_damage(
+                let extend_component = |value| {
+                    if extension {
+                        // Cleave may use assigned critical charms, but cannot roll fatal.
+                        if charm_critical && value > 0 {
+                            u32::try_from(value)
+                                .ok()
+                                .map(|value| i64::from(offence.critical(value, critical_roll)))
+                        } else {
+                            Some(value)
+                        }
+                    } else {
+                        equipped_offence::critical_swing(
+                            &offence,
+                            &root,
+                            entry.actor,
+                            swing.lineage,
+                            ordinal,
+                            value,
+                            critical_roll,
+                        )
+                    }
+                };
+                let (Some(physical), Some(secondary)) =
+                    (extend_component(physical), extend_component(secondary))
+                else {
+                    continue;
+                };
+                let raw = if super::super::hazard::outgoing_damage(
                     &runtime,
                     entry.actor,
                     entry.session,
                     target,
-                    damage,
+                    physical.saturating_add(secondary),
                     (swing.lineage.command_id().get(), ordinal),
-                );
-                // Soulpit Intense Hex reads the actual canonical condition slot. The raw
-                // melee/distance/wand request is reduced before armor and PvP splitting.
+                ) == 0
+                {
+                    [0, 0]
+                } else {
+                    [physical, secondary]
+                };
+                // Soulpit Intense Hex reads the canonical condition slot and scales each
+                // damage component before target defence and PvP damage reduction.
                 let Ok(conditions) =
                     runtime.actor_conditions_at(entry.actor, Some(entry.session), now.get())
                 else {
@@ -699,15 +722,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) else {
                     continue;
                 };
-                let Some(damage) = damage
-                    .checked_mul(i64::from(retained))
-                    .map(|value| value / 100)
-                else {
+                let scale = |value: i64| {
+                    value
+                        .checked_mul(i64::from(retained))
+                        .map(|value| value / 100)
+                        .filter(|value| *value >= 0)
+                };
+                let (Some(damage), Some(elemental)) = (scale(raw[0]), scale(raw[1])) else {
                     continue;
                 };
-                if damage < 0 {
-                    continue;
-                }
                 if !runtime.contains_live_creature(target) {
                     let black = if extension {
                         self.pvp_target_legal(
@@ -731,12 +754,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let Some(black) = black else {
                         continue;
                     };
-                    let Ok(raw) = u32::try_from(damage) else {
-                        entry.clear_target();
-                        continue;
-                    };
-                    // PVP-DEFENCE-1 splits and scales the roll when the target's block budget
-                    // becomes available after this pass.
                     pvp_hits.push(PvpSwing {
                         actor: entry.actor,
                         session: entry.session,
@@ -748,7 +765,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         target,
                         lineage: swing.lineage,
                         ordinal,
-                        magnitude: raw,
+                        components: (damage, elemental, element),
                         black,
                         revision,
                         weapon: selected.weapon.clone(),
@@ -789,6 +806,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let split_melee = selected.weapon.weapon.has_elemental_attack()
                     || offence.elemental_conversion.is_some();
                 let physical_immune = creature_physically_immune(&snapshot.state.policy);
+                let health_change = match observe_native_attack_health(
+                    &runtime,
+                    health_names_data.as_ref(),
+                    target,
+                ) {
+                    Ok(observation) => observation,
+                    Err(()) => continue,
+                };
+                let cruelty_drain = match runtime.soul_war_health_callback(target) {
+                    Ok(Some(policy)) if policy.is_cruelty() => {
+                        match runtime.soul_war_cruelty_drain(&snapshot) {
+                            Ok(value) => Some(value.unwrap_or(2)),
+                            Err(_) => continue,
+                        }
+                    }
+                    Ok(_) => None,
+                    Err(_) => continue,
+                };
+                let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
+                // The creature's healing map uses the components before outgoing conditions.
+                let healing = |key, value| snapshot.state.policy.damage_healing(key, value).ok();
+                let Some(healing) = healing("physical", raw[0])
+                    .zip(healing(ranged::element_key(element), raw[1]))
+                    .and_then(|(primary, secondary)| {
+                        u64::try_from(primary.checked_add(secondary)?).ok()
+                    })
+                else {
+                    continue;
+                };
+                let mut creature_health = u64::try_from(snapshot.health).unwrap_or(0);
+                if healing > 0 {
+                    let Ok(receipts) = runtime.commit_source_creature_heal_batch(
+                        digest,
+                        &[(target, race_key.clone(), creature_max_health, healing)],
+                    ) else {
+                        continue;
+                    };
+                    let [receipt] = receipts.as_slice() else {
+                        continue;
+                    };
+                    creature_health = u64::try_from(receipt.health_after).unwrap_or(0);
+                }
+                let proficiency_damage = |value| {
+                    proficiency.map_or(value, |effects| {
+                        effects.apply_percent(value, creature_health, creature_max_health)
+                    })
+                };
                 if selected.weapon.ranged.is_none() && !split_melee && physical_immune {
                     continue;
                 }
@@ -808,32 +872,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     continue;
                 }
-                let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
-                let health_change = match observe_native_attack_health(
-                    &runtime,
-                    health_names_data.as_ref(),
-                    target,
-                ) {
-                    Ok(observation) => observation,
-                    Err(()) => continue,
-                };
-                let cruelty_drain = match runtime.soul_war_health_callback(target) {
-                    Ok(Some(policy)) if policy.is_cruelty() => {
-                        match runtime.soul_war_cruelty_drain(&snapshot) {
-                            Ok(value) => Some(value.unwrap_or(2)),
-                            Err(_) => continue,
-                        }
-                    }
-                    Ok(_) => None,
-                    Err(_) => continue,
-                };
                 let mut resolved_element = crate::content::ProjectV2RangedElement::Physical;
                 let mut ranged_magnitude = if let Some(ranged) = &selected.weapon.ranged {
                     ranged::creature_damage(
                         ranged,
                         &snapshot.state.policy,
-                        damage,
-                        &offence,
+                        (damage, elemental, element),
+                        proficiency_damage,
                         (&root, constants, entry.actor, swing.lineage, ordinal),
                         cruelty_drain,
                         health_change.as_ref(),
@@ -843,8 +888,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 Some((
                                     state,
                                     now.get(),
-                                    u64::try_from(snapshot.health).ok()?,
-                                    u64::try_from(snapshot.maximum_health).ok()?,
+                                    creature_health,
+                                    creature_max_health,
                                     crate::spell::cast::wheel_adjacent_target(
                                         &runtime,
                                         entry.actor,
@@ -871,19 +916,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         blocks.len() - 1
                     }
                 };
-                let melee_components = if selected.weapon.ranged.is_none() && split_melee {
-                    let Some(components) = selected
-                        .weapon
-                        .weapon
-                        .split_damage(damage)
-                        .and_then(|(p, s, e)| offence.convert_physical(p, s, e))
-                    else {
-                        continue;
-                    };
-                    Some(components)
-                } else {
-                    None
-                };
+                let melee_components = (selected.weapon.ranged.is_none() && split_melee)
+                    .then_some((damage, elemental, element));
                 let secondary_immune = melee_components.is_some_and(|(_, _, element)| {
                     snapshot
                         .state
@@ -899,7 +933,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         content,
                         entry,
                         &selected.weapon,
-                        HitBlock::Immunity,
+                        (None, HitBlock::Immunity),
                         now,
                         &mut trained,
                     );
@@ -910,26 +944,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && !physical_immune
                     && blocks[index].1.try_block(&constants.block, swing.at);
                 if let Some((physical, elemental, element)) = melee_components {
-                    let Some(healing) = snapshot
-                        .state
-                        .policy
-                        .damage_healing(ranged::element_key(element), elemental)
-                        .ok()
-                        .and_then(|amount| u64::try_from(amount).ok())
-                    else {
-                        continue;
-                    };
-                    // The creature's source heal is a separate HP change before resistance.
-                    if healing > 0
-                        && runtime
-                            .commit_source_creature_heal_batch(
-                                content.source_digest(),
-                                &[(target, race_key.clone(), creature_max_health, healing)],
-                            )
-                            .is_err()
-                    {
-                        continue;
-                    }
                     ranged_magnitude = (|| {
                         let physical = if physical_immune {
                             0
@@ -954,7 +968,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 ranged::element_key(element),
                             )?;
                         resolved_element = element;
-                        Some([physical, elemental])
+                        Some([physical, elemental].map(proficiency_damage))
                     })();
                 }
                 let Some(magnitude) = (if selected.weapon.ranged.is_some() || split_melee {
@@ -976,9 +990,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 // Crystal checks the secondary block last even when physical damage landed.
                 let training_block = if secondary_immune {
-                    HitBlock::Immunity
+                    let primary = if physical_immune {
+                        HitBlock::Immunity
+                    } else {
+                        swing_block(ranged_magnitude.map_or(0, |parts| parts[0]))
+                    };
+                    (Some(primary), HitBlock::Immunity)
                 } else {
-                    swing_block(magnitude)
+                    (None, swing_block(magnitude))
                 };
                 // CREATURE-RESIST-MELEE-1: the creature's mitigation and physical response shape
                 // what passed its defence and armor (`Creature::mitigateDamage`, `Monster::blockHit`).
@@ -990,7 +1009,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     else {
                         continue;
                     };
-                    landed
+                    proficiency_damage(landed)
                 } else {
                     magnitude
                 };
@@ -1010,8 +1029,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 state.finish_wheel_attack_components(
                                     primary,
                                     secondary,
-                                    u64::try_from(snapshot.health).unwrap_or(0),
-                                    u64::try_from(snapshot.maximum_health).unwrap_or(0),
+                                    creature_health,
+                                    creature_max_health,
                                     now.get(),
                                     crate::spell::cast::wheel_adjacent_target(
                                         &runtime,
@@ -1675,7 +1694,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return;
         };
-        let offence = equipped_offence::attacker_offence(states, runtime, hit.actor, hit.session);
         let ranged_damage = if let Some(ranged) = &hit.weapon.ranged {
             self.ranged_player_damage(
                 permit,
@@ -1683,7 +1701,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 content,
                 target_session,
                 ranged,
-                &offence,
                 &hit,
                 constants,
                 root,
@@ -1703,9 +1720,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             trained: &mut *trained,
         };
         let Some((physical_raw, secondary_raw, converted_element)) =
-            pvp_swing_components(hit.magnitude, hit.black, &offence, |damage| {
-                hit.weapon.weapon.split_damage(damage)
-            })
+            pvp_swing_components(hit.components, hit.black)
         else {
             return;
         };
@@ -1985,7 +2000,7 @@ fn train_swing(
     content: &NativeGameplayState,
     entry: &ActorAttack,
     weapon: &WeaponFacts,
-    block: HitBlock,
+    (previous, block): (Option<HitBlock>, HitBlock),
     now: SemanticTimeMicros,
     trained: &mut TrainingDue,
 ) {
@@ -2003,7 +2018,12 @@ fn train_swing(
         entry.session,
         swing_family(weapon.weapon),
         now.get(),
-        |hits| hits.melee_hit(block),
+        |hits| {
+            if let Some(previous) = previous {
+                hits.melee_hit(previous);
+            }
+            hits.melee_hit(block)
+        },
         trained,
     );
 }
@@ -2318,13 +2338,9 @@ fn settle_kill(
 }
 
 fn pvp_swing_components(
-    damage: u32,
+    (physical, secondary, element): (i64, i64, crate::content::ProjectV2RangedElement),
     black: bool,
-    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
-    split: impl FnOnce(i64) -> Option<(i64, i64, crate::content::ProjectV2RangedElement)>,
 ) -> Option<(i64, i64, crate::content::ProjectV2RangedElement)> {
-    let (physical, secondary, element) =
-        split(i64::from(damage)).and_then(|(p, s, e)| offence.convert_physical(p, s, e))?;
     let scale = |value| {
         u32::try_from(value)
             .ok()
@@ -2350,7 +2366,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         content: &NativeGameplayState,
         session: GameSessionId,
         ranged: &ranged::RangedLoadout,
-        offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
         hit: &PvpSwing,
         constants: &AttackConstants,
         root: &GameplayDecisionRoot,
@@ -2375,10 +2390,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let equipment = equipment::read_equipment_in_transaction(&mut tx, &authority).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
             crate::gameplay_transport::equipment_move::equipment_effects_owner::equipment_effects(&equipment, content).ok_or(crate::durability::DurabilityError::Unavailable)
         })).await.ok()?;
-        let (physical, elemental, element) =
-            pvp_swing_components(hit.magnitude, hit.black, offence, |damage| {
-                ranged.split(damage)
-            })?;
+        let (physical, elemental, element) = pvp_swing_components(hit.components, hit.black)?;
         let physical = if physical > 0 {
             oteryn_gameplay_combat_rules::resolution::swing_mitigated(
                 root,
@@ -2684,9 +2696,7 @@ mod tests {
         use crate::content::native_gameplay::{
             NativeGameplayInput, compile_native_gameplay, decode,
         };
-        use oteryn_gameplay_combat_rules::resolution::{
-            equipped_offence::EquippedOffence, swing_weapon,
-        };
+        use oteryn_gameplay_combat_rules::resolution::swing_weapon;
 
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
         let mut input =
@@ -2704,9 +2714,7 @@ mod tests {
         let (physical, elemental, element) = weapon.split_damage(107).ok_or("weapon components")?;
         assert_eq!(element, ProjectV2RangedElement::Fire);
         assert_eq!(
-            super::pvp_swing_components(107, false, &EquippedOffence::default(), |damage| {
-                weapon.split_damage(damage)
-            }),
+            super::pvp_swing_components((physical, elemental, element), false),
             Some((physical / 2, elemental / 2, element)),
         );
         Ok(())
