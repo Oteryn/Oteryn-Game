@@ -93,7 +93,7 @@ impl BrowserEpoch {
         Ok(child)
     }
 
-    #[cfg(bevy_shell)]
+    #[cfg(any(test, bevy_shell))]
     pub(crate) fn cancellation(&self) -> CancellationToken {
         self.ended.clone()
     }

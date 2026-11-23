@@ -634,3 +634,56 @@ fn fresh_grant_missing_terminal_bid_releases_history_only_fence() -> TestResult 
         Ok(())
     })
 }
+
+#[test]
+fn expired_status_batch_installs_only_verified_receipts() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        seed_bids(&mock, &client, &token, 2)?;
+        mock.runtime.block_on(async {
+            let cancel = CancellationToken::new();
+            let page = client
+                .bazaar_page(&token, AuctionView::All, None, cancel.clone())
+                .await?;
+            assert_eq!(page.recent_operations.len(), 2);
+            mock.authority
+                .lock()
+                .map_err(|_| "lock")?
+                .held_bazaar_status = Some(page.recent_operations[0].request_id.clone());
+            let expected = page.recent_operations[1].clone();
+            let mut view = View::default();
+            tokio::time::timeout(
+                std::time::Duration::from_secs(3),
+                status_lookup::TEST_TIMEOUT.scope(
+                    std::time::Duration::from_millis(500),
+                    view.install_page(page, &client, &token, cancel),
+                ),
+            )
+            .await?;
+            assert!(
+                view.pending(),
+                "an unverified operation must fence another purchase"
+            );
+            assert_eq!(
+                view.page.as_ref().ok_or("page")?.recent_operations,
+                vec![expected]
+            );
+            mock.authority
+                .lock()
+                .map_err(|_| "lock")?
+                .held_bazaar_status = None;
+            controller::execute(
+                &mut view,
+                Action::Status,
+                &client,
+                &token,
+                CancellationToken::new(),
+            )
+            .await;
+            assert!(!view.pending());
+            Ok(())
+        })
+    })
+}

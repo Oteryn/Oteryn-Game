@@ -3,6 +3,8 @@ use oteryn_client_runtime::chat::ChatLine;
 use std::{collections::VecDeque, fmt::Write};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ConsoleFilters {
+    pub auto_private_tabs: bool,
+    pub join_leave: bool,
     pub information: bool,
     pub events: bool,
     pub status: bool,
@@ -13,6 +15,8 @@ pub struct ConsoleFilters {
 impl Default for ConsoleFilters {
     fn default() -> Self {
         Self {
+            auto_private_tabs: true,
+            join_leave: true,
             information: true,
             events: true,
             status: true,
@@ -23,6 +27,15 @@ impl Default for ConsoleFilters {
     }
 }
 impl ConsoleFilters {
+    pub fn shows_participant_notice(
+        self,
+        notice: &crate::chat_channel_participants::NoticeLine,
+        channel: u16,
+    ) -> bool {
+        notice.channel_id == channel
+            && (self.join_leave
+                || notice.kind == crate::chat_channel_participants::NoticeKind::Excluded)
+    }
     pub fn visible(self, tab: ConsoleTab, line: &ChatLine) -> bool {
         let private = matches!(line, ChatLine::Private { .. } | ChatLine::PrivateChannel(_));
         !private || (self.private_messages && !(self.private_tab && tab == ConsoleTab::All))

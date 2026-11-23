@@ -103,7 +103,7 @@ fn sid_string(sid: PSID) -> io::Result<String> {
     }
 }
 
-// Hold each checked directory without delete sharing until the final
+// Hold each checked directory without write or delete sharing until the final
 // open, so the path cannot be redirected between inspection and creation.
 fn guard_parents(path: &Path) -> io::Result<Vec<File>> {
     let parents: Vec<_> = path.ancestors().skip(1).collect();
@@ -113,7 +113,7 @@ fn guard_parents(path: &Path) -> io::Result<Vec<File>> {
         .map(|parent| {
             let directory = File::options()
                 .access_mode(FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES)
-                .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+                .share_mode(FILE_SHARE_READ)
                 .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
                 .open(parent)?;
             let attributes = directory.metadata()?.file_attributes();
@@ -350,7 +350,19 @@ fn checked_parent_denies_rename_until_create_finishes() -> io::Result<()> {
         Some(32),
         "checked directory must remain pinned"
     );
+    let writer = || {
+        File::options()
+            .access_mode(FILE_WRITE_DATA)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
+            .open(&parent)
+    };
+    assert_eq!(
+        writer().err().and_then(|error| error.raw_os_error()),
+        Some(32)
+    );
     drop(guards);
+    drop(writer()?);
     std::fs::rename(parent, moved)
 }
 
@@ -372,12 +384,12 @@ fn windows_export_accepts_short_parent_name() -> io::Result<()> {
         }
         PathBuf::from(std::ffi::OsString::from_wide(&buffer[..len as usize]))
     };
-    assert_ne!(
-        short.file_name(),
-        parent.file_name(),
-        "requires 8.3 aliases"
-    );
-    open(&short.join("chat.log"), false)?;
+    // Volumes without 8.3 aliases return the long spelling. Both spellings
+    // must resolve to the pinned directory and support append.
+    use std::io::Write;
+    open(&short.join("chat.log"), false)?.write_all(b"short")?;
     assert!(parent.join("chat.log").is_file());
+    open(&parent.join("chat.log"), true)?.write_all(b" parent")?;
+    assert_eq!(std::fs::read(short.join("chat.log"))?, b"short parent");
     Ok(())
 }
