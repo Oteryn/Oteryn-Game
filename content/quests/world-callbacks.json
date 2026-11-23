@@ -3697,11 +3697,15 @@
           "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
           "minimum": 6,
           "maximum": 6,
-          "set": 7,
-          "add": 1
+          "set": 7
         }
       ],
       "offerings": [],
+      "activation": {
+        "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+        "minimum": 6,
+        "maximum": 6
+      },
       "item_on_target": {
         "item": "oteryn:item.tibia.i4872",
         "count": 1,
@@ -3762,11 +3766,15 @@
           "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
           "minimum": 6,
           "maximum": 6,
-          "set": 7,
-          "add": 1
+          "set": 7
         }
       ],
       "offerings": [],
+      "activation": {
+        "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+        "minimum": 6,
+        "maximum": 6
+      },
       "item_on_target": {
         "item": "oteryn:item.tibia.i4872",
         "count": 1,

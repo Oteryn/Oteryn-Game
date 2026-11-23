@@ -42,3 +42,35 @@ $proof$ from begin_at for 5);
                             AND p.definition_production_key='oteryn:item.tibia.i4837')
 $movement$);
 END $migration$;
+
+-- Retire due icicles in the same unattended custodies as terminal scrolls.
+-- Keep the exact custody, retirement and audit proofs on every removal path.
+DO $migration$
+DECLARE patch RECORD; body TEXT; old_predicate TEXT; new_predicate TEXT;
+    scroll CONSTANT TEXT := 'oteryn:item.tibia.i25718';
+    sample CONSTANT TEXT := 'oteryn:item.tibia.i4837';
+BEGIN
+    FOR patch IN SELECT * FROM (VALUES
+        ('game_temple_scroll_capture(game_item_instances,uuid)', true),
+        ('game_temple_scroll_receipt_proven(game_spell_item_temporal_receipts)', true),
+        ('game_temple_scroll_expire_due(uuid,uuid,numeric,integer)', false),
+        ('game_character_inbox_remove()', false),
+        ('game_character_depot_remove()', false),
+        ('game_house_location_proven()', false),
+        ('game_item_corpse_entry_removal_proven()', false)
+    ) AS patches(signature, negated)
+    LOOP
+        body := pg_get_functiondef(patch.signature::regprocedure);
+        IF patch.negated THEN
+            old_predicate := format('p.definition_production_key<>%L', scroll);
+            new_predicate := format('p.definition_production_key NOT IN (%L,%L)', scroll, sample);
+        ELSE
+            old_predicate := format('p.definition_production_key=%L', scroll);
+            new_predicate := format('p.definition_production_key IN (%L,%L)', scroll, sample);
+        END IF;
+        IF (length(body)-length(replace(body,old_predicate,'')))/length(old_predicate)<>1 THEN
+            RAISE EXCEPTION 'missing unattended Item deadline predicate in %', patch.signature;
+        END IF;
+        EXECUTE replace(body,old_predicate,new_predicate);
+    END LOOP;
+END $migration$;

@@ -360,6 +360,7 @@ pub(super) async fn access_exercise(
             ).bind(&track.track).fetch_one(&h.pool).await?;
             assert_eq!(value, track.set);
         }
+        expire_deposited_sample(owner, admitted, h, &reward.item).await?;
     }
     if case.name == MARID_LAMP {
         assert_eq!(quantity(h, 3231).await?, 0);
@@ -377,6 +378,113 @@ pub(super) async fn access_exercise(
         "{}",
         case.name
     );
+    Ok(())
+}
+
+async fn expire_deposited_sample(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    sample_key: &str,
+) -> TestResult {
+    use crate::durability::item_loop_move::DepotMove;
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+
+    let sample: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(item_instance_id) FROM game_spell_item_temporal_schedules
+         WHERE definition_production_key=$1",
+    )
+    .bind(sample_key)
+    .fetch_one(&h.pool)
+    .await?;
+    let item = sample.as_slice().try_into()?;
+    let session = admitted.game_session_id;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(debug)?
+        .ok_or("ice sample fence")?
+        .item_fence();
+    let native = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("native item generation")?;
+    let access = DepotMove {
+        town: 1,
+        box_number: 1,
+        deposit: true,
+        request_digest: [1; 32],
+        premium: owner.session_premium_gate(session).await,
+    };
+    let command = CommandId::new(admitted.continuity.next_command_id).map_err(debug)?;
+    let permit = owner.spell_lane_permit().await.ok_or("Item writer lane")?;
+    owner
+        .root
+        .commit_depot_move_at(
+            &permit,
+            owner.character,
+            owner.holder,
+            &fence,
+            CommandRef::new(session, command),
+            &NativeItemWeights(native),
+            access,
+            item,
+            None,
+        )
+        .await
+        .map_err(debug)?
+        .map_err(debug)?;
+    drop(permit);
+    let browse = || {
+        owner.root.read_depot_page(
+            owner.character,
+            fence.character_id,
+            access.town,
+            access.box_number,
+            0,
+        )
+    };
+    let fresh = browse().await?;
+    assert_eq!(fresh.total, 1);
+    assert_eq!(
+        fresh.entries.first().ok_or("fresh sample")?.item.item_instance_id,
+        item
+    );
+
+    // Advance this fixture's deadline without waiting for its real lifetime.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "UPDATE game_spell_item_temporal_schedules
+         SET expires_at_unix_ms=floor(extract(epoch FROM statement_timestamp())*1000)::bigint-1
+         WHERE uuid_send(item_instance_id)=$1",
+    )
+    .bind(&sample)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .next_item_deadline_pass_us = 0;
+    owner.drain_source_item_deadlines().await;
+    let expired = browse().await?;
+    assert_eq!(expired.total, 0);
+    assert!(expired.entries.is_empty());
+    let retired: (i16, i64, i16) = sqlx::query_as(
+        "SELECT i.lifecycle,i.quantity,r.custody_kind FROM game_item_instances i
+         JOIN game_spell_item_temporal_receipts r USING(item_instance_id)
+         WHERE uuid_send(i.item_instance_id)=$1",
+    )
+    .bind(sample)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(retired, (2, 0, 5));
     Ok(())
 }
 
