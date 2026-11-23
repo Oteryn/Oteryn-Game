@@ -3,6 +3,15 @@ use super::*;
 
 impl Channel {
     pub(super) fn advance_movement(&mut self, now: u64, walkable: bool) {
+        self.advance_movement_with_players(now, walkable, &[self.player_candidate()]);
+    }
+
+    pub(super) fn advance_movement_with_players(
+        &mut self,
+        now: u64,
+        walkable: bool,
+        players: &[TargetCandidate],
+    ) {
         use crate::movement::speed::{EngineeringGroundSpeed, creature_speed_fixture::Native};
         let blocking: BTreeSet<_> = if walkable {
             BTreeSet::new()
@@ -23,7 +32,6 @@ impl Channel {
             })
             .collect();
         let navigation = self.runtime.content_pin().map_revision_digest();
-        let players = [self.player_candidate()];
         let mut time = self.movement_time;
         loop {
             self.table.drive_movement(
@@ -34,7 +42,7 @@ impl Channel {
                 &sources,
                 &EngineeringGroundSpeed,
                 &self.root,
-                &players,
+                players,
                 time,
                 &mut self.path_budget,
                 false,

@@ -529,11 +529,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return;
         };
+        // Use the same actor/session roster for the think and for both melee batches,
+        // including players published since the previous swing.
+        let player_roster = census
+            .iter()
+            .filter_map(|(actor, _, session)| session.map(|session| (*actor, session)))
+            .collect::<Vec<_>>();
         if swing_pass {
-            states.monster_melee.think_players = census
-                .iter()
-                .filter_map(|(actor, _, session)| session.map(|session| (*actor, session)))
-                .collect();
             // A monster already admitted keeps its clocks; a source setType rebinds only its
             // qualified profile. Admission of new visible monsters happens above.
             for (actor, ..) in &monsters {
@@ -798,8 +800,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // Re-read current player positions and vitals after profile movement and after
             // the first melee batch. No all-actor census is needed for a movement-only pass.
-            let player_census =
-                think_player_census(&runtime, melee_owner.think_players.iter().copied());
+            let player_census = think_player_census(&runtime, player_roster.iter().copied());
             let targets =
                 melee_targets(room, &runtime, &states, &attack, &player_census, now.get());
             let batch = if movement_retry {

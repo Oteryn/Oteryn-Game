@@ -109,7 +109,7 @@ impl CreatureAiTable {
             // Crystal monster.cpp:1604-1612 checks for returning players on every
             // walk-back step. The movement cadence can fire between two thinks.
             if matches!(motion.goal, MovementGoal::WalkBack { .. })
-                && walk_back_target_in_view(
+                && walk_back_player_in_view(
                     runtime,
                     &entry.state.profile,
                     snapshot.position(),
@@ -162,14 +162,13 @@ impl CreatureAiTable {
                 motion.cursor += 1;
             }
             motion.step_sequence = motion.step_sequence.saturating_add(1);
-            if matches!(motion.goal, MovementGoal::WalkBack { spawn } if spawn == next) {
+            if let MovementGoal::WalkBack { spawn } = motion.goal
+                && (walk_back_player_in_view(runtime, &entry.state.profile, next, players)
+                    || spawn == next)
+            {
                 motion.stop();
-                if walk_back_target_in_view(runtime, &entry.state.profile, next, players) {
-                    entry.due_us = Some(entry.due_us.map_or(now, |due| due.min(now)));
-                } else {
-                    entry.due_us = None;
-                    runtime.clear_source_player_damage(actor);
-                }
+                // The next think owns the idle transition and its damage reset.
+                entry.due_us = Some(entry.due_us.map_or(now, |due| due.min(now)));
             }
         }
         for entry in self.entries.values_mut() {
@@ -301,24 +300,17 @@ impl CreatureAiTable {
     }
 }
 
-fn walk_back_target_in_view(
+fn walk_back_player_in_view(
     runtime: &ChannelRuntimeV1,
     profile: &CreatureBehaviourProfile,
     at: MovementLocalPosition,
     players: &[TargetCandidate],
 ) -> bool {
-    players
-        .iter()
-        .filter(|player| player.eligible)
-        .any(|player| {
-            let Ok(position) = runtime.read_actor_position(player.actor) else {
-                return false;
-            };
-            let current = TargetCandidate {
-                position: position.position(),
-                ..*player
-            };
-            targeting::is_eligible(profile.targeting(), at, &current)
-                && targeting::perceives(profile.is_native(), at, current.position)
-        })
+    players.iter().any(|player| {
+        runtime
+            .read_actor_position(player.actor)
+            .is_ok_and(|position| {
+                targeting::perceives(profile.is_native(), at, position.position())
+            })
+    })
 }
