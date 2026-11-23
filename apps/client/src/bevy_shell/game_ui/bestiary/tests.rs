@@ -801,3 +801,63 @@ fn untracked_bestiary_stage_is_captured_after_credited_kill() -> Result {
     );
     Ok(())
 }
+
+#[test]
+fn refused_capture_query_after_a_credited_kill_retries_without_losing_the_baseline() -> Result {
+    use crate::play::{SettingsState, screenshot::CaptureAction};
+    let now = std::time::Instant::now();
+    let (link, mut commands, outbox) = play_channel();
+    outbox.bevy_bestiary_initialize();
+    outbox.bevy_analyser_initialize();
+    let mut settings = SettingsState::new(None);
+    settings.preferences.screenshots.on_bestiary_unlock = true;
+    for (step, count) in [(0, 9), (3, 10), (6, 10)] {
+        let time = now + std::time::Duration::from_secs(step);
+        if step == 3 {
+            outbox.push(vec![oteryn_session::SessionEvent::AnalyserFacts(
+                oteryn_session::AppliedDelta {
+                    server_sequence: 2,
+                    base_revision: 1,
+                    new_revision: 2,
+                    value: vec![oteryn_session::analyser_transport::AnalyserFact::Kill {
+                        race: std::num::NonZeroU32::new(9),
+                    }],
+                },
+            )]);
+        }
+        settings.prepare_screenshots(time, Some(&link));
+        let query = command(&mut commands)?;
+        let result = progression::CharmProgressionReply {
+            outcome: progression::CharmProgressionOutcome::Query,
+            fee_gold: 0,
+            bestiary: vec![progression::bestiary::BestiaryRaceProgress {
+                race: std::num::NonZeroU32::new(9).ok_or("race")?,
+                kill_count: count,
+                kill_thresholds: [10, 20, 30],
+            }],
+            charms: default(),
+        };
+        outbox.bevy_bestiary_result(
+            &query,
+            &GatedCommandResult {
+                command_id: step + 1,
+                server_sequence: step + 2,
+                status: if step == 3 {
+                    oteryn_session::CommandStatus::Rejected
+                } else {
+                    oteryn_session::CommandStatus::Accepted
+                },
+                payload: progression::encode_charm_progression_reply(&result)
+                    .map_err(|err| format!("{err:?}"))?,
+            },
+        );
+        assert_eq!(
+            matches!(
+                settings.prepare_screenshots(time, Some(&link)),
+                CaptureAction::Save
+            ),
+            step == 6
+        );
+    }
+    Ok(())
+}

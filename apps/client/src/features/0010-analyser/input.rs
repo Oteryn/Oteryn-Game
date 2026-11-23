@@ -71,7 +71,9 @@ impl PlayLink {
         panel.impact_high
     }
     pub fn analyser_reset_high(&self) {
-        let panel = &mut lock(&self.mailbox).analyser;
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.combat_capture.reset_impact_records();
+        let panel = &mut mailbox.analyser;
         panel.impact_high = [0; 2];
         panel.high_revision = panel.high_revision.saturating_add(1);
     }
@@ -86,10 +88,7 @@ impl PlayLink {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.analyser.selected && mailbox.analyser.open {
             if mailbox.analyser.tool == oteryn_client_ui::analyser::Tool::Impact {
-                let records = &mut mailbox.combat_capture;
-                records.record_resets = records.record_resets.saturating_add(1);
-                records.damage_record = 0;
-                records.healing_record = 0;
+                mailbox.combat_capture.reset_impact_records();
             }
             oteryn_client_ui::analyser::protocol::reset_tool(&mut mailbox.analyser);
         }

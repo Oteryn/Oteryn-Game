@@ -126,15 +126,19 @@ impl Mailbox {
     pub(in crate::play) fn refresh_loot_quote(
         &mut self,
         id: u32,
-        price: u64,
+        price: Option<u64>,
         source: oteryn_client_ui::analyser::PriceSource,
     ) {
         if self.analyser.loot_sources.get(&id) != Some(&source)
-            || self.analyser.loot_prices.get(&id) == Some(&price)
+            || self.analyser.loot_prices.get(&id).copied() == price
         {
             return;
         }
-        self.analyser.loot_prices.insert(id, price);
+        if let Some(price) = price {
+            self.analyser.loot_prices.insert(id, price);
+        } else {
+            self.analyser.loot_prices.remove(&id);
+        }
         self.analyser.party.clear();
         self.analyser.party_revision = self.analyser.party_revision.saturating_add(1);
         self.analyser.party_feedback = Some("Prices changed; refresh party accounting");
@@ -162,7 +166,7 @@ impl Mailbox {
                     for (id, price) in prices {
                         self.refresh_loot_quote(
                             id,
-                            price,
+                            Some(price),
                             oteryn_client_ui::analyser::PriceSource::Merchant,
                         );
                     }

@@ -601,6 +601,32 @@ fn item_valuation_uses_confirmed_market_or_entered_unit_price() -> TestResult {
     app.update();
     click(&mut app, Action::MarketValue)?;
     assert_eq!(link.analyser_panel().loot_prices.get(&42), Some(&19));
+    use oteryn_client_ui::market::details::{Query, Reply, Statistics};
+    assert!(link.market_query(Query::Statistics { definition: 42 }));
+    let PlayCommand::Feature(statistics) = receiver.try_recv()? else {
+        return Err("market statistics".into());
+    };
+    outbox.bevy_market_reply(
+        &statistics,
+        &oteryn_session::GatedCommandResult {
+            command_id: 3,
+            server_sequence: 3,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: oteryn_client_runtime::market::market_details::encode_reply(
+                &Reply::Statistics(Statistics {
+                    definition: 42,
+                    as_of_us: 2592000000001,
+                    since_us: 1,
+                    ..default()
+                }),
+            )
+            .map_err(|error| format!("{error:?}"))?,
+        },
+    );
+    assert!(
+        !link.analyser_panel().loot_prices.contains_key(&42),
+        "a confirmed empty market history clears the old analyser quote"
+    );
     app.world_mut()
         .query_filtered::<&mut EditableText, With<OwnPrice>>()
         .single_mut(app.world_mut())?

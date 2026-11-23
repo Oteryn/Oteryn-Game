@@ -110,6 +110,12 @@ pub(crate) struct CombatCaptureFacts {
 const MAX_TRACKED_ATTACKERS: usize = 256;
 
 impl CombatCaptureFacts {
+    pub(crate) fn reset_impact_records(&mut self) {
+        self.record_resets = self.record_resets.saturating_add(1);
+        self.damage_record = 0;
+        self.healing_record = 0;
+    }
+
     pub(crate) fn observe(
         &mut self,
         fact: &oteryn_session::analyser_transport::AnalyserFact,

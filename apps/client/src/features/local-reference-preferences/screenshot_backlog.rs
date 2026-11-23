@@ -19,6 +19,7 @@ pub(in super::super) struct ScreenshotRuntime {
     last_bestiary_query: Option<Instant>,
     previous: Option<Signals>,
     queried_kills: Option<u64>,
+    stages_at_request: Option<oteryn_client_ui::charm_progression::BestiaryStages>,
     automatic_pending: bool,
     game_only: Option<bool>,
 }
@@ -123,6 +124,7 @@ impl SettingsState {
                 link.invalidate_capture_bestiary();
                 self.screenshot_runtime.last_bestiary_query = None;
                 self.screenshot_runtime.queried_kills = None;
+                self.screenshot_runtime.stages_at_request = None;
             }
             Signals::read(
                 link,
@@ -151,15 +153,23 @@ impl SettingsState {
             let bestiary = !preferences.automatic_disabled
                 && (preferences.on_bestiary_complete || preferences.on_bestiary_unlock);
             let killed = runtime.queried_kills != Some(signals.events.credited_kills);
-            let interval = Duration::from_secs(if killed { 2 } else { 4 });
+            // Each accepted reply publishes a new Arc even when no stage changed.
+            // A refused query leaves the previous snapshot intact and still needs a retry.
+            let unanswered = runtime
+                .stages_at_request
+                .as_ref()
+                .zip(signals.bestiary.as_ref())
+                .is_some_and(|(requested, latest)| Arc::ptr_eq(requested, latest));
+            let interval = Duration::from_secs(if killed || unanswered { 2 } else { 4 });
             if bestiary
-                && (killed || !signals.events.kill_feed || signals.bestiary.is_none())
+                && (killed || unanswered || !signals.events.kill_feed || signals.bestiary.is_none())
                 && runtime
                     .last_bestiary_query
                     .is_none_or(|at| now.saturating_duration_since(at) >= interval)
                 && link.refresh_capture_bestiary()
             {
                 runtime.queried_kills = Some(signals.events.credited_kills);
+                runtime.stages_at_request.clone_from(&signals.bestiary);
                 runtime.last_bestiary_query = Some(now);
             }
             if preferences.on_player_attacking && !preferences.automatic_disabled {

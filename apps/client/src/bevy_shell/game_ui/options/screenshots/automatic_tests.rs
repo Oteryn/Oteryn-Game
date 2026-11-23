@@ -272,6 +272,14 @@ fn character_impact_records_survive_restart_and_master_cancels_queued_automatic_
                 state.prepare_screenshots(now, Some(&link)),
                 CaptureAction::Save
             ));
+            state.cancel_screenshot();
+            link.analyser_reset_high();
+            state.prepare_screenshots(now, Some(&link));
+            assert_eq!(
+                state.preferences.impact_records,
+                [0, 0],
+                "Reset all-time high clears the record used by automatic capture"
+            );
         }
         let mut preferences = state.preferences.clone();
         preferences.screenshots.automatic_disabled = true;
