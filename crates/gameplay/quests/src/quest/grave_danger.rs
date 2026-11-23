@@ -310,11 +310,16 @@ pub fn reply(key: Reply) -> Option<&'static [String]> {
         .map(|entry| entry.reply.as_slice())
 }
 
+pub(super) fn source_state(
+    content_revision: &str,
+) -> Result<super::loader::LoweredQuestState, String> {
+    super::loader::parse_quest_state(STATE, content_revision).map_err(|error| format!("{error:?}"))
+}
+
 pub(super) fn extend(
     catalogue: super::QuestStateCatalogue,
 ) -> Result<super::QuestStateCatalogue, String> {
-    let extra = super::loader::parse_quest_state(STATE, &catalogue.content_revision)
-        .map_err(|error| format!("{error:?}"))?;
+    let extra = source_state(&catalogue.content_revision)?;
     let mut tracks = catalogue.tracks.values().cloned().collect::<Vec<_>>();
     for track in extra.catalogue().tracks.values() {
         if let Some(existing) = tracks.iter_mut().find(|existing| existing.key == track.key) {

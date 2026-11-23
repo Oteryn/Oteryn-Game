@@ -100,6 +100,15 @@ fn registry() -> Result<&'static Registry, String> {
                 false,
                 false,
             )?;
+            // Jack's NPC writes share the questline with the bound Zelos passage.
+            let grave_danger = super::grave_danger::source_state("grave-danger")?;
+            for key in [super::grave_danger::START, super::grave_danger::ACCESS] {
+                let transition = grave_danger
+                    .catalogue()
+                    .transition(key)
+                    .ok_or_else(|| format!("missing Grave Danger operation {key}"))?;
+                add(transition.clone(), false, false)?;
+            }
             add(super::arena_completion::transition()?, false, true)?;
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
