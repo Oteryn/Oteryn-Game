@@ -470,8 +470,16 @@ make_leaf db db.node-boot.test db-ca serverAuth DNS:db.node-boot.test
 cp "$WP5_PKI/client.crt" "$WP5_PKI/intent-client.crt"
 cp "$WP5_PKI/client.key" "$WP5_PKI/intent-client.key"
 # An end-entity certificate: TLS rejects a CA certificate used as a server leaf.
+# NODE_BOOT_PUBLIC_HOST (default 127.0.0.1): the host the Platform route advertises to clients;
+# a non-loopback value is added to the gameplay certificate SAN next to localhost.
+public_san=""
+case "${NODE_BOOT_PUBLIC_HOST:-127.0.0.1}" in
+  127.0.0.1|localhost) ;;
+  *[!0-9.]*) public_san=",DNS:$NODE_BOOT_PUBLIC_HOST" ;;
+  *) public_san=",IP:$NODE_BOOT_PUBLIC_HOST" ;;
+esac
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 1 \
-  -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost" \
+  -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost$public_san" \
   -addext "basicConstraints=critical,CA:FALSE" -addext "keyUsage=critical,digitalSignature" \
   -addext "extendedKeyUsage=serverAuth" \
   -keyout "$WP5_PKI/gameplay.key" -out "$WP5_PKI/gameplay.crt" >/dev/null 2>&1

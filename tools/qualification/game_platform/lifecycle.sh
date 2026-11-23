@@ -113,7 +113,7 @@ game_platform_start() {
   export PORTAL_E2E_INTERNAL_PORT="${GAME_PLATFORM_INTERNAL_PORT:-18543}"
   export PORTAL_E2E_ADMISSION_PORT="${GAME_PLATFORM_ADMISSION_PORT:-18091}"
   export PORTAL_E2E_GATEWAY_PORT="${GAME_PLATFORM_GATEWAY_PORT:-18090}"
-  export OTERYN_PUBLIC_ORIGIN="http://127.0.0.1:$PORTAL_E2E_HTTP_PORT"
+  export OTERYN_PUBLIC_ORIGIN="http://${NODE_BOOT_PUBLIC_HOST:-127.0.0.1}:$PORTAL_E2E_HTTP_PORT"
   export PORTAL_E2E_NATIVE_SCOPES="[\"$WORLD_ID/$CHANNEL_ID\"]"
   # The pinned portal refuses Store delivery and restore notices together.
   # Keep Store delivery available for node-boot journeys.
