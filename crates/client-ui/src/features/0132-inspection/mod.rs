@@ -4,9 +4,17 @@ mod protocol;
 mod state;
 mod view;
 pub use input::open_key;
-pub use protocol::{apply_result, request, request_page, request_sources};
+pub use protocol::{apply_result, request, request_equipment, request_page, request_sources};
 pub use state::Panel;
 pub use view::{catalogue_text, panel_text};
+
+/// The visible outfit can be drawn even before a negotiated palette arrives.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OutfitPortrait {
+    pub look_type: u32,
+    pub addons: u8,
+    pub colours: Option<[[u8; 3]; 4]>,
+}
 
 #[cfg(test)]
 mod catalogue_tests {

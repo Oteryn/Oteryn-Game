@@ -72,6 +72,7 @@
 #define UiAsset3 "ui-assets\images\skin\classic\checkbox-unchecked.png"
 #define UiAsset4 "ui-assets\images\skin\classic\dialog-frame-borderimage.png"
 #define UiAsset5 "ui-assets\images\1pixel-down-frame.png"
+#define UiAsset6 "ui-assets\images\game\spells\spell-icons-32x32.png"
 
 [Setup]
 ; One fixed AppId for every release and channel (section 2).
@@ -111,6 +112,7 @@ Source: "{#PayloadDir}\{#UiAsset2}"; DestDir: "{tmp}"; DestName: "oteryn-ui-2.pn
 Source: "{#PayloadDir}\{#UiAsset3}"; DestDir: "{tmp}"; DestName: "oteryn-ui-3.png"; Flags: dontcopy
 Source: "{#PayloadDir}\{#UiAsset4}"; DestDir: "{tmp}"; DestName: "oteryn-ui-4.png"; Flags: dontcopy
 Source: "{#PayloadDir}\{#UiAsset5}"; DestDir: "{tmp}"; DestName: "oteryn-ui-5.png"; Flags: dontcopy
+Source: "{#PayloadDir}\{#UiAsset6}"; DestDir: "{tmp}"; DestName: "oteryn-ui-6.png"; Flags: dontcopy
 
 [Icons]
 Name: "{autoprograms}\Oteryn"; Filename: "{app}\oteryn-launcher.exe"
@@ -421,6 +423,7 @@ begin
     3: Result := '{#UiAsset3}';
     4: Result := '{#UiAsset4}';
     5: Result := '{#UiAsset5}';
+    6: Result := '{#UiAsset6}';
   end;
 end;
 
@@ -433,6 +436,7 @@ begin
     3: Result := '{#GetSHA256OfFile(PayloadDir + "\" + UiAsset3)}';
     4: Result := '{#GetSHA256OfFile(PayloadDir + "\" + UiAsset4)}';
     5: Result := '{#GetSHA256OfFile(PayloadDir + "\" + UiAsset5)}';
+    6: Result := '{#GetSHA256OfFile(PayloadDir + "\" + UiAsset6)}';
   end;
 end;
 
@@ -458,10 +462,12 @@ var
   I: Integer;
 begin
   Result := (EntryCount(Dir + '\ui-assets') = 1) and
-    (EntryCount(Dir + '\ui-assets\images') = 2) and
+    (EntryCount(Dir + '\ui-assets\images') = 3) and
+    (EntryCount(Dir + '\ui-assets\images\game') = 1) and
+    (EntryCount(Dir + '\ui-assets\images\game\spells') = 1) and
     (EntryCount(Dir + '\ui-assets\images\skin') = 1) and
     (EntryCount(Dir + '\ui-assets\images\skin\classic') = 5);
-  for I := 0 to 5 do
+  for I := 0 to 6 do
     Result := Result and HashMatches(Dir + '\' + UiAssetPath(I), UiAssetHash(I));
 end;
 
@@ -575,7 +581,7 @@ begin
       Exit;
     end;
   end;
-  for I := 0 to 5 do begin
+  for I := 0 to 6 do begin
     TemporaryName := 'oteryn-ui-' + IntToStr(I) + '.png';
     Target := Staging + '\' + UiAssetPath(I);
     ExtractTemporaryFile(TemporaryName);

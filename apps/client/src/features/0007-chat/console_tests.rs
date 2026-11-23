@@ -730,6 +730,25 @@ fn enabled_speaker_levels_query_the_first_line_after_login()
     outbox.console_result(&GatedCommandResult {
         command_id: 1,
         server_sequence: 1,
+        status: CommandStatus::Rejected,
+        payload: vec![],
+    });
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    let retry = loop {
+        settings.sync_local_preferences(&link);
+        if let Ok(crate::combat_input::PlayCommand::Feature(retry)) = commands.try_recv() {
+            break retry;
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "unchanged speaker did not retry"
+        );
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    };
+    assert_eq!(retry.payload, command.payload);
+    outbox.console_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
         status: CommandStatus::Accepted,
         payload: oteryn_client_runtime::chat::console::encode_levels(&[Some(7)]).ok_or("encode")?,
     });

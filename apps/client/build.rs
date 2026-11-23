@@ -13,6 +13,9 @@ mod prey_catalogue;
 #[path = "build_support/release_identity.rs"]
 mod release_identity;
 
+#[path = "build_support/spell_parameters.rs"]
+mod spell_parameters;
+
 #[path = "build_support/update_trust.rs"]
 mod update_trust;
 
@@ -80,6 +83,8 @@ fn main() -> Result<(), String> {
     let bindings = preference_bindings::generate(&root.join("../.."))?;
     let out = std::env::var("OUT_DIR").map_err(|e| e.to_string())?;
     prey_catalogue::emit(&root.join("../.."), std::path::Path::new(&out))?;
+    println!("cargo:rerun-if-changed=build_support/spell_parameters.rs");
+    spell_parameters::generate(root, std::path::Path::new(&out))?;
     std::fs::write(
         std::path::Path::new(&out).join("preference_bindings.rs"),
         bindings,

@@ -305,3 +305,31 @@ fn committed_step_timing_controls_first_and_continuous_visual_glides()
     }
     Ok(())
 }
+
+#[test]
+fn movement_facing_preference_changes_step_prediction_without_suppressing_steps()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut view = view()?;
+    let mut prefs = view.preferences().clone();
+    prefs.controls.preserve_facing = true;
+    view.set_preferences(prefs)?;
+    let facing = view.facing();
+    view.arrow(StepDir::West);
+    assert_eq!(view.send_step()?, Some(StepDir::West));
+    assert_eq!(view.scene().facing(), facing);
+    Ok(())
+}
+
+#[test]
+fn facing_choice_applies_to_confirmed_steps_without_a_keypress()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut view = view()?;
+    view.apply(&moved_to(101, 201, 0))?;
+    assert_eq!(view.scene().facing(), StepDir::SouthEast);
+    let mut prefs = view.preferences().clone();
+    prefs.controls.preserve_facing = true;
+    view.set_preferences(prefs)?;
+    view.apply(&moved_to(100, 201, 0))?;
+    assert_eq!(view.scene().facing(), StepDir::SouthEast);
+    Ok(())
+}

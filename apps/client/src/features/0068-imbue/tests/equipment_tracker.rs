@@ -230,6 +230,46 @@ fn equipment_tracker_discards_an_inflight_reply_after_unequip() -> Result<(), St
 
 #[test]
 fn equipment_tracker_filters_whole_items_through_inspection_and_playlink() -> Result<(), String> {
+    let link = inspect_equipment_groups(true)?;
+    for group in [0, 1, 2, 3] {
+        link.imbue_tracker_toggle_group(group);
+        let text = oteryn_client_ui::imbue::tracker_text(&link.imbue_panel());
+        assert_eq!(text.contains("10 minutes"), group != 2, "group {group}");
+        assert_eq!(text.contains("180 minutes"), group != 2, "group {group}");
+        assert_eq!(text.contains("240 minutes"), group != 2, "group {group}");
+        assert_eq!(
+            text.lines()
+                .any(|line| line.contains("Plate") && line.contains("unused imbuement slot")),
+            group != 2,
+            "group {group}"
+        );
+        for (expected, name) in ["Helmet", "Leggings", "Plate", "Boots"].iter().enumerate() {
+            assert_eq!(
+                text.contains(name),
+                group != expected,
+                "{name} group {group}"
+            );
+        }
+        link.imbue_tracker_toggle_group(group);
+    }
+    Ok(())
+}
+
+#[test]
+fn equipment_tracker_filters_each_slot_through_inspection_and_playlink() -> Result<(), String> {
+    let link = inspect_equipment_groups(false)?;
+    for group in [0, 1, 2, 3] {
+        link.imbue_tracker_toggle_group(group);
+        let text = oteryn_client_ui::imbue::tracker_text(&link.imbue_panel());
+        assert_eq!(text.contains("10 minutes"), group != 0, "group {group}");
+        assert_eq!(text.contains("240 minutes"), group != 2, "group {group}");
+        assert_eq!(text.contains("unused imbuement slot"), group != 3, "group {group}");
+        link.imbue_tracker_toggle_group(group);
+    }
+    Ok(())
+}
+
+fn inspect_equipment_groups(mixed: bool) -> Result<crate::play::PlayLink, String> {
     let (link, mut commands, outbox) = play_channel();
     {
         let mut m = mailbox::lock(&outbox.0);
@@ -287,11 +327,14 @@ fn equipment_tracker_filters_whole_items_through_inspection_and_playlink() -> Re
                         tier: 0,
                         name: name.into(),
                         attributes: {
-                            let mut slots = vec![("Imbuement Slot 3".into(), "empty".into())];
+                            let mut slots = Vec::new();
+                            if mixed || time.is_empty() {
+                                slots.push(("Imbuement Slot 3".into(), "empty".into()));
+                            }
                             if !time.is_empty() {
                                 slots.push(("Imbuement Slot 1".into(), format!("Basic Strike (critical damage), lasts {time}h while fighting.")));
                             }
-                            if number == 1 {
+                            if mixed && number == 1 || !mixed && number == 4 {
                                 slots.push(("Imbuement Slot 2".into(), "Powerful Void, lasts 04:00h while fighting.".into()));
                             }
                             slots
@@ -302,26 +345,5 @@ fn equipment_tracker_filters_whole_items_through_inspection_and_playlink() -> Re
             },
         );
     }
-    for group in [0, 1, 2, 3] {
-        link.imbue_tracker_toggle_group(group);
-        let text = oteryn_client_ui::imbue::tracker_text(&link.imbue_panel());
-        assert_eq!(text.contains("10 minutes"), group != 2, "group {group}");
-        assert_eq!(text.contains("180 minutes"), group != 2, "group {group}");
-        assert_eq!(text.contains("240 minutes"), group != 2, "group {group}");
-        assert_eq!(
-            text.lines()
-                .any(|line| line.contains("Plate") && line.contains("unused imbuement slot")),
-            group != 2,
-            "group {group}"
-        );
-        for (expected, name) in ["Helmet", "Leggings", "Plate", "Boots"].iter().enumerate() {
-            assert_eq!(
-                text.contains(name),
-                group != expected,
-                "{name} group {group}"
-            );
-        }
-        link.imbue_tracker_toggle_group(group);
-    }
-    Ok(())
+    Ok(link)
 }

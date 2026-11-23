@@ -28,6 +28,15 @@ impl PlayLink {
         lock(&self.mailbox).item_movement.abort();
     }
     pub fn item_drag_drop(&self, destination: Option<oteryn_session::ItemMoveDestination>) {
+        self.drop_stack(destination, false, false);
+    }
+
+    pub(crate) fn drop_stack(
+        &self,
+        destination: Option<oteryn_session::ItemMoveDestination>,
+        whole: bool,
+        single: bool,
+    ) {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.inventory_shutdown {
             return;
@@ -39,7 +48,26 @@ impl PlayLink {
                 destination,
             )
         });
-        let request = mailbox.item_movement.drop_on(destination, counted);
+        if single
+            && mailbox.item_movement.dragged.is_some_and(|item| {
+                item.count > 1
+                    && (!counted
+                        || item.equipped
+                        || matches!(
+                            destination,
+                            Some(oteryn_session::ItemMoveDestination::Equipment(_))
+                        ))
+            })
+        {
+            mailbox.item_movement.cancel();
+            return;
+        }
+        let mut request = mailbox
+            .item_movement
+            .drop_on(destination, counted && (!whole || single));
+        if single && mailbox.item_movement.prompt.is_some() {
+            request = mailbox.item_movement.confirm(1);
+        }
         send_move(&mut mailbox, &self.commands, request);
     }
     pub fn item_move_confirm(&self, count: Option<u32>) {

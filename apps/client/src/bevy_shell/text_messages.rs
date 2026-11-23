@@ -118,8 +118,8 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<GameRegions>) {
                     width: percent(80.),
                     top: match area {
                         Area::Loot => percent(50.),
-                        Area::Private => percent(27.),
                         Area::Top => percent(15.),
+                        Area::Private => percent(27.),
                         Area::Look => percent(40.),
                         Area::Center => percent(60.),
                         Area::Bottom => Val::Auto,
@@ -154,21 +154,29 @@ fn project(
             };
         }
         state.observe(&play.view, now);
-        let (reset, private) = play.link.private_screen_message(&mut state.chat_cursor);
-        if reset {
+        let (reset, notices) = play.link.take_screen_notices(&mut state.chat_cursor);
+        if reset
+            && state.slots[Area::Private as usize]
+                .as_ref()
+                .is_some_and(|slot| {
+                    slot.kind
+                        == Some(crate::play::feature_local_text_messages::view::NoticeKind::Private)
+                })
+        {
             state.slots[Area::Private as usize] = None;
         }
-        if owner.settings.preferences.game_window.private_messages
-            && let Some(text) = private
-        {
-            state.show(Area::Private, &text, [95, 247, 247], now);
-        }
-        for notice in play.link.take_window_notices() {
+        for notice in notices {
             if !notice.kind.visible(&owner.settings.preferences) {
                 continue;
             }
-            state.show(Area::Bottom, &notice.text, [255; 3], now);
-            if let Some(slot) = &mut state.slots[Area::Bottom as usize] {
+            let (area, colour) = match notice.kind {
+                crate::play::feature_local_text_messages::view::NoticeKind::Private => {
+                    (Area::Private, [95, 247, 247])
+                }
+                _ => (Area::Bottom, [255; 3]),
+            };
+            state.show(area, &notice.text, colour, now);
+            if let Some(slot) = &mut state.slots[area as usize] {
                 slot.kind = Some(notice.kind);
             }
         }

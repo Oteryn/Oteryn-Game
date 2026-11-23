@@ -214,7 +214,7 @@ fn new_incoming_pvp_situation_requests_a_capture() -> Result {
                 oteryn_client_runtime::party_skull::PvpSituation {
                     incoming,
                     situation_id: None,
-                    remaining_ms: 9000,
+                    remaining_ms: if index == 2 { 15000 } else { 9000 },
                 };
                 1 + usize::from(index == 3)
             ],
@@ -233,7 +233,7 @@ fn new_incoming_pvp_situation_requests_a_capture() -> Result {
                 settings.prepare_screenshots(now, Some(&link)),
                 CaptureAction::Save
             ),
-            index == 1
+            matches!(index, 1 | 2)
         );
         settings.cancel_screenshot();
     }

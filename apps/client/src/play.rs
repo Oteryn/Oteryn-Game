@@ -48,6 +48,8 @@ pub struct PlayView {
     world_clock: Option<oteryn_session::world_clock::WorldClock>,
     resource_hud: resource_hud::ViewState,
     party_icon_epoch: std::time::Instant,
+    party_summons: std::collections::BTreeMap<oteryn_session::EntityRef, oteryn_session::EntityRef>,
+    party_summons_refresh: Option<std::time::Instant>,
     party_icons_refresh: Option<std::time::Instant>,
     party_icons: Vec<oteryn_client_runtime::party_skull::PartyIcon>,
     guild_emblems: Vec<oteryn_session::guild_emblem::GuildEmblem>,
@@ -140,9 +142,6 @@ pub(crate) use feature_0017_attack::view::health as battle_row_health;
 pub(crate) use feature_local_minimap::input::MinimapSaves;
 pub use feature_local_minimap::view::{
     MinimapBinding, MinimapMark, MinimapMemory, MinimapNavigation,
-};
-pub use feature_local_spell_action_bar::view::{
-    BarAction, BarDock, BarGesture, BarLayout, ItemUseMode, PassiveAbility, SpellAim,
 };
 
 pub use feature_0023_presentation::state::*;

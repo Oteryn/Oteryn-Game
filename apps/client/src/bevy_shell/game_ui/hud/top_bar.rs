@@ -27,6 +27,9 @@ pub(super) enum BarLine {
     Experience,
 }
 
+#[derive(Component)]
+pub(super) struct VitalTrack;
+
 /// Line heights of the large style (about 27 px for the two lines).
 const VITAL_HEIGHT: f32 = 14.;
 const XP_LINE: f32 = 13.;
@@ -71,6 +74,7 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
     ] {
         let track = commands
             .spawn((
+                VitalTrack,
                 Node {
                     width: percent(50.),
                     height: percent(100.),
@@ -346,14 +350,22 @@ pub(super) fn project_skills(
     }
 }
 
+// Track, body and line filters keep their mutable Node queries disjoint.
+#[allow(clippy::type_complexity)]
 pub(super) fn project_style(
     owner: NonSend<HostOwner>,
-    mut bodies: Query<&mut Node, (With<BarBody>, Without<BarLine>)>,
-    mut lines: Query<(&BarLine, &mut Node)>,
+    mut bodies: Query<&mut Node, (With<BarBody>, Without<BarLine>, Without<VitalTrack>)>,
+    mut lines: Query<(&BarLine, &mut Node), Without<VitalTrack>>,
+    mut tracks: Query<&mut Node, With<VitalTrack>>,
 ) {
     let prefs = &owner.settings.preferences;
     let parallel = matches!(prefs.status_bar_style, 1 | 3);
     let large = matches!(prefs.status_bar_style, 2 | 3);
+    let stacked_vitals = prefs.status_bar_style == 3;
+    for mut track in &mut tracks {
+        track.width = percent(if stacked_vitals { 100. } else { 50. });
+        track.height = percent(if stacked_vitals { 50. } else { 100. });
+    }
     for mut body in &mut bodies {
         let direction = if parallel {
             FlexDirection::Row
@@ -373,6 +385,13 @@ pub(super) fn project_style(
         }
     }
     for (line, mut node) in &mut lines {
+        if matches!(line, BarLine::Vitals) {
+            node.flex_direction = if stacked_vitals {
+                FlexDirection::Column
+            } else {
+                FlexDirection::Row
+            };
+        }
         let width = if parallel && prefs.status_bar_experience {
             percent(50.)
         } else {
