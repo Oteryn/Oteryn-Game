@@ -284,6 +284,14 @@ impl OwnedCastFacts {
                 )
             })
         };
+        let effective_skill = |index| {
+            let trained = self.build.skills()[index];
+            skill_adjustments.adjust_projected_skill(
+                u32::from(loyalty_level(index + 1, trained)),
+                u32::from(trained.0),
+                index,
+            )
+        };
         let premium = self
             .access
             .premium
@@ -353,11 +361,7 @@ impl OwnedCastFacts {
                             return Err(OwnedFactsError::UnavailableEquipment);
                         };
                         attack = Some((
-                            skill_adjustments
-                                .adjust_skill(
-                                    u32::from(loyalty_level(skill + 1, self.build.skills()[skill])),
-                                    skill,
-                                )
+                            effective_skill(skill)
                                 .and_then(|value| {
                                     value.checked_add(self.access.proficiency_skills[skill])
                                 })
@@ -403,11 +407,15 @@ impl OwnedCastFacts {
         } else {
             harmony
         };
+        let trained_magic = self.build.magic();
         Ok(CasterState {
             vocation: facts.vocation,
             level: facts.level,
             magic_level: skill_adjustments
-                .adjust_magic_level(u32::from(loyalty_level(0, self.build.magic())))
+                .adjust_projected_magic_level(
+                    u32::from(loyalty_level(0, trained_magic)),
+                    u32::from(trained_magic.0),
+                )
                 .and_then(|value| value.checked_add(self.access.proficiency_skills[7]))
                 .ok_or(OwnedFactsError::BuildMismatch)?,
             premium: super::CasterPremium::from_current(premium.is_some_and(|p| p.value)),
@@ -418,8 +426,7 @@ impl OwnedCastFacts {
             attack_skill,
             attack_value,
             attack_factor,
-            shielding_skill: skill_adjustments
-                .adjust_shielding(u32::from(loyalty_level(6, self.build.skills()[5])))
+            shielding_skill: effective_skill(5)
                 .and_then(|value| value.checked_add(self.access.proficiency_skills[5]))
                 .ok_or(OwnedFactsError::BuildMismatch)?,
             melee_weapon,

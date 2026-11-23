@@ -131,11 +131,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     state.owned_effective_skills(&build, now).ok()?;
                     let adjustments = state.owned_skill_adjustments(now).ok()?;
                     let mut values = [0; 8];
-                    values[0] = adjustments.adjust_magic_level(u32::from(loyalty_levels[0]))?;
-                    for (index, (value, loyal)) in
-                        values[1..].iter_mut().zip(&loyalty_levels[1..]).enumerate()
-                    {
-                        *value = adjustments.adjust_skill(u32::from(*loyal), index)?;
+                    values[0] = adjustments.adjust_projected_magic_level(
+                        u32::from(loyalty_levels[0]),
+                        u32::from(skills[0].level),
+                    )?;
+                    for (index, value) in values[1..].iter_mut().enumerate() {
+                        *value = adjustments.adjust_projected_skill(
+                            u32::from(loyalty_levels[index + 1]),
+                            u32::from(skills[index + 1].level),
+                            index,
+                        )?;
                     }
                     use oteryn_gameplay_content::content::item_abilities::AbilitySkill;
                     for (kind, delta) in &effects.skills {

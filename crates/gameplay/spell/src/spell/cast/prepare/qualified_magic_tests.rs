@@ -310,6 +310,75 @@ fn gp001_qualified_owner_magic_reaches_all_affected_preparations() -> Result<(),
 }
 
 #[test]
+fn owned_caster_percentages_use_trained_magic_and_shielding_with_loyalty() -> Result<(), String> {
+    use oteryn_gameplay_domain::domain::condition::ConditionValues;
+    use oteryn_gameplay_domain::domain::condition::attributes::{
+        AttributeModifier, AttributeModifiers,
+    };
+    use oteryn_gameplay_foundation::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+    };
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+
+    let content = content()?;
+    let spell = spell(&content, "Light")?;
+    let (mut state, facts) = owner(&content, &spell, 3600, 2)?;
+    let mut skills = [(10, 0); 7];
+    skills[5] = (100, 0);
+    let build = DurableBuildState::new("paladin", (30, 0), skills).map_err(|e| format!("{e:?}"))?;
+    let owned = OwnedCastFacts::from_owner_reads(
+        facts.binding.clone(),
+        build,
+        400,
+        facts.equipment().clone(),
+        facts.access,
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    let reducer = Some(AttributeModifier::PercentOfBase(25));
+    let definition = ConditionDefinition::new(
+        "source.native.attributes",
+        1,
+        ConditionValues::SourceAttributes {
+            modifiers: AttributeModifiers {
+                magic_points: reducer,
+                shielding: reducer,
+                ..Default::default()
+            },
+            duration_ms: 1_000,
+        },
+    )
+    .ok_or("attribute condition")?;
+    state
+        .conditions
+        .apply(
+            &definition,
+            None,
+            ConditionSourceKind::SelfUse,
+            &[],
+            &ApplicationFacts {
+                now: NOW,
+                base_speed: 220,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: true,
+                decision_root: &GameplayDecisionRoot::from_bytes([0; 32]),
+                occurrence: DecisionOccurrenceId::from_bytes([0; 16]),
+            },
+        )
+        .map_err(|e| format!("{e:?}"))?;
+    let caster = owned
+        .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
+        .map_err(|e| format!("{e:?}"))?;
+    // Loyalty gives magic 31 and shielding 104. The percentage deltas are 22 and 75.
+    assert_eq!(
+        (caster.magic_level, caster.shielding_skill),
+        (31 - 22 + 2, 104 - 75)
+    );
+    Ok(())
+}
+
+#[test]
 fn gp001_qualified_magic_keeps_raw_build_binding_and_live_state_checks() -> Result<(), String> {
     let content = content()?;
     for name in PATHS {

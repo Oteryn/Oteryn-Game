@@ -1940,24 +1940,37 @@ impl OwnedSkillAdjustments {
         u32::try_from((i128::from(level) + i128::from(native) + source).max(0)).ok()
     }
     pub fn adjust_magic_level(self, base: u32) -> Option<u32> {
+        self.adjust_projected_magic_level(base, base)
+    }
+
+    /// Apply the magic condition delta from the trained level to the loyalty-adjusted level.
+    pub fn adjust_projected_magic_level(
+        self,
+        loyalty_level: u32,
+        trained_level: u32,
+    ) -> Option<u32> {
         Self::adjust(
-            base,
-            base,
+            loyalty_level,
+            trained_level,
             self.native.magic_level,
             self.source.magic_points,
         )?
         .checked_add(self.wheel_magic)
     }
     pub fn adjust_shielding(self, base: u32) -> Option<u32> {
-        Self::adjust(base, base, self.native.shielding, self.source.shielding)?
-            .checked_add(self.wheel_skills[5])
+        self.adjust_skill(base, 5)
     }
     pub fn adjust_skill(self, base: u32, index: usize) -> Option<u32> {
         self.adjust_projected_skill(base, base, index)
     }
 
-    /// Apply the condition and stance deltas derived from training to the effective level.
-    pub(super) fn adjust_projected_skill(self, level: u32, base: u32, index: usize) -> Option<u32> {
+    /// Apply the condition and stance deltas from the trained level to the loyalty-adjusted level.
+    pub fn adjust_projected_skill(
+        self,
+        loyalty_level: u32,
+        trained_level: u32,
+        index: usize,
+    ) -> Option<u32> {
         let (native, modifier) = match index {
             0 => (self.native.fist, None),
             1..=3 => (self.native.melee, self.source.melee),
@@ -1966,10 +1979,10 @@ impl OwnedSkillAdjustments {
             6 => (0, self.source.fishing),
             _ => return None,
         };
-        let value = Self::adjust(level, base, native, modifier)?
+        let value = Self::adjust(loyalty_level, trained_level, native, modifier)?
             .checked_add(*self.wheel_skills.get(index)?)?;
         if index == 0 {
-            value.checked_add(base.checked_mul(self.justice_percent)? / 100)
+            value.checked_add(trained_level.checked_mul(self.justice_percent)? / 100)
         } else {
             Some(value)
         }
