@@ -151,12 +151,11 @@ def refresh_overlay_weights(root, weights):
     """Replay weight admissions while retaining the verified donor profile closure."""
     import import_spell_families as spell_import
     import register_spell_families as registration
-    import compose_monster_current_sources as composition
 
+    # The current-source and Creature overlays leave this Item provider unchanged.
+    # During regeneration, the WorldProject may already contain newly admitted
+    # Creatures while the derived Creature shards still describe its predecessor.
     generated = spell_import.baseline_outputs(root)
-    baseline = dict(generated)
-    generated = registration.current_sources.outputs(root, generated)
-    generated = composition.compose(root, baseline, generated)
     # Validate the existing closure before changing its weight leaves or digest.
     registration.admit_overlay_profiles(root, generated)
     provider = json.loads(generated[spell_import.PROVIDER_DESTINATIONS['item_profiles']])

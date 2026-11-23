@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch
 
 import compose_monster_current_sources as compose
+import import_cyclopedia_global as cyclopedia
 import import_current_spell_sources as current
 import import_spell_families as importer
 import monster_seven_spell_overlay as overlay
@@ -106,6 +107,39 @@ class ComposeTests(unittest.TestCase):
 
 
 class OrcSamProjectionTests(unittest.TestCase):
+    def test_weight_refresh_can_run_before_orc_sam_shards_are_materialized(self):
+        root = importer.ROOT
+        packet = compose.load(root, compose.ORC_SAM_SOURCE)
+        documents = {
+            "definitions/reference.json": {"records": packet["records"]},
+            "definitions/declarations.json": {"authoring_profiles": packet["profiles"]},
+        }
+        read_shard = compose.read_derived_shard
+
+        def predecessor_shard(path):
+            shard = read_shard(path)
+            shard["records"] = [
+                row for row in shard["records"]
+                if row["definition"]["identity"]["key"] != compose.ORC_SAM_CREATURE
+            ]
+            return shard
+
+        with (
+            patch.object(compose, "read_project_document", side_effect=lambda root, name: documents[name]),
+            patch.object(compose, "read_derived_shard", side_effect=predecessor_shard),
+            patch.object(cyclopedia, "apply_overlay_weights", return_value={}),
+            patch.object(Path, "write_text", autospec=True) as write_pin,
+        ):
+            self.assertEqual(cyclopedia.refresh_overlay_weights(root, cyclopedia.load_weights(root)), {})
+
+        from register_spell_families import COIN_PROFILES, DOOR_PROFILES
+
+        self.assertEqual([call.args[0] for call in write_pin.call_args_list],
+                         [root / COIN_PROFILES, root / DOOR_PROFILES])
+        for call in write_pin.call_args_list:
+            path, payload = call.args
+            self.assertEqual(json.loads(payload), json.loads(path.read_bytes()))
+
     def test_admission_preserves_projected_nullable_reference_level(self):
         packet = compose.load(importer.ROOT, compose.ORC_SAM_SOURCE)
         raw_creature = packet["profiles"][0]
