@@ -13,8 +13,9 @@ already reads:
 * ``OTERYN_E2E_ROW_BATCH=start:len``: the row journeys in ``world.rs``;
 * ``NODE_BOOT_SPELLS=1``: the spell scenarios.
 
-Group names and row indices come from the sources, so a new group or row is
-planned without editing this file, and a misspelt knob fails the plan
+Group names and indexed row identities come from the sources, so supported
+new groups and rows are planned without editing this file. An unmapped row
+or a misspelt knob fails the plan
 instead of running zero scenarios.
 
 Subcommands:
@@ -59,6 +60,20 @@ SCENARIO = re.compile(
 NODE_BOOT_RESULT = re.compile(r"(?:^|\s)NODE_BOOT_RESULT=([A-Z_]{1,40})(?:\s|$)")
 GAME_PLATFORM_RESULT = re.compile(r"(?:^|\s)GAME_PLATFORM_RESULT=(PASS|FAIL|BLOCKED)(?:\s|$)")
 INCOMPLETE = re.compile(r"SEAM_EVIDENCE E2EF1_INCOMPLETE(?:\s|$)")
+CAPTURE = re.compile(
+    r"^SEAM_EVIDENCE e2e_capture scenario=([A-Za-z0-9_.-]{1,64}) status=CAPTURED(?:\s|$)",
+    re.MULTILINE,
+)
+ROW_ID = re.compile(r"[A-Z][0-9]{2}[a-z]?\.(?:full|client)")
+TERMINAL = {"PASS", "FAIL", "SKIPPED", "MISSING-SERVER", "MISSING-CLIENT"}
+# These four dispatchers predate verdict::indexed. Check their literal emitter
+# against this contract; do not infer a scenario from a module's filename.
+DIRECT_ROWS = {
+    "full_e2ef19::run_packet": "S04b.full",
+    "full_e2ef18::run_packet": "C14.full",
+    "full_e2ef20::run_packet": "E02.full",
+    "client_row_c07::run_client_packet": "C07.client",
+}
 
 
 class PlanError(ValueError):
@@ -89,6 +104,62 @@ def row_indices(root: Path = ROOT) -> list[int]:
     if len(set(indices)) != len(indices):
         raise PlanError("a row index is selected by two call sites")
     return sorted(indices)
+
+
+def row_scenarios(root: Path = ROOT) -> dict[int, str]:
+    """Read the closed dispatcher grammar, failing on every unmapped selector.
+
+    This intentionally does not try to parse arbitrary Rust, group macros, or
+    capture/replay semantics. A new dispatch shape needs an explicit contract.
+    """
+    source = read(root, CLIENT_PHASES / "world.rs")
+    rows: dict[int, str] = {}
+    blocks = re.finditer(r"(?ms)^            if e2e_row_selected\((\d+)\) \{\n(.*?)^            }", source)
+    for block in blocks:
+        index, body = int(block[1]), block[2]
+        indexed = re.fullmatch(
+            r'\s*verdict::indexed\("([^\"]+)", async \{\s*'
+            r'[a-z0-9_]+::[a-z0-9_]+\([^;]*\)\.await;\s*'
+            r'release_row_characters\(clients\)\.await\s*}\)\s*\.await;\s*', body)
+        if indexed:
+            scenario = indexed[1]
+        else:
+            direct = re.fullmatch(
+                r'\s*([a-z0-9_]+::[a-z0-9_]+)\(clients\)\.await;\s*'
+                r'release_row_characters\(clients\)\.await\?;\s*', body)
+            if direct is None or direct[1] not in DIRECT_ROWS:
+                raise PlanError(f"row {index}: dispatcher needs an explicit scenario contract")
+            scenario = DIRECT_ROWS[direct[1]]
+            module = direct[1].split("::")[0]
+            emitted = set(re.findall(r'e2e_all scenario=([A-Za-z0-9_.-]+) status=',
+                                     read(root, CLIENT_PHASES / f"{module}.rs")))
+            if emitted != {scenario}:
+                raise PlanError(f"row {index}: direct emitter differs from its scenario contract")
+        if index in rows or not ROW_ID.fullmatch(scenario) or scenario in rows.values():
+            raise PlanError(f"row {index}: duplicate or invalid scenario contract")
+        rows[index] = scenario
+    if sorted(rows) != row_indices(root):
+        raise PlanError("not every e2e_row_selected call has a scenario contract")
+    return rows
+
+
+def expected_rows(item: dict, rows: dict[int, str], root: Path = ROOT) -> list[dict]:
+    if item["entry"] != "node_boot" or not item["world"]:
+        return []
+    selected = item["env"].get("NODE_BOOT_E2E_ONLY")
+    if selected is not None and "rows" not in selected.split(","):
+        return []
+    batch = item["env"].get("OTERYN_E2E_ROW_BATCH")
+    if batch is not None:
+        start, length = map(int, batch.split(":"))
+    else:
+        default = re.search(r"E2E_ROW_BATCH_DEFAULT: \(usize, usize\) = \((\d+), (\d+)\);",
+                            read(root, CLIENT_PHASES / "e2e_row_batch.rs"))
+        if default is None:
+            raise PlanError("default row selection not found")
+        start, length = map(int, default.groups())
+    return [{"index": index, "scenario": scenario} for index, scenario in sorted(rows.items())
+            if start <= index < start + length]
 
 
 def pinned_sha(root: Path, relative: Path, variable: str) -> str:
@@ -133,7 +204,8 @@ def row_batches(indices: list[int], start: int, end: int | None, size: int) -> l
 
 
 def shard(name: str, entry: str, platform_ref: str, world: bool, env: dict[str, str]) -> dict:
-    return {"name": name, "entry": entry, "platform_ref": platform_ref, "world": world, "env": env}
+    return {"name": name, "entry": entry, "platform_ref": platform_ref, "world": world,
+            "env": env, "expected_rows": []}
 
 
 def plan(
@@ -155,7 +227,8 @@ def plan(
         raise PlanError("batch must be a positive integer")
     size = int(batch)
     registry = journey_groups(root)
-    indices = row_indices(root)
+    row_registry = row_scenarios(root)
+    indices = sorted(row_registry)
     platform = pinned_sha(root, NODE_BOOT_RUN, "PLATFORM_SHA")
     portal = pinned_sha(root, GAME_PLATFORM_RUN, "GAME_PLATFORM_SHA")
     world = {"NODE_BOOT_SKIP_BASIC": "1"}
@@ -212,7 +285,8 @@ def plan(
         if game_platform:
             shards.append(portal_shard)
     for item in shards:
-        validate_shard(item, registry)
+        item["expected_rows"] = expected_rows(item, row_registry, root)
+        validate_shard(item, registry, row_registry=row_registry, root=root)
     if not shards:
         raise PlanError("the set selects no shard")
     if len(shards) > MAX_SHARDS:
@@ -223,8 +297,9 @@ def plan(
     return shards
 
 
-def validate_shard(item: dict, registry: list[str] | None = None) -> None:
-    if set(item) != {"name", "entry", "platform_ref", "world", "env"}:
+def validate_shard(item: dict, registry: list[str] | None = None, *,
+                   row_registry: dict[int, str] | None = None, root: Path = ROOT) -> None:
+    if set(item) != {"name", "entry", "platform_ref", "world", "env", "expected_rows"}:
         raise PlanError("shard has unexpected fields")
     if not isinstance(item["name"], str) or not SHARD_NAME.fullmatch(item["name"]):
         raise PlanError("invalid shard name")
@@ -236,6 +311,16 @@ def validate_shard(item: dict, registry: list[str] | None = None) -> None:
         raise PlanError("invalid shard fields")
     if item["entry"] == "game_platform" and item["env"]:
         raise PlanError("the game_platform lane sets its own knobs")
+    expected = item["expected_rows"]
+    if not isinstance(expected, list) or any(
+        not isinstance(row, dict) or set(row) != {"index", "scenario"}
+        or type(row["index"]) is not int or row["index"] < 0
+        or not isinstance(row["scenario"], str) or not ROW_ID.fullmatch(row["scenario"])
+        for row in expected
+    ):
+        raise PlanError("invalid expected row identities")
+    if len({row["index"] for row in expected}) != len(expected) or len({row["scenario"] for row in expected}) != len(expected):
+        raise PlanError("duplicate expected row identities")
     groups = set(registry if registry is not None else journey_groups())
     for key, value in item["env"].items():
         if not isinstance(value, str):
@@ -253,6 +338,14 @@ def validate_shard(item: dict, registry: list[str] | None = None) -> None:
             raise PlanError(f"knob {key} is not allowed")
         if not ok:
             raise PlanError(f"invalid value for {key}")
+    rows_selected = (item["entry"] == "node_boot" and item["world"]
+                     and "rows" in item["env"].get("NODE_BOOT_E2E_ONLY", "rows").split(","))
+    if rows_selected != bool(expected):
+        raise PlanError("indexed row scope has missing or unexpected row identities")
+    if rows_selected:
+        canonical = expected_rows(item, row_registry if row_registry is not None else row_scenarios(root), root)
+        if expected != canonical:
+            raise PlanError("expected row identities differ from the selected source dispatchers")
 
 
 def export_env(item: dict) -> str:
@@ -278,6 +371,7 @@ def extract(log: Path, *, name: str, entry: str, exit_code: int, seconds: int) -
         "result": results[-1] if results else "NONE",
         "incomplete": bool(INCOMPLETE.search(text)),
         "scenarios": scenarios,
+        "captures": CAPTURE.findall(text),
     }
 
 
@@ -298,25 +392,30 @@ def summarize(shards: list[dict], directory: Path, prefix: str, *, missing_fatal
     """Markdown table plus the problems that fail the summary.
 
     Fatal: a planned shard without a readable result, a World shard that ran
-    no scenario, and any MISSING* scenario status unless `missing_fatal` is
+    no scenario, a selected indexed row without exactly one terminal verdict,
+    and any MISSING* scenario status unless `missing_fatal` is
     false (the PR heavy and Merge Queue gates, whose single-machine run never
     failed on MISSING rows). Scenario FAIL rows and E2EF1_INCOMPLETE are
     reported; each shard job already fails on its own NODE_BOOT_RESULT.
+    Captures never substitute for required terminal row verdicts.
     """
     problems: list[str] = []
+    registry = journey_groups()
+    row_registry = row_scenarios()
     rows = ["| shard | result | exit | minutes | scenarios | PASS | FAIL | MISSING | other |",
             "|---|---|---|---|---|---|---|---|---|"]
     details: list[str] = []
+    row_coverage: list[str] = []
     owners: dict[str, list[str]] = {}
     for item in shards:
-        validate_shard(item)
+        validate_shard(item, registry, row_registry=row_registry)
         path = directory / f"{prefix}{item['name']}" / "result.json"
         if len(shards) == 1 and not path.exists():
             # download-artifact extracts a lone matching artifact straight into its path.
             path = directory / "result.json"
         try:
             result = json.loads(path.read_text(encoding="utf-8"))
-            if result.get("shard") != item["name"]:
+            if result.get("shard") != item["name"] or result.get("entry") != item["entry"]:
                 raise ValueError("shard mismatch")
         except (OSError, ValueError):
             problems.append(f"{item['name']}: no result evidence")
@@ -334,6 +433,22 @@ def summarize(shards: list[dict], directory: Path, prefix: str, *, missing_fatal
             problems.append(f"{item['name']}: {counts['MISSING']} MISSING scenario(s)")
         if item["world"] and not result["scenarios"]:
             problems.append(f"{item['name']}: World shard ran no scenario")
+        observed = {row["scenario"]: [] for row in item["expected_rows"]}
+        for scenario in result["scenarios"]:
+            if scenario["id"] in observed:
+                observed[scenario["id"]].append(scenario["status"])
+        for scenario, statuses in observed.items():
+            if not statuses:
+                suffix = " (capture only)" if scenario in result.get("captures", []) else ""
+                problems.append(f"{item['name']}: missing terminal verdict for {scenario}{suffix}")
+            elif len(statuses) != 1:
+                problems.append(f"{item['name']}: duplicate terminal verdicts for {scenario}")
+            elif statuses[0] not in TERMINAL:
+                problems.append(f"{item['name']}: non-terminal status {statuses[0]} for {scenario}")
+        if observed:
+            recorded = sum(len(statuses) == 1 and statuses[0] in TERMINAL for statuses in observed.values())
+            row_coverage.append(f"- `{item['name']}` indexed row verdicts: {recorded}/{len(observed)}; "
+                                "captures and extra slices do not satisfy required identities")
         if result["incomplete"]:
             details.append(f"- `{item['name']}` E2EF1_INCOMPLETE")
         verdict = result["result"] + ("" if shard_passed(result) else " (failed)")
@@ -345,6 +460,10 @@ def summarize(shards: list[dict], directory: Path, prefix: str, *, missing_fatal
     out = ["## Node boot shards", "", *rows, ""]
     if details:
         out += ["### Scenarios not passing", "", *details, ""]
+    if row_coverage:
+        out += ["### Indexed row verdict coverage", "", *row_coverage, "",
+                "This checks selected indexed rows only. Group, basic, spells and game-platform "
+                "completeness require their own execution contracts.", ""]
     if overlaps:
         out += ["### Scenarios run by more than one shard", "", *(f"- {entry}" for entry in overlaps), ""]
     if problems:

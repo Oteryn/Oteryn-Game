@@ -1,0 +1,42 @@
+[
+  {
+    "shard": "rows-000-010",
+    "job_id": 137606828613,
+    "artifact_id": 14809137635,
+    "qualification_log_sha256": "52b54e5a16f79bedbf2419e3f05cf24b1523b4269dfbe92c8c4030b0abaaf61c",
+    "new_extract_equal_original_result_for_all_prior_fields": true,
+    "capture_count": 0,
+    "summary_cli_exit_code": 0,
+    "summary": "## Node boot shards\n\n| shard | result | exit | minutes | scenarios | PASS | FAIL | MISSING | other |\n|---|---|---|---|---|---|---|---|---|\n| rows-000-010 | NODE_BOOT_PASS | 0 | 21.0 | 9 | 0 | 9 | 0 | 0 |\n\n### Scenarios not passing\n\n- `rows-000-010` C03.full FAIL\n- `rows-000-010` C12.full FAIL\n- `rows-000-010` C09.full FAIL\n- `rows-000-010` C06.full FAIL\n- `rows-000-010` C02.full FAIL\n- `rows-000-010` C01.full FAIL\n- `rows-000-010` W22b.full FAIL\n- `rows-000-010` C05.full FAIL\n- `rows-000-010` C04.full FAIL\n\n### Indexed row verdict coverage\n\n- `rows-000-010` indexed row verdicts: 9/9; captures and extra slices do not satisfy required identities\n\nThis checks selected indexed rows only. Group, basic, spells and game-platform completeness require their own execution contracts.\n\n"
+  },
+  {
+    "shard": "rows-080-090",
+    "job_id": 137606828593,
+    "artifact_id": 14809233130,
+    "qualification_log_sha256": "49fddb86ac361f2253846dffc10f9dbbe83a7be3375d351448bd232e5c411dd9",
+    "new_extract_equal_original_result_for_all_prior_fields": true,
+    "capture_count": 0,
+    "summary_cli_exit_code": 1,
+    "summary": "## Node boot shards\n\n| shard | result | exit | minutes | scenarios | PASS | FAIL | MISSING | other |\n|---|---|---|---|---|---|---|---|---|\n| rows-080-090 | NODE_BOOT_FAIL (failed) | 1 | 30.4 | 9 | 0 | 9 | 0 | 0 |\n\n### Scenarios not passing\n\n- `rows-080-090` M10.full FAIL\n- `rows-080-090` M09.full FAIL\n- `rows-080-090` M06.full FAIL\n- `rows-080-090` C15.full FAIL\n- `rows-080-090` C08.full FAIL\n- `rows-080-090` S04b.full FAIL\n- `rows-080-090` C14.full FAIL\n- `rows-080-090` E02.full FAIL\n- `rows-080-090` C02.client FAIL\n\n### Indexed row verdict coverage\n\n- `rows-080-090` indexed row verdicts: 9/10; captures and extra slices do not satisfy required identities\n\nThis checks selected indexed rows only. Group, basic, spells and game-platform completeness require their own execution contracts.\n\n### Summary failures\n\n- rows-080-090: missing terminal verdict for C01.client\n\n"
+  },
+  {
+    "shard": "rows-200-210",
+    "job_id": 137606828663,
+    "artifact_id": 14807453351,
+    "qualification_log_sha256": "f4b4187a1f2d60adfe282b006158adf6358430a6212e72f9d91b38ecd5a1387c",
+    "new_extract_equal_original_result_for_all_prior_fields": true,
+    "capture_count": 0,
+    "summary_cli_exit_code": 1,
+    "summary": "## Node boot shards\n\n| shard | result | exit | minutes | scenarios | PASS | FAIL | MISSING | other |\n|---|---|---|---|---|---|---|---|---|\n| rows-200-210 | NODE_BOOT_PASS | 0 | 5.5 | 0 | 0 | 0 | 0 | 0 |\n\n### Indexed row verdict coverage\n\n- `rows-200-210` indexed row verdicts: 0/10; captures and extra slices do not satisfy required identities\n\nThis checks selected indexed rows only. Group, basic, spells and game-platform completeness require their own execution contracts.\n\n### Summary failures\n\n- rows-200-210: World shard ran no scenario\n- rows-200-210: missing terminal verdict for S13b.client\n- rows-200-210: missing terminal verdict for S13a.client\n- rows-200-210: missing terminal verdict for S15b.client\n- rows-200-210: missing terminal verdict for S04c.client\n- rows-200-210: missing terminal verdict for S07.client\n- rows-200-210: missing terminal verdict for S16b.client\n- rows-200-210: missing terminal verdict for S09.client\n- rows-200-210: missing terminal verdict for S05.client\n- rows-200-210: missing terminal verdict for S10.client\n- rows-200-210: missing terminal verdict for S16a.client\n\n"
+  },
+  {
+    "shard": "rows-220-230",
+    "job_id": 137606828652,
+    "artifact_id": 14807168331,
+    "qualification_log_sha256": "32c107d5f48562b94e4e3e30509775834d3ac0f6aee1eac53e384988ab01e416",
+    "new_extract_equal_original_result_for_all_prior_fields": true,
+    "capture_count": 0,
+    "summary_cli_exit_code": 1,
+    "summary": "## Node boot shards\n\n| shard | result | exit | minutes | scenarios | PASS | FAIL | MISSING | other |\n|---|---|---|---|---|---|---|---|---|\n| rows-220-230 | NODE_BOOT_FAIL (failed) | 1 | 21.5 | 9 | 0 | 9 | 0 | 0 |\n\n### Scenarios not passing\n\n- `rows-220-230` C07.client FAIL\n- `rows-220-230` C20d.client FAIL\n- `rows-220-230` W22b.client FAIL\n- `rows-220-230` W23.client FAIL\n- `rows-220-230` W24.client FAIL\n- `rows-220-230` N07a.client FAIL\n- `rows-220-230` N07b.client FAIL\n- `rows-220-230` N07c.client FAIL\n- `rows-220-230` N07d.client FAIL\n\n### Indexed row verdict coverage\n\n- `rows-220-230` indexed row verdicts: 9/10; captures and extra slices do not satisfy required identities\n\nThis checks selected indexed rows only. Group, basic, spells and game-platform completeness require their own execution contracts.\n\n### Summary failures\n\n- rows-220-230: missing terminal verdict for C20a.client\n\n"
+  }
+]

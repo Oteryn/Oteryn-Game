@@ -1,0 +1,31 @@
+{
+  "phase": "AUTHORING follow-up; unchanged source hashes",
+  "reason": "Initial item fixture construction exceeded /tmp quota after EXDEV hardlink fallback; TMPDIR now shares source filesystem",
+  "tmpdir": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/tmp",
+  "source_and_tmp_same_device": true,
+  "checks": [
+    {
+      "name": "item_engine",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/content-schema/item-authoring/test_engine_items.py"
+      ],
+      "exit_code": 0,
+      "seconds": 7.692,
+      "stdout": "PASS 603 checks\n{'cohort': 'engine', 'status': 'PASS', 'scope': 'explicit old165/411 input views; selected current3332/current103 guards independently live'}\n",
+      "stderr": "...\n----------------------------------------------------------------------\nRan 3 tests in 0.185s\n\nOK\n...\n----------------------------------------------------------------------\nRan 3 tests in 0.790s\n\nOK\n....\n----------------------------------------------------------------------\nRan 4 tests in 0.004s\n\nOK\n"
+    },
+    {
+      "name": "s3b_shell_syntax",
+      "argv": [
+        "bash",
+        "-n",
+        "tools/qualification/wp5_s3b/run.sh"
+      ],
+      "exit_code": 0,
+      "seconds": 0.002,
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}

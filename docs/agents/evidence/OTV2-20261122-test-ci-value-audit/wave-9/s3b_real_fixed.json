@@ -1,0 +1,69 @@
+{
+  "scope": "Actual tiny Rust libtest and actual S3B cleanup/verdict tail; no Game/PG/Platform run",
+  "source_sha256": "6bfb3528734d38ea4d058dcd68b1ede7ddb251294d1e4ff40b5760e63fc1e634",
+  "expected": "fixed",
+  "rustc": "rustc 1.100.0 (0ef1bc386 2026-11-09)",
+  "fixture": "#[test]\n#[ignore]\nfn selected_success() {\n    println!(\"probe stdout emitted during an ignored test\");\n    eprintln!(\"probe stderr emitted during an ignored test\");\n}\n#[test]\n#[ignore]\nfn selected_failure() { assert_eq!(1, 2, \"intentional smoke failure\"); }\n",
+  "compile_exit_code": 0,
+  "cases": [
+    {
+      "case": "success",
+      "argv": [
+        "selected_success",
+        "--exact",
+        "--nocapture",
+        "--color",
+        "never",
+        "--ignored"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "\nrunning 1 test\nprobe stdout emitted during an ignored test\ntest selected_success ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=SEAM_PASS\n",
+      "stderr": "probe stderr emitted during an ignored test\n"
+    },
+    {
+      "case": "no_exact_match",
+      "argv": [
+        "missing_name",
+        "--exact",
+        "--nocapture",
+        "--color",
+        "never",
+        "--ignored"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "stdout": "\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not execute exactly one passing test\n"
+    },
+    {
+      "case": "selected_but_ignored",
+      "argv": [
+        "selected_success",
+        "--exact",
+        "--nocapture",
+        "--color",
+        "never"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "stdout": "\nrunning 1 test\ntest selected_success ... ignored\n\ntest result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 1 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not execute exactly one passing test\n"
+    },
+    {
+      "case": "failed_test",
+      "argv": [
+        "selected_failure",
+        "--exact",
+        "--nocapture",
+        "--color",
+        "never",
+        "--ignored"
+      ],
+      "exit_code": 101,
+      "expected_exit_code": 101,
+      "stdout": "\nrunning 1 test\ntest selected_failure ... FAILED\n\nfailures:\n\nfailures:\n    selected_failure\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "\nthread 'selected_failure' (4173215) panicked at /tmp/oteryn-s3b-real-libtest-mrfqrftc/fixture.rs:9:25:\nassertion `left == right` failed: intentional smoke failure\n  left: 1\n right: 2\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+    }
+  ]
+}

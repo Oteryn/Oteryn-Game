@@ -1,0 +1,35 @@
+# Wave 6 — source-level semantic audit and runnable dependency qualification
+
+Task `OTV2-20261122-test-ci-value-audit`; [draft PR #3430](https://github.com/Oteryn/Oteryn-Game/pull/3430); [issue #3429](https://github.com/Oteryn/Oteryn-Game/issues/3429). This wave's **source head is `327b64d1ce5a627a75c1b3520c21ab364796bf99`**. A separately allocated, clean, detached source worktree on `oteryn-vps` was used for the runs. Authoring used another isolated worktree. These are source-head results; neither a later PR head nor an unchecked CI run inherits PASS.
+
+## Ten exact full-file reviews (PROVEN)
+
+The ten previously `STATIC_AST_ONLY` `tools/content-migration/test_*.py` files in [semantic_scope.tsv](semantic_scope.tsv) were actually read **in full**. That manifest includes each Git blob SHA, 59 distinct literal test methods, current runtime consumer, fixture, independent oracle, concrete failure mode and KEEP disposition, with original execution outcomes per file. [observed_methods.tsv](observed_methods.tsv) identifies each method's execution result.
+
+Notable distinct defenses that should **remain**: retained 1,870 adopted Creature rows and 1,351 changed melee sources in `test_compose_monster_current_sources.py`; correct Canary/Crystal Soul Core source-pins/donor selection; six condition-potion identities with mutation/rollback checks; Item admission/retirement and 217/218 historical scope; health bounds and condition payload preservation; Wiki immunity/mitigation conversion refusal. A file's old-looking name is not a retirement argument.
+
+**Initial real execution**, `python3 -m unittest -v` over exactly these ten modules, Python 3.14.4, returned **59 reported methods: 50 PASS, 3 ERROR, 6 SKIP, 0 assertion FAIL, exit 1** (full output SHA and command retained in [validation.json](validation.json)). Two errors arose from missing authentic `lupa.luajit21`; one from missing genuine `zstandard`. Six skips were caused by missing, non-fabricated historical `/workspace` research snapshots: one source-completion packet and five residual-monster tests.
+
+**Dependency follow-up:** `lupa==2.8` was obtained as an actual platform wheel according to the repository's pinned spell/monster authoring requirements (installed under `/tmp`, not in repo). The two failed LuaJIT tests were actually re-run and **2/2 PASS**. Another real Python 3.14 environment has `zstandard==0.25.0`; the failing full cooking registry test re-ran and **1/1 PASS** (177.810 s). None of these results converts a historical SKIP to PASS. The **combined authentic-dependency rerun** of all ten modules reported **59 methods: 53 PASS, 6 SKIP, 0 ERROR, 0 assertion FAIL, exit 0 in 208.946 s**. Six historical-fixture SKIPs remain unqualified, despite the successful process exit. The exact run, per-method outcomes and raw log digest are in [validation.json](validation.json) and [observed_methods.tsv](observed_methods.tsv).
+
+**Historical-fixture risk (SOURCE-PROVEN):** `test_complete_residual_monster_mechanics.py` uses `skipUnless` for three historical paths, but its `test_all_encounters_translate_with_exact_native_ppm_and_registered_items` additionally reads `/workspace/monster-round7-output/native-item-map-rust.json`, not included in that guard. Restoring only the three paths may expose a new `FileNotFoundError`. Retain the independent PPM/minion/encounter oracles; restore verified, digest-bound fixtures, then separately qualify the missing fourth dependency. No fixture was invented here.
+
+## Selection and CI (PROVEN / UNKNOWN)
+
+The exact 78-workflow literal-name proof is [selection_evidence.json](selection_evidence.json). No **literal filename** of these ten files occurs in the 78 committed `.github/workflows/` definitions or the direct `test_parallel_checks.py` inventory. The active `content-tree-migration.yml` job explicitly selects the parallel-checks inventory, not general `test_*.py` discovery. This establishes a **direct-dispatch gap**, not definitive zero execution: indirect/inherited discovery must still be traced across live jobs and run logs before a retirement or positive coverage claim. No workflow or production test source is modified in this wave.
+
+At live read of the source head, Agent governance, Architecture semantic audit and Craft Authoring were successful; `PR PostgreSQL harness` has only the `heavy-gate` successful, with real PostgreSQL/Node boot jobs **SKIPPED**. The two Merge gate generations were still queued/in progress with Rust jobs outstanding. The green Codex-review-gate confirms a receipt only, and native review covers only first code-bearing `978d40a0`. **Do not claim full CI, live Game–Platform/PostgreSQL, Windows or GPU PASS.**
+
+## BB-02 black-box completeness — still an unapplied proposal
+
+A **fresh synthetic `plan → extract → summarize` reproduction against this source head** confirms the same current `tools/qualification/node_boot/matrix.py` (blob `36454c568dac76cb73b58180c0b7214da9fb701a`) still accepts wrong terminal scenario `I01.full PASS` for requested index 206 expecting `S09.client`: `shard_passed=true` and `summary_problems=[]`. See [bb02_current_head_repro.json](bb02_current_head_repro.json). Both `matrix.py` and `test_matrix.py` are byte-identical to pinned baseline. This is a **test-oracle false positive**, not a proven live gameplay result.
+
+Existing `../aggregate_completeness_proposal.patch` and its earlier 33 focused green tests remain **unapplied**: the 302 indexed row-contract identities are only a bounded subdomain, not all basic, groups, spells, capture/replay or Game–Platform. Enforcing the proposal against no-op/capture-only producers may expose missing terminal verdicts; obtain representative **real** logs with `CAPTURED` separate from PASS before adoption. Never invent missing terminal PASS or whitelist missing IDs.
+
+## Exact remaining queue and review history
+
+The original `wave-2/content_tools_remainingfiles.tsv` contains 695 paths: 10 first issue-only full reads plus wave3=8, wave4=10, wave5=10, **wave6=10**, all disjoint, give **48 actually fully read paths** and **647 remaining** (403 `STATIC_AST_ONLY`, 10 `PARTIALLY_REVIEWED`, 234 `INVENTORY_ONLY`). This is a **content-tools** ledger only. The separate 130 global semantic-review groups and runtime audit lanes remain open. See [remaining_queue_overlay.md](remaining_queue_overlay.md).
+
+Review history unchanged: one native Codex review, requested for `978d40a0`, completed without findings; **no second request** for a documentation-only evidence successor. Root sole publication writer. No merge or force update authorized. This batch is documentary evidence only, without test/CI/gameplay source mutations.
+
+**Next priority:** restore provenance-checked historical packets and confirm actual CI consumers; validate BB-02 against real mixed/full/client/capture-only logs; separately close 130 groups and live PostgreSQL/Game/Platform/Windows/GPU qualification. Retain PG fencing, replay, durable value, codec/math and migrations tests.

@@ -1,0 +1,18 @@
+{
+  "before": {
+    "executions_including_nested_cases": 54,
+    "unique_case_count": 42,
+    "elapsed_seconds": 10.513249180999992
+  },
+  "after": {
+    "executions_including_nested_cases": 42,
+    "unique_case_count": 42,
+    "elapsed_seconds": 7.181574224999963
+  },
+  "same_unique_ids": true,
+  "missing_ids": [],
+  "added_ids": [],
+  "before_errors_failures": 0,
+  "after_errors_failures": 0,
+  "limitations": "Sequential single samples of affected unittest slice only; not full governance, CI, or whole-repository performance. Three unaffected plain-main suites counted by static dispatch analysis separately."
+}

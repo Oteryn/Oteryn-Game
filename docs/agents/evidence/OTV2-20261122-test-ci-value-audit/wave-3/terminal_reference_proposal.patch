@@ -1,0 +1,17 @@
+--- a/tools/content-migration/test_boss_corpse_terminal_reference.py
++++ b/tools/content-migration/test_boss_corpse_terminal_reference.py
+@@ -13,7 +13,13 @@
+         records=[row['definition'] for name in index['shards'] for row in json.loads((ROOT/name).read_bytes())['records']]
+         original=copy.deepcopy(records[25377])
+         self.assertEqual(original['identity']['key'],'oteryn:item.tibia.i43666')
++        original_count=len(records)
++        self.assertEqual(original_count,index['record_count'])
+         terminal.extend_records(records,ROOT)
+         self.assertEqual([i for i,r in enumerate(records) if r['identity']['key']==terminal.KEY],[25377])
+         self.assertEqual(records[25377],original,'all original UNKNOWN reference fields stay unchanged')
+-        self.assertEqual(len(records),34117)
++        self.assertEqual(len(records),original_count)
++
++
++if __name__ == '__main__':
++    unittest.main()

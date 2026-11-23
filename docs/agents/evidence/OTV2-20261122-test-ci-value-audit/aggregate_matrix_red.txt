@@ -1,0 +1,114 @@
+test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row (__main__.RequiredRowEvidenceTests.test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row) ...
+  test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row (__main__.RequiredRowEvidenceTests.test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row) (scenario='S09.logout') ... FAIL
+  test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row (__main__.RequiredRowEvidenceTests.test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row) (scenario='S09.full') ... FAIL
+test_capture_does_not_replace_a_terminal_verdict (__main__.RequiredRowEvidenceTests.test_capture_does_not_replace_a_terminal_verdict) ...
+  test_capture_does_not_replace_a_terminal_verdict (__main__.RequiredRowEvidenceTests.test_capture_does_not_replace_a_terminal_verdict) (capture='SEAM_EVIDENCE e2e_capture scenario=S09.client status=CAPTURED evidence=logout\n') ... FAIL
+  test_capture_does_not_replace_a_terminal_verdict (__main__.RequiredRowEvidenceTests.test_capture_does_not_replace_a_terminal_verdict) (capture='SEAM_EVIDENCE e2e_all scenario=S09.client status=CAPTURED seconds=1\n') ... FAIL
+test_complete_terminal_evidence_can_include_extra_bounded_slices (__main__.RequiredRowEvidenceTests.test_complete_terminal_evidence_can_include_extra_bounded_slices) ... ok
+test_duplicate_expected_row_is_not_one_completed_execution (__main__.RequiredRowEvidenceTests.test_duplicate_expected_row_is_not_one_completed_execution) ... FAIL
+test_existing_failure_and_missing_status_policy_is_not_redefined (__main__.RequiredRowEvidenceTests.test_existing_failure_and_missing_status_policy_is_not_redefined) ... ok
+test_missing_informational_does_not_waive_absent_evidence (__main__.RequiredRowEvidenceTests.test_missing_informational_does_not_waive_absent_evidence) ... FAIL
+test_non_row_lanes_do_not_claim_indexed_row_coverage (__main__.RequiredRowEvidenceTests.test_non_row_lanes_do_not_claim_indexed_row_coverage) ... ERROR
+test_other_scenario_cannot_replace_the_selected_row (__main__.RequiredRowEvidenceTests.test_other_scenario_cannot_replace_the_selected_row) ... FAIL
+test_partially_executed_batch_is_not_complete (__main__.RequiredRowEvidenceTests.test_partially_executed_batch_is_not_complete) ... FAIL
+test_plan_records_ids_for_all_selected_rows_including_unwrapped_emitters (__main__.RequiredRowEvidenceTests.test_plan_records_ids_for_all_selected_rows_including_unwrapped_emitters) ... ERROR
+test_reference_requires_its_selected_rows_as_well_as_existing_group_evidence (__main__.RequiredRowEvidenceTests.test_reference_requires_its_selected_rows_as_well_as_existing_group_evidence) ... ERROR
+
+======================================================================
+ERROR: test_non_row_lanes_do_not_claim_indexed_row_coverage (__main__.RequiredRowEvidenceTests.test_non_row_lanes_do_not_claim_indexed_row_coverage)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/23c09bc1235f/aggregate_row_regressions.py", line 96, in test_non_row_lanes_do_not_claim_indexed_row_coverage
+    self.assertTrue(all(shard['expected_rows'] == [] for shard in plan))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/23c09bc1235f/aggregate_row_regressions.py", line 96, in <genexpr>
+    self.assertTrue(all(shard['expected_rows'] == [] for shard in plan))
+                        ~~~~~^^^^^^^^^^^^^^^^^
+KeyError: 'expected_rows'
+
+======================================================================
+ERROR: test_plan_records_ids_for_all_selected_rows_including_unwrapped_emitters (__main__.RequiredRowEvidenceTests.test_plan_records_ids_for_all_selected_rows_including_unwrapped_emitters)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/23c09bc1235f/aggregate_row_regressions.py", line 86, in test_plan_records_ids_for_all_selected_rows_including_unwrapped_emitters
+    rows = [entry for shard in plan for entry in shard['expected_rows']]
+                                                 ~~~~~^^^^^^^^^^^^^^^^^
+KeyError: 'expected_rows'
+
+======================================================================
+ERROR: test_reference_requires_its_selected_rows_as_well_as_existing_group_evidence (__main__.RequiredRowEvidenceTests.test_reference_requires_its_selected_rows_as_well_as_existing_group_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/23c09bc1235f/aggregate_row_regressions.py", line 100, in test_reference_requires_its_selected_rows_as_well_as_existing_group_evidence
+    expected = {row['scenario'] for row in reference['expected_rows']}
+                                           ~~~~~~~~~^^^^^^^^^^^^^^^^^
+KeyError: 'expected_rows'
+
+======================================================================
+FAIL: test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row (__main__.RequiredRowEvidenceTests.test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row) (scenario='S09.logout')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/23c09bc1235f/aggregate_row_regressions.py", line 42, in test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row
+    self.assertTrue(any('S09.client' in problem for problem in problems), problems)
+AssertionError: False is not true : []
+
+======================================================================
+FAIL: test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row (__main__.RequiredRowEvidenceTests.test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row) (scenario='S09.full')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/23c09bc1235f/aggregate_row_regressions.py", line 42, in test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row
+    self.assertTrue(any('S09.client' in problem for problem in problems), problems)
+AssertionError: False is not true : []
+
+======================================================================
+FAIL: test_capture_does_not_replace_a_terminal_verdict (__main__.RequiredRowEvidenceTests.test_capture_does_not_replace_a_terminal_verdict) (capture='SEAM_EVIDENCE e2e_capture scenario=S09.client status=CAPTURED evidence=logout\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/23c09bc1235f/aggregate_row_regressions.py", line 62, in test_capture_does_not_replace_a_terminal_verdict
+    self.assertTrue(any('S09.client' in problem for problem in problems), problems)
+AssertionError: False is not true : []
+
+======================================================================
+FAIL: test_capture_does_not_replace_a_terminal_verdict (__main__.RequiredRowEvidenceTests.test_capture_does_not_replace_a_terminal_verdict) (capture='SEAM_EVIDENCE e2e_all scenario=S09.client status=CAPTURED seconds=1\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/23c09bc1235f/aggregate_row_regressions.py", line 62, in test_capture_does_not_replace_a_terminal_verdict
+    self.assertTrue(any('S09.client' in problem for problem in problems), problems)
+AssertionError: False is not true : []
+
+======================================================================
+FAIL: test_duplicate_expected_row_is_not_one_completed_execution (__main__.RequiredRowEvidenceTests.test_duplicate_expected_row_is_not_one_completed_execution)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/23c09bc1235f/aggregate_row_regressions.py", line 52, in test_duplicate_expected_row_is_not_one_completed_execution
+    self.assertTrue(any('duplicate' in problem and 'S09.client' in problem for problem in problems), problems)
+AssertionError: False is not true : []
+
+======================================================================
+FAIL: test_missing_informational_does_not_waive_absent_evidence (__main__.RequiredRowEvidenceTests.test_missing_informational_does_not_waive_absent_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/23c09bc1235f/aggregate_row_regressions.py", line 67, in test_missing_informational_does_not_waive_absent_evidence
+    self.assertTrue(any('S09.client' in problem for problem in problems), problems)
+AssertionError: False is not true : []
+
+======================================================================
+FAIL: test_other_scenario_cannot_replace_the_selected_row (__main__.RequiredRowEvidenceTests.test_other_scenario_cannot_replace_the_selected_row)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/23c09bc1235f/aggregate_row_regressions.py", line 35, in test_other_scenario_cannot_replace_the_selected_row
+    self.assertTrue(any('S09.client' in problem for problem in problems), problems)
+AssertionError: False is not true : []
+
+======================================================================
+FAIL: test_partially_executed_batch_is_not_complete (__main__.RequiredRowEvidenceTests.test_partially_executed_batch_is_not_complete)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/23c09bc1235f/aggregate_row_regressions.py", line 47, in test_partially_executed_batch_is_not_complete
+    self.assertTrue(any('C12.full' in problem for problem in problems), problems)
+AssertionError: False is not true : []
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.840s
+
+FAILED (failures=8, errors=3)

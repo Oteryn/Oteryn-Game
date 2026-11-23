@@ -1,0 +1,166 @@
+{
+  "observed_at": "2026-11-22T23:11:23.972856+00:00",
+  "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "scope": "content-schema and content-migration, excluding craft-authoring and repository",
+  "indexed_test_files": 706,
+  "indexed_python_test_definitions": 5510,
+  "static_ast_files": 472,
+  "static_ast_parse_errors": 0,
+  "static_method_body_hint_clusters": 3,
+  "full_test_source_files": 11,
+  "literal_test_definitions_in_full_test_source_files": 81,
+  "partial_test_source_files": 10,
+  "full_context_source_files": 5,
+  "partial_context_source_files": 7,
+  "remaining_not_fully_read_in_this_wave": 695,
+  "all_scope_bytes_match_base": true,
+  "remaining_file_semantics": "This wave removes only its 11 fully read test files. Prior exact scopes remain in a separate column, not erased or expanded to full-file review.",
+  "runtime": "One focused case attempt blocked before execution at import by missing rfc3339-validator; no successful test execution and no full suite in this wave.",
+  "groups": {
+    "tools/content-migration": {
+      "test_files": 213,
+      "python_test_definitions": 1394,
+      "bytes": 1489791
+    },
+    "tools/content-schema/achievement-authoring": {
+      "test_files": 1,
+      "python_test_definitions": 11,
+      "bytes": 6096
+    },
+    "tools/content-schema/area-authoring": {
+      "test_files": 1,
+      "python_test_definitions": 0,
+      "bytes": 3387
+    },
+    "tools/content-schema/character-progression": {
+      "test_files": 1,
+      "python_test_definitions": 19,
+      "bytes": 7089
+    },
+    "tools/content-schema/charm-authoring": {
+      "test_files": 3,
+      "python_test_definitions": 49,
+      "bytes": 38089
+    },
+    "tools/content-schema/condition-authoring": {
+      "test_files": 1,
+      "python_test_definitions": 12,
+      "bytes": 11268
+    },
+    "tools/content-schema/cosmetics-authoring": {
+      "test_files": 5,
+      "python_test_definitions": 31,
+      "bytes": 29958
+    },
+    "tools/content-schema/encounter-authoring": {
+      "test_files": 5,
+      "python_test_definitions": 42,
+      "bytes": 43785
+    },
+    "tools/content-schema/encounters": {
+      "test_files": 5,
+      "python_test_definitions": 20,
+      "bytes": 23673
+    },
+    "tools/content-schema/house-authoring": {
+      "test_files": 1,
+      "python_test_definitions": 19,
+      "bytes": 7422
+    },
+    "tools/content-schema/imbuement-authoring": {
+      "test_files": 14,
+      "python_test_definitions": 259,
+      "bytes": 177641
+    },
+    "tools/content-schema/item-authoring": {
+      "test_files": 46,
+      "python_test_definitions": 394,
+      "bytes": 477731
+    },
+    "tools/content-schema/map-content-linking": {
+      "test_files": 1,
+      "python_test_definitions": 7,
+      "bytes": 4823
+    },
+    "tools/content-schema/monster-authoring": {
+      "test_files": 29,
+      "python_test_definitions": 258,
+      "bytes": 219465
+    },
+    "tools/content-schema/native-gameplay": {
+      "test_files": 51,
+      "python_test_definitions": 265,
+      "bytes": 247698
+    },
+    "tools/content-schema/npc-authoring": {
+      "test_files": 22,
+      "python_test_definitions": 238,
+      "bytes": 186302
+    },
+    "tools/content-schema/proficiency-authoring": {
+      "test_files": 1,
+      "python_test_definitions": 11,
+      "bytes": 15326
+    },
+    "tools/content-schema/quest-authoring": {
+      "test_files": 213,
+      "python_test_definitions": 1522,
+      "bytes": 1093158
+    },
+    "tools/content-schema/reward-claim-authoring": {
+      "test_files": 11,
+      "python_test_definitions": 121,
+      "bytes": 121520
+    },
+    "tools/content-schema/spell-authoring": {
+      "test_files": 33,
+      "python_test_definitions": 357,
+      "bytes": 320034
+    },
+    "tools/content-schema/starter-kit-authoring": {
+      "test_files": 1,
+      "python_test_definitions": 4,
+      "bytes": 7113
+    },
+    "tools/content-schema/step-speed": {
+      "test_files": 1,
+      "python_test_definitions": 5,
+      "bytes": 2480
+    },
+    "tools/content-schema/store-authoring": {
+      "test_files": 3,
+      "python_test_definitions": 7,
+      "bytes": 8852
+    },
+    "tools/content-schema/test_materialized_authored_props.py": {
+      "test_files": 1,
+      "python_test_definitions": 6,
+      "bytes": 2521
+    },
+    "tools/content-schema/test_validate_full_game_content_tree.py": {
+      "test_files": 1,
+      "python_test_definitions": 0,
+      "bytes": 2680
+    },
+    "tools/content-schema/test_validate_item_master_schema.py": {
+      "test_files": 1,
+      "python_test_definitions": 0,
+      "bytes": 2615
+    },
+    "tools/content-schema/wheel-authoring": {
+      "test_files": 11,
+      "python_test_definitions": 137,
+      "bytes": 72556
+    },
+    "tools/content-schema/world-authoring": {
+      "test_files": 18,
+      "python_test_definitions": 264,
+      "bytes": 256635
+    },
+    "tools/content-schema/world-object-authoring": {
+      "test_files": 12,
+      "python_test_definitions": 58,
+      "bytes": 79994
+    }
+  }
+}

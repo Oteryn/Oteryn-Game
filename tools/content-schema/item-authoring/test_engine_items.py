@@ -3914,6 +3914,7 @@ def main():
         test_owner_family_decisions_loader_missing_file_is_hard_error,
         test_committed_owner_family_decisions_loads_fail_closed,
         test_empty_client_object_routes_appearance_placeholder_slot,
+        test_frost_cannon_routes_non_pickupable_blocking_prop,
         test_empty_client_object_route_requires_zero_flags,
         test_empty_client_object_route_never_outranks_owner_table,
         test_wo2c_carpet_and_magic_field_routes_only_for_unresolved_geometry,

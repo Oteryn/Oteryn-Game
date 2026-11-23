@@ -1,0 +1,292 @@
+--- a/tools/qualification/node_boot/matrix.py
++++ b/tools/qualification/node_boot/matrix.py
+@@ -61,0 +62,14 @@
++CAPTURE = re.compile(
++    r"^SEAM_EVIDENCE e2e_capture scenario=([A-Za-z0-9_.-]{1,64}) status=CAPTURED(?:\s|$)",
++    re.MULTILINE,
++)
++ROW_ID = re.compile(r"[A-Z][0-9]{2}[a-z]?\.(?:full|client)")
++TERMINAL = {"PASS", "FAIL", "SKIPPED", "MISSING-SERVER", "MISSING-CLIENT"}
++# These four dispatchers predate verdict::indexed. Check their literal emitter
++# against this contract; do not infer a scenario from a module's filename.
++DIRECT_ROWS = {
++    "full_e2ef19::run_packet": "S04b.full",
++    "full_e2ef18::run_packet": "C14.full",
++    "full_e2ef20::run_packet": "E02.full",
++    "client_row_c07::run_client_packet": "C07.client",
++}
+@@ -91,0 +106,56 @@
++
++
++def row_scenarios(root: Path = ROOT) -> dict[int, str]:
++    """Read the closed dispatcher grammar, failing on every unmapped selector.
++
++    This intentionally does not try to parse arbitrary Rust, group macros, or
++    capture/replay semantics. A new dispatch shape needs an explicit contract.
++    """
++    source = read(root, CLIENT_PHASES / "world.rs")
++    rows: dict[int, str] = {}
++    blocks = re.finditer(r"(?ms)^            if e2e_row_selected\((\d+)\) \{\n(.*?)^            }", source)
++    for block in blocks:
++        index, body = int(block[1]), block[2]
++        indexed = re.fullmatch(
++            r'\s*verdict::indexed\("([^\"]+)", async \{\s*'
++            r'[a-z0-9_]+::[a-z0-9_]+\([^;]*\)\.await;\s*'
++            r'release_row_characters\(clients\)\.await\s*}\)\s*\.await;\s*', body)
++        if indexed:
++            scenario = indexed[1]
++        else:
++            direct = re.fullmatch(
++                r'\s*([a-z0-9_]+::[a-z0-9_]+)\(clients\)\.await;\s*'
++                r'release_row_characters\(clients\)\.await\?;\s*', body)
++            if direct is None or direct[1] not in DIRECT_ROWS:
++                raise PlanError(f"row {index}: dispatcher needs an explicit scenario contract")
++            scenario = DIRECT_ROWS[direct[1]]
++            module = direct[1].split("::")[0]
++            emitted = set(re.findall(r'e2e_all scenario=([A-Za-z0-9_.-]+) status=',
++                                     read(root, CLIENT_PHASES / f"{module}.rs")))
++            if emitted != {scenario}:
++                raise PlanError(f"row {index}: direct emitter differs from its scenario contract")
++        if index in rows or not ROW_ID.fullmatch(scenario) or scenario in rows.values():
++            raise PlanError(f"row {index}: duplicate or invalid scenario contract")
++        rows[index] = scenario
++    if sorted(rows) != row_indices(root):
++        raise PlanError("not every e2e_row_selected call has a scenario contract")
++    return rows
++
++
++def expected_rows(item: dict, rows: dict[int, str], root: Path = ROOT) -> list[dict]:
++    if item["entry"] != "node_boot" or not item["world"]:
++        return []
++    selected = item["env"].get("NODE_BOOT_E2E_ONLY")
++    if selected is not None and "rows" not in selected.split(","):
++        return []
++    batch = item["env"].get("OTERYN_E2E_ROW_BATCH")
++    if batch is not None:
++        start, length = map(int, batch.split(":"))
++    else:
++        default = re.search(r"E2E_ROW_BATCH_DEFAULT: \(usize, usize\) = \((\d+), (\d+)\);",
++                            read(root, CLIENT_PHASES / "e2e_row_batch.rs"))
++        if default is None:
++            raise PlanError("default row selection not found")
++        start, length = map(int, default.groups())
++    return [{"index": index, "scenario": scenario} for index, scenario in sorted(rows.items())
++            if start <= index < start + length]
+@@ -136 +206,2 @@
+-    return {"name": name, "entry": entry, "platform_ref": platform_ref, "world": world, "env": env}
++    return {"name": name, "entry": entry, "platform_ref": platform_ref, "world": world,
++            "env": env, "expected_rows": []}
+@@ -158 +229,2 @@
+-    indices = row_indices(root)
++    row_registry = row_scenarios(root)
++    indices = sorted(row_registry)
+@@ -215 +287,2 @@
+-        validate_shard(item, registry)
++        item["expected_rows"] = expected_rows(item, row_registry, root)
++        validate_shard(item, registry, row_registry=row_registry, root=root)
+@@ -226,2 +299,3 @@
+-def validate_shard(item: dict, registry: list[str] | None = None) -> None:
+-    if set(item) != {"name", "entry", "platform_ref", "world", "env"}:
++def validate_shard(item: dict, registry: list[str] | None = None, *,
++                   row_registry: dict[int, str] | None = None, root: Path = ROOT) -> None:
++    if set(item) != {"name", "entry", "platform_ref", "world", "env", "expected_rows"}:
+@@ -238,0 +313,10 @@
++    expected = item["expected_rows"]
++    if not isinstance(expected, list) or any(
++        not isinstance(row, dict) or set(row) != {"index", "scenario"}
++        or type(row["index"]) is not int or row["index"] < 0
++        or not isinstance(row["scenario"], str) or not ROW_ID.fullmatch(row["scenario"])
++        for row in expected
++    ):
++        raise PlanError("invalid expected row identities")
++    if len({row["index"] for row in expected}) != len(expected) or len({row["scenario"] for row in expected}) != len(expected):
++        raise PlanError("duplicate expected row identities")
+@@ -255,0 +340,8 @@
++    rows_selected = (item["entry"] == "node_boot" and item["world"]
++                     and "rows" in item["env"].get("NODE_BOOT_E2E_ONLY", "rows").split(","))
++    if rows_selected != bool(expected):
++        raise PlanError("indexed row scope has missing or unexpected row identities")
++    if rows_selected:
++        canonical = expected_rows(item, row_registry if row_registry is not None else row_scenarios(root), root)
++        if expected != canonical:
++            raise PlanError("expected row identities differ from the selected source dispatchers")
+@@ -280,0 +373 @@
++        "captures": CAPTURE.findall(text),
+@@ -309,0 +403 @@
++    row_coverage: list[str] = []
+@@ -319 +413 @@
+-            if result.get("shard") != item["name"]:
++            if result.get("shard") != item["name"] or result.get("entry") != item["entry"]:
+@@ -336,0 +431,16 @@
++        observed = {row["scenario"]: [] for row in item["expected_rows"]}
++        for scenario in result["scenarios"]:
++            if scenario["id"] in observed:
++                observed[scenario["id"]].append(scenario["status"])
++        for scenario, statuses in observed.items():
++            if not statuses:
++                suffix = " (capture only)" if scenario in result.get("captures", []) else ""
++                problems.append(f"{item['name']}: missing terminal verdict for {scenario}{suffix}")
++            elif len(statuses) != 1:
++                problems.append(f"{item['name']}: duplicate terminal verdicts for {scenario}")
++            elif statuses[0] not in TERMINAL:
++                problems.append(f"{item['name']}: non-terminal status {statuses[0]} for {scenario}")
++        if observed:
++            recorded = sum(len(statuses) == 1 and statuses[0] in TERMINAL for statuses in observed.values())
++            row_coverage.append(f"- `{item['name']}` indexed row verdicts: {recorded}/{len(observed)}; "
++                                "captures and extra slices do not satisfy required identities")
+@@ -347,0 +458,4 @@
++    if row_coverage:
++        out += ["### Indexed row verdict coverage", "", *row_coverage, "",
++                "This checks selected indexed rows only. Group, basic, spells and game-platform "
++                "completeness require their own execution contracts.", ""]
+--- a/tools/qualification/node_boot/test_matrix.py
++++ b/tools/qualification/node_boot/test_matrix.py
+@@ -71,2 +71,4 @@
+-        self.assertEqual(matrix.plan("reference"), [matrix.shard(
+-            "reference", "node_boot", matrix.pinned_sha(ROOT, matrix.NODE_BOOT_RUN, "PLATFORM_SHA"), True, {})])
++        expected = matrix.shard("reference", "node_boot",
++                                matrix.pinned_sha(ROOT, matrix.NODE_BOOT_RUN, "PLATFORM_SHA"), True, {})
++        expected["expected_rows"] = matrix.expected_rows(expected, matrix.row_scenarios())
++        self.assertEqual(matrix.plan("reference"), [expected])
+@@ -207 +209,3 @@
+-            log = self.write(tmp, "log", "SEAM_EVIDENCE e2e_all scenario=I01.full status=PASS seconds=1\n"
++            required = ''.join(f"SEAM_EVIDENCE e2e_all scenario={row['scenario']} status=PASS seconds=1\n"
++                               for row in shards[0]["expected_rows"])
++            log = self.write(tmp, "log", required + "SEAM_EVIDENCE e2e_all scenario=I01.full status=PASS seconds=1\n"
+@@ -213 +217,2 @@
+-            self.assertIn("| reference | NODE_BOOT_PASS | 0 | 1.0 | 1 | 1 | 0 | 0 | 0 |", markdown)
++            count = len(shards[0]["expected_rows"]) + 1
++            self.assertIn(f"| reference | NODE_BOOT_PASS | 0 | 1.0 | {count} | {count} | 0 | 0 | 0 |", markdown)
+@@ -256,0 +262,132 @@
++class RequiredRowEvidenceTests(unittest.TestCase):
++    def summary(self, rows, lines, *, missing_fatal=True):
++        shards = matrix.plan('custom', rows=rows)
++        self.assertEqual(len(shards), 1)
++        shard = shards[0]
++        with tempfile.TemporaryDirectory() as tmp:
++            directory = Path(tmp)
++            log = directory / 'node.log'
++            log.write_text(lines + 'NODE_BOOT_RESULT=NODE_BOOT_PASS\n')
++            result = matrix.extract(log, name=shard['name'], entry=shard['entry'],
++                                    exit_code=0, seconds=3)
++            output = directory / shard['name']
++            output.mkdir()
++            (output / 'result.json').write_text(json.dumps(result))
++            return matrix.summarize(shards, directory, '', missing_fatal=missing_fatal)
++
++    def test_other_scenario_cannot_replace_the_selected_row(self):
++        _, problems = self.summary('206:207',
++                                   'SEAM_EVIDENCE e2e_all scenario=I01.full status=PASS seconds=1\n')
++        self.assertTrue(any('S09.client' in problem for problem in problems), problems)
++
++    def test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row(self):
++        for scenario in ('S09.logout', 'S09.full'):
++            with self.subTest(scenario=scenario):
++                _, problems = self.summary('206:207',
++                    f'SEAM_EVIDENCE e2e_all scenario={scenario} status=PASS seconds=1\n')
++                self.assertTrue(any('S09.client' in problem for problem in problems), problems)
++
++    def test_partially_executed_batch_is_not_complete(self):
++        _, problems = self.summary('1:3',
++                                   'SEAM_EVIDENCE e2e_all scenario=C03.full status=PASS seconds=1\n')
++        self.assertTrue(any('C12.full' in problem for problem in problems), problems)
++
++    def test_duplicate_expected_row_is_not_one_completed_execution(self):
++        line = 'SEAM_EVIDENCE e2e_all scenario=S09.client status=PASS seconds=1\n'
++        _, problems = self.summary('206:207', line + line)
++        self.assertTrue(any('duplicate' in problem and 'S09.client' in problem for problem in problems), problems)
++
++    def test_capture_does_not_replace_a_terminal_verdict(self):
++        for capture in (
++            'SEAM_EVIDENCE e2e_capture scenario=S09.client status=CAPTURED evidence=logout\n',
++            'SEAM_EVIDENCE e2e_all scenario=S09.client status=CAPTURED seconds=1\n',
++        ):
++            with self.subTest(capture=capture):
++                _, problems = self.summary('206:207', capture +
++                    'SEAM_EVIDENCE e2e_all scenario=I01.full status=PASS seconds=1\n')
++                self.assertTrue(any('S09.client' in problem for problem in problems), problems)
++
++    def test_missing_informational_does_not_waive_absent_evidence(self):
++        _, problems = self.summary('206:207',
++            'SEAM_EVIDENCE e2e_all scenario=I01.full status=PASS seconds=1\n', missing_fatal=False)
++        self.assertTrue(any('S09.client' in problem for problem in problems), problems)
++
++    def test_complete_terminal_evidence_can_include_extra_bounded_slices(self):
++        _, problems = self.summary('206:207',
++            'SEAM_EVIDENCE e2e_all scenario=S09.client status=PASS seconds=1\n'
++            'SEAM_EVIDENCE e2e_all scenario=S09.logout status=PASS seconds=1\n'
++            'SEAM_EVIDENCE e2e_capture scenario=S09.client status=CAPTURED evidence=logout\n')
++        self.assertEqual(problems, [])
++
++    def test_existing_failure_and_missing_status_policy_is_not_redefined(self):
++        for status in ('FAIL', 'MISSING-SERVER', 'MISSING-CLIENT', 'SKIPPED'):
++            with self.subTest(status=status):
++                _, problems = self.summary('206:207',
++                    f'SEAM_EVIDENCE e2e_all scenario=S09.client status={status} seconds=1\n',
++                    missing_fatal=False)
++                self.assertEqual(problems, [])
++
++    def test_plan_records_ids_for_all_selected_rows_including_unwrapped_emitters(self):
++        plan = matrix.plan('full')
++        rows = [entry for shard in plan for entry in shard['expected_rows']]
++        self.assertEqual(sorted(row['index'] for row in rows), matrix.row_indices())
++        self.assertEqual(len({row['scenario'] for row in rows}), len(rows))
++        by_index = {row['index']: row['scenario'] for row in rows}
++        self.assertEqual({index: by_index[index] for index in (85, 86, 87, 206, 227)},
++                         {85: 'S04b.full', 86: 'C14.full', 87: 'E02.full',
++                          206: 'S09.client', 227: 'C07.client'})
++
++    def test_non_row_lanes_do_not_claim_indexed_row_coverage(self):
++        plan = matrix.plan('custom', groups='core;f4', basic=True, spells=True, game_platform=True)
++        self.assertTrue(all(shard['expected_rows'] == [] for shard in plan))
++
++    def test_reference_requires_its_selected_rows_as_well_as_existing_group_evidence(self):
++        reference = matrix.plan('reference')[0]
++        expected = {row['scenario'] for row in reference['expected_rows']}
++        self.assertIn('C03.full', expected)
++        self.assertIn('W23.full', expected)
++        self.assertNotIn('S09.client', expected)
++
++
++
++class RowSourceContractTests(unittest.TestCase):
++    def assert_rejected(self, changes):
++        with tempfile.TemporaryDirectory() as tmp:
++            source = Path(tmp) / matrix.CLIENT_PHASES
++            source.mkdir(parents=True)
++            names = ['world.rs', *(call.split('::')[0] + '.rs' for call in matrix.DIRECT_ROWS)]
++            for name in names:
++                text = (ROOT / matrix.CLIENT_PHASES / name).read_text()
++                (source / name).write_text(changes.pop(name, lambda text: text)(text))
++            for name, change in changes.items():
++                (source / name).write_text(change(''))
++            with self.assertRaises(matrix.PlanError):
++                matrix.row_scenarios(Path(tmp))
++
++    def test_unrecognised_dispatch_shape_cannot_disappear_from_plan(self):
++        self.assert_rejected({'world.rs': lambda text: text.replace(
++            'verdict::indexed("C03.full", async {', 'verdict::other("C03.full", async {', 1)})
++
++    def test_selector_outside_the_supported_dispatcher_cannot_disappear_from_plan(self):
++        self.assert_rejected({'other.rs': lambda _: 'fn extra() { if e2e_row_selected(999) {} }\n'})
++
++    def test_duplicate_scenario_contract_is_rejected(self):
++        self.assert_rejected({'world.rs': lambda text: text.replace(
++            'verdict::indexed("C12.full", async {', 'verdict::indexed("C03.full", async {', 1)})
++
++    def test_direct_emitter_contract_must_match_its_source(self):
++        self.assert_rejected({'full_e2ef18.rs': lambda text: text.replace(
++            'scenario=C14.full status=', 'scenario=S01.full status=')})
++
++    def test_plan_cannot_drop_or_substitute_one_required_identity(self):
++        for change in ('drop', 'replace'):
++            with self.subTest(change=change):
++                shard = matrix.plan('custom', rows='1:3')[0]
++                if change == 'drop':
++                    shard['expected_rows'].pop()
++                else:
++                    shard['expected_rows'][0]['scenario'] = 'I01.full'
++                with self.assertRaises(matrix.PlanError):
++                    matrix.validate_shard(shard)
++
++

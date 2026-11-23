@@ -1,0 +1,38 @@
+{
+  "terminal": {
+    "current_source": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "extra_unrelated_allocation": {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "duplicate_reference": {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "changed_reference_body": {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "inventory": {
+    "old_count": 40,
+    "new_count": 43,
+    "retained_commands_and_cwds": 40,
+    "added_names": [
+      "test_boss_corpse_terminal_reference",
+      "test_coin_converter_profiles",
+      "test_creature_level_rating"
+    ]
+  }
+}

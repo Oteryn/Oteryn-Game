@@ -1,0 +1,167 @@
+{
+  "baseline_head": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "candidate_sha256": {
+    "tools/qualification/node_boot/matrix.py": "bb95423074580ece694672f17319691c8336a67dd76771d2312596cbf1e33d2e",
+    "tools/qualification/node_boot/test_matrix.py": "8f5c41b24ec0e25483197709f674ce0989b22f4a6dc130ab80e1180aeb560718"
+  },
+  "focused_runs": [
+    {
+      "command": "python3 tools/qualification/node_boot/test_matrix.py -v",
+      "tests": 36,
+      "exit_code": 0,
+      "unittest_seconds": 4.781
+    },
+    {
+      "command": "python3 tools/qualification/node_boot/test_prebuilt.py -v",
+      "tests": 6,
+      "exit_code": 0,
+      "unittest_seconds": 0.54
+    },
+    {
+      "command": "python3 tools/qualification/node_boot/test_shared_prebuilt.py -v",
+      "tests": 9,
+      "exit_code": 0,
+      "unittest_seconds": 0.233
+    }
+  ],
+  "plan_env_prebuilt_preservation": [
+    {
+      "set": "reference",
+      "shards": 1,
+      "old_fields_and_export_env_identical": true,
+      "prebuilt_accepts_all": true,
+      "variants": [
+        "qualification-spawn",
+        "qualification-clock",
+        "world-compiler"
+      ],
+      "indexed_rows": 14
+    },
+    {
+      "set": "pr",
+      "shards": 7,
+      "old_fields_and_export_env_identical": true,
+      "prebuilt_accepts_all": true,
+      "variants": [
+        "qualification-spawn",
+        "qualification-clock",
+        "world-compiler"
+      ],
+      "indexed_rows": 14
+    },
+    {
+      "set": "full",
+      "shards": 37,
+      "old_fields_and_export_env_identical": true,
+      "prebuilt_accepts_all": true,
+      "variants": [
+        "default",
+        "qualification-spawn",
+        "qualification-clock",
+        "world-compiler"
+      ],
+      "indexed_rows": 302
+    },
+    {
+      "set": "custom",
+      "shards": 36,
+      "old_fields_and_export_env_identical": true,
+      "prebuilt_accepts_all": true,
+      "variants": [
+        "default",
+        "qualification-spawn",
+        "qualification-clock",
+        "world-compiler"
+      ],
+      "indexed_rows": 302
+    }
+  ],
+  "retained_ci_source_comparison": {
+    "selectors": 302,
+    "all_bodies_identical": true,
+    "whole_world_file_identical": false,
+    "baseline_matrix_and_batch_byte_identical": true,
+    "scope": "Local retained source verification; no independent GitHub download by reviewer."
+  },
+  "independent_archive_replay": [
+    {
+      "name": "rows-000-010",
+      "retained_archive_and_members_match_hashes": true,
+      "old_extract_fields_unchanged": true,
+      "old_problems": [],
+      "new_problems": [],
+      "statuses": {
+        "FAIL": 9
+      },
+      "captures": 0,
+      "original_exit": 0
+    },
+    {
+      "name": "rows-080-090",
+      "retained_archive_and_members_match_hashes": true,
+      "old_extract_fields_unchanged": true,
+      "old_problems": [],
+      "new_problems": [
+        "rows-080-090: missing terminal verdict for C01.client"
+      ],
+      "statuses": {
+        "FAIL": 9
+      },
+      "captures": 0,
+      "original_exit": 1
+    },
+    {
+      "name": "rows-200-210",
+      "retained_archive_and_members_match_hashes": true,
+      "old_extract_fields_unchanged": true,
+      "old_problems": [
+        "rows-200-210: World shard ran no scenario"
+      ],
+      "new_problems": [
+        "rows-200-210: World shard ran no scenario",
+        "rows-200-210: missing terminal verdict for S13b.client",
+        "rows-200-210: missing terminal verdict for S13a.client",
+        "rows-200-210: missing terminal verdict for S15b.client",
+        "rows-200-210: missing terminal verdict for S04c.client",
+        "rows-200-210: missing terminal verdict for S07.client",
+        "rows-200-210: missing terminal verdict for S16b.client",
+        "rows-200-210: missing terminal verdict for S09.client",
+        "rows-200-210: missing terminal verdict for S05.client",
+        "rows-200-210: missing terminal verdict for S10.client",
+        "rows-200-210: missing terminal verdict for S16a.client"
+      ],
+      "statuses": {},
+      "captures": 0,
+      "original_exit": 0
+    },
+    {
+      "name": "rows-220-230",
+      "retained_archive_and_members_match_hashes": true,
+      "old_extract_fields_unchanged": true,
+      "old_problems": [],
+      "new_problems": [
+        "rows-220-230: missing terminal verdict for C20a.client"
+      ],
+      "statuses": {
+        "FAIL": 9
+      },
+      "captures": 0,
+      "original_exit": 1
+    }
+  ],
+  "synthetic_complete_positive_control": {
+    "expected_pass_rows": 302,
+    "problems": []
+  },
+  "no_op_ranges_rejected": [
+    "400:401",
+    "0:0"
+  ],
+  "limitations": [
+    "All four archived fixtures contain FAIL terminals only; no actual PASS or capture-enabled physical artifact is retained.",
+    "All-PASS coverage is synthetic. CAPTURED and duplicate rejection are covered by the focused candidate tests.",
+    "The archived physical run belongs to aa16e94d338a71ef9962b54ede37d1f3e8f4750b, not this candidate.",
+    "No Rust, PostgreSQL, client, GPU or hosted workflow was executed by this peer review."
+  ],
+  "findings": []
+}

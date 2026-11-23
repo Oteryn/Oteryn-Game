@@ -1,0 +1,49 @@
+{
+  "before": {
+    "discover_count": 10,
+    "direct_count": 5,
+    "unique_bodies": 7,
+    "discover": [
+      "TaintedSouls.test_invalid_whole_stack_or_output_count_never_generates_a_recipe",
+      "TaintedSouls.test_recipe_is_registered_once_in_the_production_craft_catalogue",
+      "TaintedSouls.test_schema_accepts_only_explicit_target_capture",
+      "TaintedSouls.test_source_recipe_uses_qm22_capture_target_stack_policy",
+      "TaintedSouls.test_source_script_and_nonstackable_output_are_independently_qualified",
+      "TaintedSoulsIntegration.test_canonical_catalogue_registers_the_captured_target_recipe",
+      "TaintedSoulsIntegration.test_canonical_outputs_validate_the_quantity_capture_schema",
+      "TaintedSoulsIntegration.test_invalid_whole_stack_or_output_count_never_generates_a_recipe",
+      "TaintedSoulsIntegration.test_source_recipe_uses_qm22_capture_target_stack_policy",
+      "TaintedSoulsIntegration.test_source_script_and_nonstackable_output_are_independently_qualified"
+    ],
+    "direct": [
+      "TaintedSouls.test_invalid_whole_stack_or_output_count_never_generates_a_recipe",
+      "TaintedSouls.test_recipe_is_registered_once_in_the_production_craft_catalogue",
+      "TaintedSouls.test_schema_accepts_only_explicit_target_capture",
+      "TaintedSouls.test_source_recipe_uses_qm22_capture_target_stack_policy",
+      "TaintedSouls.test_source_script_and_nonstackable_output_are_independently_qualified"
+    ]
+  },
+  "after": {
+    "discover_count": 7,
+    "direct_count": 7,
+    "unique_bodies": 7,
+    "discover": [
+      "TaintedSouls.test_invalid_whole_stack_or_output_count_never_generates_a_recipe",
+      "TaintedSouls.test_recipe_is_registered_once_in_the_production_craft_catalogue",
+      "TaintedSouls.test_schema_accepts_only_explicit_target_capture",
+      "TaintedSouls.test_source_recipe_uses_qm22_capture_target_stack_policy",
+      "TaintedSouls.test_source_script_and_nonstackable_output_are_independently_qualified",
+      "TaintedSoulsIntegration.test_canonical_catalogue_registers_the_captured_target_recipe",
+      "TaintedSoulsIntegration.test_canonical_outputs_validate_the_quantity_capture_schema"
+    ],
+    "direct": [
+      "TaintedSouls.test_invalid_whole_stack_or_output_count_never_generates_a_recipe",
+      "TaintedSouls.test_recipe_is_registered_once_in_the_production_craft_catalogue",
+      "TaintedSouls.test_schema_accepts_only_explicit_target_capture",
+      "TaintedSouls.test_source_recipe_uses_qm22_capture_target_stack_policy",
+      "TaintedSouls.test_source_script_and_nonstackable_output_are_independently_qualified",
+      "TaintedSoulsIntegration.test_canonical_catalogue_registers_the_captured_target_recipe",
+      "TaintedSoulsIntegration.test_canonical_outputs_validate_the_quantity_capture_schema"
+    ]
+  }
+}

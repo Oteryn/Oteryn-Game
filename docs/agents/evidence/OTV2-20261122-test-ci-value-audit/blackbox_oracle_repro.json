@@ -1,0 +1,19 @@
+{
+  "ref": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "tests_run": 1,
+  "test_passes": true,
+  "errors": [],
+  "failures": [],
+  "observed_stage_processes": [
+    {
+      "returncode": 1,
+      "stdout": "::group::stage sample\nPG_OBSERVE dump --stage sample --dir /tmp/tmp4x5ds35j/postgres --activity /tmp/tmp4x5ds35j/postgres/activity.log\n::endgroup::\n",
+      "stderr": "environment: line 51: GAME_SOURCE: unbound variable\n"
+    },
+    {
+      "returncode": 127,
+      "stdout": "::group::stage sample\nPG_OBSERVE dump --stage sample --dir /tmp/tmp_72drq41/postgres --activity /tmp/tmp_72drq41/postgres/activity.log --verbose\n::endgroup::\nNODE_BOOT_STAGE_FAILED sample exit=1\n",
+      "stderr": "environment: line 72: report_character_authority_failures: command not found\n"
+    }
+  ]
+}

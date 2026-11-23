@@ -1,0 +1,77 @@
+{
+  "scope": "AUTHORING; documentation/evidence-only successor. Source/predicate probes are not Rust/PG execution.",
+  "predecessor": "978d40a02e9e9d4b1d8c16fe7dea25aad586e108",
+  "reviewed_source_paths_equal_baseline": 107,
+  "checks": [
+    {
+      "argv": [
+        "python",
+        "/workspace/scratch/23c09bc1235f/Oteryn-Game-wave2/docs/agents/evidence/OTV2-20261122-test-ci-value-audit/wave-2/durability_oracle_probe.py",
+        "--repo",
+        "/workspace/scratch/23c09bc1235f/Oteryn-Game-wave2",
+        "--output",
+        "/tmp/oteryn-wave2-check-pc04zjnn/durability.json"
+      ],
+      "exit_code": 0,
+      "seconds": 0.072,
+      "stdout": "{\n  \"verified_source_files\": 8,\n  \"top_level_parser_mounts\": 27,\n  \"model_only\": true,\n  \"output\": \"/tmp/oteryn-wave2-check-pc04zjnn/durability.json\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python",
+        "/workspace/scratch/23c09bc1235f/Oteryn-Game-wave2/docs/agents/evidence/OTV2-20261122-test-ci-value-audit/wave-2/server_boundary_repros.py",
+        "/workspace/scratch/23c09bc1235f/Oteryn-Game-wave2"
+      ],
+      "exit_code": 0,
+      "seconds": 0.111,
+      "stdout": "{\n  \"scope\": \"actual shell cleanup and execution/verdict tail, synthetic test command only\",\n  \"source\": \"tools/qualification/wp5_s3b/run.sh\",\n  \"source_sha256\": \"fb4d265f8cf8c98ec6e6ecc2bc08a3ae334a467b9a28f1cce97dd1196f185e63\",\n  \"tail_first_line\": 176,\n  \"topology_started\": false,\n  \"rust_tests_executed\": false,\n  \"cases\": [\n    {\n      \"case\": \"zero_tests\",\n      \"synthetic_command_rc\": 0,\n      \"actual_shell_rc\": 0,\n      \"verdict\": \"SEAM_PASS\",\n      \"stdout\": \"running 0 tests\\n\\ntest result: ok. 0 passed; 0 failed; 0 ignored; 1 filtered out\\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\\nS3B_RESULT=SEAM_PASS\\n\",\n      \"stderr\": \"\",\n      \"oracle_gap\": true\n    },\n    {\n      \"case\": \"one_test_control\",\n      \"synthetic_command_rc\": 0,\n      \"actual_shell_rc\": 0,\n      \"verdict\": \"SEAM_PASS\",\n      \"stdout\": \"running 1 test\\n\\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 filtered out\\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\\nS3B_RESULT=SEAM_PASS\\n\",\n      \"stderr\": \"\",\n      \"oracle_gap\": false\n    },\n    {\n      \"case\": \"failed_command_control\",\n      \"synthetic_command_rc\": 1,\n      \"actual_shell_rc\": 1,\n      \"verdict\": \"COMPOSED_FAIL\",\n      \"stdout\": \"test result: FAILED. 0 passed; 1 failed\\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\\nS3B_RESULT=COMPOSED_FAIL\\n\",\n      \"stderr\": \"\",\n      \"oracle_gap\": false\n    }\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python",
+        "/workspace/scratch/23c09bc1235f/Oteryn-Game-wave2/docs/agents/evidence/OTV2-20261122-test-ci-value-audit/wave-2/content_tools_checkpoint.py",
+        "--repo",
+        "/workspace/scratch/23c09bc1235f/Oteryn-Game-wave2",
+        "--output",
+        "/tmp/oteryn-wave2-check-pc04zjnn/content"
+      ],
+      "exit_code": 0,
+      "seconds": 1.042,
+      "stdout": "{\n  \"observed_at\": \"2026-11-22T23:20:36.941487+00:00\",\n  \"baseline\": \"8e9f0e16631aab1beb8416f8d5ca707aa3031083\",\n  \"scope\": \"content-schema and content-migration, excluding craft-authoring and repository\",\n  \"indexed_test_files\": 706,\n  \"indexed_python_test_definitions\": 5510,\n  \"static_ast_files\": 472,\n  \"static_ast_parse_errors\": 0,\n  \"static_method_body_hint_clusters\": 3,\n  \"full_test_source_files\": 11,\n  \"literal_test_definitions_in_full_test_source_files\": 81,\n  \"partial_test_source_files\": 10,\n  \"full_context_source_files\": 5,\n  \"partial_context_source_files\": 7,\n  \"remaining_not_fully_read_in_this_wave\": 695,\n  \"all_scope_bytes_match_base\": true,\n  \"remaining_file_semantics\": \"This wave removes only its 11 fully read test files. Prior exact scopes remain in a separate column, not erased or expanded to full-file review.\",\n  \"runtime\": \"One focused case attempt blocked before execution at import by missing rfc3339-validator; no successful test execution and no full suite in this wave.\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python",
+        "tools/repository/validate_repository_policy.py"
+      ],
+      "exit_code": 0,
+      "seconds": 2.702,
+      "stdout": "Post-merge exact-candidate routing regressions PASS\nRepository policy validation passed (23 files, 78 workflows).\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python",
+        "tools/repository/refresh_ci_workflow_pins.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 0.03,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python",
+        "tools/agents/validate_governance.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.188,
+      "stdout": "Governance validation passed for Oteryn/Oteryn-Game.\nValidated 22 required policy documents and 9 project lanes.\n",
+      "stderr": ""
+    }
+  ]
+}

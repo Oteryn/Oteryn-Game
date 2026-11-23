@@ -1,0 +1,52 @@
+{
+  "exit_code": 0,
+  "argv": [
+    "python3",
+    "resume_matrix/replay_real_results.py",
+    "--repo",
+    "Oteryn-Game-resume-authoring"
+  ],
+  "results": [
+    {
+      "shard": "rows-000-010",
+      "job_id": 137606828613,
+      "problems": [],
+      "meets_expected_completeness": true
+    },
+    {
+      "shard": "rows-080-090",
+      "job_id": 137606828593,
+      "problems": [
+        "rows-080-090: missing terminal verdict for C01.client"
+      ],
+      "meets_expected_completeness": true
+    },
+    {
+      "shard": "rows-200-210",
+      "job_id": 137606828663,
+      "problems": [
+        "rows-200-210: World shard ran no scenario",
+        "rows-200-210: missing terminal verdict for S13b.client",
+        "rows-200-210: missing terminal verdict for S13a.client",
+        "rows-200-210: missing terminal verdict for S15b.client",
+        "rows-200-210: missing terminal verdict for S04c.client",
+        "rows-200-210: missing terminal verdict for S07.client",
+        "rows-200-210: missing terminal verdict for S16b.client",
+        "rows-200-210: missing terminal verdict for S09.client",
+        "rows-200-210: missing terminal verdict for S05.client",
+        "rows-200-210: missing terminal verdict for S10.client",
+        "rows-200-210: missing terminal verdict for S16a.client"
+      ],
+      "meets_expected_completeness": true
+    },
+    {
+      "shard": "rows-220-230",
+      "job_id": 137606828652,
+      "problems": [
+        "rows-220-230: missing terminal verdict for C20a.client"
+      ],
+      "meets_expected_completeness": true
+    }
+  ],
+  "stderr": ""
+}

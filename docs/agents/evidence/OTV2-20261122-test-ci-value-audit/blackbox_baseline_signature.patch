@@ -1,0 +1,100 @@
+--- a/tools/qualification/node_boot/run.sh
++++ b/tools/qualification/node_boot/run.sh
+@@ -997,0 +998,35 @@
++# Match the recorded failure, not every later failure of the same scenario.
++stage_fail_rows() { # log known-failure-file new|known
++  python3 - "$1" "$2" "$3" <<'PY_KNOWN_FAIL_ROWS'
++from pathlib import Path
++import re
++import sys
++
++log_path, known_path, mode = sys.argv[1:]
++if mode not in ("new", "known"):
++    raise SystemExit("invalid known-failure classification mode")
++known = {}
++path = Path(known_path)
++for line in path.read_text().splitlines() if path.is_file() else ():
++    line = line.strip()
++    if not line or line.startswith("#"):
++        continue
++    match = re.fullmatch(r"([A-Za-z0-9_.-]+) ([a-z-]+) at ([^;\s]+)(?:;.*)?", line)
++    if match is None or match[1] in known:
++        raise SystemExit("invalid or duplicate known-failure entry")
++    known[match[1]] = (match[2], match[3])
++failures = {}
++for line in Path(log_path).read_text(errors="replace").splitlines():
++    row = re.search(r"e2e_all scenario=([^ ]+) status=FAIL(?: |$)", line)
++    if row is None:
++        continue
++    signatures = re.findall(r"(?:^| )cause=([a-z-]+) root=([^\s]+)(?=\s|$)", line)
++    signature = signatures[0] if len(signatures) == 1 else None
++    failures.setdefault(row[1], set()).add(signature)
++matching = {row for row, signatures in failures.items()
++            if row in known and signatures == {known[row]}}
++selected = failures.keys() - matching if mode == "new" else matching
++print(",".join(sorted(selected)))
++PY_KNOWN_FAIL_ROWS
++}
++
+@@ -1030,2 +1065,2 @@
+-    # A FAIL row fails its stage even when the stage process exits 0, unless the row is
+-    # listed in known_fail_rows.txt (debt that every run prints).
++    # A FAIL row fails its stage even when the stage process exits 0, unless its
++    # scenario, cause and root exactly match known_fail_rows.txt (printed debt).
+@@ -1033,2 +1068,2 @@
+-    new_rows=$(stage_rows "$WORK/stage-$name.log" FAIL | grep -vxFf <(known_rows "$known_fail") | paste -sd, - || true)
+-    known_hit=$(stage_rows "$WORK/stage-$name.log" FAIL | grep -xFf <(known_rows "$known_fail") | paste -sd, - || true)
++    new_rows=$(stage_fail_rows "$WORK/stage-$name.log" "$known_fail" new)
++    known_hit=$(stage_fail_rows "$WORK/stage-$name.log" "$known_fail" known)
+--- a/tools/qualification/node_boot/test_diagnostics.py
++++ b/tools/qualification/node_boot/test_diagnostics.py
+@@ -411 +411 @@
+-    """A FAIL row fails its stage unless known_fail_rows.txt lists it."""
++    """Only the recorded cause/root of a listed FAIL row is baseline debt."""
+@@ -414,0 +415 @@
++        helpers += '\n' + function('stage_fail_rows')
+@@ -419,0 +421,3 @@
++            if status == 'FAIL':
++                script = (helpers + '\nstage_fail_rows "$1/stage.log" "$1/known.txt" new\n'
++                          'stage_fail_rows "$1/stage.log" "$1/known.txt" known\n')
+@@ -425 +429 @@
+-        log = ('SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1 cause=assertion\n'
++        log = ('SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1 cause=assertion root=C01.full/admission\n'
+@@ -428 +432 @@
+-        known = '# comment\n\nC01.full assertion at C01.full/admission\nC03.full flaky\n'
++        known = '# comment\n\nC01.full assertion at C01.full/admission\nC03.full assertion at C03.full/baseline\n'
+@@ -441,0 +446,34 @@
++    def test_same_row_new_root_or_cause_is_not_baselined(self):
++        known = 'E01.full assertion at E01/greet; retained source comment\n'
++        for suffix in ('cause=assertion root=E01/relog-bank-balance',
++                       'cause=transport root=E01/greet'):
++            with self.subTest(suffix=suffix):
++                log = f'SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 {suffix}\n'
++                self.assertEqual(self.rows(log, 'FAIL', known), ('E01.full', ''))
++
++    def test_unclassified_failure_is_not_baselined(self):
++        known = 'E01.full assertion at E01/greet\n'
++        log = 'SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1\n'
++        self.assertEqual(self.rows(log, 'FAIL', known), ('E01.full', ''))
++
++    def test_exact_signature_and_known_remarks_are_preserved(self):
++        known = 'E01.full assertion at E01/greet; source:unchanged.rs:1\n'
++        log = 'SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 evidence=detail cause=assertion root=E01/greet\n'
++        self.assertEqual(self.rows(log, 'FAIL', known), ('', 'E01.full'))
++
++    def test_known_then_new_failure_of_same_row_is_new(self):
++        known = 'E01.full assertion at E01/greet\n'
++        log = ('SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/greet\n'
++               'SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=1 cause=assertion root=E01/relog\n')
++        self.assertEqual(self.rows(log, 'FAIL', known), ('E01.full', ''))
++
++    def test_current_baseline_preserves_all_recorded_signatures(self):
++        known = SOURCE.with_name('known_fail_rows.txt').read_text()
++        entries = [re.fullmatch(r'([^ ]+) ([a-z-]+) at ([^;\s]+)(?:;.*)?', line)
++                   for line in known.splitlines() if line.strip() and not line.startswith('#')]
++        self.assertTrue(all(entries))
++        log = ''.join(f'SEAM_EVIDENCE e2e_all scenario={entry[1]} status=FAIL seconds=1 '
++                      f'cause={entry[2]} root={entry[3]}\n' for entry in entries)
++        self.assertEqual(self.rows(log, 'FAIL', known),
++                         ('', ','.join(sorted(entry[1] for entry in entries))))
++

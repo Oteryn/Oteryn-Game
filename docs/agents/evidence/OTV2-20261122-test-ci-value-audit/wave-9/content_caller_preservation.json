@@ -1,0 +1,708 @@
+{
+  "source_head": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "before_plan_count": 40,
+  "after_plan_count": 43,
+  "removed_checks": [],
+  "changed_existing_commands_or_cwds": [],
+  "added_checks": [
+    "test_boss_corpse_terminal_reference",
+    "test_coin_converter_profiles",
+    "test_creature_level_rating"
+  ],
+  "previous_checks": {
+    "package-tree-contract": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_world_project_v2_to_tree.py",
+        "--case",
+        "package-tree-contract"
+      ],
+      "cwd": "None"
+    },
+    "document-roundtrip-negatives": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_world_project_v2_to_tree.py",
+        "--case",
+        "document-roundtrip-negatives"
+      ],
+      "cwd": "None"
+    },
+    "closed-weapon-metadata": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_world_project_v2_to_tree.py",
+        "--case",
+        "closed-weapon-metadata"
+      ],
+      "cwd": "None"
+    },
+    "relation-row-ownership": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_world_project_v2_to_tree.py",
+        "--case",
+        "relation-row-ownership"
+      ],
+      "cwd": "None"
+    },
+    "closed-bank-admission": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_world_project_v2_to_tree.py",
+        "--case",
+        "closed-bank-admission"
+      ],
+      "cwd": "None"
+    },
+    "test_monster_seven_spell_overlay.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_monster_seven_spell_overlay.py"
+      ],
+      "cwd": "None"
+    },
+    "test_quest_registration_preservation.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_quest_registration_preservation.py"
+      ],
+      "cwd": "None"
+    },
+    "test_boss_corpse_profiles": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_boss_corpse_profiles"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_authored_npc_item_profiles": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_authored_npc_item_profiles"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_quest_corpse_profiles": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_quest_corpse_profiles"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_boss_reward_yield_profiles": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_boss_reward_yield_profiles"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_equipment_source_overlaps": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_equipment_source_overlaps"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_equipment_known_speed_pin": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_equipment_known_speed_pin"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_refresh_equipment_profile_pin": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_refresh_equipment_profile_pin"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_refresh_season_creature_inventory": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_refresh_season_creature_inventory"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_m42_cooking_canonical": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_m42_cooking_canonical"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_quest_batch3_item_profiles": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_quest_batch3_item_profiles"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_questpc7_merge_audit_callbacks": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc7_merge_audit_callbacks"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_full_spell_artifact.CorpseSourceCohortTests": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_full_spell_artifact.CorpseSourceCohortTests"
+      ],
+      "cwd": "REPO/tools/content-schema/native-gameplay"
+    },
+    "test_questpc2_rotten_loot_items": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc2_rotten_loot_items"
+      ],
+      "cwd": "REPO/tools/content-schema/native-gameplay"
+    },
+    "summer_corpse_items.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-schema/native-gameplay/summer_corpse_items.py",
+        "--check"
+      ],
+      "cwd": "None"
+    },
+    "test_quest_reward_item_semantics.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_quest_reward_item_semantics.py"
+      ],
+      "cwd": "None"
+    },
+    "test_amber_item_semantics.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_amber_item_semantics.py"
+      ],
+      "cwd": "None"
+    },
+    "test_lion_trial_item_profiles.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_lion_trial_item_profiles.py"
+      ],
+      "cwd": "None"
+    },
+    "test_engnpc_m04_item_profiles.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_engnpc_m04_item_profiles.py"
+      ],
+      "cwd": "None"
+    },
+    "test_world_change_item_profiles.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-schema/native-gameplay/test_world_change_item_profiles.py"
+      ],
+      "cwd": "None"
+    },
+    "quest_reward_item_semantics.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/quest_reward_item_semantics.py",
+        "--check"
+      ],
+      "cwd": "None"
+    },
+    "test_reward_claim_authoring.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "test_reward_claim_authoring.py"
+      ],
+      "cwd": "REPO/tools/content-schema/reward-claim-authoring"
+    },
+    "test_reward_claim_variant_authoring.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "test_reward_claim_variant_authoring.py"
+      ],
+      "cwd": "REPO/tools/content-schema/reward-claim-authoring"
+    },
+    "test_starter_kit_authoring.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "test_starter_kit_authoring.py"
+      ],
+      "cwd": "REPO/tools/content-schema/starter-kit-authoring"
+    },
+    "test_item_taxonomy.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_item_taxonomy.py"
+      ],
+      "cwd": "None"
+    },
+    "test_item_official_navigation.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_item_official_navigation.py"
+      ],
+      "cwd": "None"
+    },
+    "test_source_relocations.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_source_relocations.py"
+      ],
+      "cwd": "None"
+    },
+    "test_regenerate_content.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_regenerate_content.py"
+      ],
+      "cwd": "None"
+    },
+    "test_oteryn_additive_driver.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/merge-driver/test_oteryn_additive_driver.py"
+      ],
+      "cwd": "None"
+    },
+    "test_npc_presence_stage.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_npc_presence_stage.py"
+      ],
+      "cwd": "None"
+    },
+    "test_item_navigation_source_supplement.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_item_navigation_source_supplement.py"
+      ],
+      "cwd": "None"
+    },
+    "test_item_engine_navigation.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_item_engine_navigation.py"
+      ],
+      "cwd": "None"
+    },
+    "test_item_external_family_refinement.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_item_external_family_refinement.py"
+      ],
+      "cwd": "None"
+    },
+    "test_item_bounded7_navigation.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_item_bounded7_navigation.py"
+      ],
+      "cwd": "None"
+    }
+  },
+  "candidate_checks": {
+    "package-tree-contract": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_world_project_v2_to_tree.py",
+        "--case",
+        "package-tree-contract"
+      ],
+      "cwd": "None"
+    },
+    "document-roundtrip-negatives": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_world_project_v2_to_tree.py",
+        "--case",
+        "document-roundtrip-negatives"
+      ],
+      "cwd": "None"
+    },
+    "closed-weapon-metadata": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_world_project_v2_to_tree.py",
+        "--case",
+        "closed-weapon-metadata"
+      ],
+      "cwd": "None"
+    },
+    "relation-row-ownership": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_world_project_v2_to_tree.py",
+        "--case",
+        "relation-row-ownership"
+      ],
+      "cwd": "None"
+    },
+    "closed-bank-admission": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_world_project_v2_to_tree.py",
+        "--case",
+        "closed-bank-admission"
+      ],
+      "cwd": "None"
+    },
+    "test_monster_seven_spell_overlay.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_monster_seven_spell_overlay.py"
+      ],
+      "cwd": "None"
+    },
+    "test_quest_registration_preservation.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_quest_registration_preservation.py"
+      ],
+      "cwd": "None"
+    },
+    "test_boss_corpse_profiles": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_boss_corpse_profiles"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_boss_corpse_terminal_reference": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_boss_corpse_terminal_reference"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_coin_converter_profiles": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_coin_converter_profiles"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_creature_level_rating": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_creature_level_rating"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_authored_npc_item_profiles": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_authored_npc_item_profiles"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_quest_corpse_profiles": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_quest_corpse_profiles"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_boss_reward_yield_profiles": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_boss_reward_yield_profiles"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_equipment_source_overlaps": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_equipment_source_overlaps"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_equipment_known_speed_pin": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_equipment_known_speed_pin"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_refresh_equipment_profile_pin": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_refresh_equipment_profile_pin"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_refresh_season_creature_inventory": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_refresh_season_creature_inventory"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_m42_cooking_canonical": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_m42_cooking_canonical"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_quest_batch3_item_profiles": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_quest_batch3_item_profiles"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_questpc7_merge_audit_callbacks": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc7_merge_audit_callbacks"
+      ],
+      "cwd": "REPO/tools/content-migration"
+    },
+    "test_full_spell_artifact.CorpseSourceCohortTests": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_full_spell_artifact.CorpseSourceCohortTests"
+      ],
+      "cwd": "REPO/tools/content-schema/native-gameplay"
+    },
+    "test_questpc2_rotten_loot_items": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc2_rotten_loot_items"
+      ],
+      "cwd": "REPO/tools/content-schema/native-gameplay"
+    },
+    "summer_corpse_items.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-schema/native-gameplay/summer_corpse_items.py",
+        "--check"
+      ],
+      "cwd": "None"
+    },
+    "test_quest_reward_item_semantics.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_quest_reward_item_semantics.py"
+      ],
+      "cwd": "None"
+    },
+    "test_amber_item_semantics.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_amber_item_semantics.py"
+      ],
+      "cwd": "None"
+    },
+    "test_lion_trial_item_profiles.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_lion_trial_item_profiles.py"
+      ],
+      "cwd": "None"
+    },
+    "test_engnpc_m04_item_profiles.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_engnpc_m04_item_profiles.py"
+      ],
+      "cwd": "None"
+    },
+    "test_world_change_item_profiles.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-schema/native-gameplay/test_world_change_item_profiles.py"
+      ],
+      "cwd": "None"
+    },
+    "quest_reward_item_semantics.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/quest_reward_item_semantics.py",
+        "--check"
+      ],
+      "cwd": "None"
+    },
+    "test_reward_claim_authoring.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "test_reward_claim_authoring.py"
+      ],
+      "cwd": "REPO/tools/content-schema/reward-claim-authoring"
+    },
+    "test_reward_claim_variant_authoring.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "test_reward_claim_variant_authoring.py"
+      ],
+      "cwd": "REPO/tools/content-schema/reward-claim-authoring"
+    },
+    "test_starter_kit_authoring.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "test_starter_kit_authoring.py"
+      ],
+      "cwd": "REPO/tools/content-schema/starter-kit-authoring"
+    },
+    "test_item_taxonomy.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_item_taxonomy.py"
+      ],
+      "cwd": "None"
+    },
+    "test_item_official_navigation.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_item_official_navigation.py"
+      ],
+      "cwd": "None"
+    },
+    "test_source_relocations.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_source_relocations.py"
+      ],
+      "cwd": "None"
+    },
+    "test_regenerate_content.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_regenerate_content.py"
+      ],
+      "cwd": "None"
+    },
+    "test_oteryn_additive_driver.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/merge-driver/test_oteryn_additive_driver.py"
+      ],
+      "cwd": "None"
+    },
+    "test_npc_presence_stage.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_npc_presence_stage.py"
+      ],
+      "cwd": "None"
+    },
+    "test_item_navigation_source_supplement.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_item_navigation_source_supplement.py"
+      ],
+      "cwd": "None"
+    },
+    "test_item_engine_navigation.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_item_engine_navigation.py"
+      ],
+      "cwd": "None"
+    },
+    "test_item_external_family_refinement.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_item_external_family_refinement.py"
+      ],
+      "cwd": "None"
+    },
+    "test_item_bounded7_navigation.py": {
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "REPO/tools/content-migration/test_item_bounded7_navigation.py"
+      ],
+      "cwd": "None"
+    }
+  }
+}

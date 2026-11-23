@@ -1,0 +1,19 @@
+{
+  "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "scope": [
+    "crates/gameplay/durability",
+    "apps/game-server/tests",
+    "apps/game-server/src/lifted_tests"
+  ],
+  "manual_scope_rows": 148,
+  "case_body_review_rows": 99,
+  "context_rows": 49,
+  "unique_reviewed_paths": 45,
+  "indexed_test_bearing_files": 603,
+  "remaining_status": {
+    "UNREVIEWED_STATIC_SCAN": 572,
+    "PARTIAL_REVIEW_SEE_EXACT_SCOPES": 31
+  },
+  "runtime": "NONE; NO RUST OR PG EXECUTED",
+  "whole_files_semantically_completed": 0
+}

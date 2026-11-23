@@ -1,0 +1,56 @@
+[
+  {
+    "argv": [
+      "python3",
+      "tools/agents/validate_governance.py"
+    ],
+    "exit_code": 0,
+    "seconds": 0.499,
+    "stdout": "Governance validation passed for Oteryn/Oteryn-Game.\nValidated 22 required policy documents and 9 project lanes.\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "tools/repository/validate_repository_policy.py"
+    ],
+    "exit_code": 0,
+    "seconds": 3.324,
+    "stdout": "Post-merge exact-candidate routing regressions PASS\nRepository policy validation passed (23 files, 78 workflows).\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "tools/repository/refresh_ci_workflow_pins.py",
+      "--check"
+    ],
+    "exit_code": 0,
+    "seconds": 0.049,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit_code": 0,
+    "seconds": 0.04,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "git",
+      "diff",
+      "--cached",
+      "--check"
+    ],
+    "exit_code": 0,
+    "seconds": 0.024,
+    "stdout": "",
+    "stderr": ""
+  }
+]

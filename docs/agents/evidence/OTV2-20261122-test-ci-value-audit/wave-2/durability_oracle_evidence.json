@@ -1,0 +1,137 @@
+{
+  "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "mode": "READ_ONLY_SOURCE_AND_PREDICATE_MODEL; NOT_RUST_EXECUTION; NOT_PG_EXECUTION",
+  "source_blobs_verified": {
+    "crates/gameplay/durability/src/durability/schema_contract_tests.rs": "55db2c076d7633e2f8edea79c2882d9c26821322",
+    "crates/gameplay/durability/src/durability/admission_journal.rs": "1cb339bd97622d2f361f01e72664e75f327c377a",
+    "crates/gameplay/durability/src/durability/core_modules.rs": "4a8734f81f179d7b0a061db27a08fb1482a635bb",
+    "apps/game-server/tests/support/bank_postgres_cases.rs": "f17ce7408507ee557bd90ca39e0e65500d71dbb4",
+    "crates/gameplay/durability/src/durability/db.rs": "d9fe7b6d81de2354c73991af6829a19742fe7774",
+    "apps/game-server/migrations/0004_native_admission_source.sql": "201a2a0f93a4215bfb6eb4d31732c9f36921cff0",
+    "crates/gameplay/economy/src/bank.rs": "942870a6cdda1fd1541bfb70019ffabc2f77cfbb",
+    "crates/gameplay/durability/src/durability/core_modules_linkage_tests.rs": "18d6ce5c386c170f53d23a5e35278a8e2c33dca2"
+  },
+  "DUR-01": {
+    "original_three_contains_predicates": [
+      true,
+      true,
+      true
+    ],
+    "public_module_export": true,
+    "public_type_reexport": true,
+    "claim": "Original source oracle accepts these unconditionally public entry spellings; not a runtime vulnerability claim"
+  },
+  "DUR-02": {
+    "loop_table_observations": [
+      "game_account_bank_operations",
+      "game_account_bank_entries",
+      "game_account_bank_balances",
+      "game_account_bank_coin_lines",
+      "game_account_bank_audit_outbox"
+    ],
+    "complete_runtime_transaction_before_select_count": true,
+    "forced_error_after_complete_operation_and_count": true,
+    "claim": "Five observations share the same post-full-writer fault boundary; actual DB paths not run"
+  },
+  "DUR-03": {
+    "expected_from_production_sql": [
+      "game_durability_admission_account_guards",
+      "game_durability_admission_character_guards",
+      "game_durability_admission_guard_history",
+      "game_durability_admission_lifecycle_receipts",
+      "game_durability_admission_runtime_guards",
+      "game_durability_admission_signing_trust_guards",
+      "game_durability_control_loss_continuity",
+      "game_durability_executor_custody",
+      "game_durability_fresh_admission_receipts",
+      "game_durability_reconnect_attempts",
+      "game_durability_reconnect_pending_commands",
+      "game_durability_reconnect_sessions",
+      "game_durability_recovery_grant_consumptions",
+      "game_durability_session_replacements",
+      "game_durability_session_use_ledgers",
+      "game_durability_session_use_memberships",
+      "game_durability_transport_ref_reservations"
+    ],
+    "hypothetical_removed_relation": "game_durability_admission_account_guards",
+    "hypothetical_replacement_existing_relation": "game_durability_native_source_registration",
+    "mutated_expected_count": 17,
+    "original_count_and_sort_predicates_accept": true,
+    "equality_predicate_if_pg_locks_matches_mutated_sql": true,
+    "claim": "Predicate model only; no mutated SQL or PostgreSQL run. Does not establish a failure of the whole suite"
+  },
+  "DUR-05": {
+    "registration_if_let_present": true,
+    "assignment_if_let_present": true,
+    "successful_fixture_errors_return_without_failure": true,
+    "claim": "Nonmatching outer variants bypass inner assertions. Fixture decoder failures skip subsequent encoding assertions"
+  },
+  "DUR-07": {
+    "production_decoder_uses_same_code_method": true,
+    "original_mapping": {
+      "Ok": 0,
+      "BalanceLimit": 1,
+      "InsufficientBalance": 2,
+      "InsufficientCoins": 3,
+      "NoRoom": 4,
+      "JuniorAccount": 5,
+      "UnknownRecipient": 6,
+      "RecipientCannotReceiveTransfers": 7,
+      "SameAccount": 8
+    },
+    "hypothetical_mapping": {
+      "Ok": 0,
+      "BalanceLimit": 1,
+      "InsufficientBalance": 2,
+      "InsufficientCoins": 3,
+      "NoRoom": 4,
+      "JuniorAccount": 7,
+      "UnknownRecipient": 6,
+      "RecipientCannotReceiveTransfers": 5,
+      "SameAccount": 8
+    },
+    "original_predicates_accept_baseline": true,
+    "original_predicates_accept_swapped_meanings": true,
+    "independent_named_mapping_accepts_swap": false,
+    "claim": "Model of this one unit predicate; no Rust, migration, or full-suite mutation execution"
+  },
+  "DUR-08": {
+    "top_level_mount_count": 27,
+    "top_level_mount_paths": [
+      "apps/game-server/tests/account_achievement_postgres.rs",
+      "apps/game-server/tests/bank_postgres.rs",
+      "apps/game-server/tests/bestiary_progress_postgres.rs",
+      "apps/game-server/tests/character_forge_dust_postgres.rs",
+      "apps/game-server/tests/character_proficiency_modification_postgres.rs",
+      "apps/game-server/tests/character_progression_postgres.rs",
+      "apps/game-server/tests/charm_state_postgres.rs",
+      "apps/game-server/tests/chest_use_postgres.rs",
+      "apps/game-server/tests/combat_bestiary_postgres.rs",
+      "apps/game-server/tests/combat_death_reward_postgres.rs",
+      "apps/game-server/tests/combat_pickup_postgres.rs",
+      "apps/game-server/tests/corpse_decay_postgres.rs",
+      "apps/game-server/tests/corpse_transfer_postgres.rs",
+      "apps/game-server/tests/durability_postgres.rs",
+      "apps/game-server/tests/house_interior_postgres.rs",
+      "apps/game-server/tests/item_fee_burn_postgres.rs",
+      "apps/game-server/tests/item_mint_postgres.rs",
+      "apps/game-server/tests/item_ref_production.rs",
+      "apps/game-server/tests/item_timed_state_postgres.rs",
+      "apps/game-server/tests/item_transfer_postgres.rs",
+      "apps/game-server/tests/item_use_postgres.rs",
+      "apps/game-server/tests/map_item_mint_postgres.rs",
+      "apps/game-server/tests/native_admission_source_postgres.rs",
+      "apps/game-server/tests/npc_econ_bank_postgres.rs",
+      "apps/game-server/tests/reward_claim_mint_postgres.rs",
+      "apps/game-server/tests/runtime_scope_assignment_postgres.rs",
+      "apps/game-server/tests/wp5_s3b_composition.rs"
+    ],
+    "canonical_targets_with_duplicate_source": [
+      "durability_postgres",
+      "native_admission_source_postgres",
+      "runtime_scope_assignment_postgres"
+    ],
+    "owning_parser_literal_test_functions": 5,
+    "compiled_or_executed_duplicate_case_count": "UNKNOWN"
+  }
+}

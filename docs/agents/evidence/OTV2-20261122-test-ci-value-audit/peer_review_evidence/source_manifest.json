@@ -1,0 +1,46 @@
+{
+  "base_commit": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "diff_sha256": "eaf5d7a52de930320238e14977cebee0269fbcc2262d5cf9956b64fd5ca3927b",
+  "files": [
+    {
+      "path": ".github/workflows/agent-governance.yml",
+      "base_sha256": "2009dbc9778f1900f12bbc00021afa22a0a1e3ea44a285c3f169e90d05ca5d25",
+      "current_sha256": "75d6ee4a1490da097956676424df84d3bac54b95a156a3485615cb194cb0c680"
+    },
+    {
+      "path": "tools/content-schema/craft-authoring/test_tainted_souls.py",
+      "base_sha256": "6e516a38a7c6c92365f88711c65d4dec03916b1599dda6b705af72bda4aef24e",
+      "current_sha256": "f7a6c2c523017d8f844394694b665e116e4bea07fc146b5cd37350954703ff53"
+    },
+    {
+      "path": "tools/qualification/node_boot/known_fail_rows.txt",
+      "base_sha256": "54a39c1ece4f8a8e2309074b574ded15f38cb476db97ff283cacf01a6d2a5fa6",
+      "current_sha256": "e3b2c660664b8ee202ec011fae0d263bd96655ce668a8322637f9ff70d83619f"
+    },
+    {
+      "path": "tools/qualification/node_boot/run.sh",
+      "base_sha256": "bacd184879b72c65731dbb42990cfbae63f54b3ff58e8b6085debb2876382a03",
+      "current_sha256": "0dced24b8b313cd5eaa781872217f8e7f7d2275e493535cfcefe38521f2f6325"
+    },
+    {
+      "path": "tools/qualification/node_boot/test_diagnostics.py",
+      "base_sha256": "83d59025f0f3325dc75913c7371cd791bb9e7522424845aa835197549684266b",
+      "current_sha256": "82fd2a9ababfc9fc01b93136ab74c5f4b83a9ebbb76e218388ae290aba67ceec"
+    },
+    {
+      "path": "tools/qualification/node_boot/test_node_boot_tools.py",
+      "base_sha256": "30a53b0570041bfaaf7c1605b5c0758df1f41a3af56efe07a563764347900b0b",
+      "current_sha256": "789f0c0dac09c2c3c598f2a4af8891c6d632cf01ecd29e3eb9966fc2d134b8df"
+    },
+    {
+      "path": "tools/repository/test_agent_governance_pr_targets.py",
+      "base_sha256": "8b894040febd907189342685fcd96b41475ecde87f35401563943b2589f7c4ac",
+      "current_sha256": "f726136424f0d367db784abbd9e9adddaef7502a419e1632fef37dc8b4970efe"
+    },
+    {
+      "path": "tools/repository/test_validate_pr_gate_pg_sim.py",
+      "base_sha256": "0c78d37a7eff6cfeeab9b44e5b52b084e800b03179fcf4dd45cf18a72c7382d8",
+      "current_sha256": "cc74b30dbd55deafc2723b88afecd356d26a70dc1fdc5d1af7bda79efc7ef5f0"
+    }
+  ]
+}

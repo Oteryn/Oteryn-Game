@@ -124,7 +124,7 @@ fi
 prepare_seam_test() {
   SEAM_TEST_CWD="$GAME_SOURCE"
   SEAM_TEST_COMMAND=(cargo +1.100.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}"
-    "$TEST_NAME" -- --ignored --exact --nocapture)
+    "$TEST_NAME" -- --ignored --exact --nocapture --color never)
   if [[ -n "${SERVER_SEAM_PREBUILT_DIR:-}" ]]; then
     [[ "${WP5_QUALIFICATION:-s3b}" == seam || "${WP5_QUALIFICATION:-s3b}" == spell-seam ]] \
       || { echo 'S3B_RESULT=BLOCKED reason=prebuilt_variant_mismatch'; return 2; }
@@ -132,7 +132,7 @@ prepare_seam_test() {
       || { echo 'S3B_RESULT=BLOCKED reason=invalid_prebuilt_seam'; return 2; }
     SEAM_TEST_CWD="$GAME_SOURCE/apps/game-server"
     SEAM_TEST_COMMAND=("$SERVER_SEAM_PREBUILT_DIR/server-seam/node-boot-libtest"
-      "$TEST_NAME" --ignored --exact --nocapture)
+      "$TEST_NAME" --ignored --exact --nocapture --color never)
   else
     # Compile before services and short-lived bootstrap intents are created.
     cargo +1.100.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" --no-run
@@ -178,6 +178,13 @@ evidence "platform_intents=issued count=2 path=operator_command ttl_seconds=300"
   WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
   WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
     "${SEAM_TEST_COMMAND[@]}"
-)
+) | tee "$WORK/seam-test.log"
 unset FRESH_SEED_HEX RECOVERY_SEED_HEX
+# An exact filter also exits zero when no test matched. The single selected
+# libtest must really pass; multiple/missing summaries are not qualification.
+if [[ "$(grep -c '^test result:' "$WORK/seam-test.log")" != 1 ]] ||
+   ! grep -Eq '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; [0-9]+ filtered out; finished in [0-9]+(\.[0-9]+)?s$' "$WORK/seam-test.log"; then
+  echo 'S3B qualification did not execute exactly one passing test' >&2
+  exit 1
+fi
 result="$PASS_RESULT"

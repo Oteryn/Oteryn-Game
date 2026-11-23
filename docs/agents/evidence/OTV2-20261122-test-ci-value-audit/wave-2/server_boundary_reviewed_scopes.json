@@ -1,0 +1,636 @@
+{
+  "base_commit": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "head_at_manifest": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "reviewed_source_files_equal_base": true,
+  "semantic_scope_is_bounded": true,
+  "rust_or_pg_or_platform_executions": 0,
+  "repo_mutations_by_child": 0,
+  "reviewed": [
+    {
+      "path": "apps/game-server/src/qualification.rs",
+      "ranges": [
+        {
+          "start": 645,
+          "end": 656
+        },
+        {
+          "start": 842,
+          "end": 999
+        },
+        {
+          "start": 1455,
+          "end": 1750
+        },
+        {
+          "start": 1930,
+          "end": 2145
+        },
+        {
+          "start": 2968,
+          "end": 3011
+        },
+        {
+          "start": 3074,
+          "end": 3089
+        },
+        {
+          "start": 3124,
+          "end": 3168
+        }
+      ],
+      "kind": "semantic",
+      "focus": "Socket helpers, node/basic branch, composed seam setup/final state, SQL oracles and source-shape tests",
+      "file_line_count": 3168,
+      "source_sha256": "b7abcf58ffa49053e3225b85461ce2e7879fc0d8bbe46eb28718e5d124e83393"
+    },
+    {
+      "path": "apps/game-server/src/qualification/client_phases/negatives.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 250
+        }
+      ],
+      "kind": "semantic",
+      "focus": "TLS/Foundation/FND04/capability public negatives",
+      "file_line_count": 250,
+      "source_sha256": "acb000b6221c61f549495c3ca8d4e7676dd8a31fb1cfacc942a67fb6841fe69e"
+    },
+    {
+      "path": "apps/game-server/src/qualification/client_phases/admission.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 222
+        }
+      ],
+      "kind": "semantic",
+      "focus": "Wire admission, replay under existing holder, concurrency and control loss",
+      "file_line_count": 222,
+      "source_sha256": "196270181afdde353f5b6c65271cd79e40355334983e9da2a12de20ff3acdf9f"
+    },
+    {
+      "path": "apps/game-server/src/qualification/client_phases/recovery.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 200
+        }
+      ],
+      "kind": "semantic",
+      "focus": "Capabilities, same-session generation/sequence, replay, repeated loss and expiry",
+      "file_line_count": 200,
+      "source_sha256": "09087a828ee694f802b4dccd37f671035ff8eed2c89be0fa766e40b60eed6b79"
+    },
+    {
+      "path": "apps/game-server/src/qualification/client_phases/disconnect_resume.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 81
+        }
+      ],
+      "kind": "semantic",
+      "focus": "Pending-step replacement transport continuity",
+      "file_line_count": 81,
+      "source_sha256": "f452a819687ed5f6aa1992f15b5380a2548f1a6271aa3bd5d1ea4e7325708f55"
+    },
+    {
+      "path": "apps/game-server/src/qualification/client_phases/readmission.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 53
+        }
+      ],
+      "kind": "semantic",
+      "focus": "Fresh readmission after terminal release",
+      "file_line_count": 53,
+      "source_sha256": "ee4da8874325e48e4b9b5b31c51d3c1113e2b18a545c95f1c5007a8eb3c9ac98"
+    },
+    {
+      "path": "apps/game-server/src/qualification/client_phases/use_wire.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 144
+        }
+      ],
+      "kind": "semantic",
+      "focus": "Public door interactions and durable release",
+      "file_line_count": 144,
+      "source_sha256": "1bb2ae8281ceb94c082c8fc1a09257b0c4685a4863fd7cae3c87ae718ad1b4ea"
+    },
+    {
+      "path": "apps/game-server/src/qualification/client_phases/dev_client.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 305
+        }
+      ],
+      "kind": "semantic-partial",
+      "focus": "Join snapshot and phase driver; later comparison/scenario helpers unreviewed",
+      "file_line_count": 603,
+      "source_sha256": "6993636a6d972e6a12d6dbd5a506f22b1a9f6ec44ae4f8a1cfc8b5d7412ecb0d"
+    },
+    {
+      "path": "apps/game-server/src/qualification/client_phases/client_row_s09.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 64
+        }
+      ],
+      "kind": "semantic",
+      "focus": "Capture-gated logout/relogin journey and reconstructed outcome capture",
+      "file_line_count": 64,
+      "source_sha256": "8959b0b284dd2e92710b9154281f12170c79566e75f17c48ddede4f3b90eb201"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_postgres.rs",
+      "ranges": [
+        {
+          "start": 35,
+          "end": 68
+        },
+        {
+          "start": 276,
+          "end": 301
+        },
+        {
+          "start": 376,
+          "end": 476
+        },
+        {
+          "start": 693,
+          "end": 1035
+        }
+      ],
+      "kind": "semantic-partial",
+      "focus": "Floor restart, descriptor rollback, pending slots and custody fences; other cases not claimed",
+      "file_line_count": 1567,
+      "source_sha256": "44302af699933de6753a380814718c8a44798cfad7da3e7a1339502fbe16e4cb"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 23
+        },
+        {
+          "start": 704,
+          "end": 810
+        }
+      ],
+      "kind": "semantic-partial",
+      "focus": "Real controlled TLS peer refusal, timeout and EOF/cancellation",
+      "file_line_count": 1221,
+      "source_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719"
+    },
+    {
+      "path": "apps/game-server/src/node/serve/postgres_tests/readiness.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 39
+        }
+      ],
+      "kind": "semantic",
+      "focus": "Trigger fault + independent attempt counter + bounded error",
+      "file_line_count": 39,
+      "source_sha256": "0416aa6c06811fef64981d516f59062f846909962f4050c793a1dcfff9b410f2"
+    },
+    {
+      "path": "apps/game-server/src/node/serve.rs",
+      "ranges": [
+        {
+          "start": 14,
+          "end": 19
+        },
+        {
+          "start": 4174,
+          "end": 4237
+        },
+        {
+          "start": 5330,
+          "end": 5349
+        }
+      ],
+      "kind": "semantic-partial",
+      "focus": "Readiness retry classification/PG privilege denial and source-order guard only",
+      "file_line_count": 5349,
+      "source_sha256": "bb5508beee28f8ebfc1f1f886d9bdf8b581e5cb4d749501bad021c56d3db153a"
+    },
+    {
+      "path": "apps/game-server/src/lifted_tests/foundation_recovery_tests.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 110
+        },
+        {
+          "start": 483,
+          "end": 832
+        }
+      ],
+      "kind": "semantic-partial",
+      "focus": "Mock journal shape and all 12 case bodies; journal implementation middle unreviewed",
+      "file_line_count": 832,
+      "source_sha256": "0a07dbeef18c9aeaf046f77d2de5e603f226237bba1236e530dde58ae5010004"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "ranges": [
+        {
+          "start": 185,
+          "end": 194
+        }
+      ],
+      "kind": "mount-only",
+      "focus": "Recovery tests mounted in library under cfg(test)",
+      "file_line_count": 1035,
+      "source_sha256": "c25df59b572d112f93f7a878dcd46da80ef465bf69637d8e6b6545f28973148e"
+    },
+    {
+      "path": "apps/game-server/tests/wp5_s3b_composition.rs",
+      "ranges": [
+        {
+          "start": 437,
+          "end": 462
+        },
+        {
+          "start": 718,
+          "end": 749
+        }
+      ],
+      "kind": "semantic-partial",
+      "focus": "Independent authority snapshot and explicit ignored test entry, not full flow",
+      "file_line_count": 1096,
+      "source_sha256": "a440e57fd80fd16f8c6579ced43807d186ae21e637dc415dd52d6d349acb404a"
+    },
+    {
+      "path": "apps/game-server/Cargo.toml",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 237
+        }
+      ],
+      "kind": "manifest",
+      "focus": "Autodiscovery and explicit test=false wrapper exceptions",
+      "file_line_count": 237,
+      "source_sha256": "41af9e1fc4fa9f078ae3af9385982e552de5878fac17e39fa0784b106a6c71d6"
+    },
+    {
+      "path": "tools/qualification/wp5_s3b/run.sh",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 183
+        }
+      ],
+      "kind": "semantic",
+      "focus": "Selection, exact flags, topology setup and caller verdict",
+      "file_line_count": 183,
+      "source_sha256": "fb4d265f8cf8c98ec6e6ecc2bc08a3ae334a467b9a28f1cce97dd1196f185e63"
+    },
+    {
+      "path": "tools/qualification/wp5_s3a/run.sh",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 60
+        }
+      ],
+      "kind": "semantic-partial",
+      "focus": "Historical Platform/Game pin and exact protected source-blob comparison only",
+      "file_line_count": 630,
+      "source_sha256": "03a96a817b2b2af03f9169b9958802b6f411e76e0895bf47f43b27d08452d520"
+    },
+    {
+      "path": "tools/qualification/node_boot/prebuilt.py",
+      "ranges": [
+        {
+          "start": 114,
+          "end": 172
+        },
+        {
+          "start": 185,
+          "end": 231
+        }
+      ],
+      "kind": "semantic-partial",
+      "focus": "Name inventory before packaging and identity/hash validation",
+      "file_line_count": 276,
+      "source_sha256": "288a79b279ca36544338daf3834bdaec8be9f00e39072f6e8d1770e814e4daa0"
+    },
+    {
+      "path": "tools/qualification/game_platform/lifecycle.sh",
+      "ranges": [
+        {
+          "start": 151,
+          "end": 223
+        }
+      ],
+      "kind": "semantic",
+      "focus": "Real public auth/Gateway and exact evidence enforcement",
+      "file_line_count": 225,
+      "source_sha256": "77e968886df5bbaa3d4f2c1c6bd5f15605b7c1f9df742adde04e2ff83be892d7"
+    },
+    {
+      "path": "tests/security/auth/tests/native_ticket_and_gateway_fail_closed.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 35
+        },
+        {
+          "start": 90,
+          "end": 265
+        }
+      ],
+      "kind": "semantic-partial",
+      "focus": "Route proof and full positive Gateway/TLS/SQL journey; other negatives already separate lane",
+      "file_line_count": 265,
+      "source_sha256": "5ae76c2f3578e52d4bc9eb865e3f6d2caf09e207af51960d835ccf68d346e966"
+    },
+    {
+      "path": "tests/security/auth/tests/support/mod.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 40
+        },
+        {
+          "start": 549,
+          "end": 575
+        }
+      ],
+      "kind": "semantic-partial",
+      "focus": "No-env behavior and bounded real topology executor",
+      "file_line_count": 596,
+      "source_sha256": "73a52f29b959449ce5dc7f48314522429c7a9d0dc3253c6c6605b1b06e025a47"
+    },
+    {
+      "path": ".github/workflows/gameplay-server-seam.yml",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 78
+        }
+      ],
+      "kind": "workflow",
+      "focus": "Manual seam caller",
+      "file_line_count": 78,
+      "source_sha256": "0b9197165753d612e3be821a2c3cd56d5bebc8ad2f0b625d747db71fa97c0f67"
+    },
+    {
+      "path": ".github/workflows/wp5-s3b-composition.yml",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 90
+        }
+      ],
+      "kind": "workflow",
+      "focus": "Scoped PR/manual/historical branch composition caller",
+      "file_line_count": 90,
+      "source_sha256": "7e579b516da8f2cd061d9c279aa5cff642d525f0217998ae3c57fb8ce660c6d1"
+    },
+    {
+      "path": ".github/workflows/wp5-s3a-real-interop.yml",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 90
+        }
+      ],
+      "kind": "workflow",
+      "focus": "Historical interop caller/pins",
+      "file_line_count": 90,
+      "source_sha256": "c24edf00f6070ab8e4708165ceb0812f7c0d1ff5247981f19395b1db05a4c991"
+    },
+    {
+      "path": ".github/workflows/merge-group-gate.yml",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 38
+        },
+        {
+          "start": 640,
+          "end": 717
+        },
+        {
+          "start": 880,
+          "end": 977
+        },
+        {
+          "start": 1065,
+          "end": 1071
+        },
+        {
+          "start": 1130,
+          "end": 1198
+        },
+        {
+          "start": 1792,
+          "end": 1817
+        },
+        {
+          "start": 1871,
+          "end": 1894
+        }
+      ],
+      "kind": "workflow-partial",
+      "focus": "Triggers, ordinary integration/library, registered PG and physical seam callers",
+      "file_line_count": 1976,
+      "source_sha256": "d80ebed3b8993da45880281e253c54660db95f6ae47b537f3e89c557a861e58e"
+    },
+    {
+      "path": ".github/workflows/postgres-test-partitions.yml",
+      "ranges": [
+        {
+          "start": 318,
+          "end": 333
+        },
+        {
+          "start": 491,
+          "end": 514
+        },
+        {
+          "start": 750,
+          "end": 812
+        }
+      ],
+      "kind": "workflow-partial",
+      "focus": "Registered target, PG service env and runner; self-hosted env line629 was indexed only",
+      "file_line_count": 856,
+      "source_sha256": "63227f9e891db9e4cf5f256cd8740045a47332371ec1e8dc0416beda1b0298e5"
+    },
+    {
+      "path": ".github/workflows/pr-postgres-harness.yml",
+      "ranges": [
+        {
+          "start": 48,
+          "end": 58
+        },
+        {
+          "start": 256,
+          "end": 296
+        }
+      ],
+      "kind": "workflow-partial",
+      "focus": "Scoped heavy-tests PR caller; full node matrix excluded from this wave",
+      "file_line_count": 813,
+      "source_sha256": "253311344bf0037fda6abe34e17cdcded6e23cd0b2680c065c265b1b98fdd25e"
+    },
+    {
+      "path": "tools/repository/plan_rust_test_shards.py",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 102
+        }
+      ],
+      "kind": "semantic",
+      "focus": "Exact integration target partition rule",
+      "file_line_count": 102,
+      "source_sha256": "b2e82b2614a20d51117004d4816a02c4a4df6236be8006e09b5109d8219fa877"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/preadmission.rs",
+      "ranges": [
+        {
+          "start": 1,
+          "end": 137
+        }
+      ],
+      "kind": "semantic",
+      "focus": "PG/duplex single winner and replay after logout, no public Gateway/TLS",
+      "file_line_count": 177,
+      "source_sha256": "6b7900d6a32c8397a1a45a40e5c44abfa2f3b4beb04a1a0facf596ebe8af950a"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/admission.rs",
+      "ranges": [
+        {
+          "start": 285,
+          "end": 307
+        }
+      ],
+      "kind": "mapping-only",
+      "focus": "Durable replay rejection to public enum",
+      "file_line_count": 717,
+      "source_sha256": "13751621dfbbaba34641264f5a2b96b85c47bfe0930cf473af602a5bd525003e"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/lib.rs",
+      "ranges": [
+        {
+          "start": 216,
+          "end": 230
+        }
+      ],
+      "kind": "mapping-only",
+      "focus": "Public fresh-admission errors incl1105",
+      "file_line_count": 2901,
+      "source_sha256": "ce180334bf2b2fb0a4a7fb8ba0f3b21b5ed41acf2f12f20c95c6408ba1ec51e6"
+    },
+    {
+      "path": "crates/platform-client/src/native_login.rs",
+      "ranges": [
+        {
+          "start": 466,
+          "end": 501
+        }
+      ],
+      "kind": "semantic-partial",
+      "focus": "Public recovery request encoder only, no real issuer qualification",
+      "file_line_count": 869,
+      "source_sha256": "e03a286439377253ccb67f36a70b73eceddc84798ff14765a4fe39e295c084fe"
+    }
+  ],
+  "remaining_queue": [
+    {
+      "priority": 1,
+      "path": "crates/platform-client/src/native_login.rs",
+      "scope": "recovery transport/caller beyond request encoder, plus actual Platform endpoint/issuer/device lifecycle",
+      "reason": "Need independently verified full public recovery journey before replacing harness-signed recovery credentials."
+    },
+    {
+      "priority": 1,
+      "path": "apps/game-server/tests/wp5_s3b_composition.rs",
+      "scope": "composition_flow 750\u20131034 and qualify_registered_recovery 304\u2013436; remaining helpers",
+      "reason": "Check each concrete authority mutation and final evidence contract, rather than infer it from test name or snapshot helper."
+    },
+    {
+      "priority": 1,
+      "path": "apps/game-server/src/qualification/client_phases",
+      "scope": "Other capture-only row producers and exact session/client consumers; previous BB02 proposals remain unapplied",
+      "reason": "Require producer/capture/consumer outcome contract; do not count CAPTURED as PASS."
+    },
+    {
+      "priority": 2,
+      "path": "apps/game-server/src/lifted_tests/foundation_recovery_tests.rs",
+      "scope": "111\u2013482 RecoveryJournal implementation",
+      "reason": "Case bodies and fixture type reviewed; not yet compare mocked journal contract to PG journal transaction behavior."
+    },
+    {
+      "priority": 2,
+      "path": "apps/game-server/tests/native_admission_source_postgres.rs",
+      "scope": "69\u2013275,302\u2013375,477\u2013692,1036\u2013EOF",
+      "reason": "Remaining setup and case bodies not semantically reviewed in this lane; inspect floor/recovery evidence relation before broad whole-file judgment."
+    },
+    {
+      "priority": 2,
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "24\u2013703",
+      "reason": "Other controlled transport/publication cases and fixture construction not semantically reviewed; certificate arrays are not case review."
+    },
+    {
+      "priority": 2,
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "scope": "Full file",
+      "reason": "Confirm still-required historical interop contract and practical current execution before retirement recommendation."
+    },
+    {
+      "priority": 2,
+      "path": "apps/game-server/src/node/serve.rs",
+      "scope": "All other test bodies beyond 4174\u20134237 and5330\u20135349, plus startup orchestration",
+      "reason": "Current review covers readiness only, not all node boot/config/control behavior."
+    },
+    {
+      "priority": 2,
+      "path": "apps/game-server/src/node/serve/channel_boot.rs",
+      "scope": "Full file and relevant tests",
+      "reason": "Only inventory in this wave; no claim on current admission/capability realization coverage."
+    },
+    {
+      "priority": 2,
+      "path": "apps/game-server/src/node/config.rs",
+      "scope": "Full test module",
+      "reason": "Only inventory in this wave; distinguish behavioral parser rejects from source-shape fixtures."
+    },
+    {
+      "priority": 2,
+      "path": "apps/game-server/src/qualification/client_phases/dev_client.rs",
+      "scope": "306\u2013603 plus called client_* mechanic bodies",
+      "reason": "Do not infer every called mechanic oracle from phase driver."
+    },
+    {
+      "priority": 3,
+      "path": "tools/qualification/wp5_s3a/run.sh",
+      "scope": "61\u2013EOF, historical source-blob availability and actual workflow results",
+      "reason": "Current historical-pin/source-lock evidence does not establish whether the lane is intentionally retained or currently blocked."
+    },
+    {
+      "priority": 3,
+      "path": ".github/workflows",
+      "scope": "Actual GitHub executions, protected-branch requirements and latest applicability decisions",
+      "reason": "Read-only workflow source mapping is not proof of a particular candidate having run these tests."
+    }
+  ]
+}

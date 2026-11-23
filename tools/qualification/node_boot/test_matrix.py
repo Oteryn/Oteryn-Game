@@ -68,8 +68,10 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(len(shards), 7)
 
     def test_reference_is_one_unchanged_machine(self):
-        self.assertEqual(matrix.plan("reference"), [matrix.shard(
-            "reference", "node_boot", matrix.pinned_sha(ROOT, matrix.NODE_BOOT_RUN, "PLATFORM_SHA"), True, {})])
+        expected = matrix.shard("reference", "node_boot",
+                                matrix.pinned_sha(ROOT, matrix.NODE_BOOT_RUN, "PLATFORM_SHA"), True, {})
+        expected["expected_rows"] = matrix.expected_rows(expected, matrix.row_scenarios())
+        self.assertEqual(matrix.plan("reference"), [expected])
 
     def test_custom_set_splits_groups_and_row_ranges(self):
         shards = matrix.plan("custom", groups="core;f7clock", rows="20:45", batch="10", spells=True)
@@ -204,13 +206,16 @@ class EvidenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "shards"
             root.mkdir()
-            log = self.write(tmp, "log", "SEAM_EVIDENCE e2e_all scenario=I01.full status=PASS seconds=1\n"
+            required = ''.join(f"SEAM_EVIDENCE e2e_all scenario={row['scenario']} status=PASS seconds=1\n"
+                               for row in shards[0]["expected_rows"])
+            log = self.write(tmp, "log", required + "SEAM_EVIDENCE e2e_all scenario=I01.full status=PASS seconds=1\n"
                                          "NODE_BOOT_RESULT=NODE_BOOT_PASS\n")
             result = matrix.extract(log, name="reference", entry="node_boot", exit_code=0, seconds=60)
             (root / "result.json").write_text(json.dumps(result))
             markdown, problems = matrix.summarize(shards, root, "node-boot-1-1-")
             self.assertEqual(problems, [])
-            self.assertIn("| reference | NODE_BOOT_PASS | 0 | 1.0 | 1 | 1 | 0 | 0 | 0 |", markdown)
+            count = len(shards[0]["expected_rows"]) + 1
+            self.assertIn(f"| reference | NODE_BOOT_PASS | 0 | 1.0 | {count} | {count} | 0 | 0 | 0 |", markdown)
             result["shard"] = "other"
             (root / "result.json").write_text(json.dumps(result))
             _, problems = matrix.summarize(shards, root, "node-boot-1-1-")
@@ -252,6 +257,172 @@ class WorkflowTests(unittest.TestCase):
         ):
             self.assertIn(fragment, text)
         self.assertNotIn("redact_ci_log.py", text, "shard evidence uses the wider matrix.py filter")
+
+
+class RequiredRowEvidenceTests(unittest.TestCase):
+    def summary(self, rows, lines, *, missing_fatal=True, result_entry=None):
+        shards = matrix.plan('custom', rows=rows)
+        self.assertEqual(len(shards), 1)
+        shard = shards[0]
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            log = directory / 'node.log'
+            log.write_text(lines + 'NODE_BOOT_RESULT=NODE_BOOT_PASS\n')
+            result = matrix.extract(log, name=shard['name'], entry=shard['entry'],
+                                    exit_code=0, seconds=3)
+            if result_entry is not None:
+                result['entry'] = result_entry
+            output = directory / shard['name']
+            output.mkdir()
+            (output / 'result.json').write_text(json.dumps(result))
+            return matrix.summarize(shards, directory, '', missing_fatal=missing_fatal)
+
+    def test_other_scenario_cannot_replace_the_selected_row(self):
+        _, problems = self.summary('206:207',
+                                   'SEAM_EVIDENCE e2e_all scenario=I01.full status=PASS seconds=1\n')
+        self.assertTrue(any('S09.client' in problem for problem in problems), problems)
+
+    def test_other_entry_cannot_satisfy_the_same_named_artifact(self):
+        _, problems = self.summary('206:207',
+            'SEAM_EVIDENCE e2e_all scenario=S09.client status=PASS seconds=1\n',
+            result_entry='game_platform')
+        self.assertEqual(problems, ['rows-206-207: no result evidence'])
+
+    def test_a_bounded_slice_or_full_row_cannot_replace_the_selected_client_row(self):
+        for scenario in ('S09.logout', 'S09.full'):
+            with self.subTest(scenario=scenario):
+                _, problems = self.summary('206:207',
+                    f'SEAM_EVIDENCE e2e_all scenario={scenario} status=PASS seconds=1\n')
+                self.assertTrue(any('S09.client' in problem for problem in problems), problems)
+
+    def test_partially_executed_batch_is_not_complete(self):
+        _, problems = self.summary('1:3',
+                                   'SEAM_EVIDENCE e2e_all scenario=C03.full status=PASS seconds=1\n')
+        self.assertTrue(any('C12.full' in problem for problem in problems), problems)
+
+    def test_duplicate_expected_row_is_not_one_completed_execution(self):
+        line = 'SEAM_EVIDENCE e2e_all scenario=S09.client status=PASS seconds=1\n'
+        _, problems = self.summary('206:207', line + line)
+        self.assertTrue(any('duplicate' in problem and 'S09.client' in problem for problem in problems), problems)
+
+    def test_capture_does_not_replace_a_terminal_verdict(self):
+        for capture in (
+            'SEAM_EVIDENCE e2e_capture scenario=S09.client status=CAPTURED evidence=logout\n',
+            'SEAM_EVIDENCE e2e_all scenario=S09.client status=CAPTURED seconds=1\n',
+        ):
+            with self.subTest(capture=capture):
+                _, problems = self.summary('206:207', capture +
+                    'SEAM_EVIDENCE e2e_all scenario=I01.full status=PASS seconds=1\n')
+                self.assertTrue(any('S09.client' in problem for problem in problems), problems)
+
+    def test_missing_informational_does_not_waive_absent_evidence(self):
+        _, problems = self.summary('206:207',
+            'SEAM_EVIDENCE e2e_all scenario=I01.full status=PASS seconds=1\n', missing_fatal=False)
+        self.assertTrue(any('S09.client' in problem for problem in problems), problems)
+
+    def test_complete_terminal_evidence_can_include_extra_bounded_slices(self):
+        _, problems = self.summary('206:207',
+            'SEAM_EVIDENCE e2e_all scenario=S09.client status=PASS seconds=1\n'
+            'SEAM_EVIDENCE e2e_all scenario=S09.logout status=PASS seconds=1\n'
+            'SEAM_EVIDENCE e2e_capture scenario=S09.client status=CAPTURED evidence=logout\n')
+        self.assertEqual(problems, [])
+
+    def test_existing_failure_and_missing_status_policy_is_not_redefined(self):
+        for status in ('FAIL', 'MISSING-SERVER', 'MISSING-CLIENT', 'SKIPPED'):
+            with self.subTest(status=status):
+                _, problems = self.summary('206:207',
+                    f'SEAM_EVIDENCE e2e_all scenario=S09.client status={status} seconds=1\n',
+                    missing_fatal=False)
+                self.assertEqual(problems, [])
+
+    # Terminal identities retained from run 45144642861, head aa16e94d.
+    # Free-form diagnostics are omitted; FAIL acceptance remains the runner's job.
+    def test_real_full_batch_keeps_existing_known_failure_accounting(self):
+        scenarios = ('C03.full', 'C12.full', 'C09.full', 'C06.full', 'C02.full',
+                     'C01.full', 'W22b.full', 'C05.full', 'C04.full')
+        lines = ''.join(f'SEAM_EVIDENCE e2e_all scenario={sid} status=FAIL seconds=1\n'
+                        for sid in scenarios)
+        _, problems = self.summary('0:10', lines)
+        self.assertEqual(problems, [])
+
+    def test_real_mixed_and_legacy_batches_cannot_hide_one_silent_client(self):
+        cases = (
+            ('80:90', ('M10.full', 'M09.full', 'M06.full', 'C15.full', 'C08.full',
+                       'S04b.full', 'C14.full', 'E02.full', 'C02.client'), 'C01.client'),
+            ('220:230', ('C07.client', 'C20d.client', 'W22b.client', 'W23.client',
+                         'W24.client', 'N07a.client', 'N07b.client', 'N07c.client',
+                         'N07d.client'), 'C20a.client'),
+        )
+        for selected, scenarios, missing in cases:
+            with self.subTest(selected=selected):
+                lines = ''.join(f'SEAM_EVIDENCE e2e_all scenario={sid} status=FAIL seconds=1\n'
+                                for sid in scenarios)
+                _, problems = self.summary(selected, lines, missing_fatal=False)
+                self.assertEqual(len(problems), 1, problems)
+                self.assertIn(f'missing terminal verdict for {missing}', problems[0])
+
+    def test_plan_records_ids_for_all_selected_rows_including_unwrapped_emitters(self):
+        plan = matrix.plan('full')
+        rows = [entry for shard in plan for entry in shard['expected_rows']]
+        self.assertEqual(sorted(row['index'] for row in rows), matrix.row_indices())
+        self.assertEqual(len({row['scenario'] for row in rows}), len(rows))
+        by_index = {row['index']: row['scenario'] for row in rows}
+        self.assertEqual({index: by_index[index] for index in (85, 86, 87, 206, 227)},
+                         {85: 'S04b.full', 86: 'C14.full', 87: 'E02.full',
+                          206: 'S09.client', 227: 'C07.client'})
+
+    def test_non_row_lanes_do_not_claim_indexed_row_coverage(self):
+        plan = matrix.plan('custom', groups='core;f4', basic=True, spells=True, game_platform=True)
+        self.assertTrue(all(shard['expected_rows'] == [] for shard in plan))
+
+    def test_reference_requires_its_selected_rows_as_well_as_existing_group_evidence(self):
+        reference = matrix.plan('reference')[0]
+        expected = {row['scenario'] for row in reference['expected_rows']}
+        self.assertIn('C03.full', expected)
+        self.assertIn('W23.full', expected)
+        self.assertNotIn('S09.client', expected)
+
+
+
+class RowSourceContractTests(unittest.TestCase):
+    def assert_rejected(self, changes):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / matrix.CLIENT_PHASES
+            source.mkdir(parents=True)
+            names = ['world.rs', *(call.split('::')[0] + '.rs' for call in matrix.DIRECT_ROWS)]
+            for name in names:
+                text = (ROOT / matrix.CLIENT_PHASES / name).read_text()
+                (source / name).write_text(changes.pop(name, lambda text: text)(text))
+            for name, change in changes.items():
+                (source / name).write_text(change(''))
+            with self.assertRaises(matrix.PlanError):
+                matrix.row_scenarios(Path(tmp))
+
+    def test_unrecognised_dispatch_shape_cannot_disappear_from_plan(self):
+        self.assert_rejected({'world.rs': lambda text: text.replace(
+            'verdict::indexed("C03.full", async {', 'verdict::other("C03.full", async {', 1)})
+
+    def test_selector_outside_the_supported_dispatcher_cannot_disappear_from_plan(self):
+        self.assert_rejected({'other.rs': lambda _: 'fn extra() { if e2e_row_selected(999) {} }\n'})
+
+    def test_duplicate_scenario_contract_is_rejected(self):
+        self.assert_rejected({'world.rs': lambda text: text.replace(
+            'verdict::indexed("C12.full", async {', 'verdict::indexed("C03.full", async {', 1)})
+
+    def test_direct_emitter_contract_must_match_its_source(self):
+        self.assert_rejected({'full_e2ef18.rs': lambda text: text.replace(
+            'scenario=C14.full status=', 'scenario=S01.full status=')})
+
+    def test_plan_cannot_drop_or_substitute_one_required_identity(self):
+        for change in ('drop', 'replace'):
+            with self.subTest(change=change):
+                shard = matrix.plan('custom', rows='1:3')[0]
+                if change == 'drop':
+                    shard['expected_rows'].pop()
+                else:
+                    shard['expected_rows'][0]['scenario'] = 'I01.full'
+                with self.assertRaises(matrix.PlanError):
+                    matrix.validate_shard(shard)
 
 
 if __name__ == "__main__":

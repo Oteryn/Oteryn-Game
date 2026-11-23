@@ -1,0 +1,28 @@
+{
+  "source_head": "e2823da47991c1bdfe67388626a2d40edf84d50e",
+  "committed_workflow_definitions": 78,
+  "exact_workflow": ".github/workflows/content-tree-migration.yml",
+  "entrypoint": "python tools/content-migration/test_world_project_v2_to_tree.py --jobs 2 --workflow-checks",
+  "inventory_function": "test_world_project_v2_to_tree.check_inventory(workflow_checks=True)",
+  "inventory_count": 40,
+  "selected_exact_files": [
+    "test_amber_item_semantics.py",
+    "test_authored_npc_item_profiles.py"
+  ],
+  "not_selected_in_this_inventory": [
+    "test_apply_mitigation_estimates.py",
+    "test_apply_monster_field_patches.py",
+    "test_audit_house_decoration_sources.py",
+    "test_authored_quest_custody_weights.py",
+    "test_bestiary_inventory.py",
+    "test_bind_monster_source_definitions.py",
+    "test_coin_converter_profiles.py",
+    "test_creature_reference_closure.py"
+  ],
+  "closure_source": [
+    "tools/content-migration/test_world_project_v2_to_tree.py:629-683,722-733",
+    "tools/content-migration/test_parallel_checks.py:93-132",
+    ".github/workflows/content-tree-migration.yml:189-194"
+  ],
+  "conclusion": "2 exact selected through indirect workflow launcher, 8 absent from this 40-name inventory; cannot claim no execution elsewhere"
+}

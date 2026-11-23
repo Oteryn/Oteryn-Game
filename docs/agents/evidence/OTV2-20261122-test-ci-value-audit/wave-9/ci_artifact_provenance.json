@@ -1,0 +1,70 @@
+{
+  "source": "GitHub Actions artifact metadata fetched by root; ZIP SHA256 independently compared locally",
+  "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45144642861",
+  "artifacts": [
+    {
+      "id": 14809233130,
+      "name": "node-boot-45144642861-rows-080-090",
+      "digest": "sha256:7dd2805d6600f711c9d590da9e5841727d95ea645f9f8c9997bedab3fece2edb",
+      "size_in_bytes": 11508,
+      "workflow_run": {
+        "id": 45144642861,
+        "repository_id": 1338291140,
+        "head_repository_id": 1338291140,
+        "head_branch": "main",
+        "head_sha": "aa16e94d338a71ef9962b54ede37d1f3e8f4750b"
+      },
+      "local_archive_file": "rows080090.zip",
+      "local_zip_sha256": "7dd2805d6600f711c9d590da9e5841727d95ea645f9f8c9997bedab3fece2edb",
+      "digest_matches": true
+    },
+    {
+      "id": 14809137635,
+      "name": "node-boot-45144642861-rows-000-010",
+      "digest": "sha256:d9dd0fadb72f3da80581375390405c027b6c8fc3834b19312a8fcfe2f0e843d8",
+      "size_in_bytes": 10952,
+      "workflow_run": {
+        "id": 45144642861,
+        "repository_id": 1338291140,
+        "head_repository_id": 1338291140,
+        "head_branch": "main",
+        "head_sha": "aa16e94d338a71ef9962b54ede37d1f3e8f4750b"
+      },
+      "local_archive_file": "rows000010.zip",
+      "local_zip_sha256": "d9dd0fadb72f3da80581375390405c027b6c8fc3834b19312a8fcfe2f0e843d8",
+      "digest_matches": true
+    },
+    {
+      "id": 14807453351,
+      "name": "node-boot-45144642861-rows-200-210",
+      "digest": "sha256:f7bbe9d3e6611351adadc4db48e3af78ae7d9276b70312e66aad0e69e6b006b9",
+      "size_in_bytes": 7492,
+      "workflow_run": {
+        "id": 45144642861,
+        "repository_id": 1338291140,
+        "head_repository_id": 1338291140,
+        "head_branch": "main",
+        "head_sha": "aa16e94d338a71ef9962b54ede37d1f3e8f4750b"
+      },
+      "local_archive_file": "rows200210.zip",
+      "local_zip_sha256": "f7bbe9d3e6611351adadc4db48e3af78ae7d9276b70312e66aad0e69e6b006b9",
+      "digest_matches": true
+    },
+    {
+      "id": 14807168331,
+      "name": "node-boot-45144642861-rows-220-230",
+      "digest": "sha256:d1ca640962be41a6fdb96c5a3e575d99c42aaefbf246ebd76f3ff7d485362ca0",
+      "size_in_bytes": 9083,
+      "workflow_run": {
+        "id": 45144642861,
+        "repository_id": 1338291140,
+        "head_repository_id": 1338291140,
+        "head_branch": "main",
+        "head_sha": "aa16e94d338a71ef9962b54ede37d1f3e8f4750b"
+      },
+      "local_archive_file": "rows220230.zip",
+      "local_zip_sha256": "d1ca640962be41a6fdb96c5a3e575d99c42aaefbf246ebd76f3ff7d485362ca0",
+      "digest_matches": true
+    }
+  ]
+}

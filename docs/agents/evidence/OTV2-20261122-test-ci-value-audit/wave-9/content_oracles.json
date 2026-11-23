@@ -1,0 +1,114 @@
+{
+  "mode": "actual Python test methods; in-memory mutations, no repository/game/content writes",
+  "coin": {
+    "current_source": {
+      "tests_run": 1,
+      "failures": [],
+      "errors": [],
+      "skips": [],
+      "accepted": true
+    },
+    "one_id_only": {
+      "tests_run": 1,
+      "failures": [
+        "Traceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring/tools/content-migration/test_coin_converter_profiles.py\", line 18, in test_converters_are_carried_nonstackable_tools_with_500_charges\n    self.assertEqual(converters.IDS, expected_ids)\nAssertionError: Items in the second set but not the first:\n28525\n28526\n25719\n"
+      ],
+      "errors": [],
+      "skips": [],
+      "accepted": false
+    },
+    "empty_ids": {
+      "tests_run": 1,
+      "failures": [
+        "Traceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring/tools/content-migration/test_coin_converter_profiles.py\", line 18, in test_converters_are_carried_nonstackable_tools_with_500_charges\n    self.assertEqual(converters.IDS, expected_ids)\nAssertionError: Items in the second set but not the first:\n23722\n28525\n28526\n25719\n"
+      ],
+      "errors": [],
+      "skips": [],
+      "accepted": false
+    }
+  },
+  "calibration": {
+    "current_source": {
+      "tests_run": 1,
+      "failures": [],
+      "errors": [],
+      "skips": [],
+      "accepted": true
+    },
+    "empty_calibration": {
+      "tests_run": 1,
+      "failures": [
+        "Traceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring/tools/content-migration/test_creature_level_rating.py\", line 20, in test_calibration_within_ten_percent\n    self.assertCountEqual(\nAssertionError: Element counts were not equal:\nFirst has 0, Second has 1:  ('Bulltaur Lair', 300)\nFirst has 0, Second has 1:  (\"Nimmersatt's Breeding Ground\", 454)\nFirst has 0, Second has 1:  ('Rotten Wasteland', 790)\n"
+      ],
+      "errors": [],
+      "skips": [],
+      "accepted": false
+    },
+    "missing_one_area": {
+      "tests_run": 1,
+      "failures": [
+        "Traceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring/tools/content-migration/test_creature_level_rating.py\", line 20, in test_calibration_within_ten_percent\n    self.assertCountEqual(\nAssertionError: Element counts were not equal:\nFirst has 0, Second has 1:  ('Rotten Wasteland', 790)\n"
+      ],
+      "errors": [],
+      "skips": [],
+      "accepted": false
+    },
+    "duplicate_area": {
+      "tests_run": 1,
+      "failures": [
+        "Traceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring/tools/content-migration/test_creature_level_rating.py\", line 20, in test_calibration_within_ten_percent\n    self.assertCountEqual(\nAssertionError: Element counts were not equal:\nFirst has 2, Second has 1:  ('Bulltaur Lair', 300)\n"
+      ],
+      "errors": [],
+      "skips": [],
+      "accepted": false
+    },
+    "changed_reference_value": {
+      "tests_run": 1,
+      "failures": [
+        "Traceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring/tools/content-migration/test_creature_level_rating.py\", line 20, in test_calibration_within_ten_percent\n    self.assertCountEqual(\nAssertionError: Element counts were not equal:\nFirst has 1, Second has 0:  ('Bulltaur Lair', 301)\nFirst has 0, Second has 1:  ('Bulltaur Lair', 300)\n"
+      ],
+      "errors": [],
+      "skips": [],
+      "accepted": false
+    },
+    "out_of_tolerance_control": {
+      "tests_run": 1,
+      "failures": [
+        "Traceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring/tools/content-migration/test_creature_level_rating.py\", line 29, in test_calibration_within_ten_percent\n    self.assertLessEqual(\nAssertionError: 300 not less than or equal to 30.0\n"
+      ],
+      "errors": [],
+      "skips": [],
+      "accepted": false
+    }
+  },
+  "calibration_source_values": [
+    {
+      "area": "Bulltaur Lair",
+      "observed_tibia": 300,
+      "oteryn": 300
+    },
+    {
+      "area": "Nimmersatt's Breeding Ground",
+      "observed_tibia": 454,
+      "oteryn": 454
+    },
+    {
+      "area": "Rotten Wasteland",
+      "observed_tibia": 790,
+      "oteryn": 790
+    }
+  ],
+  "engine_registration": {
+    "defined_functions": 108,
+    "selected_functions": 108,
+    "unique_selected": 108,
+    "missing": []
+  },
+  "source_sha256": {
+    "tools/content-migration/test_coin_converter_profiles.py": "e84f3a0a509e6d31141ea330f9dea0b9036b558207135cca6047cd35ece541d6",
+    "tools/content-migration/coin_converter_profiles.py": "26e714886992a89f32d1fd3f6ad94137d638bec7d669bd35e75001b0a9a56e52",
+    "tools/content-migration/test_creature_level_rating.py": "746f3133ef4e3066261f1fc93427486cea4c64113f12501bc2637b730b43fe12",
+    "tools/content-migration/creature_level_rating.py": "c28fa5c7fb93d0ce221adb70560039961b47fea554590778d58f963322537e53",
+    "tools/content-schema/item-authoring/test_engine_items.py": "ee782152b449d88bf3ef69ca55014fd318ad6461a6f41e81ba492adb32be4c72"
+  }
+}

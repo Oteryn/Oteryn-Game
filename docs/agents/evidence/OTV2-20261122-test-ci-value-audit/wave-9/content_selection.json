@@ -1,0 +1,41 @@
+{
+  "full_workflow_plan_count": 43,
+  "executed_selected_checks": [
+    {
+      "name": "test_boss_corpse_terminal_reference",
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_boss_corpse_terminal_reference"
+      ],
+      "cwd": "/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring/tools/content-migration"
+    },
+    {
+      "name": "test_coin_converter_profiles",
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_coin_converter_profiles"
+      ],
+      "cwd": "/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring/tools/content-migration"
+    },
+    {
+      "name": "test_creature_level_rating",
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_creature_level_rating"
+      ],
+      "cwd": "/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring/tools/content-migration"
+    }
+  ],
+  "seconds": 4.543,
+  "all_selected_passed": true,
+  "scope": "Three added complete modules only, through real check_inventory and parallel_checks.run_checks; remaining existing plan not re-executed here."
+}

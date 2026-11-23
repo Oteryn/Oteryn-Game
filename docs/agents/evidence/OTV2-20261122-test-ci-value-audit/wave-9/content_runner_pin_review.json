@@ -1,0 +1,18 @@
+{
+  "runner_sha256": "dcca590aaed8df321ecd1d7ccb2d7092291663e48bc035311c42e67a8611bede",
+  "exact_hash_reference_search_exit_code": 1,
+  "exact_hash_reference_matches": [],
+  "code_content_workflow_path_references": [
+    "HEAD:.github/workflows/content-tree-migration.yml",
+    "HEAD:content/npcs/S10-AUDIT.md",
+    "HEAD:tools/content-migration/regenerate_content.py",
+    "HEAD:tools/content-migration/test_bestiary_inventory.py",
+    "HEAD:tools/content-migration/test_parallel_checks.py",
+    "HEAD:tools/content-migration/world_project_v2_to_tree.py",
+    "HEAD:tools/content-schema/reward-claim-authoring/README.md",
+    "HEAD:tools/content-schema/starter-kit-authoring/README.md",
+    "HEAD:tools/repository/test_classify_content_routing.py"
+  ],
+  "producer_behavior": "world_project_v2_to_tree.py refresh_bestiary_inventory rewrites two specific Creature-count golden assertions (lines142-150); runner schedule changes do not alter them. No whole-file hash dependency found in tracked sources.",
+  "not_executed": "Full content regeneration is not run or claimed."
+}

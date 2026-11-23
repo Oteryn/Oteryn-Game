@@ -1,0 +1,267 @@
+{
+  "baseline_root": "/workspace/scratch/23c09bc1235f/Oteryn-Game-current-audit",
+  "candidate_root": "/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring",
+  "explicit_module_id_renames": {
+    "test_main_job_applicability.py": "governance_main_job_cases.py",
+    "test_merge_authority_applicability.py": "governance_merge_authority_cases.py"
+  },
+  "scope": "Actual three CLI entrypoints before; sole existing owner after. Discovery of the same governance slice. Not full CI timing.",
+  "before": {
+    "cli": {
+      "executions": 27,
+      "unique_cases": 16,
+      "ids": [
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_dispatch_cannot_qualify_a_stack",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_invalid_head_repository_and_state_fail_for_both_modes",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_main_and_dispatch_keep_exact_head_qualification",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_retargeted_event_fails_before_checkout",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_stack_runs_are_explicit_preflight",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_concurrency_separates_prs",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_main_and_missing_base_keep_existing_admission",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_metadata_edits_do_not_repeat_semantic_audit",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_metadata_runs_cannot_cancel_active_audit",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_qualifies_after_stack_ready_then_main_base_edit",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_source_and_retarget_runs_supersede_old_qualification",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_main_audits_execute_even_if_branch_filter_admits_stack_event",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_no_unguarded_root_can_launch_main_product_jobs_for_stack",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_queue_qualification_has_no_pr_base_guard",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_stack_skips_scope_and_both_always_aggregates",
+        "test_merge_authority_applicability.py::MergeAuthorityApplicabilityTests.test_native_stack_event_keeps_main_audit_inapplicable",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_concurrency_separates_prs",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_main_and_missing_base_keep_existing_admission",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_metadata_edits_do_not_repeat_semantic_audit",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_metadata_runs_cannot_cancel_active_audit",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_qualifies_after_stack_ready_then_main_base_edit",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_source_and_retarget_runs_supersede_old_qualification",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_main_audits_execute_even_if_branch_filter_admits_stack_event",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_no_unguarded_root_can_launch_main_product_jobs_for_stack",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_queue_qualification_has_no_pr_base_guard",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_stack_skips_scope_and_both_always_aggregates",
+        "test_merge_authority_applicability.py::MergeAuthorityApplicabilityTests.test_native_stack_event_keeps_main_audit_inapplicable"
+      ],
+      "normalized_ids": [
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_dispatch_cannot_qualify_a_stack",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_invalid_head_repository_and_state_fail_for_both_modes",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_main_and_dispatch_keep_exact_head_qualification",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_retargeted_event_fails_before_checkout",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_stack_runs_are_explicit_preflight",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_concurrency_separates_prs",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_main_and_missing_base_keep_existing_admission",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_metadata_edits_do_not_repeat_semantic_audit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_metadata_runs_cannot_cancel_active_audit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_qualifies_after_stack_ready_then_main_base_edit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_source_and_retarget_runs_supersede_old_qualification",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_main_audits_execute_even_if_branch_filter_admits_stack_event",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_no_unguarded_root_can_launch_main_product_jobs_for_stack",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_queue_qualification_has_no_pr_base_guard",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_stack_skips_scope_and_both_always_aggregates",
+        "governance_merge_authority_cases.py::MergeAuthorityApplicabilityTests.test_native_stack_event_keeps_main_audit_inapplicable",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_concurrency_separates_prs",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_main_and_missing_base_keep_existing_admission",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_metadata_edits_do_not_repeat_semantic_audit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_metadata_runs_cannot_cancel_active_audit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_qualifies_after_stack_ready_then_main_base_edit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_source_and_retarget_runs_supersede_old_qualification",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_main_audits_execute_even_if_branch_filter_admits_stack_event",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_no_unguarded_root_can_launch_main_product_jobs_for_stack",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_queue_qualification_has_no_pr_base_guard",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_stack_skips_scope_and_both_always_aggregates",
+        "governance_merge_authority_cases.py::MergeAuthorityApplicabilityTests.test_native_stack_event_keeps_main_audit_inapplicable"
+      ],
+      "commands": [
+        {
+          "entrypoint": "test_agent_governance_pr_targets.py",
+          "rc": 0,
+          "ids": [
+            "test_agent_governance_pr_targets.py::GovernanceTargets.test_dispatch_cannot_qualify_a_stack",
+            "test_agent_governance_pr_targets.py::GovernanceTargets.test_invalid_head_repository_and_state_fail_for_both_modes",
+            "test_agent_governance_pr_targets.py::GovernanceTargets.test_main_and_dispatch_keep_exact_head_qualification",
+            "test_agent_governance_pr_targets.py::GovernanceTargets.test_retargeted_event_fails_before_checkout",
+            "test_agent_governance_pr_targets.py::GovernanceTargets.test_stack_runs_are_explicit_preflight",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_concurrency_separates_prs",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_main_and_missing_base_keep_existing_admission",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_metadata_edits_do_not_repeat_semantic_audit",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_metadata_runs_cannot_cancel_active_audit",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_qualifies_after_stack_ready_then_main_base_edit",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_source_and_retarget_runs_supersede_old_qualification",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_main_audits_execute_even_if_branch_filter_admits_stack_event",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_no_unguarded_root_can_launch_main_product_jobs_for_stack",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_queue_qualification_has_no_pr_base_guard",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_stack_skips_scope_and_both_always_aggregates",
+            "test_merge_authority_applicability.py::MergeAuthorityApplicabilityTests.test_native_stack_event_keeps_main_audit_inapplicable"
+          ],
+          "stdout": "",
+          "stderr": "................\n----------------------------------------------------------------------\nRan 16 tests in 3.484s\n\nOK\n"
+        },
+        {
+          "entrypoint": "test_main_job_applicability.py",
+          "rc": 0,
+          "ids": [
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_concurrency_separates_prs",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_main_and_missing_base_keep_existing_admission",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_metadata_edits_do_not_repeat_semantic_audit",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_metadata_runs_cannot_cancel_active_audit",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_qualifies_after_stack_ready_then_main_base_edit",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_source_and_retarget_runs_supersede_old_qualification",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_main_audits_execute_even_if_branch_filter_admits_stack_event",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_no_unguarded_root_can_launch_main_product_jobs_for_stack",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_queue_qualification_has_no_pr_base_guard",
+            "test_main_job_applicability.py::MainJobApplicabilityTests.test_stack_skips_scope_and_both_always_aggregates"
+          ],
+          "stdout": "",
+          "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 3.233s\n\nOK\n"
+        },
+        {
+          "entrypoint": "test_merge_authority_applicability.py",
+          "rc": 0,
+          "ids": [
+            "test_merge_authority_applicability.py::MergeAuthorityApplicabilityTests.test_native_stack_event_keeps_main_audit_inapplicable"
+          ],
+          "stdout": "",
+          "stderr": ".\n----------------------------------------------------------------------\nRan 1 test in 0.240s\n\nOK\n"
+        }
+      ]
+    },
+    "discovery": {
+      "ids": [
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_dispatch_cannot_qualify_a_stack",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_invalid_head_repository_and_state_fail_for_both_modes",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_main_and_dispatch_keep_exact_head_qualification",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_retargeted_event_fails_before_checkout",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_stack_runs_are_explicit_preflight",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_concurrency_separates_prs",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_main_and_missing_base_keep_existing_admission",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_metadata_edits_do_not_repeat_semantic_audit",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_metadata_runs_cannot_cancel_active_audit",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_qualifies_after_stack_ready_then_main_base_edit",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_source_and_retarget_runs_supersede_old_qualification",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_main_audits_execute_even_if_branch_filter_admits_stack_event",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_no_unguarded_root_can_launch_main_product_jobs_for_stack",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_queue_qualification_has_no_pr_base_guard",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_stack_skips_scope_and_both_always_aggregates",
+        "test_merge_authority_applicability.py::MergeAuthorityApplicabilityTests.test_native_stack_event_keeps_main_audit_inapplicable",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_concurrency_separates_prs",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_main_and_missing_base_keep_existing_admission",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_metadata_edits_do_not_repeat_semantic_audit",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_metadata_runs_cannot_cancel_active_audit",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_qualifies_after_stack_ready_then_main_base_edit",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_architecture_source_and_retarget_runs_supersede_old_qualification",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_main_audits_execute_even_if_branch_filter_admits_stack_event",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_no_unguarded_root_can_launch_main_product_jobs_for_stack",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_queue_qualification_has_no_pr_base_guard",
+        "test_main_job_applicability.py::MainJobApplicabilityTests.test_stack_skips_scope_and_both_always_aggregates",
+        "test_merge_authority_applicability.py::MergeAuthorityApplicabilityTests.test_native_stack_event_keeps_main_audit_inapplicable"
+      ],
+      "tests": 27,
+      "errors": 0,
+      "failures": 0,
+      "skips": 0
+    },
+    "seconds": 15.1392
+  },
+  "after": {
+    "cli": {
+      "executions": 16,
+      "unique_cases": 16,
+      "ids": [
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_dispatch_cannot_qualify_a_stack",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_invalid_head_repository_and_state_fail_for_both_modes",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_main_and_dispatch_keep_exact_head_qualification",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_retargeted_event_fails_before_checkout",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_stack_runs_are_explicit_preflight",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_concurrency_separates_prs",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_main_and_missing_base_keep_existing_admission",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_metadata_edits_do_not_repeat_semantic_audit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_metadata_runs_cannot_cancel_active_audit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_qualifies_after_stack_ready_then_main_base_edit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_source_and_retarget_runs_supersede_old_qualification",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_main_audits_execute_even_if_branch_filter_admits_stack_event",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_no_unguarded_root_can_launch_main_product_jobs_for_stack",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_queue_qualification_has_no_pr_base_guard",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_stack_skips_scope_and_both_always_aggregates",
+        "governance_merge_authority_cases.py::MergeAuthorityApplicabilityTests.test_native_stack_event_keeps_main_audit_inapplicable"
+      ],
+      "normalized_ids": [
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_dispatch_cannot_qualify_a_stack",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_invalid_head_repository_and_state_fail_for_both_modes",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_main_and_dispatch_keep_exact_head_qualification",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_retargeted_event_fails_before_checkout",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_stack_runs_are_explicit_preflight",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_concurrency_separates_prs",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_main_and_missing_base_keep_existing_admission",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_metadata_edits_do_not_repeat_semantic_audit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_metadata_runs_cannot_cancel_active_audit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_qualifies_after_stack_ready_then_main_base_edit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_source_and_retarget_runs_supersede_old_qualification",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_main_audits_execute_even_if_branch_filter_admits_stack_event",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_no_unguarded_root_can_launch_main_product_jobs_for_stack",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_queue_qualification_has_no_pr_base_guard",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_stack_skips_scope_and_both_always_aggregates",
+        "governance_merge_authority_cases.py::MergeAuthorityApplicabilityTests.test_native_stack_event_keeps_main_audit_inapplicable"
+      ],
+      "commands": [
+        {
+          "entrypoint": "test_agent_governance_pr_targets.py",
+          "rc": 0,
+          "ids": [
+            "test_agent_governance_pr_targets.py::GovernanceTargets.test_dispatch_cannot_qualify_a_stack",
+            "test_agent_governance_pr_targets.py::GovernanceTargets.test_invalid_head_repository_and_state_fail_for_both_modes",
+            "test_agent_governance_pr_targets.py::GovernanceTargets.test_main_and_dispatch_keep_exact_head_qualification",
+            "test_agent_governance_pr_targets.py::GovernanceTargets.test_retargeted_event_fails_before_checkout",
+            "test_agent_governance_pr_targets.py::GovernanceTargets.test_stack_runs_are_explicit_preflight",
+            "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_concurrency_separates_prs",
+            "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_main_and_missing_base_keep_existing_admission",
+            "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_metadata_edits_do_not_repeat_semantic_audit",
+            "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_metadata_runs_cannot_cancel_active_audit",
+            "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_qualifies_after_stack_ready_then_main_base_edit",
+            "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_source_and_retarget_runs_supersede_old_qualification",
+            "governance_main_job_cases.py::MainJobApplicabilityTests.test_main_audits_execute_even_if_branch_filter_admits_stack_event",
+            "governance_main_job_cases.py::MainJobApplicabilityTests.test_no_unguarded_root_can_launch_main_product_jobs_for_stack",
+            "governance_main_job_cases.py::MainJobApplicabilityTests.test_queue_qualification_has_no_pr_base_guard",
+            "governance_main_job_cases.py::MainJobApplicabilityTests.test_stack_skips_scope_and_both_always_aggregates",
+            "governance_merge_authority_cases.py::MergeAuthorityApplicabilityTests.test_native_stack_event_keeps_main_audit_inapplicable"
+          ],
+          "stdout": "",
+          "stderr": "................\n----------------------------------------------------------------------\nRan 16 tests in 3.439s\n\nOK\n"
+        }
+      ]
+    },
+    "discovery": {
+      "ids": [
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_dispatch_cannot_qualify_a_stack",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_invalid_head_repository_and_state_fail_for_both_modes",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_main_and_dispatch_keep_exact_head_qualification",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_retargeted_event_fails_before_checkout",
+        "test_agent_governance_pr_targets.py::GovernanceTargets.test_stack_runs_are_explicit_preflight",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_concurrency_separates_prs",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_main_and_missing_base_keep_existing_admission",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_metadata_edits_do_not_repeat_semantic_audit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_metadata_runs_cannot_cancel_active_audit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_qualifies_after_stack_ready_then_main_base_edit",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_architecture_source_and_retarget_runs_supersede_old_qualification",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_main_audits_execute_even_if_branch_filter_admits_stack_event",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_no_unguarded_root_can_launch_main_product_jobs_for_stack",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_queue_qualification_has_no_pr_base_guard",
+        "governance_main_job_cases.py::MainJobApplicabilityTests.test_stack_skips_scope_and_both_always_aggregates",
+        "governance_merge_authority_cases.py::MergeAuthorityApplicabilityTests.test_native_stack_event_keeps_main_audit_inapplicable"
+      ],
+      "tests": 16,
+      "errors": 0,
+      "failures": 0,
+      "skips": 0
+    },
+    "seconds": 7.2311
+  },
+  "unique_case_ids_unchanged": true,
+  "renamed_helpers_identical_bytes": {
+    "test_main_job_applicability.py": {
+      "new_path": "governance_main_job_cases.py",
+      "sha256": "6a7d38f848f239365d28ec3ff715bc9496e1ca8537ccab614a05b316321e3388"
+    },
+    "test_merge_authority_applicability.py": {
+      "new_path": "governance_merge_authority_cases.py",
+      "sha256": "58db959fdf945aa54ce7149d0c20ff49d671d185ac3d8a81b269a261f0e727d8"
+    }
+  },
+  "protected_workflow_git_blob": "42d84c9089cdef928c6cb17268269156c87c0abb"
+}

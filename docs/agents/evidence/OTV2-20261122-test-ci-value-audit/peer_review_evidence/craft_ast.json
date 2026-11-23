@@ -1,0 +1,25 @@
+{
+  "before_method_count": 10,
+  "after_method_count": 7,
+  "changed_retained_method_bodies": [],
+  "removed_methods": [
+    {
+      "id": "TaintedSoulsIntegration.test_source_script_and_nonstackable_output_are_independently_qualified",
+      "byte_equivalent_AST_to_retained": [
+        "TaintedSouls.test_source_script_and_nonstackable_output_are_independently_qualified"
+      ]
+    },
+    {
+      "id": "TaintedSoulsIntegration.test_invalid_whole_stack_or_output_count_never_generates_a_recipe",
+      "byte_equivalent_AST_to_retained": [
+        "TaintedSouls.test_invalid_whole_stack_or_output_count_never_generates_a_recipe"
+      ]
+    },
+    {
+      "id": "TaintedSoulsIntegration.test_source_recipe_uses_qm22_capture_target_stack_policy",
+      "byte_equivalent_AST_to_retained": [
+        "TaintedSouls.test_source_recipe_uses_qm22_capture_target_stack_policy"
+      ]
+    }
+  ]
+}

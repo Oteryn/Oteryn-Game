@@ -1,0 +1,33 @@
+{
+  "diagnostics_direct": 44,
+  "all_discovery": 114,
+  "unique": 88,
+  "duplicates": {
+    "test_node_boot_tools.FailureSummaryTests.test_output_is_bounded_and_appended_to_the_step_summary": 2,
+    "test_node_boot_tools.FailureSummaryTests.test_rows_group_by_root_then_gap_then_evidence": 2,
+    "test_node_boot_tools.FailureSummaryTests.test_run_sh_prints_the_summary_before_the_stage_table": 2,
+    "test_node_boot_tools.KnobTests.test_defaults_are_the_ci_values": 2,
+    "test_node_boot_tools.KnobTests.test_parallel_stack_overrides_are_accepted": 2,
+    "test_node_boot_tools.KnobTests.test_pvp_auto_port_is_allocated_by_the_real_listener": 2,
+    "test_node_boot_tools.KnobTests.test_pvp_boot_reads_the_structured_listener_event": 2,
+    "test_node_boot_tools.KnobTests.test_pvp_override_cannot_alias_another_listener": 2,
+    "test_node_boot_tools.KnobTests.test_pvp_port_allocation_leaves_an_occupied_adjacent_listener_untouched": 2,
+    "test_node_boot_tools.KnobTests.test_pvp_port_can_override_an_unusable_adjacent_port": 2,
+    "test_node_boot_tools.KnobTests.test_unsafe_overrides_block_before_any_privileged_command": 2,
+    "test_node_boot_tools.PgObserveTests.test_dump_writes_stage_files_and_prints_a_bounded_summary": 2,
+    "test_node_boot_tools.PgObserveTests.test_redact_sql_keeps_shape_and_drops_values": 2,
+    "test_node_boot_tools.PgObserveTests.test_run_sh_starts_postgres_with_observability_settings": 2,
+    "test_node_boot_tools.PgObserveTests.test_server_log_filter_keeps_redacted_lock_deadlock_and_slow_records": 2,
+    "test_node_boot_tools.ReuseTests.test_kept_or_reused_stack_never_reports_a_pass": 2,
+    "test_node_boot_tools.ReuseTests.test_reuse_refuses_missing_foreign_or_stopped_stacks": 2,
+    "test_node_boot_tools.ReuseTests.test_saved_state_is_owner_only_and_restores_the_seam_inputs": 2,
+    "test_node_boot_tools.ReuseTests.test_world_mp_requires_fresh_stack_but_can_teardown": 2,
+    "test_node_boot_tools.SeamPassThroughTests.test_seam_rejects_an_exact_filter_that_matches_zero_tests": 2,
+    "test_node_boot_tools.SeamPassThroughTests.test_seam_runs_spawn_fence_regression_with_database_url": 2,
+    "test_node_boot_tools.SeamPassThroughTests.test_seam_stage_passes_harness_knobs_only_when_set": 2,
+    "test_node_boot_tools.StageDumpTests.test_each_stage_end_dumps_postgres_and_a_failed_stage_is_verbose": 2,
+    "test_node_boot_tools.StageDumpTests.test_successful_process_cannot_hide_a_changed_failure_signature": 2,
+    "test_node_boot_tools.TimelineTests.test_command_line_writes_json": 2,
+    "test_node_boot_tools.TimelineTests.test_node_log_and_pg_samples_become_chrome_trace_events": 2
+  }
+}

@@ -1,0 +1,13 @@
+--- a/tools/repository/test_agent_governance_pr_targets.py
++++ b/tools/repository/test_agent_governance_pr_targets.py
+@@ -11,2 +10,0 @@
+-from test_main_job_applicability import MainJobApplicabilityTests  # noqa: F401
+-from test_merge_authority_applicability import MergeAuthorityApplicabilityTests  # noqa: F401
+--- a/.github/workflows/agent-governance.yml
++++ b/.github/workflows/agent-governance.yml
+@@ -212 +212,4 @@
+-        run: python tools/repository/test_agent_governance_pr_targets.py
++        run: |
++          python tools/repository/test_agent_governance_pr_targets.py
++          python tools/repository/test_main_job_applicability.py
++          python tools/repository/test_merge_authority_applicability.py

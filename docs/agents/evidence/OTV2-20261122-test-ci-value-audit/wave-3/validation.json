@@ -1,0 +1,93 @@
+{
+  "schema": "OTERYN_TEST_CI_AUDIT_WAVE_3_EVIDENCE/v1",
+  "source_head": "2952e155ad6f371d1e4b3b351acd57d4757e386e",
+  "source_tree": "1bb32f8f3365cb440cd9b9ad42ba5f117716a120",
+  "base_head": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "runtime": {
+    "machine": "oteryn-vps",
+    "python": "3.14.4",
+    "checkout": "clean detached exact source head",
+    "local_repo_status_after": "clean",
+    "postgres": false,
+    "rust_executed": false,
+    "game_platform": false
+  },
+  "manual_read": {
+    "full_source_files": 8,
+    "literal_test_methods": 25,
+    "passed_files": 7,
+    "failed_files": 1
+  },
+  "test": {
+    "command": "cd tools/content-migration && python3 -m unittest -v test_authored_quest_timed_custody test_authored_static_item_constructors test_boss2_craft_profile_join test_boss2_native_corpse_profile_coherence test_boss_conditional_bag_profile test_boss_corpse_terminal_reference test_boss_movement_profiles test_boss_reward_binding_policy",
+    "original": {
+      "exit": 1,
+      "ran": 25,
+      "passed": 24,
+      "failed": 1,
+      "duration_seconds": 23.225,
+      "first_failure": "test_boss_corpse_terminal_reference.ExistingElderReferenceTests.test_existing_canonical_reference_is_retained_without_second_allocation: AssertionError: 34123 != 34117"
+    },
+    "scratch_before_guard": {
+      "exit": 0,
+      "ran": 25,
+      "passed": 25,
+      "failed": 0,
+      "duration_seconds": 23.323
+    },
+    "direct_original": {
+      "command": "python3 test_boss_corpse_terminal_reference.py",
+      "exit": 0,
+      "output_bytes": 0,
+      "methods_executed": 0
+    },
+    "direct_scratch_full_patch": {
+      "command": "python3 test_boss_corpse_terminal_reference.py",
+      "exit": 0,
+      "ran": 1,
+      "passed": 1,
+      "duration_seconds": 0.488
+    }
+  },
+  "proposed_patch": "terminal_reference_proposal.patch",
+  "patch_applied_to_branch": false,
+  "current_index": {
+    "path": "content/items/index.json",
+    "blob_sha": "9f8d2909c214d9d7c384b8fb437c4ddb3cea20f1",
+    "record_count": 34123,
+    "shards": 69
+  },
+  "source_identity": {
+    "same_base_head_blobs": [
+      "tools/content-migration/test_boss_corpse_terminal_reference.py",
+      "content/items/index.json",
+      "tools/content-migration/boss_corpse_terminal_reference.py"
+    ],
+    "same_current_main_blobs": [
+      "tools/content-migration/test_boss_corpse_terminal_reference.py",
+      "content/items/index.json"
+    ]
+  },
+  "workflow_selection": {
+    "workflow_index_count": 78,
+    "none_of_eight_named_in_workflow_commands": true,
+    "none_of_eight_named_in_check_inventory": true,
+    "indirect_invocation": "UNKNOWN"
+  },
+  "queue": {
+    "wave2_total": 695,
+    "previous_full_reads": 10,
+    "this_wave_full_reads": 8,
+    "remain": 677,
+    "by_status": {
+      "STATIC_AST_ONLY": 433,
+      "PARTIALLY_REVIEWED": 10,
+      "INVENTORY_ONLY": 234
+    }
+  },
+  "review": {
+    "prior_native_reviews": 1,
+    "reviewed_sha": "978d40a02e9e9d4b1d8c16fe7dea25aad586e108",
+    "requested_new_review": false
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "command": [
+    "python3",
+    "tools/repository/test_heavy_gate.py",
+    "HeavyGateTests.test_node_boot_aggregate_fails_closed"
+  ],
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "FF\n======================================================================\nFAIL: test_node_boot_aggregate_fails_closed (__main__.HeavyGateTests.test_node_boot_aggregate_fails_closed) (workflow='pr-postgres-harness.yml')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring/tools/repository/test_heavy_gate.py\", line 806, in test_node_boot_aggregate_fails_closed\n    self.assertEqual(self.run_aggregate(filename).returncode, 0)\nAssertionError: 1 != 0\n\n======================================================================\nFAIL: test_node_boot_aggregate_fails_closed (__main__.HeavyGateTests.test_node_boot_aggregate_fails_closed) (workflow='merge-group-gate.yml')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring/tools/repository/test_heavy_gate.py\", line 806, in test_node_boot_aggregate_fails_closed\n    self.assertEqual(self.run_aggregate(filename).returncode, 0)\nAssertionError: 1 != 0\n\n----------------------------------------------------------------------\nRan 1 test in 0.491s\n\nFAILED (failures=2)\n"
+}

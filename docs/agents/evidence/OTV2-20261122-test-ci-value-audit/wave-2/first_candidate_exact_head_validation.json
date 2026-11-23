@@ -1,0 +1,504 @@
+{
+  "head": "978d40a02e9e9d4b1d8c16fe7dea25aad586e108",
+  "tree": "bee850896ef48b8d947a6cdb36a95a1475ce2460",
+  "checked_at": "2026-11-22T23:01:14.128821+00:00",
+  "clean_before_and_after": true,
+  "checks": [
+    {
+      "name": "repository_policy",
+      "argv": [
+        "python",
+        "tools/repository/validate_repository_policy.py"
+      ],
+      "exit_code": 0,
+      "seconds": 2.993,
+      "stdout": "Post-merge exact-candidate routing regressions PASS\nRepository policy validation passed (23 files, 78 workflows).\n",
+      "stderr": ""
+    },
+    {
+      "name": "workflow_pins",
+      "argv": [
+        "python",
+        "tools/repository/refresh_ci_workflow_pins.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 0.056,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "agent_governance",
+      "argv": [
+        "python",
+        "tools/agents/validate_governance.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.289,
+      "stdout": "Governance validation passed for Oteryn/Oteryn-Game.\nValidated 22 required policy documents and 9 project lanes.\n",
+      "stderr": ""
+    },
+    {
+      "name": "agent_tests",
+      "argv": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/agents/tests"
+      ],
+      "exit_code": 0,
+      "seconds": 0.633,
+      "stdout": "",
+      "stderr": ".......................................................................................................................................\n----------------------------------------------------------------------\nRan 135 tests in 0.427s\n\nOK\n"
+    },
+    {
+      "name": "node_boot_diagnostics",
+      "argv": [
+        "python",
+        "tools/qualification/node_boot/test_diagnostics.py"
+      ],
+      "exit_code": 0,
+      "seconds": 2.941,
+      "stdout": "",
+      "stderr": "................................................\n----------------------------------------------------------------------\nRan 48 tests in 2.788s\n\nOK\n"
+    },
+    {
+      "name": "node_boot_full_discovery",
+      "argv": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/qualification/node_boot",
+        "-p",
+        "test_*.py"
+      ],
+      "exit_code": 1,
+      "seconds": 5.053,
+      "stdout": "",
+      "stderr": ".........................................................................EEEEE.EE.........\n======================================================================\nERROR: test_empty_reply_is_diagnosed (test_provision.ProvisionTests.test_empty_reply_is_diagnosed)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 72, in test_empty_reply_is_diagnosed\n    self.exchange(b\"\")\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 24, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_oversized_reply_diagnostic_contains_only_64_source_bytes (test_provision.ProvisionTests.test_oversized_reply_diagnostic_contains_only_64_source_bytes)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 64, in test_oversized_reply_diagnostic_contains_only_64_source_bytes\n    self.exchange(b\"x\" * 64 + b\"Y\")\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 24, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_qualified_reply_is_accepted (test_provision.ProvisionTests.test_qualified_reply_is_accepted)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 47, in test_qualified_reply_is_accepted\n    self.exchange(b\"qualified\\n\")\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 24, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_refusal_retains_the_exact_node_answer (test_provision.ProvisionTests.test_refusal_retains_the_exact_node_answer)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 51, in test_refusal_retains_the_exact_node_answer\n    self.exchange(b\"rejected\\n\")\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 24, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_reply_diagnostic_escapes_control_and_non_ascii_bytes (test_provision.ProvisionTests.test_reply_diagnostic_escapes_control_and_non_ascii_bytes)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 56, in test_reply_diagnostic_escapes_control_and_non_ascii_bytes\n    self.exchange(b\"rejected\\n\\x1b[31m\\xff\\r\")\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 24, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_refusal_retains_the_exact_node_answer (test_provision.SpawnTests.test_refusal_retains_the_exact_node_answer)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 111, in test_refusal_retains_the_exact_node_answer\n    self.exchange(b\"rejected reason=unknown_creature\\n\")\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 83, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_spawned_reply_is_returned (test_provision.SpawnTests.test_spawned_reply_is_returned)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 107, in test_spawned_reply_is_returned\n    self.assertEqual(self.exchange(reply), f\"spawned {self.IDENTITY} 7\")\n                     ^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/qualification/node_boot/test_provision.py\", line 83, in exchange\n    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/socket.py\", line 233, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\nPermissionError: [Errno 1] Operation not permitted\n\n----------------------------------------------------------------------\nRan 90 tests in 4.905s\n\nFAILED (errors=7)\n"
+    },
+    {
+      "name": "craft_discovery",
+      "argv": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/craft-authoring",
+        "-p",
+        "test_tainted_souls.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.916,
+      "stdout": "",
+      "stderr": ".......\n----------------------------------------------------------------------\nRan 7 tests in 0.555s\n\nOK\n"
+    },
+    {
+      "name": "craft_direct",
+      "argv": [
+        "python",
+        "tools/content-schema/craft-authoring/test_tainted_souls.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.891,
+      "stdout": "",
+      "stderr": ".......\n----------------------------------------------------------------------\nRan 7 tests in 0.621s\n\nOK\n"
+    },
+    {
+      "name": "shell_syntax",
+      "argv": [
+        "bash",
+        "-n",
+        "tools/qualification/node_boot/run.sh"
+      ],
+      "exit_code": 0,
+      "seconds": 0.004,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "whitespace",
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+        "HEAD"
+      ],
+      "exit_code": 0,
+      "seconds": 0.021,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "reliability_checklist",
+      "argv": [
+        "python",
+        "tools/repository/reliability_checklist.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.183,
+      "stdout": "Reliability checklist: 6 item(s) match this diff.\n\n- [postgres-case-executed] A PostgreSQL case that passes without a database proves nothing\n  matched: line +| `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/current_fence_receipt_read.rs::cu\n  check:   run the one filtered PostgreSQL target against a real database and show it executed (its marker and a non-trivial duration); otherwise report it as not run\n  source:  .claude/skills/oteryn-dev/references/local-checks.md#postgresql-tests\n- [ci-control-plane] Workflow or repository-tool change\n  matched: path .github/workflows/agent-governance.yml\n  check:   python3 tools/repository/validate_repository_policy.py and every tools/repository/test_*.py; timeouts, budgets and recursion limits change only with the owner's consent\n  source:  .claude/skills/oteryn-dev/references/ci-merge.md#how-the-gate-works-now\n- [shell-exit-status] Pipeline hides the exit status (tee, tail) or errexit stops before evidence is written\n  matched: line +              \"run\": \"set -euo pipefail\\nlisting=\\\"$(cat \\\"$RUNNER_TEMP/archive-list.md\\\")\\\"\\ngit c\n  check:   set -o pipefail or read ${PIPESTATUS[0]}; on a step that must record evidence after a failure, turn errexit off and capture the status inside each branch; simulate the step with a failing stub\n  source:  .claude/skills/oteryn-dev/references/local-checks.md#build-hygiene\n- [log-redaction] Logs or evidence published without redaction\n  matched: line +              \"run\": \"set -euo pipefail\\nlisting=\\\"$(cat \\\"$RUNNER_TEMP/archive-list.md\\\")\\\"\\ngit c\n  check:   drop lines matching password|postgres://|mysql://|secret|token|key|grant before upload; never print a database URL or password\n  source:  .claude/skills/oteryn-dev/references/local-checks.md#postgresql-tests\n- [node-boot-harness] Node boot harness change\n  matched: path tools/qualification/node_boot/known_fail_rows.txt\n  check:   bash -n tools/qualification/node_boot/run.sh, python3 tools/qualification/node_boot/test_diagnostics.py, python3 tools/qualification/node_boot/test_matrix.py when present, and python3 tools/repository/test_heavy_gate.py\n  source:  .claude/skills/oteryn-dev/references/local-checks.md#jobs-that-only-run-after-the-merge\n- [governance] Agent governance files\n  matched: path docs/agents/evidence/OTV2-20261122-test-ci-value-audit/README.md\n  check:   python3 tools/agents/validate_governance.py and python3 -m unittest discover -s tools/agents/tests\n  source:  .claude/skills/oteryn-dev/references/local-checks.md#order-cheapest-first\n",
+      "stderr": ""
+    },
+    {
+      "name": "repo/test_agent_governance_pr_targets.py",
+      "argv": [
+        "python",
+        "tools/repository/test_agent_governance_pr_targets.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.159,
+      "stdout": "",
+      "stderr": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.038s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_benchmark_rust_cache.py",
+      "argv": [
+        "python",
+        "tools/repository/test_benchmark_rust_cache.py"
+      ],
+      "exit_code": 0,
+      "seconds": 4.67,
+      "stdout": "",
+      "stderr": "...........\n----------------------------------------------------------------------\nRan 11 tests in 4.573s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_check_dispatch_pg_shards.py",
+      "argv": [
+        "python",
+        "tools/repository/test_check_dispatch_pg_shards.py"
+      ],
+      "exit_code": 1,
+      "seconds": 0.136,
+      "stdout": "",
+      "stderr": ".....EFF..\n======================================================================\nERROR: test_repository_shards_cover_the_unsharded_inventory (__main__.CheckDispatchPgShardsTests.test_repository_shards_cover_the_unsharded_inventory)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/repository/test_check_dispatch_pg_shards.py\", line 50, in test_repository_shards_cover_the_unsharded_inventory\n    check(3)\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/repository/check_dispatch_pg_shards.py\", line 117, in check\n    subprocess.run([os.environ.get(\"RUSTC\", \"rustc\"), \"--edition=2024\",\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 548, in run\n    with Popen(*popenargs, **kwargs) as process:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 1026, in __init__\n    self._execute_child(args, executable, preexec_fn, close_fds,\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 1955, in _execute_child\n    raise child_exception_type(errno_num, err_msg, err_filename)\nFileNotFoundError: [Errno 2] No such file or directory: 'rustc'\n\n======================================================================\nFAIL: test_resolver_cli_emits_only_one_shard_for_the_retained_retry (__main__.CheckDispatchPgShardsTests.test_resolver_cli_emits_only_one_shard_for_the_retained_retry)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/repository/test_check_dispatch_pg_shards.py\", line 85, in test_resolver_cli_emits_only_one_shard_for_the_retained_retry\n    self.assertEqual(result.returncode, 0, result.stderr)\nAssertionError: 1 != 0 : Traceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/repository/check_dispatch_pg_shards.py\", line 177, in <module>\n    main()\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/repository/check_dispatch_pg_shards.py\", line 169, in main\n    selected = check(args.count, exact_test=args.test)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/repository/check_dispatch_pg_shards.py\", line 117, in check\n    subprocess.run([os.environ.get(\"RUSTC\", \"rustc\"), \"--edition=2024\",\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 548, in run\n    with Popen(*popenargs, **kwargs) as process:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 1026, in __init__\n    self._execute_child(args, executable, preexec_fn, close_fds,\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 1955, in _execute_child\n    raise child_exception_type(errno_num, err_msg, err_filename)\nFileNotFoundError: [Errno 2] No such file or directory: 'rustc'\n\n\n======================================================================\nFAIL: test_resolver_cli_rejects_unknown_test_without_a_selection (__main__.CheckDispatchPgShardsTests.test_resolver_cli_rejects_unknown_test_without_a_selection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/repository/test_check_dispatch_pg_shards.py\", line 97, in test_resolver_cli_rejects_unknown_test_without_a_selection\n    self.assertIn(\"missing exact PostgreSQL test\", result.stderr)\nAssertionError: 'missing exact PostgreSQL test' not found in 'Traceback (most recent call last):\\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/repository/check_dispatch_pg_shards.py\", line 177, in <module>\\n    main()\\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/repository/check_dispatch_pg_shards.py\", line 169, in main\\n    selected = check(args.count, exact_test=args.test)\\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/repository/check_dispatch_pg_shards.py\", line 117, in check\\n    subprocess.run([os.environ.get(\"RUSTC\", \"rustc\"), \"--edition=2024\",\\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 548, in run\\n    with Popen(*popenargs, **kwargs) as process:\\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 1026, in __init__\\n    self._execute_child(args, executable, preexec_fn, close_fds,\\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 1955, in _execute_child\\n    raise child_exception_type(errno_num, err_msg, err_filename)\\nFileNotFoundError: [Errno 2] No such file or directory: \\'rustc\\'\\n'\n\n----------------------------------------------------------------------\nRan 10 tests in 0.070s\n\nFAILED (failures=2, errors=1)\n"
+    },
+    {
+      "name": "repo/test_check_duplicate_test_sources.py",
+      "argv": [
+        "python",
+        "tools/repository/test_check_duplicate_test_sources.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.103,
+      "stdout": "",
+      "stderr": "..............\n----------------------------------------------------------------------\nRan 14 tests in 0.007s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_classify_content_routing.py",
+      "argv": [
+        "python",
+        "tools/repository/test_classify_content_routing.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.057,
+      "stdout": "PASS test_pr_905_content_tree_shape_is_not_full\nPASS test_content_real_consumers_still_select_product_lanes\nPASS test_unknown_inputs_remain_fail_closed\nPASS test_exact_candidate_scan_finds_existing_content_world_consumer\nPASS test_pr_content_deferral_is_explicit_and_narrow\nPASS test_deploy_inputs_use_exact_consumer_routing\nPASS test_main_defers_content_only_for_pull_request_events\nContent/import exact-consumer routing regressions PASS\n",
+      "stderr": ""
+    },
+    {
+      "name": "repo/test_classify_post_merge_lanes.py",
+      "argv": [
+        "python",
+        "tools/repository/test_classify_post_merge_lanes.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.442,
+      "stdout": "Post-merge exact-candidate routing regressions PASS\n",
+      "stderr": ""
+    },
+    {
+      "name": "repo/test_classify_pr_test_lanes.py",
+      "argv": [
+        "python",
+        "tools/repository/test_classify_pr_test_lanes.py"
+      ],
+      "exit_code": 0,
+      "seconds": 4.324,
+      "stdout": "Reusing successful hosted Rust qualification from run/attempt 7/1.\nReusing successful hosted Rust qualification from run/attempt 7/1.\nReusing successful hosted Rust qualification from run/attempt 7/1.\nReconfirmed hosted Rust qualification from run/attempt 7/1.\nPrevious qualification unavailable.\nMetadata concurrency PASS: isolated edits, retarget cancellation and canonical full game-gate\nRepository tool dependencies PASS: auxiliary case, consumer promotion, security and unknown FULL\nRouting matrix PASS: product, auxiliary, exact consumers, controls, Atlas and fail-closed cases\nExact candidate reference scan PASS: file, directory, package and canonical-control consumers\nDirectory reference left boundary PASS: prose ignored; quoted, joined and exact-file consumers kept\nWorkflow routing PASS: auxiliary workflows narrow, gate workflows and selectors stay FULL\nDocumentation fast path PASS: docs-only skip, mixed/control/unknown/consumed FULL\nCandidate mode PASS: regular trees accepted, special modes fail closed\nAudit rotation PASS: exact PR pin replacement only, full routing for all other cases\nAudit rotation PASS: exact PR pin replacement only, full routing for all other cases\nLarge PR fallback PASS: exact Git trees recover complete changed-file evidence\nScope count drift PASS: seven positive-first transitions recover exact Git; zero-first selects FULL\nScope count drift PASS: immutable recovery or FULL fallback; authority and count validity stay strict\nScope identity fences PASS: five identity changes fail with stable or drifting counts and no outputs\nScope invalid counts PASS: both reads reject negative/missing/null/string/float/bool without outputs\nScope stable small PR PASS: exact immutable comparison records remain complete\nAggregate PASS: only fast PR lanes, required failures/cancellations/skips and invalid routing fail closed\nServer qualification PASS: boot/transport/durability paths select it, unrelated paths skip, malformed input fails closed\nWorld bundle PASS: each compiler input selects the lane, a docs-only change skips, malformed input fails closed\nCLI fallback PASS: malformed classifier inputs remain conservative FULL\nExact-candidate PR routing regressions PASS\n",
+      "stderr": "fatal: not a tree object\nfatal: not a tree object\n"
+    },
+    {
+      "name": "repo/test_classify_quest_authoring_scope.py",
+      "argv": [
+        "python",
+        "tools/repository/test_classify_quest_authoring_scope.py"
+      ],
+      "exit_code": 0,
+      "seconds": 19.694,
+      "stdout": "Quest scope: full (not a Quest tool doc: content/items/a.json)\nDonor-source check: skipped (no donor input changed)\nQuest scope: full (not a Quest tool doc: content/quests/a.json)\nDonor-source check: run (donor input content/quests/a.json)\nQuest scope: full (classification failed closed: FileNotFoundError)\nDonor-source check: run (classification failed closed: FileNotFoundError)\nQuest scope: full (doc path outside the plain alphabet)\nDonor-source check: run (donor input tools/content-schema/quest-authoring/x?full?false?donor?false?.md)\nQuest scope: full (classification failed closed: ValueError)\nDonor-source check: run (classification failed closed: ValueError)\nQuest scope: full (classification failed closed: ValueError)\nDonor-source check: run (classification failed closed: ValueError)\nQuest scope: full (classification failed closed: ValueError)\nDonor-source check: run (classification failed closed: ValueError)\nQuest scope: docs_only (1 unreferenced Quest tool doc(s))\nDonor-source check: run (donor input tools/content-schema/quest-authoring/README.md)\nQuest scope: full (classification failed closed: ValueError)\nDonor-source check: run (classification failed closed: ValueError)\n",
+      "stderr": "..............................\n----------------------------------------------------------------------\nRan 30 tests in 19.550s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_collect_rust_fast_results.py",
+      "argv": [
+        "python",
+        "tools/repository/test_collect_rust_fast_results.py"
+      ],
+      "exit_code": 0,
+      "seconds": 1.721,
+      "stdout": "RUST_FAST_RESULT role=lib shard=2/5 job=101 attempt=1 artifact=201\nRUST_FAST_RESULT role=dispatch-1 shard=2/5 job=102 attempt=2 artifact=202\nRUST_FAST_RESULT role=lib shard=2/5 job=101 attempt=1 artifact=201\nRUST_FAST_RESULT role=dispatch-1 shard=2/5 job=102 attempt=2 artifact=202\n",
+      "stderr": ".....................\n----------------------------------------------------------------------\nRan 21 tests in 1.628s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_heavy_gate.py",
+      "argv": [
+        "python",
+        "tools/repository/test_heavy_gate.py"
+      ],
+      "exit_code": 0,
+      "seconds": 18.696,
+      "stdout": "/tmp/tmpalrhptn2/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp9tvks457/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp21qpo7se/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp_g3c95lw/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpm7pws67b/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpxxxxz4uh/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpyir0wcmf/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp_8doxm07/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp43v5mz_v/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp7f9v4tot/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmprop9ntop/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpot9laqlw/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpgg631tye/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmptnf1cjtq/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpwq2dvevl/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpxrrfdm9v/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmps6s9ym6h/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpgn039fby/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpz3zfvuac/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpm81vw8nh/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmptp8h_80k/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp9cjpg647/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpi29wp8ho/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp73cnid32/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpfdf6rhqw/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpl_x0ljgu/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpw5qwxy2d/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp6uga8f0s/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpy8cvrxq0/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp59a0prdv/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpbz3oyw82/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpmwt5aooq/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp22btjzqu/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp3mh0_bqx/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp2vmefecf/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpbbbqp17p/pg-planner/pg_archive_affinity.py: OK\n",
+      "stderr": "..........................\n----------------------------------------------------------------------\nRan 26 tests in 18.611s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_job_result_key.py",
+      "argv": [
+        "python",
+        "tools/repository/test_job_result_key.py"
+      ],
+      "exit_code": 0,
+      "seconds": 6.604,
+      "stdout": "",
+      "stderr": "...............................\n----------------------------------------------------------------------\nRan 31 tests in 6.518s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_main_job_applicability.py",
+      "argv": [
+        "python",
+        "tools/repository/test_main_job_applicability.py"
+      ],
+      "exit_code": 0,
+      "seconds": 3.303,
+      "stdout": "",
+      "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 3.198s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_merge_authority_applicability.py",
+      "argv": [
+        "python",
+        "tools/repository/test_merge_authority_applicability.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.336,
+      "stdout": "",
+      "stderr": ".\n----------------------------------------------------------------------\nRan 1 test in 0.259s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_normalize_cargo_mtimes.py",
+      "argv": [
+        "python",
+        "tools/repository/test_normalize_cargo_mtimes.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.212,
+      "stdout": "",
+      "stderr": "....s...\n----------------------------------------------------------------------\nRan 8 tests in 0.127s\n\nOK (skipped=1)\n"
+    },
+    {
+      "name": "repo/test_pg_archive_affinity.py",
+      "argv": [
+        "python",
+        "tools/repository/test_pg_archive_affinity.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.154,
+      "stdout": "",
+      "stderr": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.072s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_pg_test_durations.py",
+      "argv": [
+        "python",
+        "tools/repository/test_pg_test_durations.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.158,
+      "stdout": "",
+      "stderr": "....\n----------------------------------------------------------------------\nRan 4 tests in 0.092s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_plan_pg_partitions.py",
+      "argv": [
+        "python",
+        "tools/repository/test_plan_pg_partitions.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.071,
+      "stdout": "",
+      "stderr": ".........\n----------------------------------------------------------------------\nRan 9 tests in 0.004s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_protected_main_cache.py",
+      "argv": [
+        "python",
+        "tools/repository/test_protected_main_cache.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.397,
+      "stdout": "",
+      "stderr": ".......\n----------------------------------------------------------------------\nRan 7 tests in 0.305s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_refresh_ci_workflow_pins.py",
+      "argv": [
+        "python",
+        "tools/repository/test_refresh_ci_workflow_pins.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.084,
+      "stdout": "",
+      "stderr": "...\n----------------------------------------------------------------------\nRan 3 tests in 0.011s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_reliability_checklist.py",
+      "argv": [
+        "python",
+        "tools/repository/test_reliability_checklist.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.1,
+      "stdout": "",
+      "stderr": "........\n----------------------------------------------------------------------\nRan 8 tests in 0.004s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_repository_tests_run.py",
+      "argv": [
+        "python",
+        "tools/repository/test_repository_tests_run.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.087,
+      "stdout": "",
+      "stderr": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.002s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_required_status_checks.py",
+      "argv": [
+        "python",
+        "tools/repository/test_required_status_checks.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.44,
+      "stdout": "",
+      "stderr": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.317s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_run_rust_fast_archive.py",
+      "argv": [
+        "python",
+        "tools/repository/test_run_rust_fast_archive.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.905,
+      "stdout": "",
+      "stderr": ".........\n----------------------------------------------------------------------\nRan 9 tests in 0.835s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_rust_cache_pilot_workflow.py",
+      "argv": [
+        "python",
+        "tools/repository/test_rust_cache_pilot_workflow.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.395,
+      "stdout": "",
+      "stderr": "...\n----------------------------------------------------------------------\nRan 3 tests in 0.327s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_rust_fast_archive_routing.py",
+      "argv": [
+        "python",
+        "tools/repository/test_rust_fast_archive_routing.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.329,
+      "stdout": "",
+      "stderr": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.153s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_select_postgres_packages.py",
+      "argv": [
+        "python",
+        "tools/repository/test_select_postgres_packages.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.595,
+      "stdout": "",
+      "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 0.476s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_shared_dispatch_archive.py",
+      "argv": [
+        "python",
+        "tools/repository/test_shared_dispatch_archive.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.226,
+      "stdout": "",
+      "stderr": ".......................................\n----------------------------------------------------------------------\nRan 39 tests in 0.072s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_trim_cargo_cache.py",
+      "argv": [
+        "python",
+        "tools/repository/test_trim_cargo_cache.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.254,
+      "stdout": "",
+      "stderr": ".............\n----------------------------------------------------------------------\nRan 13 tests in 0.109s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_validate_coded_output.py",
+      "argv": [
+        "python",
+        "tools/repository/test_validate_coded_output.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.114,
+      "stdout": "",
+      "stderr": "....\n----------------------------------------------------------------------\nRan 4 tests in 0.012s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_validate_game_atlas_semantic_search_triggers.py",
+      "argv": [
+        "python",
+        "tools/repository/test_validate_game_atlas_semantic_search_triggers.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.344,
+      "stdout": "",
+      "stderr": "......\n----------------------------------------------------------------------\nRan 6 tests in 0.273s\n\nOK\n"
+    },
+    {
+      "name": "repo/test_validate_merge_group_pg_sim.py",
+      "argv": [
+        "python",
+        "tools/repository/test_validate_merge_group_pg_sim.py"
+      ],
+      "exit_code": 1,
+      "seconds": 1.42,
+      "stdout": "Post-merge exact-candidate routing regressions PASS\nRepository policy validation passed (23 files, 78 workflows).\nAtlas MQ PASS: protected routing, exact synthetic checkout and 32 fail-closed fan-in cases\nWorld bundle MQ PASS: protected routing, exact synthetic checkout and fail-closed fan-in cases\n",
+      "stderr": "Traceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/repository/test_validate_merge_group_pg_sim.py\", line 705, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/repository/test_validate_merge_group_pg_sim.py\", line 522, in main\n    _powershell_native_canaries()\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game-qualified/tools/repository/test_validate_merge_group_pg_sim.py\", line 49, in _powershell_native_canaries\n    assert pwsh is not None, \"pwsh is required for WP1 native failure-propagation qualification\"\n           ^^^^^^^^^^^^^^^^\nAssertionError: pwsh is required for WP1 native failure-propagation qualification\n"
+    },
+    {
+      "name": "repo/test_validate_pr_gate_pg_sim.py",
+      "argv": [
+        "python",
+        "tools/repository/test_validate_pr_gate_pg_sim.py"
+      ],
+      "exit_code": 0,
+      "seconds": 3.965,
+      "stdout": "::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n",
+      "stderr": ".................\n----------------------------------------------------------------------\nRan 17 tests in 3.862s\n\nOK\n"
+    }
+  ],
+  "commands": 43,
+  "passed": 40
+}

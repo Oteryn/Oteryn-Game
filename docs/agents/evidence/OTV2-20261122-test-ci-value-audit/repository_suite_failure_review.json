@@ -1,0 +1,69 @@
+{
+  "head": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "executables": {
+    "rustc": null,
+    "pwsh": null
+  },
+  "RUSTC_override": null,
+  "source_checks": [
+    {
+      "path": "tools/repository/test_check_dispatch_pg_shards.py",
+      "equals_head": true,
+      "current_sha256": "06cb07a0e462a88d1c42697de93ce37a546de7015425561dcf3c148bc9f2f203",
+      "head_sha256": "06cb07a0e462a88d1c42697de93ce37a546de7015425561dcf3c148bc9f2f203"
+    },
+    {
+      "path": "tools/repository/check_dispatch_pg_shards.py",
+      "equals_head": true,
+      "current_sha256": "70a2c205aac924898955de1b87142452b602cd976f32c789d67e614b0944cfdb",
+      "head_sha256": "70a2c205aac924898955de1b87142452b602cd976f32c789d67e614b0944cfdb"
+    },
+    {
+      "path": "tools/repository/test_validate_merge_group_pg_sim.py",
+      "equals_head": true,
+      "current_sha256": "f85a2fad2245e825c99279a614fac91cdf3ad394bea74b945baa34ddc7829b27",
+      "head_sha256": "f85a2fad2245e825c99279a614fac91cdf3ad394bea74b945baa34ddc7829b27"
+    }
+  ],
+  "suite_source": {
+    "path": "/workspace/scratch/23c09bc1235f/Oteryn-Game/docs/agents/evidence/OTV2-20261122-test-ci-value-audit/repository_suite.json",
+    "sha256": "33c0f42ffd092475640ffed824ee31858f8ea9504066b84f9086ae110100ef46",
+    "observed_at": "2026-11-22T22:49:44.525649+00:00",
+    "entrypoints": 32,
+    "passed": 30
+  },
+  "failed_entrypoints": [
+    {
+      "path": "tools/repository/test_check_dispatch_pg_shards.py",
+      "argv": [
+        "python",
+        "tools/repository/test_check_dispatch_pg_shards.py"
+      ],
+      "exit_code": 1,
+      "seconds": 0.21,
+      "stdout": "",
+      "stderr": ".....EFF..\n======================================================================\nERROR: test_repository_shards_cover_the_unsharded_inventory (__main__.CheckDispatchPgShardsTests.test_repository_shards_cover_the_unsharded_inventory)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/repository/test_check_dispatch_pg_shards.py\", line 50, in test_repository_shards_cover_the_unsharded_inventory\n    check(3)\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/repository/check_dispatch_pg_shards.py\", line 117, in check\n    subprocess.run([os.environ.get(\"RUSTC\", \"rustc\"), \"--edition=2024\",\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 548, in run\n    with Popen(*popenargs, **kwargs) as process:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 1026, in __init__\n    self._execute_child(args, executable, preexec_fn, close_fds,\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 1955, in _execute_child\n    raise child_exception_type(errno_num, err_msg, err_filename)\nFileNotFoundError: [Errno 2] No such file or directory: 'rustc'\n\n======================================================================\nFAIL: test_resolver_cli_emits_only_one_shard_for_the_retained_retry (__main__.CheckDispatchPgShardsTests.test_resolver_cli_emits_only_one_shard_for_the_retained_retry)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/repository/test_check_dispatch_pg_shards.py\", line 85, in test_resolver_cli_emits_only_one_shard_for_the_retained_retry\n    self.assertEqual(result.returncode, 0, result.stderr)\nAssertionError: 1 != 0 : Traceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/repository/check_dispatch_pg_shards.py\", line 177, in <module>\n    main()\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/repository/check_dispatch_pg_shards.py\", line 169, in main\n    selected = check(args.count, exact_test=args.test)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/repository/check_dispatch_pg_shards.py\", line 117, in check\n    subprocess.run([os.environ.get(\"RUSTC\", \"rustc\"), \"--edition=2024\",\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 548, in run\n    with Popen(*popenargs, **kwargs) as process:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 1026, in __init__\n    self._execute_child(args, executable, preexec_fn, close_fds,\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 1955, in _execute_child\n    raise child_exception_type(errno_num, err_msg, err_filename)\nFileNotFoundError: [Errno 2] No such file or directory: 'rustc'\n\n\n======================================================================\nFAIL: test_resolver_cli_rejects_unknown_test_without_a_selection (__main__.CheckDispatchPgShardsTests.test_resolver_cli_rejects_unknown_test_without_a_selection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/repository/test_check_dispatch_pg_shards.py\", line 97, in test_resolver_cli_rejects_unknown_test_without_a_selection\n    self.assertIn(\"missing exact PostgreSQL test\", result.stderr)\nAssertionError: 'missing exact PostgreSQL test' not found in 'Traceback (most recent call last):\\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/repository/check_dispatch_pg_shards.py\", line 177, in <module>\\n    main()\\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/repository/check_dispatch_pg_shards.py\", line 169, in main\\n    selected = check(args.count, exact_test=args.test)\\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/repository/check_dispatch_pg_shards.py\", line 117, in check\\n    subprocess.run([os.environ.get(\"RUSTC\", \"rustc\"), \"--edition=2024\",\\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 548, in run\\n    with Popen(*popenargs, **kwargs) as process:\\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 1026, in __init__\\n    self._execute_child(args, executable, preexec_fn, close_fds,\\n  File \"/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py\", line 1955, in _execute_child\\n    raise child_exception_type(errno_num, err_msg, err_filename)\\nFileNotFoundError: [Errno 2] No such file or directory: \\'rustc\\'\\n'\n\n----------------------------------------------------------------------\nRan 10 tests in 0.097s\n\nFAILED (failures=2, errors=1)\n",
+      "classification": "BLOCKED_MISSING_TOOLCHAIN",
+      "missing": "rustc",
+      "cause": "One direct FileNotFoundError and two secondary assertion failures arise because rustc cannot be spawned before inventory generation.",
+      "baseline_reproduction": "NOT_RUN: all affected source bytes equal HEAD and traceback identifies missing executable unambiguously."
+    },
+    {
+      "path": "tools/repository/test_validate_merge_group_pg_sim.py",
+      "argv": [
+        "python",
+        "tools/repository/test_validate_merge_group_pg_sim.py"
+      ],
+      "exit_code": 1,
+      "seconds": 1.278,
+      "stdout": "Post-merge exact-candidate routing regressions PASS\nRepository policy validation passed (23 files, 78 workflows).\nAtlas MQ PASS: protected routing, exact synthetic checkout and 32 fail-closed fan-in cases\nWorld bundle MQ PASS: protected routing, exact synthetic checkout and fail-closed fan-in cases\n",
+      "stderr": "Traceback (most recent call last):\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/repository/test_validate_merge_group_pg_sim.py\", line 705, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/repository/test_validate_merge_group_pg_sim.py\", line 522, in main\n    _powershell_native_canaries()\n  File \"/workspace/scratch/23c09bc1235f/Oteryn-Game/tools/repository/test_validate_merge_group_pg_sim.py\", line 49, in _powershell_native_canaries\n    assert pwsh is not None, \"pwsh is required for WP1 native failure-propagation qualification\"\n           ^^^^^^^^^^^^^^^^\nAssertionError: pwsh is required for WP1 native failure-propagation qualification\n",
+      "classification": "BLOCKED_MISSING_DEPENDENCY",
+      "missing": "pwsh",
+      "cause": "Required native PowerShell canary explicitly rejects missing pwsh after preceding routing/policy checks pass.",
+      "baseline_reproduction": "NOT_RUN: source equals HEAD and guard directly checks shutil.which(pwsh)."
+    }
+  ],
+  "conclusion": "30 of 32 entrypoints passed. Two entrypoints remain incomplete because rustc and pwsh are absent. No candidate-caused failure was identified; this is not a green full-suite qualification.",
+  "additional_tests_run": false
+}
