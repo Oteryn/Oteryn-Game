@@ -48,7 +48,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "3f488a4e42d3c3c61186ec6a7d38ea5528b43b85
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "b3423b858c7cad5c2814cef0708819f41c4b5bb328bae5450d202c2e18a92631"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "32f0bea7c7e0d071888670c36c39181697fb021b"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "5ccb7d64dc78a2591c9577166ea12e1e7037e8c0"
 EXPECTED_POST_MERGE_RUST_SHA256 = "e14581834f2ceec245d87380e97f446ca3b06524a90b733adf20eca38380902e"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -513,7 +513,7 @@ def main() -> int:
             "dependency_review": (
                 "    name: Merge Queue / dependency review\n",
                 "    needs: candidate\n",
-                "actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294",
+                "actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec",
                 "base-ref: ${{ needs.candidate.outputs.base_sha }}",
                 "head-ref: ${{ github.event.merge_group.head_sha || github.sha }}",
             ),
