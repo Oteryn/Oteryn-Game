@@ -954,6 +954,35 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                 line(&talk(&owner, &dependencies, npc, command_id + 2, request).await?)
                     .contains(&format!("{fare} gold"))
             );
+            // Crystal's travel children reset the topic, or ungreet for Eremo.
+            let decline = match *captain {
+                "brodrosch" => Some(("We would like to serve you some time.", false)),
+                "captain_bluebear" => Some(("We would like to serve you some time.", false)),
+                "captain_seahorse" => Some(("We would like to serve you some time.", false)),
+                "eremo" => Some(("Maybe later.", true)),
+                "kendra" => Some(("We would like to serve you some time.", false)),
+                "uzon" => Some(("You shouldn't miss the experience.", false)),
+                _ => None,
+            };
+            if let Some((reply, closes)) = decline {
+                let declined = talk(&owner, &dependencies, npc, command_id + 3, "no").await?;
+                assert_eq!(line(&declined), reply, "{captain}/{destination}");
+                assert_eq!(
+                    declined.conversation.as_ref().is_some_and(|c| c.open.is_none()),
+                    closes,
+                    "{captain}/{destination}: focus"
+                );
+                assert_eq!(owner.states.chat.engaged(session).is_none(), closes);
+                assert_eq!(gold(&h).await?, before);
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                if closes {
+                    talk(&owner, &dependencies, npc, command_id + 4, "hi").await?;
+                }
+                assert!(
+                    line(&talk(&owner, &dependencies, npc, command_id + 5, request).await?)
+                        .contains(&format!("{fare} gold"))
+                );
+            }
             let fence = owner
                 .current_quest_fence(session)
                 .await
@@ -968,7 +997,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                     dependencies.actor,
                     UseCommand {
                         game_session_id: session,
-                        command_id: command_id + 3,
+                        command_id: command_id + 6,
                         item_fence: Some(fence),
                     },
                     NpcTalkIntent {
@@ -1005,7 +1034,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                     dependencies.actor,
                     UseCommand {
                         game_session_id: session,
-                        command_id: command_id + 3,
+                        command_id: command_id + 6,
                         item_fence: Some(fence),
                     },
                 )

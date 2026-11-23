@@ -7,6 +7,7 @@ use serde::Deserialize;
 use std::{collections::BTreeMap, sync::OnceLock};
 
 pub(super) const SOURCE: &str = include_str!("source_dialogue.json");
+pub(super) const TRAVEL_DECLINES: &str = include_str!("travel_declines.json");
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -34,4 +35,28 @@ pub(super) struct FocusReply {
 pub(super) fn catalogue() -> &'static BTreeMap<String, Dialogue> {
     static CATALOGUE: OnceLock<BTreeMap<String, Dialogue>> = OnceLock::new();
     CATALOGUE.get_or_init(|| serde_json::from_str(SOURCE).unwrap_or_default())
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TravelDecline {
+    routes: Vec<String>,
+    reply: Vec<String>,
+    #[serde(default)]
+    ungreet: bool,
+    #[serde(rename = "source")]
+    _source: String,
+}
+
+/// Source replies for routes without a published decline keyword.
+pub(super) fn travel_decline(npc: &str, route: &str) -> Option<(&'static [String], bool)> {
+    static DECLINES: OnceLock<BTreeMap<String, TravelDecline>> = OnceLock::new();
+    let source = DECLINES
+        .get_or_init(|| serde_json::from_str(TRAVEL_DECLINES).unwrap_or_default())
+        .get(npc)?;
+    source
+        .routes
+        .iter()
+        .any(|key| key == route)
+        .then_some((source.reply.as_slice(), source.ungreet))
 }

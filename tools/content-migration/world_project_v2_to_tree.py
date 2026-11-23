@@ -699,7 +699,7 @@ def main(*, items_only: bool = False) -> int:
                             "schema": declarations["schema"]}})
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
-    if len(service_records) != 400:
+    if len(service_records) != 401:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}
@@ -711,8 +711,10 @@ def main(*, items_only: bool = False) -> int:
                    if field in row or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")]
         service_counts[family] = len(records)
         service_shards[family] = []
-        for start in range(0, len(records), ITEM_SHARD_SIZE):
-            rows = [{"declaration": declaration} for declaration in records[start:start + ITEM_SHARD_SIZE]]
+        # Keep the published legacy trade shard stable when adding service variants.
+        shard_size = 324 if family == "Service.Trade" else ITEM_SHARD_SIZE
+        for start in range(0, len(records), shard_size):
+            rows = [{"declaration": declaration} for declaration in records[start:start + shard_size]]
             end = start + len(rows) - 1
             relative = f"{node}{stem}-{start:05d}-{end:05d}.json"
             service_shards[family].append(relative)
@@ -720,14 +722,14 @@ def main(*, items_only: bool = False) -> int:
                 "schema": "OTERYN_SERVICE_AUTHORING_SHARD/v1",
                 "family": family,
                 "source_legacy_role": "content/world/definitions/declarations.json",
-                "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
+                "shard": {"index": start // shard_size, "start": start, "end": end, "count": len(rows)},
                 "records": rows,
             })
         write(f"{node}index.json", {
             "schema": "OTERYN_FAMILY_INDEX/v1",
             "family": family,
             "record_count": len(records),
-            "shard_size": ITEM_SHARD_SIZE,
+            "shard_size": shard_size,
             "shards": service_shards[family],
             "legacy_source": {
                 "path": "content/world/definitions/declarations.json",

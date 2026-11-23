@@ -4,6 +4,7 @@ use crate::content::npc_catalogue::travel::TravelRoute;
 use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFacts};
 use crate::durability::npc_travel::{PaidTravelRequest, TravelRefusal};
 use crate::map::view::MapFacts;
+use oteryn_protocol_oteryn::npc_service::{NpcConversation, NpcConversationState};
 
 #[path = "paid_travel/quest_confirmation.rs"]
 mod quest_confirmation;
@@ -90,6 +91,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
         })
     }
+    pub(in crate::gameplay_transport) fn has_pending_paid_decline(
+        &self,
+        command: connection::UseCommand,
+        intent: &NpcTalkIntent,
+        context: &(u64, u64, String),
+    ) -> bool {
+        if !intent.text.trim().eq_ignore_ascii_case("no") {
+            return false;
+        }
+        let Some(fence) = command.item_fence else {
+            return false;
+        };
+        let Some(entry) = self
+            .states
+            .chat
+            .npc_talk()
+            .and_then(|book| book.get(&context.2))
+        else {
+            return false;
+        };
+        self.states
+            .newhaven_travel
+            .paid_prompts
+            .lock()
+            .is_ok_and(|prompts| {
+                prompts.get(&command.game_session_id).is_some_and(|prompt| {
+                    prompt.matches_confirmation(
+                        intent.npc_actor,
+                        context,
+                        fence,
+                        self.owner_now().get(),
+                    ) && entry.travel_decline(&prompt.route.route.key).is_some()
+                })
+            })
+    }
+
     pub(super) async fn paid_travel_talk(
         &self,
         actor: ExactActorRef,
@@ -99,7 +136,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> npc_command::NpcTalkOutcome {
         let session = command.game_session_id;
         let text = intent.text.trim().to_ascii_lowercase();
-        let (context, routes) = {
+        let (context, routes, fence, now, previous) = {
             let runtime = self.runtime.lock().await;
             if self.states.spell_states.lock().await.is_dead(actor) {
                 return ordinary;
@@ -125,15 +162,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if entry.travel_routes.is_empty() {
                 return ordinary;
             }
-            (context, entry.travel_routes.clone())
-        };
-        let Some(fence) = command.item_fence else {
-            return ordinary;
-        };
-        let now = self.owner_now().get();
-        let previous = match self.states.newhaven_travel.paid_prompts.lock() {
-            Ok(mut prompts) => prompts.remove(&session),
-            Err(_) => return ordinary,
+            let Some(fence) = command.item_fence else {
+                return ordinary;
+            };
+            let now = self.owner_now().get();
+            let previous = match self.states.newhaven_travel.paid_prompts.lock() {
+                Ok(mut prompts) => prompts.remove(&session),
+                Err(_) => return ordinary,
+            };
+            if text == "no" {
+                let Some(prompt) = previous.filter(|prompt| {
+                    prompt.matches_confirmation(intent.npc_actor, &context, fence, now)
+                }) else {
+                    return ordinary;
+                };
+                let Some((reply, ungreet)) = entry.travel_decline(&prompt.route.route.key) else {
+                    return ordinary;
+                };
+                if ungreet
+                    && !self.states.chat.engaged(session).is_some_and(|npc| {
+                        npc.placement_identity() == intent.npc_actor.identity
+                            && npc.actor_local_generation() == intent.npc_actor.generation
+                            && self.states.chat.end_engagement(session, npc)
+                    })
+                {
+                    return ordinary;
+                }
+                let name = self.states.chat.speaker_name(session).unwrap_or_default();
+                return npc_command::NpcTalkOutcome {
+                    conversation: Some(NpcConversation {
+                        open: (!ungreet).then_some((intent.npc_actor, NpcConversationState::Open)),
+                        lines: reply
+                            .iter()
+                            .map(|line| {
+                                oteryn_gameplay_npc::quest_greetings::render_player_name(
+                                    line, &name,
+                                )
+                            })
+                            .collect(),
+                    }),
+                    ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Ok)
+                };
+            }
+            (context, entry.travel_routes.clone(), fence, now, previous)
         };
         let prompt = if text == "yes" {
             let Some(prompt) = previous else {

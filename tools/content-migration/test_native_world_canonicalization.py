@@ -106,25 +106,13 @@ class NativeWorldCompletion(unittest.TestCase):
             ),
         )
         self.write(self.world / "unmanaged/sentinel", b"retain caller sibling\n")
+        authoring = Path(__file__).resolve().parents[2] / (
+            "content/services/trade/crystal-npc-trade.authoring.json"
+        )
+        shops = json.loads(authoring.read_bytes())["shops"]
         self.write(
             self.repo / "content/services/trade/crystal-npc-trade.authoring.json",
-            encode(
-                {
-                    "shops": [
-                        {
-                            "npc": "gamon",
-                            "offers": [
-                                {
-                                    "item": 2797,
-                                    "direction": "Sell",
-                                    "unit_price": 50,
-                                    "replaces_item": 2998,
-                                },
-                            ],
-                        }
-                    ]
-                }
-            ),
+            encode({"shops": [shop for shop in shops if shop["npc"] == "gamon"]}),
         )
         self.add_gamon()
         self.original = canonical.read_documents(self.world)
@@ -136,8 +124,24 @@ class NativeWorldCompletion(unittest.TestCase):
         document = json.loads(path.read_bytes())
         document["records"].append(
             {
+                "kind": "NPC",
+                "identity": {"key": "oteryn:npc.gamon", "revision": "definition-r1"},
+                "services": [
+                    {
+                        "family": "Service",
+                        "key": "oteryn:service.trade.gamon",
+                        "revision": "definition-r1",
+                    }
+                ],
+            }
+        )
+        document["records"].append(
+            {
                 "kind": "Service",
-                "identity": {"key": "oteryn:service.trade.gamon"},
+                "identity": {
+                    "key": "oteryn:service.trade.gamon",
+                    "revision": "definition-r1",
+                },
                 "offers": [
                     {
                         "item": {
@@ -145,7 +149,7 @@ class NativeWorldCompletion(unittest.TestCase):
                             "key": "oteryn:item.tibia.i2998",
                             "revision": "definition-r1",
                         },
-                        "direction": "Sell",
+                        "direction": "SellToPlayer",
                         "unit_price": 25,
                     }
                 ],
@@ -231,15 +235,15 @@ class NativeWorldCompletion(unittest.TestCase):
             declarations = json.loads(
                 (staging / "definitions/declarations.json").read_bytes()
             )
-            gamon = next(
-                row for row in declarations["records"] if row["kind"] == "Service"
-            )
+            records = {row["identity"]["key"]: row for row in declarations["records"]}
+            gamon = records["oteryn:npc.gamon"]
+            linked_offers = [records[ref["key"]]["offers"] for ref in gamon["services"]]
             self.assertEqual(
                 [
-                    (offer["item"]["key"], offer["unit_price"])
-                    for offer in gamon["offers"]
+                    [(offer["item"]["key"], offer["unit_price"]) for offer in offers]
+                    for offers in linked_offers
                 ],
-                [("oteryn:item.tibia.i2797", 50)],
+                [[("oteryn:item.tibia.i2998", 30)], [("oteryn:item.tibia.i2998", 50)]],
             )
             return self.native_output(command, **kwargs)
 

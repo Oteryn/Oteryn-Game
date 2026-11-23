@@ -222,6 +222,7 @@ pub struct NpcTalkEntry {
     topic_reply: Option<String>,
     /// The admitted offers of every Service of the NPC, in source order (NPC-CMD-1b).
     offers: Vec<ProjectV2ServiceOffer>,
+    travel_declines: HashMap<String, (Vec<String>, bool)>,
     pub travel_routes: Vec<crate::content::npc_catalogue::travel::TravelRoute>,
     pub premium_services: Vec<crate::content::npc_catalogue::premium_services::PremiumNpcService>,
 }
@@ -229,6 +230,13 @@ pub struct NpcTalkEntry {
 impl NpcTalkEntry {
     pub fn bank(&self) -> bool {
         self.bank
+    }
+
+    /// The reply and focus disposition for declining a quoted travel route.
+    pub fn travel_decline(&self, route: &str) -> Option<(&[String], bool)> {
+        self.travel_declines
+            .get(route)
+            .map(|(reply, ungreet)| (reply.as_slice(), *ungreet))
     }
 
     /// The admitted offers the trade window projects.
@@ -357,6 +365,7 @@ impl NpcTalkEntry {
             topic_reply: topic.map(str::to_owned),
             offers: Vec::new(),
             premium_services: Vec::new(),
+            travel_declines: HashMap::new(),
             travel_routes: Vec::new(),
         }
     }
@@ -475,9 +484,10 @@ impl NpcTalkBook {
                 YASIR_NAME,
                 YASIR_PASSAGE,
                 format_args!(
-                    "{}\0{}",
+                    "{}\0{}\0{}",
                     literal_contacts::REVISION_MATERIAL,
-                    source_dialogue::SOURCE
+                    source_dialogue::SOURCE,
+                    source_dialogue::TRAVEL_DECLINES
                 ),
             )),
             ..Self::default()
@@ -525,6 +535,35 @@ impl NpcTalkBook {
                     || route.quest_gate.is_none()
             })
             .collect::<Vec<_>>();
+            let travel_declines = travel_routes
+                .iter()
+                .filter_map(|route| {
+                    let key = &route.route.key;
+                    let decline = if let Some(source) =
+                        source_dialogue::travel_decline(&reference.key, key)
+                    {
+                        source
+                    } else {
+                        let child = npc.bank_dialogue
+                            .as_ref()?
+                            .keywords
+                            .iter()
+                            .filter(|keyword| {
+                                keyword.key == *key
+                                    || matches!(keyword.triggers.as_slice(), [word] if route.matches_keyword(word))
+                            })
+                            .find_map(|keyword| {
+                                keyword
+                                    .children
+                                    .iter()
+                                    .find(|child| child.triggers == ["no"])
+                                    .or_else(|| keyword.children.iter().find(|child| child.fallback))
+                            })?;
+                        (child.reply.as_slice(), child.ungreet)
+                    };
+                    Some((key.clone(), (decline.0.to_vec(), decline.1)))
+                })
+                .collect();
             let bank = npc
                 .services
                 .iter()
@@ -934,6 +973,7 @@ impl NpcTalkBook {
                         && npc.dialogue.is_some()
                         && premium_services.is_empty()
                         && travel_routes.is_empty(),
+                    travel_declines,
                     travel_routes,
                     premium_services,
                     bank: npc

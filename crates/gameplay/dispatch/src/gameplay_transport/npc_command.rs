@@ -848,13 +848,16 @@ pub(super) async fn npc_bank_talk(
     {
         state.quest_dialogue.restart_topic();
     }
-    // A live route quote owns its confirmation before any quest adapter runs.
-    // The paid owner repeats this exact scope/expiry check before departure.
+    // A live route quote owns its answer before any quest adapter runs.
+    // The paid owner repeats this exact scope and expiry check.
     if admission
         .states
         .npc_conversations
         .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
-        .is_some_and(|context| admission.has_pending_paid_confirmation(command, &intent, &context))
+        .is_some_and(|context| {
+            admission.has_pending_paid_confirmation(command, &intent, &context)
+                || admission.has_pending_paid_decline(command, &intent, &context)
+        })
     {
         return ordinary;
     }
