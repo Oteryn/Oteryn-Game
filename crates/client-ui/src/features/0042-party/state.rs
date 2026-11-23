@@ -14,6 +14,7 @@ pub enum Intent {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct PartyPanel {
+    pub typed_feedback: bool,
     pub list_title: String,
     pub list_hidden: [bool; 7],
     pub list_sort: ListSort,

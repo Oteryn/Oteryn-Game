@@ -614,7 +614,9 @@ fn ending_session_preserves_impact_record_earned_after_explicit_reset()
             server_sequence: 1,
             base_revision: 0,
             new_revision: 1,
-            value: vec![AnalyserFact::Impact(AnalyserImpact::Healing(75u32.try_into()?))],
+            value: vec![AnalyserFact::Impact(AnalyserImpact::Healing(
+                75u32.try_into()?,
+            ))],
         },
     )]);
     settings.prepare_screenshots(now, Some(&link));
@@ -624,5 +626,37 @@ fn ending_session_preserves_impact_record_earned_after_explicit_reset()
     let mut reopened = SettingsState::new(Some(path));
     reopened.select_character(Some([1; 16]));
     assert_eq!(reopened.preferences.impact_records, [0, 75]);
+    Ok(())
+}
+
+#[test]
+fn personal_boss_defeat_wire_requests_screenshot() -> Result<(), Box<dyn std::error::Error>> {
+    let folder = tempfile::tempdir()?;
+    let (link, _, outbox) = crate::play::play_channel();
+    let mut settings = SettingsState::new(None);
+    settings.preferences.screenshots.on_boss_defeat = true;
+    settings.preferences.screenshots.directory = folder.path().to_string_lossy().into_owned();
+    let now = std::time::Instant::now();
+    assert!(
+        settings
+            .process_screenshots(now, Some(&link), &mut Source(vec![]))?
+            .is_empty()
+    );
+    let value = oteryn_protocol_oteryn::zones_nologout::decode_server_message(b"\x2a\x04boss")
+        .map_err(|error| format!("{error:?}"))?;
+    outbox.push(vec![oteryn_session::SessionEvent::ServerMessage(
+        oteryn_session::AppliedDelta {
+            base_revision: 1,
+            new_revision: 2,
+            server_sequence: 2,
+            value,
+        },
+    )]);
+    assert_eq!(
+        settings
+            .process_screenshots(now, Some(&link), &mut Source(vec![]))?
+            .len(),
+        1
+    );
     Ok(())
 }

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0615-boss-defeated",
+  "kind": "panels",
+  "id": "0615-boss-defeated-panel",
+  "status": "supported",
+  "entry": "protocol.rs::advanced"
+}

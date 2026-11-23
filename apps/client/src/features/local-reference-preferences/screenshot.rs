@@ -100,6 +100,8 @@ impl Pixels {
 pub(crate) struct CaptureObservations {
     tracked_loot: u64,
     pub(in crate::play) tracker: [u64; 3],
+    pub(in crate::play) personal_boss_events: bool,
+    boss_revision: u64,
     credited_kills: u64,
     kill_feed: bool,
     low_health: u64,
@@ -122,6 +124,11 @@ impl crate::play::mailbox::Mailbox {
             }
         };
         match event {
+            SessionEvent::ServerMessage(delta)
+                if matches!(delta.value, oteryn_session::ServerMessage::BossDefeated(_)) =>
+            {
+                self.capture_observations.boss_revision = delta.new_revision;
+            }
             SessionEvent::AnalyserFacts(delta) => delta.value.iter().for_each(&mut observe),
             SessionEvent::AnalyserAttributedFacts(delta) => {
                 delta.value.iter().for_each(|row| observe(&row.fact))
