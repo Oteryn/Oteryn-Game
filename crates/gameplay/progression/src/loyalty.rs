@@ -1,6 +1,6 @@
 //! Global loyalty skill-point projection. Loyalty never mutates trained progress.
 use oteryn_gameplay_domain::domain::character_build::{
-    BuildFormula, MAX_BUILD_PROGRESS, MIN_SKILL_LEVEL, cumulative_progress, relevel,
+    BuildFormula, MAX_BUILD_LEVEL, MIN_SKILL_LEVEL,
 };
 
 /// Five percentage points per 360 loyalty points, capped at fifty percent.
@@ -31,8 +31,8 @@ pub const fn title(points: u32) -> Option<&'static str> {
     }
 }
 
-/// Project a stored skill family to its displayed/effective level by increasing its total
-/// skill points. `family` is zero for magic and 1..=7 for ordinary skills.
+/// Project a stored skill family by adding a share of its lifetime points to the current
+/// level's remainder. `family` is zero for magic and 1..=7 for ordinary skills.
 #[must_use]
 pub fn projected_level(
     formula: &impl BuildFormula,
@@ -43,21 +43,29 @@ pub fn projected_level(
     loyalty_points: u32,
 ) -> u16 {
     let percent = bonus_percent(loyalty_points);
-    if percent == 0 || family > 7 {
+    if percent == 0 || family > 7 || level >= MAX_BUILD_LEVEL {
         return level;
     }
     let floor = if family == 0 { 0 } else { MIN_SKILL_LEVEL };
-    let total = cumulative_progress(level, progress, floor, |next| {
-        formula.required(vocation, family, next)
-    });
-    let bonus = u128::from(total) * u128::from(percent) / 100;
-    let projected = u128::from(total)
-        .saturating_add(bonus)
-        .min(u128::from(MAX_BUILD_PROGRESS)) as u64;
-    relevel(projected, floor, |next| {
-        formula.required(vocation, family, next)
-    })
-    .0
+    let required = |next| formula.required(vocation, family, next).map(u128::from);
+    let progress = u128::from(progress);
+    // The storage bound applies to one level's remainder. The lifetime total sums up to
+    // MAX_BUILD_LEVEL individual requirements, safely within u128 even with the multiplier.
+    let Some(total) = (floor + 1..=level).try_fold(progress, |total, completed| {
+        Some(total + required(completed)?)
+    }) else {
+        return level;
+    };
+    let mut available = progress + total * u128::from(percent) / 100;
+    let mut projected = level;
+    for next in level + 1..=MAX_BUILD_LEVEL {
+        let Some(cost) = required(next).filter(|&cost| cost <= available) else {
+            break;
+        };
+        available -= cost;
+        projected = next;
+    }
+    projected
 }
 
 #[cfg(test)]
