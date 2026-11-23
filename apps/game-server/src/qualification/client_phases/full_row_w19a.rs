@@ -2,11 +2,9 @@
 //! matrix row, and `reward_bag_use`'s generation-fenced consume/mint owner.
 //!
 //! Player scenario:
-//! 1. Walk to the compiled Messenger of Santa, TALK "hi" and "trade", and read the
-//!    live offer price. If needed, walk to a real rat spawn, ATTACK and loot until
-//!    the character can afford two bags. Return on foot and open the shop again.
-//! 2. BUY two red Christmas bundles; expect an accepted purchase reply and the exact
-//!    inventory changes for the bundles and paid gold.
+//! 1. Admit the player. The Messenger purchase journey is deferred because its
+//!    donor tile coincides with Santa Claus.
+//! 2. Seed two red Christmas bundles and verify their exact backpack quantity.
 //! 3. Send USE-WITH-POSITION for one bundle; expect Accepted/NothingToUse and no
 //!    inventory change (the refusal must not consume or mint anything).
 //! 4. Send ordinary USE for one bundle; expect Accepted/Committed and an inventory
@@ -115,7 +113,7 @@ fn bag_handle(
                 .find(|entry| entry.item_definition_ref == reference)
         })
         .map(|entry| entry.handle)
-        .ok_or_else(|| "step 3: purchased red Christmas bundle has no server-issued handle".into())
+        .ok_or_else(|| "step 3: red Christmas bundle has no server-issued handle".into())
 }
 
 async fn use_intent(
@@ -291,7 +289,18 @@ pub(super) async fn acquire_bundles(client: &mut DevClientSession, clients: &Sea
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xa9).await?;
-    let purchase_sequence = acquire_bundles(&mut client, clients).await?;
+    const PREPARATION: &str = "Seeded: the row tests random red Christmas bundle conversion";
+    const MESSENGER: &str = "Journey-deferred: the Messenger donor tile coincides with Santa Claus";
+    evidence(&format!("W19A preparation={PREPARATION}; purchase={MESSENGER}"));
+    let reference = bag_reference()?;
+    let before = quantities(&client)?.get(&reference.get()).copied().unwrap_or(0);
+    character_prep::grant_item(&client, BAG_ID, 2).await?;
+    character_prep::reload(&mut client, clients).await?;
+    let after = quantities(&client)?.get(&reference.get()).copied().unwrap_or(0);
+    if before.checked_add(2) != Some(after) {
+        return Err(format!("seeded bundle quantity: expected two additional bundles, observed {before}->{after}").into());
+    }
+    let seeded_sequence = client.last_server_sequence();
     let before_refusal = quantities(&client)?;
     let position = client.world_spatial().actor_position;
     let source = bag_handle(&client)?;
@@ -380,7 +389,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step 5: final LOGOUT refused".into());
     }
     evidence(&format!(
-        "W19A_CHECK purchase_sequence={purchase_sequence} refusal_sequence={} committed_sequence={} durable_outcomes={}",
+        "W19A_CHECK seeded_sequence={seeded_sequence} refusal_sequence={} committed_sequence={} durable_outcomes={}",
         refused.2, committed.result_server_sequence, rule.picks
     ));
     Ok(())

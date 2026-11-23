@@ -544,21 +544,26 @@ async fn imbuement_journey(
     step: &mut &'static str,
 ) -> TestResult<()> {
     let index = provisioning::item_index()?;
-    // Check the physical shrine route before asking the starter to gather loot and gold.
+    // Check the physical shrine route before granting materials or earning gold.
     full_e2ef7::shrine(client, world).await?;
-    *step = "obtain-basic-strike-materials";
+    const PREPARATION: &str =
+        "Seeded: inspection tests the Basic Strike conversion and persistence";
+    evidence(&format!("I16 preparation={PREPARATION}"));
+    *step = "seed-basic-strike-materials-and-sword";
     let recipe = oteryn_gameplay_items::imbuement::imbuement_recipe(1, 1)
         .ok_or("Basic Strike recipe absent")?;
-    for &(item, count) in recipe.materials {
-        full_e2ef7::acquire(client, world, &index, item, count)
-            .await
-            .map_err(|error| format!(
-                "Basic Strike requires {count} Protective Charms ({item}) and {} gold; ordinary acquisition observed {error}; the town crop has no Imbuement Assistant placement and one Valkyrie spawn (32286,32121,7) with a 90000ms respawn and a 30974ppm one-charm drop",
-                recipe.apply_gold,
-            ))?;
+    for &(key, count) in recipe.materials {
+        character_prep::grant_item(client, character_prep::item_id(key)?, count).await?;
     }
-    *step = "obtain-sword-and-fee";
-    let sword = full_e2ef7::acquire(client, world, &index, "oteryn:item.tibia.i3264", 1).await?;
+    let sword = provisioning::item_reference(&index, 3264)?;
+    if !entries(client)?
+        .iter()
+        .any(|entry| entry.item_definition_ref == sword)
+    {
+        character_prep::grant_item(client, 3264, 1).await?;
+    }
+    relogin_starter(client, clients).await?;
+    *step = "earn-imbuement-fee";
     full_e2ef7::earn_gold(client, world, recipe.apply_gold).await?;
     *step = "inspect-applied-imbuement";
     full_e2ef7::shrine(client, world).await?;

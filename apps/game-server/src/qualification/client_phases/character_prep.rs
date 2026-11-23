@@ -86,3 +86,41 @@ pub(super) async fn dedicated_character(
         characters: [row.as_slice().try_into()?],
     })
 }
+
+pub(super) async fn grant_item(
+    client: &oteryn_dev_client::DevClientSession,
+    id: u32,
+    count: u32,
+) -> TestResult {
+    request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        format!("item-{id}-{count}"),
+    )
+    .await
+    .map_err(|error| format!("backpack grant for item {id} x{count}: {error}"))?;
+    Ok(())
+}
+
+pub(super) fn item_id(key: &str) -> TestResult<u32> {
+    Ok(key
+        .strip_prefix("oteryn:item.tibia.i")
+        .ok_or("seeded item has no numeric Tibia id")?
+        .parse()?)
+}
+
+pub(super) async fn reload(
+    client: &mut oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult {
+    let session = client.join_snapshot().game_session_id;
+    let (result, detail, _, _) = logout_retrying_busy(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("inventory preparation logout refused: {detail}").into());
+    }
+    *client = connect_character(clients, 0x70, 1).await?;
+    if client.join_snapshot().game_session_id == session {
+        return Err("inventory preparation reused its original session".into());
+    }
+    Ok(())
+}

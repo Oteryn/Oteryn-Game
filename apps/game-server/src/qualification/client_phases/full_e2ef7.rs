@@ -3523,7 +3523,7 @@ const PVP_ACTIONS: &[&str] = &[
     "final-logout",
 ];
 const IMBUE_ACTIONS: &[&str] = &[
-    "player-acquisition",
+    "seeded-prerequisites",
     "shrine-apply",
     "occupied-refusal",
     "worn-effect",
@@ -4892,27 +4892,30 @@ async fn imbuement_journey(
             .bytes,
     )?;
     use crate::content::ReferenceItemField::Known;
-    let candidate=profiles.records.iter().filter(|r|r.admission.materializable && matches!(&r.semantics.imbuement,Known(i) if matches!(i.slot_count,Known(1..=3)) && matches!(&i.allowed_family_tiers,Known(fs) if fs.iter().any(|f|f.family.wire()==1))))
-        .min_by_key(|r| {
-            let key=&r.production_definition.production_key;
-            let present=definitions.revision(key).and_then(|rev|definitions.definition_ref("Item",key,rev)).is_some_and(|d|carried(client,d).is_ok());
-            (!present,key!="oteryn:item.tibia.i3264",key.clone())
-        }).ok_or("no materializable strike-capable item in pinned native policy")?;
-    let target = acquire(
-        client,
-        world,
-        &definitions,
-        &candidate.production_definition.production_key,
-        1,
-    )
-    .await?;
+    let candidate = profiles.records.iter()
+        .filter(|r| r.admission.materializable
+            && matches!(&r.semantics.imbuement, Known(i) if matches!(i.slot_count, Known(1..=3))
+                && matches!(&i.allowed_family_tiers, Known(fs) if fs.iter().any(|f| f.family.wire() == 1))))
+        .filter_map(|r| {
+            let id = character_prep::item_id(&r.production_definition.production_key).ok()?;
+            let reference = provisioning::item_reference(&definitions, id).ok()?;
+            (units(client, reference) == 0).then_some((id, reference))
+        })
+        .min_by_key(|(id, _)| (*id != 3264, *id))
+        .ok_or("no unused materializable strike-capable item in pinned native policy")?;
+    const PREPARATION: &str = "Seeded: Basic Strike inspects application, effects, fees and persistence";
+    evidence(&format!("P21 preparation={PREPARATION}"));
+    let (id, target) = candidate;
+    character_prep::grant_item(client, id, 1).await?;
     let basic = oteryn_gameplay_items::imbuement::imbuement_recipe(1, 1)
         .ok_or("basic Strike recipe absent")?;
     for &(key, count) in basic.materials {
-        acquire(client, world, &definitions, key, count).await?;
+        character_prep::grant_item(client, character_prep::item_id(key)?, count).await?;
     }
-    row.pass("player-acquisition");
+    character_prep::reload(client, clients).await?;
+    carried(client, target)?;
     earn_gold(client, world, basic.apply_gold + 15_000).await?;
+    row.pass("seeded-prerequisites");
     shrine(client, world).await?;
     let baseline = strike_effect(client).await?;
     let payment_before = player_gold(client).await?;

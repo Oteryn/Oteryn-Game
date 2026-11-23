@@ -58,27 +58,6 @@ pub(super) async fn run(
     covet: bool,
     starter_seconds: f64,
 ) -> TestResult<DevClientSession> {
-    for (id, used, action, route) in [
-        (
-            I08,
-            primal,
-            "obtain-primal-bag",
-            "Primal Bag 39546: no carried bag observed, Hazard 12 Primal Ordeal reward held and no Plunder Patriarch spawn in the compiled town regions (reward_bag_use.rs:16)",
-        ),
-        (
-            I13,
-            covet,
-            "obtain-bag-you-covet",
-            "Bag You Covet 43895: no carried bag observed, Rotten Blood bosses Bakragore, Chagorz, Ichgahal, Murcion and Vemiath have no spawn in the compiled town regions and Crimson Offering requires a Bakragore kill (reward_bag_use.rs:16)",
-        ),
-    ] {
-        match used {
-            true => evidence(&format!(
-                "e2e_all scenario={id}.full status=PASS seconds={starter_seconds:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities"
-            )),
-            false => Check::new(id, action).finish(Err(route.into())),
-        }
-    }
     let mut mining = Check::new(I12, "obtain-pick-and-shiny-stone");
     let mut ring = Check::new(I15, "obtain-energy-ring");
     let mut client = match observations {
@@ -87,12 +66,58 @@ pub(super) async fn run(
             Ok(client) => client,
             Err(rejoin) => {
                 let detail = format!("starter={error}; recovery-admission={rejoin}");
+                for (id, used) in [(I08, primal), (I13, covet)] {
+                    if used {
+                        evidence(&format!(
+                            "e2e_all scenario={id}.full status=PASS seconds={starter_seconds:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities"
+                        ));
+                    } else {
+                        Check::new(id, "seed-use-and-reload-bag")
+                            .finish(Err(detail.clone().into()));
+                    }
+                }
                 mining.finish(Err(detail.clone().into()));
                 ring.finish(Err(detail.into()));
                 return Err(rejoin);
             }
         },
     };
+    const I08_SEEDED: &str = "Seeded: Primal Bag use tests conversion of a bag already in custody";
+    const I13_SEEDED: &str =
+        "Seeded: Bag You Covet use tests conversion of a bag already in custody";
+    for (row, used, id, constant, mode) in [
+        (I08, primal, 39546, "PRIMAL_BAG", I08_SEEDED),
+        (I13, covet, 43895, "BAG_YOU_COVET", I13_SEEDED),
+    ] {
+        evidence(&format!("E2EF3 preparation row={row} {mode}"));
+        if used {
+            evidence(&format!(
+                "e2e_all scenario={row}.full status=PASS seconds={starter_seconds:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities"
+            ));
+            continue;
+        }
+        let check = Check::new(row, "seed-use-and-reload-bag");
+        let result = async {
+            character_prep::grant_item(&client, id, 1).await?;
+            super::e2ei_a::relogin_starter(&mut client, clients).await?;
+            if !super::reward_bag(&mut client, constant).await? {
+                return Err("seeded reward bag missing from backpack".into());
+            }
+            let quantities = super::quantities(&client)?;
+            super::open_backpack(&mut client).await?;
+            let backpack = super::backpack_inspection(&mut client).await?;
+            super::e2ei_a::relogin_starter(&mut client, clients).await?;
+            super::open_backpack(&mut client).await?;
+            if super::quantities(&client)? != quantities
+                || super::backpack_inspection(&mut client).await? != backpack
+            {
+                return Err("reward conversion changed across fresh admission".into());
+            }
+            Ok(())
+        }
+        .await;
+        check.finish(result);
+    }
     let setup = load_hunt_world(clients)
         .and_then(|(metadata, world)| Ok((metadata, world, provisioning::item_index()?)));
     match setup {

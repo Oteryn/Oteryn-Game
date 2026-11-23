@@ -83,6 +83,12 @@ revision. `world_boot_seconds` measures process start through readiness;
 `node_boot_qualification_world_loader` library test loads the same bundle without
 sudo and checks the temple protection zone and reachable depot.
 
+Seeded rows can request `qualify <session> item-<id>-<count>` over the
+root-only node control socket. The qualification-spawn build resolves the
+served item definition and commits a fenced reward claim into the main backpack
+for counts 1 through 20. An exact retry in the same admission replays its claim.
+Rows re-admit to observe the backpack through the normal client snapshot.
+
 To qualify the preserved full spell manifest through the same topology:
 
 ```sh

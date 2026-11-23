@@ -6,6 +6,21 @@ use crate::qualification_spell_character as qualification_build;
 #[cfg(any(test, feature = "qualification-spawn"))]
 use crate::qualification_wild_spawn as wild_spawn;
 
+fn named_item(profile: &str) -> Option<(u32, u32)> {
+    let (id, count) = profile.strip_prefix("item-")?.split_once('-')?;
+    if id.starts_with('0')
+        || id.len() > 10
+        || !id.bytes().all(|byte| byte.is_ascii_digit())
+        || count.starts_with('0')
+        || !count.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return None;
+    }
+    let id: u32 = id.parse().ok()?;
+    let count: u32 = count.parse().ok()?;
+    (id != 0 && (1..=20).contains(&count)).then_some((id, count))
+}
+
 fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
     let (session, profile) = text.strip_prefix("qualify ")?.split_once(' ')?;
@@ -13,8 +28,9 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     (matches!(
         profile,
         "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
-    ) || (cfg!(any(test, feature = "qualification-spawn")) && profile == "c05-exiva"))
-        .then_some((session, profile))
+    ) || (cfg!(any(test, feature = "qualification-spawn"))
+        && (profile == "c05-exiva" || named_item(profile).is_some())))
+    .then_some((session, profile))
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -658,6 +674,18 @@ async fn prepare_build(
     {
         return Err("qualification scope mismatch".into());
     }
+    if let Some(item) = named_item(profile) {
+        return prepare_items(
+            root,
+            authority,
+            proof,
+            &current,
+            native,
+            deadline,
+            Some(item),
+        )
+        .await;
+    }
     let character = crate::domain::CharacterId::from_bytes(
         *current.current_character_lease().character_id().as_bytes(),
     )
@@ -710,7 +738,7 @@ async fn prepare_build(
     if profile == "c05-exiva" {
         return Ok(());
     }
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    prepare_items(root, authority, proof, &current, native, deadline, None).await
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -741,10 +769,12 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
+    named: Option<(u32, u32)>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::domain::item_definition::ItemStackClass;
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
-    use crate::durability::reward_claim_mint::RewardClaimMintRequest;
+    use crate::durability::reward_claim_mint::{RewardClaimMintContent, RewardClaimMintRequest};
     use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
 
     let fence = CurrentCharacterItemFence {
@@ -776,7 +806,7 @@ async fn prepare_items(
         .map_err(|error| format!("qualification inventory: {error:?}"))
     };
     let mut inventory = read_inventory().await?;
-    if inventory.backpack.is_none() {
+    if inventory.backpack.is_none() && named.is_none() {
         use crate::durability::starter_grant::{StarterGrantOutcome, StarterTemplate};
         let template = StarterTemplate {
             key: fixture_gear_claim(current.current_game_session_id(), "backpack"),
@@ -813,9 +843,14 @@ async fn prepare_items(
     let index = native
         .item_index()
         .ok_or("qualification Item index missing")?;
-    // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
-    // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    // Legacy build profiles retain their axe, rope and shovel.
+    let legacy = [(3276, 1), (3003, 1), (3457, 1)];
+    for (ordinal, &(id, count)) in named
+        .as_slice()
+        .iter()
+        .chain(legacy.iter().filter(|_| named.is_none()))
+        .enumerate()
+    {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
@@ -825,35 +860,64 @@ async fn prepare_items(
                 .ok_or("qualification Item absent")?
                 .into(),
         };
-        if inventory
-            .equipment
-            .iter()
-            .chain(bag.entries.iter().map(|entry| &entry.item))
-            .any(|existing| existing.definition == definition && existing.quantity == 1)
+        if named.is_none()
+            && inventory
+                .equipment
+                .iter()
+                .chain(bag.entries.iter().map(|entry| &entry.item))
+                .any(|existing| existing.definition == definition && existing.quantity == 1)
         {
             continue;
         }
         let item = generation_item_facts(native, &definition)
             .map_err(|error| format!("qualification Item {key}: {error:?}"))?;
+        let maximum = match item.stack {
+            ItemStackClass::NonStackable => 1,
+            ItemStackClass::Stackable { proven_maximum } => proven_maximum.unwrap_or(100),
+            ItemStackClass::Unknown => return Err("qualification Item stack class unknown".into()),
+        };
+        if maximum == 0 {
+            return Err("qualification Item stack maximum is zero".into());
+        }
+        let quantity = count.min(maximum);
+        let mut additional_items = Vec::new();
+        let mut remaining = count - quantity;
+        while remaining != 0 {
+            let quantity = remaining.min(maximum);
+            additional_items.push(RewardClaimMintContent {
+                item: item.clone(),
+                quantity,
+                key_number: None,
+                text: None,
+                fluid_subtype: None,
+                charges_remaining: None,
+            });
+            remaining -= quantity;
+        }
+        let offset = named.map_or(ordinal as u64, |(id, count)| {
+            (u64::from(id) << 5) | u64::from(count)
+        });
+        let claim_key = if named.is_some() {
+            format!("named-i{id}-{count}")
+        } else {
+            format!("i{id}")
+        };
         let request = RewardClaimMintRequest {
             backpack_outputs: false,
-            additional_items: Vec::new(),
+            additional_items,
             // Reserved fixture ids cannot collide with the client's low command ids.
             command: crate::foundation::CommandRef::new(
                 current.current_game_session_id(),
-                crate::foundation::CommandId::new(u64::MAX - ordinal as u64)?,
+                crate::foundation::CommandId::new(u64::MAX - offset)?,
             ),
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),
-                production_key: fixture_gear_claim(
-                    current.current_game_session_id(),
-                    &format!("i{id}"),
-                ),
+                production_key: fixture_gear_claim(current.current_game_session_id(), &claim_key),
                 revision_ref: "qualification-v1".into(),
             },
             source_placement: "oteryn:qualification.node-boot".into(),
             item,
-            quantity: 1,
+            quantity,
             contents: Vec::new(),
             root_text: None,
             root_fluid_subtype: None,
@@ -889,7 +953,7 @@ async fn prepare_items(
             .commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
             .await
             .map_err(|error| format!("qualification Item commit: {error:?}"))?;
-        fixture_item_committed(outcome)?;
+        fixture_item_committed(outcome, quantity)?;
     }
     Ok(())
 }
@@ -935,15 +999,16 @@ impl crate::durability::item_loop_move::ItemLoopContent for FixtureItemContent<'
 
 fn fixture_item_committed(
     outcome: crate::durability::reward_claim_mint::RewardClaimMintOutcome,
+    quantity: u32,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::reward_claim_mint::RewardClaimMintOutcome;
     let receipt = match outcome {
         RewardClaimMintOutcome::Committed(receipt)
         | RewardClaimMintOutcome::AlreadyCommitted(receipt) => receipt,
     };
-    if receipt.quantity != 1 {
+    if receipt.quantity != quantity {
         return Err(format!(
-            "qualification Item receipt has quantity {}",
+            "qualification Item receipt has quantity {}, expected {quantity}",
             receipt.quantity
         )
         .into());
@@ -1443,8 +1508,23 @@ mod tests {
                 placement_ordinal: 0,
             },
         };
-        assert!(fixture_item_committed(RewardClaimMintOutcome::Committed(receipt.clone())).is_ok());
-        assert!(fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(receipt)).is_ok());
+        assert!(
+            fixture_item_committed(RewardClaimMintOutcome::Committed(receipt.clone()), 1).is_ok()
+        );
+        assert!(
+            fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(receipt.clone()), 1)
+                .is_ok()
+        );
+        let stack = CommittedRewardClaimMint {
+            quantity: 20,
+            ..receipt
+        };
+        assert!(
+            fixture_item_committed(RewardClaimMintOutcome::Committed(stack.clone()), 1).is_err()
+        );
+        assert!(
+            fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(stack), 20).is_ok()
+        );
     }
 
     fn assert_early_warning(reason: EarlyRefusal, expected: &str) {
@@ -1459,13 +1539,13 @@ mod tests {
 
     #[test]
     fn fixture_disabled_has_a_classified_warning() {
-        let refused = prepare_request(
-            false,
-            Some(()),
-            b"qualify 01890f4c-3b2a-7c01-8d11-9a321b7c0004 c05-exiva",
-        )
-        .err();
-        assert_eq!(refused, Some(EarlyRefusal::FixtureDisabled));
+        for request in [
+            b"qualify 01890f4c-3b2a-7c01-8d11-9a321b7c0004 c05-exiva".as_slice(),
+            b"qualify 01890f4c-3b2a-7c01-8d11-9a321b7c0004 item-6506-2",
+        ] {
+            let refused = prepare_request(false, Some(()), request).err();
+            assert_eq!(refused, Some(EarlyRefusal::FixtureDisabled));
+        }
         assert_early_warning(EarlyRefusal::FixtureDisabled, "fixture_disabled");
     }
 
@@ -1512,6 +1592,7 @@ mod tests {
                                 "explorer",
                                 "monk",
                                 "c05-exiva",
+                                "item-6506-2",
                             ] {
                                 let script = Path::new(env!("CARGO_MANIFEST_DIR"))
                                     .join("../../tools/qualification/node_boot/provision.py");
@@ -1626,7 +1707,7 @@ mod tests {
             crate::content::qualify_native_entry_room_from_gameplay_manifest(world, &manifest)?;
         let native = crate::content::qualified_native_gameplay_test_state(room.compiled())?;
         let index = native.item_index().ok_or("Item index")?;
-        for id in [3276, 3003, 3457] {
+        for id in [3276, 3003, 3457, 39546, 43895, 6506, 11444, 3264] {
             let key = format!("oteryn:item.tibia.i{id}");
             let definition = crate::durability::item_mint::TypedDefinitionRef {
                 family: "Item".into(),
@@ -1706,11 +1787,18 @@ mod tests {
             "druid",
             "monk",
             "c05-exiva",
+            "item-43895-1",
+            "item-6506-2",
         ] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }
         for text in [
             format!("qualify {id} master_sorcerer"),
+            format!("qualify {id} item-0-1"),
+            format!("qualify {id} item-43895-0"),
+            format!("qualify {id} item-43895-21"),
+            format!("qualify {id} item-4294967296-1"),
+            format!("qualify {id} item-43895-1-extra"),
             format!("qualify {id} knight extra"),
             format!("qualify {id} knight\nqualify {id} druid"),
             "qualify 01890f4c-3b2a-4c01-8d11-9a321b7c0004 knight".into(),
