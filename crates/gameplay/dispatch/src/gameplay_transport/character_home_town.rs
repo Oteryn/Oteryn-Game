@@ -448,9 +448,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let town = self.home_town(session, None).await?;
-        if premium_area_town(town)? && !self.session_premium_gate(session).await.premium_current() {
-            return None;
-        }
+        let premium_access = if premium_area_town(town)? {
+            let coordinator = self.premium_coordinator?;
+            let account = self.session_account(session)?;
+            // Settling the activation latch can use PostgreSQL.
+            if !coordinator.premium_gate(account).await.premium_current() {
+                return None;
+            }
+            Some((account, coordinator.view(account)))
+        } else {
+            None
+        };
         let temple = map.overlay.base().subareas.town(town)?.temple?;
         let target = MovementLocalPosition {
             x: i32::from(temple.x),
@@ -479,6 +487,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &closed,
         )
         .ok()?;
+        // Holding both movement guards, sample the live gate again with trusted time.
+        if let Some((account, access)) = premium_access
+            && (self.session_account(session) != Some(account)
+                || !access.premium_gate().premium_current())
+        {
+            return None;
+        }
         let arrival = runtime.commit_source_step(proof).ok()?;
         let _ = map.facts.emit_movement_effect(source, TELEPORT_EFFECT);
         let _ = map.facts.emit_movement_effect(

@@ -8,9 +8,9 @@ use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::{CharacterLease, ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator;
-use crate::premium::PremiumConsumer;
+use crate::premium::{PremiumConsumer, TrustedNow};
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[test]
 fn citizen_tile_persists_town_death_uses_temple_and_reconnect_keeps_it() -> TestResult {
@@ -27,6 +27,7 @@ enum HomeTownCase {
     Citizenship,
     PremiumEntry(PremiumEntry),
     GuildPremium,
+    GuildPremiumInFlight,
     GuildSharedLanding,
 }
 
@@ -50,6 +51,11 @@ fn p20_ended_premium_consumes_pending_arrival_with_relocation() -> TestResult {
 #[test]
 fn guild_exits_require_current_premium_for_edron() -> TestResult {
     on_large_stack(HomeTownCase::GuildPremium)
+}
+
+#[test]
+fn guild_exits_recheck_premium_after_waiting_on_movement_locks() -> TestResult {
+    on_large_stack(HomeTownCase::GuildPremiumInFlight)
 }
 
 #[test]
@@ -130,9 +136,10 @@ fn scenario(case: HomeTownCase) -> TestResult {
                 .clone(),
         )?;
         deps.combat_room = Some(deps.room.clone());
-        let clock = Arc::new(P20Clock(std::sync::Mutex::new(
-            crate::premium::TrustedNow::new(P20_NOW, 1_000_000),
-        )));
+        let clock = Arc::new(P20Clock {
+            now: Mutex::new(TrustedNow::new(P20_NOW, 1_000_000)),
+            on_read: Mutex::new(None),
+        });
         let (consumer, coordinator) = premium_reads(&h, Arc::clone(&clock));
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
@@ -210,8 +217,17 @@ fn scenario(case: HomeTownCase) -> TestResult {
                 )
                 .await?;
             }
-            HomeTownCase::GuildPremium => {
-                guild_premium(&mut owner, &consumer, &coordinator, &clock, actor, session).await?;
+            HomeTownCase::GuildPremium | HomeTownCase::GuildPremiumInFlight => {
+                guild_premium(
+                    &mut owner,
+                    &consumer,
+                    &coordinator,
+                    &clock,
+                    actor,
+                    session,
+                    matches!(case, HomeTownCase::GuildPremiumInFlight),
+                )
+                .await?;
             }
             HomeTownCase::GuildSharedLanding => {
                 guild_shared_landing(&owner, actor, session).await?;
@@ -353,14 +369,22 @@ fn scenario(case: HomeTownCase) -> TestResult {
 
 const P20_NOW: i64 = 1_790_812_800_000_000;
 
-struct P20Clock(std::sync::Mutex<Option<crate::premium::TrustedNow>>);
+struct P20Clock {
+    now: Mutex<Option<TrustedNow>>,
+    on_read: Mutex<Option<Box<dyn FnOnce() + Send>>>,
+}
 impl crate::gameplay_transport::spell_premium_coordinator::clock_registration::Registered
     for P20Clock
 {
 }
 impl crate::gameplay_transport::spell_premium_coordinator::RegisteredPremiumClock for P20Clock {
-    fn read_current_window(&self) -> Option<crate::premium::TrustedNow> {
-        *self.0.lock().expect("clock")
+    fn read_current_window(&self) -> Option<TrustedNow> {
+        let now = *self.now.lock().expect("clock");
+        let on_read = self.on_read.lock().expect("clock hook").take();
+        if let Some(on_read) = on_read {
+            on_read();
+        }
+        now
     }
 }
 
@@ -432,6 +456,7 @@ async fn guild_premium<'a>(
     clock: &P20Clock,
     actor: ExactActorRef,
     session: GameSessionId,
+    expires_in_flight: bool,
 ) -> TestResult {
     use crate::durability::premium_fence::{EntitlementState, PremiumEvidence};
     let expires = P20_NOW + 30_000_000;
@@ -443,6 +468,23 @@ async fn guild_premium<'a>(
         ..premium_evidence(EntitlementState::Active)
     });
     assert!(owner.session_premium_gate(session).await.premium_current());
+    if expires_in_flight {
+        guild_premium_in_flight(owner, clock, actor, session, expires).await?;
+    } else {
+        guild_premium_availability(owner, clock, actor, session, expires).await?;
+    }
+    assert_eq!(owner.home_town(session, None).await, Some(11));
+    owner.release_premium(id(40), session);
+    Ok(())
+}
+
+async fn guild_premium_availability(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    clock: &P20Clock,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expires: i64,
+) -> TestResult {
     for (from, direction, _) in GUILD_EXITS {
         assert_eq!(
             step_guild_exit(owner, actor, session, from, direction)
@@ -452,8 +494,7 @@ async fn guild_premium<'a>(
         );
     }
 
-    *clock.0.lock().map_err(debug)? =
-        crate::premium::TrustedNow::new(expires + 2_000_000, 1_000_000);
+    *clock.now.lock().map_err(debug)? = TrustedNow::new(expires + 2_000_000, 1_000_000);
     assert!(!owner.session_premium_gate(session).await.premium_current());
     for (from, direction, exit) in GUILD_EXITS {
         assert_eq!(
@@ -466,7 +507,7 @@ async fn guild_premium<'a>(
     }
 
     // The entitlement also fails closed when trusted time is unavailable.
-    *clock.0.lock().map_err(debug)? = None;
+    *clock.now.lock().map_err(debug)? = None;
     assert!(!owner.session_premium_gate(session).await.premium_current());
     for (from, direction, exit) in GUILD_EXITS {
         assert_eq!(
@@ -477,10 +518,67 @@ async fn guild_premium<'a>(
             "unavailable entitlement must stop the Edron relocation"
         );
     }
-    assert_eq!(owner.home_town(session, None).await, Some(11));
-    owner.release_premium(id(40), session);
     eprintln!(
         "W12_GUILD_PREMIUM_POSTGRES_EXECUTED: both exits accept current Premium and refuse expired or unavailable Premium"
+    );
+    Ok(())
+}
+
+async fn guild_premium_in_flight(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    clock: &P20Clock,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expires: i64,
+) -> TestResult {
+    use std::future::{Future, pending};
+    use std::task::{Context, Waker};
+
+    for (from, direction, exit) in GUILD_EXITS {
+        *clock.now.lock().map_err(debug)? = TrustedNow::new(expires - 2_000_000, 1_000_000);
+        let (locked, holding) = tokio::sync::oneshot::channel();
+        let states = Arc::clone(&owner.states);
+        *clock.on_read.lock().map_err(debug)? = Some(Box::new(move || {
+            // Park a future with the spell-state guard at the first Premium read.
+            // The step cannot commit until the test drops this guard.
+            let mut blocker = Box::pin(async move {
+                let _guard = states
+                    .spell_states
+                    .try_lock()
+                    .expect("settle before locking");
+                pending::<()>().await;
+            });
+            assert!(
+                blocker
+                    .as_mut()
+                    .poll(&mut Context::from_waker(Waker::noop()))
+                    .is_pending()
+            );
+            assert!(locked.send(blocker).is_ok());
+        }));
+
+        let mut step = std::pin::pin!(tokio::task::unconstrained(step_guild_exit(
+            owner, actor, session, from, direction,
+        )));
+        let blocker = tokio::select! {
+            biased;
+            blocker = holding => blocker?,
+            _ = &mut step => panic!("the Guild relocation must wait for the movement lock"),
+        };
+        assert!(
+            owner.runtime.try_lock().is_err(),
+            "the relocation holds runtime while waiting for spell state"
+        );
+        *clock.now.lock().map_err(debug)? = TrustedNow::new(expires + 2_000_000, 1_000_000);
+        drop(blocker);
+        assert_eq!(
+            step.await?.x,
+            exit,
+            "Premium expired while waiting for the Guild relocation lock"
+        );
+    }
+    eprintln!(
+        "W12_GUILD_PREMIUM_RECHECK_POSTGRES_EXECUTED: both exits refuse Premium that expires while waiting for movement locks"
     );
     Ok(())
 }
