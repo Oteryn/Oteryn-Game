@@ -44,7 +44,7 @@ where
             own.position = observation.actor_position;
         }
         let (next_sequence, next_revision) = appearances
-            .refresh(
+            .refresh_result(
                 stream,
                 authority,
                 actor,
@@ -52,10 +52,11 @@ where
                 view,
                 &channel,
                 item_view.as_deref_mut(),
-                *sequence,
-                *revision,
+                (*sequence, *revision),
+                true,
             )
-            .await?;
+            .await
+            .ok()?;
         (Vec::new(), next_sequence, next_revision)
     } else {
         let (Some(delta_sequence), Some(new_revision)) =

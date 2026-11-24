@@ -593,11 +593,15 @@ mod e2ef1 {
         .await?;
         let before = tile(client.world_spatial().actor_position)?;
         let revision = *revisions.get(&(object.at, object.ordinal)).unwrap_or(&0);
-        if door_use(client, world, object, revision).await? != UseDisposition::Committed
-            || distance(tile(client.world_spatial().actor_position)?, object.at) > 1
-            || tile(client.world_spatial().actor_position)? == before
+        let disposition = door_use(client, world, object, revision).await?;
+        let after = tile(client.world_spatial().actor_position)?;
+        if disposition != UseDisposition::Committed
+            || distance(after, object.at) > 1
+            || after == before
         {
-            return Err("far USE did not walk and commit retry".into());
+            return Err(format!(
+                "far USE did not walk and commit retry: {disposition:?} from={before:?} to={after:?} target={object:?} revision={revision}"
+            ).into());
         }
         checks.pass("far-use-retry", (before, object, client.world_spatial()));
         // Restore the channel-scoped door, using its actual transition revision.

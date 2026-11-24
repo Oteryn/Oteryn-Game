@@ -618,11 +618,28 @@ pub(super) async fn equip_axe(
         if !carried {
             return Err("provisioning did not publish a carried axe".into());
         }
-        let equipped = bots[index]
-            .client()?
-            .session_mut()
-            .equip_item_definition(axe)
-            .await?;
+        let (before, remaining) = bots.split_at_mut(index);
+        let (bot, after) = remaining.split_first_mut().ok_or("axe wielder missing")?;
+        let equipped = while_servicing_liveness(
+            async {
+                let result = async {
+                    TestResult::Ok(
+                        bot.client()?
+                            .session_mut()
+                            .equip_item_definition(axe)
+                            .await?,
+                    )
+                }
+                .await;
+                bot.contextualize("equip-axe", result)
+            },
+            async || {
+                pump_at(before, "equip-axe-peer").await?;
+                pump_at(after, "equip-axe-peer").await?;
+                Ok(())
+            },
+        )
+        .await??;
         if equipped.status != CommandStatus::Accepted
             || equipped.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
         {
@@ -672,7 +689,10 @@ pub(super) async fn attack_target(bot: &mut Bot<'_, '_>, target: Option<&EntityR
     if outcome.status != CommandStatus::Accepted
         || outcome.disposition != attack::AttackIntentDisposition::Ok
     {
-        return Err(format!("attack status={:?};disposition={:?};source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/combat.rs:4;PvP-refusal:crates/gameplay/dispatch/src/gameplay_transport/pvp_live.rs:184;level-rule:crates/gameplay/combat-rules/src/pvp/legality.rs:97;reason-detail=not-carried-by-ATTACK_V1;reply={outcome:?}", outcome.status, outcome.disposition).into());
+        return Err(format!(
+            "attack status={:?};disposition={:?};source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/combat.rs:4;reason-detail=not-carried-by-ATTACK_V1;reply={outcome:?}",
+            outcome.status, outcome.disposition
+        ).into());
     }
     Ok(())
 }
