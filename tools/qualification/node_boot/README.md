@@ -146,6 +146,14 @@ The runner prints a
 summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
 at the path reported on stderr. It exits nonzero if any group fails.
 
+For item reseeding, extract the second column of `item-sweep-reseed.tsv`
+into a manifest with one item key per line. Set `OTERYN_E2E_ITEM_SWEEP_KEYS`
+to that manifest's absolute path. The batch range selects a key-sorted slice
+of the manifest. Set `OTERYN_E2E_ITEM_SWEEP_SEED_ONLY=1` for seed and cleanup
+verdicts only. Each cloud invocation provisions a fresh set of characters.
+The item-only selection uses the ordinary World and does not start the
+secondary PvP World.
+
 ## Parallel stacks, the single-row loop and diagnostics
 
 Local runs can start several isolated stacks at once. Unset knobs keep the CI

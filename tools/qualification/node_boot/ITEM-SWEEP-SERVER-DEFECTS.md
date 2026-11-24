@@ -275,3 +275,7 @@ owner (`crates/gameplay/items/src/item_ref_admission.rs:63–74`).
 The exact keys are 11459, 11460, 11461, 11462, 11681, 11683, 12310, 13992,
 14084 and 14085. That typed failure qualifies these keys for a replay against
 fxi's head in a separate detached test checkout.
+
+The first `110:120` attempt reached `NODE_BOOT_FAIL` before any seed rows.
+The seam client reported `ServerProtocolError { code: 1051 }` during
+fixture admission. This attempt contributes no item verdicts.
