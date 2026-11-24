@@ -943,6 +943,23 @@ fn every_gate_is_recorded_in_the_plan_row() {
             clause.contains(entry.plan) && names.iter().all(|name| clause.contains(name.as_str()))
         })
     };
+    let check_owners = |entry: &Entry, owners: &[&str]| {
+        for owner in owners {
+            assert!(
+                plan.lines()
+                    .any(|line| line.starts_with(&format!("| {owner} |"))),
+                "gate `{}` names `{owner}`, which is not a plan batch",
+                entry.gate
+            );
+        }
+        let names: Vec<String> = owners.iter().map(|owner| (*owner).to_owned()).collect();
+        assert!(
+            clause(entry, &names),
+            "the plan row has no clause naming {owners:?} for `{}` ({})",
+            entry.gate,
+            entry.plan
+        );
+    };
     for entry in INVENTORY {
         match entry.state {
             Gate::Open { batch, pr } => {
@@ -953,6 +970,11 @@ fn every_gate_is_recorded_in_the_plan_row() {
                     entry.plan
                 );
             }
+            Gate::AllocatedOpen {
+                task: "MAGIC-ITEMS-1",
+            } => {
+                check_owners(entry, &["MAGIC-SUMMON-1", "MAGIC-ITEMS-1"]);
+            }
             Gate::AllocatedOpen { task } => {
                 assert!(
                     clause(entry, &[task.to_owned()]),
@@ -960,23 +982,7 @@ fn every_gate_is_recorded_in_the_plan_row() {
                     entry.gate
                 );
             }
-            Gate::Closed { owners } => {
-                for owner in owners {
-                    assert!(
-                        plan.lines()
-                            .any(|line| line.starts_with(&format!("| {owner} |"))),
-                        "closed gate `{}` names `{owner}`, which is not a plan batch",
-                        entry.gate
-                    );
-                }
-                let names: Vec<String> = owners.iter().map(|owner| (*owner).to_owned()).collect();
-                assert!(
-                    clause(entry, &names),
-                    "the plan row has no clause naming {owners:?} for `{}` ({})",
-                    entry.gate,
-                    entry.plan
-                );
-            }
+            Gate::Closed { owners } => check_owners(entry, owners),
             Gate::SourceWorldBranch => assert!(
                 clause(
                     entry,
