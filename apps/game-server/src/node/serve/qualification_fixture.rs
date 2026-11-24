@@ -867,8 +867,9 @@ async fn prepare_build(
     .await?;
     #[cfg(feature = "qualification-spawn")]
     if let Some((platinum, gold)) = match profile {
-        "c02-ranged" => Some((9, 29)),
-        "c02-druid" => Some((4, 99)),
+        // Newhaven already grants 50 gold. Leave one gold to earn in each leg.
+        "c02-ranged" => Some((8, 79)),
+        "c02-druid" => Some((4, 49)),
         _ => None,
     } {
         for item in [(3035, platinum), (3031, gold)] {

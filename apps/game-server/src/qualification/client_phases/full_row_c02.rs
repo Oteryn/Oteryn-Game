@@ -241,6 +241,13 @@ async fn fund_ranged_purchase(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let gold = coin_references()?;
     let mut carried = carried_gold(client, &gold)?;
+    if carried.checked_add(1) != Some(needed) {
+        return Err(format!(
+            "funding-opening-balance-mismatch:carried={carried}:expected={}",
+            needed - 1
+        )
+        .into());
+    }
     while carried < needed {
         let hunt = tokio::time::timeout_at(deadline, async {
             let reply = client
