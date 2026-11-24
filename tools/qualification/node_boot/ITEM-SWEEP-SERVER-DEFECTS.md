@@ -107,3 +107,11 @@ did not reach a published view, so it measures the stale rejection only.
 
 The five failures are the two rack USE refusals and the previously recorded
 10219 fixture refusal with its two dependent steps.
+
+### Request and custody limitations during the inventory replay
+
+| Observed class | Example keys | Crystal 201189f8 | Evidence and classification |
+| --- | --- | --- | --- |
+| Direct USE of attack ammunition | 15793, 16141, 16142, 16143 | `data/items/items.xml:33747–33761,34589–34636`, `src/creatures/players/player.cpp:315–358`, `src/items/weapons/weapons.cpp:408–444` | The positive USE rows send command type 2 with the carried handle. Crystal selects ammunition when resolving a ranged weapon and decrements the count on weapon use. The direct USE rows can fail even with correct combat behavior. Restriction rows sent through direct USE also lack the Crystal weapon precondition. Separate explicit Ammo equip refusals are recorded independently. |
+| Bed use with generic Ground custody | 26093–26099, 42279–42281 | `data/items/items.xml:51307–51366,74651–74675`, `src/items/bed.cpp:102–106,162–168` | SQL seeding plus Browse Field either produced no handle or sent direct USE with the Ground item handle. Crystal requires a house-linked bed and a player permitted to use it. These rows do not exercise that owner. |
+| Ground container USE outside native ownership | 17428, 17439, 26105, 26162, 42072, 42273 | `data/items/items.xml:35559–35650,51397–51566,74423,74621`, `src/lua/creature/actions.cpp:461–467,525–535` | Generic SQL custody produced `Accepted/StaleState` after Browse Field. For corpse keys, no creature death established lifecycle or loot custody. For fixed furniture, no native map or house placement established custody. The native rack result above establishes that specific map-owner failure, while these other classes require their own custody replay. |
