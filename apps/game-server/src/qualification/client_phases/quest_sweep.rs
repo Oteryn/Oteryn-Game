@@ -51,7 +51,7 @@ impl Tally {
     fn blocked(&mut self, key: &str, step: &str, root: &str) {
         self.blocked += 1;
         evidence(&format!(
-            "quest_sweep blocked scenario=QS.{key}.{step} root=QS.{key}.{root} mode=seeded"
+            "e2e_all scenario=QS.{key}.{step} status=FAIL seconds=0.000 evidence=mode=seeded,blocked-by-root cause=blocked-by-QS.{key}.{root}"
         ));
     }
 
@@ -1297,7 +1297,11 @@ enum Action<'a> {
     Journal,
 }
 
-fn plan<'a>(quest: &'a Quest, claims: &'a BTreeMap<String, Vec<BoundPlacement>>) -> Vec<Check<'a>> {
+fn plan<'a>(
+    quest: &'a Quest,
+    claims: &'a BTreeMap<String, Vec<BoundPlacement>>,
+    catalogue: &QuestStateCatalogue,
+) -> Vec<Check<'a>> {
     let mut checks = Vec::new();
     if quest.stages.is_empty() && quest.claims.is_empty() && quest.recipe_stages.is_empty() {
         checks.push(Check {
@@ -1374,6 +1378,11 @@ fn plan<'a>(quest: &'a Quest, claims: &'a BTreeMap<String, Vec<BoundPlacement>>)
                 && stage.trigger.callback.as_ref().is_some_and(|callback| {
                     authored_item(callback).is_some()
                         || outfit_grant_keys(callback).is_ok_and(|keys| !keys.is_empty())
+                        || callback["key"].as_str().is_some_and(|key| {
+                            catalogue
+                                .transition(key)
+                                .is_some_and(|transition| transition.experience.is_some())
+                        })
                 })
         })
     {
@@ -1599,7 +1608,7 @@ async fn run_entry(
         Entry::Quest(quest) => {
             let mut blocked = None;
             let mut wire_root = None;
-            for check in plan(quest, claims) {
+            for check in plan(quest, claims, journey.catalogue) {
                 verdict::Harness::global().progress("quest-sweep-step");
                 let started = std::time::Instant::now();
                 let advances = matches!(&check.action, Action::Stage(..) | Action::MissingStage(_));
@@ -1734,6 +1743,35 @@ mod tests {
             &reward
         ));
         assert!(!exact_inventory_delta(&before, &before, &reward));
+    }
+
+    #[test]
+    fn plan_counts_experience_from_the_transition_owner() -> TestResult {
+        let lowered = load_embedded_quest_state(SERVED_CONTENT_REVISION)
+            .map_err(|error| format!("quest state catalogue: {error:?}"))?;
+        let key = "oteryn:quest-reward/chosen/hunting-campaign";
+        let mut quest = Quest {
+            stages: vec![serde_json::from_value(serde_json::json!({
+                "key": "final",
+                "completes": true,
+                "trigger": {"kind": "npc_dialogue", "callback": {"key": key}},
+            }))?],
+            ..Quest::default()
+        };
+        let claims = BTreeMap::new();
+        let catalogue = lowered.catalogue();
+        assert!(
+            !plan(&quest, &claims, catalogue)
+                .iter()
+                .any(|check| check.name == "reward")
+        );
+        quest.stages[0].completes = false;
+        assert!(
+            plan(&quest, &claims, catalogue)
+                .iter()
+                .any(|check| check.name == "reward")
+        );
+        Ok(())
     }
 
     #[test]
