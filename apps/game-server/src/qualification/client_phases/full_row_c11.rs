@@ -342,7 +342,7 @@ async fn wait_spell(
 }
 
 async fn knight_journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    use oteryn_protocol_oteryn::{battle_instinct_status as wire, wheel};
+    use oteryn_protocol_oteryn::{battle_instinct_status as wire, cyclopedia_character, wheel};
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -392,8 +392,19 @@ async fn knight_journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult 
     }
 
     let (vocation, level) = admitted_build(&mut client).await?;
-    if !is_vocation(vocation, "elite_knight") || level != 625 {
-        return Err(format!("Battle Instinct requires the prepared level-625 Elite Knight; observed vocation={vocation} level={level}").into());
+    if !is_vocation(vocation, "knight") || level != 625 {
+        return Err(format!("Battle Instinct requires the prepared level-625 Knight; observed vocation={vocation} level={level}").into());
+    }
+    let forecast = client.session_mut().gated_command(
+        cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+        cyclopedia_character::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+        &[cyclopedia_character::protection::SELECTOR],
+    ).await?;
+    if forecast.status != CommandStatus::Accepted
+        || !cyclopedia_character::protection::Forecast::decode(&forecast.payload)
+            .is_some_and(|forecast| forecast.promotion_benefit && forecast.level == level)
+    {
+        return Err(format!("Battle Instinct requires current promotion benefits; observed {forecast:?}").into());
     }
     let before = battle_status(&mut client).await?;
     if before.active || before.melee != 0 || before.shielding != 0 {
