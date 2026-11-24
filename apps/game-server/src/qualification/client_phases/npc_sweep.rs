@@ -808,10 +808,10 @@ impl Fixture<'_> {
             let at = nearby(self.world, there)?;
             let client = self.enter(at, None, None, 100).await?;
             let actor = visible_npc(client, there, &name).await?;
-            Ok((at, there, actor))
+            Ok((at, actor))
         })
         .await;
-        let (at, there, actor) = match setup {
+        let (at, actor) = match setup {
             Ok(value) => {
                 rows.emit("placement", "", Ok(()));
                 value
@@ -838,7 +838,7 @@ impl Fixture<'_> {
                 rows.emit(row, "blocked", Err(format!("blocked-by-{root}").into()));
                 continue;
             }
-            let result = within_step(self.step(at, there, actor, &name, action)).await;
+            let result = within_step(self.step(at, actor, &name, action)).await;
             if !rows.emit(row, action.cause(), result) {
                 failures.push(step);
             }
@@ -856,7 +856,6 @@ impl Fixture<'_> {
     async fn step(
         &mut self,
         at: TilePos,
-        there: TilePos,
         actor: EntityRef,
         name: &str,
         action: &Action<'_>,
@@ -910,6 +909,8 @@ impl Fixture<'_> {
                 }
                 Ok(())
             }
+            // The placement row proved this exact actor generation. Re-admission
+            // changes the customer session, not the NPC, which may wander afterward.
             Action::Offer(offer, occurrence) => {
                 let sell = (offer.direction.side() == NpcTradeSide::Sell).then_some(*offer);
                 let client = self
@@ -920,20 +921,17 @@ impl Fixture<'_> {
                         if sell.is_none() { offer.unit_price } else { 0 },
                     )
                     .await?;
-                let actor = visible_npc(client, there, name).await?;
                 talk(client, actor, "hi").await?;
                 trade(client, actor, offer, *occurrence).await
             }
             Action::Route(route) => {
                 let client = self.enter(at, None, Some(route), route.price).await?;
-                let actor = visible_npc(client, there, name).await?;
                 talk(client, actor, "hi").await?;
                 travel(client, actor, route).await
             }
             Action::Service(service) => {
                 let fee = service_price(&service.identity.key).map_or(100, |(_, fee)| fee.max(100));
                 let client = self.enter(at, None, None, fee).await?;
-                let actor = visible_npc(client, there, name).await?;
                 talk(client, actor, "hi").await?;
                 perform_service(client, actor, clients, service).await
             }
