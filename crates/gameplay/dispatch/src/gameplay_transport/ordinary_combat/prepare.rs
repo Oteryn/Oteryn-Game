@@ -494,12 +494,7 @@ async fn prepare_spatial(
         (None, SpellTarget::None)
             if profile.header.targeting.needs_direction || spell.target_or_direction =>
         {
-            let d = position
-                .facing()
-                .map(direction)
-                .unwrap_or(cast_direction(plans::DEFAULT_PLAYER_SPELL_DIRECTION));
-            let (dx, dy) = delta(d);
-            offset(caster_position, dx, dy)?
+            caster_front(caster_position, position.facing())?
         }
         (None, SpellTarget::None) => caster_position,
         (None, SpellTarget::AttackTarget) => {
@@ -529,6 +524,18 @@ async fn prepare_spatial(
     for a in &profile.dependencies.abilities {
         candidates.extend(geometry(a, origin, facing)?);
     }
+    // A direct cast with no held target can fall back to an occupant of the
+    // caster's front tile, including when its explicit position has no target.
+    let fallback_front = (spell.target_or_direction
+        && !spell.self_target
+        && attack_target_actor.is_none()
+        && profile
+            .dependencies
+            .abilities
+            .iter()
+            .any(|ability| ability.area.is_none()))
+    .then(|| caster_front(caster_position, position.facing()))
+    .transpose()?;
     let mut bindings = Vec::new();
     let mut chain_creatures = Vec::new();
     let mut chain_tiles = BTreeSet::new();
@@ -558,6 +565,9 @@ async fn prepare_spatial(
             actor: atom,
             position: p,
         });
+        if Some(p) == fallback_front {
+            candidates.insert(p);
+        }
         plans::add_chain_search_tiles(&mut chain_tiles, plan_position(p), spell.chain.is_some())
             .map_err(|_| SpellCastDisposition::Rejected)?;
     }

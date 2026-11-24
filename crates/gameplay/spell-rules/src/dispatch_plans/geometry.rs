@@ -54,6 +54,15 @@ pub fn player_spell_direction(aim: Option<Direction>, facing: Option<Direction>)
     aim.or(facing).unwrap_or(DEFAULT_PLAYER_SPELL_DIRECTION)
 }
 
+/// The adjacent tile used when a target-or-direction spell falls back to heading.
+pub fn player_spell_front(
+    caster: TilePosition,
+    facing: Option<Direction>,
+) -> Result<TilePosition, PlanRejected> {
+    let (dx, dy) = player_spell_direction(None, facing);
+    offset(caster, dx, dy)
+}
+
 #[cfg(test)]
 mod player_facing_tests {
     use super::*;
@@ -63,6 +72,19 @@ mod player_facing_tests {
         assert_eq!(player_spell_direction(None, None), (0, 1));
         assert_eq!(player_spell_direction(None, Some((-1, 0))), (-1, 0));
         assert_eq!(player_spell_direction(Some((1, 0)), Some((-1, 0))), (1, 0));
+    }
+
+    #[test]
+    fn target_or_direction_fallback_reads_the_tile_in_front_of_the_player() {
+        assert_eq!(player_spell_front((10, 10, 7), None), Ok((10, 11, 7)));
+        assert_eq!(
+            player_spell_front((10, 10, 7), Some((-1, 0))),
+            Ok((9, 10, 7))
+        );
+        assert_eq!(
+            player_spell_front((10, i32::MAX, 7), None),
+            Err(PlanRejected)
+        );
     }
 }
 
