@@ -297,7 +297,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     if case == 255 {
         use oteryn_protocol_oteryn::actor_spell_v2 as wire;
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 608])
+            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 608])
                 .ok_or("parameter cast capability")?;
         assert!(admitted.continuity.selected_capabilities.contains(608));
         let spell = (1..=deps.spells.source_len())
@@ -327,8 +327,9 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         let (results, unsolicited) =
             exchange(&owner, &mut admitted, &requests, true, false).await?;
         assert_eq!(results.len(), 2);
-        assert_eq!(results[0], results[1]);
+        assert_eq!(results[0].1, results[1].1);
         assert_eq!(results[0].0, CommandStatus::Accepted);
+        assert_eq!(results[1].0, CommandStatus::DuplicateReplay);
         let result = wire::decode_parameter_spell_cast_result(&results[0].1).map_err(debug)?;
         assert_eq!(result.disposition, actor_spell::SpellCastDisposition::Cast);
         assert_eq!(
@@ -345,7 +346,10 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                 .mana,
             before - 20
         );
-        return Ok(());
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
     }
     if case >= 7 {
         return exiva_settings::exercise(

@@ -92,10 +92,11 @@ pub(super) async fn check(
         )
         .await
         .ok_or("NPC mean reply")?;
-        // The admitted buy quotes are 150 and 180.
+        // The catalogue includes Nah Bob's quest shop quote regardless of character access.
+        let mean = (150 + 180 + 2_000) / 3;
         assert_eq!(
             catalogue::decode_npc_prices(&result)?,
-            [(item.get(), Some(165)), (piece.get(), None)]
+            [(item.get(), Some(mean)), (piece.get(), None)]
         );
         return Ok(());
     }

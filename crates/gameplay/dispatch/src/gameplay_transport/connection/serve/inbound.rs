@@ -23,7 +23,7 @@ where
 {
     if matches!(
         next,
-        Next::Serene | Next::QuestLog | Next::Chat | Next::Visibility | Next::Combat | Next::Npc
+        Next::Serene | Next::QuestLog | Next::Chat | Next::Combat | Next::Npc
     ) {
         crate::durability::DurabilityRoot::with_background_holder(
             authority.background_operation(receive_inner(stream, authority, session, next)),

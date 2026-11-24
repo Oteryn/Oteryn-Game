@@ -81,6 +81,7 @@ fn scenario(case: Case) -> TestResult {
 pub(super) struct CatalogueBatch<'a> {
     pub(super) template: &'a super::fixture::MigratedDatabaseTemplate,
     pub(super) quests: Arc<QuestStateCatalogue>,
+    pub(super) pinned_world: Option<&'a crate::map::boot::BundleWorld>,
 }
 
 pub(super) fn embedded_catalogue() -> TestResult<Arc<QuestStateCatalogue>> {
@@ -297,7 +298,10 @@ fn scenario_case(
             super::qc_pinned_world::COMPLETION_CHEST_UIDS.contains(&chest.unique)
         });
         let world = if pinned_completion_chest {
-            super::qc_pinned_world::world(native)?
+            match batch.and_then(|batch| batch.pinned_world) {
+                Some(pinned_world) => pinned_world.fresh_channel_for_test()?,
+                None => super::qc_pinned_world::world(native)?,
+            }
         } else if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
             super::quest_callbacks_fixtures::source_world_choices_with_door(
                 chest,

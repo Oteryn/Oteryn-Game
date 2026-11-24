@@ -66,8 +66,15 @@ fn scenario(case: Case) -> TestResult {
                     use std::future::{Future, poll_fn};
                     use std::task::Poll;
 
+                    // Keep the retried discovery in PostgreSQL until its checkout
+                    // is observable even when a poll can finish a fast read.
+                    let mut discovery_gate = h.pool.begin().await?;
+                    sqlx::query("LOCK TABLE game_durability_admission_account_guards IN ACCESS EXCLUSIVE MODE")
+                        .execute(&mut *discovery_gate)
+                        .await?;
                     let held = h.root.try_issue_semantic_pass()?;
                     assert!(!h.root.background_holder_ready());
+                    let _owner_clock = admission.freeze_owner_clock_for_test();
                     let stop = oteryn_foundation::CancellationToken::new();
                     let mut cadence = std::pin::pin!(admission.run_soulpits(&stop));
                     tokio::time::pause();
@@ -89,14 +96,24 @@ fn scenario(case: Case) -> TestResult {
                         } => return Err("PostgreSQL did not return the test holder".into()),
                     }
                     assert!(h.root.background_holder_ready());
-                    poll_fn(|cx| {
+                    // Keep driving the cadence until checkout. A single poll
+                    // can stop at a pending operation before it takes the holder.
+                    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
+                    let checked_out = poll_fn(|cx| {
                         assert!(cadence.as_mut().poll(cx).is_pending());
-                        Poll::Ready(())
+                        if !h.root.is_ready() {
+                            return Poll::Ready(true);
+                        }
+                        if std::time::Instant::now() >= deadline {
+                            return Poll::Ready(false);
+                        }
+                        cx.waker().wake_by_ref();
+                        Poll::Pending
                     })
                     .await;
                     assert_eq!(tokio::time::Instant::now(), paused_at);
                     assert!(
-                        !h.root.is_ready(),
+                        checked_out,
                         "the next discovery has checked out the returned holder"
                     );
                     tokio::time::resume();
@@ -105,6 +122,7 @@ fn scenario(case: Case) -> TestResult {
                         cadence.await,
                         crate::monster_owner_cycle::respawn_job::RespawnExit::Shutdown
                     );
+                    discovery_gate.rollback().await?;
                 } else {
                     let contended = case == Case::Locked;
                     let mut blocker = if contended {

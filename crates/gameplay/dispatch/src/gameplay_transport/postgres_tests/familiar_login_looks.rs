@@ -37,7 +37,11 @@ fn familiar_appearance_dispatch_confirms_only_granted_looks_postgres() -> TestRe
 
 fn scenario(name: &'static str, premium_current: bool, check_appearance: bool) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
-        let h = Harness::create_with_admission_seed(admin, name, false, false).await?;
+        let h = if check_appearance {
+            Harness::create_quest_reward(admin, name, false).await?
+        } else {
+            Harness::create_with_admission_seed(admin, name, false, false).await?
+        };
         let result: TestResult = async {
             let request = prepare_current_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
@@ -245,6 +249,7 @@ fn scenario(name: &'static str, premium_current: bool, check_appearance: bool) -
                 let (_, output) =
                     daily_reward_fixtures::serve(&owner, &mut admitted, &[(6324, &[])]).await?;
                 let values = daily_reward_fixtures::results(&output)?;
+                assert_eq!(values.len(), 1);
                 assert_eq!(values[0].1, crate::foundation::CommandStatus::Accepted);
                 let view: serde_json::Value = serde_json::from_slice(&values[0].2)?;
                 assert_eq!(view["choices"].as_array().ok_or("choices")?.len(), 1);
@@ -263,6 +268,7 @@ fn scenario(name: &'static str, premium_current: bool, check_appearance: bool) -
                 )
                 .await?;
                 let values = daily_reward_fixtures::results(&output)?;
+                assert_eq!(values.len(), 2);
                 assert_eq!(values[0].1, crate::foundation::CommandStatus::Rejected);
                 assert_eq!(values[1].1, crate::foundation::CommandStatus::Accepted);
                 let confirmation: serde_json::Value = serde_json::from_slice(&values[1].2)?;

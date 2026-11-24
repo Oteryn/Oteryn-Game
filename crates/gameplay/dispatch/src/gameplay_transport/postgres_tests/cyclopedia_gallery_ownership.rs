@@ -30,7 +30,7 @@ fn cyclopedia_gallery_filters_acquisition_sources_and_lists_owned_familiars_thro
 
 fn scenario() -> TestResult {
     run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "cycler_gallery", true, false).await?;
+        let h = Harness::create_appearance(admin, "cycler_gallery").await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h

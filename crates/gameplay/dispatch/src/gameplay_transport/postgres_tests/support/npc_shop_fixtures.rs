@@ -168,6 +168,14 @@ async fn exchange_with_scope(
                         ));
                     } else {
                         assert_eq!(result.status, CommandStatus::Accepted, "talk {sent_id}");
+                        if include_equipped {
+                            let disposition =
+                                oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(
+                                    result.payload,
+                                )
+                                .map_err(debug)?;
+                            assert_eq!(disposition, NpcIntentDisposition::Ok, "talk {sent_id}");
+                        }
                     }
                     break;
                 }
@@ -788,6 +796,11 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
             let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid")
                 .bind(id(220).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(before, 1);
+            // The two earlier exchanges used all four talk intents in this session's window.
+            tokio::time::sleep(std::time::Duration::from_micros(
+                oteryn_gameplay_npc::npc_command::RATE_WINDOW_MICROS,
+            ))
+            .await;
             let (status, included) = exchange_with_scope(
                 &owner, &mut admitted, Some((7, 8)), 9, &sell_all, true,
             ).await?;

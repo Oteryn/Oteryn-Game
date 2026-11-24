@@ -44,6 +44,8 @@ fn scenario() -> TestResult {
         let mut admitted = deps.admitted;
         let session = admitted.game_session_id;
         admitted.first_entry = FirstEntryOutcome::Positioned;
+        let fence = super::death_ml_loss_composed_fixtures::current_fence(&owner, session).await?;
+        admitted.item_fence = Some(fence.item_fence());
 
         let (status, bytes) = exchange(&owner, &mut admitted, 1, 6372, &[]).await?;
         assert_eq!((status, bytes), (CommandStatus::Rejected, vec![]));

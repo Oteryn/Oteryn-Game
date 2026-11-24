@@ -5,27 +5,26 @@ use sqlx::PgConnection;
 
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-/// Match the case database names issued by `oteryn_test_support::postgres::database_name`.
+/// Match the stub case and the native item-transfer harness database names.
 fn is_house_case_database(database: &str, harness_only: bool) -> bool {
-    let prefix = format!("oteryn_case_{:x}_", std::process::id());
-    let Some((sequence, tag)) = database
-        .strip_prefix(&prefix)
-        .and_then(|suffix| suffix.split_once('_'))
-    else {
+    let Some((stem, nanos)) = database.rsplit_once('_') else {
         return false;
     };
-    if !u64::from_str_radix(sequence, 16).is_ok_and(|number| sequence == format!("{number:x}")) {
+    if !nanos
+        .parse::<u128>()
+        .is_ok_and(|number| nanos == number.to_string())
+    {
         return false;
     }
     let harness_tag = |prefix: &str| {
-        tag.strip_prefix(prefix).is_some_and(|suffix| {
+        stem.strip_prefix(prefix).is_some_and(|suffix| {
             !suffix.is_empty()
                 && suffix
                     .bytes()
                     .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
         })
     };
-    (!harness_only && tag == "house_interior")
+    (!harness_only && stem == "house_interior")
         || harness_tag("it_house_interior_")
         || harness_tag("it_house_loader_")
 }
@@ -44,25 +43,25 @@ async fn dedicated_database(connection: &mut PgConnection, harness_only: bool) -
 
 #[test]
 fn house_fixture_only_accepts_its_own_case_databases() {
-    use oteryn_test_support::postgres::database_name;
-
-    let stub = database_name("house_interior");
-    assert!(is_house_case_database(&stub, false));
-    assert!(!is_house_case_database(&stub, true));
-    for tag in ["it_house_interior_capacity", "it_house_loader_current"] {
-        assert!(is_house_case_database(&database_name(tag), true));
+    let stub = "house_interior_1795478400000000000";
+    assert!(is_house_case_database(stub, false));
+    assert!(!is_house_case_database(stub, true));
+    for name in [
+        "it_house_interior_capacity_1795478400000000000",
+        "it_house_loader_current_1795478400000000000",
+    ] {
+        assert!(is_house_case_database(name, true));
     }
 
-    let process = std::process::id();
     for name in [
-        "postgres".to_owned(),
-        "oteryn_tpl_1234567890abcdef".to_owned(),
-        database_name("it_ordinary_transfer"),
-        database_name("it_house_interior_"),
-        format!("oteryn_case_{process:x}_nothex_house_interior"),
-        format!("oteryn_case_{:x}_0_it_house_loader_current", process ^ 1),
+        "postgres",
+        "oteryn_tpl_1234567890abcdef",
+        "it_ordinary_transfer_1795478400000000000",
+        "it_house_interior__1795478400000000000",
+        "it_house_loader_current_not_decimal",
+        "it_house_loader_current_+1795478400000000000",
     ] {
-        assert!(!is_house_case_database(&name, false), "{name}");
+        assert!(!is_house_case_database(name, false), "{name}");
     }
 }
 
