@@ -131,6 +131,17 @@ pub struct Read {
 }
 
 impl DurabilityRoot {
+    pub(super) fn drome_test_clock(&self) -> Option<Arc<AtomicI64>> {
+        #[cfg(any(test, feature = "test-support"))]
+        {
+            self.quest_test_clock_handle()
+        }
+        #[cfg(not(any(test, feature = "test-support")))]
+        {
+            None
+        }
+    }
+
     pub async fn read_tibiadrome(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -146,7 +157,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
-        let test_clock = test_clock(self);
+        let test_clock = self.drome_test_clock();
         let payload = payload.to_vec();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
@@ -206,7 +217,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
-        let test_clock = test_clock(self);
+        let test_clock = self.drome_test_clock();
         self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
@@ -255,18 +266,6 @@ impl DurabilityRoot {
             commit_semantic_transaction(tx,deadline).await?;
             Ok(Ok(reply))
         })).await?
-    }
-}
-
-pub(super) fn test_clock(root: &DurabilityRoot) -> Option<Arc<AtomicI64>> {
-    #[cfg(any(test, feature = "test-support"))]
-    {
-        root.quest_test_clock_handle()
-    }
-    #[cfg(not(any(test, feature = "test-support")))]
-    {
-        let _ = root;
-        None
     }
 }
 
@@ -456,7 +455,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
-        let test_clock = test_clock(self);
+        let test_clock = self.drome_test_clock();
         self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;

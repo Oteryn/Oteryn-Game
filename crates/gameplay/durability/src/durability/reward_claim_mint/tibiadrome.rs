@@ -38,7 +38,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
         let node = node.clone();
-        let test_clock = arena::test_clock(self);
+        let test_clock = self.drome_test_clock();
         let mut context = weights;
         self.try_issue_semantic_pass()?.run_with_context(&mut context,move |holder,deadline,weights|Box::pin(async move {
             let mut tx=begin_type2_transaction(holder,deadline).await?;
