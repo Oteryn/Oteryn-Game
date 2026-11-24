@@ -346,3 +346,14 @@ effect or turn those fixture failures into item-server defects.
 The interrupted run left no `NODE_BOOT_RESULT` and its process exited.
 The restart repeats the last observed key. The ledger has 792 entries
 remaining from the original 1,403, with 611 distinct seeds verified.
+
+The i29432 hireling lamp needs the hireling Inbox custody driver. The
+ordinary backpack reward reservation refused `UnknownStackClass`
+(`apps/game-server/src/node/serve/qualification_fixture.rs:1007`,
+`crates/gameplay/items/src/stacking.rs:19`). The spell-native profile
+declares only `CharacterInbox` and `NonStackable`. A legitimate lamp
+also carries an owned hireling identity
+(`crates/gameplay/dispatch/src/gameplay_transport/hireling.rs:108–131`).
+Crystal 201189f8 `hireling_lamp.lua:7–24` requires the player's house
+tile. Classify the backpack reservation as the wrong fixture for this
+action. No lamp USE verdict was produced for this key.

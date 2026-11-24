@@ -306,7 +306,7 @@ impl Fixtures<'_> {
         for (ordinal, key) in std::iter::once(key).chain(gear.iter().copied()).enumerate() {
             // The qualification owner freezes one reward cause per admitted
             // session. Distinct gear proposals need distinct sessions.
-            let client = connect_character(scope, 0x71, index % 2).await?;
+            let mut client = connect_character(scope, 0x71, index % 2).await?;
             let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
             let script = Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../tools/qualification/node_boot/provision.py");
@@ -327,8 +327,21 @@ impl Fixtures<'_> {
                         &key,
                     ])
                     .status()
-            })
-            .await;
+            });
+            while !status.is_finished() {
+                verdict::Harness::global().progress("item-fixture-preparation");
+                if client
+                    .service_liveness(Duration::from_millis(100))
+                    .await
+                    .is_err()
+                {
+                    // The recovery path releases the admitted character even if
+                    // the control owner finished after losing this transport.
+                    break;
+                }
+                client.take_events();
+            }
+            let status = status.await;
             let released = release_fixture(client, scope, index % 2).await;
             if !status??.success() {
                 return Err("fixture-item-preparation-refused".into());

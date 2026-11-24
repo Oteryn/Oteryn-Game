@@ -142,7 +142,6 @@ fixture-release-blocked	tibia.i4161
 fixture-release-blocked	tibia.i4197
 fixture-release-blocked	tibia.i4198
 fixture-release-blocked	tibia.i4206
-fixture-seed-or-admission-failed	tibia.i29432
 fixture-seed-or-admission-failed	tibia.i37810
 fixture-seed-or-admission-failed	tibia.i39147
 fixture-seed-or-admission-failed	tibia.i39148
@@ -180,6 +179,7 @@ fresh-admission-missing-seeded-item	tibia.i34017
 fresh-admission-missing-seeded-item	tibia.i3552
 fresh-admission-missing-seeded-item	tibia.i3559
 fresh-admission-missing-seeded-item	tibia.i3561
+hireling-inbox-custody-unavailable	tibia.i29432
 house-bed-placement-unavailable	tibia.i15506
 house-bed-placement-unavailable	tibia.i15507
 house-bed-placement-unavailable	tibia.i15508
