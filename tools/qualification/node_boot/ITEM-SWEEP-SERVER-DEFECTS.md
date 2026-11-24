@@ -259,3 +259,19 @@ Across the previous narrow runs and these continuations, the union of emitted
 item keys is 2,119, equal to the selected census. Of those keys, 716 ever
 passed the seed step and 1,403 had no successful seed. A seed PASS does not
 imply that each dependent gameplay step reached its assertion.
+
+### Seed recovery replay
+
+The [seed ledger](item-sweep-reseed.tsv) records one observed cause per key
+for all 1,403 keys that had no prior seed PASS. A generic provisioning
+refusal stays unclassified without the node's typed diagnostic.
+
+| Manifest batch | Seed PASS | Seed FAIL | Terminal result |
+| --- | ---: | ---: | --- |
+| `0:10` on the sweep branch | 0 | 10 | `NODE_BOOT_FAIL` |
+
+All ten pilot refusals were `DefinitionNotFound` at the active admission
+owner (`crates/gameplay/items/src/item_ref_admission.rs:63–74`).
+The exact keys are 11459, 11460, 11461, 11462, 11681, 11683, 12310, 13992,
+14084 and 14085. That typed failure qualifies these keys for a replay against
+fxi's head in a separate detached test checkout.

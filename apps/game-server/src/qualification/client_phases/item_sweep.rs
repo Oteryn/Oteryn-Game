@@ -241,15 +241,15 @@ struct Tally {
     fail: usize,
 }
 
-struct Rows<'a> {
+pub(super) struct Rows<'a> {
     key: &'a str,
-    pending: Vec<&'static str>,
+    pub(super) pending: Vec<&'static str>,
     counts: Tally,
     lap: std::time::Instant,
 }
 
 impl Rows<'_> {
-    fn emit(&mut self, step: &str, result: TestResult) {
+    pub(super) fn emit(&mut self, step: &str, result: TestResult) {
         self.pending.retain(|name| *name != step);
         let seconds = self.lap.elapsed().as_secs_f64();
         self.lap = std::time::Instant::now();
@@ -283,10 +283,17 @@ struct Fixtures<'a> {
 }
 
 impl Fixtures<'_> {
+    fn fixture(&self, build: Build) -> (&SeamClients<'_>, usize) {
+        (
+            self.scopes[build.vocation],
+            usize::from(build.level == HIGH),
+        )
+    }
+
     async fn seed(&mut self, key: &str, build: Build) -> TestResult<DevClientSession> {
         let index = build.vocation * 2 + usize::from(build.level == HIGH);
         let scope = self.scopes[index / 2];
-        let mut client = connect_character(scope, 0x71, index % 2).await?;
+        let client = connect_character(scope, 0x71, index % 2).await?;
         let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
         let script = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../tools/qualification/node_boot/provision.py");
@@ -311,12 +318,11 @@ impl Fixtures<'_> {
         .await;
         // Release even after fixture refusal. Dropping an admitted socket instead
         // would park the Character in reconnect grace and block the next item.
-        let released = release(&mut client).await;
+        let released = release_fixture(client, scope, index % 2).await;
         if !status??.success() {
             return Err("fixture-item-preparation-refused".into());
         }
         released?;
-        drop(client);
         let mut client = connect_character(scope, 0x72, index % 2).await?;
         let facts = super::creature_sweep::read_stats(&mut client).await;
         let verification = facts.and_then(|(_, level, vocation)| {
@@ -332,7 +338,7 @@ impl Fixtures<'_> {
             }
         });
         if let Err(error) = verification {
-            let _ = release(&mut client).await;
+            let _ = release_fixture(client, scope, index % 2).await;
             return Err(error);
         }
         self.prepared[index] = true;
@@ -340,8 +346,57 @@ impl Fixtures<'_> {
     }
 }
 
-async fn release(client: &mut DevClientSession) -> TestResult {
-    super::creature_sweep::release(client).await
+async fn release_fixture(
+    mut client: DevClientSession,
+    scope: &SeamClients<'_>,
+    index: usize,
+) -> TestResult {
+    if let Err(initial) = super::creature_sweep::release(&mut client).await {
+        let id = *client.join_snapshot().game_session_id.as_bytes();
+        let previous = client.disconnect();
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+        verdict::Harness::global().bounded_wait(deadline, "item-fixture-recovery");
+        loop {
+            match session_loss_row(scope.url, id).await? {
+                Some((1, _, _)) => break,
+                Some((3, _, _)) | None => return Ok(()),
+                _ if tokio::time::Instant::now() >= deadline => {
+                    return Err(format!("fixture-recovery-loss-timeout: {initial}").into());
+                }
+                _ => tokio::time::sleep(Duration::from_millis(100)).await,
+            }
+        }
+        let generation = platform_generation(scope.descriptor, &scope.accounts[index]).await?;
+        let (nonce, _) = fresh_grant_material(0x73)?;
+        let token = sign_recovery(
+            scope.recovery,
+            &scope.accounts[index],
+            &scope.characters[index],
+            &scope.world,
+            generation,
+            now_seconds()?,
+            nonce,
+        );
+        let mut resumed = oteryn_dev_client::resume_session(
+            oteryn_dev_client::RecoveryTransport {
+                address: scope.address,
+                server_name: "localhost",
+                root_certificate: scope.certificate,
+                deadline: Duration::from_secs(20),
+            },
+            previous,
+            oteryn_dev_client::Recovery {
+                reconnect_material: token.as_bytes(),
+                schema_revision: 1,
+                client_build_id: "oteryn-dev-client/item-sweep",
+                deadline: Duration::from_secs(20),
+                appearance_items: None,
+            },
+        )
+        .await?;
+        super::creature_sweep::release(&mut resumed).await?;
+    }
+    Ok(())
 }
 
 /// Remove only scratch-world ground custody created by this entry's fixture
@@ -509,7 +564,7 @@ async fn rack(
         Ok(())
     }
     .await;
-    let released = release(&mut client).await;
+    let released = release_fixture(client, fixtures.scopes[0], 0).await;
     if rows.pending.contains(&"seed") {
         return opened.and(released);
     }
@@ -641,7 +696,7 @@ async fn ground_container(
         Ok(())
     }
     .await;
-    let released = release(&mut client).await;
+    let released = release_fixture(client, fixtures.scopes[0], 1).await;
     if rows.pending.contains(&"seed") {
         return result.and(released);
     }
@@ -1347,7 +1402,8 @@ async fn restriction(
     }
     .await;
     let cleanup = drop_carried(&mut client, reference).await;
-    let released = release(&mut client).await;
+    let (scope, index) = fixtures.fixture(build);
+    let released = release_fixture(client, scope, index).await;
     result.and(cleanup).and(released)
 }
 
@@ -1394,6 +1450,21 @@ async fn sweep_item(
             rows.emit("seed", Err(error));
         }
         rows.blocked("map-custody");
+        return;
+    }
+    if !item.group("bed").is_null() {
+        let scope = fixtures.scopes[0];
+        match connect_character(scope, 0x71, 0).await {
+            Ok(mut client) => {
+                let seeded = full_row_c10::sweep_bed(&mut client, world, reference, rows).await;
+                if let Err(error) = seeded {
+                    rows.emit("seed", Err(error));
+                }
+                rows.emit("cleanup", release_fixture(client, scope, 0).await);
+            }
+            Err(error) => rows.emit("seed", Err(error)),
+        }
+        rows.blocked("house-custody");
         return;
     }
     if item.ground_only {
@@ -1444,14 +1515,16 @@ async fn sweep_item(
     };
     let Some(entry) = carried(&client, reference) else {
         rows.emit("seed", Err("fresh-admission-missing-seeded-item".into()));
-        rows.emit("cleanup", release(&mut client).await);
+        let (scope, index) = fixtures.fixture(build);
+        rows.emit("cleanup", release_fixture(client, scope, index).await);
         rows.blocked("seed");
         return;
     };
     rows.emit("seed", Ok(()));
     if rows.pending.as_slice() == ["cleanup"] {
         let cleanup = drop_carried(&mut client, reference).await;
-        let released = release(&mut client).await;
+        let (scope, index) = fixtures.fixture(build);
+        let released = release_fixture(client, scope, index).await;
         rows.emit("cleanup", cleanup.and(released));
         return;
     }
@@ -1491,7 +1564,8 @@ async fn sweep_item(
         rows.emit("use", result);
     }
     let cleanup = drop_carried(&mut client, reference).await;
-    let release = release(&mut client).await;
+    let (scope, index) = fixtures.fixture(build);
+    let release = release_fixture(client, scope, index).await;
     rows.emit("cleanup", cleanup.and(release));
     for (level, vocation, required, action) in restrictions(item) {
         let (low, wrong) = restriction_builds(required);

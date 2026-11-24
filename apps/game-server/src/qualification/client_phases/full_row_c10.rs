@@ -182,7 +182,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     let food = full_e2ef7::acquire(&mut client, world, &provisioning::item_index()?, "oteryn:item.tibia.i3577", 1)
         .await.map_err(|error| format!("step=rest-food observed={error} need=earned-edible-food"))?;
-    let BedPlan { bed, definition, house, key, entrance } = plan_bed(world, tile(client.world_spatial().actor_position)?)?;
+    let BedPlan { bed, definition, house, key, entrance } = plan_bed(world, tile(client.world_spatial().actor_position)?, None)?;
     let to_entrance = route(world, tile(client.world_spatial().actor_position)?, |at| at == entrance)
         .ok_or("step=house-admission observed=no-route-to-catalogue-entrance")?;
     walk(&mut client, world, &to_entrance).await?;
@@ -332,7 +332,7 @@ struct BedPlan {
     entrance: TilePos,
 }
 
-fn plan_bed(world: &BundleWorld, from: TilePos) -> TestResult<BedPlan> {
+fn plan_bed(world: &BundleWorld, from: TilePos, exact: Option<NonZeroU32>) -> TestResult<BedPlan> {
     use oteryn_gameplay_world::map::view::MapFacts;
 
     let profiles = native_input()?.item_profiles.as_ref().ok_or("step=bed-route observed=no-native-item-profiles")?;
@@ -364,7 +364,7 @@ fn plan_bed(world: &BundleWorld, from: TilePos) -> TestResult<BedPlan> {
                 let Ok(ordinal) = u8::try_from(ordinal) else { break };
                 if let Some(entry) = facts.base_entry(bed, ordinal, id)
                     && let MapDefinition::Item(definition) = entry.definition
-                    && heads.contains(&definition)
+                    && exact.map_or_else(|| heads.contains(&definition), |wanted| definition == wanted)
                     && [(0, -1), (1, 0), (0, 1), (-1, 0)].into_iter().any(|(dx, dy)| {
                         bed.x.checked_add_signed(dx).zip(bed.y.checked_add_signed(dy)).is_some_and(|(x, y)| {
                             let at = TilePos { x, y, floor: bed.floor };
@@ -380,6 +380,39 @@ fn plan_bed(world: &BundleWorld, from: TilePos) -> TestResult<BedPlan> {
     }
     closest.map(|(_, plan)| plan)
         .ok_or_else(|| "step=house-admission observed=no-reachable-catalogue-entrance-with-interior-bed".into())
+}
+
+/// Probe one exact base-map bed through the normal house transfer and modal owners.
+pub(super) async fn sweep_bed(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    reference: NonZeroU32,
+    rows: &mut super::item_sweep::Rows<'_>,
+) -> TestResult {
+    let start = tile(client.world_spatial().actor_position)?;
+    let BedPlan { bed, definition, house, key, entrance } = plan_bed(world, start, Some(reference))?;
+    let path = route(world, start, |at| at == entrance)
+        .ok_or("bed-fixture-no-route-to-house")?;
+    walk(client, world, &path).await?;
+    enter_bed_house(client, &key).await?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route_avoiding(world, from, |at| {
+        same_house(house, world.facts().house_id(at)) && at.floor == bed.floor
+            && u32::from(at.x.abs_diff(bed.x)) + u32::from(at.y.abs_diff(bed.y)) == 1
+    }, |at| same_house(house, world.facts().house_id(at)))
+        .ok_or("bed-fixture-no-interior-route")?;
+    walk(client, world, &path).await?;
+    let position = spatial_basis::current(client)?.position(bed);
+    let map = client.session_mut().world_map_snapshot().ok_or("bed-fixture-no-map")?;
+    let origin = map.tiles.iter().find(|tile| tile.position == position)
+        .and_then(|tile| tile.items.iter().find(|item| item.definition == MapDefinition::Item(definition)))
+        .map(|item| item.origin).ok_or("bed-fixture-no-live-item")?;
+    let digest = map.header.bundle_digest;
+    rows.emit("seed", Ok(()));
+    if rows.pending.contains(&"use") {
+        rows.emit("use", sleep_at_bed(client, bed, digest, origin).await);
+    }
+    Ok(())
 }
 
 type AuthoredHouse = (u32, String, TilePos);
