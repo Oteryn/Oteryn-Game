@@ -1,5 +1,3 @@
-include!("qualification_hunt_plan.rs");
-
 async fn qualification_hunt_route(
     client: &mut DevClientSession,
     world: &BundleWorld,

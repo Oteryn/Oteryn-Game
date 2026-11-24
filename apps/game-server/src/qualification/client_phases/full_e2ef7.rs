@@ -4215,6 +4215,7 @@ async fn pvp_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
+    include!("qualification_hunt_plan.rs");
     include!("qualification_hunt_route.rs");
 
     let url = required("NODE_BOOT_PVP_DATABASE_URL")?;
@@ -4962,6 +4963,7 @@ async fn imbuement_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
+    include!("qualification_hunt_plan.rs");
     include!("qualification_hunt_route.rs");
 
     let mut characters = clients.characters.to_vec();
