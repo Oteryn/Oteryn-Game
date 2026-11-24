@@ -616,9 +616,16 @@ pub(super) async fn run(
             rows.abort(error.cause, &error.detail);
         }
         for client in &mut party {
-            // Allow the normal disconnect/release owner to handle combat-locked actors.
-            // Never replace their session or its fence to make the next entry runnable.
-            if let Err(error) = logout_retrying_busy(client).await {
+            let cleanup: TestResult = async {
+                walk_to_logout_tile(client, world).await?;
+                let (result, reply, _, _) = logout_retrying_busy(client).await?;
+                if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+                    return Err(format!("boss fixture logout refused: {reply}").into());
+                }
+                Ok(())
+            }
+            .await;
+            if let Err(error) = cleanup {
                 evidence(&format!(
                     "boss_sweep cleanup={} error={}",
                     entry.key,
@@ -1236,12 +1243,30 @@ async fn seed_quest_access(clients: &SeamClients<'_>, selected: &[Entry]) -> Tes
     Ok(())
 }
 
+async fn walk_to_logout_tile(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let no_logout = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .map(|tile| tile.no_logout())
+    };
+    if no_logout(from) == Some(true) {
+        let path = route(world, from, |at| no_logout(at) == Some(false))
+            .ok_or("no walkable tile that allows fixture logout")?;
+        walk(client, world, &path).await?;
+    }
+    Ok(())
+}
+
 async fn seeded_knight(
-    client: DevClientSession,
+    mut client: DevClientSession,
     clients: &SeamClients<'_>,
+    world: &BundleWorld,
     index: usize,
     level: u32,
 ) -> TestResult<DevClientSession> {
+    walk_to_logout_tile(&mut client, world).await?;
     provisioning::provision_profile(client, clients, index, level, &format!("knight@{level}")).await
 }
 
@@ -1267,23 +1292,27 @@ async fn held_journey(
     let (definition, _) = definitions
         .get(creature)
         .ok_or_else(|| failure("content", "missing held creature definition"))?;
-    let mut player = connect_character(clients, 0xb4, leader_index)
-        .await
-        .map_err(|error| failure("fixture", error))?;
-    let from =
-        tile(player.world_spatial().actor_position).map_err(|error| failure("fixture", error))?;
     let target = held.at;
     if world
         .base()
         .tile(target.x, target.y, target.floor)
         .is_none()
     {
-        party.push(player);
         return Err(failure(
             "world_route",
             format!("held spawn {target:?} lies outside the loaded world bundle"),
         ));
     }
+    let player = connect_character(clients, 0xb4, leader_index)
+        .await
+        .map_err(|error| failure("fixture", error))?;
+    let player = seeded_knight(player, clients, world, leader_index, build_level)
+        .await
+        .map_err(|error| failure("fixture", error))?;
+    party.push(player);
+    let player = &mut party[0];
+    let from =
+        tile(player.world_spatial().actor_position).map_err(|error| failure("fixture", error))?;
     let koshei_switch = rows.entry.koshei_switch();
     let path = creature_sweep::far_route(world, from, |at| {
         if koshei_switch {
@@ -1297,7 +1326,6 @@ async fn held_journey(
     let path = match path {
         Ok(path) => path,
         Err(_) => {
-            party.push(player);
             return Err(failure(
                 "world_route",
                 format!(
@@ -1311,11 +1339,6 @@ async fn held_journey(
             ));
         }
     };
-    player = seeded_knight(player, clients, leader_index, build_level)
-        .await
-        .map_err(|error| failure("fixture", error))?;
-    party.push(player);
-    let player = &mut party[0];
     walk(player, world, &path)
         .await
         .map_err(|error| failure("world_route", error))?;
@@ -1479,7 +1502,7 @@ async fn journey(
         .pop()
         .ok_or_else(|| failure("fixture", "no admitted leader"))?;
     party.push(
-        seeded_knight(leader, clients, leader_index, build_level)
+        seeded_knight(leader, clients, world, leader_index, build_level)
             .await
             .map_err(|error| failure("fixture", error))?,
     );
@@ -1489,7 +1512,7 @@ async fn journey(
             .await
             .map_err(|error| failure("fixture", error))?;
         party.push(
-            seeded_knight(member, clients, index, build_level)
+            seeded_knight(member, clients, world, index, build_level)
                 .await
                 .map_err(|error| failure("fixture", error))?,
         );
