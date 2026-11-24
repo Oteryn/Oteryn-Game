@@ -718,6 +718,37 @@ PY_REGION_PIN
   install_owned root:root -m 0644 "$PIN" "$BASE/world/world.json"
   MAP_REVISION="$WORLD_DIGEST"
 fi
+NPC_SWEEP_DATA_ARGS=()
+if [[ "$NODE_BOOT_WORLD" == 1 && ",${NODE_BOOT_E2E_ONLY:-}," == *,npc_sweep,* ]]; then
+  python3 - "$GAME_SOURCE" "$WORK" <<'PY_NPC_CATALOGUE'
+import json
+import sys
+from pathlib import Path
+
+sys.dont_write_bytecode = True
+repo, work = map(Path, sys.argv[1:])
+sys.path.insert(0, str(repo / "deploy/synology-game"))
+from stage_npc_data import PIN_SCHEMA, catalogue_digest, collect_catalogue, project_files, stage
+
+content = repo / "content"
+revision, project = project_files(content / "world")
+pin = work / "npc-sweep-data-pin.json"
+pin.write_text(json.dumps({
+    "schema": PIN_SCHEMA,
+    "project_revision": revision,
+    "project_sha256": catalogue_digest(project.items()),
+    "catalogue_sha256": catalogue_digest(collect_catalogue(content)),
+}))
+stage(pin, repo, work / "npc-sweep-data")
+PY_NPC_CATALOGUE
+  while IFS= read -r -d '' path; do
+    install_owned root:root -d -m 0755 "$BASE/npc-sweep-data/${path%/*}"
+    install_owned root:root -m 0644 "$WORK/npc-sweep-data/$path" "$BASE/npc-sweep-data/$path"
+  done < <(cd "$WORK/npc-sweep-data" && find content -type f -print0)
+  NPC_SWEEP_DATA_ARGS=(--npc-data-project "$BASE/npc-sweep-data/content/world"
+    --npc-data-sha256 "$(<"$WORK/npc-sweep-data/PROJECT_SHA256")")
+fi
+
 install_owned "$SERVICE_UID" -d -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
 install_owned "$SERVICE_UID" -d -m 0755 "$BASE/node/secrets"
 install_owned root -m 0755 "$TARGET/oteryn-game-server" "$TARGET/oteryn-game-ops" "$TARGET/oteryn-game-migrate" "$BASE/bin/"
@@ -868,7 +899,7 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2"
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2" "${NPC_SWEEP_DATA_ARGS[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
 }
@@ -1548,7 +1579,7 @@ restart_without_supersession() { # fails at S2 custody, never ready
   ops authorization issue --file launch-b.json --binding node-boot-b
   write_node_config launch-b.json
   local code=0
-  "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" 2> "$WORK/restart.log" || code=$?
+  "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" "${NPC_SWEEP_DATA_ARGS[@]}" 2> "$WORK/restart.log" || code=$?
   cat "$WORK/restart.log"
   [[ $code == 13 ]] || fail "restart without supersession exit=$code"
   local line node revision
