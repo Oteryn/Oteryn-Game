@@ -69,10 +69,11 @@ pub(super) async fn run(
         .remove_test_actor(wrong)
         .map_err(debug)?;
     let (far, entity) = spawn(owner, actor, "oteryn:creature.bear", 4).await?;
-    let (results, next) = wire::exchange(
+    let (results, next, _) = wire::exchange_with_view(
         owner,
         retained,
         &[encode_item_use_intent(&use_on(entity)).map_err(debug)?],
+        true,
     )
     .await?;
     assert_eq!(results, [UseDisposition::TooFar]);

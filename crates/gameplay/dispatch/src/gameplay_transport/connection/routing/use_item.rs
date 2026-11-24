@@ -292,7 +292,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     (Some(_), Some(target)) => authority
                         .observe_visible_entities(actor)
                         .await
-                        .is_some_and(|channel| adjacent_taming_target(&channel, target)),
+                        .is_some_and(|channel| observed_taming_target(&channel, target)),
                     _ => false,
                 };
                 authority.tame_mount(
@@ -605,25 +605,18 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     })
 }
 
-// A creature may enter the observer's reach between publications. Only use the
-// observer-filtered current view, and require the exact live incarnation on a
-// same-floor use-with tile before accepting a cache miss.
-fn adjacent_taming_target(
+// A creature can become visible between publications. Require its exact
+// incarnation in the observer-filtered current view. Taming checks reach
+// against the live positions when it resolves the use.
+fn observed_taming_target(
     channel: &transport::world_spatial::ChannelEntities,
     target: transport::world_spatial::EntityRef,
 ) -> bool {
     use transport::world_spatial::VisibleKind;
-    let Some(observer) = channel.entities.iter().find(|entity| entity.identity == channel.observer)
-    else {
-        return false;
-    };
     channel.entities.iter().any(|entity| {
         matches!(entity.kind, VisibleKind::Creature)
             && entity.identity == target.identity
             && entity.generation == target.generation
-            && entity.position.floor == observer.position.floor
-            && entity.position.x.abs_diff(observer.position.x) <= 1
-            && entity.position.y.abs_diff(observer.position.y) <= 1
     })
 }
 
