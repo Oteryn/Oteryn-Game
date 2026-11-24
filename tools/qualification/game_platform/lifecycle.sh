@@ -6,6 +6,7 @@ GP_HARNESS_PID=''
 GP_PG_CONTAINER=''
 game_platform_retain_test_logs() {
   [[ -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" && -n "${WORK:-}" ]] || return 0
+  mkdir -p -- "$NODE_BOOT_FAILURE_LOG_DIR" || return 1
   local log value
   local -a evidence_args=()
   for value in "$GAME_PLATFORM_SHA" "$(git -C "$GAME_SOURCE" rev-parse HEAD)" "${WORLD_DIGEST:-}"; do
