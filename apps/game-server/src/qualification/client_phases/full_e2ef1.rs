@@ -3,7 +3,7 @@
 use super::*;
 #[path = "provision.rs"]
 mod original;
-pub(super) use original::provision_profile;
+pub(super) use original::provision_boss;
 
 pub(super) async fn with_peer_liveness<T>(
     client: &mut oteryn_dev_client::DevClientSession,

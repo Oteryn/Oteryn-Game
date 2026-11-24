@@ -20,11 +20,39 @@ pub(super) async fn provision_at_level(
 }
 
 pub(in crate::qualification) async fn provision_profile(
+    client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    index: usize,
+    expected_level: u32,
+    profile: &str,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    reload_profile(client, clients, index, expected_level, profile, false).await
+}
+
+pub(in crate::qualification) async fn provision_boss(
+    client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    index: usize,
+    level: u32,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    reload_profile(
+        client,
+        clients,
+        index,
+        level,
+        &format!("knight@{level}"),
+        true,
+    )
+    .await
+}
+
+async fn reload_profile(
     mut client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
     index: usize,
     expected_level: u32,
     profile: &str,
+    recover_disconnect: bool,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let vocation = if profile == "explorer" || profile.starts_with("knight@") {
@@ -61,10 +89,18 @@ pub(in crate::qualification) async fn provision_profile(
     if !status.success() {
         return Err("node-boot fenced build provisioning failed".into());
     }
-    let (result, logout, attempts, busy_timed_out) =
-        client_world::logout_retrying_busy(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    let logout = client_world::logout_retrying_busy(&mut client).await;
+    match logout {
+        Ok((Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted), _, _, _)) => {}
+        Err(error) if recover_disconnect => {
+            // The control command already committed. Fresh admission waits for
+            // release and the checks below verify the durable build and gear.
+            evidence(&format!("provisioning logout=ambiguous error={error}"));
+        }
+        Err(error) => return Err(error),
+        Ok((_, reply, attempts, busy_timed_out)) => {
+            return Err(format!("fixture setup logout refused: {reply}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+        }
     }
     drop(client);
     let mut client = connect_character(clients, 0x70, index).await?;

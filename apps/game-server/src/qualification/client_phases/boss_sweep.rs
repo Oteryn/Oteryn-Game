@@ -150,8 +150,10 @@ fn census(root: &Path) -> TestResult<Catalogue> {
             // Participant order also includes supporting actors. Match the
             // encounter's own identity anywhere in the authored roster.
             let matching = creatures.find(|creature| short(creature) == short(key));
+            let parent =
+                room_actor(short(key)).map(|(parent, _)| format!("oteryn:creature.{parent}"));
             let (lever, donor) = donor_lever(&levers, short(key))
-                .unwrap_or_else(|| resolve_lever(&levers, matching));
+                .unwrap_or_else(|| resolve_lever(&levers, parent.as_deref().or(matching)));
             let creature = lever
                 .and_then(|index| levers[index].creature_key.as_deref())
                 .or(primary);
@@ -217,6 +219,72 @@ fn census(root: &Path) -> TestResult<Catalogue> {
         return Err("duplicate boss sweep entry key".into());
     }
     Ok(Catalogue { entries, levers })
+}
+
+// These actors are created inside the parent's room by the cited Crystal hooks.
+fn room_actor(key: &str) -> Option<(&'static str, &'static str)> {
+    Some(match key {
+        "charged_anomaly" => ("anomaly", "Charged Anomaly"),
+        "charging_outburst" => ("outburst", "Charging Outburst"),
+        "crystal_smelly_cheese" => ("ratmiral_blackwhiskers", "Smelly Cheese"),
+        "crystal_weak_spot" => ("ratmiral_blackwhiskers", "Weak Spot"),
+        "field_fill_aspect_of_power" => ("goshnar_s_megalomania_purple", "Aspect of Power"),
+        "field_fill_soul_cage" => ("goshnar_s_malice", "Soul Cage"),
+        _ => return None,
+    })
+}
+
+struct ScriptedRoom {
+    unique: Option<u16>,
+    action: Option<u16>,
+    roster: &'static [[i32; 3]],
+    actor: &'static str,
+    spawn: Option<[i32; 3]>,
+    step_landing: Option<[i32; 3]>,
+}
+
+fn scripted_room(key: &str) -> Option<ScriptedRoom> {
+    Some(match key {
+        "azerus" => ScriptedRoom {
+            unique: Some(3086),
+            action: None,
+            roster: &[],
+            actor: "Azerus",
+            spawn: None,
+            step_landing: None,
+        },
+        "death_priest_shargon" => ScriptedRoom {
+            unique: Some(30002),
+            action: None,
+            roster: &[
+                [33583, 31844, 10],
+                [33584, 31844, 10],
+                [33585, 31844, 10],
+                [33586, 31844, 10],
+                [33587, 31844, 10],
+            ],
+            actor: "Death Priest Shargon",
+            spawn: Some([33487, 32108, 9]),
+            step_landing: None,
+        },
+        "drume" => ScriptedRoom {
+            unique: None,
+            action: Some(59601),
+            roster: &[[32457, 32508, 6]],
+            actor: "Usurper Commander",
+            spawn: Some([32444, 32516, 7]),
+            step_landing: None,
+        },
+        "ferumbras_mortal_shell" => ScriptedRoom {
+            unique: None,
+            action: Some(24846),
+            roster: &[],
+            actor: "Ferumbras Mortal Shell",
+            spawn: None,
+            step_landing: Some([33270, 31474, 14]),
+        },
+        _ => return None,
+    })
 }
 
 fn donor_gap(key: &str) -> Option<(&'static str, &'static str)> {
@@ -537,12 +605,19 @@ pub(super) async fn run(
     for (offset, entry) in selected.iter().enumerate() {
         let leader_index = offset % clients.accounts.len();
         verdict::Harness::global().progress("boss-sweep-entry");
+        let encounter = entry.key.strip_suffix(".encounter");
+        let phase = encounter.and_then(room_actor);
+        let scripted = encounter.and_then(scripted_room);
         let mut rows = Rows {
             entry,
             steps: if entry.held.is_some() {
                 &["route", "spawn", "kill", "reward"]
             } else if entry.key.ends_with(".arena") && entry.lever.is_none() {
                 &["entry"]
+            } else if scripted.is_some() {
+                &["entry", "spawn"]
+            } else if phase.is_some() {
+                &["ineligible", "eligible", "spawn", "phase"]
             } else {
                 &STEPS
             },
@@ -560,6 +635,16 @@ pub(super) async fn run(
                     &definitions,
                     rewards,
                     (leader_index, build_level),
+                    &mut party,
+                    &mut rows,
+                )
+                .await
+            } else if let Some(scripted) = scripted {
+                scripted_journey(
+                    clients,
+                    world,
+                    scripted,
+                    leader_index,
                     &mut party,
                     &mut rows,
                 )
@@ -806,6 +891,176 @@ async fn scope(
     Ok(())
 }
 
+fn scripted_placement(world: &BundleWorld, room: &ScriptedRoom) -> TestResult<(TilePos, u64)> {
+    use crate::map::view::{MapFacts, placement_key};
+
+    let mut selected = None;
+    for (floor, x, y, view) in world.base().tiles() {
+        let at = TilePos { x, y, floor };
+        for ordinal in 0..view.depths().iter().filter(|depth| **depth == 0).count() {
+            let Some(key) = u8::try_from(ordinal)
+                .ok()
+                .and_then(|ordinal| placement_key(at, ordinal))
+            else {
+                continue;
+            };
+            if !world.facts().base_hidden(key)
+                && world
+                    .facts()
+                    .quest_callback_matches(key, room.unique, room.action, None)
+                && selected.replace((at, key)).is_some()
+            {
+                return Err("multiple published placements match donor room trigger".into());
+            }
+        }
+    }
+    selected.ok_or_else(|| "donor room trigger has no published placement in bundle".into())
+}
+
+async fn wait_at(client: &mut DevClientSession, landing: TilePos) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    while tile(client.world_spatial().actor_position).ok() != Some(landing) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("trigger did not land the player at {landing:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+    Ok(())
+}
+
+async fn scripted_journey(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    room: ScriptedRoom,
+    leader_index: usize,
+    party: &mut Vec<DevClientSession>,
+    rows: &mut Rows<'_>,
+) -> Result<(), Failure> {
+    use crate::map::view::MapFacts;
+
+    let (at, key) =
+        scripted_placement(world, &room).map_err(|error| failure("scripted_placement", error))?;
+    if room.roster.len() > clients.accounts.len() {
+        return Err(failure(
+            "fixture_party_size",
+            "insufficient scripted room occupants",
+        ));
+    }
+    for offset in 0..room.roster.len().max(1) {
+        let index = (leader_index + offset) % clients.accounts.len();
+        party.push(
+            connect_character(clients, 0xb4, index)
+                .await
+                .map_err(|error| failure("fixture", error))?,
+        );
+    }
+    for (client, &stand) in party.iter_mut().zip(room.roster) {
+        walk_to(
+            client,
+            world,
+            cell(stand).map_err(|error| failure("content", error))?,
+        )
+        .await
+        .map_err(|error| failure("entry_route", error))?;
+    }
+    let leader = &mut party[0];
+    if room.roster.is_empty() {
+        let from = tile(leader.world_spatial().actor_position)
+            .map_err(|error| failure("entry_route", error))?;
+        let path = creature_sweep::far_route(world, from, |pos| {
+            pos.floor == at.floor && pos.x.abs_diff(at.x).max(pos.y.abs_diff(at.y)) <= 1
+        })
+        .map_err(|_| {
+            failure(
+                "entry_route",
+                format!("no route to scripted trigger {at:?}"),
+            )
+        })?;
+        walk(leader, world, &path)
+            .await
+            .map_err(|error| failure("entry_route", error))?;
+    }
+    let prior = leader
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.iter())
+        .map(|entity| entity.entity)
+        .collect::<Vec<_>>();
+    if let Some(landing) = room.step_landing {
+        // The final wire step can teleport before walk_to sees the trigger tile.
+        let from = tile(leader.world_spatial().actor_position)
+            .map_err(|error| failure("entry_route", error))?;
+        let path = creature_sweep::far_route(world, from, |pos| pos == at)
+            .map_err(|_| failure("entry_route", format!("no route onto seal at {at:?}")))?;
+        let (&step, approach) = path
+            .split_last()
+            .ok_or_else(|| failure("entry_route", "fixture already occupies seal"))?;
+        walk(leader, world, approach)
+            .await
+            .map_err(|error| failure("entry_route", error))?;
+        let reply = leader
+            .step_retrying(step)
+            .await
+            .map_err(|error| failure("scripted_step", error))?;
+        if reply.disposition != StepDisposition::Moved {
+            return Err(failure(
+                "scripted_step",
+                format!("seal step: {:?}", reply.disposition),
+            ));
+        }
+        wait_at(
+            leader,
+            cell(landing).map_err(|error| failure("content", error))?,
+        )
+        .await
+        .map_err(|error| failure("scripted_step", error))?;
+    } else {
+        let mut placement = world.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let reply = leader
+            .use_object(&placement, world.facts().object_revision(key))
+            .await
+            .map_err(|error| failure("scripted_use", error))?;
+        if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
+            return Err(failure(
+                "scripted_use",
+                format!("room trigger: {:?}", reply.disposition),
+            ));
+        }
+    }
+    rows.emit(None, "authored-trigger-committed");
+    let spawn = room
+        .spawn
+        .map(cell)
+        .transpose()
+        .map_err(|error| failure("content", error))?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    loop {
+        if leader.world_entities().is_some_and(|entities| {
+            entities.iter().any(|entity| {
+                !prior.contains(&entity.entity)
+                    && creature_sweep::creature_named(entity, room.actor)
+                    && spawn.is_none_or(|at| tile(entity.position).ok() == Some(at))
+            })
+        }) {
+            rows.emit(None, &format!("scripted-actor-visible:{}", room.actor));
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(failure(
+                "spawn_absent",
+                format!("no new {} frame", room.actor),
+            ));
+        }
+        leader
+            .service_liveness(Duration::from_millis(50))
+            .await
+            .map_err(|error| failure("spawn_protocol", error))?;
+        leader.take_events();
+    }
+}
+
 async fn observe_boss(
     client: &mut DevClientSession,
     name: &str,
@@ -833,10 +1088,10 @@ async fn observe_boss(
     }
 }
 
-async fn fight(
+async fn start_attack(
     client: &mut DevClientSession,
     target: oteryn_dev_client::WorldSpatialEntity,
-) -> TestResult<ActorPosition> {
+) -> TestResult {
     let modes = client
         .session_mut()
         .set_fight_modes(&attack::FightModes {
@@ -854,6 +1109,45 @@ async fn fight(
     {
         return Err(format!("native combat refused: {modes:?}; {attack:?}").into());
     }
+    Ok(())
+}
+
+async fn observe_room_actor(
+    client: &mut DevClientSession,
+    target: oteryn_dev_client::WorldSpatialEntity,
+    name: &str,
+) -> TestResult {
+    let instance = client.join_snapshot().game_session_id;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(40);
+    let mut attacking = false;
+    loop {
+        if client.join_snapshot().game_session_id != instance {
+            return Err(format!("left parent room before observing {name}").into());
+        }
+        if client.world_entities().is_some_and(|entities| {
+            entities
+                .iter()
+                .any(|entity| creature_sweep::creature_named(entity, name))
+        }) {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("no {name} frame in parent room").into());
+        }
+        if !attacking {
+            start_attack(client, target).await?;
+            attacking = true;
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+}
+
+async fn fight(
+    client: &mut DevClientSession,
+    target: oteryn_dev_client::WorldSpatialEntity,
+) -> TestResult<ActorPosition> {
+    start_attack(client, target).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut position = target.position;
     while let Some(visible) = client
@@ -1273,9 +1567,7 @@ async fn seeded_knight(
     entry: &Entry,
 ) -> TestResult<DevClientSession> {
     walk_to_logout_tile(&mut client, world).await?;
-    let client =
-        provisioning::provision_profile(client, clients, index, level, &format!("knight@{level}"))
-            .await?;
+    let client = provisioning::provision_boss(client, clients, index, level).await?;
     // The owner has now committed progression. Quest tracks need a real
     // character revision >= 2 (0056_character_quest_state.sql:100).
     seed_quest_access(clients, index, entry).await?;
@@ -1362,13 +1654,15 @@ async fn held_journey(
         .await
         .map_err(|error| failure("world_route", error))?;
     if koshei_switch {
+        use crate::map::view::MapFacts;
+
         rows.emit(None, "walked-to-authored-tomb-switch");
         let key = crate::map::view::placement_key(KOSHEI_SWITCH, 1)
             .ok_or_else(|| failure("content", KOSHEI_ENTRY_SOURCE))?;
         let mut placement = world.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
         let reply = player
-            .use_object(&placement, 0)
+            .use_object(&placement, world.facts().object_revision(key))
             .await
             .map_err(|error| failure("world_spawn_trigger", error))?;
         if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
@@ -1380,6 +1674,16 @@ async fn held_journey(
                 ),
             ));
         }
+        wait_at(
+            player,
+            TilePos {
+                x: 33270,
+                y: 32406,
+                floor: -12,
+            },
+        )
+        .await
+        .map_err(|error| failure("world_spawn_trigger", error))?;
     } else {
         rows.emit(None, "walked-to-authored-world-spawn");
     }
@@ -1493,9 +1797,22 @@ async fn journey(
     } else {
         BossActivityRefusal::Position
     };
-    refused(leader, &payload, expected)
+    let origin = leader.join_snapshot().game_session_id;
+    let before_position = leader.world_spatial().actor_position;
+    let negative = lever(leader, &payload)
         .await
         .map_err(|error| failure("entry_refusal", error))?;
+    if !matches!(
+        negative,
+        (CommandStatus::Rejected, BossActivityReply::Refused(_))
+    ) || origin != leader.join_snapshot().game_session_id
+        || before_position != leader.world_spatial().actor_position
+    {
+        return Err(failure(
+            "entry_refusal",
+            format!("unsafe to continue after {negative:?}"),
+        ));
+    }
     let (_, negative_cooldown, _) = cooldowns(leader, &boss_key)
         .await
         .map_err(|error| failure("protocol", error))?;
@@ -1505,10 +1822,17 @@ async fn journey(
             "ineligible attempt changed cooldown",
         ));
     }
-    rows.emit(
-        None,
-        &format!("typed-{expected:?}-without-handoff-or-cooldown-change"),
-    );
+    if negative.1 == BossActivityReply::Refused(expected) {
+        rows.emit(
+            None,
+            &format!("typed-{expected:?}-without-handoff-or-cooldown-change"),
+        );
+    } else {
+        rows.emit(
+            Some("entry_refusal"),
+            &format!("expected {expected:?}; observed {negative:?}; owner:{ROOM_OWNER}"),
+        );
+    }
 
     let minimum = authored
         .minimum_players
@@ -1644,6 +1968,19 @@ async fn journey(
         &format!("native-entity:{:?};at:{boss_at:?}", target.entity),
     );
 
+    if let Some((_, name)) = rows
+        .entry
+        .key
+        .strip_suffix(".encounter")
+        .and_then(room_actor)
+    {
+        observe_room_actor(leader, target, name)
+            .await
+            .map_err(|error| failure("phase_not_observed", error))?;
+        rows.emit(None, &format!("room-actor-visible:{name}"));
+        return Ok(());
+    }
+
     let instance = leader.join_snapshot().game_session_id;
     let other_instances: Vec<_> = others
         .iter()
@@ -1741,7 +2078,7 @@ async fn journey(
     let seconds = authored
         .cooldown_seconds
         .ok_or_else(|| failure("content", "no authored cooldown"))?;
-    let (now, actual, _) = cooldowns(leader, &boss_key)
+    let (now, actual, credited) = cooldowns(leader, &boss_key)
         .await
         .map_err(|error| failure("protocol", error))?;
     if !actual.is_some_and(|actual| cooldown_matches(before, now, actual, seconds)) {
@@ -1764,7 +2101,16 @@ async fn journey(
     refused(leader, &payload, BossActivityRefusal::Cooldown)
         .await
         .map_err(|error| failure("cooldown_refusal", error))?;
-    rows.emit(None, "typed-Cooldown-without-second-handoff");
+    let (_, replay_deadline, replay_kills) = cooldowns(leader, &boss_key)
+        .await
+        .map_err(|error| failure("cooldown_replay_snapshot", error))?;
+    if (replay_deadline, replay_kills) != (actual, credited) {
+        return Err(failure(
+            "cooldown_replay_mutation",
+            format!("before:{actual:?}/{credited};after:{replay_deadline:?}/{replay_kills}"),
+        ));
+    }
+    rows.emit(None, "typed-Cooldown-without-second-handoff-or-mutation");
     Ok(())
 }
 
@@ -1832,6 +2178,18 @@ mod tests {
                 .ok_or("missing aliased encounter")?;
             assert_eq!(entry.creature.as_deref(), Some(creature));
             assert!(entry.lever.is_some());
+            assert!(entry.source.starts_with("Crystal201189f8:"));
+        }
+        for entry in &catalogue.entries {
+            let Some((parent, _)) = entry.key.strip_suffix(".encounter").and_then(room_actor)
+            else {
+                continue;
+            };
+            let lever = entry.lever.ok_or("room actor has no parent lever")?;
+            assert_eq!(
+                catalogue.levers[lever].creature_key.as_deref().map(short),
+                Some(parent)
+            );
             assert!(entry.source.starts_with("Crystal201189f8:"));
         }
         let dragon = catalogue
