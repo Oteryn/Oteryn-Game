@@ -2705,6 +2705,13 @@ impl Readiness<'_> {
         ready: bool,
         budget: Option<tokio::time::Instant>,
     ) -> Result<AdmissionAuthorityPublicationV1, BootError> {
+        // The serving loops keep running during withdrawal. Reserve foreground
+        // preference across both the guard read and its fenced publication.
+        let _foreground = if ready {
+            None
+        } else {
+            self.root.foreground_demand().ok()
+        };
         for _ in 0..2 {
             let publication = self.prepare(ready, budget).await?;
             let mut attempt = 0;
@@ -4226,6 +4233,70 @@ source_authority = "OTERYN_GAME_JOURNAL"
         ] {
             assert!(!readiness_publication_retryable(&error), "{error:?}");
         }
+    }
+
+    #[test]
+    fn readiness_withdrawal_precedes_scheduled_holder_work()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness as fixture;
+
+        let Some(admin) = fixture::configured_admin() else {
+            return Ok(());
+        };
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || -> Result<(), String> {
+                fixture::runtime()
+                    .map_err(fixture::debug)?
+                    .block_on(async {
+                        let harness =
+                            fixture::Harness::create(admin, "withdrawal_holder", false).await?;
+                        let result: fixture::TestResult = async {
+                            let mut config =
+                                NodeConfig::parse(super::super::config::tests::NODE.as_bytes())?;
+                            config.readiness.source_authority = "game-runtime-publisher".into();
+                            let readiness = Readiness {
+                                root: &harness.root,
+                                proof: &harness.node,
+                                scope: fixture::scope()?,
+                                generation: 1,
+                                config: &config,
+                            };
+                            harness.root.await_ready().await?;
+                            let occupied = harness.root.try_issue_semantic_pass()?;
+                            let deadline = tokio::time::Instant::now() + SHUTDOWN_BUDGET;
+                            let mut withdrawal =
+                                std::pin::pin!(readiness.publish(false, Some(deadline)));
+                            std::future::poll_fn(|context| {
+                                assert!(withdrawal.as_mut().poll(context).is_pending());
+                                Poll::Ready(())
+                            })
+                            .await;
+                            occupied.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                            assert!(harness.root.is_ready(), "the occupied holder returned");
+                            let background = DurabilityRoot::with_background_holder(async {
+                                harness.root.try_issue_semantic_pass().map(drop)
+                            })
+                            .await;
+                            assert!(matches!(background, Err(DurabilityError::RootUnavailable)));
+                            withdrawal.await.map_err(fixture::debug)?;
+                            let ready: bool = sqlx::query_scalar(
+                                "SELECT ready FROM game_durability_admission_runtime_guards",
+                            )
+                            .fetch_one(&harness.pool)
+                            .await?;
+                            assert!(!ready);
+                            Ok(())
+                        }
+                        .await;
+                        harness.cleanup().await?;
+                        result
+                    })
+                    .map_err(fixture::debug)
+            })?
+            .join()
+            .map_err(|_| "readiness withdrawal test thread failed")??;
+        Ok(())
     }
 
     #[test]
