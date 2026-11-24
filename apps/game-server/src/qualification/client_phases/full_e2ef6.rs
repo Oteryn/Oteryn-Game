@@ -189,13 +189,10 @@ async fn first_vocation_rows(
         "dedicated-knight-birth",
         "death and promotion journey with player-earned XP and gold",
     );
-    let loss_scope = character_prep::dedicated_named_character(
-        clients,
-        "NODE_BOOT_C11_UNASSIGNED_ACCOUNT",
-        Some("Experience Loss Candidate"),
-    )
-    .await
-    .and_then(|dedicated| dedicated.replace_slot(clients, 1));
+    let loss_scope =
+        character_prep::dedicated_named_birth(clients, "Experience Loss Candidate", "knight")
+            .await
+            .and_then(|dedicated| dedicated.replace_slot(clients, 1));
     let loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[After("S16a")]);
     match loss_scope {
         Ok((accounts, characters)) => {

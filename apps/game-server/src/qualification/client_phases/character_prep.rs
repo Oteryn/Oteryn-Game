@@ -166,6 +166,42 @@ pub(super) async fn dedicated_named_character(
     })
 }
 
+/// Look up a named birth reserved for one row in the disposable World.
+pub(super) async fn dedicated_named_birth(
+    scope: &SeamClients<'_>,
+    name: &str,
+    vocation: &str,
+) -> TestResult<DedicatedCharacter> {
+    let mut database = sqlx::PgConnection::connect(scope.url).await?;
+    let rows: Vec<(String, Vec<u8>)> = sqlx::query_as(
+        "SELECT account_id::text, uuid_send(character_id) FROM game_character_roots
+         WHERE world_id=encode($1,'hex')::uuid AND name=$2 AND creation_vocation=$3 LIMIT 2",
+    )
+    .bind(scope.world.as_slice())
+    .bind(name)
+    .bind(vocation)
+    .fetch_all(&mut database)
+    .await?;
+    database.close().await?;
+    let [(account, character)] = rows.as_slice() else {
+        return Err(
+            format!("expected one dedicated {vocation} birth named {name} in this World").into(),
+        );
+    };
+    let account_id = crate::node::uuid_bytes(account).ok_or("invalid preparation account")?;
+    if scope
+        .accounts
+        .iter()
+        .any(|existing| crate::node::uuid_bytes(existing) == Some(account_id))
+    {
+        return Err("preparation account overlaps a shared fixture".into());
+    }
+    Ok(DedicatedCharacter {
+        accounts: [account.clone()],
+        characters: [character.as_slice().try_into()?],
+    })
+}
+
 pub(super) async fn grant_item(
     client: &oteryn_dev_client::DevClientSession,
     id: u32,

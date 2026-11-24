@@ -1410,9 +1410,33 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
   done
   [[ $failed == 0 ]] || fail "Character bootstrap"
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+    local c20_account=01934f10-7c00-7000-8000-000000000023
     local c20_operation=01934f10-7c04-7018-805b-3b1122334418
+    # This account must use the ordinary vocation-bearing Platform birth.
+    python3 - "$WORK" "$c20_account" <<'PY_C20_ACCOUNT'
+import json
+from pathlib import Path
+import secrets
+import subprocess
+import sys
+
+work = Path(sys.argv[1])
+account = sys.argv[2]
+try:
+    env = json.loads((work / "portal/secrets/env.json").read_text())
+    binary = json.loads((work / "identity.json").read_text())["portal_binary"]
+    payload = {
+        "accountId": account,
+        "email": f"nb-{account}@example.invalid",
+        "password": secrets.token_urlsafe(48),
+    }
+    subprocess.run([binary, "seed", "account", json.dumps(payload)], env=env,
+                   capture_output=True, timeout=20, check=True)
+except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+    raise SystemExit("node_boot_c20a_account_seed_failed") from None
+PY_C20_ACCOUNT
     python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
-      "$WORK" "$C11_UNASSIGNED_ACCOUNT" "$WORLD_ID" "$c20_operation" "${INTERPRETATION[@]}" "Experience Loss Candidate" Knight
+      "$WORK" "$c20_account" "$WORLD_ID" "$c20_operation" "${INTERPRETATION[@]}" "Experience Loss Candidate" Knight
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$c20_operation"
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$c20_operation"
 
