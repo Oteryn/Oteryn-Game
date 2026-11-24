@@ -389,3 +389,17 @@ The sweep now uses the third packet account's untouched level-one
 character and the fixture's level-zero custody path, then verifies the
 actual vocation on the fresh connection. The content unit test verifies
 the positive build and the availability of a wrong-vocation fixture.
+
+| Fresh tail replay | Entries | Seed PASS | Seed FAIL | PASS rows | FAIL rows | Terminal result |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `0:120` of 429 pending keys | 120 | 85 | 35 | 202 | 38 | `NODE_BOOT_FAIL` |
+
+Of the seed failures, 32 report exact bed definitions absent from the
+loaded catalogue houses. Three qualification item requests reached the
+active item index and returned `DefinitionNotFound`. Each of those three
+cleanup rows was blocked by seed. At this checkpoint 705 of the original
+1,403 distinct keys had seed PASS and 698 remained in the ledger.
+
+| Cause | Keys | Oteryn owner | Crystal 201189f8 | Expected and observed |
+| --- | --- | --- | --- | --- |
+| Active content admission missing | 43863, 48116, 48544 | `crates/gameplay/items/src/item_ref_admission.rs:63–74` | `data/items/items.xml:75988–75995,81432–81436,81886–81890`, `data/scripts/actions/items/foods.lua:122,133,138–151` | The fixture sent `qualify <session> item <vocation> <level> oteryn:item.tibia.i<key>`. Crystal defines an ammo-slot conch horn with ice protection and two usable foods. The active item owner refused all three before it could materialize the carried item. The equipment and food-effect requests had no live handle. |
