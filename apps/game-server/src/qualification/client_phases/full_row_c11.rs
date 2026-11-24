@@ -131,7 +131,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .await
         .map_err(|error| admission_error("initial-admission", error))?;
     let (vocation, level) = admitted_vocation(&mut client).await?;
-    if vocation != 0 || level != 8 {
+    if monk_path(vocation, level) != Some(false) || level != 8 {
         return Err(format!("Oressa candidate must first admit unassigned at level 8; observed vocation={vocation} level={level}").into());
     }
     match monk_path(vocation, level) {
