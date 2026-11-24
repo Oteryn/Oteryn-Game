@@ -275,6 +275,7 @@ def global_details(root, source):
     from forge_item_profiles import owners, project
     from import_cyclopedia_global import load_capture
     from ranged_item_profiles import apply_authoring
+    from weapon_equip_requirements import SLOT_FACTS, complete
 
     records = copy.deepcopy(source)
     document = {"records": records}
@@ -286,6 +287,8 @@ def global_details(root, source):
     item_details.apply_capture_stats(document, load_capture(root))
     project(document, owners(root))
     apply_authoring(root, document)
+    facts = json.loads((root / SLOT_FACTS).read_bytes())
+    records = complete(document, facts, packet=True)["records"]
     details = {}
     for donor, active in zip(source, records, strict=True):
         fields = {}
