@@ -71,16 +71,8 @@ for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_P
   [[ -z "${!node_boot_port+x}" || ( "${!node_boot_port}" =~ ^[1-9][0-9]{3,4}$ && "${!node_boot_port}" -le 65535 ) ]] \
     || blocked "invalid_port_${node_boot_port,,}"
 done
-# The native Platform lifecycle reads the game port from the environment (prepare.py route).
-export NODE_BOOT_GAME_PORT="${NODE_BOOT_GAME_PORT:-17181}"
-node_boot_game_port="${NODE_BOOT_GAME_PORT:-17181}"
-# Port zero lets the real listener bind atomically and report its assigned port.
+# Port zero lets the real PvP listener bind atomically and report its assigned port.
 PVP_GAME_PORT="${NODE_BOOT_PVP_GAME_PORT:-0}"
-if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" ]] && (( PVP_GAME_PORT == node_boot_game_port
-  || PVP_GAME_PORT == ${NODE_BOOT_PG_PORT:-15433}
-  || PVP_GAME_PORT == ${NODE_BOOT_PLATFORM_PORT:-18463} )); then
-  blocked invalid_port_node_boot_pvp_game_port
-fi
 # NODE_BOOT_KEEP_STACK=1 leaves the stack up after the seam stage; NODE_BOOT_REUSE_STACK=1
 # reruns only the seam stage against it, =teardown removes it. Local development only.
 NODE_BOOT_KEEP_STACK="${NODE_BOOT_KEEP_STACK:-0}"
@@ -160,13 +152,6 @@ case "$NODE_BOOT_WORLD_PROFILE" in
   *) blocked invalid_world_profile ;;
 esac
 readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
-# A kept or reused stack is one topology, so it never runs the separate basic pass.
-# The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
-if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
-  && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
-  && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
-  NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
-fi
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
@@ -217,6 +202,23 @@ if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
     ancestor="${ancestor%/*}"
     ancestor="${ancestor:-/}"
   done
+fi
+
+if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
+  node_boot_ports="$(python3 "$GAME_SOURCE/tools/qualification/game_platform/prepare.py" --select-ports)" \
+    || blocked listener_port_allocation_failed
+  while IFS= read -r node_boot_port; do
+    export "$node_boot_port"
+  done <<< "$node_boot_ports"
+  printf 'NODE_BOOT_PORTS %s NODE_BOOT_PVP_GAME_PORT=%s\n' "${node_boot_ports//$'\n'/ }" "$PVP_GAME_PORT"
+fi
+
+# A kept or reused stack is one topology, so it never runs the separate basic pass.
+# The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
+  && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
+  && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
+  NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
 NODE_BOOT_LIBTEST=""
 WORLD_COMPILER=(cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler --)
@@ -314,6 +316,8 @@ if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
   fi
   # shellcheck source=/dev/null
   source "$REUSE_STATE"
+  kept_mode="${kept_mode:-}"
+  export NODE_BOOT_GAME_PORT="${NODE_BOOT_GAME_PORT:-${kept_mode##*/}}"
   if [[ "${kept_mode:-}" != "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}" ]]; then
     echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
   fi

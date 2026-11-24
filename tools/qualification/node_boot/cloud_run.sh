@@ -36,6 +36,7 @@ summarize() {
       printf "%s|%s|%s\n", row, verdict, reason
     }' < "$log") || return 1
 
+  grep -aE '^NODE_BOOT_PORTS ([A-Z_]+=[0-9]+ ?)+$' "$log" | sort -u || true
   printf 'CLOUD_RUN group=%s result=%s seconds=%s\nROWS-BEGIN\n' "$group" "$result" "$seconds"
   [[ -z "$rows" ]] || printf '%s\n' "$rows"
   printf 'ROWS-END\n'
