@@ -5712,7 +5712,7 @@ mod equipment_projection_tests {
         use crate::content::item_abilities::{AbilitySkill, ItemAbility, item_ability_profile};
         use crate::content::{
             ReferenceItemField as Field, ReferenceRationalPercent, ReferenceResistanceKind,
-            qualify_native_entry_room,
+            ReferenceSignedPoints, qualify_native_entry_room,
         };
         use oteryn_gameplay_domain::domain::equipment_policy_abi::{
             EquipmentBaseVocation, EquipmentPolicyLookup,
@@ -5738,7 +5738,7 @@ mod equipment_projection_tests {
         )))?;
         assert_eq!(packet.records.len(), 177);
         assert_eq!(packet.held_ranged.len(), 4);
-        for expected in packet.records {
+        for mut expected in packet.records {
             let key = &expected.production_definition.production_key;
             let revision = &expected.production_definition.revision_ref;
             if packet
@@ -5755,6 +5755,16 @@ mod equipment_projection_tests {
                 .item_policy(key, revision)
                 .ok_or_else(|| format!("missing Crystal item policy {key}"))?;
             let actual = details.record();
+            // Global lists a single defense value for these three weapons.
+            if matches!(
+                expected.production_binding.external_id.as_str(),
+                "49524" | "49526" | "49530"
+            ) {
+                let Field::Known(weapon) = &mut expected.semantics.weapon else {
+                    return Err("expected Crystal weapon defense".into());
+                };
+                weapon.extra_defense = Field::Known(ReferenceSignedPoints(0));
+            }
             assert_eq!(actual.admission, expected.admission, "{key}");
             assert_eq!(
                 actual.semantics.physical, expected.semantics.physical,

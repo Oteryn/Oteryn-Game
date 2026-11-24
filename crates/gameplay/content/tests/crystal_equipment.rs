@@ -396,6 +396,15 @@ fn check_crystal_equipment() -> TestResult {
                 "{key}"
             );
             if launcher {
+                // Global supplies the final attack and hit chance for these launchers.
+                let (attack, hit_chance) = match source.id {
+                    28718 => (6, 5),
+                    29417 => (5, 5),
+                    _ => (
+                        u16::try_from(value("attack")?)?,
+                        i8::try_from(value("hitchance")?)?,
+                    ),
+                };
                 assert_eq!(
                     record.authoring.ranged,
                     Some(ProjectV2RangedWeapon::Distance {
@@ -404,9 +413,9 @@ fn check_crystal_equipment() -> TestResult {
                         } else {
                             ReferenceAmmoType::Bolt
                         },
-                        attack: u16::try_from(value("attack")?)?,
+                        attack,
                         range_cells: u8::try_from(value("range")?)?,
-                        hit_chance: i8::try_from(value("hitchance")?)?,
+                        hit_chance,
                         max_hit_chance: 90,
                     }),
                     "{key}"

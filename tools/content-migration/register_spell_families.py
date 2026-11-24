@@ -1812,8 +1812,15 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
-    # Complete ranged authoring for every admitted Item, including late loot yields.
-    ranged_item_profiles.apply_native(root, generated)
+    # Keep the qualified Crystal rod costs where Global does not show a mana value.
+    ranged_item_profiles.apply_native(
+        root,
+        generated,
+        retained_keys={
+            crystal_equipment_slice_4.item_key(identifier)
+            for identifier in (49529, 49885, 49886, 49887)
+        },
+    )
     # SRX-1 keeps the historical single-line provider byte-identical. The loader
     # composes only the changed records from a separately pinned small supplement.
     import srx1_profile_updates
