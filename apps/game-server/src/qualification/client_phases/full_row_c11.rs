@@ -396,7 +396,7 @@ async fn knight_journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult 
     }
 
     let (vocation, level) = admitted_build(&mut client).await?;
-    if !is_vocation(vocation, "knight") || level != 625 {
+    if !(is_vocation(vocation, "knight") || is_vocation(vocation, "elite_knight")) || level != 625 {
         return Err(format!("Battle Instinct requires the prepared level-625 Knight; observed vocation={vocation} level={level}").into());
     }
     let promoted = promotion_forecast(&mut client).await?;
