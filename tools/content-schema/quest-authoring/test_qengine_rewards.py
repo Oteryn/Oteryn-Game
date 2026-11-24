@@ -132,7 +132,7 @@ class QuestRewards(unittest.TestCase):
         doc=self.author['document']
         mounts={row['key']:row for row in doc['mounts']}
         mappings={row['grant_key']:row for row in doc['grant_mappings']}
-        self.assertEqual(len(mounts), 277)
+        self.assertEqual(len(mounts), 280)
         for legacy, primary in (
             ('ripptor', 'noxious_ripptor'),
             ('rented_horse_marrom_escuro', 'rented_horse'),

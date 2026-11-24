@@ -90,6 +90,11 @@ def populate(root, inputs, looks, source, item_packet):
     for legacy, name, line in (
         ('ripptor', 'Noxious Ripptor', 231),
         ('rented_horse_marrom_escuro', 'Rented Horse', 51),
+        # Wiki revisions 383161–383163 call these colour-specific final stages
+        # Finished. Keep the three legacy appearance keys alongside Crystal's.
+        ('finished_cold_percht_sleigh', 'Cold Percht Sleigh Final', 179),
+        ('finished_bright_percht_sleigh', 'Bright Percht Sleigh Final', 180),
+        ('finished_dark_percht_sleigh', 'Dark Percht Sleigh Final', 181),
     ):
         citation = {**catalogue_source, 'reference':
                     f'https://github.com/zimbadev/crystalserver/blob/{CATALOGUE_REVISION}/{MOUNTS_XML}#L{line}'}
