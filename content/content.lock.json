@@ -42,12 +42,12 @@
     "item_conversion": 130
   },
   "item_authoring_counts": {
-    "authoring": 700,
-    "relation_sources": 880,
+    "authoring": 1153,
+    "relation_sources": 1161,
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "8b1b9c5d9603f29a57c942283ab5721a0084c6d9",
+    "declarations": "0e1c90ee976f783e3d6c9aa2c453c881bbd3ad78",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "307cf0a3d2c62e222a27ceab4f3b19af9f8b3edf",
     "reference": "e8c4487697f321137afbd4b4962a7d0e202a4331",
@@ -71,15 +71,15 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "3772f9c4279e497ec5bc3f49f36293b1d5e4e797bce6ba5eda051d3624253520"
+        "sha256": "b35dcc15a406aec369a80dad261b94a98012614169ee76d3e6129254cc82ed33"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
-        "sha256": "c748c82930b371c81571917abe5dfd5361b2bb3f89a653b01977b9cb7173b89e"
+        "sha256": "86f093c8a6e1db90f3651d6a3939ce84f33fb3a75800d22701a820e4173df9b4"
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "46de0a718a6c13fa5bba99b5e33027091cf4041a79521b473073cb7497cd24ec"
+        "sha256": "6b976e6f7c1fe4e1cddef0b83b0519f68b6640dc03a81d03659201f2a9073969"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "f2bc8e4231a2e887514379b92a9cee1ad43bd1627dd6422cf01c8adc46fd6e3c"
+          "sha256": "8f088b6f17c2237fe443a18b5a462c1eb071066e808e9c76aef56ca868d65691"
         },
         {
           "creates_canonical_identities": false,
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "2a3906c6a4607463bf4155148f197a641c17e1e8fc0da6982838ba77d803256e"
+          "sha256": "be9deee584430b4e00f1bc627dc93e6f8edabb3119bfb4f20e86b441025afd54"
         },
         {
           "creates_canonical_identities": false,
