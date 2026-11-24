@@ -181,36 +181,26 @@ fn census(root: &Path) -> TestResult<BTreeMap<String, Entry>> {
         let document: Value =
             serde_json::from_slice(&std::fs::read(root.join("quests").join(name))?)?;
         for callback in array(&document["callbacks"])? {
-            let key = text(&callback["key"])?;
             let Some(quest) = quests.get_mut(text(&callback["quest"])?) else {
                 continue;
             };
-            if quest.stages.iter().any(|stage| {
-                stage
-                    .trigger
-                    .callback
-                    .iter()
-                    .chain(&stage.trigger.alternatives)
-                    .any(|existing| existing["key"].as_str() == Some(key))
-            }) {
-                continue;
-            }
             let kind = match callback["trigger"].as_str() {
                 Some("use") => "map_use",
                 Some("step_in") => "step_in",
                 None if callback["npc"].is_string() => "npc_dialogue",
                 _ => continue,
             };
-            quest.stages.push(Stage {
-                key: row_key(key),
-                completes: callback["completes"].as_bool().unwrap_or(false),
-                trigger: Trigger {
-                    kind: kind.to_owned(),
-                    callback: Some(callback.clone()),
-                    usage: None,
-                    alternatives: Vec::new(),
-                },
-            });
+            add_callback(quest, kind, callback.clone())?;
+        }
+    }
+    // reward_callbacks.rs:546 lists the retained NPC registries admitted by the owner.
+    for callback in oteryn_gameplay_quests::quest::reward_callbacks::load()? {
+        if let Some(quest) = quests.get_mut(&callback.quest)
+            && callback.carried_item.is_none()
+            && callback.world_claim.is_none()
+            && !callback.npc.is_empty()
+        {
+            add_callback(quest, "npc_dialogue", serde_json::to_value(callback)?)?;
         }
     }
     let sets: BTreeMap<String, CompletionSet> =
@@ -254,6 +244,31 @@ fn census(root: &Path) -> TestResult<BTreeMap<String, Entry>> {
         }
     }
     Ok(entries)
+}
+
+fn add_callback(quest: &mut Quest, kind: &str, callback: Value) -> TestResult {
+    let key = text(&callback["key"])?;
+    if quest.stages.iter().any(|stage| {
+        stage
+            .trigger
+            .callback
+            .iter()
+            .chain(&stage.trigger.alternatives)
+            .any(|existing| existing["key"].as_str() == Some(key))
+    }) {
+        return Ok(());
+    }
+    quest.stages.push(Stage {
+        key: row_key(key),
+        completes: callback["completes"].as_bool().unwrap_or(false),
+        trigger: Trigger {
+            kind: kind.to_owned(),
+            callback: Some(callback),
+            usage: None,
+            alternatives: Vec::new(),
+        },
+    });
+    Ok(())
 }
 
 #[derive(Deserialize)]
@@ -1885,6 +1900,13 @@ mod tests {
             matches!(entries.get("oteryn:quest.25_years_of_tibia_quest"), Some(Entry::Quest(quest)) if quest.stages.iter().any(|stage| stage.key == "s1-return-part-25099"))
         );
         assert!(entries.contains_key("oteryn:quest.adorned_uh_rune_quest"));
+        assert!(matches!(
+            entries.get("oteryn:quest.rottin_wood_and_the_married_men_quest"),
+            Some(Entry::Quest(quest)) if quest.stages.iter().any(|stage| {
+                stage.key == "oteryn-quest-reward-rottin-wood-bushwhacking"
+                    && stage.trigger.kind == "npc_dialogue"
+            })
+        ));
         assert!(
             matches!(entries.get("oteryn:quest.bear_room_quest"), Some(Entry::Quest(quest))
                 if quest.claims.iter().any(|claim| claim == "oteryn:reward-claim.kv.bear_chest1"))
