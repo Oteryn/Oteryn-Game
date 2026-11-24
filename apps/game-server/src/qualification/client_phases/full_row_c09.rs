@@ -458,40 +458,83 @@ async fn damage_and_spend_mana(
     client: &mut DevClientSession,
     world: &BundleWorld,
 ) -> TestResult<(u32, u32, u32, u32)> {
-    let metadata = oteryn_world_bundle::bundle::visit(
-        &std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
-        |_, _| Ok(()),
-    )?;
-    travel_to_spawn(
-        client,
-        world,
-        &metadata.spawns,
-        "oteryn:creature.poison_spider",
-    )
-    .await?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let protected = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .map(|tile| tile.protection_zone())
+    };
+    let outside = route(world, from, |at| {
+        let mut neighbours = [
+            StepDirection::North,
+            StepDirection::East,
+            StepDirection::South,
+            StepDirection::West,
+        ]
+        .into_iter()
+        .filter_map(|step| destination(world, at, step))
+        .filter(|next| next.floor == at.floor)
+        .filter_map(protected);
+        at.floor == from.floor
+            && protected(at) == Some(false)
+            && neighbours.clone().any(|protected| protected)
+            && neighbours.any(|protected| !protected)
+    })
+    .ok_or("no native route to an open damage encounter tile")?;
+    walk(client, world, &outside).await?;
     client.session_mut().attack_target(None).await?;
     let (mana, mana_after) = spend_mana(client).await?;
     let before = *client.actor_vitals().ok_or("pre-combat vitals absent")?;
     client.take_events();
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    let health = loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        let changed = client
-            .take_events()
-            .into_iter()
-            .find_map(|event| match event {
-                SessionEvent::ActorVitals(delta) if delta.value.health < before.health => {
-                    Some(delta.value.health)
-                }
-                _ => None,
-            });
-        if let Some(value) = changed {
-            break value;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("ATTACK produced no damage delta from {}", before.health).into());
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let spawn = request_spawn(session, "oteryn:creature.poison_spider".into());
+    tokio::pin!(spawn);
+    let answer = loop {
+        tokio::select! {
+            answer = &mut spawn => break answer.map_err(|error| format!("C09 poison spider fixture: {error}"))?,
+            result = client.service_liveness(Duration::from_millis(100)) => { result?; }
         }
     };
+    let threat = parse_spawned_entity(&answer)?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+    let mut damage = None;
+    let mut observed = false;
+    let health = loop {
+        client.service_liveness(Duration::from_millis(50)).await?;
+        observed |= client.world_entities().is_some_and(|entities| {
+            entities
+                .get(&threat)
+                .is_some_and(|entity| entity.kind == oteryn_dev_client::EntityKind::Creature)
+        });
+        damage = damage.or_else(|| {
+            client
+                .take_events()
+                .into_iter()
+                .find_map(|event| match event {
+                    SessionEvent::ActorVitals(delta) if delta.value.health < before.health => {
+                        Some(delta.value.health)
+                    }
+                    _ => None,
+                })
+        });
+        if observed && let Some(health) = damage {
+            break health;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "C09 poison spider visible={observed} damage={damage:?} from {}",
+                before.health
+            )
+            .into());
+        }
+    };
+    let here = tile(client.world_spatial().actor_position)?;
+    let safe = route(world, here, |at| {
+        at.floor == here.floor && protected(at) == Some(true)
+    })
+    .ok_or("no native retreat into protection after the C09 damage delta")?;
+    walk(client, world, &safe).await?;
     Ok((before.health, health, mana, mana_after))
 }
 
@@ -664,7 +707,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let meat = provisioning::item_reference(&provisioning::item_index()?, 3577)?;
-    character_prep::declare_seeded("C09", "character", "dedicated Platform bootstrap");
+    character_prep::declare_seeded(
+        "C09",
+        "character,poison-spider",
+        "dedicated Platform bootstrap and nearby native damage encounter",
+    );
     let identity =
         character_prep::lookup_row_character(clients, "01934f10-7c00-7000-8000-000000000020")
             .await?;
