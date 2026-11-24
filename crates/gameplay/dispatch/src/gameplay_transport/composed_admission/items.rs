@@ -14,12 +14,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let command_id = crate::foundation::CommandId::new(command.command_id)
             .map_err(|_| crate::durability::item_transfer::ItemTransferError::InvalidInput)?;
-        self.root
-            .read_item_transfer_receipt(
-                self.character,
-                fence.character_id,
-                crate::foundation::CommandRef::new(command.game_session_id, command_id),
-            )
-            .await
+        use crate::durability::item_transfer::ItemTransferError;
+        let command = crate::foundation::CommandRef::new(command.game_session_id, command_id);
+        // A busy checkout cannot prove the original command has no receipt.
+        AdmissionRetryBudget::for_command(self.root)
+            .retry_command_guard(async || {
+                match self
+                    .root
+                    .read_item_transfer_receipt(self.character, fence.character_id, command)
+                    .await
+                {
+                    Err(ItemTransferError::Unavailable(error)) => Err(error),
+                    result => Ok(result),
+                }
+            })
+            .await?
     }
 }

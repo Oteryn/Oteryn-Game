@@ -458,13 +458,14 @@ pub(super) async fn committed_equipment_move(
         return Some(EquipmentMoveReplay::Absent);
     };
     let command_id = CommandId::new(command.command_id).ok()?;
-    admission
-        .root
-        .read_equipment_move_receipt(
-            admission.character,
-            fence.character_id,
-            CommandRef::new(command.game_session_id, command_id),
-        )
+    let command = CommandRef::new(command.game_session_id, command_id);
+    super::AdmissionRetryBudget::for_command(admission.root)
+        .retry_command_guard(async || {
+            admission
+                .root
+                .read_equipment_move_receipt(admission.character, fence.character_id, command)
+                .await
+        })
         .await
         .ok()
 }
