@@ -549,6 +549,76 @@ fn weapon(client: &DevClientSession) -> TestResult<Option<NonZeroU32>> {
         .map(|entry| entry.item.item_definition_ref))
 }
 
+async fn acquire_pema(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+    definition: NonZeroU32,
+) -> TestResult {
+    use oteryn_dev_client::client_runtime::npc_shop;
+    use oteryn_protocol_oteryn::npc_service as npc;
+
+    let seller = npcs.npcs.iter().find(|entry| entry.key == "oteryn:npc.enpa_deia_pema")
+        .ok_or("Enpa-Deia Pema absent from the compiled NPC table")?;
+    let near_placement = |at: TilePos, placement: TilePos| {
+        at.floor == placement.floor && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+    };
+    let placements = seller.placements.iter().map(|p| TilePos { x: p.x, y: p.y, floor: p.floor });
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        placements.clone().any(|placement| near_placement(at, placement))
+    }).ok_or("no playable route within three tiles of a compiled Enpa-Deia Pema placement")?;
+    walk(client, world, &path).await?;
+    let here = tile(client.world_spatial().actor_position)?;
+    let actor = client.world_entities().and_then(|entities| {
+        let mut matches = entities.iter().filter(|entry| {
+            entry.kind == EntityKind::Npc
+                && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Enpa-Deia Pema"))
+                && placements.clone().any(|placement| {
+                    near_placement(here, placement) && tile(entry.position).ok() == Some(placement)
+                })
+        });
+        let actor = matches.next()?.entity;
+        matches.next().is_none().then_some(actor)
+    }).ok_or("expected one live Enpa-Deia Pema at a compiled placement")?;
+
+    for text in ["hi", "trade"] {
+        let reply = npc_shop::talk(client.session_mut(), &npc::NpcTalkIntent { npc_actor: actor, text: text.into() }).await?;
+        if reply != npc::NpcIntentDisposition::Ok {
+            return Err(format!("Enpa-Deia Pema {text} reply={reply:?}").into());
+        }
+    }
+    let delta = client.session_mut().read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1).await?;
+    let window = npc::decode_npc_trade_window(&delta.payload).map_err(|e| format!("Pema trade window: {e:?}"))?;
+    let (window_actor, catalogue_revision) = window.open.ok_or("Pema trade window closed")?;
+    if window_actor != actor {
+        return Err("trade window opened for a different NPC".into());
+    }
+    let (index, offer) = window.offers.iter().enumerate()
+        .find(|(_, offer)| offer.side == npc::NpcTradeSide::Buy && offer.item_definition_ref == definition.get())
+        .ok_or("Pema trade window does not sell item 50271")?;
+    if offer.count != 1 {
+        return Err(format!("Pema offer must contain one item 50271, served {}", offer.count).into());
+    }
+    let inventory = client.inventory().ok_or("no inventory before Pema BUY")?;
+    let before = carried_count(client, definition);
+    if before != 0 || inventory.equipment.iter().any(|entry| entry.item.item_definition_ref == definition) {
+        return Err("item 50271 already present after reload, before Pema BUY".into());
+    }
+    client.take_events();
+    let reply = npc_shop::buy(client.session_mut(), &npc::NpcTradeIntent {
+        npc_actor: actor,
+        catalogue_revision,
+        offer_index: u32::try_from(index)?,
+        side: offer.side,
+        quantity: 1,
+        expected_unit_price: offer.unit_price,
+    }).await?;
+    if reply != npc::NpcIntentDisposition::Ok {
+        return Err(format!("Pema BUY reply={reply:?} price={}", offer.unit_price).into());
+    }
+    wait_inventory(client, "Pema BUY of item 50271", |c| carried_count(c, definition) == before + 1).await
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let definition = item_ref()?;
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_C12_MONK_ACCOUNT").await?;
@@ -566,20 +636,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    let talk_range = oteryn_protocol_oteryn::npc_service::TALK_RANGE_TILES;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at.floor == 7 && u32::from(at.x.abs_diff(33603).max(at.y.abs_diff(31468))) <= talk_range
-    }).ok_or("no playable route to Enpa-Deia Pema at (33603,31468,z7)")?;
-    walk(&mut client, world, &path).await?;
-    let position = client.world_spatial().actor_position;
-    if !client.world_entities().is_some_and(|entities| entities.iter().any(|entry| {
-        entry.kind == EntityKind::Npc
-            && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Enpa-Deia Pema"))
-            && entry.position.floor == position.floor
-            && entry.position.x.abs_diff(position.x).max(entry.position.y.abs_diff(position.y)) <= talk_range
-    })) {
-        return Err("Enpa-Deia Pema absent within talk range after walking".into());
-    }
     if carried_count(&client, definition) != 0 || equipped_right(&client, definition) {
         return Err("item 50271 must first enter the dedicated Monk's backpack through the purchase".into());
     }
@@ -587,13 +643,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     character_prep::grant_item(&client, MANA_POTION, 12).await?;
     character_prep::grant_item(&client, 3043, 2).await?;
     character_prep::reload(&mut client, clients).await?;
-    let index = provisioning::item_index()?;
-    let purchased = full_e2ef7::acquire(
-        &mut client, world, &index, "oteryn:item.tibia.i50271", 1
-    ).await?;
-    if purchased != definition {
-        return Err("live purchase returned the wrong weapon definition".into());
-    }
+    acquire_pema(&mut client, world, &metadata.npcs, definition).await?;
     let spell_index = spell(&mut client)?;
     let augment = content_augment()?;
     let from = tile(client.world_spatial().actor_position)?;
