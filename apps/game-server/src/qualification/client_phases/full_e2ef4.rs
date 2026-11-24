@@ -736,18 +736,17 @@ async fn coins(
         } else {
             "oteryn:creature.rat"
         };
-        let hunt: TestResult = async {
-            evidence(&format!("E2EF4_OBSERVATION E03 acquisition_target={creature}"));
+        let mut gold = gold;
+        let mut kills = 0;
+        while gold < 100 {
+            evidence(&format!("E2EF4_OBSERVATION E03 acquisition_target={creature} kills={kills}"));
             e03_timing(started, "route-to-creature-start", client, gold);
             travel_to_spawn(client, world, spawns, creature).await?;
             e03_timing(started, "hunt-start", client, gold);
-            client_hunt::hunt(client).await
-        }
-        .await;
-        let gold = backpack_coins(client, refs)?[0];
-        e03_timing(started, "hunt-end", client, gold);
-        if let Err(error) = hunt {
-            evidence(&format!("E2EF4_GAP E03 gold-acquisition: {error}"));
+            client_hunt::hunt_with_loot(client, Some(refs[0])).await?;
+            kills += 1;
+            gold = backpack_coins(client, refs)?[0];
+            e03_timing(started, "hunt-end", client, gold);
         }
         e03_timing(started, "return-start", client, gold);
         town(client, world).await?;
@@ -1777,8 +1776,10 @@ async fn logout_peer(
         if let Some(path) = no_logout {
             walk(&mut peer, world, &path).await?;
             let response = peer.session_mut().logout().await?;
-            if response.status != CommandStatus::Rejected || response.result.is_some() {
-                return Err(format!("nologout: expected rejection with no result, observed {response:?}").into());
+            if response.status != CommandStatus::Rejected
+                || response.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::NoLogout)
+            {
+                return Err(format!("nologout: expected typed NoLogout rejection, observed {response:?}").into());
             }
             peer.service_liveness(Duration::from_millis(25)).await?;
             row.pass("nologout", "authored-no-logout-rejected-and-session-live");

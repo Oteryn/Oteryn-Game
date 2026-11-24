@@ -58,6 +58,18 @@ fn every_result_code_round_trips() {
 }
 
 #[test]
+fn no_logout_has_a_distinct_typed_result() {
+    let wire = raw(&[(1, 4)]);
+    let result = decode_logout_result(&wire).expect("decodes NO_LOGOUT");
+    assert!(result.is_rejected());
+    assert_eq!(result, LogoutResult::NoLogout);
+    assert_eq!(
+        encode_logout_result(result).expect("encodes NO_LOGOUT"),
+        wire
+    );
+}
+
+#[test]
 fn the_worst_result_fits_its_bound() {
     let worst = encode_logout_result(LogoutResult::InFight {
         retry_after_ms: MAX_LOGOUT_RETRY_AFTER_MS,
@@ -77,7 +89,8 @@ fn invalid_results_fail_closed() {
     for payload in [
         Vec::new(),                  // code 0
         raw(&[(1, 0)]),              // explicit code 0
-        raw(&[(1, 4)]),              // unknown code
+        raw(&[(1, 5)]),              // unknown code
+        raw(&[(1, 4), (2, 5)]),      // retry with NO_LOGOUT
         raw(&[(1, 2)]),              // IN_FIGHT without a retry
         raw(&[(1, 2), (2, 60_001)]), // retry over ATTACK0-RL-03
         raw(&[(1, 1), (2, 5)]),      // retry with ACCEPTED

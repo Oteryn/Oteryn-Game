@@ -22,6 +22,9 @@ enum LogoutResultCode {
   // A durable spell commit or an own kill settlement is pending, or the terminal release
   // failed retryably before it committed. Nothing changed; the client may retry.
   LOGOUT_RESULT_CODE_BUSY = 3;
+  // The current tile forbids logout. The session remains live; wait for a change of
+  // position before sending a new logout intent.
+  LOGOUT_RESULT_CODE_NO_LOGOUT = 4;
 }
 
 // ClientCommand.payload of command type 23: always empty. A non-empty payload is REJECTED with
@@ -30,7 +33,7 @@ enum LogoutResultCode {
 message LogoutIntentV1 {}
 
 // CommandResult.payload of command type 23, with status ACCEPTED for code ACCEPTED and REJECTED
-// for IN_FIGHT and BUSY. retry_after_ms is the remaining in-fight time, rounded up to a whole
+// for IN_FIGHT, BUSY and NO_LOGOUT. retry_after_ms is the remaining in-fight time, rounded up to a whole
 // millisecond, in 1..=60000 (ATTACK0-RL-03); it is present with IN_FIGHT only and absent with
 // every other code. At most 6 bytes.
 message LogoutResultV1 {

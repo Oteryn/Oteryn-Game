@@ -40,6 +40,8 @@ pub enum LogoutResult {
     InFight { retry_after_ms: u32 },
     /// A pending durable commit or a retryable release failure; the client may retry.
     Busy,
+    /// The current tile forbids logout. Retrying here cannot release the session.
+    NoLogout,
 }
 
 impl LogoutResult {
@@ -53,6 +55,7 @@ impl LogoutResult {
             Self::Accepted => 1,
             Self::InFight { .. } => 2,
             Self::Busy => 3,
+            Self::NoLogout => 4,
         }
     }
 }
@@ -101,6 +104,7 @@ pub fn decode_logout_result(payload: &[u8]) -> WireResult<LogoutResult> {
             Ok(LogoutResult::InFight { retry_after_ms })
         }
         (3, 0) => Ok(LogoutResult::Busy),
+        (4, 0) => Ok(LogoutResult::NoLogout),
         _ => Err(LogoutWireError::Malformed),
     }
 }
