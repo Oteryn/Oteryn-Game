@@ -3873,7 +3873,7 @@ impl HuntCorpseEvidence {
 }
 
 async fn hunt_one(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    acquisition_step("hunt", hunt_one_inner(client, world, None)).await
+    acquisition_step("hunt", hunt_one_inner(client, world, None, false)).await
 }
 
 async fn wait_for_hunt_target<T>(
@@ -3897,6 +3897,7 @@ async fn hunt_one_inner(
     client: &mut DevClientSession,
     world: &BundleWorld,
     acquisition_deadline: Option<tokio::time::Instant>,
+    record_attack: bool,
 ) -> TestResult {
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -3998,10 +3999,46 @@ async fn hunt_one_inner(
     if acquisition_deadline.is_some_and(|deadline| tokio::time::Instant::now() >= deadline) {
         return Err("ordinary acquisition budget exhausted before rat attack".into());
     }
+    let from = client.world_spatial().actor_position;
     let reply = client
         .session_mut()
         .attack_target(Some(&target.entity))
         .await?;
+    if record_attack {
+        use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+        let hand_and_ammo: Vec<_> = client
+            .inventory()
+            .into_iter()
+            .flat_map(|inventory| &inventory.equipment)
+            .filter(|entry| {
+                matches!(
+                    entry.slot,
+                    EquipmentSlot::RightHand | EquipmentSlot::LeftHand | EquipmentSlot::Ammo
+                )
+            })
+            .map(|entry| {
+                (
+                    entry.slot,
+                    entry.item.item_definition_ref.get(),
+                    entry.item.count.get(),
+                )
+            })
+            .collect();
+        let distance = from
+            .x
+            .abs_diff(target.position.x)
+            .max(from.y.abs_diff(target.position.y));
+        evidence(&format!(
+            "C02_ATTACK target={:?} from={from:?} to={:?} distance={distance} chase={:?} hand_and_ammo={hand_and_ammo:?} status={:?} reason={:?} command_id={} sequence={}",
+            target.entity,
+            target.position,
+            modes.chase,
+            reply.status,
+            reply.disposition,
+            reply.command_id,
+            reply.result_server_sequence
+        ));
+    }
     if reply.disposition != attacks::AttackIntentDisposition::Ok {
         return Err(format!("starter attack refused: {reply:?}").into());
     }
@@ -4279,7 +4316,7 @@ async fn pvp_journey(
                 .ok_or("S08 participant admission absent")?;
             let entry = tile(player.world_spatial().actor_position)?;
             qualification_hunt_route(player, world, None, Some(entry), deadline).await?;
-            acquisition_step("hunt", hunt_one_inner(player, world, Some(deadline))).await?;
+            acquisition_step("hunt", hunt_one_inner(player, world, Some(deadline), false)).await?;
             qualification_hunt_route(player, world, Some(entry), None, deadline).await?;
             let level = player_level(player).await?;
             if level < oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL {
@@ -4999,7 +5036,7 @@ async fn imbuement_journey(
         tokio::time::Instant::now() + Duration::from_secs(150),
         async |client| Ok(player_gold(client).await? >= 85),
         async |client, deadline| {
-            acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await
+            acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline), false)).await
         },
     )
     .await?;
@@ -5150,7 +5187,7 @@ async fn imbuement_journey(
     let entry = tile(client.world_spatial().actor_position)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     qualification_hunt_route(client, world, None, Some(entry), deadline).await?;
-    acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await?;
+    acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline), false)).await?;
     qualification_hunt_route(client, world, Some(entry), None, deadline).await?;
     equipment_move(client, target, false).await?;
     let duration = imbue_window(client, target).await?.applied;
@@ -5919,13 +5956,22 @@ pub(super) async fn earn_gold(
     world: &BundleWorld,
     required: u64,
 ) -> TestResult {
-    acquisition_step("gold", earn_gold_inner(client, world, required)).await
+    acquisition_step("gold", earn_gold_inner(client, world, required, false)).await
+}
+
+pub(super) async fn earn_gold_with_attack_evidence(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    required: u64,
+) -> TestResult {
+    acquisition_step("gold", earn_gold_inner(client, world, required, true)).await
 }
 
 async fn earn_gold_inner(
     client: &mut DevClientSession,
     world: &BundleWorld,
     required: u64,
+    record_attack: bool,
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     loop {
@@ -5936,7 +5982,11 @@ async fn earn_gold_inner(
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("player-money-acquisition-blocked:required-gold={required};served-bank-plus-carried={served};ordinary-hunt-budget=150s").into());
         }
-        let hunt = acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await;
+        let hunt = acquisition_step(
+            "hunt",
+            hunt_one_inner(client, world, Some(deadline), record_attack),
+        )
+        .await;
         hunt.map_err(|e|format!("player-money-acquisition-blocked:required-gold={required};served-bank-plus-carried={served};ordinary-hunt={e}"))?;
     }
 }

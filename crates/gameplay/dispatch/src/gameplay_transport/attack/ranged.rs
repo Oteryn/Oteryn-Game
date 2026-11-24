@@ -536,6 +536,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let command = selected.swing.lineage;
+        #[cfg(feature = "qualification-cast-evidence")]
+        let session = entry.session;
         let operations = pass
             .run_with_context(&mut context, move |holder, deadline, context| {
                 Box::pin(async move {
@@ -545,7 +547,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         QualifiedItemDefinition, SpellGroundTarget,
                     };
                     let (owner, permit, runtime, objects, room, content) = context;
-                    let mut tx = items::begin_spell_owner_transaction(holder, deadline).await?;
+                    let mut tx = items::begin_spell_owner_transaction(holder, deadline)
+                        .await
+                        .inspect_err(|_| {
+                            #[cfg(feature = "qualification-cast-evidence")]
+                            super::qualification_attack_stage(
+                                session,
+                                "ranged_prepare_transaction_unavailable",
+                            );
+                        })?;
                     let authority = items::assert_spell_item_authority_in_transaction(
                         &mut tx,
                         permit,
@@ -557,7 +567,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         content.source_digest(),
                     )
                     .await
-                    .map_err(|_| DurabilityError::Unavailable)?;
+                    .map_err(|_| {
+                        #[cfg(feature = "qualification-cast-evidence")]
+                        super::qualification_attack_stage(
+                            session,
+                            "ranged_prepare_item_authority_refused",
+                        );
+                        DurabilityError::Unavailable
+                    })?;
                     let actual = equipment_owner::read_current_equipment_in_transaction(
                         &mut tx,
                         owner.root,
@@ -584,9 +601,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 &mut tx, &authority, room, runtime, objects, cell,
                             )
                             .await
-                            .map_err(|_| DurabilityError::Unavailable)?
+                            .map_err(|_| {
+                                #[cfg(feature = "qualification-cast-evidence")]
+                                super::qualification_attack_stage(
+                                    session,
+                                    &format!("ranged_prepare_sight_tile_unavailable cell={cell:?}"),
+                                );
+                                DurabilityError::Unavailable
+                            })?
                             .projectile
                         {
+                            #[cfg(feature = "qualification-cast-evidence")]
+                            super::qualification_attack_stage(
+                                session,
+                                &format!("ranged_prepare_sight_blocked cell={cell:?}"),
+                            );
                             return Err(DurabilityError::Unavailable);
                         }
                     }

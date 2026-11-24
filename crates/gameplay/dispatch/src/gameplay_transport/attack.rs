@@ -192,6 +192,14 @@ struct WeaponFacts {
     read_at: SemanticTimeMicros,
 }
 
+#[cfg(feature = "qualification-cast-evidence")]
+fn qualification_attack_stage(session: GameSessionId, stage: &str) {
+    super::operator_event(&format!(
+        "event=qualification_auto_attack session={:?} stage={stage}",
+        session.as_bytes()
+    ));
+}
+
 /// The swing weapon of equipped hands, resolved by the pure Combat Rules owner.
 pub fn swing_weapon(content: &NativeGameplayState, items: &[EquippedItem]) -> Option<SwingWeapon> {
     oteryn_gameplay_combat_rules::resolution::swing_weapon(content, |slot| {
@@ -1334,9 +1342,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let Some(equipment) = super::equipment_move::read_current_equipment(self, session).await
         else {
+            #[cfg(feature = "qualification-cast-evidence")]
+            qualification_attack_stage(session, "equipment_read_unavailable");
             return;
         };
         if equipment.content_digest != digest || content.source_digest() != digest {
+            #[cfg(feature = "qualification-cast-evidence")]
+            qualification_attack_stage(session, "equipment_digest_mismatch");
             return;
         }
         let weights = super::item_ref_admission::NativeItemWeights(content);
@@ -1377,9 +1389,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Vec::new()
         };
         let Some(ranged) = ranged::loadout(content, &equipment, &quiver_entries) else {
+            #[cfg(feature = "qualification-cast-evidence")]
+            qualification_attack_stage(session, "ranged_loadout_unqualified");
             return;
         };
         let Some(weapon) = swing_weapon(content, &equipment.items) else {
+            #[cfg(feature = "qualification-cast-evidence")]
+            qualification_attack_stage(session, "swing_weapon_unqualified");
             return;
         };
         let item_key = self.proficiency_catalogue.as_ref().and_then(|catalogue| {
@@ -1426,6 +1442,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 owner.install_track(key, track);
             }
         }
+        #[cfg(feature = "qualification-cast-evidence")]
+        qualification_attack_stage(
+            session,
+            if ranged.is_some() {
+                "weapon_ready_ranged"
+            } else {
+                "weapon_ready_melee"
+            },
+        );
         self.states.attack.lock().await.store_weapon(
             actor,
             session,

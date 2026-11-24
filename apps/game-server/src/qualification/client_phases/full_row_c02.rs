@@ -360,7 +360,39 @@ async fn hunt_with_damage_receipt(
     let attacker = own(client)?;
     client.take_events();
     client.begin_presentation_recording();
-    let result = full_e2ef7::earn_gold(client, world, required_total).await;
+    use std::io::{BufRead, BufReader, Seek, SeekFrom};
+
+    let session = format!(
+        "session={:?}",
+        client.join_snapshot().game_session_id.as_bytes()
+    );
+    let server_log = std::env::var_os("NODE_BOOT_CAST_EVIDENCE_LOG")
+        .and_then(|path| std::fs::File::open(path).ok())
+        .and_then(|mut file| {
+            file.seek(SeekFrom::End(0)).ok()?;
+            Some(file)
+        });
+    let result = full_e2ef7::earn_gold_with_attack_evidence(client, world, required_total).await;
+    if let Some(file) = server_log {
+        let mut events = BTreeMap::new();
+        for line in BufReader::new(file).lines().map_while(Result::ok) {
+            if let Some(event) = line.split_once("qualification_auto_attack")
+                && event.1.contains(&session)
+            {
+                let detail = event
+                    .1
+                    .split_once("stage=")
+                    .map_or(event.1, |(_, stage)| stage);
+                let entry = events.entry(detail.to_owned()).or_insert((0, line));
+                entry.0 += 1;
+            }
+        }
+        for (_, (count, sample)) in events {
+            evidence(&format!("C02_SERVER_COMBAT count={count} {sample}"));
+        }
+    } else {
+        evidence("C02_SERVER_COMBAT log_unavailable");
+    }
     let presentations = client.finish_presentation_recording();
     let damage: Vec<_> = presentations
         .into_iter()

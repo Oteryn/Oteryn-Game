@@ -435,6 +435,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
             {
+                #[cfg(feature = "qualification-cast-evidence")]
+                super::qualification_attack_stage(entry.session, "ranged_shot_payment_refused");
                 if pvp_permit.has_unresolved() {
                     return;
                 }
@@ -2012,13 +2014,21 @@ pub(super) fn select_swing(
         && facts.attackable_kind
         && facts.alive
     {
-        ranged
-            .ready(
-                facts.distance,
-                facts.present_and_visible,
-                player.vitals().mana,
-            )
-            .ok()?;
+        if let Err(_reason) = ranged.ready(
+            facts.distance,
+            facts.present_and_visible,
+            player.vitals().mana,
+        ) {
+            #[cfg(feature = "qualification-cast-evidence")]
+            super::qualification_attack_stage(
+                entry.session,
+                &format!(
+                    "ranged_gate_refused reason={_reason:?} distance={}",
+                    facts.distance
+                ),
+            );
+            return None;
+        }
         // Range was checked with the qualified launcher range. All other target gates and
         // the timer remain the existing attack owner's rules.
         facts.distance = facts.distance.min(1);
