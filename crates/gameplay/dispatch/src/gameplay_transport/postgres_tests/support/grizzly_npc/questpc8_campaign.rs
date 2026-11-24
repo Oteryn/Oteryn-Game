@@ -515,10 +515,18 @@ async fn record_and_drain_lethal(
         }
     }
     assert!(queue.has_session(admitted.game_session_id));
-    assert_eq!(
-        owner.drain_kill_rewards(admitted.game_session_id).await,
-        DrainOutcome::Drained
-    );
+    let mut outcome = owner.drain_kill_rewards(admitted.game_session_id).await;
+    for _ in 1..8 {
+        if outcome == DrainOutcome::Drained {
+            break;
+        }
+        // A deferred pass keeps the original death queued. Restore the test
+        // holder if the pass retired it, then drain that same death.
+        owner.root.await_ready().await?;
+        tokio::task::yield_now().await;
+        outcome = owner.drain_kill_rewards(admitted.game_session_id).await;
+    }
+    assert_eq!(outcome, DrainOutcome::Drained);
     assert_eq!(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Drained

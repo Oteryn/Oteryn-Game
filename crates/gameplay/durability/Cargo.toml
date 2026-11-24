@@ -50,7 +50,6 @@ tokio = { workspace = true, features = ["signal"] }
 oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities", features = ["test-support"] }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation", features = ["test-support"] }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content", features = ["test-support"] }
-oteryn-test-support = { version = "=0.1.0", path = "../../test-support", features = ["postgres"] }
 
 [lints]
 workspace = true

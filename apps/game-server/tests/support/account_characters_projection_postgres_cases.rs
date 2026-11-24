@@ -35,43 +35,36 @@ impl Database {
         {
             return Err("unsafe PostgreSQL test admin URL".into());
         }
-        let name = oteryn_test_support::postgres::database_name("lcfa");
+        let suffix = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos();
+        let name = format!("lcfa_{suffix}");
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
+        admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                "CREATE DATABASE {name}"
+            ))))
+            .await?;
+        admin.close().await?;
+        let prefix = admin_url
+            .strip_suffix("/postgres")
+            .ok_or("invalid admin URL")?;
+        let url = format!("{prefix}/{name}");
+        let mut connection = sqlx::PgConnection::connect(&url).await?;
         let version: String = sqlx::query_scalar("SHOW server_version_num")
-            .fetch_one(&mut admin)
+            .fetch_one(&mut connection)
             .await?;
         assert_eq!(
             version,
             oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
             "canonical target is PostgreSQL 18.6"
         );
-        if through.is_some() {
-            admin
-                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                    "CREATE DATABASE {name}"
-                ))))
-                .await?;
-        } else {
-            oteryn_test_support::postgres::create_migrated_database(
-                &mut admin,
-                &admin_url,
-                &name,
-                &oteryn_gameplay_durability::GAME_MIGRATOR,
-            )
-            .await?;
+        let migrator = &oteryn_gameplay_durability::GAME_MIGRATOR;
+        match through {
+            Some(version) => migrator.run_to(version, &mut connection).await?,
+            None => migrator.run(&mut connection).await?,
         }
-        admin.close().await?;
-        let prefix = admin_url
-            .strip_suffix("/postgres")
-            .ok_or("invalid admin URL")?;
-        let url = format!("{prefix}/{name}");
-        if let Some(version) = through {
-            let mut connection = sqlx::PgConnection::connect(&url).await?;
-            oteryn_gameplay_durability::GAME_MIGRATOR
-                .run_to(version, &mut connection)
-                .await?;
-            connection.close().await?;
-        }
+        connection.close().await?;
         Ok(Self {
             admin_url,
             name,

@@ -3,6 +3,9 @@ use sqlx::{Connection, Executor, PgConnection};
 use std::env;
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static DATABASE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 /// Independent actor seeds use independent accounts so transport/nonce negatives
 /// do not first violate the separately enforced account-global session exclusion.
@@ -66,7 +69,6 @@ pub fn current_authority_from_record(
 pub enum IsolatedPostgresError {
     MissingAdminUrl,
     UnsafeAdminUrl,
-    NoncanonicalVersion(String),
     Sqlx(sqlx::Error),
 }
 
@@ -83,12 +85,6 @@ impl Display for IsolatedPostgresError {
                 "OTERYN_TEST_POSTGRES_ADMIN_URL is required for PostgreSQL E2E"
             }
             Self::UnsafeAdminUrl => "PostgreSQL E2E requires the pinned local test-admin URL",
-            Self::NoncanonicalVersion(version) => {
-                return write!(
-                    formatter,
-                    "PostgreSQL E2E requires PostgreSQL 18.6, received {version}"
-                );
-            }
             Self::Sqlx(error) => {
                 return write!(formatter, "PostgreSQL E2E operation failed: {error}");
             }
@@ -110,61 +106,18 @@ pub struct IsolatedPostgres {
     database_name: String,
 }
 
-enum TestSchema {
-    Empty,
-    Migrated,
-    CanonicalMigrated,
-}
-
 impl IsolatedPostgres {
     pub async fn create(test_name: &str) -> Result<Self, IsolatedPostgresError> {
-        Self::create_with_schema(test_name, TestSchema::Empty).await
-    }
-
-    pub async fn create_migrated(test_name: &str) -> Result<Self, IsolatedPostgresError> {
-        Self::create_with_schema(test_name, TestSchema::Migrated).await
-    }
-
-    pub async fn create_migrated_canonical(test_name: &str) -> Result<Self, IsolatedPostgresError> {
-        Self::create_with_schema(test_name, TestSchema::CanonicalMigrated).await
-    }
-
-    async fn create_with_schema(
-        test_name: &str,
-        schema: TestSchema,
-    ) -> Result<Self, IsolatedPostgresError> {
         let admin_url = env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")
             .map_err(|_error| IsolatedPostgresError::MissingAdminUrl)?;
         validate_admin_url(&admin_url)?;
 
-        if test_name.is_empty() || test_name.len() > 40 {
-            return Err(IsolatedPostgresError::UnsafeAdminUrl);
-        }
-        let database_name = oteryn_test_support::postgres::database_name(test_name);
+        let database_name = database_name(test_name)?;
         let mut admin = PgConnection::connect(&admin_url).await?;
-        if matches!(schema, TestSchema::CanonicalMigrated) {
-            let version: String = sqlx::query_scalar("SHOW server_version_num")
-                .fetch_one(&mut admin)
-                .await?;
-            if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
-                return Err(IsolatedPostgresError::NoncanonicalVersion(version));
-            }
-        }
-        if !matches!(schema, TestSchema::Empty) {
-            oteryn_test_support::postgres::create_migrated_database(
-                &mut admin,
-                &admin_url,
-                &database_name,
-                &oteryn_gameplay_durability::GAME_MIGRATOR,
-            )
+        let create_database = format!("CREATE DATABASE {database_name}");
+        admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(create_database)))
             .await?;
-        } else {
-            admin
-                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                    "CREATE DATABASE {database_name}"
-                ))))
-                .await?;
-        }
 
         Ok(Self {
             admin_url,
@@ -239,6 +192,26 @@ pub fn validate_admin_url(value: &str) -> Result<(), IsolatedPostgresError> {
     }
 
     Ok(())
+}
+
+fn database_name(test_name: &str) -> Result<String, IsolatedPostgresError> {
+    let normalized: String = test_name
+        .bytes()
+        .map(|byte| {
+            if byte.is_ascii_alphanumeric() {
+                char::from(byte.to_ascii_lowercase())
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    if normalized.is_empty() || normalized.len() > 40 {
+        return Err(IsolatedPostgresError::UnsafeAdminUrl);
+    }
+
+    let ordinal = DATABASE_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+    let process = std::process::id();
+    Ok(format!("oteryn_game_test_{process}_{ordinal}_{normalized}"))
 }
 
 /// Isolated migration-admin corruption injection. Dropping the transaction rolls
@@ -655,9 +628,10 @@ mod durability_contract_tests {
     async fn migrated_database(
         test_name: &str,
     ) -> Result<(IsolatedPostgres, String, MigrationExecutor), Box<dyn Error>> {
-        let database = IsolatedPostgres::create_migrated(test_name).await?;
+        let database = IsolatedPostgres::create(test_name).await?;
         let database_url = database.database_url()?;
         let executor = MigrationExecutor::connect_migration(&database_url).await?;
+        executor.apply_embedded_ledger().await?;
         Ok((database, database_url, executor))
     }
 

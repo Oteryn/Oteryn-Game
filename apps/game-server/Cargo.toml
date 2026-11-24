@@ -99,7 +99,6 @@ oteryn-gameplay-content = { version = "=0.1.0", path = "../../crates/gameplay/co
 # `stage=dev_client`. Not part of either production closure (workspace-boundaries.toml
 # `[dev_edges]`, never walked by the production-closure check).
 oteryn-dev-client = { version = "=0.1.0", path = "../../tools/dev-client" }
-oteryn-test-support = { version = "=0.1.0", path = "../../crates/test-support", features = ["postgres"] }
 # Test-only (MAP-LOAD-1): the map_load tests compile their fixture bundle with the compiler.
 oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../tools/world-bundle-compiler" }
 rcgen.workspace = true
