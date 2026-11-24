@@ -147,6 +147,13 @@ and inherits these opt-in groups’ batch selectors:
   The `shrines` family is also selectable. Map counts describe the bundle served
   by the selected world profile.
 
+The first 40 creature encyclopedia reports exposed two defects. The Bestiary
+detail projection omitted the authored report in all 12 accepted detail replies
+([server detail projection](../../../crates/gameplay/dispatch/src/gameplay_transport/charm_progression/catalogue.rs#L204)).
+The other 28 reports linked to creatures that had no canonical wire race
+([race catalogue](../../../crates/gameplay/dispatch/src/gameplay_transport/charm_progression.rs#L91)).
+The census preserves both failure categories and the dependent steps.
+
 The runner prints a
 summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
 at the path reported on stderr. It exits nonzero if any group fails.
