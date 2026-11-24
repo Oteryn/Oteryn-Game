@@ -90,7 +90,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     });
 }
 
-fn snapshot(client: &mut DevClientSession) -> TestResult<appearance::Snapshot> {
+pub(super) fn snapshot(client: &mut DevClientSession) -> TestResult<appearance::Snapshot> {
     let state = client
         .session_mut()
         .gated_snapshot(appearance::STATE_DOMAIN_APPEARANCE)
@@ -189,7 +189,7 @@ fn content_revision() -> TestResult<String> {
         .ok_or_else(|| "step=appearance-input observed=missing-content-revision".into())
 }
 
-async fn change(
+pub(super) async fn change(
     client: &mut DevClientSession,
     request: &appearance::Change,
 ) -> TestResult<(CommandStatus, appearance::ChangeResult, u64)> {
@@ -209,7 +209,7 @@ async fn change(
     Ok((reply.status, result, reply.server_sequence))
 }
 
-fn own_binding<'a>(
+pub(super) fn own_binding<'a>(
     client: &DevClientSession,
     state: &'a appearance::Snapshot,
 ) -> TestResult<&'a appearance::Binding> {

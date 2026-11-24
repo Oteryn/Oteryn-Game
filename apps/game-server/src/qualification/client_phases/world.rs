@@ -11,6 +11,8 @@ mod full_e2ef3;
 #[path = "general_stats.rs"]
 mod general_stats;
 
+#[path = "cosmetic_sweep.rs"]
+mod cosmetic_sweep;
 #[path = "creature_sweep.rs"]
 mod creature_sweep;
 #[path = "mp/mount.rs"]
@@ -3194,10 +3196,14 @@ pub(super) async fn journeys(
         ));
     }
     let mp_selected = groups.runs("mp");
+    let cosmetic_selected = groups.runs("cosmetic_sweep") && cosmetic_sweep::opted_in();
     let sweep_selected = groups.runs("creature_sweep")
         && std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty());
-    if mp_selected || sweep_selected {
+    if cosmetic_selected || mp_selected || sweep_selected {
         let [mp_first, mp_second, sweep] = extra_world_fixtures(clients, packet_clients).await?;
+        if cosmetic_selected {
+            cosmetic_sweep::run(&sweep.clients(clients), world).await?;
+        }
         if sweep_selected {
             creature_sweep::run(&sweep.clients(clients), world, &generation.rewards).await?;
         }

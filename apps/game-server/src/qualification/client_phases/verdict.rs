@@ -764,6 +764,7 @@ impl Row {
 /// each row owns its admissions and cleanup.
 const GROUPS: &[(&str, &[&str])] = &[
     ("core", &[]),
+    ("cosmetic_sweep", &[]),
     ("creature_sweep", &[]),
     ("f4", &[]),
     ("f5", &[]),

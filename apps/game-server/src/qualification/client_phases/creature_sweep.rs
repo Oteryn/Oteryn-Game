@@ -1368,7 +1368,9 @@ async fn prepare_player(
 }
 
 /// Experience and level from the Cyclopedia GeneralStats tab (the same panel MP09 reads).
-async fn read_stats(client: &mut DevClientSession) -> TestResult<(u64, u32, Option<u8>)> {
+pub(super) async fn read_stats(
+    client: &mut DevClientSession,
+) -> TestResult<(u64, u32, Option<u8>)> {
     let mut view = panel::CyclopediaCharacterPanel {
         selected: true,
         limit: 50,
