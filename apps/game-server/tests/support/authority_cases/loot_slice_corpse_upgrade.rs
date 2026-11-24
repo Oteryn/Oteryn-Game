@@ -7,7 +7,7 @@ use crate::item_transfer_postgres_cases::{
 use oteryn_gameplay_durability::GAME_MIGRATOR;
 use sqlx::Connection;
 
-const MIGRATION: i64 = 3040;
+const MIGRATION: i64 = 3200;
 const PRIOR_FUNCTIONS: [&str; 4] = [
     "game_summer_corpse_chain(text)",
     "game_source_corpse_durations_v1(text)",

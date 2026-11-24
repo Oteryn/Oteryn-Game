@@ -352,6 +352,8 @@ fn trade_request(n: u8, total: u64) -> TestResult<durability::npc_trade::NpcTrad
     use crate::durability::npc_trade::*;
     let i = identity(n);
     Ok(NpcTradeRequest {
+        shopping_bag: None,
+        include_equipped: false,
         fluid_subtype: None,
         full_charges: None,
         cause: NpcTradeCause {

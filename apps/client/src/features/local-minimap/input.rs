@@ -108,6 +108,41 @@ impl PlayView {
 }
 
 impl PlayView {
+    #[cfg(bevy_shell)]
+    pub(crate) fn atlas_flags(&self, bounds: [u16; 4], floor: i8) -> Vec<(u16, u16, u8, String)> {
+        let map = super::state::lock(&self.minimap);
+        let mut flags = Vec::new();
+        let [left, top, right, bottom] = bounds.map(i32::from);
+        let mut add = |x: i32, y: i32, z: i16, icon: u8, label: &str| {
+            if z == i16::from(floor) && (left..=right).contains(&x) && (top..=bottom).contains(&y) {
+                flags.push((x as u16, y as u16, icon, label.to_owned()));
+            }
+        };
+        for m in &map.markers {
+            add(m.x, m.y, m.floor, m.color, &m.label);
+        }
+        for m in &map.quest_marks.0 {
+            add(
+                i32::from(m.x),
+                i32::from(m.y),
+                i16::from(m.floor),
+                5,
+                &m.text,
+            );
+        }
+        let personal: std::collections::BTreeSet<_> = map
+            .quest_marks
+            .0
+            .iter()
+            .map(|m| (i32::from(m.x), i32::from(m.y), i16::from(m.floor)))
+            .collect();
+        for m in &map.quest_markers {
+            if !personal.contains(&(m.x, m.y, m.floor)) {
+                add(m.x, m.y, m.floor, 4, &m.label);
+            }
+        }
+        flags
+    }
     /// Current player position for a separately navigable overview.
     pub fn satellite_player(&self) -> (i32, i32, i16) {
         (self.own.x, self.own.y, self.floor)

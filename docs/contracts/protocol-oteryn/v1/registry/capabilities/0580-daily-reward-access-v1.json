@@ -1,0 +1,17 @@
+{
+  "id": 580,
+  "name": "DAILY_REWARD_ACCESS_V1",
+  "owner_decision": "Server and protocol gap closure",
+  "owner": "daily reward access",
+  "requires": [
+    182
+  ],
+  "command_types": [
+    6321,
+    6322,
+    6323
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES gated by the composed owner and its loaded native content."
+}

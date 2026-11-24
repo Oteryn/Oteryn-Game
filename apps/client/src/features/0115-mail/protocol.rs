@@ -28,6 +28,13 @@ pub(in crate::play) struct Panels {
     pub house_furniture_rotation: oteryn_client_ui::house_furniture_rotation::Panel,
     pub house_furniture_wrap: oteryn_client_ui::house_furniture_wrap::Panel,
     pub house_podium: oteryn_client_ui::house_podium::Panel,
+    #[cfg(bevy_shell)]
+    pub expiry_pending: Option<oteryn_session::ItemHandle>,
+    #[cfg(bevy_shell)]
+    pub expiry_reply: Option<(
+        oteryn_session::ItemHandle,
+        Option<oteryn_client_runtime::timed_item::TimedItemResult>,
+    )>,
     pub timed_item: oteryn_client_ui::timed_item::Panel,
     /// The item chosen for the timed item window while a request was pending; targeted on its
     /// reply and inspected by the form's next tick.
@@ -41,9 +48,8 @@ impl Outbox {
         let mut shared = lock(&self.0);
         shared.item_forge.preview.selected = session.feature_selected(152);
         shared.imbue.details_selected = session.feature_selected(447);
-        shared.imbue.success_selected = session.feature_selected(
-            oteryn_session::imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1,
-        );
+        shared.imbue.success_selected = session
+            .feature_selected(oteryn_session::imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1);
         shared
             .properties
             .house
@@ -55,6 +61,7 @@ impl Outbox {
         };
         shared.properties.party_skull = oteryn_client_ui::party_skull::Panel {
             selected: session.feature_selected(134),
+            situation_identity: session.feature_selected(616),
             ..Default::default()
         };
         shared.properties.cyclopedia_map = oteryn_client_ui::cyclopedia_map::Panel {
@@ -165,6 +172,24 @@ impl Outbox {
             ),
             39 => {
                 let properties = &mut shared.properties;
+                #[cfg(bevy_shell)]
+                if let Ok(intent) =
+                    oteryn_client_runtime::timed_item::decode_timed_item_intent(&command.payload)
+                {
+                    use oteryn_client_runtime::timed_item as wire;
+                    let reply = accepted(result)
+                        .then(|| wire::decode_timed_item_result(&result.payload).ok())
+                        .flatten();
+                    let inspect = intent.action == wire::TimedAction::Inspect;
+                    if inspect || reply.is_some_and(|r| r.disposition == wire::TimedDisposition::Ok)
+                    {
+                        properties.expiry_reply = Some((intent.target, reply));
+                    }
+                    if inspect && properties.expiry_pending == Some(intent.target) {
+                        properties.expiry_pending = None;
+                        return;
+                    }
+                }
                 super::super::feature_0039_timed_item::protocol::apply(
                     &mut properties.timed_item,
                     command,
@@ -179,11 +204,23 @@ impl Outbox {
                     );
                 }
             }
-            54 => super::super::feature_0054_training::protocol::apply(
-                &mut shared.properties.training,
-                command,
-                result,
-            ),
+            54 => {
+                #[cfg(bevy_shell)]
+                let was_confirmed = shared.properties.training.offline_confirmed;
+                super::super::feature_0054_training::protocol::apply(
+                    &mut shared.properties.training,
+                    command,
+                    result,
+                );
+                #[cfg(bevy_shell)]
+                if shared.properties.training.offline_confirmed && !was_confirmed {
+                    let feedback = shared.properties.training.feedback.clone();
+                    shared.window_notice(
+                        crate::play::feature_local_text_messages::view::NoticeKind::OfflineTraining,
+                        feedback,
+                    );
+                }
+            }
             55 => super::super::feature_0055_guild_bank::protocol::apply(
                 &mut shared.properties.guild_bank,
                 command,

@@ -1,0 +1,19 @@
+{
+  "id": 598,
+  "name": "ANALYSER_PARTY_VALUATION_V1",
+  "constant": "analyser_party::CAPABILITY_ANALYSER_PARTY_VALUATION_V1",
+  "requires": [
+    597
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    6359
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

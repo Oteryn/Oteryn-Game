@@ -63,6 +63,9 @@ fn console_filters_route_real_notices_store_results_and_private_tabs()
             .map_err(|e| format!("{e:?}"))?,
         },
     );
+
+    #[cfg(bevy_shell)]
+    assert!(link.take_window_notices().pop_back().is_some_and(|notice| notice.text.contains("OfferUnavailable")));
     let terms = [
         "ridge event",
         "safe area",
@@ -134,5 +137,76 @@ fn console_filters_route_real_notices_store_results_and_private_tabs()
     assert!(refreshed.contains("Store catalogue updated."));
     assert_eq!(refreshed.matches("OfferUnavailable").count(), 1);
 
+    Ok(())
+}
+
+#[test]
+fn applied_console_options_filter_received_notices() {
+    let (link, _, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    outbox.push(vec![SessionEvent::ServerMessage(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: ServerMessage::Advance("Festival".into()),
+    })]);
+    let mut settings = crate::play::SettingsState::new(None);
+    assert!(panel_text(&link.chat_panel()).contains("Festival"));
+    settings.preferences.console.events = false;
+    settings.sync_local_preferences(&link);
+    assert!(!panel_text(&link.chat_panel()).contains("Festival"));
+}
+
+#[test]
+fn private_tab_guild_and_npc_audio_follow_received_message_type()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = play_channel();
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 7, &[])?;
+    assert!(oteryn_client_ui::chat::open_conversation(
+        &mut lock(&link.mailbox).chat,
+        "Friend"
+    ));
+    let delta = |value| AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value,
+    };
+    let send = || {
+        outbox.push(vec![
+            SessionEvent::ChatLine(delta(ChatLine::Private {
+                speaker_name: "Friend".into(),
+                text: "Hello".into(),
+            })),
+            SessionEvent::ChatLine(delta(ChatLine::Guild(oteryn_session::GuildChatLine {
+                guild_id: [1; 16],
+                rank: 1,
+                speaker_name: "Leader".into(),
+                text: "Meet here".into(),
+            }))),
+            SessionEvent::NpcConversation(AppliedDelta {
+                server_sequence: 3,
+                base_revision: 0,
+                new_revision: 1,
+                value: oteryn_protocol_oteryn::npc_service::NpcConversation {
+                    open: None,
+                    lines: vec!["Greetings".into()],
+                },
+            }),
+        ])
+    };
+    let mut prefs = view.preferences().clone();
+    prefs.audio.private_without_tab = false;
+    view.set_preferences(prefs.clone())?;
+    send();
+    assert!(view.tick(&link).is_ok());
+    assert_eq!(view.take_ui_sounds(), [crate::play::UiSound::Chat; 3]);
+    prefs.audio.private = false;
+    prefs.audio.npc = false;
+    prefs.audio.guild = false;
+    view.set_preferences(prefs)?;
+    send();
+    assert!(view.tick(&link).is_ok());
+    assert!(view.take_ui_sounds().is_empty());
     Ok(())
 }

@@ -213,11 +213,13 @@ impl Peer {
                 partner: Some(reference(1 - side)),
                 trade_id: (phase == 2).then_some([3; 16]),
                 own: (side == 0 || phase == 2).then_some(trade::Offer {
+                    appearance_id: None,
                     definition: 123 + u32::from(side),
                     count: 1,
                     sub_type: 0,
                 }),
                 counter: (phase == 2).then_some(trade::Offer {
+                    appearance_id: None,
                     definition: 123 + u32::from(1 - side),
                     count: 1,
                     sub_type: 0,

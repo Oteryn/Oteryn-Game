@@ -1,0 +1,15 @@
+{
+  "mechanic": "0603-cyclopedia-movement-speed",
+  "kind": "handlers",
+  "id": "0603-cyclopedia-movement-speed-unsupported",
+  "status": "unsupported",
+  "reason": "The client General Stats panel still uses the legacy payload. Capability 603 adds the live speed suffix to command 388.",
+  "commands": [],
+  "not_applicable": {
+    "state": "The client has no model for server-side current and base speed.",
+    "protocol": "The client has no negotiated handler for this capability.",
+    "view": "The native panel consumes the existing capabilities.",
+    "input": "The native panel uses the existing commands.",
+    "settings": "This capability does not introduce a client setting."
+  }
+}

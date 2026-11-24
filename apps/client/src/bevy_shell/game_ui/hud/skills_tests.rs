@@ -89,26 +89,7 @@ fn skills_hover_and_visibility_reset_controls_are_reachable()
             .ok_or_else(|| format!("missing {label}").into())
     };
     // Tibia opens the skills settings from the widget's right-click menu.
-    let menu = find(&mut app, "Skills base")?;
-    app.world_mut()
-        .trigger(bevy::picking::events::PointerClick {
-            entity: menu,
-            pointer: bevy::picking::events::Pointer::new(
-                bevy::picking::pointer::PointerId::Mouse,
-                bevy::picking::pointer::Location {
-                    target: bevy::camera::NormalizedRenderTarget::None {
-                        width: 100,
-                        height: 100,
-                    },
-                    position: Vec2::ZERO,
-                },
-            ),
-            button: bevy::picking::pointer::PointerButton::Secondary,
-            hit: bevy::picking::backend::HitData::new(Entity::PLACEHOLDER, 0., None, None),
-            duration: std::time::Duration::ZERO,
-            count: 1,
-        });
-    app.update();
+    open_skills_menu(&mut app)?;
     let toggle = find(&mut app, "Toggle Magic")?;
     app.world_mut().trigger(Activate { entity: toggle });
     app.update();
@@ -184,6 +165,17 @@ fn skills_hover_and_visibility_reset_controls_are_reachable()
         .world_mut()
         .query_filtered::<Entity, With<Header>>()
         .single(app.world())?;
+    outbox.push(vec![oteryn_session::SessionEvent::InventoryCapacity(
+        oteryn_session::AppliedDelta {
+            server_sequence: 2,
+            base_revision: 1,
+            new_revision: 2,
+            value: oteryn_session::inventory_capacity::InventoryCapacity {
+                capacity: 60000,
+                free: 31000,
+            },
+        },
+    )]);
     app.world_mut().entity_mut(header).insert(Hovered(true));
     app.update();
     assert!(
@@ -192,6 +184,126 @@ fn skills_hover_and_visibility_reset_controls_are_reachable()
             .ok_or("XP tooltip")?
             .0
             .contains("XP/hour: 0")
+    );
+    let details = &app.world().get::<Text>(tooltip).ok_or("tooltip")?.0;
+    assert!(details.contains("Base XP rate: 100%"));
+    assert!(details.contains("Low-level bonus: 41.67%"));
+    assert!(details.contains("Capacity: 310.00 / 600.00 oz"));
+    Ok(())
+}
+
+#[test]
+fn skills_toggle_one_bar_keeps_skill_and_other_bars_visible()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, _, outbox) = super::super::tests::app()?;
+    outbox.bevy_hud_skills_fixture()?;
+    app.update();
+    open_skills_menu(&mut app)?;
+    let button = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(e, name)| (name.as_str() == "Toggle Magic progress bar").then_some(e))
+        .ok_or("missing individual progress control")?;
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    for (track, node) in app.world_mut().query::<(&Track, &Node)>().iter(app.world()) {
+        assert_eq!(
+            node.display,
+            if track.0 == 0 {
+                Display::None
+            } else {
+                Display::Flex
+            }
+        );
+    }
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .skills_widget()
+            .rows
+            .len(),
+        8
+    );
+    Ok(())
+}
+
+fn open_skills_menu(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
+    let menu = app
+        .world_mut()
+        .query_filtered::<Entity, With<Header>>()
+        .single(app.world())?;
+    app.world_mut()
+        .trigger(bevy::picking::events::PointerClick {
+            entity: menu,
+            pointer: bevy::picking::events::Pointer::new(
+                bevy::picking::pointer::PointerId::Mouse,
+                bevy::picking::pointer::Location {
+                    target: bevy::camera::NormalizedRenderTarget::None {
+                        width: 100,
+                        height: 100,
+                    },
+                    position: Vec2::ZERO,
+                },
+            ),
+            button: bevy::picking::pointer::PointerButton::Secondary,
+            hit: bevy::picking::backend::HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            duration: std::time::Duration::ZERO,
+            count: 1,
+        });
+    app.update();
+    Ok(())
+}
+
+#[test]
+fn skills_combat_group_toggle_shows_confirmed_offence() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cyclopedia_character::{
+        CharacterTab, TabView,
+        combat::{CombatStat, CombatStats},
+    };
+    let (mut app, _commands, outbox) = super::super::tests::app()?;
+    outbox.bevy_cyclopedia_initialize(true, false, false);
+    app.update();
+    open_skills_menu(&mut app)?;
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(e, n)| (n.as_str() == "Toggle Offence stats").then_some(e))
+        .ok_or("Offence toggle")?;
+    app.world_mut().trigger(Activate { entity });
+    app.update();
+    let mut stats = CombatStats::new(CharacterTab::Offence, 1, 1, 1).map_err(|_| "stats")?;
+    stats
+        .set(CombatStat::AttackTotal, 35)
+        .map_err(|_| "attack")?;
+    outbox.skills_combat_result(
+        CharacterTab::Offence,
+        &oteryn_client_runtime::raw_feature::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_client_runtime::CommandStatus::Accepted,
+            payload: TabView::Combat(stats).encode().map_err(|_| "encode")?,
+        },
+    );
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0.contains("Attack Total: 35"))
+    );
+    app.world_mut().trigger(Activate { entity });
+    app.update();
+    assert!(
+        !app.world_mut()
+            .query::<(&Text, &Node)>()
+            .iter(app.world())
+            .any(|(t, n)| t.0.contains("Attack Total: 35") && n.display != Display::None)
     );
     Ok(())
 }

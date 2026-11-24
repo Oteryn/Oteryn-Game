@@ -1,13 +1,29 @@
 """Replay qualified Item Details facts after native profile admission."""
 
 import json
+from collections import Counter
 
-from import_cyclopedia_global import load_weights
+from import_cyclopedia_global import apply_stats, item_id, load_capture, load_weights
 
-
-WEIGHT_IDS = (43501, 43502, 43503, 43504, 43899, 43900, 43946, 43947, 44048, 44727, 44728)
+WEIGHT_IDS = (
+    43501,
+    43502,
+    43503,
+    43504,
+    43860,
+    43899,
+    43900,
+    43946,
+    43947,
+    44048,
+    44727,
+    44728,
+    50255,
+)
 WEIGHT_FACTS = "tools/content-schema/native-gameplay/item-detail-weight-facts.json"
-GLOBAL_MODIFIER_PROMOTIONS = "docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json"
+GLOBAL_MODIFIER_PROMOTIONS = (
+    "docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json"
+)
 
 
 def item_key(identifier):
@@ -19,8 +35,8 @@ def known(value):
 
 
 def selected_modifier_vectors(root):
-    from lower_mantra_bond_modifier_packet import whole_vector
     from lower_elemental_magic_modifier_packet import native_order
+    from lower_mantra_bond_modifier_packet import whole_vector
 
     # The existing Global promotion supplies the whole vectors for sanguine
     # trousers and ethereal coned hat. Crystal has 10 for the hat, Global has 12.
@@ -43,7 +59,9 @@ def selected_modifier_vectors(root):
     ):
         vector = whole_vector(fields, order)
         if vector is None:
-            raise ValueError(f"ITEM_DETAILS_INVALID_CRYSTAL_MODIFIER_VECTOR:{identifier}")
+            raise ValueError(
+                f"ITEM_DETAILS_INVALID_CRYSTAL_MODIFIER_VECTOR:{identifier}"
+            )
         vectors[item_key(identifier)] = vector["value"]
     return vectors
 
@@ -58,23 +76,39 @@ def load_weight_facts(root, generated):
     if raw is None:
         raw = (root / WEIGHT_FACTS).read_bytes()
     weights = qualified_weights(root)
-    if json.loads(raw) != {str(identifier): value for identifier, value in weights.items()}:
+    if json.loads(raw) != {
+        str(identifier): value for identifier, value in weights.items()
+    }:
         raise ValueError("ITEM_DETAILS_WEIGHT_FACTS_DRIFT")
     return weights
 
 
 def apply_weight(record, identifier, weights):
     # These donor overlays can encode the loader's default zero as weight.
-    # The verified Global capture has positive measurements for every entry.
+    # Canary's Galthen capture instead carries 1280.00 oz for Item 50255.
     value = weights[identifier]
+    donor_weight = 128_000 if identifier == 50255 else 0
     physical = record["semantics"]["physical"]["value"]
-    if value <= 0 or physical["weight"] not in (known(0), known(value)):
+    if value <= 0 or physical["weight"] not in (known(donor_weight), known(value)):
         raise ValueError(f"ITEM_DETAILS_WEIGHT_SOURCE_CONFLICT:{identifier}")
     physical["weight"] = known(value)
 
 
+def apply_capture_stats(profiles, capture):
+    counts = Counter()
+    for record in profiles["records"]:
+        identity = record["production_binding"]["target"]
+        if identity["key"] != record["production_definition"]["production_key"]:
+            raise ValueError("ITEM_DETAILS_PRODUCTION_IDENTITY")
+        if row := capture.get(item_id(identity)):
+            apply_stats(record, row["basic"], counts)
+
+
 def apply(root, profiles, weights):
-    records = {row["production_definition"]["production_key"]: row for row in profiles["records"]}
+    records = {
+        row["production_definition"]["production_key"]: row
+        for row in profiles["records"]
+    }
     for identifier in weights:
         apply_weight(records[item_key(identifier)], identifier, weights)
 
@@ -84,3 +118,5 @@ def apply(root, profiles, weights):
         if semantics["skill_modifiers"] not in ({"state": "UNKNOWN"}, selected):
             raise ValueError(f"ITEM_DETAILS_MODIFIER_SOURCE_CONFLICT:{key}")
         semantics["skill_modifiers"] = selected
+
+    apply_capture_stats(profiles, load_capture(root))

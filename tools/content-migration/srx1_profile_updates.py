@@ -1,4 +1,4 @@
-"""Generate the small, pinned SRX-1 Item update set; preserve the base provider."""
+"""Generate the small, pinned SRX-1 Item update set."""
 import copy
 import hashlib
 import json
@@ -42,10 +42,20 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
     enriched = json.loads(overlay[profile_path])
     house_decoration_actions.apply_top_order(
         enriched['records'], json.loads((root / house_decoration_actions.PROFILES).read_bytes()))
-    overlay[profile_path] = canonical(enriched)
+    original_document = json.loads(base)
+    # Omit redundant nulls after the exact source comparisons. Rust reads either
+    # representation as Unknown and keeps the composed provider within 16 MiB.
+    for profile_document in (original_document, enriched):
+        for row in profile_document['records']:
+            attributes = row['attributes']
+            for name in ('field_condition', 'rune_consumption'):
+                if attributes.get(name) is None:
+                    attributes.pop(name, None)
+    base = canonical(original_document)
+    generated[profile_path] = base
     original = {row['production_definition']['production_key']: row
-                for row in json.loads(base)['records']}
-    updates = [row for row in json.loads(overlay[profile_path])['records']
+                for row in original_document['records']}
+    updates = [row for row in enriched['records']
                if original.get(row['production_definition']['production_key']) != row]
     if not updates or len(updates) > 128:
         raise ValueError('SRX1_ITEM_UPDATE_BOUNDS')

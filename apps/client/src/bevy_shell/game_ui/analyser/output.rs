@@ -10,19 +10,49 @@ use std::{
 #[derive(Event)]
 pub(super) struct CopyReport(pub(super) String);
 
-pub(super) fn copy(
-    event: On<CopyReport>,
-    mut clipboard: ResMut<bevy::clipboard::Clipboard>,
-    owner: NonSend<HostOwner>,
-) {
-    if let Some(play) = &owner.play {
-        let status = if clipboard.set_text(event.0.clone()).is_ok() {
+#[derive(Resource, Default)]
+pub(super) struct CopyTask {
+    // Keep the clipboard owner alive on X11 after publishing its selection.
+    clipboard: std::sync::Arc<std::sync::Mutex<Option<bevy::clipboard::Clipboard>>>,
+    pending: Option<(u64, bevy_tasks::Task<bool>)>,
+}
+
+pub(super) fn copy(event: On<CopyReport>, mut copy: ResMut<CopyTask>, owner: NonSend<HostOwner>) {
+    if owner.play.is_none() || copy.pending.is_some() {
+        return;
+    }
+    let clipboard = copy.clipboard.clone();
+    let text = event.0.clone();
+    copy.pending = Some((
+        owner.generation(),
+        bevy_tasks::IoTaskPool::get().spawn(async move {
+            clipboard
+                .lock()
+                .unwrap_or_else(|err| err.into_inner())
+                .get_or_insert_with(Default::default)
+                .set_text(text)
+                .is_ok()
+        }),
+    ));
+}
+
+pub(super) fn finish_copy(mut copy: ResMut<CopyTask>, owner: NonSend<HostOwner>) {
+    let Some((generation, task)) = &mut copy.pending else {
+        return;
+    };
+    let Some(saved) = bevy_tasks::futures::check_ready(task) else {
+        return;
+    };
+    if *generation == owner.generation()
+        && let Some(play) = &owner.play
+    {
+        play.link.analyser_feedback(if saved {
             "Report copied"
         } else {
             "Clipboard unavailable"
-        };
-        play.link.analyser_feedback(status);
+        });
     }
+    copy.pending = None;
 }
 
 #[derive(Resource, Default)]

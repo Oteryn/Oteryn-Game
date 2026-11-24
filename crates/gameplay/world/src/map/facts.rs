@@ -197,6 +197,25 @@ pub struct BundleFacts {
 const AMBIGUOUS: u32 = u32::MAX;
 
 impl BundleFacts {
+    #[cfg(any(test, feature = "test-support"))]
+    pub(super) fn fresh_for_test(&self) -> Self {
+        Self {
+            palette: self.palette.clone(),
+            movement_definitions: self.movement_definitions.clone(),
+            movement_solidities: self.movement_solidities.clone(),
+            movement_blocks: self.movement_blocks.clone(),
+            ids: self.ids.clone(),
+            placements: self.placements.clone(),
+            map_source_items: self.map_source_items.clone(),
+            map_source_children: self.map_source_children.clone(),
+            unsupported_source_containers: self.unsupported_source_containers.clone(),
+            houses: self.houses.clone(),
+            house_doors: self.house_doors.clone(),
+            doors: self.doors.fresh_for_test(),
+            ..Self::default()
+        }
+    }
+
     /// A qualified Source owner may use the same bounded volatile-item model
     /// without inventing a bundle, base tile, durable Item or map placement.
     /// The caller supplies its already resolved immovable native Item facts.
@@ -372,16 +391,19 @@ impl BundleFacts {
                 _ => unique.push((id, index)),
             }
         }
+        // 188: spent Botany spider web (Crystal actions_fire_bug.lua:125-129).
+        // 430: occupied Lighthouse pressure plate (Crystal movement-stair.lua:6-16).
         // 3682, 12187, 12189: Bushwhacking entrance, laid net and captured merchant.
+        // 4851, 4996: Ape City spent statue and jar (Crystal actions_mission9_snake_destroyer.lua).
         // 6473, 6474: the timed Rottin wall repairs.
         // 7252: painted baby seal (Crystal actions_paint.lua:27), absent from the base palette.
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
         let mut movement_solidities = BTreeMap::new();
         let movement_definitions: BTreeMap<_, _> = [
-            435, 1025, 1841, 1949, 3682, 5022, 6473, 6474, 7252, 9125, 9126, 9929, 9933, 9934,
-            9935, 9936, 9937, 9938, 9939, 10186, 10187, 12187, 12189, 12369, 13842, 13843, 13976,
-            14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077, 14163, 14164, 14255, 17939,
-            21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100, 49362,
+            188, 430, 435, 1025, 1841, 1949, 3682, 4851, 4996, 5022, 6473, 6474, 7252, 9125, 9126,
+            9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187, 12187, 12189, 12369,
+            13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077, 14163,
+            14164, 14255, 17939, 21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100, 49362,
         ]
         .into_iter()
         .chain(6594..=6608)
@@ -1241,9 +1263,12 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
     let Some(open_key) = door::open_key(key, closed, open) else {
         return PaletteDoor::Sealed;
     };
-    // The closed state must itself block movement and projectiles.
+    // Crystal 201189f8 CustomDoorTable includes the barred gates 2177 and 2179.
+    // Their profiles block movement when closed and let projectiles through in both poses.
     match item(key) {
-        Some(closed_def) if closed_def.solid != Some(false) && closed_def.blocks_projectile => {}
+        Some(closed_def)
+            if (closed_def.solid != Some(false) && closed_def.blocks_projectile)
+                || (matches!(closed, 2177 | 2179) && closed_def.solid == Some(true)) => {}
         _ => return PaletteDoor::Sealed,
     }
     let Some(definition) = item(&open_key) else {

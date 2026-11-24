@@ -14,7 +14,7 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::CommandRef;
 use oteryn_gameplay_housing::house_management::{HouseManagementAction, valid_move_out_date};
-pub use query::HouseManagementSummary;
+pub use query::{HouseManagementPage, HouseManagementSummary};
 #[derive(Debug, Clone)]
 pub struct QualifiedHouse {
     pub key: String,

@@ -128,6 +128,10 @@ pub(super) enum Kind {
     /// Toggles the public visibility of one of the player's own earned badges.
     BadgeVisibility(u8),
     Encyclopedia,
+    Wheel,
+    XpBoost,
+    Blessings,
+    HoldingsLayout,
     HoldingsFilter,
     HoldingsLocation(Option<oteryn_client_runtime::cyclopedia_character::items::Location>),
     Tab(Tab),
@@ -142,7 +146,10 @@ pub(super) struct HoldingsSearch;
 struct State {
     generation: u64,
     serial: u64,
+    xp_request: Option<u64>,
+    xp_unavailable: bool,
     tab: Tab,
+    grid: bool,
     snapshot: Option<CyclopediaCharacterPanel>,
     /// Shown tab's request that the retained builder refused; resent once it accepts.
     unsent: Option<Intent>,
@@ -151,7 +158,9 @@ struct State {
 }
 pub(super) fn install(app: &mut App) {
     artwork::install(app);
-    app.init_resource::<State>()
+    app.init_resource::<super::cyclopedia_navigation::History>()
+        .add_systems(Last, super::cyclopedia_navigation::update_history)
+        .init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(Update, (keyboard, project).chain())
         .add_systems(
@@ -176,6 +185,34 @@ fn project(
     mut focus: ResMut<InputFocus>,
     parents: Query<&ChildOf>,
 ) {
+    if let Some(generation) = state.xp_request {
+        if Some(generation) != owner.play.as_ref().map(|_| owner.generation())
+            || owner.phase != Phase::Playing
+        {
+            state.xp_request = None;
+        } else if let Some(play) = &owner.play {
+            let store = play.link.store_panel();
+            if !store.open || store.browser.search != "XP Boost" {
+                state.xp_request = None;
+            } else if !store.pending {
+                state.xp_request = None;
+                if store.feedback.is_none()
+                    && store
+                        .browser
+                        .page
+                        .as_ref()
+                        .is_some_and(|page| page.products.is_empty())
+                {
+                    play.link.store_set_open(false);
+
+                    state.xp_unavailable = true;
+                    state.snapshot = None;
+                } else if store.feedback.is_none() && play.link.cyclopedia_character_panel().open {
+                    play.link.window_toggle(WINDOW, &[]);
+                }
+            }
+        }
+    }
     let panel = owner
         .play
         .as_ref()
@@ -194,6 +231,8 @@ fn project(
         state.unsent = None;
         state.generation = owner.generation();
         state.tab = Tab::default();
+        state.grid = false;
+        state.xp_unavailable = false;
     }
     let Some(mut panel) = panel else {
         return;
@@ -237,11 +276,13 @@ fn project(
     };
     state.serial = serial;
     let tab = state.tab;
+    let grid = state.grid;
     let control = Control {
         generation: state.generation,
         serial,
         kind: Kind::Close,
     };
+    let xp_unavailable = state.xp_unavailable && tab == Tab::General;
     let widgets = state
         .widgets
         .get_or_insert_with(|| widgets::build(&mut commands, &skins));
@@ -257,11 +298,25 @@ fn project(
         widgets.panel,
         control,
         tab,
+        grid,
         &panel,
     ));
+    if xp_unavailable && let Some(content) = widgets.content {
+        widgets::text(
+            &mut commands,
+            &skins,
+            content,
+            "XP boosts are unavailable in the current Store catalogue.",
+        );
+    }
     state.snapshot = Some(panel);
 }
-fn perform(owner: &HostOwner, state: &mut State, control: Control) {
+fn perform(
+    owner: &HostOwner,
+    state: &mut State,
+    control: Control,
+    widget: Option<&mut super::hud::EquipmentWidget>,
+) {
     if control.generation != owner.generation()
         || control.serial != state.serial
         || owner.modal_active()
@@ -301,6 +356,37 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
             state.tab = tab;
             tab.intent()
         }
+        Kind::HoldingsLayout if state.tab == Tab::Items => {
+            state.grid = !state.grid;
+            state.snapshot = None;
+            return;
+        }
+        Kind::XpBoost if state.tab == Tab::General => {
+            let store = play.link.store_panel();
+            if store.selected && !store.pending && store.confirmed_purchase.is_none() {
+                state.xp_request = Some(owner.generation());
+                play.link.store_browse("featured", "XP Boost", 0, 0);
+                play.link.store_set_open(true);
+            }
+            return;
+        }
+        Kind::Wheel if state.tab == Tab::General => {
+            play.link.window_toggle(WINDOW, &[]);
+            play.link.open_wheel();
+            return;
+        }
+        Kind::Blessings
+            if matches!(
+                state.tab,
+                Tab::Character(CharacterTab::Defence | CharacterTab::Offence)
+            ) =>
+        {
+            if let Some(widget) = widget {
+                widget.blessings = true;
+                play.link.window_toggle(WINDOW, &[]);
+            }
+            return;
+        }
         Kind::Refresh => state.tab.intent(),
         Kind::Previous => {
             let Some(intent) = state.tab.page(false) else {
@@ -316,6 +402,10 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
         }
         Kind::BadgeVisibility(_)
         | Kind::Close
+        | Kind::XpBoost
+        | Kind::Wheel
+        | Kind::Blessings
+        | Kind::HoldingsLayout
         | Kind::Encyclopedia
         | Kind::HoldingsFilter
         | Kind::HoldingsLocation(_) => {
@@ -330,6 +420,8 @@ fn activate(
     controls: Query<&Control>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
+    mut history: ResMut<super::cyclopedia_navigation::History>,
+    mut widget: Option<ResMut<super::hud::EquipmentWidget>>,
     mut state: ResMut<State>,
 ) {
     if guard.allows(event.entity)
@@ -341,7 +433,15 @@ fn activate(
         ) {
             state.pending_filter = Some((*control, event.entity));
         } else {
-            perform(&owner, &mut state, *control);
+            perform(&owner, &mut state, *control, widget.as_deref_mut());
+            if control.kind == Kind::Encyclopedia
+                && let Some(play) = &owner.play
+                && !play.link.cyclopedia_character_panel().open
+                && play.link.inspection_panel().catalogue_open
+            {
+                use super::cyclopedia_navigation::Subject;
+                history.visit(control.generation, Subject::Character, Subject::Items);
+            }
         }
     }
 }
@@ -422,7 +522,7 @@ fn keyboard(
                 serial: state.serial,
                 kind: Kind::Close,
             };
-            perform(&owner, &mut state, control);
+            perform(&owner, &mut state, control, None);
         } else if matches!(event.key_code, KeyCode::Enter | KeyCode::NumpadEnter)
             && state.tab == Tab::Items
             && focus.get().is_some_and(|field| search.contains(field))

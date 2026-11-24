@@ -49,11 +49,19 @@ fn closed_web_link_result_preserves_current_login_feedback()
 -> Result<(), Box<dyn std::error::Error>> {
     crate::account_services::test_server::test_thread(|| {
         let mut owner = HostOwner::new(None)?;
-        let epoch = oteryn_foundation::CancellationToken::new();
-        let (send, result) = std::sync::mpsc::channel();
-        owner.web_link = Some((epoch.clone(), result));
-        send.send(false)?;
-        epoch.cancel();
+        let folder = tempfile::tempdir()?;
+        let config = crate::reentry::Reentry::device_test_config(
+            folder.path().into(),
+            "https://localhost:1",
+        )?;
+        let entry = owner.entry.as_mut().ok_or("entry")?;
+        assert!(entry.configure(config));
+        assert!(entry.request_picker());
+        owner.phase = Phase::Entering;
+        owner.open_web_link(crate::web_links::WebLink::CookiePolicy);
+        let epoch = owner.web_link.as_ref().ok_or("web link")?.0.clone();
+        owner.close();
+        assert!(epoch.is_cancelled());
         let message = owner.login.form.message().to_owned();
         owner.poll_web_link();
         assert!(owner.web_link.is_none());

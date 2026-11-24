@@ -99,7 +99,11 @@ pub(super) fn meaningful(
         )
         .is_ok(),
         7 => oteryn_protocol_oteryn::npc_service::decode_npc_talk_intent(command.payload).is_ok(),
-        8 => oteryn_protocol_oteryn::npc_service::decode_npc_trade_intent(command.payload).is_ok(),
+        8 => oteryn_protocol_oteryn::npc_service::decode_npc_trade_intent_for(
+            command.payload,
+            selected.contains(&oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_OPTIONS_V1),
+        )
+        .is_ok(),
         13 => chat::decode_chat_intent(command.payload).is_ok_and(|intent| {
             !matches!(
                 intent,
@@ -130,8 +134,17 @@ pub(super) fn meaningful(
             .is_ok_and(|intent| intent != loop_training::ExerciseIntent::Status),
         76 => house_move_out::decode_house_move_out_request(command.payload)
             .is_ok_and(|request| request.action != 0),
-        79 => stash::decode_stash_query(command.payload)
-            .is_ok_and(|(intent, _)| intent.action != stash::StashAction::Browse),
+        79 => stash::decode_stash_query(command.payload).is_ok_and(|(intent, _)| {
+            intent.action != stash::StashAction::Browse
+                && (!intent.action.needs_stash_actions()
+                    || selected.contains(&stash::CAPABILITY_STASH_ACTIONS_V1))
+        }),
+        stash::COMMAND_TYPE_STASH_ROW_ACTION => stash::decode_stash_row_intent(command.payload)
+            .is_ok_and(|intent| {
+                intent.action.changes_loot_list()
+                    && selected
+                        .contains(&oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1)
+            }),
         80 => market::decode_request(command.payload).is_ok_and(|request| request.action >= 5),
         81 => target_move::decode_target_move_intent(command.payload).is_ok(),
         84 => charm_progression::decode_charm_progression_request(command.payload)
@@ -168,10 +181,20 @@ pub(super) fn meaningful(
             oteryn_protocol_oteryn::daily_reward::DailyRewardClaim::decode(command.payload).is_ok()
         }
         40 => oteryn_protocol_oteryn::guild::decode_guild_intent(command.payload).is_ok(),
-        45 => oteryn_protocol_oteryn::party::decode_party_intent(command.payload).is_ok(),
+        45 => oteryn_protocol_oteryn::party::decode_party_intent(command.payload).is_ok_and(
+            |intent| {
+                !matches!(
+                    intent,
+                    oteryn_protocol_oteryn::party::PartyIntent::Revoke(_)
+                ) || selected.contains(&oteryn_protocol_oteryn::party::CAPABILITY_PARTY_REVOKE_V1)
+            },
+        ),
         56 => oteryn_protocol_oteryn::house::decode_house_intent(command.payload).is_ok(),
         60 => oteryn_protocol_oteryn::staff::decode_envelope(command.payload).is_ok(),
         66 => loop_training::decode_offline_training(command.payload).is_ok(),
+        loop_training::COMMAND_TYPE_OFFLINE_TRAINING_CHOOSE => {
+            loop_training::decode_offline_training_skill(command.payload).is_ok()
+        }
         68 => oteryn_protocol_oteryn::guild_bank::decode_guild_bank_intent(command.payload).is_ok(),
         73 => oteryn_protocol_oteryn::cyclopedia::decode_request(
             command.command_type,
@@ -181,9 +204,17 @@ pub(super) fn meaningful(
         78 => oteryn_protocol_oteryn::player_trade::decode_intent(command.payload).is_ok(),
         93 => oteryn_protocol_oteryn::player_report::decode_player_report_request(command.payload)
             .is_ok(),
-        97 => oteryn_protocol_oteryn::npc_shop::decode_npc_shop_intent(command.payload).is_ok(),
+        97 => oteryn_protocol_oteryn::npc_shop::decode_npc_shop_intent_for(
+            command.payload,
+            selected.contains(&oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_OPTIONS_V1),
+        )
+        .is_ok(),
         98 => oteryn_protocol_oteryn::creature_push::decode_creature_push_intent(command.payload)
             .is_ok(),
+        oteryn_protocol_oteryn::actor_spell_v2::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_PARAMETERS_V2 => {
+            oteryn_protocol_oteryn::actor_spell_v2::decode_parameter_spell_cast_intent(command.payload)
+                .is_ok()
+        }
         _ => false,
     }
 }

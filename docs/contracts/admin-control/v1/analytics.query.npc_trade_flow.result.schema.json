@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NpcTradeFlowResult",
+  "type": "object",
+  "properties": {
+    "completeness": {
+      "$ref": "#/$defs/Completeness"
+    },
+    "context": {
+      "$ref": "#/$defs/EconomyContext"
+    },
+    "filters": {
+      "$ref": "#/$defs/NpcTradeFlowParams"
+    },
+    "metric_revision": {
+      "type": "string"
+    },
+    "query_id": {
+      "$ref": "#/$defs/NpcTradeFlowId"
+    },
+    "rows": {
+      "$ref": "#/$defs/AnalyticsRows"
+    },
+    "watermark": {
+      "$ref": "#/$defs/Watermark"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "query_id",
+    "filters",
+    "metric_revision",
+    "watermark",
+    "completeness",
+    "context",
+    "rows"
+  ],
+  "$defs": {
+    "AnalyticsRows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NpcTradeRow"
+      },
+      "maxItems": 10000
+    },
+    "Completeness": {
+      "type": "string",
+      "enum": [
+        "PROVEN_COMPLETE_FOR_DECLARED_DURABLE_SCOPE",
+        "NO_KNOWN_GAP_BEST_EFFORT",
+        "PARTIAL",
+        "UNKNOWN"
+      ]
+    },
+    "Decimal": {
+      "description": "Exact nonnegative amount or count, including values outside JSON's safe integer range.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$"
+    },
+    "EconomyContext": {
+      "type": "object",
+      "properties": {
+        "active_characters": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_revision": {
+          "type": "string"
+        },
+        "ruleset_revision": {
+          "type": "string"
+        },
+        "world_age_days": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "world_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "world_id",
+        "world_age_days",
+        "ruleset_revision",
+        "content_revision"
+      ]
+    },
+    "Grain": {
+      "type": "string",
+      "enum": [
+        "minute",
+        "hour",
+        "day"
+      ]
+    },
+    "NpcTradeFlowFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "npc_type_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "NpcTradeFlowId": {
+      "type": "string",
+      "enum": [
+        "npc_trade_flow"
+      ]
+    },
+    "NpcTradeFlowParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/NpcTradeFlowFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/NpcTradeFlowId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "NpcTradeRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "gold_paid_to_npc": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "gold_received_from_npc": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "items_bought_from_npc": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "items_sold_to_npc": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "npc_type_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "npc_type_id",
+        "item_type_id",
+        "items_bought_from_npc",
+        "items_sold_to_npc",
+        "gold_paid_to_npc",
+        "gold_received_from_npc"
+      ]
+    },
+    "Watermark": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

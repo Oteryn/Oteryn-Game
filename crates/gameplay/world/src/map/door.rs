@@ -115,6 +115,13 @@ pub struct DoorBook {
 }
 
 impl DoorBook {
+    #[cfg(any(test, feature = "test-support"))]
+    pub(super) fn fresh_for_test(&self) -> Self {
+        let mut copy = self.activity_region(|_| true);
+        copy.sealed = self.sealed;
+        copy
+    }
+
     /// A private activity starts from authored door states, never the origin's
     /// mutable Channel door poses or revision counters.
     pub(super) fn activity_copy(&self, inside: impl Fn(TilePos) -> bool) -> Self {

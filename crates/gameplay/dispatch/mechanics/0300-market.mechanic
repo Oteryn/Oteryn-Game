@@ -4,7 +4,7 @@ transport=market
 composed=market
 authority=market
 [route]
-match routing::market::route(authority, &session.admitted, command).await {
+match routing::market::route(authority, &session.admitted, &session.commands, command).await {
     Some(dispatch) => dispatch,
     None => return Err(ServeEnd::Disconnected),
 }

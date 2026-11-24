@@ -38,7 +38,26 @@ pub(super) fn scenario_with_admin(case: Case, admin: String) -> TestResult {
     let result = std::thread::Builder::new()
         .name(format!("client-e2e-{case:?}"))
         .stack_size(256 << 20)
-        .spawn(move || body(case, admin).map_err(|error| error.to_string()))?
+        .spawn(move || {
+            if !matches!(case, Case::HotkeyEquipOpenPvp) {
+                return body(case, admin).map_err(|error| error.to_string());
+            }
+            let mut result = Ok(());
+            let lines = oteryn_error_codes::capture(|| {
+                result = body(case, admin).map_err(|error| error.to_string());
+            });
+            result?;
+            assert!(
+                lines.iter().any(|line| {
+                    line.contains("event=hotkey_equip_rejected")
+                        && line.contains("stage=payload")
+                        && line.contains("command_id=2")
+                }),
+                "the rejected command emits its operator event"
+            );
+            eprintln!("POSTGRES_CASE_COMPLETED hotkey_equip_open_pvp");
+            Ok(())
+        })?
         .join()
         .unwrap_or_else(|_| Err("CLIENT-E2E-1 scenario panicked".to_owned()));
     eprintln!(

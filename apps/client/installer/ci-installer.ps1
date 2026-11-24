@@ -323,12 +323,26 @@ try {
 }
 Check ($launcher.WaitForExit(60000)) 'the launcher did not exit after the transaction mutex was released'
 Check ($launcher.ExitCode -eq 0) "the launcher exited $($launcher.ExitCode)"
+$clientExe = Join-Path $InstallDir "releases\$activeA\oteryn-client.exe"
+# The launcher can exit before the smoke client acquires its mutex.
+Wait-Until {
+    -not (Get-Process -Name 'oteryn-client' -ErrorAction SilentlyContinue |
+        Where-Object { $_.Path -eq $clientExe })
+} 120 'the launched smoke client process to exit'
 Wait-Until { -not (Mutex-Exists $ClientMutexName) } 120 'the launched smoke client to exit'
 
 Write-Host '--- /RELAUNCH starts the active client through the launcher after setup exits'
 $ChildEnvironment.LOCALAPPDATA = Join-Path $WorkDir 'relaunch-localappdata'
 $relaunchDiagnosticDir = Join-Path $ChildEnvironment.LOCALAPPDATA 'Oteryn'
-Check ((Invoke-Setup $setupA @('/RELAUNCH')) -eq 0) 'install with /RELAUNCH failed'
+$code = Invoke-Setup $setupA @('/RELAUNCH')
+if ($code -ne 0) {
+    $log = Join-Path $Logs "setup-$script:Run.log"
+    Write-Host "--- relaunch diagnostic: $log"
+    if (Test-Path -LiteralPath $log -PathType Leaf) {
+        Get-Content -Raw -LiteralPath $log | Write-Host
+    }
+}
+Check ($code -eq 0) "install with /RELAUNCH failed (exit $code)"
 $relaunchDeadline = [DateTime]::UtcNow.AddSeconds(60)
 while (-not (Mutex-Exists $ClientMutexName) -and [DateTime]::UtcNow -lt $relaunchDeadline) {
     Start-Sleep -Milliseconds 250
@@ -348,7 +362,6 @@ if (-not (Mutex-Exists $ClientMutexName)) {
     }
     throw 'installer check failed: timed out waiting for the relaunched client'
 }
-$clientExe = Join-Path $InstallDir "releases\$activeA\oteryn-client.exe"
 Get-Process -Name 'oteryn-client' -ErrorAction SilentlyContinue |
     Where-Object { $_.Path -eq $clientExe } | Stop-Process -Force
 Wait-Until { -not (Mutex-Exists $ClientMutexName) } 60 'the relaunched client to stop'

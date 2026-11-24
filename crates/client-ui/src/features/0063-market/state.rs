@@ -10,6 +10,11 @@ pub enum MarketView {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MarketPanel {
+    pub hand_filter: Option<u8>,
+    pub hand_positions: std::collections::BTreeMap<u32, Option<u8>>,
+    pub hand_pending: Option<u32>,
+    pub funds: Option<(u64, u64)>,
+    pub funds_pending: bool,
     pub coins: CoinPanel,
     pub details: super::details::Details,
     pub selected: bool,
@@ -31,6 +36,11 @@ pub struct MarketPanel {
 impl Default for MarketPanel {
     fn default() -> Self {
         Self {
+            hand_filter: None,
+            hand_positions: Default::default(),
+            hand_pending: None,
+            funds: None,
+            funds_pending: false,
             coins: CoinPanel::default(),
             details: Default::default(),
             selected: false,
@@ -48,5 +58,12 @@ impl Default for MarketPanel {
             pending: None,
             feedback: None,
         }
+    }
+}
+
+impl MarketPanel {
+    pub fn matches_hand_filter(&self, definition: u32) -> bool {
+        self.hand_filter
+            .is_none_or(|hand| self.hand_positions.get(&definition) == Some(&Some(hand)))
     }
 }

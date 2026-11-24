@@ -134,6 +134,13 @@ changing status again, issuing another Party invitation or repeating feedback.
 Reusing a command id with different canonical action/target content is refused.
 The existing leader upsert/remove receipts remain owned by S14a.
 
+Peers selecting server message category capability 575 receive private domain 57
+notices categorized TEAM_FINDER. An application change notifies the listing
+owner and the applicant. A published listing change notifies its owner and
+current connected applicants. Refresh the affected view using command 444.
+These live notices carry no listing or applicant identity and grant no action
+authority. Legacy peers keep the existing status feedback.
+
 ## Query reply
 
 Command 444 returns `TeamFinderResult`.

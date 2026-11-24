@@ -84,6 +84,10 @@ pub(super) fn perform(
             let Some(quote) = store::confirmation_quote(panel) else {
                 return false;
             };
+            if !owner.settings.preferences.confirm_store_purchase {
+                let [name, sex, identity, _] = &state.fields;
+                return link.store_confirm_purchase(&quote, name, sex, identity);
+            }
             state.confirmation = Some(Confirmation {
                 quote,
                 fields: state.fields.clone(),

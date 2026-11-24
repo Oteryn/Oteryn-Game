@@ -93,6 +93,7 @@ mod tests {
                     generation: 1,
                 }),
                 own: Some(player_trade::Offer {
+                    appearance_id: None,
                     definition: 10,
                     count: 1,
                     sub_type: 0,

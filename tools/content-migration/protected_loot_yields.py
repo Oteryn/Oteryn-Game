@@ -64,17 +64,29 @@ def admit(root, items, order):
         for key, definition in sorted(definitions.items())
         if key not in existing
     ]
+    incomplete = [
+        existing[key]
+        for key, definition in definitions.items()
+        if key in existing
+        and native_loot_yield_facts(definition["identity"], existing[key]) is None
+    ]
     ids = {int(definition["identity"]["key"].rsplit(".i", 1)[1]) for definition in new}
+    ids.update(int(profile["production_binding"]["external_id"]) for profile in incomplete)
     observed = source.facts(root, ids, allow_containers=True) if ids else {}
     xml = (root / "imports/canary/items-xml/items.xml").read_bytes()
-    for profile in custody.qualify_many(root, new, xml, terminal_expiry=True):
+    qualified = custody.qualify_many(root, new, xml, terminal_expiry=True)
+    for profile in [*qualified, *incomplete]:
         key = profile["production_definition"]["production_key"]
         # The quest importer preserves canonical Unknowns outside its physical
         # scope. Loot also needs the pinned classification and fresh-instance
         # charge/expiry facts, without overwriting known Quest or combat facts.
         if observed[key]["production_binding"] != profile["production_binding"]:
             raise ValueError(f"protected loot source binding differs: {key}")
-        for group in ("classification", "charges", "temporal"):
+        groups = ("classification", "charges", "temporal")
+        if key in existing:
+            # A Quest owner can already admit the Item with unresolved loot facts.
+            groups += ("stack", "container")
+        for group in groups:
             canonical = profile["semantics"][group]
             proven = observed[key]["semantics"][group]
             if source.accepted.known_conflict(canonical, proven):
@@ -82,8 +94,9 @@ def admit(root, items, order):
             profile["semantics"][group] = source.accepted.accepted_first(
                 canonical, proven
             )
-        existing[key] = profile
-        items["records"].append(profile)
+        if key not in existing:
+            existing[key] = profile
+            items["records"].append(profile)
     for key, definition in definitions.items():
         if native_loot_yield_facts(definition["identity"], existing[key]) is None:
             raise ValueError(f"protected loot lacks native custody: {key}")

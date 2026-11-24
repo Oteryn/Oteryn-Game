@@ -149,6 +149,34 @@ pub(super) fn native_switch_with_pin() -> Result<
 }
 
 #[test]
+fn party_notice_uses_the_current_instance_after_activity_handoff() -> Result<(), String> {
+    let (switch, pin) = native_switch_with_pin()?;
+    let mut admitted = switch.destination;
+    let fence = admitted.item_fence.ok_or("instance fence")?;
+    let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
+        fence.runtime_scope,
+        NodeId::decode(&id(4)).map_err(debug)?,
+        1,
+        fence.scope_ownership_generation.get(),
+        1,
+        "runtime-scope-assignment:1",
+        1,
+        pin,
+    )
+    .map_err(debug)?;
+    let reservation = runtime
+        .reserve_fresh_session(admitted.game_session_id)
+        .map_err(debug)?;
+    admitted.runtime_actor = Some(runtime.commit_fresh_session(reservation).map_err(debug)?);
+
+    use crate::gameplay_transport::party_command::party_notice_fence;
+    assert_eq!(party_notice_fence(&admitted, &runtime), Some((fence, None)));
+    admitted.continuity.connection_generation += 1;
+    assert_eq!(party_notice_fence(&admitted, &runtime), None);
+    Ok(())
+}
+
+#[test]
 fn committed_destination_is_visible_before_barrier_without_resurrecting_old_control()
 -> Result<(), String> {
     let registry = ActivityRuntimeRegistry::default();

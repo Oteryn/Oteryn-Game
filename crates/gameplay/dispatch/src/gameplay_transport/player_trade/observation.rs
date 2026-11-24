@@ -356,8 +356,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         .check()
         .map_err(CheckError::from)?;
-        let definition = definition_ref(index, &definition).ok_or(ResultCode::NotTradeable)?;
-        leaf.project_offer(definition.get())
-            .map_err(|_| ResultCode::Rejected.into())
+        let reference = definition_ref(index, &definition).ok_or(ResultCode::NotTradeable)?;
+        let mut offer = leaf.project_offer(reference.get()).map_err(|_| ResultCode::Rejected)?;
+        if self.active_generation.is_some_and(|generation|
+            generation.identity().client_artifact_digest() == runtime.content_pin().client_artifact_digest()
+        ) {
+            offer.appearance_id = super::super::item_ref_admission::native_item_appearance(
+                native, &definition.production_key, &definition.revision_ref,
+            );
+        }
+        Ok(offer)
     }
 }

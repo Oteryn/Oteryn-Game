@@ -69,7 +69,7 @@ fn stash_market_and_tracker_pushes_keep_the_session_usable() -> Result<(), BoxEr
 
 #[test]
 fn hotkey_equip_session_decodes_selected_equipment_snapshot_and_delta() -> Result<(), BoxError> {
-    hotkey_equip_session_selection(&[4, 6, 12, 14, 179])
+    hotkey_equip_session_selection(&[4, 6, 12, 14, 179], false)
 }
 
 #[test]
@@ -161,7 +161,7 @@ fn hotkey_equip_refusal_detail_does_not_poison_the_session() -> Result<(), BoxEr
 #[test]
 fn hotkey_equip_carried_session_reuses_equipment_snapshot_delta_and_reply() -> Result<(), BoxError>
 {
-    hotkey_equip_session_selection(&[4, 6, 12, 14, 179, 180])
+    hotkey_equip_session_selection(&[4, 6, 12, 14, 179, 180], false)
 }
 
 #[test]
@@ -251,12 +251,24 @@ fn accepted_item_move_rejections_do_not_poison_either_client_route() -> Result<(
 fn hotkey_equip_tiered_session_uses_selected_codec() -> Result<(), BoxError> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| hotkey_equip_session_selection(&[4, 6, 12, 14, 179, 180, 485]))?
+        .spawn(|| hotkey_equip_session_selection(&[4, 6, 12, 14, 179, 180, 485], false))?
         .join()
         .map_err(|_| "tiered equip session test thread panicked")?
 }
 
-fn hotkey_equip_session_selection(selected: &'static [u32]) -> Result<(), BoxError> {
+#[test]
+fn hotkey_equip_applies_inventory_delivered_after_moved_result() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| hotkey_equip_session_selection(&[4, 6, 12, 14, 179, 180, 485], true))?
+        .join()
+        .map_err(|_| "result-first equip session test thread panicked")?
+}
+
+fn hotkey_equip_session_selection(
+    selected: &'static [u32],
+    result_first: bool,
+) -> Result<(), BoxError> {
     block_on(async move {
         let inventory = CharacterInventory {
             equipment: vec![item_view::EquippedItem {
@@ -299,18 +311,18 @@ fn hotkey_equip_session_selection(selected: &'static [u32]) -> Result<(), BoxErr
             } else {
                 assert_eq!(command.payload, &[0, 0, 0, 1]);
             }
-            write_frame(&mut server, &encode_state_delta(1, 41, 9, 1, 2, 1, &delta)?).await?;
-            write_frame(
-                &mut server,
-                &encode_command_result(
-                    1,
-                    42,
-                    command.command_id,
-                    CommandStatus::Accepted,
-                    &[8, 1],
-                )?,
-            )
-            .await?;
+            let result = encode_command_result(
+                1,
+                if result_first { 41 } else { 42 },
+                command.command_id,
+                CommandStatus::Accepted,
+                &[8, 1],
+            )?;
+            let update =
+                encode_state_delta(1, if result_first { 42 } else { 41 }, 9, 1, 2, 1, &delta)?;
+            for frame in if result_first { [result, update] } else { [update, result] } {
+                write_frame(&mut server, &frame).await?;
+            }
             let mut rest = Vec::new();
             server.read_to_end(&mut rest).await?;
             Ok::<(), BoxError>(())
@@ -323,6 +335,14 @@ fn hotkey_equip_session_selection(selected: &'static [u32]) -> Result<(), BoxErr
             .equip_item_definition(std::num::NonZeroU32::MIN)
             .await?;
         assert_eq!(result.outcome, ItemMoveOutcome::Moved);
+        if result_first {
+            assert_eq!(session.inventory(), Some(&inventory));
+            let events = session.wait_for_events(std::time::Duration::from_secs(1)).await?;
+            assert!(events.iter().any(|event| matches!(
+                event,
+                SessionEvent::Inventory(delta) if delta.value == updated
+            )));
+        }
         assert_eq!(session.inventory(), Some(&updated));
         drop(session);
         peer.await??;

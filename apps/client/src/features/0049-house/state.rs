@@ -54,6 +54,9 @@ impl Panel {
         self.model.pending_acl_read = false;
         self.model.pending_acl = false;
         self.model.acl_snapshot = None;
+        self.model.collecting = false;
+        self.model.pending_after = None;
+        self.model.page_after = None;
         self.model.page = Default::default();
         self.model.index = 0;
         self.model.pending_index = 0;

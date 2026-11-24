@@ -54,6 +54,33 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     )
 }
 
+pub(in super::super) async fn auction_list<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    admitted: &AdmittedSession,
+    command: ClientCommandView<'_>,
+) -> Dispatch {
+    use oteryn_protocol_oteryn::house as wire;
+    Dispatch::House(
+        transport::house_query::dispatch(
+            authority,
+            actor,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: command.command_id,
+                item_fence: admitted.item_fence,
+            },
+            command.payload,
+            admitted
+                .continuity
+                .selected_capabilities
+                .contains(wire::CAPABILITY_GUILDHALL_V1),
+            true,
+        )
+        .await,
+    )
+}
+
 pub(in super::super) async fn guild_acl<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
