@@ -73,11 +73,11 @@ pub(crate) fn next_command_source() -> Result<u16, SpawnRefusal> {
         .map_err(|_| SpawnRefusal::Fence("qualification spawn sources exhausted".into()))
 }
 
-/// Open ground outside Thais temple used by the creature-sweep fixture.
+/// Creature-sweep hunting area outside Thais temple, in the bundle's Global z frame.
 pub(crate) const SWEEP_HUNT_POSITION: MovementLocalPosition = MovementLocalPosition {
     x: 32369,
     y: 32230,
-    floor: -7,
+    floor: 7,
 };
 
 /// The eight neighbours of `center` on its floor, orthogonal first, in a fixed order.
