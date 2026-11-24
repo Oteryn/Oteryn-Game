@@ -1,17 +1,18 @@
 //! ZONES-NOLOGOUT-1: retained bundle flags through the composed logout owner and real router.
 use super::autowalk_fixtures::{at, place, read, send};
-use super::fixture::{Harness, debug, join_two, run};
+use super::fixture::{Harness, debug, id, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session, track};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
+    ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
+    prime_player_status_clock, serve_admitted,
 };
 use oteryn_protocol_oteryn::logout::{LogoutResult, decode_logout_result};
 use oteryn_protocol_oteryn::tutorial_notices::{TutorialNotice, decode_tutorial_notice};
 use oteryn_protocol_oteryn::{
-    MessageType, decode_command_result, decode_snapshot_chunk, decode_state_delta,
-    decode_wire_envelope,
+    GameSessionId, MessageType, decode_command_result, decode_snapshot_chunk, decode_state_delta,
+    decode_wire_envelope, world_spatial_entities::EntityRef, zones_nologout::PlayerPresence,
 };
 use tokio::io::AsyncWriteExt;
 
@@ -137,6 +138,31 @@ fn scenario() -> TestResult {
         track(&owner, &deps)?;
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
+        prime_player_status_clock(&owner, admitted);
+        let observer_session = GameSessionId::decode(&id(110)).map_err(debug)?;
+        let observer = {
+            let mut runtime = deps.runtime.lock().await;
+            let reserved = runtime.reserve_fresh_session(observer_session).map_err(debug)?;
+            let observer = runtime.commit_fresh_session(reserved).map_err(debug)?;
+            runtime.initialize_pinned_test_position(observer, at(7, 0)).map_err(debug)?;
+            observer
+        };
+        let status = owner
+            .player_status(
+                crate::gameplay_transport::connection::AdmittedSession {
+                    runtime_actor: Some(observer),
+                    game_session_id: observer_session,
+                    ..admitted
+                },
+                EntityRef {
+                    identity: deps.actor.placement_identity(),
+                    generation: deps.actor.actor_local_generation(),
+                },
+            )
+            .await
+            .ok_or("visible status on the pinned NOLOGOUT tile")?;
+        assert_eq!(status.presence, PlayerPresence::Online);
+        assert!(status.no_logout);
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[21, 92])
                 .ok_or("selection")?;

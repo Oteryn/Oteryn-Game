@@ -1,9 +1,8 @@
 //! Riding uses the real appearance owner, mounted PostgreSQL fixture and visibility codec.
 use super::appearance_change_postgres_fixtures::observer_visibility_tests;
+use super::death_ml_loss_composed_fixtures::production_generation_with_cosmetics;
 use super::*;
-use crate::content::native_gameplay::test_support::cosmetics_fixture::{
-    activated_with_optional_cosmetics, cosmetics_test_packet,
-};
+use crate::content::native_gameplay::test_support::cosmetics_fixture::cosmetics_test_packet;
 use crate::gameplay_transport::{
     appearance_change,
     connection::{FreshAdmissionAuthority, UseCommand},
@@ -67,7 +66,7 @@ fn scenario(position_before_change: bool) -> TestResult {
         sqlx::query("INSERT INTO game_account_appearance_unlocks VALUES(encode($1,'hex')::uuid,'motion-mount',encode($2,'hex')::uuid)")
             .bind(id(40).as_slice()).bind(id(199).as_slice()).execute(&harness.pool).await?;
         let (controller, pin) =
-            activated_with_optional_cosmetics(world, None, Some(&serde_json::to_vec(&packet)?));
+            production_generation_with_cosmetics(world, "content-1", None, serde_json::to_vec(&packet)?)?;
         super::tutorial_vitals_fixture::publish_native_activation(&harness, &pin).await?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
             .bind(id(41).as_slice()).execute(&harness.pool).await?;
@@ -137,8 +136,6 @@ fn scenario(position_before_change: bool) -> TestResult {
                 .bind(id(112).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
             sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,8,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
                 .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(112).as_slice()).execute(&mut *tx).await?;
-            sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'none',0,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,1,encode($2,'hex')::uuid) ON CONFLICT DO NOTHING")
-                .bind(id(41).as_slice()).bind(id(30).as_slice()).execute(&mut *tx).await?;
             tx.commit().await?;
             let mut writer = harness.pool.begin().await?;
             sqlx::query("SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR UPDATE")
@@ -168,40 +165,6 @@ fn scenario(position_before_change: bool) -> TestResult {
                 "forecast equipment must be available under the same lock"
             );
             writer.rollback().await?;
-            use super::cyclopedia_fixtures::support::exchange;
-            use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
-            let offers = [
-                OfferedCapability { id: 199, requires: &[] },
-                OfferedCapability { id: 603, requires: &[199] },
-            ];
-            let mut stats = admitted;
-            stats.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
-            stats.continuity.selected_capabilities = SelectedCapabilities::select(&offers, &[199])
-                .ok_or("legacy cyclopedia capability")?;
-            let request = [1, 0, 0, 1];
-            let (status, before) = exchange(&owner, &mut stats, 1, 388, &request).await?;
-            assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
-            stats.continuity.selected_capabilities = SelectedCapabilities::select(&offers, &[199, 603])
-                .ok_or("speed capability")?;
-            let (status, after) = exchange(&owner, &mut stats, 2, 388, &request).await?;
-            assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
-            assert_eq!(after.get(..before.len()), Some(before.as_slice()));
-            let [1, current_lo, current_hi, base_lo, base_hi] =
-                after.get(before.len()..).ok_or("speed suffix")?
-            else {
-                return Err("missing current and base movement speed".into());
-            };
-            let current = u16::from_le_bytes([*current_lo, *current_hi]);
-            let base = u16::from_le_bytes([*base_lo, *base_hi]);
-            let state_base = {
-                let runtime = dependencies.runtime.lock().await;
-                let states = owner.states.spell_states.lock().await;
-                states.get(&runtime, dependencies.actor, admitted.game_session_id)
-                    .ok_or("movement owner")?.owned_base_speed()
-            };
-            assert_eq!(u32::from(base), state_base);
-            assert!(current > base, "the equipped boots contribute to current speed");
-
             assert_mismatched_interpretation(&harness, &owner, &dependencies).await?;
         }
         let entity = appearance::EntityRef {
@@ -401,7 +364,10 @@ fn scenario(position_before_change: bool) -> TestResult {
             .await,
             Some(false)
         );
-        real_connection(&harness, &owner, &dependencies, entity).await?;
+        let ended = real_connection(&harness, &owner, &dependencies, entity).await?;
+        if position_before_change {
+            assert_cyclopedia_speed(&owner, &dependencies, ended).await?;
+        }
         drop(owner);
         drop(authority);
         drop(seal);
@@ -409,6 +375,91 @@ fn scenario(position_before_change: bool) -> TestResult {
         eprintln!("ACTOR_MOTION_POSTGRES_CASE_COMPLETED");
         Ok(())
     })
+}
+
+async fn assert_cyclopedia_speed(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    dependencies: &Dependencies,
+    mut stats: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use super::cyclopedia_fixtures::support::exchange;
+    use crate::durability::character_build::{
+        BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
+    };
+    use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+
+    let formula = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.training_formula())
+        .ok_or("training formula")?;
+    let before = DurableBuildState::default();
+    let after = convert_vocation(formula, &before, "monk").map_err(debug)?;
+    let fence = crate::gameplay_transport::character_gameplay_fence::current(
+        owner, stats.game_session_id, false,
+    )
+    .await
+    .ok_or("stats build fence")?;
+    owner
+        .root
+        .commit_character_build(
+            owner.character,
+            owner.holder,
+            fence,
+            BuildChangeRequest {
+                occurrence: BuildOccurrence::from_bytes(id(90)).map_err(debug)?,
+                cause: BuildCause::VocationChoice,
+                before,
+                after,
+                pruned_stance: None,
+            },
+            formula,
+        )
+        .await
+        .map_err(debug)?;
+    stats.item_fence = Some(fence.item_fence());
+
+    let offers = [
+        OfferedCapability {
+            id: 199,
+            requires: &[],
+        },
+        OfferedCapability {
+            id: 603,
+            requires: &[199],
+        },
+    ];
+    stats.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
+    stats.continuity.selected_capabilities = SelectedCapabilities::select(&offers, &[199])
+        .ok_or("legacy cyclopedia capability")?;
+    let request = [1, 0, 0, 1];
+    let first = stats.continuity.next_command_id;
+    let (status, before) = exchange(owner, &mut stats, first, 388, &request).await?;
+    assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+    stats.continuity.selected_capabilities = SelectedCapabilities::select(&offers, &[199, 603])
+        .ok_or("speed capability")?;
+    let second = stats.continuity.next_command_id;
+    let (status, after) = exchange(owner, &mut stats, second, 388, &request).await?;
+    assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+    assert_eq!(after.get(..before.len()), Some(before.as_slice()));
+    let [1, current_lo, current_hi, base_lo, base_hi] =
+        after.get(before.len()..).ok_or("speed suffix")?
+    else {
+        return Err("missing current and base movement speed".into());
+    };
+    let current = u16::from_le_bytes([*current_lo, *current_hi]);
+    let base = u16::from_le_bytes([*base_lo, *base_hi]);
+    let state_base = {
+        let runtime = dependencies.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        states
+            .get(&runtime, dependencies.actor, stats.game_session_id)
+            .ok_or("movement owner")?
+            .owned_base_speed()
+    };
+    assert_eq!(u32::from(base), state_base);
+    assert!(current > base, "the equipped boots contribute to current speed");
+    Ok(())
 }
 
 async fn assert_mismatched_interpretation(
@@ -461,7 +512,7 @@ async fn real_connection(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     dependencies: &Dependencies,
     entity: wire::EntityRef,
-) -> TestResult {
+) -> TestResult<crate::gameplay_transport::connection::AdmittedSession> {
     use crate::gameplay_transport::{
         capabilities::{OfferedCapability, SelectedCapabilities},
         connection::{ConnectionEnd, FirstEntryOutcome, IDLE_LIVENESS, serve_admitted},
@@ -672,12 +723,9 @@ async fn real_connection(
     })
     .await
     .map_err(|_| "actor motion real connection timed out")??;
-    assert!(
-        matches!(
-            end,
-            ConnectionEnd::AdmittedThenDisconnected(_) | ConnectionEnd::AdmittedThenControlLost(_)
-        ),
-        "{end:?}"
-    );
-    Ok(())
+    match end {
+        ConnectionEnd::AdmittedThenDisconnected(admitted)
+        | ConnectionEnd::AdmittedThenControlLost(admitted) => Ok(admitted),
+        _ => Err(format!("actor motion connection ended: {end:?}").into()),
+    }
 }

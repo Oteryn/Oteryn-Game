@@ -1,5 +1,7 @@
 //! A4/C17b: production spell completion under real Character and Content fences.
-use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
+use super::death_ml_loss_composed_fixtures::{
+    current_fence, production_generation_with_cosmetics, production_generation_with_source,
+};
 use super::fixture::{Harness, debug, id, run};
 use super::item_look_fixtures::large_stack;
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -54,64 +56,11 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                 "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
             );
             let (controller, pin) = if WITH_OBSERVER {
-                use crate::content::native_gameplay::{NativeGameplayInput, PinnedGameplayBytes};
-                use crate::content::{
-                    ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,
-                    activate_native_entry_room_with_gameplay,
-                };
-                use sha2::Digest;
-                let mut supplied = NativeGameplayInput::from_manifest(
-                    &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                        .join("../../../content/spells.manifest.json"),
-                )
-                .map_err(debug)?;
                 let mut cosmetics = crate::content::native_gameplay::test_support::cosmetics_fixture::cosmetics_test_packet();
                 cosmetics["authoring"]["document"]["content_revision"] = "content-1".into();
-                let pinned = |bytes: Vec<u8>| PinnedGameplayBytes {
-                    sha256: sha2::Sha256::digest(&bytes)
-                        .iter()
-                        .map(|byte| format!("{byte:02x}"))
-                        .collect(),
-                    bytes,
-                };
-                supplied.cosmetics = pinned(serde_json::to_vec(&cosmetics)?);
-                // Qualify the same source fixture with NOLOGOUT on the caster's entry tile.
-                let mut source: serde_json::Value = serde_json::from_slice(source)?;
-                let tile = source["tiles"]
-                    .as_array_mut()
-                    .and_then(|tiles| {
-                        tiles.iter_mut().find(|tile| {
-                            tile["native_position"] == serde_json::json!([2, 11, -7])
-                        })
-                    })
-                    .ok_or("caster source tile")?;
-                let flags = tile["otbm_flags"].as_u64().ok_or("source tile flags")?;
-                tile["otbm_flags"] = serde_json::json!(flags | 8);
-                supplied.source_world = Some(pinned(serde_json::to_vec(&source)?));
-                supplied
-                    .build_training
-                    .as_mut()
-                    .ok_or("build training")?
-                    .content_revision = "content-1".into();
-                let room = crate::content::qualify_selected_native_gameplay_room(world, &supplied)
-                    .map_err(debug)?;
-                let issuance = NativeEntryActivationIssuance {
-                    world_id: world,
-                    activation_sequence: 1,
-                    server_artifact_digest: room.compiled().server_digest(),
-                    client_artifact_digest: room.compiled().client_digest(),
-                    frame_binding_digest: room.frame_binding().digest(),
-                };
-                let mut controller = ContentActivationController::new();
-                let pin = activate_native_entry_room_with_gameplay(
-                    &mut controller,
-                    &NodeBootQuiescence::before_channel_runtime(),
-                    world,
-                    &issuance,
-                    &supplied,
-                )
-                .map_err(debug)?;
-                (controller, pin)
+                production_generation_with_cosmetics(
+                    world, "content-1", Some(source), serde_json::to_vec(&cosmetics)?,
+                )?
             } else {
                 production_generation_with_source(world, "content-1", Some(source))?
             };
@@ -276,7 +225,7 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                     .and_then(|bytes| PlayerStatus::decode(&bytes))
                     .ok_or("visible player status")?;
                 assert_eq!(visible.presence, PlayerPresence::Online);
-                assert!(visible.no_logout);
+                assert!(!visible.no_logout, "the pinned caster tile permits logout");
                 Some((reader, target, view))
             } else {
                 None

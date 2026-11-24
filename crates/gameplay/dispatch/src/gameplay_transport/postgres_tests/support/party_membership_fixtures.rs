@@ -112,8 +112,8 @@ pub(super) enum Step {
     Invite(EntityRef),
     Accept,
     Revoke(EntityRef),
-    Pass(usize),
-    Kick(usize),
+    Pass([u8; 16]),
+    Kick([u8; 16]),
     Leave,
     Malformed,
     Notice(PartyMembershipChange),
@@ -189,24 +189,24 @@ pub(super) async fn roundtrip(
                         .ok_or("invitation")?
                         .handle,
                 )),
-                Step::Pass(index) => Some(PartyIntent::PassLeadership(
-                    results
+                Step::Pass(target) | Step::Kick(target) => {
+                    let handle = crate::gameplay_transport::party_command::party_member_handle(
+                        session, *target,
+                    )
+                    .ok_or("member handle")?;
+                    let member = results
                         .last()
                         .ok_or("query first")?
                         .members
-                        .get(*index)
-                        .ok_or("member")?
-                        .handle,
-                )),
-                Step::Kick(index) => Some(PartyIntent::Kick(
-                    results
-                        .last()
-                        .ok_or("query first")?
-                        .members
-                        .get(*index)
-                        .ok_or("member")?
-                        .handle,
-                )),
+                        .iter()
+                        .find(|member| member.handle == handle)
+                        .ok_or("target missing from party query")?;
+                    Some(if matches!(step, Step::Pass(_)) {
+                        PartyIntent::PassLeadership(member.handle)
+                    } else {
+                        PartyIntent::Kick(member.handle)
+                    })
+                }
                 Step::Leave => Some(PartyIntent::Leave),
                 Step::Query | Step::Malformed | Step::Notice(_) => None,
             };
@@ -410,6 +410,7 @@ async fn scenario(
             .character_id()
             .as_bytes(),
     ];
+    let third_character = *currents[2].current_character_lease().character_id().as_bytes();
     let seal = h.recovery.seal_current().map_err(debug)?;
     let recovery = h
         .root
@@ -578,8 +579,10 @@ async fn scenario(
     // Carry the stale connection's ended continuity while keeping the current lease.
     admitted[2].continuity = stale.continuity;
     if !partyskull && !reference_level && !chat {
-        roundtrip(&owner, &mut admitted[0], &[Step::Revoke(targets[1])]).await?;
-        let before = roundtrip(&owner, &mut admitted[1], &[Step::Query]).await?;
+        // Re-invite the last invitee so the succession check still exercises the first.
+        let target = targets[2];
+        roundtrip(&owner, &mut admitted[0], &[Step::Revoke(target)]).await?;
+        let before = roundtrip(&owner, &mut admitted[2], &[Step::Query]).await?;
         assert_eq!(before[0].invitations.len(), 1);
         admitted[0].continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42, CAPABILITY_PARTY_REVOKE_V1])
@@ -587,15 +590,15 @@ async fn scenario(
         let results = roundtrip(
             &owner,
             &mut admitted[0],
-            &[Step::Revoke(targets[1]), Step::Revoke(targets[1])],
+            &[Step::Revoke(target), Step::Revoke(target)],
         ).await?;
         assert_eq!(results[0].disposition, PartyDisposition::Ok);
         assert_eq!(results[1].disposition, PartyDisposition::NotInvited);
-        let revoked = roundtrip(&owner, &mut admitted[1], &[Step::Query]).await?;
+        let revoked = roundtrip(&owner, &mut admitted[2], &[Step::Query]).await?;
         assert!(revoked[0].invitations.is_empty());
-        let unaffected = roundtrip(&owner, &mut admitted[2], &[Step::Query]).await?;
+        let unaffected = roundtrip(&owner, &mut admitted[1], &[Step::Query]).await?;
         assert_eq!(unaffected[0].invitations.len(), 1);
-        let invited = roundtrip(&owner, &mut admitted[0], &[Step::Invite(targets[1])]).await?;
+        let invited = roundtrip(&owner, &mut admitted[0], &[Step::Invite(target)]).await?;
         assert_eq!(invited[0].disposition, PartyDisposition::Ok);
     }
     if partyskull {
@@ -655,7 +658,7 @@ async fn scenario(
     if reference_level {
         super::monster_reference_level_fixtures::check(&owner, &admitted).await?;
     }
-    let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Pass(1)]).await?;
+    let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Pass(characters[1])]).await?;
     assert_eq!(result[0].members.len(), 3);
     assert_eq!(result[1].disposition, PartyDisposition::Ok);
     if partyskull {
@@ -668,9 +671,9 @@ async fn scenario(
         )
         .await?;
     }
-    let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Kick(2)]).await?;
+    let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Kick(third_character)]).await?;
     assert_eq!(result[1].disposition, PartyDisposition::NotLeader);
-    let result = roundtrip(&owner, &mut admitted[1], &[Step::Query, Step::Pass(0)]).await?;
+    let result = roundtrip(&owner, &mut admitted[1], &[Step::Query, Step::Pass(characters[0])]).await?;
     assert_eq!(result[1].disposition, PartyDisposition::Ok);
     let result = roundtrip(&owner, &mut admitted[0], &[Step::Leave]).await?;
     assert_eq!(result[0].disposition, PartyDisposition::Ok);
@@ -692,15 +695,16 @@ async fn scenario(
         .command_ingress = commands;
     let result = roundtrip(&owner, &mut admitted[1], &[Step::Query]).await?;
     assert_eq!(result[0].members.len(), 2);
-    assert!(
-        result[0].members[0].leader,
+    assert_eq!(
+        result[0].members.iter().find(|member| member.leader).map(|member| member.handle),
+        crate::gameplay_transport::party_command::party_member_handle(admitted[1], characters[1]),
         "earliest invited member succeeds"
     );
     // Re-form three members, then exercise the current leader's kick.
     let result = roundtrip(&owner, &mut admitted[1], &[Step::Invite(targets[0])]).await?;
     assert_eq!(result[0].disposition, PartyDisposition::Ok);
     roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Accept]).await?;
-    let result = roundtrip(&owner, &mut admitted[1], &[Step::Query, Step::Kick(1)]).await?;
+    let result = roundtrip(&owner, &mut admitted[1], &[Step::Query, Step::Kick(third_character)]).await?;
     assert_eq!(result[1].disposition, PartyDisposition::Ok);
     let result = roundtrip(&owner, &mut admitted[2], &[Step::Query]).await?;
     assert!(result[0].members.is_empty());

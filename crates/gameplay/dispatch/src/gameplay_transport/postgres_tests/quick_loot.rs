@@ -101,6 +101,15 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
         .current_session_at(deps.admitted.game_session_id)
         .await?
         .0;
+        deps.runtime
+            .lock()
+            .await
+            .bind_attacker_lease(
+                deps.actor,
+                current.current_game_session_id(),
+                current.current_character_lease(),
+            )
+            .map_err(debug)?;
         let fence = crate::gameplay_transport::item_fence_of(current).ok_or("item fence")?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
@@ -667,11 +676,9 @@ async fn quick_loot_destination_management(
     let (replies, _) =
         super::parameter_spell_fixtures::exchange(owner, admitted, &commands, false, false).await?;
     assert_eq!(replies.len(), commands.len());
-    assert!(
-        replies
-            .iter()
-            .all(|(status, _)| *status == CommandStatus::Accepted)
-    );
+    for ((kind, _), (status, _)) in commands.iter().zip(&replies) {
+        assert_eq!(*status, CommandStatus::Accepted, "quick-loot command {kind}");
+    }
     let first = decode_quick_loot_destinations(&replies[1].1).map_err(debug)?;
     assert_eq!(first.loot.len(), QuickLootCategory::ALL.len() + 1);
     assert!(first.loot.iter().all(|r| r.recipient_id == Some(id(71))));
@@ -693,13 +700,34 @@ async fn quick_loot_destination_management(
     let actual: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(parent_item_instance_id) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(coin.as_slice()).fetch_one(pool).await?;
     assert_eq!(actual, id(71));
-    // Resume an original command whose terminal result had not been observed.
-    // The fresh snapshot allocates new handles, so the old handle cannot resolve.
-    admitted.continuity.next_command_id = distribution_id;
-    let (retry, _) =
-        super::parameter_spell_fixtures::exchange(owner, admitted, &commands[5..], false, false)
-            .await?;
-    assert_eq!(retry, [replies[5].clone()]);
+    // Keep the Channel's command cursor and resend the original command on the new stream.
+    let (retry, _) = super::parameter_spell_fixtures::exchange_from(
+        owner,
+        admitted,
+        &commands[5..],
+        false,
+        false,
+        distribution_id,
+    )
+    .await?;
+    assert_eq!(retry, [(CommandStatus::DuplicateReplay, replies[5].1.clone())]);
+
+    // A cold ingress must recover the same durable result even if the new item view cannot
+    // resolve the original handle. An unresolved handle on its own cannot authorize a move.
+    let (kind, payload) = &commands[5];
+    let durable_retry = owner
+        .quick_loot_destinations(
+            *admitted,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: distribution_id,
+                item_fence: admitted.item_fence,
+            },
+            (*kind, payload),
+            None,
+        )
+        .await;
+    assert_eq!(durable_retry, Some(replies[5].clone()));
 
     Ok(())
 }
