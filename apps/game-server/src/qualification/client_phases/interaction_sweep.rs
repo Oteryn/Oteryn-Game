@@ -371,6 +371,13 @@ async fn chest(
     }
     .target(world);
     let before = inventory(client)?;
+    let before_handles: std::collections::BTreeSet<_> = client
+        .inventory()
+        .ok_or("inventory snapshot unavailable")?
+        .entries
+        .iter()
+        .map(|item| item.handle)
+        .collect();
     let result = use_target(client, &target).await?;
     if result != UseDisposition::Committed {
         return Err(format!("use-refused: {result:?}").into());
@@ -405,6 +412,9 @@ async fn chest(
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     };
+    if !placement.contents.is_empty() {
+        check_reward_container(client, items, placement, &before_handles).await?;
+    }
     rows.pass("exact-authored-inventory-delta");
     let result = use_target(client, &target).await?;
     if result != UseDisposition::NothingToUse || inventory(client)? != awarded {
@@ -413,6 +423,88 @@ async fn chest(
         );
     }
     rows.pass("once-claim-refused-without-reward");
+    Ok(())
+}
+
+async fn check_reward_container(
+    client: &mut DevClientSession,
+    items: &crate::content::item_ref::ItemDefinitionIndex,
+    placement: &BoundPlacement,
+    before: &std::collections::BTreeSet<oteryn_protocol_oteryn::item_view::ItemHandle>,
+) -> TestResult {
+    use oteryn_protocol_oteryn::container_tree::{ContainerViewIntent, ContainerViewOutcome};
+
+    let root = &placement
+        .placement
+        .items
+        .first()
+        .ok_or("reward container root missing")?
+        .item;
+    let reference = items
+        .definition_ref("Item", root.key().as_str(), root.revision().as_str())
+        .ok_or("reward container root is not indexed")?;
+    let handle = client
+        .inventory()
+        .ok_or("inventory snapshot unavailable")?
+        .entries
+        .iter()
+        .find(|item| item.item_definition_ref == reference && !before.contains(&item.handle))
+        .ok_or("reward-container-missing: no new authored container handle")?
+        .handle;
+
+    let opened = client
+        .session_mut()
+        .container_view(ContainerViewIntent::Open {
+            handle,
+            replace_view: None,
+        })
+        .await?;
+    if opened != Some(ContainerViewOutcome::Opened) {
+        return Err(format!("reward-container-refused: {opened:?}").into());
+    }
+
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let (view_id, contents) = loop {
+        if let Some(view) = client.session_mut().container_views().and_then(|views| {
+            views
+                .views
+                .iter()
+                .find(|view| view.container_handle == handle)
+        }) {
+            let mut counts = Quantities::new();
+            for item in &view.entries {
+                *counts.entry(item.item_definition_ref).or_default() += u64::from(item.count.get());
+            }
+            break (view.view_id, counts);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("reward-container-missing: opened container view not observed".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    };
+    let result = client
+        .session_mut()
+        .container_view(ContainerViewIntent::Close { view_id })
+        .await?;
+    if result != Some(ContainerViewOutcome::Closed) {
+        return Err(format!("reward-container-close-refused: {result:?}").into());
+    }
+
+    let mut expected = Quantities::new();
+    for item in &placement.contents {
+        let reference = items
+            .definition_ref(
+                "Item",
+                item.item.key().as_str(),
+                item.item.revision().as_str(),
+            )
+            .ok_or("authored container reward is not indexed")?;
+        *expected.entry(reference).or_default() += u64::from(item.count);
+    }
+    if expected != contents {
+        return Err("reward-container-mismatch: exact authored child quantities required".into());
+    }
     Ok(())
 }
 
