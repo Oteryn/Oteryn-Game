@@ -138,9 +138,22 @@ Docker and the exact pinned Platform checkout are required. Set
 Pass multiple groups as separate arguments, for example
 `tools/qualification/node_boot/cloud_run.sh core f6`. The Cloud runner uses
 the bundled environment, runs every group sequentially in the same checkout
-and inherits `OTERYN_E2E_CREATURE_BATCH` for `creature_sweep`. It prints a
-summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
-at the path reported on stderr. It exits nonzero if any group fails.
+and inherits batch selectors for the opt-in content sweeps.
+
+| Group | Batch selector | Default |
+| --- | --- | --- |
+| `creature_sweep` | `OTERYN_E2E_CREATURE_BATCH` | `0:3` |
+| `quest_sweep` | `OTERYN_E2E_QUEST_SWEEP_BATCH` | `0:3` |
+
+Select `quest_sweep` explicitly with `NODE_BOOT_E2E_ONLY` or as a Cloud runner
+argument. Its key-sorted batch includes definition quests, authored quest
+bindings, and classic NPC reply branches. The sweep uses a dedicated character
+with level, vocation, and starter tools provisioned by the qualification
+fixture. The seam log records each `QS.*` step and a batch summary.
+
+The Cloud runner prints a group summary and writes private logs under
+`/tmp/node-boot-cloud.*` at the path reported on stderr. It exits nonzero if
+any group fails.
 
 ## Parallel stacks, the single-row loop and diagnostics
 
