@@ -1059,6 +1059,34 @@ async fn use_effect(
     item: &Item,
     index: &crate::content::item_ref::ItemDefinitionIndex,
 ) -> TestResult {
+    let text = item.group("readable_writeable");
+    if known(&text["readable"]).as_bool() == Some(true) {
+        use oteryn_protocol_oteryn::item_inscription as wire;
+        let payload = wire::Request {
+            item_handle: entry.handle.get(),
+        }
+        .encode()
+        .ok_or("inscription-request-encode")?;
+        let reply = client
+            .session_mut()
+            .gated_command(
+                wire::CAPABILITY_ITEM_INSCRIPTION_READ_V1,
+                wire::COMMAND_TYPE_ITEM_INSCRIPTION_READ,
+                &payload,
+            )
+            .await?;
+        let observed = wire::Reply::decode(&reply.payload)
+            .ok_or_else(|| format!("inscription-reply-unavailable-{:?}", reply.status))?;
+        let max = known(&text["max_text_length"]).as_u64();
+        let writable = known(&text["writeable"]).as_bool();
+        if reply.status != CommandStatus::Accepted
+            || max != Some(u64::from(observed.max_length))
+            || writable.is_some_and(|value| value != observed.writable)
+        {
+            return Err(format!("inscription expected max={max:?} writable={writable:?}; observed status={:?} max={} writable={}", reply.status, observed.max_length, observed.writable).into());
+        }
+        return Ok(());
+    }
     let consumption = item.group("consumption");
     let mut food = None;
     let mut potion = None;
@@ -1402,7 +1430,28 @@ pub(super) async fn run<'a>(scopes: [&'a SeamClients<'a>; 5], world: &BundleWorl
     }?;
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let items = census(&root)?;
-    let entries: Vec<_> = items.iter().filter(|(_, item)| item.in_sweep()).collect();
+    let mut requested = match std::env::var_os("OTERYN_E2E_ITEM_SWEEP_KEYS") {
+        Some(path) => Some(
+            std::fs::read_to_string(path)?
+                .lines()
+                .map(str::trim)
+                .filter(|line| !line.is_empty())
+                .map(|line| format!("oteryn:item.{line}"))
+                .collect::<std::collections::BTreeSet<_>>(),
+        ),
+        None => None,
+    };
+    let mut entries = Vec::new();
+    for (key, item) in items.iter().filter(|(_, item)| item.in_sweep()) {
+        if requested.as_mut().is_none_or(|keys| keys.remove(key)) {
+            entries.push((key, item));
+        }
+    }
+    if let Some(unknown) = requested.filter(|keys| !keys.is_empty()) {
+        return Err(
+            format!("item sweep manifest contains keys outside the census: {unknown:?}").into(),
+        );
+    }
     let total = entries.len();
     evidence(&format!(
         "item_sweep census definitions={} total={total} mode=seeded",
