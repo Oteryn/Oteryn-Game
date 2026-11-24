@@ -6465,6 +6465,7 @@ impl ForgeClient {
                         if tile(self.position)? != landing {
                             return Err("forge STEP endpoint frame mismatch".into());
                         }
+                        verdict::Harness::global().progress("forge-walk");
                         break;
                     }
                     StepDisposition::Blocked => {
