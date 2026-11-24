@@ -12,7 +12,9 @@
 //! The exact mana and soul oracle uses authored costs, with percent-of-max
 //! rounding from `crates/gameplay/spell-rules/src/cast.rs:272`.
 use super::*;
-use crate::spell::{Carrier, Execution, ManaCost, SpellDefinition, SpellEffect, Vocation};
+use crate::spell::{
+    Carrier, Execution, ManaCost, SpellDefinition, SpellEffect, Vocation, target::AllowedTargets,
+};
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{
     actor_spell::{ActorVitals, SpellCastDisposition, SpellTarget, SpellTargetPosition},
@@ -145,8 +147,12 @@ pub(super) async fn run(clients: &[SeamClients<'_>; 3], world: &BundleWorld) -> 
         .into());
     }
     let end = start.saturating_add(len).min(keys.len());
+    let runes = keys[start..end]
+        .iter()
+        .filter(|key| key.starts_with("candidate:spell/rune/"))
+        .count();
     evidence(&format!(
-        "spell_sweep census total={} start={start} selected={} mode=seeded",
+        "spell_sweep census total={} start={start} selected={} runes={runes} mode=seeded",
         keys.len(),
         end - start
     ));
@@ -503,6 +509,16 @@ async fn select_attack_target(
     Ok(())
 }
 
+// The item-use bridge resolves the actor occupying the selected tile and
+// explicitly includes the caster for healing runes (rune_use_bridge.rs:165–225).
+fn rune_targets_own_tile(spell: &SpellDefinition) -> bool {
+    matches!(spell.carrier, Carrier::Rune { .. })
+        && matches!(
+            spell.allowed_targets,
+            AllowedTargets::SelfOnly | AllowedTargets::SelfOrOwnSummons
+        )
+}
+
 async fn ineligible(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -527,7 +543,7 @@ async fn ineligible(
         if spell.aggressive || spell.needs_target {
             reach_ground(&mut client, world).await?;
         }
-        let target = if spell.needs_target && !spell.self_target {
+        let target = if spell.needs_target && !spell.self_target && !rune_targets_own_tile(spell) {
             Some(spawn_target(&mut client, "deer").await?)
         } else {
             None
@@ -565,18 +581,20 @@ async fn positive(
     rows: &mut Rows<'_>,
 ) -> TestResult {
     let health_effect = pure_effect(spell);
-    let dispel = (spell.self_target || !spell.needs_target) && rune.is_none() && match &spell.execution {
+    let targets_self = spell.self_target || !spell.needs_target || rune_targets_own_tile(spell);
+    let dispel = targets_self && match &spell.execution {
         Execution::Effects(effects) => effects.iter().any(|effect| {
             matches!(effect, SpellEffect::RemoveCondition { condition, .. } if condition == "paralyze")
         }),
         _ => false,
     };
+    let controlled_cooldown = dispel && rune.is_none();
     if dispel {
         spawn_target(client, "rot_elemental").await?;
     }
     let target = match health_effect {
         Some(HealthEffect::Damage) => Some(spawn_target(client, "deer").await?),
-        Some(HealthEffect::Heal) if spell.self_target || !spell.needs_target => {
+        Some(HealthEffect::Heal) if targets_self => {
             if vitals(client)?.health == vitals(client)?.max_health {
                 if !dispel {
                     spawn_target(client, "bear").await?;
@@ -705,8 +723,12 @@ async fn positive(
         None
     };
     let retry_sent = std::time::Instant::now();
-    let retry = if has_cooldown && !dispel {
-        Some(cast(client, index, rune, target, spell.needs_target).await)
+    let retry = if has_cooldown && !controlled_cooldown {
+        Some(if rune_after == Some(0) {
+            Err("rune consumed its last backpack unit; cooldown retry requires another unit".into())
+        } else {
+            cast(client, index, rune, target, spell.needs_target).await
+        })
     } else {
         None
     };
@@ -805,7 +827,7 @@ async fn positive(
         .await;
         rows.record("cooldown", cooldown);
     }
-    if dispel && has_cooldown {
+    if controlled_cooldown && has_cooldown {
         let cooldown = async {
             require(
                 std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some(),
@@ -845,6 +867,10 @@ async fn positive(
     }
     if !has_cooldown {
         let cooldown = async {
+            require(
+                rune_after != Some(0),
+                "rune consumed its last backpack unit; zero-cooldown retry requires another unit",
+            )?;
             let reply = cast(client, index, rune, target, spell.needs_target).await?;
             require(
                 matches!(
