@@ -17,37 +17,60 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  seed:
-    name: Codex runner PoC / seed archive in ghcr (hosted)
+  relay:
+    name: Codex runner PoC / relay lib-1 archive to ghcr (hosted)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
+      actions: read
       contents: read
       packages: write
+    env:
+      SOURCE_RUN: "45369833403"
     steps:
-      - name: Make a 200 MiB test archive
-        run: |
-          mkdir -p "$RUNNER_TEMP/seed"
-          head -c 209715200 /dev/urandom > "$RUNNER_TEMP/seed/blob.bin"
-          (cd "$RUNNER_TEMP/seed" && sha256sum blob.bin > blob.sha256)
-          printf 'FROM scratch\nCOPY blob.bin blob.sha256 /\n' > "$RUNNER_TEMP/seed/Dockerfile"
-      - name: Push test archive to ghcr
+      - name: Download the planner of the source run
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: pr-postgres-test-planner
+          path: ${{ runner.temp }}/relay/pg-planner
+          run-id: ${{ env.SOURCE_RUN }}
+          github-token: ${{ github.token }}
+      - name: Download the lib-1 archive of the source run
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: pr-postgres-test-archives-lib-1
+          path: ${{ runner.temp }}/relay/pg-selected
+          run-id: ${{ env.SOURCE_RUN }}
+          github-token: ${{ github.token }}
+      - name: Push the archive to ghcr
         env:
           GH_TOKEN: ${{ github.token }}
-          IMAGE: ghcr.io/oteryn/oteryn-game-codex-runner-poc:${{ github.run_id }}-${{ github.run_attempt }}
+          IMAGE: ghcr.io/oteryn/oteryn-game-codex-runner-poc:pg-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/relay"
+          (cd pg-selected && sha256sum -c SHA256SUMS)
+          ls -la pg-planner pg-selected
+          printf 'FROM scratch\nCOPY pg-planner /pg-planner\nCOPY pg-selected /pg-selected\n' > Dockerfile
           echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-          docker build -t "$IMAGE" "$RUNNER_TEMP/seed"
+          docker build -t "$IMAGE" .
           docker push "$IMAGE"
 
-  smoke:
-    name: Codex runner PoC / PostgreSQL smoke
-    needs: seed
+  pg_partition:
+    name: Codex runner PoC / PostgreSQL lib-1 partition 4 of 15
+    needs: relay
     permissions:
       contents: read
       packages: read
     runs-on: [self-hosted, codex-cloud]
-    timeout-minutes: 30
+    timeout-minutes: 45
+    env:
+      # Head and partition of the hosted source run (hosted test step: 5m42s on 4 CPUs).
+      SOURCE_SHA: 2b9bfde7e898dd7b28d017f2d172a08cf689ceb1
+      BUILD_WORKSPACE: /home/runner/work/Oteryn-Game/Oteryn-Game
+      ARCHIVE_INDEX: "3"
+      ARCHIVE_TOTAL: "15"
+      CI_IMAGE: ghcr.io/oteryn/oteryn-game-ci-runner:pr-3469
     services:
       postgres:
         image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
@@ -63,43 +86,66 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     steps:
-      - name: Check out exact candidate
+      - name: Check out the source head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ env.SOURCE_SHA }}
           persist-credentials: false
       - name: Runner facts
         run: |
-          uname -a
           nproc
           free -g
-          df -h "$GITHUB_WORKSPACE"
-      - name: PostgreSQL reachable
-        run: |
-          for i in $(seq 1 30); do
-            if (exec 3<>/dev/tcp/127.0.0.1/5432) 2>/dev/null; then
-              echo "postgres port open after ${i}s"
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "postgres port did not open"
-          exit 1
-      - name: Pull test archive from ghcr
+          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - name: Pull archive and CI image from ghcr
         env:
           GH_TOKEN: ${{ github.token }}
-          IMAGE: ghcr.io/oteryn/oteryn-game-codex-runner-poc:${{ github.run_id }}-${{ github.run_attempt }}
+          IMAGE: ghcr.io/oteryn/oteryn-game-codex-runner-poc:pg-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
+          set -euo pipefail
           start=$(date +%s)
           # Codex Cloud keeps the home directory read-only; docker login stores its config here.
           export DOCKER_CONFIG="$RUNNER_TEMP/docker-config"
           echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
           docker pull "$IMAGE"
-          mkdir -p "$RUNNER_TEMP/seed"
           id=$(docker create "$IMAGE" /none)
-          docker cp "$id:/blob.bin" "$RUNNER_TEMP/seed/blob.bin"
-          docker cp "$id:/blob.sha256" "$RUNNER_TEMP/seed/blob.sha256"
+          docker cp "$id:/pg-planner" "$RUNNER_TEMP/pg-planner"
+          docker cp "$id:/pg-selected" "$RUNNER_TEMP/pg-selected"
           docker rm "$id"
-          echo "pull and extract took $(( $(date +%s) - start ))s"
-      - name: Verify test archive
-        run: cd "$RUNNER_TEMP/seed" && sha256sum -c blob.sha256
+          docker pull "$CI_IMAGE"
+          echo "pulls took $(( $(date +%s) - start ))s"
+      - name: Verify archive and plan the partition
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/pg-selected"
+          sha256sum -c SHA256SUMS
+          test "$(cat head-sha)" = "$SOURCE_SHA"
+          test "$(cat workspace)" = "$BUILD_WORKSPACE"
+          mkdir -p "$RUNNER_TEMP/pg-plan" "$RUNNER_TEMP/pg-archives"
+          mv pg-lib-1.json "$RUNNER_TEMP/pg-plan/"
+          mv pg-lib-1.tar.zst "$RUNNER_TEMP/pg-archives/"
+          cd "$GITHUB_WORKSPACE"
+          printf '%s  %s\n' '0e3cdf32579feec5d270659382d23bbe9de29b9d10d59ce994b34bcb1d4f8188' "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" | sha256sum -c -
+          python3 "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" "$RUNNER_TEMP/pg-plan" "$ARCHIVE_INDEX" "$ARCHIVE_TOTAL" \
+            tools/ci/pg_test_durations.json --optional-archives
+          wc -l "$RUNNER_TEMP"/pg-plan/*.filters
+      # The binaries read repository files through the build job's workspace path, which is
+      # read-only on Codex Cloud, so the tests run in the CI image with the checkout bound there.
+      - name: Run PostgreSQL-backed library tests
+        env:
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib-1.filters"
+          test "${#filters[@]}" -gt 0
+          start=$(date +%s)
+          status=0
+          docker run --rm --network host \
+            -v "$GITHUB_WORKSPACE:$BUILD_WORKSPACE" -v "$RUNNER_TEMP:$RUNNER_TEMP" -w "$BUILD_WORKSPACE" \
+            -e OTERYN_TEST_POSTGRES_ADMIN_URL="postgresql://oteryn_test_admin:ci-${RUN_ID}-${RUN_ATTEMPT}@127.0.0.1:5432/postgres" \
+            "$CI_IMAGE" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib-1.tar.zst" \
+            --workspace-remap "$BUILD_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
+            --no-fail-fast "${filters[@]}" || status=$?
+          echo "tests took $(( $(date +%s) - start ))s, exit $status"
+          exit "$status"
