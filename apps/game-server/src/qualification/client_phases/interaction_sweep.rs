@@ -857,7 +857,7 @@ impl SweepRoutes<'_> {
         *self.exhausted.borrow_mut() = parents.into_keys().collect();
         Err(format!("no-route: exhausted {count} reachable cells").into())
     }
-    async fn follow(&self, client: &mut DevClientSession, path: &[RouteStep]) -> TestResult {
+    async fn follow(&self, client: &mut DevClientSession, path: &[RouteStep]) -> TestResult<bool> {
         let mut walking = Vec::new();
         for &step in path {
             match step {
@@ -873,20 +873,49 @@ impl SweepRoutes<'_> {
                     use_map_action(client, self.world, placement, action, None, revision)
                         .await
                         .map_err(|error| format!("route-transit-refused: {error}"))?;
-                    if tile(client.world_spatial().actor_position)? != landing {
-                        return Err(
-                            "route-transit-mismatch: server landed outside the planned approach"
-                                .into(),
-                        );
+                    let actual = tile(client.world_spatial().actor_position)?;
+                    if actual != landing {
+                        evidence(&format!(
+                            "interaction_sweep transit=redirected expected={landing:?} observed={actual:?}"
+                        ));
+                        return Ok(false);
                     }
                 }
             }
         }
-        walk(client, self.world, &walking).await
+        walk(client, self.world, &walking).await?;
+        Ok(true)
+    }
+
+    async fn reach(
+        &self,
+        client: &mut DevClientSession,
+        neighbors: impl Iterator<Item = TilePos> + Clone,
+    ) -> TestResult<TilePos> {
+        let mut visited = std::collections::HashSet::new();
+        // A live ladder landing can change when another actor occupies the
+        // first authored candidate (map/floor/rope.rs:229). Replan from the
+        // wire position. The action under test still checks its own landing.
+        for _ in 0..4 {
+            let from = tile(client.world_spatial().actor_position)?;
+            if !visited.insert(from) {
+                break;
+            }
+            let (goal, path) = self.find(from, neighbors.clone())?;
+            if self.follow(client, &path).await? {
+                if tile(client.world_spatial().actor_position)? != goal {
+                    return Err(
+                        "wrong-position: client did not arrive at the selected approach".into(),
+                    );
+                }
+                return Ok(goal);
+            }
+        }
+        Err("route-transit-repeated-redirect: failed to reach an authored approach".into())
     }
 }
 
-fn approaches(target: TilePos, cardinal: bool) -> impl Iterator<Item = TilePos> {
+fn approaches(target: TilePos, cardinal: bool) -> impl Iterator<Item = TilePos> + Clone {
     (-1_i16..=1).flat_map(move |dy| {
         (-1_i16..=1).filter_map(move |dx| {
             let distance = dx.abs() + dy.abs();
@@ -909,12 +938,7 @@ async fn approach_action(
     action: MapAction,
 ) -> TestResult {
     let cardinal = matches!(action, MapAction::Teleport(_));
-    let start = tile(client.world_spatial().actor_position)?;
-    let (expected, path) = routes.find(start, approaches(target, cardinal))?;
-    routes.follow(client, &path).await?;
-    if tile(client.world_spatial().actor_position)? != expected {
-        return Err("wrong-position: client did not arrive at the selected approach".into());
-    }
+    routes.reach(client, approaches(target, cardinal)).await?;
     Ok(())
 }
 
@@ -1191,20 +1215,17 @@ async fn chest(
         y: placement.cell.y,
         floor: placement.cell.floor,
     });
-    let start = tile(client.world_spatial().actor_position)?;
-    let (goal, path) = routes.find(
-        start,
-        positions.clone().flat_map(|at| approaches(at, false)),
-    )?;
+    let goal = routes
+        .reach(
+            client,
+            positions.clone().flat_map(|at| approaches(at, false)),
+        )
+        .await?;
     let (placement, at) = placements
         .iter()
         .zip(positions)
         .find(|(_, at)| adjacent(goal, *at))
         .ok_or("claim route has no authored placement at its approach")?;
-    routes.follow(client, &path).await?;
-    if tile(client.world_spatial().actor_position)? != goal {
-        return Err("wrong-position: client did not arrive adjacent to the claim".into());
-    }
     rows.pass("adjacent-to-claim-placement");
     let target = Placement {
         at,
