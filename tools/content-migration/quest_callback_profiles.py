@@ -61,7 +61,7 @@ def admit_map_carriers(root, document):
             document['records'].append(row)
 
 
-def admit_route_scenery(root, document):
+def admit_route_scenery(root, generated, profile_path, manifest_path, order, canonical):
     import authored_static_item_constructors
     import qengine_reward_item_profiles as donor
 
@@ -75,6 +75,32 @@ def admit_route_scenery(root, document):
     # second Alawar door also needs its unlocked and open counterparts.
     doors = {6251: True, 7033: True, 7034: True, 7035: False, 7042: True}
     movement.update(doors)
+    document = json.loads(generated[profile_path])
+    existing = {row['production_definition']['production_key']: row
+                for row in document['records']}
+    missing = set()
+    for identifier, solid in movement.items():
+        key = f'oteryn:item.tibia.i{identifier}'
+        prior = existing.get(key)
+        if prior is None:
+            missing.add(identifier)
+            continue
+        portable = identifier == 3115
+        attributes = prior['attributes']
+        physical = prior['semantics']['physical'].get('value', {})
+        motion = attributes.get('blocks_movement')
+        if (prior['production_binding']['disposition'] != 'EXACT'
+                or prior['admission']['materializable'] != portable
+                or physical.get('movable') != writing.known(portable)
+                or physical.get('pickupable') != writing.known(portable)
+                or (motion is not solid and not (portable and motion is None))
+                or (identifier in doors and attributes.get('blocks_projectile') is not solid)):
+            raise ValueError(f'QUEST_ROUTE_SCENERY_PROFILE_CONFLICT:{key}')
+        if portable and motion is None:
+            attributes['blocks_movement'] = False
+    if not missing:
+        write_provider(generated, profile_path, manifest_path, order, canonical, document)
+        return
     source = donor.source
     xml = (root / donor.XML).read_bytes()
     appearances = (root / donor.CLIENT).read_bytes()
@@ -85,8 +111,8 @@ def admit_route_scenery(root, document):
     objects = source.engine_items.load_appearance_objects(appearances)
     bindings = source.binding_index((root / 'imports/crystalserver/bindings/items.json').read_bytes())
     definitions = authored_static_item_constructors.definitions(root)
-    facts = source.policies(appearances, xml, set(movement))
-    if {row['server_item_id'] for row in facts} != set(movement):
+    facts = source.policies(appearances, xml, missing)
+    if {row['server_item_id'] for row in facts} != missing:
         raise ValueError('QUEST_ROUTE_SCENERY_SOURCE_SET')
     records = []
     for row in facts:
@@ -105,23 +131,10 @@ def admit_route_scenery(root, document):
     bound = source.bind_profiles(
         {'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records},
         bindings,
-        set(movement),
+        missing,
     )
-    existing = {row['production_definition']['production_key']: row
-                for row in document['records']}
-    for row in bound['records']:
-        key = row['production_definition']['production_key']
-        if key not in existing:
-            document['records'].append(row)
-        elif key == 'oteryn:item.tibia.i3115':
-            prior = existing[key]
-            if (prior['production_binding'] != row['production_binding']
-                    or prior['admission'] != row['admission']
-                    or prior['attributes'].get('blocks_movement') not in (None, False)):
-                raise ValueError(f'QUEST_ROUTE_SCENERY_PROFILE_CONFLICT:{key}')
-            prior['attributes']['blocks_movement'] = False
-        elif existing[key] != row:
-            raise ValueError(f'QUEST_ROUTE_SCENERY_PROFILE_CONFLICT:{key}')
+    document['records'].extend(bound['records'])
+    write_provider(generated, profile_path, manifest_path, order, canonical, document)
 
 
 def complete_native_stack(root, record, definition, binding):
@@ -498,7 +511,6 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     import lion_trial_item_profiles
     document = json.loads(generated[profile_path])
     admit_map_carriers(root, document)
-    admit_route_scenery(root, document)
     present = {row['production_definition']['production_key']: row for row in document['records']}
     if len(present) != len(document['records']):
         raise ValueError('QUEST_CALLBACK_DUPLICATE_NATIVE_ITEM')
@@ -653,6 +665,10 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
             document['records'].append(record)
         if key == 'oteryn:item.tibia.i2970':
             complete_numbered_copper_key(record, source_items)
+    write_provider(generated, profile_path, manifest_path, order, canonical, document)
+
+
+def write_provider(generated, profile_path, manifest_path, order, canonical, document):
     document['records'].sort(key=order)
     raw = encode_native_profile(document)
     generated[profile_path] = raw

@@ -1191,6 +1191,15 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     import qready2_native_profiles
 
+    # Route scenery owns map collision facts independently of reward and tool custody.
+    quest_callback_profiles.admit_route_scenery(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     quest_callback_profiles.admit(
         root,
         generated,
