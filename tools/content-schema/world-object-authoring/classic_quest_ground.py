@@ -21,7 +21,7 @@ def known(value):
     return {"state": "KNOWN", "value": value}
 
 
-def outputs(root=ROOT):
+def outputs(root=ROOT, *, terrain_index=None):
     raw = (root / f"content/assets/files/appearances-{APPEARANCES}.dat").read_bytes()
     if hashlib.sha256(raw).hexdigest() != APPEARANCES:
         raise ValueError("classic quest ground appearance digest")
@@ -82,7 +82,9 @@ def outputs(root=ROOT):
             },
         },
     }
-    index = json.loads((root / INDEX).read_bytes())
+    index = json.loads(
+        (root / INDEX).read_bytes() if terrain_index is None else terrain_index
+    )
     if NOTE not in index["notes"]:
         index["notes"] += NOTE
     return {

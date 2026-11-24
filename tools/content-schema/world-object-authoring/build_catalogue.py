@@ -487,12 +487,19 @@ def outputs(
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+        import classic_quest_ground
         import spawn_ground
         import spawn_map_ground
         from scoped_spawn_ground import catalogue_outputs
 
         files[spawn_ground.SHARD] = spawn_ground.terrain_output()
         files.update(catalogue_outputs(files[index_path]))
+        files.update(
+            (path, value.encode())
+            for path, value in classic_quest_ground.outputs(
+                terrain_index=files[index_path]
+            ).items()
+        )
         files[spawn_map_ground.SHARD] = spawn_map_ground.terrain_output()
         index = json.loads(files[index_path])
         index["notes"] = activity_static.compose_terrain_notes(
@@ -552,6 +559,7 @@ def official_shards():
 def qualified_shards():
     import activity_static
     import alawar_static
+    import classic_quest_ground
     import feroxa_static
     import spawn_ground
     import spawn_map_ground
@@ -574,6 +582,7 @@ def qualified_shards():
             feroxa_static.SHARD,
             spawn_ground.SHARD,
             SCOPED_SPAWN_GROUND_SHARD,
+            classic_quest_ground.SHARD,
             spawn_map_ground.SHARD,
         )
         if (path := ROOT / relative).exists()
