@@ -17,6 +17,7 @@ use std::num::NonZeroU32;
 
 const BATCH_VARIABLE: &str = "OTERYN_E2E_ITEM_SWEEP_BATCH";
 const VOCATIONS: [&str; 5] = ["knight", "paladin", "sorcerer", "druid", "monk"];
+const NO_VOCATION: usize = VOCATIONS.len();
 const HIGH: u32 = 600;
 const LOW: u32 = 1;
 
@@ -193,6 +194,10 @@ struct Build {
 }
 
 impl Build {
+    fn vocation_name(index: usize) -> &'static str {
+        VOCATIONS.get(index).copied().unwrap_or("none")
+    }
+
     fn permits(self, required: &Value) -> bool {
         let vocations = list(known(&required["vocations"]));
         let level = known(&required["level"])
@@ -209,6 +214,13 @@ impl Build {
                 level: HIGH,
             })
             .find(|build| build.permits(required))
+            .or_else(|| {
+                let build = Self {
+                    vocation: NO_VOCATION,
+                    level: LOW,
+                };
+                build.permits(required).then_some(build)
+            })
     }
 }
 
@@ -216,7 +228,7 @@ fn allowed_vocation(index: usize, vocations: &[Value]) -> bool {
     vocations.iter().any(|vocation| {
         vocation
             .as_str()
-            .is_some_and(|vocation| vocation.eq_ignore_ascii_case(VOCATIONS[index]))
+            .is_some_and(|vocation| vocation.eq_ignore_ascii_case(Build::vocation_name(index)))
     })
 }
 
@@ -284,6 +296,11 @@ struct Fixtures<'a> {
 
 impl Fixtures<'_> {
     fn fixture(&self, build: Build) -> (&SeamClients<'_>, usize) {
+        if build.vocation == NO_VOCATION {
+            // The packet scope's third Account is distinct from the two
+            // classified characters and retains its fresh vocationless build.
+            return (self.scopes[4], 2);
+        }
         (
             self.scopes[build.vocation],
             usize::from(build.level == HIGH),
@@ -301,12 +318,18 @@ impl Fixtures<'_> {
         gear: &[&str],
     ) -> TestResult<DevClientSession> {
         let index = build.vocation * 2 + usize::from(build.level == HIGH);
-        let scope = self.scopes[index / 2];
-        let requested_level = if self.prepared[index] { 0 } else { build.level };
+        let (scope, character) = self.fixture(build);
+        let requested_level = if build.vocation == NO_VOCATION || self.prepared[index] {
+            0
+        } else {
+            build.level
+        };
+        // The qualification owner treats level 0 as item custody only.
+        let provision_vocation = VOCATIONS.get(build.vocation).copied().unwrap_or("knight");
         for (ordinal, key) in std::iter::once(key).chain(gear.iter().copied()).enumerate() {
             // The qualification owner freezes one reward cause per admitted
             // session. Distinct gear proposals need distinct sessions.
-            let mut client = connect_character(scope, 0x71, index % 2).await?;
+            let mut client = connect_character(scope, 0x71, character).await?;
             let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
             let script = Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../tools/qualification/node_boot/provision.py");
@@ -322,7 +345,7 @@ impl Fixtures<'_> {
                         "--session",
                         &session,
                         "--item",
-                        VOCATIONS[build.vocation],
+                        provision_vocation,
                         &level.to_string(),
                         &key,
                     ])
@@ -342,19 +365,19 @@ impl Fixtures<'_> {
                 client.take_events();
             }
             let status = status.await;
-            let released = release_fixture(client, scope, index % 2).await;
+            let released = release_fixture(client, scope, character).await;
             if !status??.success() {
                 return Err("fixture-item-preparation-refused".into());
             }
             released?;
         }
-        let mut client = connect_character(scope, 0x72, index % 2).await?;
+        let mut client = connect_character(scope, 0x72, character).await?;
         let facts = super::creature_sweep::read_stats(&mut client).await;
         let verification = facts.and_then(|(_, level, vocation)| {
             if level == build.level
                 && vocation
                     == oteryn_protocol_oteryn::cyclopedia_character::vocation_id(
-                        VOCATIONS[build.vocation],
+                        Build::vocation_name(build.vocation),
                     )
             {
                 Ok(())
@@ -363,10 +386,12 @@ impl Fixtures<'_> {
             }
         });
         if let Err(error) = verification {
-            let _ = release_fixture(client, scope, index % 2).await;
+            let _ = release_fixture(client, scope, character).await;
             return Err(error);
         }
-        self.prepared[index] = true;
+        if build.vocation != NO_VOCATION {
+            self.prepared[index] = true;
+        }
         Ok(client)
     }
 }
@@ -2203,6 +2228,10 @@ mod tests {
         );
         assert_eq!(wrong.map(|build| build.level), Some(HIGH));
         assert!(wrong.is_some_and(|build| build.vocation != allowed.vocation));
+        let vocationless = &items["oteryn:item.tibia.i17110"].patterns()[0];
+        let allowed = Build::supported(vocationless).ok_or("missing vocationless build")?;
+        assert_eq!((allowed.vocation, allowed.level), (NO_VOCATION, LOW));
+        assert!(restriction_builds(vocationless).1.is_some());
         Ok(())
     }
 }
