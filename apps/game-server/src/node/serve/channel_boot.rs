@@ -89,6 +89,8 @@ pub(super) async fn prepare_channel(
         daily.grimvale_full_moon = occurrence.grimvale_full_moon;
         daily.their_masters_voice = occurrence.their_masters_voice;
     }
+    let stage_started = std::time::Instant::now();
+    event("event=channel_boot_stage stage=bundle_load state=start");
     let bundle = bundle
         .map(|checked| {
             let checked = daily_world_changes::bind_layers(checked, &daily)
@@ -109,9 +111,15 @@ pub(super) async fn prepare_channel(
         ),
         None => (channel_pin, movement_cells),
     };
+    event(&format!(
+        "event=channel_boot_stage stage=bundle_load state=finish duration_ms={}",
+        stage_started.elapsed().as_millis()
+    ));
     // BUNDLE-COMBAT-ENABLE-1: player auto-attack and native combat casts read the qualified
     // room; a bundle World serves them the room's bundle view, whose identities are the bundle
     // pin's. Every other `qualified_room` consumer stays closed for a bundle World (§1.2).
+    let stage_started = std::time::Instant::now();
+    event("event=channel_boot_stage stage=boss_catalogue state=start");
     let combat_room = match &bundle {
         Some(world) => bundle_combat_room(&qualified_room, world, material.world, &movement_cells),
         None => Some(qualified_room.clone()),
@@ -159,6 +167,12 @@ pub(super) async fn prepare_channel(
             template.source_path()
         ));
     }
+    event(&format!(
+        "event=channel_boot_stage stage=boss_catalogue state=finish duration_ms={}",
+        stage_started.elapsed().as_millis()
+    ));
+    let stage_started = std::time::Instant::now();
+    event("event=channel_boot_stage stage=channel_catalogues state=start");
     // ADMIT0/D1081: validate the real scope offer before any readiness publication.
     // The generation is the operator assignment just resolved above, not config.
     // D1442 registers WORLD_SPATIAL_FIELDS=30 behind a closed offer gate; D1083 keeps
@@ -394,6 +408,12 @@ pub(super) async fn prepare_channel(
             "event=timed_npc_boot state=retry reason={error:?}"
         ));
     }
+    event(&format!(
+        "event=channel_boot_stage stage=channel_catalogues state=finish duration_ms={}",
+        stage_started.elapsed().as_millis()
+    ));
+    let stage_started = std::time::Instant::now();
+    event("event=channel_boot_stage stage=spawn_realization state=start");
     let (spawned_monsters, spawn_windows) = match &bundle {
         Some(world) => match realize_bundle_spawns(&mut channel_runtime, world, signalled).await? {
             Some(realized) => realized,
@@ -411,6 +431,10 @@ pub(super) async fn prepare_channel(
         .map_err(|_| BootError::Readiness("world change spawn projection"))?;
     event(&format!(
         "event=creature_spawns state=realized spawned_monsters={spawned_monsters} windows={spawn_windows}"
+    ));
+    event(&format!(
+        "event=channel_boot_stage stage=spawn_realization state=finish duration_ms={}",
+        stage_started.elapsed().as_millis()
     ));
     let runtime = Mutex::new(channel_runtime);
     event(&format!(
