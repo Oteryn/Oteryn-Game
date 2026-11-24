@@ -230,9 +230,20 @@ fn admit_native_bindings(
     if let Some(bindings) = bindings {
         bindings.validate().map_err(QuestLoadError::Json)?;
         if !bindings.quests.is_empty() {
+            let predecessors =
+                super::completion_sets::journey_predecessors(&lowered.catalogue, bindings)
+                    .map_err(QuestLoadError::Json)?;
             lowered.catalogue = bindings
                 .attach(&lowered.catalogue)
                 .map_err(QuestLoadError::Json)?;
+            for (quest, predecessor) in predecessors {
+                lowered
+                    .catalogue
+                    .predecessors
+                    .entry(quest)
+                    .or_default()
+                    .push(predecessor);
+            }
             for quest in &bindings.quests {
                 let source = quest.sources.join(";");
                 for track in &quest.tracks {

@@ -731,6 +731,7 @@ impl DurabilityRoot {
         // A generic command or a caller-supplied death id is not native proof.
         if oteryn_gameplay_quests::quest::kill_objectives::binding(&request.transition_key)
             .is_some()
+            || oteryn_gameplay_quests::quest::death_objectives::is_grave_boss(&request.transition_key)
             || request
                 .transition_key
                 .starts_with("oteryn:quest-transition/native-kill/")

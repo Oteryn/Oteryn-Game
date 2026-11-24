@@ -25,16 +25,18 @@ const fn hash(hex: &[u8; 64]) -> DefinitionHash {
 const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
     (
         "oteryn:quest.ferumbras_ascension_quest",
-        &[hash(
-            b"b78d634978fcca046d0a4a9863448f6bdce8768754d80fa14fd040260a7834dd",
-        )],
+        &[
+            hash(b"b78d634978fcca046d0a4a9863448f6bdce8768754d80fa14fd040260a7834dd"),
+            hash(b"06686721ac1b4e2b9b8055018119ac9ac486bcc30976644dcc2bc1cd021f9811"),
+        ],
         hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
     ),
     (
         "oteryn:quest.forgotten_knowledge_quest",
-        &[hash(
-            b"1f2491941e888347f73919d391ecfbedbea6f1fb03433ed7e7edb5b008176d23",
-        )],
+        &[
+            hash(b"1f2491941e888347f73919d391ecfbedbea6f1fb03433ed7e7edb5b008176d23"),
+            hash(b"2a0e84e7f04fe4eafff4c3824de035250c01f8c9317feb2773ba11391678e00b"),
+        ],
         hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
     ),
     (
@@ -42,6 +44,7 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
         &[
             hash(b"617bff2ce025747e4a7747fce2009d039c79c0416d2ba226ed735d0ea5d76ede"),
             hash(b"8e6dd324609ad288a973fc96293b0d8230bb51f8093f6e676199e7c173b6a191"),
+            hash(b"4dd6fb32f7883de4278a7096fa5a36ae077efa682522ae94abf97d8f02c1242c"),
         ],
         hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
     ),
@@ -50,6 +53,7 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
         &[
             hash(b"8c6b244adca3ac947bee105824abdc268648729a62add19adc897cc47845b1f1"),
             hash(b"ae411e4ba985d12638e50fc7497cca6ca52ce87e02e2cb7b1382b9097a89ea5b"),
+            hash(b"4c294712b959c58cfc957e27be05b89278dedecda374e8f8a242169c81319722"),
         ],
         hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
     ),
@@ -58,6 +62,7 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
         &[
             hash(b"fe96732992ad3b207b75433d64569fffc0792eacc0eb6e2a16e80a636d5046ad"),
             hash(b"c47908e169bd3d739136df750c3d5d9a227e73e579457abeb054329c0c3d3b5b"),
+            hash(b"681ebe711c3e9c9624881d6ccd9ed49f4045563e6429329a516ebc0cb496f5f8"),
         ],
         hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
     ),
@@ -66,6 +71,7 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
         &[
             hash(b"5c6e9bc04b7dc5881f879e073bf3165d452e599d3633b64416cf1f611ac9523d"),
             hash(b"5e996375f282ec9d2d3b9d0fb17f46e3b19e8ae4443f6bf336299dedb010ad7d"),
+            hash(b"540cd73ad49e78251491ea0266f3930f000b57c26007a5fcb0dcaf2bea4a4113"),
         ],
         hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
     ),
@@ -74,6 +80,7 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
         &[
             hash(b"be926e9f2acf5908483637cc2f83c79dbeb7b3418c4051cb43a2ffa779233d65"),
             hash(b"efe0803a67f5d52dd56ad28b9cece21419f5b7109b0f57752ebfc6eb2f978d17"),
+            hash(b"bf28ee0fb34e8cb739fcaa7c0f6717f1eafdb599e54afffc4f94ff04042a2ef5"),
         ],
         hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
     ),
@@ -82,6 +89,7 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
         &[
             hash(b"5fd58496a9bbec4ab0feda817d182f73fc9b562cfeee6c48ccec84df16fe064d"),
             hash(b"d2b693bda2cb942c371056f6267c980bedff85882b81dbb1e3661732ba4b6e5d"),
+            hash(b"ca161893db0debcd005d1359f804106925c73f3e9fe397abb2fb710425dbb157"),
         ],
         hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
     ),
@@ -90,6 +98,7 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
         &[
             hash(b"45f1e1cfde073c475a485ef92d29e9b6177b6e3fa1de7df67e4e2652aa3c462c"),
             hash(b"59828756c8cdfdfcef9853acde04b5b420d372f1ca7b021213c2423ffa1469dd"),
+            hash(b"36e6a39b51ab64edf9e285c81cb6248266c201b428f61841c490d136db4464e0"),
         ],
         hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
     ),
@@ -98,6 +107,7 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
         &[
             hash(b"5710efb6a47e898a65a81660b74ee74e469d1ea3e4ceb14b5e3a0b5029ed4215"),
             hash(b"8cbf1b4b88b94598939d9f352e1a4a69a2ba5ff13d0f5486d1f59eff8ccddc2d"),
+            hash(b"c00b18f773d09c9c372771d066dc470d85365aa27bfd2a1014583812cbccbd9b"),
         ],
         hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
     ),
@@ -106,6 +116,7 @@ const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
         &[
             hash(b"bf21c8ce62fd697df94d9125c787278372f8869088542a1a718ec7ba814f7dad"),
             hash(b"afabcb21148c24b6a84813da6046861ff35ea512193f4dd2e775234193336049"),
+            hash(b"93f799015394a36b5896f0a862a860befd3f55a871778c5cfa2cbb6aeb1e35a7"),
         ],
         hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
     ),
@@ -301,17 +312,14 @@ mod tests {
     }
 
     #[test]
-    fn package_keeps_main_grave_danger_pin() -> Result<(), String> {
+    fn package_accepts_main_grave_danger_pin_as_predecessor() -> Result<(), String> {
         let loaded =
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
         let grave = "oteryn:quest.grave_danger_quest";
-        assert_eq!(
-            catalogue.definition_hash(grave),
-            Some(hash(
-                b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"
-            ))
-        );
+        let main = hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab");
+        assert_ne!(catalogue.definition_hash(grave), Some(main));
+        assert!(npc_rules::legacy_defaults(catalogue, grave, &main).is_some());
         assert!(
             npc_rules::legacy_defaults(
                 catalogue,
@@ -353,7 +361,14 @@ mod tests {
         let catalogue = loaded.catalogue();
 
         for &(quest, refreshed, published) in CITATION_REFRESHES {
-            assert_eq!(catalogue.definition_hash(quest), Some(published), "{quest}");
+            if quest == "oteryn:quest.grave_danger_quest" {
+                // Zelos credit changes the live definition. Both exact citation
+                // variants still resolve to the published predecessor.
+                assert_ne!(catalogue.definition_hash(quest), Some(published));
+                assert!(npc_rules::legacy_defaults(catalogue, quest, &published).is_some());
+            } else {
+                assert_eq!(catalogue.definition_hash(quest), Some(published), "{quest}");
+            }
             for &citation in refreshed {
                 assert_eq!(published_hash(quest, citation), published, "{quest}");
                 let mut unrelated_revision = citation;

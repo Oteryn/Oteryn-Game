@@ -63,11 +63,20 @@ impl SpecialAction {
                 ChaseMode::Chase => ChaseMode::Stand,
             })
         } else {
-            let Some(list) = mailbox.battle_lists.preferences.first() else {
+            if mailbox.battle_lists.preferences.is_empty() {
                 return false;
-            };
-            let rows =
-                list.rows_with_metadata(&mailbox.battle.rows, &mailbox.battle.metadata.values);
+            }
+            let rows = mailbox.filtered_battle_rows(0);
+            let rows: Vec<_> = rows
+                .into_iter()
+                .filter(|row| {
+                    mailbox
+                        .battle
+                        .rows
+                        .iter()
+                        .any(|target| target.entity == row.entity)
+                })
+                .collect();
             if rows.is_empty() {
                 return false;
             }

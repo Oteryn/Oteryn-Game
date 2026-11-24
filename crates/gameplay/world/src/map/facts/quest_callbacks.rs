@@ -78,6 +78,11 @@ pub enum QuestCallbackProjection {
         due: u64,
         restore: EntryFacts,
     },
+    /// Hide the selected source and restore exactly its committed revision.
+    TimedRemoval {
+        due: u64,
+        restore: EntryFacts,
+    },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -365,7 +370,8 @@ impl CallbackStates {
                     }
                 }
             }
-            QuestCallbackProjection::TimedTransform { due, restore } => {
+            QuestCallbackProjection::TimedTransform { due, restore }
+            | QuestCallbackProjection::TimedRemoval { due, restore } => {
                 let Some(revision) = self
                     .changed
                     .get(&owner)
@@ -374,12 +380,21 @@ impl CallbackStates {
                 else {
                     return false;
                 };
+                let overlay = if matches!(projection, QuestCallbackProjection::TimedRemoval { .. })
+                {
+                    if close || restore.pickupable || !self.hidden.insert(owner) {
+                        return false;
+                    }
+                    Some((false, self.passable.remove(&owner)))
+                } else {
+                    None
+                };
                 self.movement_decays.insert(
                     (*due, owner),
                     MovementDecay {
                         revision,
                         restore: Some(*restore),
-                        overlay: None,
+                        overlay,
                     },
                 );
             }
@@ -702,28 +717,27 @@ impl BundleFacts {
             .then_some((owner, revision))
     }
 
-    /// A transformed/removed callback entry changes floor routing with its visible stack.
+    /// A transformed or removed entry changes floor routing with its visible stack.
     /// Unchanged tiles keep the compact boot-time table and incur no stack scan.
-    pub(crate) fn quest_callback_floor_mask(
+    pub(crate) fn projected_floor_mask(
         &self,
         base: &super::super::WorldBase,
         pos: TilePos,
     ) -> Option<u8> {
         let states = self.callbacks.lock().ok().map(|s| Arc::clone(&s))?;
+        let rotations = self.rotations.lock().ok().map(|s| Arc::clone(&s))?;
         let first = placement_key(pos, 0)?;
         if states.phase_entry(pos, 0).is_some() {
             return Some(0);
         }
         let dug_bear_cave_hole = pos == super::source_bindings::DRAGON_CORPSE_HOLE
             && base.tile(pos.x, pos.y, pos.floor)?.appearance(0) == Some(593)
-            && self
-                .rotations
-                .lock()
-                .ok()?
+            && rotations
                 .get(&first)
                 .is_some_and(|(_, entry)| entry.appearance_id == 594);
         if states.changed.range(first..=first + 63).next().is_none()
             && states.hidden.range(first..=first + 63).next().is_none()
+            && rotations.range(first..=first + 63).next().is_none()
             && !dug_bear_cave_hole
         {
             return None;
@@ -732,7 +746,7 @@ impl BundleFacts {
             facts: self,
             callbacks: Some(states),
             doors: self.doors.snapshot(),
-            rotations: self.rotations.lock().ok().map(|s| Arc::clone(&s)),
+            rotations: Some(rotations),
         };
         let tile = base.tile(pos.x, pos.y, pos.floor)?;
         let mut mask = 0;
@@ -1906,7 +1920,8 @@ impl BundleFacts {
                         }
                     })
                 }
-                QuestCallbackProjection::TimedTransform { .. } => false,
+                QuestCallbackProjection::TimedTransform { .. }
+                | QuestCallbackProjection::TimedRemoval { .. } => false,
             })
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8

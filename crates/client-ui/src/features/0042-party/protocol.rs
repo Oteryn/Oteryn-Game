@@ -152,11 +152,10 @@ fn disposition_text(value: party::PartyDisposition) -> &'static str {
 /// The server sends detailed XP refusals on the existing Game private-chat feedback path.
 pub fn push_feedback(panel: &mut PartyPanel, line: &oteryn_client_runtime::chat::ChatLine) {
     if panel.awaiting_shared_feedback
-        && let oteryn_client_runtime::chat::ChatLine::Private { speaker_name, text } = line
-        && speaker_name == "Game"
+        && let Some(text) = crate::chat_system_message::feedback(line, panel.typed_feedback)
         && text.to_ascii_lowercase().contains("shared experience")
     {
-        panel.server_feedback = Some(text.clone());
+        panel.server_feedback = Some(text.to_owned());
         panel.awaiting_shared_feedback = false;
     }
 }

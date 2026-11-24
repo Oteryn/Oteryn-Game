@@ -71,7 +71,9 @@ impl PlayLink {
         panel.impact_high
     }
     pub fn analyser_reset_high(&self) {
-        let panel = &mut lock(&self.mailbox).analyser;
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.combat_capture.reset_impact_records();
+        let panel = &mut mailbox.analyser;
         panel.impact_high = [0; 2];
         panel.high_revision = panel.high_revision.saturating_add(1);
     }
@@ -83,9 +85,12 @@ impl PlayLink {
     }
 
     pub fn analyser_reset(&self) {
-        let panel = &mut lock(&self.mailbox).analyser;
-        if panel.selected && panel.open {
-            oteryn_client_ui::analyser::protocol::reset_tool(panel);
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.analyser.selected && mailbox.analyser.open {
+            if mailbox.analyser.tool == oteryn_client_ui::analyser::Tool::Impact {
+                mailbox.combat_capture.reset_impact_records();
+            }
+            oteryn_client_ui::analyser::protocol::reset_tool(&mut mailbox.analyser);
         }
     }
 
@@ -289,8 +294,6 @@ pub(in crate::play) fn refresh_party(
     mailbox: &mut Mailbox,
     commands: &UnboundedSender<PlayCommand>,
 ) {
-    mailbox.analyser.party_split_error = None;
-    mailbox.analyser.party_import = None;
     if !mailbox.party.selected {
         mailbox.analyser.party_feedback =
             Some(tr!("Party membership is unavailable in this session"));

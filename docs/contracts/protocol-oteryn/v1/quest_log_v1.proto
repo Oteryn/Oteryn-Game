@@ -77,6 +77,11 @@ message QuestLogV1 {
   // Current-World committed personal Cross markers, at most 256. Whole replacement,
   // including when the log is closed; snapshots restore these on reconnect.
   repeated QuestMapMarkV1 map_marks = 4;
+  // Only for clients selecting capability 577 QUEST_MISSION_TRACKING_V1 (requires 16).
+  // Replaces tracked field 3 for those clients. Each entry carries exactly one visible
+  // mission and its parent quest index. Distinct pairs in request order, at most 25.
+  // Entries whose mission is no longer visible are omitted.
+  repeated QuestLineV1 tracked_missions = 5;
 }
 
 // Request the quest list.
@@ -114,4 +119,22 @@ message QuestMapMarkV1 {
   uint32 y = 2; // 0..65535
   uint32 depth = 3; // 0..15, native floor = -depth
   string text = 4; // nonblank, <=256 UTF-8 bytes / 128 characters, no controls
+}
+
+// Command 6318, requiring capability 577. Both indexes are explicitly present
+// including zero, in field order, with minimal varints. At most 350 bytes.
+// An empty message clears the set. Duplicate pairs, unlisted quests, invisible
+// missions and over-limit requests are rejected without replacing the set.
+// Crystal 201189f8 data/libs/functions/quests.lua:61–91 sets the allowance
+// to 10 for free accounts and 25 for Premium accounts. Current Premium is
+// checked for every replacement. Command 6318 shares the command 22 rate limit
+// and returns an empty result, followed by a whole-domain delta on acceptance.
+// The mission selection follows the GameSession across connections and transfers.
+// Command 22's track alternative remains available to clients without 577.
+message QuestMissionTrackV1 {
+  message Pair {
+    uint32 quest_index = 1;
+    uint32 mission_index = 2;
+  }
+  repeated Pair missions = 1;
 }

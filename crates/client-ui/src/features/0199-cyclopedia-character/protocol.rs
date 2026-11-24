@@ -28,6 +28,7 @@ pub enum Intent {
     ProfileInspection,
     SpellAugments(super::AugmentIntent),
     MiscResources,
+    OwnVocation,
     Tab,
     SelectTab(cyclopedia_character::CharacterTab),
     Next,
@@ -41,6 +42,24 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     if p.pending || p.blessings.pending {
         p.feedback = Some(tr!("Waiting for the server"));
         return None;
+    }
+    if intent == Intent::OwnVocation {
+        if !p.extensions.vocation {
+            return None;
+        }
+        let payload = tab_payload(
+            cyclopedia_character::CharacterTab::GeneralStats,
+            0,
+            p.limit,
+            None,
+        )?;
+        p.pending = true;
+        p.own_vocation_pending = true;
+        return Some(FeatureCommand {
+            capability: 199,
+            kind: 388,
+            payload,
+        });
     }
     if let Intent::SpellAugments(intent) = intent {
         return super::augment_request(p, intent);
@@ -104,7 +123,8 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         _ => {}
     }
     let (kind, payload) = match intent {
-        Intent::ProfileBadges
+        Intent::OwnVocation
+        | Intent::ProfileBadges
         | Intent::ProfileInspection
         | Intent::SpellAugments(_)
         | Intent::Protection
@@ -144,24 +164,10 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
             } else {
                 p.tab
             };
-            let mut v = vec![requested as u8];
-            v.extend_from_slice(&p.offset.to_le_bytes());
-            v.push(p.limit);
-            if let Some(target) = p.target {
-                v.extend_from_slice(&target)
-            }
-            if cyclopedia_character::decode_tab_request(&v)
-                != Ok(TabRequest {
-                    tab: requested,
-                    page: oteryn_client_runtime::character_info::PageRequest::new(
-                        p.offset, p.limit,
-                    )?,
-                    target: p.target,
-                })
-            {
+            let Some(v) = tab_payload(requested, p.offset, p.limit, p.target) else {
                 p.feedback = Some(tr!("Enter a valid page and target"));
                 return None;
-            }
+            };
             (388, v)
         }
     };
@@ -183,7 +189,35 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         payload,
     })
 }
+fn tab_payload(
+    tab: cyclopedia_character::CharacterTab,
+    offset: u16,
+    limit: u8,
+    target: Option<[u8; 16]>,
+) -> Option<Vec<u8>> {
+    let page = oteryn_client_runtime::character_info::PageRequest::new(offset, limit)?;
+    let mut bytes = vec![tab as u8];
+    bytes.extend_from_slice(&offset.to_le_bytes());
+    bytes.push(limit);
+    if let Some(target) = target {
+        bytes.extend_from_slice(&target);
+    }
+    (cyclopedia_character::decode_tab_request(&bytes) == Ok(TabRequest { tab, page, target }))
+        .then_some(bytes)
+}
 pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) -> bool {
+    if std::mem::take(&mut p.own_vocation_pending) {
+        p.pending = false;
+        if matches!(
+            r.status,
+            CommandStatus::Accepted | CommandStatus::DuplicateReplay
+        ) && let Some((_, Some(id))) = decode_general(&r.payload, p.extensions)
+        {
+            p.own_vocation_id = Some(id);
+            return true;
+        }
+        return false;
+    }
     if p.protection.awaiting {
         return super::protection::apply(p, r);
     }
@@ -249,6 +283,9 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
             return false;
         };
         p.vocation_id = vocation.or(p.vocation_id);
+        if p.target.is_none() {
+            p.own_vocation_id = p.vocation_id;
+        }
         p.misc_general = Some(stats);
         p.feedback = None;
         return true;
@@ -284,6 +321,9 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
                     return false;
                 };
                 p.vocation_id = vocation.or(p.vocation_id);
+                if p.target.is_none() {
+                    p.own_vocation_id = p.vocation_id;
+                }
                 Some(stats)
             } else {
                 None

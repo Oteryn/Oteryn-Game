@@ -1,0 +1,10 @@
+{
+  "id": 6330,
+  "name": "BLESSINGS_HOLDINGS",
+  "owner_decision": "Server protocol gap closure",
+  "capability": 584,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/blessings-dialog-v1.md#holdings-and-store-copies",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/blessings-dialog-v1.md#holdings-and-store-copies",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 1049
+}

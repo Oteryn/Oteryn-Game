@@ -1,0 +1,13 @@
+{
+  "id": 611,
+  "name": "CYCLOPEDIA_OWNED_GALLERY_V1",
+  "owner_decision": "Server Cyclopedia appearance ownership and acquisition sources",
+  "owner": "Fenced Character appearance, earned cosmetic and familiar owners",
+  "requires": [
+    199
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Offered with admitted native cosmetics and the Cyclopedia Character capability. Capability 611 gates command 388 selector 136."
+}

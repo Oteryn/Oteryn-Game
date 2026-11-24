@@ -17,6 +17,37 @@
 #![cfg_attr(not(test), allow(dead_code))]
 
 pub const COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY: u32 = 10;
+pub const CAPABILITY_ACHIEVEMENT_COMPLETION_FILTER_V1: u32 = 612;
+pub const COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_FILTER: u32 = 6387;
+pub const MAX_ACCOUNT_ACHIEVEMENTS_FILTER_BYTES: usize = 1 + MAX_ACCOUNT_ACHIEVEMENTS_QUERY_BYTES;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AchievementCompletion {
+    Completed,
+    Incomplete,
+}
+
+pub fn encode_account_achievements_filter(page: u32, completion: AchievementCompletion) -> Vec<u8> {
+    let mut bytes = vec![match completion {
+        AchievementCompletion::Completed => 0,
+        AchievementCompletion::Incomplete => 1,
+    }];
+    bytes.extend(encode_account_achievements_query(
+        AccountAchievementsQuery { page },
+    ));
+    bytes
+}
+
+pub fn decode_account_achievements_filter(
+    payload: &[u8],
+) -> Result<(AccountAchievementsQuery, AchievementCompletion), AccountAchievementsError> {
+    let (completion, page) = match payload {
+        [0, page @ ..] => (AchievementCompletion::Completed, page),
+        [1, page @ ..] => (AchievementCompletion::Incomplete, page),
+        _ => return Err(AccountAchievementsError::Malformed),
+    };
+    Ok((decode_account_achievements_query(page)?, completion))
+}
 /// The fixed server-side page size (§3.3).
 pub const ACCOUNT_ACHIEVEMENTS_PAGE_ROWS: usize = 64;
 pub const MAX_ACHIEVEMENT_KEY_BYTES: usize = 160;

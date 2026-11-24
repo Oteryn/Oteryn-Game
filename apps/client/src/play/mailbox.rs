@@ -137,6 +137,8 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 /// Admission inputs shared across activity scopes on this connection.
 #[derive(Debug, Default)]
 pub(super) struct ConnectionInputs {
+    #[cfg(bevy_shell)]
+    session_task: Option<tokio::task::AbortHandle>,
     pub(super) channel_character: String,
     pub(super) channel_current: Option<[u8; 16]>,
     pub(super) channel_rows: Vec<oteryn_client_ui::channel_switch::ChannelRow>,
@@ -146,6 +148,10 @@ pub(super) struct ConnectionInputs {
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) capture_attackers: std::collections::BTreeSet<Option<oteryn_session::EntityRef>>,
+    pub(super) capture_boss_tracker:
+        Option<oteryn_client_runtime::cyclopedia_tracker::TrackerSnapshot>,
+    pub(super) combat_capture: crate::screenshots::CombatCaptureFacts,
     pub(super) connection: ConnectionInputs,
     #[cfg(bevy_shell)]
     pub(super) screen_loot: super::feature_local_text_messages::view::LootMessage,
@@ -248,6 +254,7 @@ pub(super) struct Mailbox {
     pub(super) store: oteryn_client_ui::store::StorePanel,
     pub(super) premium_game: crate::premium::game::Panel,
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
+    pub(super) vip_membership_revision: Option<u64>,
     pub(super) vip_presence_confirmed_at: Option<tokio::time::Instant>,
     /// chsw (capability 513): VIP login, logout and Channel-change notices naming the Channel,
     /// numbered so each is shown once.
@@ -299,6 +306,7 @@ pub(super) struct Mailbox {
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
     combat: VecDeque<CombatReport>,
     /// The latest refused logout not yet polled.
+    logout_requested: Option<std::time::Instant>,
     logout_refused: Option<Option<LogoutResult>>,
     ended: Option<PlayEvent>,
     pub(super) task_board: oteryn_client_ui::task_board::TaskBoardPanel,
@@ -315,6 +323,9 @@ pub(super) struct Mailbox {
     pub(super) imbue_shutdown: bool,
     pub(super) player_trade: oteryn_client_ui::player_trade::PlayerTradePanel,
     pub(super) vip: oteryn_client_ui::vip::VipPanel,
+    pub(super) party_summons: std::sync::Arc<
+        std::collections::BTreeMap<oteryn_session::EntityRef, oteryn_session::EntityRef>,
+    >,
     pub(super) party: oteryn_client_ui::party::PartyPanel,
     pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
     pub(super) hireling_shutdown: bool,

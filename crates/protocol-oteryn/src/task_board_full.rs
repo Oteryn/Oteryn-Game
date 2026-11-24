@@ -5,6 +5,9 @@ use crate::charm_wire::{push_message_field, push_varint_field, read_bytes, read_
 pub const CAPABILITY_WEEKLY_RESULTS_V1: u32 = 474;
 pub const COMMAND_WEEKLY_RESULTS: u32 = 6172;
 pub const COMMAND_ELITE_BOUNTY: u32 = 6174;
+pub const CAPABILITY_TASK_BOARD_DAILY_BOUNTY_V1: u32 = 578;
+pub const COMMAND_CLAIM_DAILY_BOUNTY_TOKEN: u32 = 6319;
+pub const ACTION_CLAIM_DAILY_BOUNTY_TOKEN: u8 = 20;
 
 pub const MAX_REQUEST_BYTES: usize = 192;
 pub const MAX_REPLY_BYTES: usize = 16_384;
@@ -34,7 +37,7 @@ impl Request {
     fn valid(&self) -> bool {
         let selection = usize::from(self.selection);
         let selected = match self.action {
-            4 | 7 | 9 | 11 | 15 | 17 => selection == 0,
+            4 | 7 | 9 | 11 | 15 | 17 | ACTION_CLAIM_DAILY_BOUNTY_TOKEN => selection == 0,
             5 | 10 | 18 => selection < 4,
             19 => selection < 2,
             6 => selection < MAX_DELIVERY_TASKS,
@@ -101,8 +104,8 @@ pub struct KillTask {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DeliveryTask {
-    /// Donor item identifier; custody resolves it to the admitted canonical Item identity.
-    pub item: u16,
+    /// Canonical Item definition reference with capability 578, donor ID otherwise.
+    pub item: u32,
     pub required: u32,
     /// Undelivered: recorded carried + stash + depot availability, modulo 2^32.
     /// Delivered: exactly `required`. Crystal protocolgame.cpp:6210-6222.
@@ -279,7 +282,7 @@ fn decode_delivery(bytes: &[u8]) -> Result<DeliveryTask, Error> {
     let mut at = 0;
     while at < bytes.len() {
         match read_varint(bytes, &mut at)? {
-            8 => set_once(&mut item, u16_value(bytes, &mut at)?)?,
+            8 => set_once(&mut item, u32_value(bytes, &mut at)?)?,
             16 => set_once(&mut required, u32_value(bytes, &mut at)?)?,
             24 => set_once(&mut current, u32_value(bytes, &mut at)?)?,
             32 => set_once(&mut delivered, bool_value(bytes, &mut at)?)?,

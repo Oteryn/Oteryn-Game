@@ -85,7 +85,7 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub player_speech: Option<String>,
     pub transform: Option<u16>,
-    /// Restore the exact pre-transform source revision after this delay.
+    /// Restore the exact source revision after a transform or selected-tool removal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_after_ms: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -678,10 +678,14 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || callback.actor_kind != ActorKind::Player
                 || (effects.transform.is_none()
                     && callback.lever.is_none()
-                    && callback
-                        .item_on_target
-                        .as_ref()
-                        .is_none_or(|item| item.target_replacement.is_none()))
+                    && !callback.item_on_target.as_ref().is_some_and(|tool| {
+                        tool.target_replacement.is_some()
+                            || (tool.target_remove
+                                && tool.selected_instance
+                                && callback.requires_world_admission
+                                && callback.trigger == Trigger::Use
+                                && callback.passages.is_empty())
+                    }))
                 || effects.portals.is_some()
                 || effects.item_presence.is_some()
                 || effects.item_cycle.is_some()

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AlertsParams",
+  "type": "object",
+  "properties": {
+    "cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "limit": {
+      "$ref": "#/$defs/PageLimit"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "limit"
+  ],
+  "$defs": {
+    "PageLimit": {
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 100,
+      "minimum": 1
+    }
+  }
+}

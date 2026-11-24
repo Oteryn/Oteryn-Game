@@ -3,6 +3,10 @@ use crate::wheel::WheelVessels;
 /// Uses the existing Wheel/Atelier capability; no extra capability ID.
 pub const CAPABILITY_WHEEL_PRESENTATION_V1: u32 = crate::wheel::CAPABILITY_WHEEL_ALLOCATION_V1;
 pub const COMMAND_TYPE_WHEEL_PRESENTATION: u32 = 6119;
+pub const COMMAND_TYPE_WHEEL_INSPECT_CHARACTER: u32 = 6378;
+pub const COMMAND_TYPE_WHEEL_GIFT_OF_LIFE_STATUS: u32 = 6379;
+pub const WHEEL_INSPECT_REFUSAL: &[u8] = b"Sorry, not possible.";
+pub const GIFT_OF_LIFE_STATUS_BYTES: usize = 9;
 pub const MAX_REQUEST_BYTES: usize = 164;
 pub const MAX_REPLY_BYTES: usize = 131072;
 #[derive(Clone, Debug, PartialEq, Eq)]

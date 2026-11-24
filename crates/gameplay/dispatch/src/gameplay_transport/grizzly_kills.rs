@@ -8,7 +8,10 @@ pub(super) use encounters::PreparedEncounter;
 mod guardians;
 pub(super) mod native_goals;
 
-use oteryn_gameplay_quests::quest::grizzly_adams::{self as quest, GrizzlyAction};
+use oteryn_gameplay_quests::quest::{
+    death_objectives,
+    grizzly_adams::{self as quest, GrizzlyAction},
+};
 
 use super::{
     ComposedFreshAdmission,
@@ -275,7 +278,8 @@ fn freeze_at(
                 .into_iter()
                 .flatten()
                 .filter(|objective| {
-                    snapshot.objective_keys.contains(&objective.key)
+                    !death_objectives::is_grave_boss(&objective.key)
+                        && snapshot.objective_keys.contains(&objective.key)
                         && corpse.is_some_and(|position| {
                             objective.matches(creature, position.x, position.y, position.floor)
                         })
@@ -746,9 +750,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-/// Keep an unavailable quest write on the existing kill retry path. Grizzly settles
-/// before the ordinary body so that its retry cannot follow an already released corpse
-/// pin. The ordinary body's own retry reuses the same quest receipts without incrementing.
+/// Keep unavailable quest writes on the existing kill retry path.
 pub(super) async fn settle(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     entry: &PendingKillSettlement,

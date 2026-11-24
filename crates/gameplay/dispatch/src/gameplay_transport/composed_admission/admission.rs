@@ -435,9 +435,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if matches!(
             admitted.first_entry,
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-        ) && !budget
-            .retry_until(async || self.admit_hazard(admitted).await)
+        ) && budget
+            .retry_unavailable(async || self.admit_hazard_once(admitted).await)
             .await
+            .is_err()
         {
             admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
         }
@@ -469,9 +470,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 admitted.first_entry = trained;
             }
             if writes_after_progression(positioned, admitted.first_entry)
-                && !budget
-                    .retry_until(async || self.admit_prey(admitted).await)
+                && self
+                    .admit_prey_with_budget(admitted, Some(&budget))
                     .await
+                    .is_err()
             {
                 admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
             }

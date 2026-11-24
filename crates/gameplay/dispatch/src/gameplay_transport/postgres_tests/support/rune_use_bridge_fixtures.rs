@@ -28,7 +28,9 @@ use crate::gameplay_transport::connection::{
 
 use crate::gameplay_transport::rune_use_bridge::test_faults::{self, Point};
 
-use crate::gameplay_transport::{ComposedFreshAdmission, SeamRooms, item_fence_of};
+use crate::gameplay_transport::{
+    AdmissionRetryBudget, ComposedFreshAdmission, SeamRooms, item_fence_of,
+};
 
 use crate::spell::cast::CharacterCastFacts;
 
@@ -64,6 +66,7 @@ pub(super) const VICTIM: MovementLocalPosition = MovementLocalPosition {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Case {
     EngencTraining,
+    IntenseHealingOwnSummon,
     ParalyzeMonster,
     ParalyzePlayer,
     Replay,
@@ -153,12 +156,24 @@ async fn client_cast(
     first_id: u64,
 ) -> TestResult<UseIntent> {
     let mut source = None;
+    let mut own_summon_visible = false;
     loop {
         let frame = read_frame(client).await?;
         let envelope = decode_wire_envelope(&frame).map_err(debug)?;
         if envelope.message_type() == MessageType::SnapshotChunk {
             let (_, domains) = decode_snapshot_chunk(envelope.payload()).map_err(debug)?;
             for domain in domains {
+                if case == Case::IntenseHealingOwnSummon
+                    && domain.domain_id == oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
+                {
+                    use oteryn_protocol_oteryn::world_spatial_entities as wire;
+                    assert_eq!(domain.snapshot_type, wire::SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2);
+                    let spatial = wire::decode_world_spatial_entities_snapshot(domain.payload)
+                        .map_err(debug)?;
+                    own_summon_visible = spatial.entities.iter().any(|entry| {
+                        entry.entity == victim && entry.kind == wire::EntityKind::Creature
+                    });
+                }
                 if domain.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY {
                     source = decode_character_inventory(domain.payload)
                         .map_err(debug)?
@@ -218,6 +233,12 @@ async fn client_cast(
         None => 0,
     };
     match case {
+        Case::IntenseHealingOwnSummon => {
+            assert!(own_summon_visible, "the admitted client must see the exact summon");
+            assert_eq!(before, 1, "the owned summon must be healable");
+            send_use(client, first_id, &intent, Expected::Result(UseDisposition::TargetIllegal))
+                .await?;
+        }
         Case::EngencTraining => {
             send_use(
                 client,
@@ -514,9 +535,12 @@ async fn serve_cast(
 }
 
 pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
-    let paralyze = matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer);
+    let trained_caster = matches!(
+        case,
+        Case::ParalyzeMonster | Case::ParalyzePlayer | Case::IntenseHealingOwnSummon
+    );
     let harness =
-        Harness::create_with_admission_seed(admin, "rune_bridge", !paralyze, false).await?;
+        Harness::create_with_admission_seed(admin, "rune_bridge", !trained_caster, false).await?;
     prepare_current_session(&harness).await?;
     if case == Case::ParalyzePlayer {
         harness.seed_pvp_target().await?;
@@ -624,6 +648,13 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
                 .realize_native_qualification_spawn(channel_pin, target_key, target_position)
                 .map_err(debug)?;
             let creature = runtime.visible_entities().creatures[0];
+            if case == Case::IntenseHealingOwnSummon {
+                runtime.set_test_creature_health(creature.actor, 1).map_err(debug)?;
+                let snapshot = runtime.companion_snapshot(creature.actor).map_err(debug)?;
+                let assigned = runtime.compare_assign_companion(actor, session, &snapshot).map_err(debug)?;
+                let master = assigned.state.master.ok_or("summon master")?;
+                assert_eq!((master.actor, master.session), (actor, session));
+            }
             victim = Some(EntityRef {
                 identity: creature.actor.placement_identity(),
                 generation: creature.generation,
@@ -643,7 +674,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         .current_session_at(session)
         .await?;
     admitted.item_fence = item_fence_of(current);
-    if paralyze {
+    if trained_caster {
         owner.admit_progression_session(&mut admitted).await;
         let progression = owner
             .progression_binding(session)
@@ -680,7 +711,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             .map_err(debug)?,
         BuildCommitOutcome::Committed(_)
     ));
-    let druid = if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
+    let druid = if trained_caster {
         let trained =
             DurableBuildState::new(druid.vocation(), (18, 0), druid.skills()).map_err(debug)?;
         harness
@@ -714,22 +745,9 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
                     actor,
                     session,
                     CharacterCastFacts {
-                        level: if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
-                            54
-                        } else {
-                            50
-                        },
-                        magic_level: if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer)
-                        {
-                            18
-                        } else {
-                            0
-                        },
-                        max_mana: if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
-                            2000
-                        } else {
-                            90
-                        },
+                        level: if trained_caster { 54 } else { 50 },
+                        magic_level: if trained_caster { 18 } else { 0 },
+                        max_mana: if trained_caster { 2000 } else { 90 },
                         ..crate::gameplay_transport::actor_spell::tests::FACTS
                     },
                     (0, 0),
@@ -760,6 +778,8 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         .bind(id(41).as_slice()).execute(&harness.pool).await?;
     let source_key = if case == Case::UnqualifiedSource {
         "oteryn:item.tibia.i3607"
+    } else if case == Case::IntenseHealingOwnSummon {
+        "oteryn:item.tibia.i3152"
     } else if case == Case::EngencTraining {
         "oteryn:item.tibia.i17512"
     } else if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
@@ -771,6 +791,16 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+    if case == Case::Replay {
+        // This direct fixture has no Channel maintenance loop. Finish the real
+        // map owner setup before its vitals timer competes with rune commands.
+        assert!(
+            AdmissionRetryBudget::for_root(&session, &harness.root)
+                .retry_until(async || owner.ensure_source_map_initialized().await)
+                .await,
+            "source map is ready before serving rune commands"
+        );
+    }
     if case == Case::EngencTraining {
         super::engenc_ordinary_hits_fixtures::prepare_rune(&mut owner, session).await?;
         tokio::time::timeout(

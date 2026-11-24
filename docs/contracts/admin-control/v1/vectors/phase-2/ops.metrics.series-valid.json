@@ -1,0 +1,86 @@
+{
+  "canonical_signed_utf8": "{\"actor\":{\"admin_id\":\"a-17\",\"ip_hash\":\"test-hash\",\"mfa_at\":\"2026-11-05T11:59:00Z\",\"permission\":\"game.ops.read\",\"roles\":[\"fixture\"],\"session_ref\":\"test-session\",\"step_up_at\":null},\"admin_operation_id\":\"019a5620-0000-7000-8000-000000000025\",\"approvals\":[],\"contract\":\"oteryn.admin-control.v1\",\"dry_run\":false,\"expires_at\":\"2026-11-05T12:01:00Z\",\"issued_at\":\"2026-11-05T12:00:00Z\",\"kind\":\"query\",\"nonce\":\"GRkZGRkZGRkZGRkZGRkZGQ\",\"operation\":\"ops.metrics.series\",\"operation_version\":1,\"params\":{\"from\":\"2026-11-05T11:00:00Z\",\"metric\":\"tick_time_ms\",\"step_seconds\":60,\"to\":\"2026-11-05T12:00:00Z\"},\"reason\":null,\"request_id\":\"019a5620-0000-7000-8000-000000000025\",\"risk_class\":\"R0\",\"signer_key_id\":\"platform-admin-signer-1\",\"target\":{\"account_ref\":null,\"character_id\":null,\"node_id\":\"node-1\",\"world_id\":null}}",
+  "clock": 1793880000,
+  "expected_error": null,
+  "expected_result_valid": true,
+  "nonce_seen": false,
+  "policy": {
+    "operations": [
+      {
+        "allowed_permissions": [
+          "game.ops.read"
+        ],
+        "min_risk_class": "R0",
+        "operation": "ops.metrics.series",
+        "worlds": [
+          "w-antica"
+        ]
+      }
+    ]
+  },
+  "precondition_error": null,
+  "preview_digest": null,
+  "prior_params_digest": null,
+  "prior_result": null,
+  "request": {
+    "actor": {
+      "admin_id": "a-17",
+      "ip_hash": "test-hash",
+      "mfa_at": "2026-11-05T11:59:00Z",
+      "permission": "game.ops.read",
+      "roles": [
+        "fixture"
+      ],
+      "session_ref": "test-session",
+      "step_up_at": null
+    },
+    "admin_operation_id": "019a5620-0000-7000-8000-000000000025",
+    "approvals": [],
+    "contract": "oteryn.admin-control.v1",
+    "dry_run": false,
+    "expires_at": "2026-11-05T12:01:00Z",
+    "issued_at": "2026-11-05T12:00:00Z",
+    "kind": "query",
+    "nonce": "GRkZGRkZGRkZGRkZGRkZGQ",
+    "operation": "ops.metrics.series",
+    "operation_version": 1,
+    "params": {
+      "from": "2026-11-05T11:00:00Z",
+      "metric": "tick_time_ms",
+      "step_seconds": 60,
+      "to": "2026-11-05T12:00:00Z"
+    },
+    "reason": null,
+    "request_id": "019a5620-0000-7000-8000-000000000025",
+    "risk_class": "R0",
+    "signature": "CViSWCftdiRMnU1I8FF6O_c2qKklMYk_rppNi4EXKihjXRvbz1dDl5GYMJX7lx9_gr8YqJuZQuZh8Ija80yXBA",
+    "signer_key_id": "platform-admin-signer-1",
+    "target": {
+      "account_ref": null,
+      "character_id": null,
+      "node_id": "node-1",
+      "world_id": null
+    }
+  },
+  "result": {
+    "metric": "tick_time_ms",
+    "points": [
+      {
+        "at": "2026-11-05T11:00:00Z",
+        "value": 12.5
+      },
+      {
+        "at": "2026-11-05T12:00:00Z",
+        "value": null
+      }
+    ]
+  },
+  "trusted_signers": [
+    {
+      "key_id": "platform-admin-signer-1",
+      "not_after": "2027-01-01T00:00:00Z",
+      "not_before": "2026-01-01T00:00:00Z",
+      "public_key": "6kpsY-KcUgq-9VB7Ey7F-ZVHdq6-vnuSQh7qaRRG0iw"
+    }
+  ]
+}

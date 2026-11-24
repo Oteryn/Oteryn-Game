@@ -178,7 +178,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         house_origin: Option<[u8; 16]>,
         item: [u8; 16],
-    ) -> Result<Option<(TypedDefinitionRef, String)>> {
+    ) -> Result<Option<(TypedDefinitionRef, CarriedItemText)>> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemUseError::AuthorityRejected)?;
@@ -208,7 +208,9 @@ impl DurabilityRoot {
                     } else {
                         match assert_item_only_fence(&mut tx, &fence, &node).await? {
                             Ok(root) => (root.content_revision, root.ruleset_revision),
-                            Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
+                            Err(CharacterProgressionError::Unavailable(error)) => {
+                                return Err(error);
+                            }
                             Err(_) => return Ok(Err(ItemUseError::AuthorityRejected)),
                         }
                     };
@@ -229,19 +231,38 @@ impl DurabilityRoot {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
-                    let text: Option<String> = sqlx::query_scalar(
-                        "SELECT text FROM game_item_texts \
-                          WHERE item_instance_id=encode($1,'hex')::uuid",
-                    )
-                    .bind(item.as_slice())
-                    .fetch_optional(&mut *tx)
-                    .await?;
+                    let inscription: Option<(String, Option<String>, Option<i64>)> =
+                        sqlx::query_as(
+                            "SELECT t.text, r.name, CASE WHEN isfinite(t.written_at) \
+                             THEN floor(extract(epoch FROM t.written_at)*1000)::bigint END \
+                         FROM game_item_texts t LEFT JOIN game_character_roots r \
+                           ON r.character_id=t.writer_character_id \
+                         WHERE t.item_instance_id=encode($1,'hex')::uuid",
+                        )
+                        .bind(item.as_slice())
+                        .fetch_optional(&mut *tx)
+                        .await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(Some((definition, text.unwrap_or_default()))))
+                    let (text, writer_name, written_at_unix_ms) = inscription.unwrap_or_default();
+                    Ok(Ok(Some((
+                        definition,
+                        CarriedItemText {
+                            text,
+                            writer_name,
+                            written_at_unix_ms,
+                        },
+                    ))))
                 })
             })
             .await?
     }
+}
+
+#[derive(Default)]
+pub struct CarriedItemText {
+    pub text: String,
+    pub writer_name: Option<String>,
+    pub written_at_unix_ms: Option<i64>,
 }
 
 /// The definition of `item` when it is equipped, a main-backpack entry or nested below one:
@@ -309,7 +330,14 @@ pub(in crate::durability) async fn read_use_inventory(
     ruleset_revision: String,
 ) -> Result<ItemUseInventory> {
     // The public reader proves Channel authority; the Hireling reader proves its named House.
-    read_carried_inventory(connection, fence.character_id, *fence.runtime_scope.world_id().as_bytes(), content_revision, ruleset_revision).await
+    read_carried_inventory(
+        connection,
+        fence.character_id,
+        *fence.runtime_scope.world_id().as_bytes(),
+        content_revision,
+        ruleset_revision,
+    )
+    .await
 }
 
 /// Storage projection shared with Character info after its own visibility check.

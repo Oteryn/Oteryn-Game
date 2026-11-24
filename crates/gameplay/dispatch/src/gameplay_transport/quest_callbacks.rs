@@ -194,6 +194,14 @@ fn unique_eligible<'a>(
     let (door, orchid) = match (selected.key.as_str(), alternative.key.as_str()) {
         (FIRE_DOOR, ORCHID) => (selected, alternative),
         (ORCHID, FIRE_DOOR) => (alternative, selected),
+        (
+            "oteryn:quest-callback/paradox-skulls",
+            "oteryn:quest-callback/paradox-tower/native-skulls",
+        ) => return Some(alternative),
+        (
+            "oteryn:quest-callback/paradox-tower/native-skulls",
+            "oteryn:quest-callback/paradox-skulls",
+        ) => return Some(selected),
         _ => return None,
     };
     let at_staging = orchid.effects.encounter.as_ref().is_some_and(|encounter| {
@@ -437,6 +445,54 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         && selector.appearance.is_none()
     {
         return false;
+    }
+    // Crystal action_elevator.lua:18–52 switches between 2772 (travel) and
+    // 2773 (reset) on the same placement. Bind the bare source lever once
+    // and select the callback from its live appearance after each use.
+    if callback
+        .key
+        .strip_prefix("oteryn:quest-callback/authored-new-frontier/")
+        .is_some_and(|key| {
+            matches!(
+                key,
+                "mine-lift"
+                    | "mine-lift-reset"
+                    | "mine-return"
+                    | "mine-return-reset"
+                    | "route-to-zao"
+                    | "route-to-zao-reset"
+                    | "route-to-farmine"
+                    | "route-to-farmine-reset"
+            )
+        })
+    {
+        return selector.position
+            == Some(Position {
+                x: pos.x,
+                y: pos.y,
+                floor: pos.floor,
+            })
+            && selector.ordinal == Some(u16::from(ordinal))
+            && map
+                .overlay
+                .base()
+                .tile(pos.x, pos.y, pos.floor)
+                .and_then(|base| {
+                    base.ids()
+                        .iter()
+                        .zip(base.depths())
+                        .filter(|(_, depth)| **depth == 0)
+                        .nth(usize::from(ordinal))
+                        .map(|(id, _)| *id)
+                })
+                .is_some_and(|id| {
+                    [2772, 2773].into_iter().any(|appearance| {
+                        map.facts.quest_callback_native_object(key, id, appearance)
+                    }) && map
+                        .facts
+                        .base_entry(pos, ordinal, id)
+                        .is_some_and(|entry| selector.appearance == Some(entry.appearance_id))
+                });
     }
     if selector.unique.is_none()
         && selector.action.is_none()

@@ -211,13 +211,35 @@ fn task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust() -> TestRes
 }
 
 fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) -> TestResult {
-    scenario_with_bootstrap(fault, elite_case_enabled, false)
+    scenario_with_bootstrap(fault, elite_case_enabled, false, None)
 }
 
 #[test]
 fn task_board_control_epoch_initializer_allows_live_query_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-control-epoch", || {
-        scenario_with_bootstrap(None, false, true)
+        scenario_with_bootstrap(None, false, true, None)
+    })
+}
+
+#[derive(Clone, Copy)]
+enum BoardUpdateCase {
+    CanonicalDelivery,
+    DailyBounty,
+}
+
+#[test]
+fn task_board_canonical_delivery_uses_active_catalogue_in_dispatch() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-canonical-delivery", || {
+        scenario_with_bootstrap(None, false, false, Some(BoardUpdateCase::CanonicalDelivery))
+    })
+}
+
+#[test]
+fn task_board_daily_bounty_claim_is_fenced_replayable_and_once_per_reset_in_dispatch() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-daily-bounty", || {
+        scenario_with_bootstrap(None, false, false, Some(BoardUpdateCase::DailyBounty))
     })
 }
 
@@ -226,9 +248,14 @@ fn scenario_with_bootstrap(
     fault: Option<RollbackFault>,
     elite_case_enabled: bool,
     control_epoch_case: bool,
+    update_case: Option<BoardUpdateCase>,
 ) -> TestResult {
     run(async move |admin| {
-        let tag = fault.map_or("task_board_e2e", RollbackFault::tag);
+        let tag = match update_case {
+            Some(BoardUpdateCase::CanonicalDelivery) => "task_board_canonical_delivery",
+            Some(BoardUpdateCase::DailyBounty) => "task_board_daily_bounty",
+            None => fault.map_or("task_board_e2e", RollbackFault::tag),
+        };
         let harness = Harness::create_with_admission_seed(admin, tag, false, false).await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -483,6 +510,7 @@ fn scenario_with_bootstrap(
                 .bind(sqlx::types::Uuid::from_bytes(*world.as_bytes()))
                 .bind(sqlx::types::Uuid::from_bytes(*channel.as_bytes()))
                 .bind(&digest)
+                .bind(&digest)
                 .fetch_one(&harness.pool)
                 .await?;
             assert!(initialized);
@@ -561,6 +589,25 @@ fn scenario_with_bootstrap(
             ],
         )
         .ok_or("selection")?;
+
+        if let Some(case) = update_case {
+            match case {
+                BoardUpdateCase::CanonicalDelivery => {
+                    progression_case::fixture_admitted_level(&owner, &harness, 8).await?;
+                    let started = full_board(&owner, &mut admitted, 5, 0, "").await?;
+                    assert_eq!(started.refusal, 0);
+                    canonical_delivery_refs_use_active_catalogue(&owner, &mut admitted, &started).await?;
+                }
+                BoardUpdateCase::DailyBounty => {
+                    daily_bounty_token_dispatch_claims_once_per_reset(&owner, &harness, &mut admitted).await?;
+                }
+            }
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
+        }
 
         let legacy = board(&owner, &mut admitted, 0, 0).await?;
         assert!(!legacy.refused);

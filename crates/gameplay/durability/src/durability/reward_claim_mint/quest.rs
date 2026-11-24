@@ -634,10 +634,10 @@ pub(crate) async fn give_world(
     else {
         return Ok(false);
     };
-    // The existing deferred reward guard reconciles every BURN against this
-    // authored cost list. Retain both scalar tools and bounded extra inputs.
+    // The deferred reward guard reconciles every BURN against this authored
+    // cost list. Reusable tools are checked by the World callback owner.
     let mut take = callback.effects.carried_inputs.clone();
-    if let Some(input) = &callback.item_on_target {
+    if let Some(input) = callback.item_on_target.as_ref().filter(|input| !input.reusable) {
         take.push(
             oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
                 fluid_subtype: None,

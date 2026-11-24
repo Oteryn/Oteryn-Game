@@ -54,7 +54,15 @@
         "y": 31625,
         "floor": -4
       },
-      "storage": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/alawars-vault/return",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "requires_world_admission": true,
       "offerings": [],
       "return_on_failure": false,
       "failure_message": null,
@@ -118,7 +126,15 @@
         }
       ],
       "teleport": null,
-      "storage": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/alawars-vault/lever",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires_world_admission": true,
       "offerings": [],
       "return_on_failure": false,
       "failure_message": null,

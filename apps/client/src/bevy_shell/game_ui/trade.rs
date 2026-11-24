@@ -56,6 +56,7 @@ struct State {
     generation: u64,
     revision: u64,
     snapshot: Option<PlayerTradePanel>,
+    partner_name: Option<String>,
     root: Option<Entity>,
 }
 pub(super) fn install(app: &mut App) {
@@ -76,7 +77,13 @@ fn project(
         .as_ref()
         .map(|play| play.link.player_trade_panel());
     let generation = owner.generation();
-    if generation == state.generation
+    let partner_name = panel
+        .as_ref()
+        .filter(|p| visible(p))
+        .and_then(|p| p.partner)
+        .and_then(|partner| owner.play.as_ref()?.link.trade_partner_name(partner));
+    if partner_name == state.partner_name
+        && generation == state.generation
         && match (&state.snapshot, &panel) {
             (Some(old), Some(new)) => same_presentation(old, new),
             (None, None) => true,
@@ -89,6 +96,7 @@ fn project(
         commands.entity(root).despawn();
     }
     state.generation = generation;
+    state.partner_name = partner_name;
     state.snapshot = panel;
     let Some(next) = state.revision.checked_add(1) else {
         return;
@@ -108,6 +116,7 @@ fn project(
         generation,
         next,
         panel,
+        state.partner_name.as_deref(),
     ));
 }
 fn activate(

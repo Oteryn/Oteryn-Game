@@ -23,11 +23,34 @@ PROGRESS = 'tools/content-schema/quest-authoring/samples/questlog/progress.json'
 INTERACTIONS = 'tools/content-schema/quest-authoring/samples/interactions/interactions.json'
 BUNDLE = 'tools/content-schema/quest-authoring/samples/source_migration/bundle.json'
 INTERACTION_MANIFEST = 'tools/content-schema/quest-authoring/samples/interactions/manifest.json'
+NATIVE_CLAIM_ALIASES = 'content/quests/native-reward-placement-aliases.json'
 DIRECTORY = 'content/quests/definitions/'
 REVISION = 'quest-r1'
 SHARD_SIZE = 100
 QUEST_KEY = re.compile(r'^oteryn:quest\.[a-z0-9_.-]+$')
 CANONICAL_CLAIM_KEY = re.compile(r'^oteryn:reward-claim\.[a-z0-9_.-]+$')
+ALAWAR_QUEST = 'oteryn:quest.alawar_s_vault_quest'
+ALAWAR_KEY_CLAIM = 'oteryn:reward-claim.quest.key.id4502'
+ALAWAR_SOURCE_HOLD = {'code': 'claim_native_lowering_missing',
+                      'source_key': 'canary:reward-claim/quest/key/id4502'}
+OUTLAW_QUEST = 'oteryn:quest.the_outlaw_camp_quest'
+OUTLAW_OVERLAY = ('tools/content-schema/world-authoring/samples/'
+                  'quest-chest-bindings/outlaw-camp.json')
+BOTANY = 'oteryn:quest.an_interest_in_botany_quest'
+BOTANY_CLAIM = 'oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach'
+BOTANY_HOLD = {'code': 'claim_native_lowering_missing',
+               'source_key': 'canary:reward-claim/quest/u8_6/an_interest_in_botany/botany_almanach'}
+CALLBACK_COVERAGE = 'docs/repository/QUEST_CALLBACK_COVERAGE.json'
+PARADOX_QUEST = 'oteryn:quest.the_paradox_tower_quest'
+PARADOX_KEY_HOLD = {'code': 'claim_native_lowering_missing',
+                    'source_key': 'canary:reward-claim/quest/key/id3899'}
+BLIND_ENEMY = 'oteryn:quest.to_blind_the_enemy_quest'
+BLIND_ENEMY_BAGS = (('bp1', 6255), ('bp2', 6256))
+BLIND_ENEMY_CLAIM_SOURCE = 'canary:reward-claim/quest/u8_1/to_blind_the_enemy/'
+EXPLORER_SOCIETY = 'oteryn:quest.the_explorer_society_quest'
+EXPLORER_CLAIM_SOURCE = 'canary:reward-claim/quest/u7_6/explorer_society/'
+NEW_FRONTIER = 'oteryn:quest.the_new_frontier_quest'
+FRONTIER_POTION_SOURCE = 'canary:reward-claim/quest/u8_54/the_new_frontier/reward/potions'
 
 
 def compact(value):
@@ -105,6 +128,89 @@ def claim_catalogue(root):
 
 def source_identity(ref):
     return ref['key'], ref['revision']
+
+
+def reconcile_elvenbane_backpacks(records, claims):
+    """The native chest owner already lowers these two exact source variants."""
+    canonical_prefix = 'oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.'
+    resolved = set()
+    for suffix, uid in BLIND_ENEMY_BAGS:
+        key = canonical_prefix + suffix
+        claim = next((row for row in claims if row['identity']['key'] == key), None)
+        if claim is None or claim['provenance']['pilot_key'] != BLIND_ENEMY_CLAIM_SOURCE + suffix:
+            raise ValueError(f'{key}: missing retained source identity')
+        native = claim.get('native_contents', {})
+        if (claim.get('definition_profile') != 'authored_variant_v1'
+                or claim.get('native_admission') != 'WAITING_IMPLEMENTATION'
+                or claim['readiness'] != 'waiting_implementation'
+                or claim['data_holds']
+                or claim['source_variant']['source_data']['status'] != 'COMPLETE'
+                or native.get('schema') != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'
+                or native.get('revision') != '201189f871d23597b82caf88fd611454a2ddefb8'
+                or native.get('source_sha256') != 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757'
+                or len(native.get('placements', [])) != 1 or len(claim['placements']) != 1):
+            raise ValueError(f'{key}: native container evidence changed')
+        recipe, = native['placements']
+        placement, = claim['placements']
+        if (recipe['unique_id'] != uid
+                or {'server': 'crystalserver', 'unique_id': uid} not in placement['source_binding']['legacy_unique_ids']
+                or recipe['root'] != placement['reward']['container']
+                or recipe['contents'] != placement['reward']['items']):
+            raise ValueError(f'{key}: native container selector or contents changed')
+        resolved.add(BLIND_ENEMY_CLAIM_SOURCE + suffix)
+    quest = next(row['definition'] for row in records
+                 if row['definition']['identity']['key'] == BLIND_ENEMY)
+    # Run after the frozen SOURCE recipe receipt has seen its original holds.
+    quest['missing_data'] = [row for row in quest['missing_data']
+                             if not (row['code'] == 'claim_native_lowering_missing'
+                                     and row.get('source_key') in resolved)]
+
+
+# QCHK-3 exercised the exact text/filled-bag projections through the live
+# chest owner. Keep the immutable variant definitions and resolve the three
+# historical native-lowering holds only while those projections still match.
+EXPLORER_NATIVE_CLAIMS = {
+    'books/hengis': (6187, 2821, ()),
+    'skull_of_ratha/bag1': (6083, 2853, (3026, 3207)),
+    'skull_of_ratha/bag2': (6084, 2853, (3012, 3097)),
+}
+
+
+def explorer_claim_lowered(claim):
+    source_key = claim['provenance']['pilot_key']
+    if not source_key.startswith(EXPLORER_CLAIM_SOURCE):
+        return False
+    variant = source_key.removeprefix(EXPLORER_CLAIM_SOURCE)
+    if claim['identity']['key'] != 'oteryn:reward-claim.quest.u7_6.explorer_society.' + variant.replace('/', '.'):
+        return False
+    expected = EXPLORER_NATIVE_CLAIMS.get(variant)
+    native = claim.get('native_contents', {})
+    placed = native.get('placements', [])
+    if (expected is None or claim['data_holds'] or len(placed) != 1
+            or native.get('schema') != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'
+            or native.get('revision') != '201189f871d23597b82caf88fd611454a2ddefb8'
+            or native.get('source_sha256') != 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757'
+            or claim.get('quest', {}).get('key') != 'canary:quest/the_explorer_society_quest'):
+        return False
+    uid, root, children = expected
+    row = placed[0]
+    return (
+        row['unique_id'] == uid
+        and row['root']['key'] == f'oteryn:item.tibia.i{root}'
+        and [(item['item']['key'], item['count']) for item in row['contents']]
+            == [(f'oteryn:item.tibia.i{child}', 1) for child in children]
+        and (bool(children) or row.get('root_text', '').startswith('Diary of Hengis Wulfson'))
+    )
+
+
+def reconcile_explorer_claims(records, claims):
+    resolved = {claim['provenance']['pilot_key'] for claim in claims
+                if claim.get('definition_profile') == 'authored_variant_v1' and explorer_claim_lowered(claim)}
+    quest = next(row['definition'] for row in records
+                 if row['definition']['identity']['key'] == EXPLORER_SOCIETY)
+    quest['missing_data'] = [hold for hold in quest['missing_data']
+                             if not (hold['code'] == 'claim_native_lowering_missing'
+                                     and hold.get('source_key') in resolved)]
 
 
 def build_records(quests, claims, readiness_reports=None, gates=None, gate_checks=None, source_data=None):
@@ -232,16 +338,110 @@ def monk_native_lowering(root):
     }
 
 
+NATIVE_CLAIM_SOURCE_HOLDS = {
+    BLIND_ENEMY: {BLIND_ENEMY_CLAIM_SOURCE + suffix for suffix, _ in BLIND_ENEMY_BAGS},
+    EXPLORER_SOCIETY: {EXPLORER_CLAIM_SOURCE + suffix for suffix in EXPLORER_NATIVE_CLAIMS},
+    NEW_FRONTIER: {FRONTIER_POTION_SOURCE},
+}
+
+
+def restore_source_claim_holds(definition):
+    key = definition['identity']['key']
+    sources = NATIVE_CLAIM_SOURCE_HOLDS.get(key)
+    if sources is None:
+        return
+    holds = definition['missing_data']
+    retained = {row['source_key'] for row in holds if row['code'] == 'claim_native_lowering_missing'}
+    if key == BLIND_ENEMY and 0 < len(retained & sources) < len(sources):
+        raise ValueError('Elvenbane backpack evidence must reconcile both source holds')
+    # Reverse the native projection in the same claim order used by build_records.
+    following_claims = set()
+    for ref in reversed(definition['source_refs']['claims']):
+        source = ref['key']
+        following_claims.add(source)
+        if source not in sources or source in retained:
+            continue
+        index = next((i for i, row in enumerate(holds)
+                      if row.get('source_key') in following_claims
+                      or row['code'] in ('requirement_unknown', 'quest_native_lowering_missing',
+                                         'source_reference_missing')), len(holds))
+        holds.insert(index, {'code': 'claim_native_lowering_missing', 'source_key': source})
+
+
+def outlaw_key_holds(definition):
+    return [{'code': 'claim_native_lowering_missing', 'source_key': ref['key']}
+            for ref in definition['source_refs']['claims']]
+
+
+def restore_outlaw_source_holds(definition):
+    if definition['identity']['key'] != OUTLAW_QUEST:
+        return
+    holds = outlaw_key_holds(definition)
+    missing = definition['missing_data']
+    if not any(hold in missing for hold in holds):
+        # The native projection removes the consecutive key holds.
+        # The frozen donor view keeps them immediately before the quest hold.
+        at = missing.index({'code': 'quest_native_lowering_missing'})
+        missing[at:at] = holds
+
+
+def reconcile_botany_claim(root, definition, claims):
+    """The Almanach is already delivered by the production chest owner."""
+    refs = definition['source_refs']
+    claim, = (c for c in claims if c['identity']['key'] == BOTANY_CLAIM)
+    placement, = claim['placements']
+    projection, = claim['native_contents']['placements']
+    coverage, = (c for q in read(root, CALLBACK_COVERAGE)['quests']
+                 if q['quest'] == refs['quest']['key']
+                 for c in q['chests'] if c['claim'] == BOTANY_CLAIM)
+    witnessed, = coverage['placements']
+    reward, = placement['reward']['items']
+    if (refs['claims'] != [{'family': 'RewardClaim', 'key': claim['provenance']['pilot_key'],
+                            'revision': claim['provenance']['pilot_revision']}]
+            or claim['quest'] != refs['quest'] or claim['data_holds']
+            or coverage['status'] != 'dispatch_pg_qualified'
+            or witnessed['position'] != placement['source_binding']['project_position']
+            or not any(s['server'] == 'crystalserver' and s['unique_id'] == 6296
+                       and s['reward_matches_current_source'] for s in witnessed['sources'])
+            or projection['root'] != reward['item'] or reward['count'] != 1
+            or reward['item']['key'] != 'oteryn:item.tibia.i11699'):
+        raise ValueError('Botany Almanach native reward evidence differs')
+    definition['missing_data'].remove(BOTANY_HOLD)
+    if not definition['missing_data']:
+        definition['readiness'] = 'definition_ready'
+
+
+def restore_source_holds(definition):
+    restore_source_claim_holds(definition)
+    key = definition['identity']['key']
+    if key == OUTLAW_QUEST:
+        restore_outlaw_source_holds(definition)
+        return
+    if key not in (ALAWAR_QUEST, PARADOX_QUEST, BOTANY):
+        return
+    missing = definition['missing_data']
+    if key == ALAWAR_QUEST and ALAWAR_SOURCE_HOLD not in missing:
+        # The applied UID projection closes this delivery in the live Quest only.
+        missing.append(copy.deepcopy(ALAWAR_SOURCE_HOLD))
+    if key == PARADOX_QUEST and PARADOX_KEY_HOLD not in missing:
+        at = missing.index({'code': 'quest_native_lowering_missing'})
+        missing.insert(at, copy.deepcopy(PARADOX_KEY_HOLD))
+    if key == BOTANY and BOTANY_HOLD not in missing:
+        missing.append(copy.deepcopy(BOTANY_HOLD))
+        definition['readiness'] = 'waiting_data'
+
+
 def source_projection(root, records):
-    """Validate and remove only the compiled native annotation from the SOURCE view.
+    """Validate and remove the compiled native annotations from the SOURCE view.
 
     Frozen SOURCE receipts still compare every original field byte for byte. Native
-    references are compiler output, checked exactly against the callback input, and
-    cannot change Source facts, readiness, holds, or the selected data-only recipe.
+    annotations and reconciliations are compiler output. The SOURCE view retains
+    the original holds and the selected data-only recipe.
     """
     result = copy.deepcopy(records)
     for row in result:
         definition = row['definition']
+        restore_source_holds(definition)
         if definition['identity']['key'] != 'oteryn:quest.the_way_of_the_monk_quest':
             continue
         original = {'state': 'WAITING_IMPLEMENTATION', 'canonical_progress_refs': [],
@@ -338,6 +538,134 @@ def tree_validator():
     return jsonschema.Draft202012Validator(schema, registry=registry)
 
 
+def reconcile_frontier_potion_claim(records, claims):
+    """Clear the runtime hold only for the exact UID 6097 native container projection."""
+    key = 'oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.potions'
+    claim = next((record for record in claims if record['identity']['key'] == key), None)
+    if (claim is None or claim.get('definition_profile') != 'authored_variant_v1'
+            or claim.get('readiness') != 'waiting_implementation' or claim['data_holds']
+            or claim['source_variant']['source_data']['status'] != 'COMPLETE'):
+        return
+    def item(item_id):
+        return {'family': 'Item', 'key': f'oteryn:item.tibia.i{item_id}', 'revision': 'definition-r1'}
+    native = claim.get('native_contents')
+    placement = {
+        'unique_id': 6097, 'capacity': 20, 'line': 1324, 'root': item(2854),
+        'completion': {'kind': 'storage', 'key': 'Storage.Quest.U8_54.TheNewFrontier.Reward.Potions'},
+        'contents': [{'count': 1, 'item': item(id)} for id in (7439, 7440, 7443)],
+    }
+    if native != {
+        'schema': 'OTERYN_NATIVE_CONTAINER_REWARD/v1',
+        'revision': '201189f871d23597b82caf88fd611454a2ddefb8',
+        'source_sha256': 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757',
+        'placements': [placement],
+    }:
+        return
+    if claim['provenance']['pilot_key'] != FRONTIER_POTION_SOURCE:
+        return
+    for row in records:
+        definition = row['definition']
+        if definition['identity']['key'] == NEW_FRONTIER:
+            definition['missing_data'].remove({
+                'code': 'claim_native_lowering_missing', 'source_key': FRONTIER_POTION_SOURCE,
+            })
+
+
+def reconcile_alawar_key_claim(root, records, claims):
+    """Clear the live key-delivery hold after preserving the historical recipe witness."""
+    claim = next(c for c in claims if c['identity']['key'] == ALAWAR_KEY_CLAIM)
+    native = claim.get('native_contents', {})
+    placements = native.get('placements', [])
+    definition = next(row['definition'] for row in records if row['definition']['identity']['key'] == ALAWAR_QUEST)
+    variant = claim.get('source_variant', {})
+    capture = 'tools/content-schema/world-authoring/samples/quest-chest-bindings/qa-batch2.json'
+    index = read(root, 'content/world/placements/index.json')
+    bindings = index['source'].get('quest_chests', {}).get('captures', [])
+    exact_placement = {'claim': ALAWAR_KEY_CLAIM, 'position': [32201, 31571, 10],
+                       'appearance': 2472, 'unique': 5008, 'source_line': 435}
+    if not (
+        claim['quest'] == definition['source_refs']['quest']
+        and claim['provenance']['pilot_key'] == ALAWAR_SOURCE_HOLD['source_key']
+        and claim['definition_profile'] == 'authored_variant_v1'
+        and claim['data_holds'] == []
+        and variant.get('source_data', {}).get('status') == 'COMPLETE'
+        and native.get('schema') == 'OTERYN_NATIVE_CONTAINER_REWARD/v1'
+        and native.get('revision') == '201189f871d23597b82caf88fd611454a2ddefb8'
+        and native.get('source_sha256') == digest(root, 'tools/content-schema/reward-claim-authoring/container_native_source.json')
+        and len(placements) == 1
+        and placements[0]['unique_id'] == exact_placement['unique']
+        and placements[0]['contents'][0].get('key_number') == 4502
+        and placements[0]['contents'][0]['item']['key'] == 'oteryn:item.tibia.i2970'
+        and {'path': capture, 'sha256': digest(root, capture)} in bindings
+        and exact_placement in read(root, capture)['bindings']
+    ):
+        raise ValueError('Alawar key 4502 lost its native claim or World placement evidence')
+    definition['missing_data'].remove(ALAWAR_SOURCE_HOLD)
+
+
+def reconcile_outlaw_key_holds(root, records, claims):
+    """Reconcile the four historical holds against exact native key-USE evidence."""
+    capture = read(root, OUTLAW_OVERLAY)
+    if capture['journey']['quest'] != OUTLAW_QUEST:
+        raise ValueError('Outlaw Camp key USE owner drift')
+    (definition,) = [r['definition'] for r in records
+                     if r['definition']['identity']['key'] == OUTLAW_QUEST]
+    owner = definition['source_refs']['quest']
+    (coverage,) = [r for r in read(root, CALLBACK_COVERAGE)['quests']
+                   if r['quest'] == owner['key']]
+    by_key = {c['identity']['key']: c for c in claims}
+    proven = set()
+    for source in capture['bindings']:
+        claim = by_key[source['claim']]
+        (placement,) = claim['placements']
+        (proof,) = [p for p in coverage['chests'] if p['claim'] == source['claim']]
+        (bound,) = proof['placements']
+        position = dict(zip('xyz', source['position']))
+        if (claim['quest'] != owner or claim['data_holds']
+                or proof['status'] != 'dispatch_pg_qualified'
+                or proof['reason'] != 'quest_catalogue_chests_qchk4_outlaw_camp_use_replay_and_refusal'
+                or placement['appearance_tibia_id'] != source['appearance']
+                or placement['source_binding']['project_position'] != position
+                or bound['position'] != position
+                or not any(p['server'] == 'crystalserver'
+                           and p['unique_id'] == source['unique']
+                           and p['reward_matches_current_source'] for p in bound['sources'])):
+            raise ValueError('Outlaw Camp key USE evidence drift')
+        proven.add(claim['provenance']['pilot_key'])
+    holds = outlaw_key_holds(definition)
+    missing = definition['missing_data']
+    if len(proven) != 4 or proven != {h['source_key'] for h in holds} or not all(
+            h in missing for h in holds):
+        raise ValueError('Outlaw Camp key hold membership drift')
+    definition['missing_data'] = [h for h in missing if h not in holds]
+
+
+def reconcile_paradox_key(root, records, claims):
+    """The existing key-mint owner serves this PG-qualified variant on the native map."""
+    key = 'oteryn:reward-claim.quest.key.id3899'
+    claim, = (row for row in claims if row['identity']['key'] == key)
+    alias, = (row for row in read(root, NATIVE_CLAIM_ALIASES)['aliases'] if row['claim'] == key)
+    placement, = claim['placements']
+    binding = placement['source_binding']
+    if (claim.get('definition_profile') != 'authored_variant_v1'
+            or claim['data_holds']
+            or claim['source_variant']['native_lowering']['pending_implementation']
+                != ['KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED']
+            or placement['reward'].get('key_binding') != 'canary:door-key/3899'
+            or alias['expected_revision'] != claim['identity']['revision']
+            or alias['project_position'] != binding['project_position']
+            or alias['appearance'] != placement['appearance_tibia_id']
+            or {'server': 'crystalserver', 'unique_id': alias['expected_source_uid']}
+                not in binding['legacy_unique_ids']):
+        raise ValueError('Paradox key native placement evidence differs from the qualified claim')
+    quest, = (row['definition'] for row in records
+              if row['definition']['identity']['key'] == PARADOX_QUEST)
+    # Preserve the original source witness and source digest attached above.
+    if claim['provenance']['pilot_key'] != PARADOX_KEY_HOLD['source_key']:
+        raise ValueError('Paradox key source identity differs from the historical hold')
+    quest['missing_data'].remove(PARADOX_KEY_HOLD)
+
+
 def expected_files(root, include_registration=False):
     quests = read(root, SOURCE)['quests']
     claims = claim_catalogue(root)
@@ -379,6 +707,10 @@ def expected_files(root, include_registration=False):
     records = attach_donor_data(root, records)
     from quest_soul_war_followup import apply as apply_soul_war_followup
     records, _ = apply_soul_war_followup(root, records)
+    reconcile_alawar_key_claim(root, records, claims)
+    reconcile_paradox_key(root, records, claims)
+    from quest_threatened_dreams_followup import apply as apply_threatened_dreams
+    apply_threatened_dreams(records)
     from quest_item_keys import catalogue, enrich, item_definitions, validate_references
     items = item_definitions(root)
     recipes = [row['definition'].get('recipe') or
@@ -402,6 +734,14 @@ def expected_files(root, include_registration=False):
                                 'target_items' not in original.get(stage['key'], {}))
     resolution = enrich([*recipes, {'stages': extra_stages}], index)
     validate_references(records, items)
+    # Reconcile native claim evidence after validating the frozen SOURCE holds.
+    reconcile_elvenbane_backpacks(records, claims)
+    reconcile_explorer_claims(records, claims)
+    reconcile_frontier_potion_claim(records, claims)
+    reconcile_outlaw_key_holds(root, records, claims)
+    # Reconcile the served claim after attaching the frozen SOURCE recipe evidence.
+    botany, = (r['definition'] for r in records if r['definition']['identity']['key'] == BOTANY)
+    reconcile_botany_claim(root, botany, claims)
     files, shards = {'content/quests/item-key-resolution.json': compact(resolution)}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
         chunk = records[start:start + SHARD_SIZE]
@@ -428,9 +768,11 @@ def expected_files(root, include_registration=False):
         'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (SOURCE, CLAIM_INDEX, MANIFEST, READINESS, GATES, GATE_MANIFEST, INTERACTION_MANIFEST, PROGRESS, INTERACTIONS, BUNDLE,
             'tools/content-schema/quest-authoring/ots_readiness.py',
             'tools/content-schema/quest-authoring/quest_tree_authoring.py',
+            OUTLAW_OVERLAY, CALLBACK_COVERAGE,
             'tools/content-schema/quest-authoring/quest_item_keys.py',
             'tools/content-schema/quest-authoring/quest_item_keys.schema.json',
             'content/quests/world-callbacks.json',
+            NATIVE_CLAIM_ALIASES,
             'tools/content-schema/quest-authoring/quest_donor_attachment.py',
             'tools/content-schema/quest-authoring/quest_donor_attachment.schema.json',
             'tools/content-schema/quest-authoring/quest_requirement_followup.py',
@@ -487,6 +829,7 @@ def expected_files(root, include_registration=False):
             'tools/content-schema/quest-authoring/soul_war_reconstruction.schema.json',
             'tools/content-schema/quest-authoring/soul_war_reconstruction.py',
             'tools/content-schema/quest-authoring/quest_soul_war_followup.py',
+            'tools/content-schema/quest-authoring/quest_threatened_dreams_followup.py',
             'tools/content-schema/quest-authoring/samples/soul-war-reconstruction/reconstruction.json',
             'tools/content-schema/quest-authoring/samples/soul-war-reconstruction/recipe-followup.json',
             'tools/content-schema/quest-authoring/samples/enrichment242/capture.json',

@@ -2925,6 +2925,78 @@
           ]
         },
         {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53162",
+            "revision": "definition-r1"
+          },
+          "unit_price": 254,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.adventurers_guild",
+              "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53163",
+            "revision": "definition-r1"
+          },
+          "unit_price": 381,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.adventurers_guild",
+              "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "direction": "SellToPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i53164",
+            "revision": "definition-r1"
+          },
+          "unit_price": 732,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.adventurers_guild",
+              "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "direction": "BuyFromPlayer",
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i54639",
+            "revision": "definition-r1"
+          },
+          "unit_price": 720,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.adventurers_guild",
+              "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
           "direction": "BuyFromPlayer",
           "item": {
             "family": "Item",

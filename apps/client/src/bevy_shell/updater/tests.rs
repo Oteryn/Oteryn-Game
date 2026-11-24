@@ -107,17 +107,18 @@ fn real_worker_failure_releases_pending_operation_for_retry() -> TestResult {
 #[cfg(unix)]
 #[test]
 fn maintenance_button_opens_menu_with_external_assets() -> TestResult {
-    use std::os::unix::fs::PermissionsExt;
     let mut app = app()?;
     let fixture = crate::play::screenshot::TestDir::new()?;
     let launcher = fixture.join("oteryn-launcher");
     let arguments = fixture.join("arguments");
     let assets = fixture.join("external UI");
-    std::fs::write(
+    // The checked-in executable has no writable descriptor that another test's
+    // concurrent fork could inherit before exec.
+    std::os::unix::fs::symlink(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src/bevy_shell/updater/test-launcher.sh"),
         &launcher,
-        b"#!/bin/sh\nprintf '%s\\n' \"$@\" > arguments.new\nmv arguments.new arguments\n",
     )?;
-    std::fs::set_permissions(&launcher, std::fs::Permissions::from_mode(0o700))?;
     app.world_mut().non_send_mut::<State>().directory = Some(fixture.path().to_path_buf());
     app.world_mut().non_send_mut::<State>().ui_assets = Some(assets.clone());
     click(&mut app, Action::Open)?;

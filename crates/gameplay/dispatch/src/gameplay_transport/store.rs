@@ -1,6 +1,6 @@
 //! STORE_V1 (capability 154): the admitted catalogue page with the Platform balance, and a
-//! purchase the Platform debits and the native Inbox mint delivers. Platform owns the balance,
-//! the debit and the order ledger; Game retains only the request binding and its answer
+//! purchase the Platform debits and the appropriate Game owner fulfills. Platform owns the
+//! balance, debit and order ledger. Game retains the request binding and its answer
 //! (`store_purchase_requests`) and the delivery receipt of each operation.
 #[path = "store/cosmetic_tokens.rs"]
 mod cosmetic_tokens;
@@ -12,7 +12,7 @@ use super::{ComposedFreshAdmission, FreshAdmissionStore};
 use crate::durability::character_inbox::{RewardClaimInboxMintOutput, RewardClaimInboxMintRequest};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::durability::store::{DeliveryIdentity,DeliveryPlan,HirelingServiceDeliveryPlan,HirelingStoreAction,HirelingStorePurchase,PurchaseRequest,PurchaseRequestState,StorePurchaseHistoryEntry};
+use crate::durability::store::{DeliveryIdentity,DeliveryPlan,HirelingServiceDeliveryPlan,HirelingStoreAction,HirelingStorePurchase,PurchaseRequest,PurchaseRequestState,StoreBlessingDelivery,StorePurchaseHistoryEntry};
 use crate::foundation::{CommandId, CommandRef};
 use crate::native_admission_source::store::{ProtocolError, PurchaseResult, PurchaseStoreOffer, StoreClient};
 use oteryn_gameplay_economy::store as rules;
@@ -77,6 +77,17 @@ pub fn with_store_offer(
     if !set.iter().any(|row| row.id == wire::cosmetic_tokens::CAPABILITY) {
         set.push(super::capabilities::OfferedCapability { id: wire::cosmetic_tokens::CAPABILITY, requires: &[wire::CAPABILITY_STORE_V1] });
     }
+    for id in [
+        wire::browse::CAPABILITY_HOME_V1,
+        wire::CAPABILITY_NAME_INPUT_V1,
+    ] {
+        if !set.iter().any(|row| row.id == id) {
+            set.push(super::capabilities::OfferedCapability {
+                id,
+                requires: &[wire::CAPABILITY_STORE_V1],
+            });
+        }
+    }
     set.sort_by_key(|row| row.id);
     let set: Set = Box::leak(set.into_boxed_slice());
     cache.push((base, set));
@@ -109,8 +120,19 @@ static HIRELING_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> = LazyLock::new(||
 
 static COSMETIC_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> = LazyLock::new(|| RuntimeCatalogue::from_json(crate::content::store_cosmetics::DOCUMENT));
 
-fn catalogue_for_key(key: &str)->Option<&'static RuntimeCatalogue> {
-    if crate::content::store_cosmetics::offer(key).is_some() {COSMETIC_CATALOGUE.as_ref()} else if key.starts_with("store:hireling:") {HIRELING_CATALOGUE.as_ref()} else {CATALOGUE.as_ref()}
+static BLESSING_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> =
+    LazyLock::new(RuntimeCatalogue::from_blessings);
+
+fn catalogue_for_key(key: &str) -> Option<&'static RuntimeCatalogue> {
+    if key.starts_with(catalogue::BLESSING_OFFER_PREFIX) {
+        BLESSING_CATALOGUE.as_ref()
+    } else if crate::content::store_cosmetics::offer(key).is_some() {
+        COSMETIC_CATALOGUE.as_ref()
+    } else if key.starts_with("store:hireling:") {
+        HIRELING_CATALOGUE.as_ref()
+    } else {
+        CATALOGUE.as_ref()
+    }
 }
 
 macro_rules! authority_methods {
@@ -165,10 +187,51 @@ pub(super) async fn execute(
             let Some(result) = cosmetic_tokens::purchase(owner, admitted, payload).await else { return REJECTED; };
             wire::encode_purchase_result(&result)
         }
-        wire::browse::COMMAND_TYPE => {
-            let Ok(query)=wire::browse::Query::decode(payload) else {return REJECTED;};
-            let Some(page)=browse::execute(owner,admitted,&query).await else {return REJECTED;};
+        wire::browse::COMMAND_TYPE | wire::browse::COMMAND_TYPE_RECENT => {
+            let recent = command_type == wire::browse::COMMAND_TYPE_RECENT;
+            if recent
+                && !admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(wire::browse::CAPABILITY_HOME_V1)
+            {
+                return REJECTED;
+            }
+            let Ok(query) = wire::browse::Query::decode(payload) else {
+                return REJECTED;
+            };
+            if recent && query.category != "featured" {
+                return REJECTED;
+            }
+            let Some(page) = browse::execute(owner, admitted, &query, recent).await else {
+                return REJECTED;
+            };
             page.encode()
+        }
+        wire::browse::COMMAND_TYPE_BANNERS => {
+            if !payload.is_empty()
+                || !admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(wire::browse::CAPABILITY_HOME_V1)
+            {
+                return REJECTED;
+            }
+            browse::banners().encode()
+        }
+        wire::COMMAND_TYPE_NAME_INPUT => {
+            if !admitted
+                .continuity
+                .selected_capabilities
+                .contains(wire::CAPABILITY_NAME_INPUT_V1)
+            {
+                return REJECTED;
+            }
+            let Ok(name) = wire::decode_name_input(payload) else {
+                return REJECTED;
+            };
+            let valid = crate::domain::character_name::CharacterName::parse(name).is_ok();
+            Ok(vec![u8::from(valid)])
         }
         wire::COMMAND_TYPE_STORE_CATALOGUE_PAGE => {
             let Ok(request) = wire::decode_catalogue_request(payload) else {
@@ -177,6 +240,8 @@ pub(super) async fn execute(
             let catalogue=if matches!(request.category.as_str(),"houses.hirelings"|"houses.hireling-dresses") {
                 if !admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1) {return REJECTED}
                 HIRELING_CATALOGUE.as_ref()
+            } else if request.category == catalogue::BLESSING_CATEGORY {
+                BLESSING_CATALOGUE.as_ref()
             } else if wire::cosmetic_tokens::eligible(&request.category) {COSMETIC_CATALOGUE.as_ref()} else {CATALOGUE.as_ref()};
             let Some(catalogue)=catalogue else {return REJECTED};
             let Some(page) = catalogue_page(owner, admitted, catalogue, &request).await else {
@@ -535,9 +600,9 @@ async fn purchase_retained_or_new(
         }
         return Some(refusal(code));
     }
-    if prey_expansion || charm_expansion {
-        // This permanent product has exactly one effect; reject a malformed retained
-        // order or several operations before committing even the first entitlement.
+    if prey_expansion || charm_expansion || binding.offer_key.starts_with(catalogue::BLESSING_OFFER_PREFIX) {
+        // Each of these offers has exactly one effect, so validate the retained order
+        // before committing its entitlement.
         prey_retry::delivery_ids(&answer)?;
     }
     let command = CommandRef::new(admitted.game_session_id, CommandId::new(command_id).ok()?);
@@ -552,9 +617,8 @@ async fn purchase_retained_or_new(
     })
 }
 
-/// Read the Platform delivery intent of one operation of this purchase and mint its item into
-/// the Character Inbox under the current gameplay fence; a delivered operation replays its
-/// receipt. The receipt is published to Platform and acknowledged in the outbox.
+/// Read the Platform intent and apply its effect under the current gameplay fence.
+/// Already fulfilled operations replay their receipt for publication to Platform.
 #[allow(clippy::too_many_arguments, reason = "the existing Store delivery owner receives the optional immutable Hireling reservation")]
 async fn deliver(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -610,6 +674,24 @@ async fn deliver(
             let fence = gameplay_fence(owner, admitted).await?;
             owner.root.grant_charm_expansion(owner.character, owner.holder, fence, operation_id,
                 DeliveryIdentity { account_id: account, character_id, world_id, fulfilment_unit_id: intent.entitlement_id.clone() }).await.ok()?
+        } else if let Some(blessing_key) = catalogue::blessing_storage_key(unlock_key) {
+            let fence = gameplay_fence(owner, admitted).await?;
+            owner.root.grant_store_blessing(
+                owner.character,
+                owner.holder,
+                fence,
+                StoreBlessingDelivery {
+                    operation_id,
+                    purchase_request_id: *binding.purchase_request_id.as_bytes(),
+                    identity: DeliveryIdentity {
+                        account_id: account,
+                        character_id,
+                        world_id,
+                        fulfilment_unit_id: intent.entitlement_id.clone(),
+                    },
+                    blessing_key: blessing_key.to_owned(),
+                },
+            ).await.ok()?
         } else {
             let offer = crate::content::store_cosmetics::offer(&binding.offer_key)?;
             let native = owner.active_generation?.native_gameplay()?.cosmetics()?;
@@ -618,11 +700,7 @@ async fn deliver(
             owner.root.grant_store_cosmetic(owner.character, owner.holder, fence, operation_id,
                 DeliveryIdentity { account_id: account, character_id, world_id, fulfilment_unit_id: intent.entitlement_id.clone() }, binding.offer_key.clone()).await.ok()?
         };
-        let bytes = platform.lock().await.delivery_receipt(&intent, &receipt.recovery_generation, &receipt.decided_at).ok()?;
-        if platform.lock().await.publish_receipt(&bytes).await.is_ok() {
-            let _ = owner.root.mark_store_receipt_acknowledged(operation_id).await;
-        }
-        return Some(());
+        return publish(owner, platform, operation_id, &intent, &receipt).await;
     }
     let item_key=if purchase.is_some() {"oteryn:item.tibia.i29432"} else {
         let [rules::DeliveryEffect::MintStoreInbox {item_key,count:1}]=effects.as_slice() else {return None};

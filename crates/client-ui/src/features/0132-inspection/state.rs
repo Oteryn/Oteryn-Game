@@ -4,6 +4,8 @@ pub struct Panel {
     pub allow_inspection: bool,
     pub permission_pending: Option<bool>,
     pub permission_retry_at: Option<(bool, std::time::Instant)>,
+    pub equipment_details: std::collections::BTreeMap<u32, Option<InspectedItem>>,
+    pub equipment_pending: Option<u32>,
     pub catalogue_open: bool,
     pub catalogue_loaded: bool,
     pub catalogue_next: Option<u32>,

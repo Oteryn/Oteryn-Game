@@ -3,7 +3,7 @@ package oteryn.protocol.v1.npc_shop;
 // Capability 81 NPC_SHOP_V1 (requires capability 3), command 97 NPC_SHOP (NPC-TRADE-SELLALL-1).
 // The intent names one offer of the trade window the server projected (domain 8), as
 // NpcTradeIntentV1 does. Strict codec: duplicate/unknown fields and zero or unknown enums are
-// refused; at most 55 request and 524 result bytes.
+// refused; at most 55 request bytes (57 with capability 589) and 524 result bytes.
 import "npc_service_v1.proto";
 import "world_spatial_v1.proto";
 enum NpcShopAction {
@@ -17,7 +17,8 @@ message NpcShopIntentV1 {
   uint32 offer_index = 3; // below MAX_OFFERS (1024)
   oteryn.protocol.v1.npc_service.NpcTradeSide side = 4; // SELL_ALL requires SELL
   NpcShopAction action = 5;
-  uint32 expected_unit_price = 6; // must equal the offer's price, else STALE
+  uint32 expected_unit_price = 6; // must equal the offer price
+  optional bool include_equipped = 7; // Capability 589 only. Canonical true when present.
 }
 message NpcShopResultV1 {
   oteryn.protocol.v1.npc_service.NpcIntentDisposition disposition = 1;

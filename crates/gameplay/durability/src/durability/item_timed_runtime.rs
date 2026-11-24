@@ -227,13 +227,19 @@ impl DurabilityRoot {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
-            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex'),158))")
-                .bind(request.transaction_id.as_slice()).execute(&mut **tx).await?;
-            match receipt(&mut tx, fence.game_session_id, request.transaction_id, request.binding).await {
-                Ok(Some(result)) => { tx.commit(deadline).await?; return Ok(Ok(result)); },
-                Ok(None) => (),
-                Err(TimedWriteError::Unavailable(error)) => return Err(error),
-                Err(error) => return Ok(Err(error)),
+            let inspect = matches!(request.operation, TimedOperation::Inspect);
+            if !inspect {
+                sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex'),158))")
+                    .bind(request.transaction_id.as_slice()).execute(&mut **tx).await?;
+                let replay = match receipt(&mut tx, fence.game_session_id, request.transaction_id, request.binding).await {
+                    Ok(replay) => replay,
+                    Err(TimedWriteError::Unavailable(error)) => return Err(error),
+                    Err(error) => return Ok(Err(error)),
+                };
+                if let Some(result) = replay {
+                    tx.commit(deadline).await?;
+                    return Ok(Ok(result));
+                }
             }
             if !assert_timed_fence(&mut tx, &fence, &node, house_origin).await? {
                 return Ok(Err(TimedWriteError::AuthorityRejected));
@@ -266,11 +272,20 @@ impl DurabilityRoot {
                     None
                 }
             };
-            let result = match apply(&mut tx, &fence, &request, origin_channel).await {
+            let result = if inspect {
+                execute::inspect(&mut tx, &fence, &request).await
+            } else {
+                apply(&mut tx, &fence, &request, origin_channel).await
+            };
+            let result = match result {
                 Ok(result) => result,
                 Err(TimedWriteError::Unavailable(error)) => return Err(error),
                 Err(error) => return Ok(Err(error)),
             };
+            if inspect {
+                tx.commit(deadline).await?;
+                return Ok(Ok(result));
+            }
             let bytes = encode_timed_item_result(result).map_err(|_| DurabilityError::InvalidStoredState)?;
             sqlx::query("INSERT INTO game_item_timed_commands(transaction_id,session_id,character_id,item_instance_id,request_binding,result) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6)")
                 .bind(request.transaction_id.as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(request.item.as_slice()).bind(request.binding.as_slice()).bind(bytes).execute(&mut **tx).await?;

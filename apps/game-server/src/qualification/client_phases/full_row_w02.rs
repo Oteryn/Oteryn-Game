@@ -243,6 +243,7 @@ pub(super) async fn defeat_faceless_bane(
 
     let payload =
         wire::encode_boss_key(BOSS).map_err(|error| format!("step-2-lever-encode:{error:?}"))?;
+    client.take_events();
     let lever = command(client, wire::COMMAND_TYPE_BOSS_LEVER, &payload).await?;
     let activity = wire::decode_boss_activity_reply(&lever.payload).map_err(|error| {
         format!(
@@ -263,7 +264,29 @@ pub(super) async fn defeat_faceless_bane(
         wire::BossActivityReply::Accepted { handoff, .. }
             if lever.status == CommandStatus::Accepted =>
         {
+            // The accepted result names the handoff on the source session.
+            // Only then service the independently validated destination snapshot.
+            if client.join_snapshot().game_session_id != channel_session {
+                return Err("step-2-instance-snapshot arrived before accepted lever handoff".into());
+            }
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            while client.join_snapshot().game_session_id == channel_session {
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(format!("step-2-accepted handoff {handoff:?} missing instance snapshot").into());
+                }
+                client.service_liveness(Duration::from_millis(25)).await?;
+                client.take_events();
+            }
             let instance_session = client.join_snapshot().game_session_id;
+            let scope = client.session_mut().activity_scope()
+                .ok_or("step-2-instance snapshot missing validated activity scope")?;
+            if scope.handoff != handoff
+                || scope.source_session != *channel_session.as_bytes()
+                || scope.session != *instance_session.as_bytes()
+                || !matches!(scope.scope, oteryn_protocol_oteryn::activity_scope::ActivityScope::Instance { .. })
+            {
+                return Err(format!("step-2-unexpected activity handoff {scope:?}").into());
+            }
             let instance_position = client.world_spatial().actor_position;
             if instance_session == channel_session || instance_position == lever_position {
                 return Err(format!(

@@ -94,7 +94,15 @@
       [
         "kv/alawars_vault2"
       ]
-    ]
+    ],
+    "finish": {
+      "transition": "oteryn:quest-callback/alawars-vault-exit",
+      "minimum_tracks": {
+        "oteryn:quest-progress/alawars-vault/journey": 6,
+        "oteryn:quest-progress/alawars-vault/lever": 1,
+        "oteryn:quest-progress/chosen-source/alawar_s_vault_quest/s1": 1
+      }
+    }
   },
   "oteryn:quest.black_knight_quest": {
     "groups": [
@@ -299,5 +307,16 @@
         "kv/legiondawnport"
       ]
     ]
+  },
+  "oteryn:quest.thais_lighthouse_quest": {
+    "groups": [
+      [
+        "kv/lighthouse1"
+      ],
+      [
+        "kv/lighthouse2"
+      ]
+    ],
+    "mint_only": true
   }
 }
