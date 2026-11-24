@@ -1,13 +1,14 @@
 """Exercise completion and copyback fences; native serialization is checked by G4."""
+
 import hashlib
 import json
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import native_world_canonicalization as canonical
@@ -34,33 +35,76 @@ class NativeWorldCompletion(unittest.TestCase):
         self.calls = []
         packet = Path(thaian.ROOT) / thaian.PACKET
         self.write(self.repo / thaian.PACKET, packet.read_bytes())
-        self.write(self.repo / "tools/content-migration/creature_admission_stage.py", b"fixture mapper\n")
-        self.write(self.repo / "crates/gameplay/content/src/content/project/v2.rs", b"pub enum ProjectV2Family {\n    Presentation,\n    Creature,\n    Behavior,\n}\n")
+        self.write(
+            self.repo / "tools/content-migration/creature_admission_stage.py",
+            b"fixture mapper\n",
+        )
+        self.write(
+            self.repo / "crates/gameplay/content/src/content/project/v2.rs",
+            b"pub enum ProjectV2Family {\n    Presentation,\n    Creature,\n    Behavior,\n}\n",
+        )
         documents = {locator: {} for locator in canonical.DOCUMENTS}
         documents["definitions/reference.json"] = {"records": []}
-        documents["definitions/declarations.json"] = {"records": [], "authoring_profiles": []}
-        documents["provenance/sources.json"] = {"sources": [], "source_identity_bindings": []}
+        documents["definitions/declarations.json"] = {
+            "records": [],
+            "authoring_profiles": [],
+        }
+        documents["provenance/sources.json"] = {
+            "sources": [],
+            "source_identity_bindings": [],
+        }
         documents["provenance/imports.json"] = {"batches": []}
         documents["project.json"] = {"project_revision": "fixture-r1"}
         for locator, value in documents.items():
             self.write(self.world / locator, encode(value))
         manifest = {
-            "package_key": "oteryn:fixture", "package_revision": "fixture-r1",
-            "semantic_schema_version": "fixture-v1", "licensing_metadata": "fixture",
-            "documents": [{"locator": locator} for locator in canonical.DOCUMENTS
-                          if locator not in {"manifest.json", "content.lock.json", "project.json"}],
+            "package_key": "oteryn:fixture",
+            "package_revision": "fixture-r1",
+            "semantic_schema_version": "fixture-v1",
+            "licensing_metadata": "fixture",
+            "documents": [
+                {"locator": locator}
+                for locator in canonical.DOCUMENTS
+                if locator not in {"manifest.json", "content.lock.json", "project.json"}
+            ],
         }
         manifest_raw = encode(manifest)
         digest = hashlib.sha256(manifest_raw).hexdigest()
-        values = [manifest[k] for k in ["package_key", "package_revision", "semantic_schema_version", "licensing_metadata"]] + [digest]
-        provenance = hashlib.sha256(b"".join(len(v.encode()).to_bytes(4, "big") + v.encode() for v in values)).hexdigest()
-        lock_raw = encode({"entries": [{"package_key": "oteryn:fixture", "package_revision": "fixture-r1", "package_provenance_digest": provenance}]})
+        values = [
+            manifest[k]
+            for k in [
+                "package_key",
+                "package_revision",
+                "semantic_schema_version",
+                "licensing_metadata",
+            ]
+        ] + [digest]
+        provenance = hashlib.sha256(
+            b"".join(len(v.encode()).to_bytes(4, "big") + v.encode() for v in values)
+        ).hexdigest()
+        lock_raw = encode(
+            {
+                "entries": [
+                    {
+                        "package_key": "oteryn:fixture",
+                        "package_revision": "fixture-r1",
+                        "package_provenance_digest": provenance,
+                    }
+                ]
+            }
+        )
         self.write(self.world / "manifest.json", manifest_raw)
         self.write(self.world / "content.lock.json", lock_raw)
-        self.write(self.world / "project.json", encode({
-            "project_revision": "fixture-r1", "manifest_sha256": digest,
-            "content_lock_sha256": hashlib.sha256(lock_raw).hexdigest(),
-        }))
+        self.write(
+            self.world / "project.json",
+            encode(
+                {
+                    "project_revision": "fixture-r1",
+                    "manifest_sha256": digest,
+                    "content_lock_sha256": hashlib.sha256(lock_raw).hexdigest(),
+                }
+            ),
+        )
         self.write(self.world / "unmanaged/sentinel", b"retain caller sibling\n")
         self.original = canonical.read_documents(self.world)
 
@@ -72,7 +116,19 @@ class NativeWorldCompletion(unittest.TestCase):
     def native_output(self, command, *, cwd, check):
         self.assertEqual(cwd, self.repo)
         self.assertTrue(check)
-        self.assertEqual(command[:8], ["cargo", "run", "--locked", "-p", "oteryn-gameplay-content", "--bin", "oteryn-world-project-canonicalize", "--"])
+        self.assertEqual(
+            command[:8],
+            [
+                "cargo",
+                "run",
+                "--locked",
+                "-p",
+                "oteryn-gameplay-content",
+                "--bin",
+                "oteryn-world-project-canonicalize",
+                "--",
+            ],
+        )
         source = Path(command[command.index("--input-root") + 1])
         output = Path(command[command.index("--output-root") + 1])
         self.assertNotEqual(source, self.world)
@@ -82,7 +138,10 @@ class NativeWorldCompletion(unittest.TestCase):
         return subprocess.CompletedProcess(command, 0)
 
     def test_standalone_uses_native_completion_for_the_explicit_package(self):
-        self.write(self.repo / "content/world/project.json", b"do not borrow repository output\n")
+        self.write(
+            self.repo / "content/world/project.json",
+            b"do not borrow repository output\n",
+        )
         with patch.object(canonical.subprocess, "run", side_effect=self.native_output):
             extent = thaian.install(self.repo, self.world)
         self.assertEqual(len(self.calls), 1)
@@ -90,31 +149,99 @@ class NativeWorldCompletion(unittest.TestCase):
         self.assertEqual(extent["references"], 3)
         self.assertEqual(extent["imports"], 1)
         completed = canonical.read_documents(self.world)
-        changed = {locator for locator in completed if completed[locator] != self.original[locator]}
+        changed = {
+            locator
+            for locator in completed
+            if completed[locator] != self.original[locator]
+        }
         self.assertEqual(changed, canonical.OWNED_DOCUMENTS)
-        self.assertEqual((self.world / "unmanaged/sentinel").read_bytes(), b"retain caller sibling\n")
-        self.assertEqual((self.repo / "content/world/project.json").read_bytes(), b"do not borrow repository output\n")
+        self.assertEqual(
+            (self.world / "unmanaged/sentinel").read_bytes(), b"retain caller sibling\n"
+        )
+        self.assertEqual(
+            (self.repo / "content/world/project.json").read_bytes(),
+            b"do not borrow repository output\n",
+        )
 
     def test_native_failure_cannot_leave_staged_python_bytes_in_the_input(self):
         default_world = self.repo / "content/world"
         shutil.copytree(self.world, default_world)
-        with patch.object(canonical.subprocess, "run", side_effect=subprocess.CalledProcessError(1, "cargo")) as native:
-            with self.assertRaises(subprocess.CalledProcessError):
-                thaian.install(self.repo)
+        with (
+            patch.object(
+                canonical.subprocess,
+                "run",
+                side_effect=subprocess.CalledProcessError(1, "cargo"),
+            ) as native,
+            self.assertRaises(subprocess.CalledProcessError),
+        ):
+            thaian.install(self.repo)
         native.assert_called_once()
         self.assertEqual(canonical.read_documents(default_world), self.original)
 
-    def test_qualification_installs_buddel_before_native_serialization(self):
+    def test_qualification_installs_travel_and_trades_before_native_serialization(self):
+        item = {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3361",
+            "revision": "fixture-r1",
+        }
+        service = {"key": "oteryn:service.trade.dixi", "revision": "fixture-r1"}
+        offer = {"item": item, "direction": "SellToPlayer", "unit_price": 31}
+        self.write(
+            self.world / "definitions/reference.json",
+            encode({"records": [{"kind": "Item", "identity": item}]}),
+        )
+        self.write(
+            self.world / "definitions/declarations.json",
+            encode(
+                {
+                    "records": [
+                        {"kind": "Service", "identity": service, "offers": [offer]},
+                        {
+                            "kind": "NPC",
+                            "identity": {"key": "oteryn:npc.dixi"},
+                            "services": [service],
+                        },
+                    ],
+                    "authoring_profiles": [],
+                }
+            ),
+        )
+
         def native(command, **kwargs):
             staging = Path(command[command.index("--input-root") + 1])
             install_buddel.assert_called_once_with(self.repo, staging)
+            project_routes.assert_called_once_with(self.repo, staging)
+            capture.assert_called_once_with(self.repo)
+            locator = "definitions/declarations.json"
+            declarations = (staging / locator).read_bytes()
+            self.assertEqual(
+                json.loads(declarations)["records"][0]["offers"],
+                [dict(offer, unit_price=25)],
+            )
+            manifest = json.loads((staging / "manifest.json").read_bytes())
+            (seal,) = [
+                row for row in manifest["documents"] if row["locator"] == locator
+            ]
+            self.assertEqual(seal["sha256"], hashlib.sha256(declarations).hexdigest())
             return self.native_output(command, **kwargs)
 
-        argv = ["native_world_canonicalization.py", "--repo-root", str(self.repo),
-                "--input-root", str(self.world)]
-        with patch.object(sys, "argv", argv), \
-                patch("buddel_travel.install_buddel") as install_buddel, \
-                patch.object(canonical.subprocess, "run", side_effect=native):
+        argv = [
+            "native_world_canonicalization.py",
+            "--repo-root",
+            str(self.repo),
+            "--input-root",
+            str(self.world),
+        ]
+        with (
+            patch.object(sys, "argv", argv),
+            patch("buddel_travel.install_buddel") as install_buddel,
+            patch("travel_route_corrections.project_routes") as project_routes,
+            patch(
+                "import_cyclopedia_global.load_capture",
+                return_value={3361: {"npc_buy_from": [{"npc": "Dixi", "price": 25}]}},
+            ) as capture,
+            patch.object(canonical.subprocess, "run", side_effect=native),
+        ):
             canonical.main()
         self.assertEqual(len(self.calls), 1)
 
@@ -143,14 +270,73 @@ class NativeWorldCompletion(unittest.TestCase):
         with (
             patch.object(spawn, "install") as install_spawn,
             patch("buddel_travel.install_buddel") as install_buddel,
+            patch("travel_route_corrections.project_routes"),
+            patch("import_cyclopedia_global.apply_trade_source"),
+            patch("import_cyclopedia_global.load_capture"),
+            patch("questpc7_world_seal.refresh"),
             patch.object(parity, "install_documents") as install_parity,
             patch.object(canonical.subprocess, "run", side_effect=native),
         ):
             with self.assertRaises(subprocess.CalledProcessError):
-                canonical.complete_world_project(self.repo, self.world, include_buddel=True)
+                canonical.complete_world_project(self.repo, self.world, include_world_successors=True)
         self.assertEqual(canonical.read_documents(self.world), self.original)
         for path in paths:
             self.assertEqual((self.repo / path).read_bytes(), b"keep checkout untouched")
+
+    def test_normal_regeneration_completes_natively_before_refreshing_pins(self):
+        world = self.repo / "content/world"
+        shutil.copytree(self.world, world)
+        producer = self.repo / "materialize_content_world_project_v2"
+        self.write(producer, b"fixture executable")
+        canonical_outputs = []
+
+        class Completed(Exception):
+            pass
+
+        def canonical_writer(command, *, cwd, check):
+            self.assertEqual(command[0], str(producer))
+            self.assertEqual(cwd, self.repo)
+            self.assertTrue(check)
+            source = Path(command[command.index("--canonicalize-root") + 1])
+            output = Path(command[command.index("--output-root") + 1])
+            self.assertNotEqual(source, world)
+            install_buddel.assert_called_once_with(self.repo, source)
+            project_routes.assert_called_once_with(self.repo, source)
+            self.assertFalse(output.exists())
+            for locator in canonical.DOCUMENTS:
+                self.write(output / locator, (source / locator).read_bytes())
+            canonical_outputs.append(output)
+
+        def materialize():
+            canonical.complete_world_project(
+                self.repo, world, include_world_successors=True,
+                materializer_executable=producer,
+            )
+
+        def measured():
+            self.assertEqual(len(canonical_outputs), 1)
+            self.assertNotEqual(canonical.read_documents(world), self.original)
+            raise Completed
+
+        with (
+            patch.object(sys, "argv", ["regenerate_content.py"]),
+            patch.object(regenerate, "ROOT", self.repo),
+            patch.object(regenerate, "WORLD", world),
+            patch.object(regenerate, "run"),
+            patch.object(regenerate, "refresh_quest_callback_proof"),
+            patch.object(regenerate, "materialize_world", side_effect=materialize),
+            patch("buddel_travel.install_buddel") as install_buddel,
+            patch("travel_route_corrections.project_routes") as project_routes,
+            patch("import_cyclopedia_global.apply_trade_source"),
+            patch("import_cyclopedia_global.load_capture"),
+            patch("questpc7_world_seal.refresh"),
+            patch.object(regenerate, "refresh_source_cohort_extent", side_effect=measured),
+            patch.object(regenerate, "repin_rust_inventory") as repin,
+            patch.object(canonical.subprocess, "run", side_effect=canonical_writer),
+            self.assertRaises(Completed),
+        ):
+            regenerate.main()
+        repin.assert_not_called()
 
     def test_missing_extra_or_changed_unowned_output_refuses_every_replacement(self):
         def missing(output):
@@ -164,14 +350,17 @@ class NativeWorldCompletion(unittest.TestCase):
 
         for mutate in [missing, extra, unowned]:
             with self.subTest(mutation=mutate.__name__):
-                def native(command, **kwargs):
+
+                def native(command, *, mutation=mutate, **kwargs):
                     result = self.native_output(command, **kwargs)
-                    mutate(self.calls[-1])
+                    mutation(self.calls[-1])
                     return result
 
-                with patch.object(canonical.subprocess, "run", side_effect=native):
-                    with self.assertRaises(ValueError):
-                        canonical.complete_world_project(self.repo, self.world)
+                with (
+                    patch.object(canonical.subprocess, "run", side_effect=native),
+                    self.assertRaises(ValueError),
+                ):
+                    canonical.complete_world_project(self.repo, self.world)
                 self.assertEqual(canonical.read_documents(self.world), self.original)
 
     def test_native_output_cannot_drop_an_authored_source(self):
@@ -183,9 +372,11 @@ class NativeWorldCompletion(unittest.TestCase):
             path.write_bytes(encode(document))
             return result
 
-        with patch.object(canonical.subprocess, "run", side_effect=native):
-            with self.assertRaisesRegex(ValueError, "source cohort"):
-                canonical.complete_world_project(self.repo, self.world)
+        with (
+            patch.object(canonical.subprocess, "run", side_effect=native),
+            self.assertRaisesRegex(ValueError, "source cohort"),
+        ):
+            canonical.complete_world_project(self.repo, self.world)
         self.assertEqual(canonical.read_documents(self.world), self.original)
 
     def test_live_input_change_is_not_overwritten_by_completed_output(self):
@@ -196,9 +387,11 @@ class NativeWorldCompletion(unittest.TestCase):
             (self.world / "project.json").write_bytes(replacement)
             return result
 
-        with patch.object(canonical.subprocess, "run", side_effect=native):
-            with self.assertRaisesRegex(ValueError, "input changed"):
-                canonical.complete_world_project(self.repo, self.world)
+        with (
+            patch.object(canonical.subprocess, "run", side_effect=native),
+            self.assertRaisesRegex(ValueError, "input changed"),
+        ):
+            canonical.complete_world_project(self.repo, self.world)
         expected = dict(self.original, **{"project.json": replacement})
         self.assertEqual(canonical.read_documents(self.world), expected)
 
@@ -208,16 +401,23 @@ class NativeWorldCompletion(unittest.TestCase):
         outside.write_bytes(document.read_bytes())
         document.unlink()
         document.symlink_to(outside)
-        with patch.object(canonical.subprocess, "run") as native:
-            with self.assertRaisesRegex(ValueError, "symlink"):
-                canonical.complete_world_project(self.repo, self.world)
+        with (
+            patch.object(canonical.subprocess, "run") as native,
+            self.assertRaisesRegex(ValueError, "symlink"),
+        ):
+            canonical.complete_world_project(self.repo, self.world)
         native.assert_not_called()
 
     def prebuilt_writer(self):
         directory = self.repo / "prebuilt"
         directory.mkdir()
-        binding = {"head": "1" * 40, "workspace": str(self.repo),
-                   "variant": prebuilt.VARIANT, "toolchain": "1.100.0", "profile": "dev"}
+        binding = {
+            "head": "1" * 40,
+            "workspace": str(self.repo),
+            "variant": prebuilt.VARIANT,
+            "toolchain": "1.100.0",
+            "profile": "dev",
+        }
         manifest = dict(binding, executables={})
         for name, target in prebuilt.TARGETS.items():
             path = directory / target["name"]
@@ -240,20 +440,31 @@ class NativeWorldCompletion(unittest.TestCase):
         manifest, binding = self.prebuilt_writer()
         with patch.object(prebuilt, "identity", return_value=binding):
             extent = canonical.complete_world_project(
-                self.repo, self.world, canonicalizer_manifest=manifest)
+                self.repo, self.world, canonicalizer_manifest=manifest
+            )
         self.assertEqual(extent["creatures"], 1)
         completed = canonical.read_documents(self.world)
-        self.assertEqual({name for name in completed if completed[name] != self.original[name]},
-                         canonical.OWNED_DOCUMENTS)
-        self.assertEqual((self.world / "unmanaged/sentinel").read_bytes(), b"retain caller sibling\n")
+        self.assertEqual(
+            {name for name in completed if completed[name] != self.original[name]},
+            canonical.OWNED_DOCUMENTS,
+        )
+        self.assertEqual(
+            (self.world / "unmanaged/sentinel").read_bytes(), b"retain caller sibling\n"
+        )
 
     def test_invalid_explicit_prebuilt_writer_cannot_fall_back_to_cargo(self):
         manifest, binding = self.prebuilt_writer()
-        (manifest.parent / prebuilt.TARGETS["canonicalizer"]["name"]).write_bytes(b"changed")
-        with patch.object(prebuilt, "identity", return_value=binding), \
-                patch.object(canonical.subprocess, "run") as native:
-            with self.assertRaisesRegex(ValueError, "checksum"):
-                canonical.complete_world_project(self.repo, self.world, canonicalizer_manifest=manifest)
+        (manifest.parent / prebuilt.TARGETS["canonicalizer"]["name"]).write_bytes(
+            b"changed"
+        )
+        with (
+            patch.object(prebuilt, "identity", return_value=binding),
+            patch.object(canonical.subprocess, "run") as native,
+            self.assertRaisesRegex(ValueError, "checksum"),
+        ):
+            canonical.complete_world_project(
+                self.repo, self.world, canonicalizer_manifest=manifest
+            )
         native.assert_not_called()
         self.assertEqual(canonical.read_documents(self.world), self.original)
 

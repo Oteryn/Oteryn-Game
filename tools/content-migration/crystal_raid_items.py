@@ -23,7 +23,7 @@ BOW = 8029
 CORPSES = {number for chain in CHAINS for number in chain}
 IDS = CORPSES | {BOW}
 CARRIED = {BOW, 10332, 10334, 10335}
-CORPSE_SQL = "apps/game-server/migrations/2978_crystal_raid_corpse_chains.sql"
+CORPSE_SQL = "apps/game-server/migrations/3161_crystal_raid_corpse_chains.sql"
 
 
 def item_bindings(root):

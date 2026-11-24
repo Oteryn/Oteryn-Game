@@ -1,0 +1,912 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnalyticsQueryResult",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/GoldSourcesSinksResult"
+    },
+    {
+      "$ref": "#/$defs/GoldSupplyResult"
+    },
+    {
+      "$ref": "#/$defs/ItemSupplyByTypeResult"
+    },
+    {
+      "$ref": "#/$defs/MarketPriceSeriesResult"
+    },
+    {
+      "$ref": "#/$defs/MarketVolumeResult"
+    },
+    {
+      "$ref": "#/$defs/NpcTradeFlowResult"
+    },
+    {
+      "$ref": "#/$defs/TopWealthResult"
+    }
+  ],
+  "$defs": {
+    "AnalyticsRows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/GoldFlowRow"
+      },
+      "maxItems": 10000
+    },
+    "AnalyticsRows2": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/GoldSupplyRow"
+      },
+      "maxItems": 10000
+    },
+    "AnalyticsRows3": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ItemSupplyRow"
+      },
+      "maxItems": 10000
+    },
+    "AnalyticsRows4": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MarketPriceRow"
+      },
+      "maxItems": 10000
+    },
+    "AnalyticsRows5": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MarketVolumeRow"
+      },
+      "maxItems": 10000
+    },
+    "AnalyticsRows6": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NpcTradeRow"
+      },
+      "maxItems": 10000
+    },
+    "AnalyticsRows7": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/WealthRow"
+      },
+      "maxItems": 10000
+    },
+    "Completeness": {
+      "type": "string",
+      "enum": [
+        "PROVEN_COMPLETE_FOR_DECLARED_DURABLE_SCOPE",
+        "NO_KNOWN_GAP_BEST_EFFORT",
+        "PARTIAL",
+        "UNKNOWN"
+      ]
+    },
+    "Decimal": {
+      "description": "Exact nonnegative amount or count, including values outside JSON's safe integer range.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$"
+    },
+    "EconomyContext": {
+      "type": "object",
+      "properties": {
+        "active_characters": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_revision": {
+          "type": "string"
+        },
+        "ruleset_revision": {
+          "type": "string"
+        },
+        "world_age_days": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "world_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "world_id",
+        "world_age_days",
+        "ruleset_revision",
+        "content_revision"
+      ]
+    },
+    "GoldFlowRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "burned_gold": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "minted_gold": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "source",
+        "minted_gold",
+        "burned_gold"
+      ]
+    },
+    "GoldSourcesSinksFilters": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "GoldSourcesSinksId": {
+      "type": "string",
+      "enum": [
+        "gold_sources_sinks"
+      ]
+    },
+    "GoldSourcesSinksParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/GoldSourcesSinksFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/GoldSourcesSinksId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "GoldSourcesSinksResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/GoldSourcesSinksParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/GoldSourcesSinksId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "GoldSupplyFilters": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "GoldSupplyId": {
+      "type": "string",
+      "enum": [
+        "gold_supply"
+      ]
+    },
+    "GoldSupplyParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/GoldSupplyFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/GoldSupplyId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "GoldSupplyResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/GoldSupplyParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/GoldSupplyId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows2"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "GoldSupplyRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "gold": {
+          "$ref": "#/$defs/Decimal"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "gold"
+      ]
+    },
+    "Grain": {
+      "type": "string",
+      "enum": [
+        "minute",
+        "hour",
+        "day"
+      ]
+    },
+    "ItemSupplyByTypeFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "ItemSupplyByTypeId": {
+      "type": "string",
+      "enum": [
+        "item_supply_by_type"
+      ]
+    },
+    "ItemSupplyByTypeParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/ItemSupplyByTypeFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/ItemSupplyByTypeId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "ItemSupplyByTypeResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/ItemSupplyByTypeParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/ItemSupplyByTypeId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows3"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "ItemSupplyRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "quantity": {
+          "$ref": "#/$defs/Decimal"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "item_type_id",
+        "quantity"
+      ]
+    },
+    "MarketPriceRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "max_unit_price_gold": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "median_unit_price_gold": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "min_unit_price_gold": {
+          "$ref": "#/$defs/Decimal"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "item_type_id",
+        "min_unit_price_gold",
+        "median_unit_price_gold",
+        "max_unit_price_gold"
+      ]
+    },
+    "MarketPriceSeriesFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "item_type_id"
+      ]
+    },
+    "MarketPriceSeriesId": {
+      "type": "string",
+      "enum": [
+        "market_price_series"
+      ]
+    },
+    "MarketPriceSeriesParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/MarketPriceSeriesFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/MarketPriceSeriesId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "MarketPriceSeriesResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/MarketPriceSeriesParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/MarketPriceSeriesId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows4"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "MarketVolumeFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "MarketVolumeId": {
+      "type": "string",
+      "enum": [
+        "market_volume"
+      ]
+    },
+    "MarketVolumeParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/MarketVolumeFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/MarketVolumeId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "MarketVolumeResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/MarketVolumeParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/MarketVolumeId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows5"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "MarketVolumeRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "gold_volume": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "quantity": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "trade_count": {
+          "$ref": "#/$defs/Decimal"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "item_type_id",
+        "trade_count",
+        "quantity",
+        "gold_volume"
+      ]
+    },
+    "NpcTradeFlowFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "npc_type_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "NpcTradeFlowId": {
+      "type": "string",
+      "enum": [
+        "npc_trade_flow"
+      ]
+    },
+    "NpcTradeFlowParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/NpcTradeFlowFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/NpcTradeFlowId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "NpcTradeFlowResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/NpcTradeFlowParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/NpcTradeFlowId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows6"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "NpcTradeRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "gold_paid_to_npc": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "gold_received_from_npc": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "items_bought_from_npc": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "items_sold_to_npc": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "npc_type_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "npc_type_id",
+        "item_type_id",
+        "items_bought_from_npc",
+        "items_sold_to_npc",
+        "gold_paid_to_npc",
+        "gold_received_from_npc"
+      ]
+    },
+    "PageLimit": {
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 100,
+      "minimum": 1
+    },
+    "TopWealthFilters": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "$ref": "#/$defs/PageLimit"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "limit"
+      ]
+    },
+    "TopWealthId": {
+      "type": "string",
+      "enum": [
+        "top_wealth"
+      ]
+    },
+    "TopWealthParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/TopWealthFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/TopWealthId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "TopWealthResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/TopWealthParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/TopWealthId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows7"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "Watermark": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "WealthRow": {
+      "type": "object",
+      "properties": {
+        "analytics_actor_id": {
+          "type": "string"
+        },
+        "gold": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "rank": {
+          "$ref": "#/$defs/PageLimit"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "rank",
+        "analytics_actor_id",
+        "gold"
+      ]
+    }
+  }
+}

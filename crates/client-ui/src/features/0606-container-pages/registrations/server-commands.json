@@ -1,0 +1,18 @@
+{
+  "mechanic": "0606-container-pages",
+  "kind": "handlers",
+  "id": "0606-container-pages-server-commands",
+  "status": "unsupported",
+  "commands": [
+    6375
+  ],
+  "direction": "client_to_server",
+  "reason": "Client wiring is delivered in its own lane.",
+  "not_applicable": {
+    "state": "The native client has not integrated the new server command.",
+    "protocol": "The protocol-oteryn crate owns the wire grammar.",
+    "view": "The native client lane owns the corresponding view.",
+    "input": "The native client lane owns the corresponding input.",
+    "settings": "The server command introduces no local settings."
+  }
+}

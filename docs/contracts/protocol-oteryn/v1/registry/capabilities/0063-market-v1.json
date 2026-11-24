@@ -15,5 +15,5 @@
     28
   ],
   "offered": false,
-  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES; current session and reachable authored depot required for every request."
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES; current session required for every request; reachable authored depot required except for rate-limited statistics."
 }

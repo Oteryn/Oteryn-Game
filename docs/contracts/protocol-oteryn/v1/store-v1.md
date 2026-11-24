@@ -109,3 +109,26 @@ the opaque Platform boundary instead of synthesizing ledger rows from purchases.
 ## Store browser
 
 Read-only command 6118 extends the existing capability with hierarchical categories, full-catalogue search/sorts and server-resolved artwork. See [store-browser-v1.md](store-browser-v1.md). Existing purchase and commercial authority rules above remain unchanged.
+
+## Character name input
+
+Capability 587 requires selected STORE_V1 (154) and the configured Store
+client. This is name-syntax preflight for the Character Name Change input.
+Crystal 201189f8 `data/modules/scripts/gamestore/init.lua:1779–1817` and the
+[Fandom archive](https://tibia.fandom.com/wiki/Name_Change) document a
+Store-supplied new name. Game applies its existing CharacterName policy
+revision 1.
+
+### Character name input request
+
+Command 6337 takes up to 128 bytes of UTF-8 text, without a prefix or additional
+fields. The server parses the exact text using CharacterName (ASCII letters
+and single interior spaces, 2–29 bytes). It never trims or rewrites the input.
+
+### Character name input result
+
+One byte, 1 for syntactically valid and 0 for invalid. Invalid UTF-8 or
+oversize framing yields Rejected without a payload. This request neither
+reserves a name nor checks availability. It cannot debit the Wallet, rename
+a Character, or activate the offline Platform-issued rename service. The
+strict codecs and behaviour for command 185 remain unchanged.

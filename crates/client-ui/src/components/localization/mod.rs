@@ -74,3 +74,18 @@ pub fn tr(source: &'static str) -> &'static str {
 }
 
 include!(concat!(env!("OUT_DIR"), "/localized_messages.rs"));
+
+#[cfg(test)]
+#[test]
+fn raw_xp_labels_describe_experience_before_bonuses() {
+    for (language, raw) in [
+        (Language::De, "Basis-EP"),
+        (Language::Es, "XP base"),
+        (Language::Pl, "Bazowe PD"),
+        (Language::Pt, "XP base"),
+        (Language::Sv, "Grund-XP"),
+    ] {
+        assert_eq!(translate(language, "Raw XP"), raw);
+        assert!(translate(language, "Raw XP/h: {}").starts_with(raw));
+    }
+}

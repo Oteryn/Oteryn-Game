@@ -17,6 +17,7 @@ pub(super) struct Control {
 }
 #[derive(Clone)]
 pub(super) enum Kind {
+    ChatMode,
     Send,
     Trade,
     Keyword(String),
@@ -83,6 +84,11 @@ fn activate(
         return;
     };
     match &control.kind {
+        Kind::ChatMode => {
+            if let Some(play) = &owner.play {
+                play.link.chat_console_mode();
+            }
+        }
         Kind::Send => submission::request(&owner, &mut state, event.entity, widgets.message, actor),
         Kind::Trade | Kind::Keyword(_) => {
             let text = match &control.kind {
@@ -150,6 +156,8 @@ pub(super) fn project(
     mut fields: Query<&mut EditableText, With<Message>>,
     mut nodes: Query<&mut Node>,
     mut text: Query<&mut Text>,
+    children: Query<&Children>,
+    mut focus: ResMut<InputFocus>,
 ) {
     let Some(root) = state.widgets else {
         state.conversation = Ui::default();
@@ -171,6 +179,32 @@ pub(super) fn project(
         }
     }
     let widgets = root.conversation;
+    use oteryn_client_ui::chat::ComposerMode;
+    let mode = play.link.npc_chat_mode();
+    let enabled = mode != ComposerMode::Off;
+    for e in [widgets.message, widgets.send] {
+        if enabled {
+            commands.entity(e).remove::<bevy::ui::InteractionDisabled>();
+        } else {
+            commands.entity(e).insert(bevy::ui::InteractionDisabled);
+        }
+    }
+    if !enabled && focus.get() == Some(widgets.message) {
+        focus.clear();
+    }
+    if let Ok(children) = children.get(widgets.chat_mode)
+        && let Some(caption) = children.first()
+        && let Ok(mut caption) = text.get_mut(*caption)
+    {
+        let value = match mode {
+            ComposerMode::On | ComposerMode::Temporary => "Chat on",
+            ComposerMode::Auto => "Chat auto",
+            ComposerMode::Off => "Chat off",
+        };
+        if caption.0 != value {
+            caption.0 = value.into();
+        }
+    }
     let visible = dialogue.selected && dialogue.visible();
     if let Ok(mut node) = nodes.get_mut(widgets.controls) {
         node.display = if visible && dialogue.target.is_some() {
@@ -188,7 +222,7 @@ pub(super) fn project(
             generation: Some(generation),
             target: dialogue.target,
             field: Some(widgets.message),
-            focus: visible.then_some(widgets.message),
+            focus: (enabled && visible).then_some(widgets.message),
             ..default()
         };
         if let Ok(mut editor) = fields.get_mut(widgets.message) {
@@ -198,12 +232,11 @@ pub(super) fn project(
     let context_changed = changed || state.conversation.lines != dialogue.lines;
     if context_changed {
         state.conversation.lines.clone_from(&dialogue.lines);
-        for entity in [widgets.send, widgets.trade] {
-            let kind = if entity == widgets.send {
-                Kind::Send
-            } else {
-                Kind::Trade
-            };
+        for (entity, kind) in [
+            (widgets.send, Kind::Send),
+            (widgets.trade, Kind::Trade),
+            (widgets.chat_mode, Kind::ChatMode),
+        ] {
             commands.entity(entity).insert(Control {
                 generation,
                 target: dialogue.target,

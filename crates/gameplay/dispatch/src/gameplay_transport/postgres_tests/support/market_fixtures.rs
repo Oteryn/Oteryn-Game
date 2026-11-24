@@ -140,8 +140,37 @@ async fn routed_market_payloads(
     Ok(replies)
 }
 
+#[derive(Clone, Copy)]
+pub(super) enum CatalogueExtension {
+    Tier,
+    Artwork,
+}
+
+#[derive(Clone, Copy)]
+enum MarketScenario {
+    Standard { bounds: bool, population: bool },
+    Catalogue(CatalogueExtension),
+    PriceLookup,
+}
+
 pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
-    run(async |admin| {
+    run_scenario(MarketScenario::Standard { bounds, population })
+}
+
+pub(super) fn scenario_with_catalogue_extension(extension: CatalogueExtension) -> TestResult {
+    run_scenario(MarketScenario::Catalogue(extension))
+}
+
+pub(super) fn scenario_with_price_lookup() -> TestResult {
+    run_scenario(MarketScenario::PriceLookup)
+}
+
+fn run_scenario(scenario: MarketScenario) -> TestResult {
+    let (bounds, population) = match scenario {
+        MarketScenario::Standard { bounds, population } => (bounds, population),
+        _ => (false, false),
+    };
+    run(async move |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "market_settlement", true, false).await?;
         super::reset();
@@ -1117,6 +1146,67 @@ pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
         };
         assert!(items.iter().any(|item| item.definition == first.definition));
         assert!(items.iter().all(|item| filter.matches(item)));
+        if let MarketScenario::Catalogue(extension) = scenario {
+            let next = admitted.continuity.next_command_id;
+            let request = |tier: Option<u8>, page: u32| -> TestResult<Vec<u8>> {
+                // Emit the new request shape independently of the protocol encoder.
+                let mut filter = serde_json::json!({});
+                if let Some(tier) = tier {
+                    filter["forge_tier"] = tier.into();
+                }
+                let json = serde_json::to_vec(&serde_json::json!({
+                    "query": "Catalogue", "filter": filter, "page": page,
+                }))?;
+                let mut payload = vec![8, 9, 66, u8::try_from(json.len())?];
+                payload.extend(json);
+                Ok(payload)
+            };
+            let legacy = routed_market_payloads(&owner, &mut admitted, [(next, request(Some(0), 0)?)]).await?;
+            assert_eq!(details::decode_reply(&legacy[0]).map_err(debug)?, Reply::Refused { code: 9 });
+            assert!(first.appearance.is_none());
+            admitted.continuity.selected_capabilities =
+                crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                    owner.offered_capabilities(),
+                    &[4, 6, 18, 37, 63, 588],
+                )
+                .ok_or("selected Market catalogue capability")?;
+            let next = admitted.continuity.next_command_id;
+            match extension {
+                CatalogueExtension::Tier => {
+                    let replies = routed_market_payloads(
+                        &owner,
+                        &mut admitted,
+                        [(next, request(Some(0), 0)?), (next + 1, request(Some(1), 0)?)],
+                    ).await?;
+                    let tier_zero: serde_json::Value = serde_json::from_slice(&replies[0])?;
+                    let upgraded: serde_json::Value = serde_json::from_slice(&replies[1])?;
+                    assert_eq!(tier_zero["items"][0]["definition"], first.definition);
+                    assert_eq!(upgraded["items"], serde_json::json!([]));
+                }
+                CatalogueExtension::Artwork => {
+                    let item_position = native.market_references().into_iter().filter(|reference| {
+                        index.definition_at(*reference)
+                            .is_some_and(|(key, revision)| native.marketable_definition(key, revision))
+                    }).position(|item| item.get() == reference).ok_or("fixture ware in catalogue")?;
+                    let page = u32::try_from(item_position / details::PAGE_SIZE)?;
+                    let replies = routed_market_payloads(
+                        &owner, &mut admitted, [(next, request(None, page)?)],
+                    ).await?;
+                    let Reply::Catalogue { items, .. } =
+                        details::decode_reply(&replies[0]).map_err(debug)?
+                    else {
+                        return Err("artwork catalogue refused".into());
+                    };
+                    let item = items.iter().find(|item| item.definition == reference)
+                        .ok_or("fixture ware in returned page")?;
+                    let policy = native.item_policy(&key, &revision).ok_or("qualified item")?;
+                    let id = policy.record().production_binding.external_id.parse::<u16>()?;
+                    let artwork = item.appearance.as_ref().ok_or("qualified item has no appearance")?;
+                    assert_eq!(artwork.object_appearance_id.get(), id);
+                    assert_eq!(artwork.catalogue_digest, generation.identity().client_artifact_digest());
+                }
+            }
+        }
         let stale = crate::durability::item_transfer::CurrentCharacterItemFence {
             connection_generation: crate::foundation::ConnectionGeneration::new(99)
                 .map_err(debug)?,
@@ -1125,7 +1215,14 @@ pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
         assert!(
             harness
                 .root
-                .market_projection(&authority, &harness.node, stale, Some(key.clone()), 0, None)
+                .market_projection(
+                    &authority,
+                    &harness.node,
+                    stale,
+                    Some(key.clone()),
+                    None,
+                    None
+                )
                 .await
                 .is_err()
         );
@@ -1187,6 +1284,122 @@ pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
             (prices.sell.trades, prices.sell.units, prices.sell.average),
             (1, 4, Some(100))
         );
+        if matches!(scenario, MarketScenario::PriceLookup) {
+            let before = snapshot(&harness).await?;
+            {
+                let mut runtime = owner.runtime.lock().await;
+                let expected = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                runtime
+                    .relocate_arena_player(
+                        deps.actor,
+                        session,
+                        expected,
+                        MovementLocalPosition {
+                            x: 3,
+                            y: 0,
+                            floor: 7,
+                        },
+                    )
+                    .map_err(debug)?;
+            }
+            let next = admitted.continuity.next_command_id;
+            let offer = routed_market(&owner, &mut admitted, [(next, sell)]).await?;
+            assert_eq!(
+                decode_reply(offer.first().ok_or("off-depot offer reply")?)
+                    .map_err(debug)?
+                    .code,
+                11
+            );
+            let query = details::encode_query(&Query::Statistics {
+                definition: reference,
+            })
+            .map_err(debug)?;
+            let next = admitted.continuity.next_command_id;
+            let replies = routed_market_payloads(
+                &owner,
+                &mut admitted,
+                [
+                    (next, query.clone()),
+                    (
+                        next + 1,
+                        details::encode_query(&Query::Book {
+                            definition: reference,
+                            page: 0,
+                        })
+                        .map_err(debug)?,
+                    ),
+                    (
+                        next + 2,
+                        details::encode_query(&Query::Catalogue {
+                            filter: Filter::default(),
+                            page: 0,
+                        })
+                        .map_err(debug)?,
+                    ),
+                ],
+            )
+            .await?;
+            assert_eq!(replies.len(), 3);
+            for reply in &replies[1..] {
+                assert_eq!(
+                    details::decode_reply(reply).map_err(debug)?,
+                    Reply::Refused { code: 11 }
+                );
+            }
+            let reply =
+                details::decode_reply(replies.first().ok_or("off-depot prices")?).map_err(debug)?;
+            let Reply::Statistics(mut remote) = reply else {
+                return Err(format!("off-depot price lookup returned {reply:?}").into());
+            };
+            // Both queries use their own statement timestamp.
+            remote.as_of_us = prices.as_of_us;
+            remote.since_us = prices.since_us;
+            assert_eq!(remote, prices);
+
+            // Keep Tokio from advancing its paused clock while the SQL socket is idle.
+            let (release, wait) = std::sync::mpsc::channel::<()>();
+            let clock_guard = tokio::task::spawn_blocking(move || {
+                let _ = wait.recv();
+            });
+            tokio::time::pause();
+            let window = std::time::Duration::from_secs(1);
+            tokio::time::advance(window).await;
+            let next = admitted.continuity.next_command_id;
+            let burst = routed_market_payloads(
+                &owner,
+                &mut admitted,
+                (next..=next + 10).map(|id| (id, query.clone())),
+            )
+            .await;
+            tokio::time::advance(window).await;
+            let next = admitted.continuity.next_command_id;
+            let after_window = routed_market_payloads(&owner, &mut admitted, [(next, query)]).await;
+            tokio::time::resume();
+            drop(release);
+            clock_guard.await?;
+
+            let burst = burst?;
+            assert_eq!(burst.len(), 11);
+            for reply in &burst[..10] {
+                assert!(matches!(
+                    details::decode_reply(reply).map_err(debug)?,
+                    Reply::Statistics(_)
+                ));
+            }
+            assert_eq!(
+                details::decode_reply(&burst[10]).map_err(debug)?,
+                Reply::Refused {
+                    code: details::STATISTICS_RATE_LIMITED
+                },
+            );
+            let after_window = after_window?;
+            assert!(matches!(
+                details::decode_reply(after_window.first().ok_or("statistics after rate window")?)
+                    .map_err(debug)?,
+                Reply::Statistics(_)
+            ));
+            assert_eq!(before, snapshot(&harness).await?);
+        }
         // Privileged fixture timestamp substitution: the production read still resolves
         // current fences independently; no mutation helper is weakened for this test.
         for (offset, expected) in [
@@ -1202,7 +1415,14 @@ pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
             fixture.commit().await?;
             let projection = harness
                 .root
-                .market_projection(&authority, &harness.node, fence, Some(key.clone()), 0, None)
+                .market_projection(
+                    &authority,
+                    &harness.node,
+                    fence,
+                    Some(key.clone()),
+                    None,
+                    None,
+                )
                 .await?;
             assert_eq!(projection.statistics.trades, expected);
             assert_eq!(
@@ -1226,7 +1446,7 @@ pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
                     &harness.node,
                     wrong_world,
                     Some(key.clone()),
-                    0,
+                    None,
                     None
                 )
                 .await

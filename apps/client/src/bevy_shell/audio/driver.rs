@@ -3,6 +3,9 @@ use crate::play::{AudioSettings, PlayView, SoundCue, UiSound};
 pub(super) trait Output {
     fn update(&mut self, settings: AudioSettings, cues: Vec<SoundCue>, ui: Vec<UiSound>);
     fn stop(&mut self);
+    fn failure(&mut self) -> Option<String> {
+        None
+    }
     fn status(&self) -> Option<&str> {
         None
     }
@@ -70,6 +73,12 @@ impl<O: Output> Player<O> {
             return;
         }
         let requested = &view.preferences().audio_device;
+        if let Some(Ok(output)) = &mut self.output
+            && let Some(error) = output.failure()
+        {
+            self.output = Some(Err(error));
+            self.retry_after = Some(now + std::time::Duration::from_secs(1));
+        }
         let changed = self.output.is_none()
             || self.device.as_deref() != Some(requested)
             || self.retry_after.is_some_and(|deadline| now >= deadline);

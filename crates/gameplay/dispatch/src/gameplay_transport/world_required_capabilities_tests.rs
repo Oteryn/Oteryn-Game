@@ -501,18 +501,24 @@ fn invalid_weather_documents_leave_capability_26_unoffered_and_a_required_26_ref
         assert!(!session.selected().contains(WEATHER));
         assert!(session.selected().contains(6));
     }
-    // Shipped weather remains offered; native gameplay is absent, so names are withheld.
+    // Native spell parameters and entity names have no source on this scope.
+    let offers = offered_for_scope_with(true, None, true);
+    assert!(!offers.iter().any(|row| row.id == 608));
     assert_eq!(
         offered_for_scope_with(true, None, true),
-        without_entity_names(super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES)
+        without_native_offers(
+            super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES
+        )
     );
     assert_eq!(
         offered_for_scope(true, None),
-        without_entity_names(super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES)
+        without_native_offers(
+            super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES
+        )
     );
     assert_eq!(
         offered_for_scope_with(false, None, true),
-        without_entity_names(PRODUCTION_OFFERED_CAPABILITIES)
+        without_native_offers(PRODUCTION_OFFERED_CAPABILITIES)
     );
 }
 

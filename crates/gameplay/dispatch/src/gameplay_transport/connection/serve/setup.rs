@@ -187,10 +187,13 @@ where
                 domain_id: oteryn_protocol_oteryn::player_trade::STATE_DOMAIN_PLAYER_TRADE,
                 revision,
                 snapshot_type: 1,
-                payload: oteryn_protocol_oteryn::player_trade::encode_state_for(
+                payload: oteryn_protocol_oteryn::player_trade::encode_state_negotiated(
                     &state,
                     admitted.continuity.selected_capabilities.contains(
                         oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1,
+                    ),
+                    admitted.continuity.selected_capabilities.contains(
+                        oteryn_protocol_oteryn::player_trade::CAPABILITY_PLAYER_TRADE_ARTWORK_V1,
                     ),
                 )
                 .map_err(|_| ServeEnd::Disconnected)?,
@@ -485,6 +488,8 @@ async fn live<A: FreshAdmissionAuthority>(
         spell_catalog,
         integrity,
         stash_rows: None,
+        managed_container_move_pending: None,
+        stash_container_pending: None,
         stash_revision: 0,
         target_walk: None,
         target_move_window: crate::gameplay_transport::attack::IntentWindow::EMPTY,

@@ -28,6 +28,37 @@ FEROXA_STATIC = "terrain-08748-08748.json"
 CRYSTAL_SPAWN_GROUND = "content/world/terrain/terrain-08751-08765.json"
 
 
+def without_spawn_ground(root, notes):
+    """Remove only the exact annotations backed by the spawn Terrain generators."""
+    tools = Path(__file__).resolve().parents[1]
+    sys.path[:0] = [
+        str(tools / "world-object-authoring"),
+        str(tools / "world-authoring"),
+    ]
+    import scoped_spawn_ground
+    import spawn_map_ground
+
+    for note, shard in (
+        (scoped_spawn_ground.NOTE, scoped_spawn_ground.SHARD),
+        (spawn_map_ground.NOTE, spawn_map_ground.SHARD),
+    ):
+        target = root / shard
+        if note not in notes and not target.exists():
+            continue
+        if notes.count(note) != 1 or not target.is_file():
+            raise ValueError("source digest drift: spawn Terrain marker note")
+        if shard == scoped_spawn_ground.SHARD:
+            expected = scoped_spawn_ground.catalogue_outputs(
+                (root / MARKER).read_bytes(), root
+            )[shard]
+        else:
+            expected = spawn_map_ground.terrain_output()
+        if target.read_bytes() != expected:
+            raise ValueError("source digest drift: spawn Terrain witness")
+        notes = notes.replace(note, "")
+    return notes
+
+
 @lru_cache(maxsize=1)
 def sugar_owner():
     """Replay the existing pinned official/Crystal witness, never bless a live hash."""
@@ -95,6 +126,7 @@ def original_marker(root):
     marker = json.loads(raw)
     if (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode() != raw:
         raise ValueError("source digest drift: terrain marker serialization")
+    marker["notes"] = without_spawn_ground(root, marker["notes"])
     crystal_ground = root / CRYSTAL_SPAWN_GROUND
     if crystal_ground.exists():
         sys.path.insert(

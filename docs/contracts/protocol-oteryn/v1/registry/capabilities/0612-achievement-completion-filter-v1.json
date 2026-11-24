@@ -1,0 +1,13 @@
+{
+  "id": 612,
+  "name": "ACHIEVEMENT_COMPLETION_FILTER_V1",
+  "owner_decision": "Client server gap allocation",
+  "owner": "Game Account Achievements",
+  "requires": [],
+  "command_types": [
+    6387
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Offered alongside the core Account Achievements reader."
+}

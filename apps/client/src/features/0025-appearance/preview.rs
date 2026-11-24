@@ -8,7 +8,7 @@ use oteryn_client_ui::appearance::Preview;
 #[cfg(bevy_shell)]
 use std::path::Path;
 #[cfg(bevy_shell)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Layers {
     pub familiar: Option<u32>,
     pub character: bool,
@@ -30,7 +30,7 @@ impl Default for Layers {
 pub struct Assets {
     index: AppearanceIndex,
     sheets: SpriteSheets,
-    pub(super) mounts: Option<mount_binding::Metadata>,
+    pub(super) mounts: Option<std::sync::Arc<mount_binding::Metadata>>,
 }
 #[cfg(bevy_shell)]
 impl Assets {
@@ -46,16 +46,25 @@ impl Assets {
         let index = AppearanceIndex::load(&store, &catalog).map_err(|e| e.to_string())?;
         Ok(Self {
             index,
-            mounts: mount_binding::load(root).ok(),
+            mounts: mount_binding::load(root).ok().map(std::sync::Arc::new),
             sheets: SpriteSheets::new(store, catalog),
         })
     }
     pub fn draw(&mut self, preview: &Preview) -> Result<Vec<u8>, String> {
+        self.draw_portrait(preview.look_type, preview.addons, Some(preview.colours))
+    }
+
+    pub fn draw_portrait(
+        &mut self,
+        look_type: u32,
+        addons: u8,
+        colours: Option<[[u8; 3]; 4]>,
+    ) -> Result<Vec<u8>, String> {
         let mut pixels = vec![32; 96 * 96 * 4];
         self.draw_look(
-            preview.look_type,
-            preview.addons,
-            Some(preview.colours),
+            look_type,
+            addons,
+            colours,
             false,
             (2, 0, false),
             &mut pixels,
@@ -129,9 +138,6 @@ impl Assets {
                 }
             }
         }
-        if !layers.character {
-            return Ok(pixels);
-        }
         let mounted = layers.mount && !mount.is_empty();
         if mounted {
             let catalogue = panel
@@ -158,6 +164,9 @@ impl Assets {
                 (direction, elapsed_ms, moving),
                 &mut pixels,
             )?;
+        }
+        if !layers.character {
+            return Ok(pixels);
         }
         self.draw_look(
             preview.look_type,

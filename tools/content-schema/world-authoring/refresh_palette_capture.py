@@ -85,7 +85,7 @@ def outputs(
             {
                 row["source_item_id"]: used[slot]
                 for slot, row in enumerate(index["palette"])
-                if used[slot]
+                if used[slot] and not row.get("scoped_spawn_ground")
             }
         )
         index["palette"] = base.build_palette(

@@ -1,0 +1,2119 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "recipe_sha256": "50e738b86fecd4d2d0eac8977239dfefc47f012902021f41091edb9c88b62530",
+      "admission": {
+        "minimum_level": 0,
+        "premium": true
+      },
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mine_leader",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission01",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02/beaver1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02/beaver2",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02/beaver3",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02_1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 4
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission03",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission04",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/angus",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/telas",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05_1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 27
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/settlement_access",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "project",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/project",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.ongulf",
+              "keywords": [
+                "project"
+              ],
+              "topic": 0,
+              "next_topic": 1,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 0
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Would you like the long or short account of the project?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:68-71"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "briefing",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/briefing",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.ongulf",
+              "keywords": [
+                "short"
+              ],
+              "topic": 1,
+              "next_topic": 2,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 0
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "We're starting a mine. Ask me for a mission when you're ready."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:93-101"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "briefing-long",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/briefing-long",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.ongulf",
+              "keywords": [
+                "long"
+              ],
+              "topic": 1,
+              "next_topic": 2,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 0
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Kazordoon sent miners to establish a new outpost. Ask me for a mission."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:72-92"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "scout",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/scout",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.ongulf",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 2,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission01",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Find a passage through the mountains and report back."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:102-113"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "scout-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/scout-report",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.ongulf",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission01",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Your scouting report will help the miners."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:114-117"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "supplies",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/supplies",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.ongulf",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02_1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Ask Melfar in Kazordoon for miners and wood."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:118-125"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "bait-offer",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/bait-offer",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.melfar",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 1,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 4
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "I have bait for three trees. Can you mark them for us?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/melfar.lua:80-90"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "bait",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/bait",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.melfar",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 1,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02_1",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i9843",
+                "count": 1,
+                "contents": []
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Use the bait on all three trees. Visit the southern tree last."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/melfar.lua:102-114"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "bait-replacement-offer",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/bait-replacement-offer",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.melfar",
+              "keywords": [
+                "buy flask",
+                "flask"
+              ],
+              "topic": 0,
+              "next_topic": 2,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 5,
+                  "preserve": true
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Do you want to buy a Flask with Beaver Bait for 100 gold coins?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/melfar.lua:125-129"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "bait-replacement",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/bait-replacement",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.melfar",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 2,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 5,
+                  "preserve": true
+                }
+              ],
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i9843",
+                "count": 1
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Here you go."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/melfar.lua:115-123"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "You don't have enough gold coins."
+              ],
+              "fee": {
+                "gold": 100,
+                "include_bank": true
+              },
+              "repeatable": true
+            }
+          }
+        },
+        {
+          "key": "bait-tree-1",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-new-frontier/bait-tree-1",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32515,
+                  "y": 31927,
+                  "floor": -7
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 3625
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 5
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02/beaver1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i9843",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "reusable": true,
+                "selected_instance": true
+              },
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:the-new-frontier/farmine-settlement",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_beaver.lua:1-43"
+              ],
+              "requires_premium": true,
+              "requires_world_admission": true
+            }
+          }
+        },
+        {
+          "key": "bait-tree-2",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-new-frontier/bait-tree-2",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32474,
+                  "y": 31947,
+                  "floor": -7
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 3625
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 5
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02/beaver2",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i9843",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "reusable": true,
+                "selected_instance": true
+              },
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:the-new-frontier/farmine-settlement",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_beaver.lua:1-43"
+              ],
+              "requires_premium": true,
+              "requires_world_admission": true
+            }
+          }
+        },
+        {
+          "key": "bait-tree-3",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-new-frontier/bait-tree-3",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32458,
+                  "y": 31997,
+                  "floor": -7
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 3625
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 5
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02/beaver3",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i9843",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "reusable": false,
+                "selected_instance": true
+              },
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:the-new-frontier/farmine-settlement",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_beaver.lua:1-43"
+              ],
+              "requires_premium": true,
+              "requires_world_admission": true
+            }
+          }
+        },
+        {
+          "key": "bait-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/bait-report",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.melfar",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 6
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02_1",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "I'll send the workers once the wood is ready. Let Ongulf know."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/melfar.lua:91-96"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02/beaver1",
+                  "minimum": 1,
+                  "maximum": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02/beaver2",
+                  "minimum": 1,
+                  "maximum": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02/beaver3",
+                  "minimum": 1,
+                  "maximum": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "supplies-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/supplies-report",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.ongulf",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 6,
+                  "maximum": 6,
+                  "set": 7
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission02_1",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The workers and wood will give us a foothold."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:126-130"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "contact",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/contact",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.ongulf",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 7,
+                  "maximum": 7,
+                  "set": 8
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission03",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Find Lazaran and discover what his people want."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:131-140"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "peace-offer",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/peace-offer",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.lazaran",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 10,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 8,
+                  "maximum": 8,
+                  "set": 8
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "My people want peace. Can you take that word to the miners?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:63-68"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "peace",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/peace",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.lazaran",
+              "keywords": [
+                "peace"
+              ],
+              "topic": 10,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 8,
+                  "maximum": 8,
+                  "set": 9
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission03",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Tell Ongulf we want peace with his people."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:103-108"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "peace-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/peace-report",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.ongulf",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 9,
+                  "maximum": 9,
+                  "set": 10
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission03",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "We'll send provisions to Lazaran's people."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:141-148"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "mine-order",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/mine-order",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.ongulf",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 10,
+                  "maximum": 10,
+                  "set": 11
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission04",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Take the mining lift to A07 and defeat the leader of the stone creatures."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:149-157"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "mine-lift",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-new-frontier/mine-lift",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33056,
+                  "y": 31527,
+                  "floor": -12
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 2772,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33065,
+                "y": 31489,
+                "floor": -15
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 11,
+                  "maximum": 11,
+                  "set": 11
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:the-new-frontier/farmine-settlement",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_elevator.lua:7-51"
+              ],
+              "requires_premium": true,
+              "effects": {
+                "transform": 2773
+              }
+            }
+          }
+        },
+        {
+          "key": "mine-lift-reset",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-new-frontier/mine-lift-reset",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33056,
+                  "y": 31527,
+                  "floor": -12
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 2773,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 11,
+                  "maximum": 11,
+                  "set": 11
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:the-new-frontier/farmine-settlement",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_elevator.lua:7-51"
+              ],
+              "requires_premium": true,
+              "effects": {
+                "transform": 2772
+              }
+            }
+          }
+        },
+        {
+          "key": "mine-leader",
+          "completes": false,
+          "trigger": {
+            "kind": "kill",
+            "counter": {
+              "key": "oteryn:quest-transition/native-kills/new-frontier-shard-of-corruption",
+              "creature": "oteryn:creature.shard_of_corruption",
+              "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mine_leader",
+              "gate": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+              "gate_value": 11,
+              "minimum": 0,
+              "maximum": 1,
+              "advance_gate_to": 12
+            }
+          }
+        },
+        {
+          "key": "mine-return",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-new-frontier/mine-return",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33064,
+                  "y": 31489,
+                  "floor": -15
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 2772,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33055,
+                "y": 31527,
+                "floor": -12
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 11,
+                  "maximum": 18,
+                  "set": 11,
+                  "preserve": true
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:the-new-frontier/farmine-settlement",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_elevator.lua:7-51"
+              ],
+              "requires_premium": true,
+              "effects": {
+                "transform": 2773
+              }
+            }
+          }
+        },
+        {
+          "key": "mine-return-reset",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-new-frontier/mine-return-reset",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33064,
+                  "y": 31489,
+                  "floor": -15
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 2773,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 11,
+                  "maximum": 18,
+                  "set": 11,
+                  "preserve": true
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:the-new-frontier/farmine-settlement",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_elevator.lua:7-51"
+              ],
+              "requires_premium": true,
+              "effects": {
+                "transform": 2772
+              }
+            }
+          }
+        },
+        {
+          "key": "mine-report",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/mine-report",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.ongulf",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 12,
+                  "maximum": 12,
+                  "set": 13
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission04",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The mine is clear. We can put the workers back to work."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:158-163"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "pledges",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/pledges",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.ongulf",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 13,
+                  "maximum": 13,
+                  "set": 14
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05_1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/angus",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/telas",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Ask Humgolf, Wyrdin, Angus, Telas and King Tibianus to support Farmine."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:164-195"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ]
+            }
+          }
+        },
+        {
+          "key": "ask-humgolf",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/ask-humgolf",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.humgolf",
+              "keywords": [
+                "farmine"
+              ],
+              "topic": 0,
+              "next_topic": 1,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Why should we support the settlement?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/humgolf.lua:67-109"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 14,
+                  "maximum": 14
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "pledge-humgolf",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/pledge-humgolf",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.humgolf",
+              "keywords": [
+                "reason"
+              ],
+              "topic": 1,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You have my support for Farmine."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/humgolf.lua:67-109"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 14,
+                  "maximum": 14
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "ask-wyrdin",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/ask-wyrdin",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.wyrdin",
+              "keywords": [
+                "farmine"
+              ],
+              "topic": 0,
+              "next_topic": 1,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Why should we support the settlement?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyrdin.lua:89-139"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 14,
+                  "maximum": 14
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "pledge-wyrdin",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/pledge-wyrdin",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.wyrdin",
+              "keywords": [
+                "reason"
+              ],
+              "topic": 1,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You have my support for Farmine."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyrdin.lua:89-139"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 14,
+                  "maximum": 14
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "ask-angus",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/ask-angus",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.angus",
+              "keywords": [
+                "farmine"
+              ],
+              "topic": 0,
+              "next_topic": 1,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/angus",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Why should we support the settlement?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:73-116"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 14,
+                  "maximum": 14
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "pledge-angus",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/pledge-angus",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.angus",
+              "keywords": [
+                "reason"
+              ],
+              "topic": 1,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/angus",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You have my support for Farmine."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:73-116"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 14,
+                  "maximum": 14
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "ask-telas",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/ask-telas",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.telas",
+              "keywords": [
+                "farmine"
+              ],
+              "topic": 0,
+              "next_topic": 1,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/telas",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Why should we support the settlement?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:570-622"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 14,
+                  "maximum": 14
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "pledge-telas",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/pledge-telas",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.telas",
+              "keywords": [
+                "reason"
+              ],
+              "topic": 1,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/telas",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You have my support for Farmine."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/telas.lua:570-622"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 14,
+                  "maximum": 14
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "ask-king_tibianus",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/ask-king_tibianus",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.king_tibianus",
+              "keywords": [
+                "farmine"
+              ],
+              "topic": 0,
+              "next_topic": 1,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Why should we support the settlement?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:67-109"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 14,
+                  "maximum": 14
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "pledge-king_tibianus",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/pledge-king_tibianus",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.king_tibianus",
+              "keywords": [
+                "reason"
+              ],
+              "topic": 1,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 3
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You have my support for Farmine."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:67-109"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 14,
+                  "maximum": 14
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "settlement",
+          "completes": true,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/settlement",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.ongulf",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 14,
+                  "maximum": 14,
+                  "set": 15
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05_1",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/settlement_access",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": {
+                "outfit": "oteryn:outfit.warmaster",
+                "addons": 0
+              },
+              "achievement": null,
+              "reply": [
+                "Farmine has the support it needs. The Zao route is open."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:196-208",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ongulf.lua:235-247"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf",
+                  "minimum": 3,
+                  "maximum": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin",
+                  "minimum": 3,
+                  "maximum": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/angus",
+                  "minimum": 3,
+                  "maximum": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/telas",
+                  "minimum": 3,
+                  "maximum": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+                  "minimum": 3,
+                  "maximum": 3
+                }
+              ],
+              "experience": 8000
+            }
+          }
+        },
+        {
+          "key": "route-to-zao",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-new-frontier/route-to-zao",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33062,
+                  "y": 31527,
+                  "floor": -12
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 2772,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32993,
+                "y": 31547,
+                "floor": -4
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/settlement_access",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:the-new-frontier/farmine-settlement",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_elevator.lua:19-32"
+              ],
+              "requires_premium": true,
+              "effects": {
+                "transform": 2773
+              }
+            }
+          }
+        },
+        {
+          "key": "route-to-zao-reset",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-new-frontier/route-to-zao-reset",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33062,
+                  "y": 31527,
+                  "floor": -12
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 2773,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/settlement_access",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:the-new-frontier/farmine-settlement",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_elevator.lua:19-32"
+              ],
+              "requires_premium": true,
+              "effects": {
+                "transform": 2772
+              }
+            }
+          }
+        },
+        {
+          "key": "route-to-farmine",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-new-frontier/route-to-farmine",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32994,
+                  "y": 31547,
+                  "floor": -4
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 2772,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33061,
+                "y": 31527,
+                "floor": -12
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/settlement_access",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:the-new-frontier/farmine-settlement",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_elevator.lua:19-32"
+              ],
+              "requires_premium": true,
+              "effects": {
+                "transform": 2773
+              }
+            }
+          }
+        },
+        {
+          "key": "route-to-farmine-reset",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-new-frontier/route-to-farmine-reset",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32994,
+                  "y": 31547,
+                  "floor": -4
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 2773,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/settlement_access",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "return_on_failure": false,
+              "failure_message": "Sorry, not possible.",
+              "sources": [
+                "oteryn-authored:the-new-frontier/farmine-settlement",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/action_elevator.lua:19-32"
+              ],
+              "requires_premium": true,
+              "effects": {
+                "transform": 2772
+              }
+            }
+          }
+        }
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00200-00299.json",
+        "oteryn-authored:the-new-frontier/farmine-settlement",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/movement_wayout.lua:5-20",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_new_frontier/creaturescripts_shard_of_corruption_kill.lua:3-14"
+      ]
+    }
+  ]
+}

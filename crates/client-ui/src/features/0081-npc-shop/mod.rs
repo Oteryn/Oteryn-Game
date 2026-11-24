@@ -13,6 +13,7 @@ pub enum Intent {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcShopPanel {
     pub live: LiveShop,
+    pub sale_exclusions: std::collections::BTreeSet<u32>,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -27,6 +28,18 @@ pub fn request(panel: &mut NpcShopPanel, intent: Intent) -> Option<NpcShopComman
     let mut value = match intent {
         Intent::Look(value) | Intent::SellAll(value) => value,
     };
+    if matches!(intent, Intent::SellAll(_))
+        && panel.live.window.open == Some((value.npc_actor, value.catalogue_revision))
+        && panel
+            .live
+            .window
+            .offers
+            .get(value.offer_index as usize)
+            .is_some_and(|offer| panel.sale_exclusions.contains(&offer.item_definition_ref))
+    {
+        panel.feedback = Some("Excluded from quick selling");
+        return None;
+    }
     value.action = match intent {
         Intent::Look(_) => npc_shop::NpcShopAction::Look,
         Intent::SellAll(_) => npc_shop::NpcShopAction::SellAll,

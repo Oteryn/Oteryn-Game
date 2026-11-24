@@ -11,6 +11,12 @@
       "name": "SERVER_MESSAGE_DELTA_V1",
       "payload_schema": "docs/contracts/protocol-oteryn/v1/server_messages_v1.proto#ServerMessageV1",
       "max_payload_bytes": 260
+    },
+    {
+      "id": 2,
+      "name": "PARTY_MEMBERSHIP_NOTICE_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/party_v1.proto#PartyMembershipNoticeV1",
+      "max_payload_bytes": 13
     }
   ],
   "snapshot_types": [

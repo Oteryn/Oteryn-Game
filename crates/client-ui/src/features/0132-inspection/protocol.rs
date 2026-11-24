@@ -8,16 +8,35 @@ pub fn request(panel: &mut Panel, request: Request) -> Option<ServerMechanicComm
     if !panel.selected || panel.pending {
         return None;
     }
-    let payload = encode_request(request).ok()?;
+    let command = encode_command(request)?;
     panel.last_request = Some(request);
     panel.reply = None;
     panel.pending = true;
     panel.feedback = tr!("Waiting for the server").into();
+    Some(command)
+}
+fn encode_command(request: Request) -> Option<ServerMechanicCommand> {
+    let payload = encode_request(request).ok()?;
     Some(ServerMechanicCommand {
         capability: 132,
         command_type: 153,
         payload,
     })
+}
+pub fn request_equipment(panel: &mut Panel) -> Option<ServerMechanicCommand> {
+    if !panel.catalogue_open || !panel.selected || panel.pending {
+        return None;
+    }
+    let id = panel
+        .catalogue
+        .keys()
+        .find(|id| !panel.equipment_details.contains_key(id))
+        .copied()?;
+    let command = encode_command(Request::Catalogue(id))?;
+    panel.equipment_details.insert(id, None);
+    panel.equipment_pending = Some(id);
+    panel.pending = true;
+    Some(command)
 }
 pub fn request_page(panel: &mut Panel, next: bool) -> Option<ServerMechanicCommand> {
     if !panel.selected || panel.pending {
@@ -97,6 +116,21 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
         return;
     }
     panel.pending = false;
+    if let Some(id) = panel.equipment_pending.take() {
+        if matches!(
+            response.status,
+            CommandStatus::Accepted | CommandStatus::DuplicateReplay
+        ) && let Ok(reply) = decode_reply(&response.payload)
+            && reply.status == 1
+            && let [item] = reply.items.as_slice()
+            && item.definition_ref == id
+        {
+            panel.equipment_details.insert(id, Some(item.clone()));
+        } else {
+            panel.feedback = "Equipment details unavailable. Browse again to retry.".into();
+        }
+        return;
+    }
     if matches!(
         response.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay

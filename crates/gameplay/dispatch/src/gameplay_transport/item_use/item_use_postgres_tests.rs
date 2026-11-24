@@ -319,11 +319,17 @@ async fn scenario(
                 id: 499,
                 requires: &[4],
             },
+            super::super::capabilities::OfferedCapability {
+                id: 593,
+                requires: &[15],
+            },
         ],
         if matches!(case, Some(Case::WithoutContainerCapability)) {
             &[4, 15]
         } else if appearances {
             &[4, 14, 15, 499]
+        } else if crystal {
+            &[4, 14, 15, 593]
         } else {
             &[4, 14, 15]
         },
@@ -386,7 +392,13 @@ async fn scenario(
         ]
         .map(|(command, disposition)| (
             command,
-            oteryn_protocol_oteryn::world_object::encode_use_result(disposition).expect("result")
+            if command == 4 && crystal {
+                // Hard-code the receipt bytes to detect a missing server field.
+                vec![0x08, 1, 0x18, 1]
+            } else {
+                oteryn_protocol_oteryn::world_object::encode_use_result(disposition)
+                    .expect("result")
+            }
         ))
     );
     assert_eq!(harness.count("game_item_use_records").await?, 2);

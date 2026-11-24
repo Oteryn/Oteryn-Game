@@ -124,8 +124,8 @@ class ConvertSpawnsTest(unittest.TestCase):
                 self.assertNotIn("respawn_ms", point)
         self.assertEqual(self.index["additional_sources"][0]["record_count"], 10)
         held = json.loads(self.files["held-bosses.json"])["records"]
-        self.assertEqual(len(held), 35)
-        self.assertEqual(self.index["held_bosses"]["point_count"], 35)
+        self.assertEqual(len(held), 34)
+        self.assertEqual(self.index["held_bosses"]["point_count"], 34)
         self.assertTrue(all("boss_policy" not in row["point"] for row in held))
 
     def test_public_pharaohs_retain_their_exact_spawn_and_respawn(self):
@@ -143,6 +143,16 @@ class ConvertSpawnsTest(unittest.TestCase):
                 point["boss_policy"], {"respawn": {"min_s": 90, "max_s": 90}}
             )
             self.assertNotIn("respawn_ms", point)
+
+    def test_frontier_mine_leader_is_a_public_respawn(self):
+        points = [point for record in self.records for point in record["declaration"]["points"]
+                  if point["creature"] == cs.FRONTIER_MINE_LEADER]
+        self.assertEqual(points, [{
+            "cell": {"floor": 15, "x": 33072, "y": 31434},
+            "creature": cs.FRONTIER_MINE_LEADER,
+            "direction": "north",
+            "boss_policy": {"respawn": {"min_s": 90, "max_s": 90}},
+        }])
 
     def test_other_hash_fails_closed(self):
         with self.assertRaises(SystemExit):

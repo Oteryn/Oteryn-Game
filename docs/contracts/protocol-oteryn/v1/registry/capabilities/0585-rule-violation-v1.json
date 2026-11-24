@@ -1,0 +1,15 @@
+{
+  "id": 585,
+  "name": "RULE_VIOLATION_V1",
+  "owner_decision": "Owner-assigned client report and Store protocol gaps, 2026-11-22",
+  "owner": "Game player report queue. Staff sanction authority is separate.",
+  "requires": [
+    76
+  ],
+  "command_types": [
+    6333,
+    6334
+  ],
+  "state_domains": [],
+  "offered": true
+}

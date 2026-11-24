@@ -30,6 +30,7 @@ impl PlayLink {
         }
         if self.commands.send(PlayCommand::Feature(command)).is_err() {
             mailbox.cyclopedia_character.pending = false;
+            mailbox.cyclopedia_character.own_vocation_pending = false;
             mailbox.cyclopedia_character.feedback = Some(tr!("The session has ended"));
             return false;
         }

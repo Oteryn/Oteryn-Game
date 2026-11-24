@@ -19,7 +19,8 @@ APPEARANCES_SHA256 = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5
 MARKER_NOTE = " Additionally one decision-21 appearance-only Summer ground; total 8613 Terrain records."
 
 
-def official_ground_records(ground_speeds, root=ROOT):
+def ground_records(identifiers, root=ROOT):
+    """Build map-only ground records against the admitted client appearance bank."""
     manifest = json.loads(
         (root / "imports/official/client-assets/15.30/manifest.json").read_bytes()
     )
@@ -36,12 +37,6 @@ def official_ground_records(ground_speeds, root=ROOT):
     ):
         raise ValueError("official appearances digest")
     appearances = read_appearances(raw)
-    bindings = json.loads(
-        (root / "imports/crystalserver/bindings/items.json").read_bytes()
-    )
-    external_ids = set(map(str, ground_speeds))
-    if any(row["external_id"] in external_ids for row in bindings["bindings"]):
-        raise ValueError("appearance-only ground unexpectedly has an Item binding")
     admitted = json.loads(
         (root / "imports/official/appearance-membership/admitted.json").read_bytes()
     )
@@ -58,25 +53,21 @@ def official_ground_records(ground_speeds, root=ROOT):
         or membership["appearances_sha256"] != digest
     ):
         raise ValueError("official appearance membership digest")
-    members_by_id = {row[0] for row in members["entries"]}
-    records = []
-    for identifier, speed in sorted(ground_speeds.items()):
-        appearance = appearances[identifier]
-        if (
-            identifier not in members_by_id
-            or "bank" not in appearance.flags
-            or appearance.speed != speed
-        ):
-            raise ValueError(
-                f"Ground {identifier} differs from the accepted appearance"
-            )
-        records.append(
-            ground_record(identifier, appearance, artifact, digest, membership, members)
-        )
-    return records
+    if not set(identifiers) <= {row[0] for row in members["entries"]}:
+        raise ValueError("ground has no official appearance membership")
+    return [
+        ground_record(i, appearances[i], digest, artifact, membership, members)
+        for i in sorted(identifiers)
+    ]
 
 
-def ground_record(identifier, appearance, artifact, digest, membership, members):
+def ground_record(identifier, appearance, digest, artifact, membership, members):
+    if (
+        "bank" not in appearance.flags
+        or not appearance.speed
+        or "unpass" in appearance.flags
+    ):
+        raise ValueError(f"appearance {identifier} is not walkable ground")
     key = f"oteryn:terrain.tibia.i{identifier}"
     known = lambda value: {"state": "KNOWN", "value": value}
     return {
@@ -127,7 +118,16 @@ def ground_record(identifier, appearance, artifact, digest, membership, members)
 
 
 def outputs_for(root, ground_speeds, shard, marker_note):
-    records = official_ground_records(ground_speeds, root)
+    records = ground_records(ground_speeds, root)
+    if any(row["ground_speed"]["value"] != ground_speeds[row["provenance"]["source_item_id"]]
+           for row in records):
+        raise ValueError("Ground speed differs from the accepted appearance")
+    bindings = json.loads(
+        (root / "imports/crystalserver/bindings/items.json").read_bytes()
+    )
+    external_ids = set(map(str, ground_speeds))
+    if any(row["external_id"] in external_ids for row in bindings["bindings"]):
+        raise ValueError("appearance-only ground unexpectedly has an Item binding")
     index_path = "content/world/placements/index.json"
     index = json.loads((root / index_path).read_bytes())
     for record in records:

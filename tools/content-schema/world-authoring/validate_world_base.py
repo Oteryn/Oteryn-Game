@@ -37,6 +37,7 @@ from convert_world_base import (
     placed_door_keys,
     world_otbm_totals,
 )
+from scoped_spawn_ground import CAPTURE, captured_grounds, plain_ground, scoped_slots
 
 HERE = Path(__file__).resolve().parent
 DIRECTORY = "content/world/placements"
@@ -69,6 +70,7 @@ REGION_KEYS = {"items", "path", "sha256", "tiles"}
 TOTAL_KEYS = {"items", "regions", "sectors", "tiles"}
 PALETTE_KEYS = {"key", "provisional", "source_item_id"}
 RETIRED_KEYS = PALETTE_KEYS | {"retired"}
+SCOPED_GROUND_KEYS = PALETTE_KEYS | {"scoped_spawn_ground"}
 
 
 class ValidationError(Exception):
@@ -94,8 +96,10 @@ def load(root: Path, path: str, strict: bool = True):
 _STATE: dict = {}
 
 
-def _init(root: str, extent: tuple[int, int], palette_size: int) -> None:
-    _STATE.update(root=Path(root), extent=extent, palette_size=palette_size)
+def _init(root: str, extent: tuple[int, int], palette_size: int, scoped=None) -> None:
+    _STATE.update(
+        root=Path(root), extent=extent, palette_size=palette_size, scoped=scoped or {}
+    )
 
 
 def check_region(row: dict) -> dict:
@@ -112,6 +116,7 @@ def check_region(row: dict) -> dict:
         "z": -1,
         "attributes": Counter(),
         "palette": Counter(),
+        "scoped": Counter(),
         "teleports": [],
     }
     errors = result["errors"]
@@ -139,6 +144,7 @@ def check_region(row: dict) -> dict:
     attributes = result["attributes"]
     used = result["palette"]
     size = _STATE["palette_size"]
+    scoped = _STATE["scoped"]
     if any(p >= size for p in seen):
         errors.append(
             f"{path}: palette indexes outside 0..{size - 1}: "
@@ -149,7 +155,7 @@ def check_region(row: dict) -> dict:
         if not sector:
             errors.append(f"{path}: sector {local} is empty")
         previous = (-1, -1)
-        for x, y, _flags, house, tile_zones, tile_items in sector:
+        for x, y, flags, house, tile_zones, tile_items in sector:
             if (y, x) <= previous:
                 errors.append(f"{path}: tiles not strictly sorted at ({x}, {y})")
                 break
@@ -165,6 +171,13 @@ def check_region(row: dict) -> dict:
             items += len(tile_items)
             for palette, depth, attrs in tile_items:
                 used[palette] += 1
+                if palette in scoped:
+                    cell = (x, y, z)
+                    if not plain_ground(flags, house, depth, attrs):
+                        errors.append(
+                            f"{path}: scoped spawn ground is not plain at {cell}"
+                        )
+                    result["scoped"][cell, scoped[palette]] += 1
                 if depth:
                     attributes["depth"] += 1
                 if attrs:
@@ -695,6 +708,7 @@ def check_palette(
     terrain: dict[int, str],
     world_object: dict[int, str],
     errors: list[str],
+    scoped_terrain: dict[int, str],
 ) -> bool:
     """Check the palette in isolation; returns False when it cannot be indexed."""
     if not isinstance(palette, list) or not palette:
@@ -703,11 +717,13 @@ def check_palette(
     start = len(errors)
     keys: set[str] = set()
     ids: set[int] = set()
+    scoped_ids: set[int] = set()
     for position, row in enumerate(palette):
         where = f"{INDEX}: palette[{position}]"
         if (
             not isinstance(row, dict)
-            or set(row) not in (PALETTE_KEYS, RETIRED_KEYS)
+            or set(row) not in (PALETTE_KEYS, RETIRED_KEYS, SCOPED_GROUND_KEYS)
+            or row.get("scoped_spawn_ground", True) is not True
             or row.get("retired", True) is not True
             or not isinstance(row["key"], str)
             or not isinstance(row["provisional"], bool)
@@ -718,12 +734,24 @@ def check_palette(
             errors.append(f"{where}: malformed entry {row!r}"[:200])
             continue
         server_id, key = row["source_item_id"], row["key"]
-        if server_id in ids:
-            errors.append(f"{where}: source_item_id {server_id} is listed twice")
-        ids.add(server_id)
         if key in keys:
             errors.append(f"{where}: key {key!r} is listed twice")
         keys.add(key)
+        if row.get("scoped_spawn_ground"):
+            if (
+                server_id not in ids
+                or server_id in scoped_ids
+                or row["provisional"]
+                or key != scoped_terrain.get(server_id)
+            ):
+                errors.append(
+                    f"{where}: scoped spawn ground must match a prior source id and Terrain record"
+                )
+            scoped_ids.add(server_id)
+            continue
+        if server_id in ids:
+            errors.append(f"{where}: source_item_id {server_id} is listed twice")
+        ids.add(server_id)
         # Canonical key precedence (architect ruling #162 Q1b): the Item key of an id with an
         # Item record, else the Terrain catalogue key, else the WorldObject catalogue key,
         # else the provisional donor key.
@@ -891,10 +919,11 @@ def validate(
     terrain = catalogue_keys("terrain", root)
     world_object = catalogue_keys("world_object", root)
     palette = index["palette"]
-    if not check_palette(palette, bound, terrain, world_object, errors):
+    scoped_terrain = catalogue_keys("terrain", root, scoped=True)
+    if not check_palette(palette, bound, terrain, world_object, errors, scoped_terrain):
         return errors
     extent = (summary["map"]["width"], summary["map"]["height"])
-    args = (str(root), extent, len(palette))
+    args = (str(root), extent, len(palette), scoped_slots(palette))
     if workers > 1 and len(rows) > 8:
         with ProcessPoolExecutor(workers, initializer=_init, initargs=args) as pool:
             results = list(pool.map(check_region, rows, chunksize=16))
@@ -907,6 +936,7 @@ def validate(
     used: Counter = Counter()
     totals = Counter()
     teleports: Counter = Counter()
+    scoped: Counter = Counter()
     for result in results:
         errors.extend(result["errors"])
         teleports.update(
@@ -914,6 +944,7 @@ def validate(
             for position, index, destination in result["teleports"]
         )
         used.update(result["palette"])
+        scoped.update(result["scoped"])
         floors[result["z"]] += result["tiles"]
         attributes.update(result["attributes"])
         totals.update(
@@ -931,6 +962,13 @@ def validate(
             f"{INDEX}: totals {index['totals']} differ from the decoded {counted}"
         )
     check_palette_use(palette, used, summary, counted["items"], errors)
+    if scoped_terrain or (root / CAPTURE).is_file():
+        expected = Counter(captured_grounds(root).items())
+        if scoped != expected:
+            errors.append(
+                f"{INDEX}: scoped spawn ground cells differ from the capture"
+                f" (missing {list(expected - scoped)[:5]}, unexpected {list(scoped - expected)[:5]})"
+            )
     check_teleports(summary, teleports, root, errors)
     if summary.get("totals") != index["totals"]:
         errors.append(f"{SUMMARY}: totals differ from the index")

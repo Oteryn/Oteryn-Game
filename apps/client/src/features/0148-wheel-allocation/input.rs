@@ -26,6 +26,11 @@ impl PlayLink {
         if !presets && !oteryn_client_ui::wheel_allocation::open_key(events) {
             return false;
         }
+        self.open_wheel();
+        true
+    }
+
+    pub fn open_wheel(&self) {
         self.wheel_request(Intent::Refresh);
         {
             let mut mailbox = lock(&self.mailbox);
@@ -37,7 +42,6 @@ impl PlayLink {
         if self.uses_shared_frontend() {
             self.wheel_presets_open();
         }
-        true
     }
 }
 

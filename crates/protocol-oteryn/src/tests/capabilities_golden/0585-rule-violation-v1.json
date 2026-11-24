@@ -1,0 +1,20 @@
+{
+  "id": 585,
+  "name": "RULE_VIOLATION_V1",
+  "constant": "player_report::CAPABILITY_RULE_VIOLATION_V1",
+  "requires": [
+    76
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    6333,
+    6334
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

@@ -21,6 +21,24 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
             for item in corpse_items {
                 super::tracking::check_value(panel, item.item_type.get(), panel.auto_track_value);
             }
+            if corpse_items
+                .iter()
+                .any(|item| panel.loot_tracked.contains(&item.item_type.get()))
+            {
+                panel.tracked_loot_receipts = panel.tracked_loot_receipts.saturating_add(1);
+            } else {
+                let unresolved: Vec<_> = corpse_items
+                    .iter()
+                    .map(|item| item.item_type.get())
+                    .filter(|id| panel.pending_drop_values.contains_key(id))
+                    .collect();
+                if !unresolved.is_empty() {
+                    if panel.pending_drop_groups.len() == super::tracking::MAX_RECENT {
+                        panel.pending_drop_groups.pop_front();
+                    }
+                    panel.pending_drop_groups.push_back(unresolved);
+                }
+            }
         }
     }
     apply_facts(panel, facts, seconds);
@@ -151,7 +169,9 @@ pub fn reset(panel: &mut Panel) {
         display: std::mem::take(&mut panel.display),
         impact_high: panel.impact_high,
         high_revision: panel.high_revision,
+        tracked_loot_receipts: panel.tracked_loot_receipts,
         export_path: std::mem::take(&mut panel.export_path),
+        loot_sources: std::mem::take(&mut panel.loot_sources),
         loot_prices: std::mem::take(&mut panel.loot_prices),
         supply_prices: std::mem::take(&mut panel.supply_prices),
         item_info: std::mem::take(&mut panel.item_info),
@@ -173,6 +193,7 @@ pub fn recover(panel: &mut Panel) {
         open: panel.open,
         impact_high: panel.impact_high,
         high_revision: panel.high_revision,
+        tracked_loot_receipts: panel.tracked_loot_receipts,
         display: std::mem::take(&mut panel.display),
         feedback: Some(tr!(
             "Server state replaced; a fresh measurement interval and item settings were started"
@@ -252,6 +273,14 @@ pub fn catalogue_result(
                 super::tracking::check_value(panel, item, threshold);
             }
         }
+        panel.pending_drop_groups.retain_mut(|items| {
+            if items.iter().any(|id| panel.auto_tracked.contains(id)) {
+                panel.tracked_loot_receipts = panel.tracked_loot_receipts.saturating_add(1);
+                return false;
+            }
+            items.retain(|id| panel.pending_drop_values.contains_key(id));
+            !items.is_empty()
+        });
         panel.feedback = Some(tr!(
             "Item identities received; resolve again if more items remain"
         ));
@@ -278,6 +307,7 @@ pub fn start_hunt(panel: &mut Panel) {
         .map_or(panel.gained_xp, |report| report.gained_xp);
     panel.goal_xp = panel.goal_xp.map(|goal| goal.saturating_sub(gained));
     panel.pending_drop_values.clear();
+    panel.pending_drop_groups.clear();
     panel
         .loot_tracked
         .retain(|item| !panel.auto_tracked.contains(item));

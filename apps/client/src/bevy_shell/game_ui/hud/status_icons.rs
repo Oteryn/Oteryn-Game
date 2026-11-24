@@ -10,6 +10,7 @@ struct Icon {
     key: String,
     label: String,
     count: usize,
+    hidden_on_bar: bool,
 }
 impl Icon {
     fn new(key: &str, label: &str, count: usize) -> Self {
@@ -17,6 +18,7 @@ impl Icon {
             key: key.into(),
             label: label.into(),
             count,
+            hidden_on_bar: false,
         }
     }
 }
@@ -160,9 +162,11 @@ pub(super) fn project(
                             && (condition.remaining_ms == -1 || condition.remaining_ms > 0)
                     })
                     .count();
-                if count > 0 && !conditions.hidden.contains(&id) {
+                if count > 0 {
                     let label = icon_key(id);
-                    next.push(Icon::new(label, label, count));
+                    let mut icon = Icon::new(label, label, count);
+                    icon.hidden_on_bar = conditions.hidden.contains(&id);
+                    next.push(icon);
                 }
             }
         }
@@ -255,7 +259,8 @@ pub(super) fn project(
                             && prefs.resource_hud.conditions
                             && !prefs.condition_hud_hidden.contains(&icon.key)
                     } else {
-                        prefs.conditions_bar_enabled
+                        !icon.hidden_on_bar
+                            && prefs.conditions_bar_enabled
                             && !prefs.condition_status_hidden.contains(&icon.key)
                     }
                 })

@@ -6,15 +6,16 @@ D384 import pin. Weapon registration (mana and damage) is nested in this XML at
 that revision, rather than in wands.lua. No identities or admission are created.
 Source defaults are explicit here, never runtime fallbacks for incomplete JSON.
 """
+
 from __future__ import annotations
 
 import argparse
-from collections import Counter
 import copy
 import hashlib
 import json
-from pathlib import Path
 import xml.etree.ElementTree as ET
+from collections import Counter
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = "imports/canary/items-xml/items.xml"
@@ -28,7 +29,10 @@ ELEMENTS = {"PHYSICAL", "DEATH", "EARTH", "ENERGY", "FIRE", "ICE"}
 
 
 def encode(value):
-    return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    return (
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        + "\n"
+    ).encode()
 
 
 def integer(values, field, default=None, low=0, high=65535):
@@ -45,7 +49,11 @@ def attributes(nodes, allowed=None):
     result = {}
     for node in nodes:
         name = node.attrib["key"].lower()
-        if allowed is not None and name not in allowed and not name.startswith("element"):
+        if (
+            allowed is not None
+            and name not in allowed
+            and not name.startswith("element")
+        ):
             continue
         if name in result:
             raise ValueError(f"RANGED_DUPLICATE_ATTRIBUTE:{name}")
@@ -58,21 +66,52 @@ def build(raw):
     seen = set()
     for item in ET.fromstring(raw).findall("item"):
         nodes = item.findall("attribute")
-        if not any(node.get("key", "").lower() == "weapontype" and node.get("value") in {"distance", "ammunition", "wand"} for node in nodes):
+        if not any(
+            node.get("key", "").lower() == "weapontype"
+            and node.get("value") in {"distance", "ammunition", "wand"}
+            for node in nodes
+        ):
             continue
-        top = attributes(nodes, {"weapontype", "primarytype", "ammotype", "attack", "range", "hitchance", "maxhitchance"})
+        top = attributes(
+            nodes,
+            {
+                "weapontype",
+                "primarytype",
+                "ammotype",
+                "attack",
+                "range",
+                "hitchance",
+                "maxhitchance",
+            },
+        )
         weapon = top.get("weapontype")
         if weapon not in {"distance", "ammunition", "wand"}:
             continue
         nested = attributes(item.findall("attribute[@key='script']/attribute"))
         ammo = top.get("ammotype")
-        kind = ("ROD" if top.get("primarytype") == "rods" or "rod" in item.get("name", "").split()
-                else "WAND") if weapon == "wand" else (
-                    "AMMUNITION" if weapon == "ammunition" else "DISTANCE" if ammo else "THROWING")
+        kind = (
+            (
+                "ROD"
+                if top.get("primarytype") == "rods"
+                or "rod" in item.get("name", "").split()
+                else "WAND"
+            )
+            if weapon == "wand"
+            else (
+                "AMMUNITION"
+                if weapon == "ammunition"
+                else "DISTANCE"
+                if ammo
+                else "THROWING"
+            )
+        )
         if "id" in item.attrib:
             ids = [integer(item.attrib, "id", low=1)]
         else:
-            ids = range(integer(item.attrib, "fromid", low=1), integer(item.attrib, "toid", low=1) + 1)
+            ids = range(
+                integer(item.attrib, "fromid", low=1),
+                integer(item.attrib, "toid", low=1) + 1,
+            )
             if not ids:
                 raise ValueError("RANGED_INVERTED_ID_RANGE")
         profile = {"kind": kind}
@@ -83,22 +122,38 @@ def build(raw):
             profile.update(
                 damage_min=integer(nested, "fromdamage", low=1),
                 damage_max=integer(nested, "todamage", low=1),
-                mana_per_shot=integer(nested, "mana", low=1), element=element)
+                mana_per_shot=integer(nested, "mana", low=1),
+                element=element,
+            )
             if profile["damage_min"] > profile["damage_max"]:
                 raise ValueError("RANGED_INVERTED_DAMAGE")
         else:
-            profile.update(attack=integer(top, "attack", 0),
-                           hit_chance=integer(top, "hitchance", 0, low=-100 if kind == "DISTANCE" else 0, high=100),
-                           max_hit_chance=integer(top, "maxhitchance", 90 if ammo else 75, low=1, high=100))
+            profile.update(
+                attack=integer(top, "attack", 0),
+                hit_chance=integer(
+                    top, "hitchance", 0, low=-100 if kind == "DISTANCE" else 0, high=100
+                ),
+                max_hit_chance=integer(
+                    top, "maxhitchance", 90 if ammo else 75, low=1, high=100
+                ),
+            )
             if kind in {"DISTANCE", "AMMUNITION"}:
                 if ammo not in {"arrow", "bolt"}:
                     raise ValueError("RANGED_REQUIRED_AMMUNITION")
                 profile["ammunition"] = ammo.upper()
             if kind != "DISTANCE":
-                elemental = [(name[7:].upper(), integer(top, name, low=1)) for name in top if name.startswith("element")]
-                if len(elemental) > 1 or any(element not in ELEMENTS - {"PHYSICAL"} for element, _ in elemental):
+                elemental = [
+                    (name[7:].upper(), integer(top, name, low=1))
+                    for name in top
+                    if name.startswith("element")
+                ]
+                if len(elemental) > 1 or any(
+                    element not in ELEMENTS - {"PHYSICAL"} for element, _ in elemental
+                ):
                     raise ValueError("RANGED_ELEMENTAL_ATTACK")
-                profile["element"], profile["elemental_attack"] = elemental[0] if elemental else ("PHYSICAL", 0)
+                profile["element"], profile["elemental_attack"] = (
+                    elemental[0] if elemental else ("PHYSICAL", 0)
+                )
         if kind != "AMMUNITION":
             profile["range_cells"] = integer(top, "range", 1, low=1, high=255)
         for item_id in ids:
@@ -108,7 +163,13 @@ def build(raw):
             counts[kind] += 1
             # RANGED-0 §4 accepts only 1..7 cells. Retain the source fact, never clamp it.
             if profile.get("range_cells", 1) > 7:
-                held.append({"item_id": item_id, "reason": "range_exceeds_RANGED_0_bound", "profile": profile})
+                held.append(
+                    {
+                        "item_id": item_id,
+                        "reason": "range_exceeds_RANGED_0_bound",
+                        "profile": profile,
+                    }
+                )
             else:
                 profiles[item_id] = copy.deepcopy(profile)
     return profiles, held, dict(sorted(counts.items()))
@@ -122,13 +183,18 @@ def source_profiles(root):
 
 
 def item_rows(root):
-    return [row for path in sorted((root / "content/items/definitions").glob("items-*.json"))
-            for row in json.loads(path.read_bytes())["records"]]
+    return [
+        row
+        for path in sorted((root / "content/items/definitions").glob("items-*.json"))
+        for row in json.loads(path.read_bytes())["records"]
+    ]
 
 
-def profile_record(row, profile):
+def profile_record(row, profile, captured=None):
     """Keep sealed authoring owners intact; the separate profile only owns new facts."""
     profile = copy.deepcopy(profile)
+    if captured is not None and profile["kind"] in {"DISTANCE", "THROWING"}:
+        profile.update(captured)
     authoring = row.get("authoring", {})
     if "weapon_attack_modifier_points" in authoring:
         del profile["attack"]
@@ -140,8 +206,10 @@ def profile_record(row, profile):
 def resolved_profile(profile, authoring):
     """Compile the native value from the existing owners, never a duplicated default."""
     profile = copy.deepcopy(profile)
-    for field, owner in (("attack", "weapon_attack_modifier_points"),
-                         ("hit_chance", "weapon_absolute_hit_chance_percent")):
+    for field, owner in (
+        ("attack", "weapon_attack_modifier_points"),
+        ("hit_chance", "weapon_absolute_hit_chance_percent"),
+    ):
         if owner not in authoring:
             continue
         if field in profile:
@@ -156,7 +224,7 @@ def resolved_profile(profile, authoring):
     return profile
 
 
-def apply_native(root, generated):
+def apply_authoring(root, document):
     """Annotate existing admitted policies; never expand native admission."""
     raw = (root / RANGED_PROFILES).read_bytes()
     if raw != outputs(root)[RANGED_PROFILES]:
@@ -172,22 +240,33 @@ def apply_native(root, generated):
     for key, record in profiles.items():
         if key not in rows or record["item"] != rows[key]["definition"]["identity"]:
             raise ValueError("RANGED_PROFILE_TARGET")
-    document = json.loads(generated[PROFILES])
     for record in document["records"]:
         key = record["production_binding"]["target"]["key"]
         if key in profiles:
             row = rows[key]
             owner = row.get("authoring", {})
-            record["authoring"]["ranged"] = resolved_profile(profiles[key]["profile"], owner)
+            record["authoring"]["ranged"] = resolved_profile(
+                profiles[key]["profile"], owner
+            )
+
+
+def apply_native(root, generated):
+    document = json.loads(generated[PROFILES])
+    apply_authoring(root, document)
     # Match the active provider's compact serialization within its existing 8 MiB bound.
     generated[PROFILES] = encode(document)
     manifest = json.loads(generated[MANIFEST])
-    manifest["item_profiles"]["sha256"] = hashlib.sha256(generated[PROFILES]).hexdigest()
+    manifest["item_profiles"]["sha256"] = hashlib.sha256(
+        generated[PROFILES]
+    ).hexdigest()
     generated[MANIFEST] = encode(manifest)
 
 
 def outputs(root=ROOT):
+    from import_cyclopedia_global import attack_fields, launcher_fields, load_capture
+
     profiles, held, counts = source_profiles(root)
+    capture = load_capture(root)
     result, defined, records = {}, set(), []
     for path in sorted((root / "content/items/definitions").glob("items-*.json")):
         document = json.loads(path.read_bytes())
@@ -200,20 +279,35 @@ def outputs(root=ROOT):
             if "authoring" in row and not authoring:
                 del row["authoring"]
             if item_id in profiles:
-                records.append(profile_record(row, profiles[item_id]))
+                attack = capture.get(item_id, {}).get("basic", {}).get("Attack")
+                captured = (
+                    launcher_fields(attack)
+                    if attack and not attack_fields(attack)
+                    else None
+                )
+                records.append(profile_record(row, profiles[item_id], captured))
         result[path.relative_to(root).as_posix()] = encode(document)
-    result[RANGED_PROFILES] = encode({
-        "schema": "OTERYN_RANGED_ITEM_PROFILES/v1",
-        "records": sorted(records, key=lambda record: record["item"]["key"]),
-    })
-    result[REPORT] = encode({
-        "schema": "OTERYN_RANGED_CONTENT_SOURCE/v1",
-        "source": {"repository": "opentibiabr/canary", "revision": REVISION,
-                   "path": "data/items/items.xml", "sha256": SOURCE_SHA256},
-        "counts": counts, "held": held,
-        "undefined_items": sorted(set(profiles) - defined),
-        "profiles": {str(key): value for key, value in sorted(profiles.items())},
-    })
+    result[RANGED_PROFILES] = encode(
+        {
+            "schema": "OTERYN_RANGED_ITEM_PROFILES/v1",
+            "records": sorted(records, key=lambda record: record["item"]["key"]),
+        }
+    )
+    result[REPORT] = encode(
+        {
+            "schema": "OTERYN_RANGED_CONTENT_SOURCE/v1",
+            "source": {
+                "repository": "opentibiabr/canary",
+                "revision": REVISION,
+                "path": "data/items/items.xml",
+                "sha256": SOURCE_SHA256,
+            },
+            "counts": counts,
+            "held": held,
+            "undefined_items": sorted(set(profiles) - defined),
+            "profiles": {str(key): value for key, value in sorted(profiles.items())},
+        }
+    )
     return result
 
 
@@ -222,7 +316,11 @@ def main():
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     generated = outputs()
-    drift = [path for path, data in generated.items() if not (ROOT / path).exists() or (ROOT / path).read_bytes() != data]
+    drift = [
+        path
+        for path, data in generated.items()
+        if not (ROOT / path).exists() or (ROOT / path).read_bytes() != data
+    ]
     if args.check:
         if drift:
             raise SystemExit("RANGED_GENERATED_DRIFT:" + ",".join(drift))

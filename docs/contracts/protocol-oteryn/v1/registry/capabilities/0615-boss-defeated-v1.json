@@ -1,0 +1,13 @@
+{
+  "id": 615,
+  "name": "BOSS_DEFEATED_V1",
+  "owner_decision": "2026-11-23 server/protocol client lane allocation",
+  "owner": "Live kill callback and server messages (domain 57 delta 1)",
+  "requires": [
+    92
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Selected with 92. Only the killing player receives field 5 on the existing server-message delta for a committed boss defeat."
+}

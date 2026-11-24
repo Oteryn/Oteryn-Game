@@ -34,18 +34,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             "/sharedxp off" => false,
             _ => return None,
         };
+        // A busy checkout is returned before the party transaction runs. Drop the
+        // attempt's spell and runtime guards before waiting for the holder.
+        let reply = super::AdmissionRetryBudget::for_command(self.root)
+            .retry_command_guard(async || {
+                self.party_shared_xp_attempt(actor, session, command_id, enabled)
+                    .await
+            })
+            .await
+            .unwrap_or(ChatIntentResult {
+                disposition: ChatDisposition::ChatUnavailable,
+                wait_seconds: 0,
+            });
+        Some(reply)
+    }
+
+    async fn party_shared_xp_attempt(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        enabled: bool,
+    ) -> Result<ChatIntentResult, DurabilityError> {
         let result = |disposition| ChatIntentResult {
             disposition,
             wait_seconds: 0,
         };
         let Some(permit) = self.spell_lane_permit().await else {
-            return Some(result(ChatDisposition::ChatUnavailable));
+            return Ok(result(ChatDisposition::ChatUnavailable));
         };
-        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-            return Some(result(ChatDisposition::Rejected));
+        let fence = match self.current_quest_fence_durable(session).await {
+            Ok(Some(fence)) => fence,
+            Err(
+                error @ (DurabilityError::RootUnavailable
+                | DurabilityError::RootPassDeadlineExceeded),
+            ) => return Err(error),
+            _ => return Ok(result(ChatDisposition::Rejected)),
         };
         let Ok(command) = CommandId::new(command_id) else {
-            return Some(result(ChatDisposition::Rejected));
+            return Ok(result(ChatDisposition::Rejected));
         };
         let item_fence = crate::durability::item_transfer::CurrentCharacterItemFence {
             character_id: fence.character_id,
@@ -65,7 +92,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && l.generation() == fence.character_lease_generation
             })
         {
-            return Some(result(ChatDisposition::Rejected));
+            return Ok(result(ChatDisposition::Rejected));
         }
         let in_protection_zone = super::actor_spell::qualified_protection_zone(
             &mut runtime,
@@ -81,16 +108,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 session,
                 "You cannot change shared experience while in a fight.",
             );
-            return Some(result(ChatDisposition::Rejected));
+            return Ok(result(ChatDisposition::Rejected));
         }
         let mut bytes = b"oteryn.party.shared-xp.v1".to_vec();
         bytes.push(u8::from(enabled));
         let binding: [u8; 32] = Sha256::digest(bytes).into();
         let mut ctx = (self, &permit, &item_fence);
-        let pass = match self.root.try_issue_semantic_pass() {
-            Ok(pass) => pass,
-            Err(_) => return Some(result(ChatDisposition::ChatUnavailable)),
-        };
+        let pass = self.root.try_issue_semantic_pass()?;
         let applied = pass
             .run_with_context(&mut ctx, move |holder, deadline, ctx| {
                 Box::pin(async move {
@@ -128,7 +152,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match applied {
             Ok((disposition, source)) => {
                 if runtime.project_world_party(actor, session, source).is_err() {
-                    return Some(result(ChatDisposition::ChatUnavailable));
+                    return Ok(result(ChatDisposition::ChatUnavailable));
                 }
                 let (disposition, text) = if disposition == "APPLIED" {
                     (
@@ -146,9 +170,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                 };
                 self.states.chat.push_party_spell_feedback(session, text);
-                Some(result(disposition))
+                Ok(result(disposition))
             }
-            Err(_) => Some(result(ChatDisposition::ChatUnavailable)),
+            Err(_) => Ok(result(ChatDisposition::ChatUnavailable)),
         }
     }
 }

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorldStateResult",
+  "type": "object",
+  "properties": {
+    "previous_state": {
+      "$ref": "#/$defs/WorldState"
+    },
+    "sessions_kicked": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "state": {
+      "$ref": "#/$defs/WorldState"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "previous_state",
+    "state",
+    "sessions_kicked"
+  ],
+  "$defs": {
+    "WorldState": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed",
+        "maintenance"
+      ]
+    }
+  }
+}

@@ -91,16 +91,16 @@ impl TryFrom<&NativeGameplayState> for TaskBoardCatalogue {
                     .admission
                     .legal_destinations
                     .contains(&NativeItemDestination::CharacterInventory)
-                || index
-                    .definition_ref(
-                        &definition.family,
-                        &definition.production_key,
-                        &definition.revision_ref,
-                    )
-                    .is_none()
             {
                 continue;
             }
+            let Some(reference) = index.definition_ref(
+                &definition.family,
+                &definition.production_key,
+                &definition.revision_ref,
+            ) else {
+                continue;
+            };
             let definition_ref = super::super::item_mint::TypedDefinitionRef {
                 family: definition.family.clone(),
                 production_key: definition.production_key.clone(),
@@ -114,6 +114,7 @@ impl TryFrom<&NativeGameplayState> for TaskBoardCatalogue {
             items.insert(
                 id,
                 TaskBoardItem {
+                    definition_ref: reference,
                     key: definition.production_key.clone(),
                     revision: definition.revision_ref.clone(),
                     stackable: record.admission.stack_class == NativeItemStackClass::StackCapable,

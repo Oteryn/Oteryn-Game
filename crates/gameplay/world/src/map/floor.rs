@@ -810,7 +810,7 @@ fn destination(
                 && let Some(mask) = index
                     .map()
                     .facts
-                    .quest_callback_floor_mask(index.map().overlay.base(), at)
+                    .projected_floor_mask(index.map().overlay.base(), at)
             {
                 return mask;
             }

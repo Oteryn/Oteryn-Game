@@ -10,7 +10,7 @@ pub const ITEM_PHYSICAL_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20261001-item-physical-promotion-v1.json"
 );
 pub const ITEM_PHYSICAL_PACKET_SHA256: &str =
-    "44bce92797cca56efddee6ab2f988f1e805e0a5e4101d9c5315939d07872c7ae";
+    "1a99c973d9a5270f5cc2a24e80b14f86532e170fcf59dbb2426600fbb7088717";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,

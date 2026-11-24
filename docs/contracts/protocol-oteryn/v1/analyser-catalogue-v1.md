@@ -25,3 +25,20 @@ Clients distinguish reported gold from the coin stacks also present in `kill_loo
 Only confirmed non-currency identities contribute custom-priced item values on top of
 gold. Unresolved/unpriced quantities stay explicit. A custom price change revalues
 retained counts and minute buckets, without changing any server state.
+
+## NPC price request
+
+Command 6360 requires capability 599 and uses the byte-for-byte command 734
+request format. Clients may request prices when resolving newly observed loot.
+The server resolves each reference against the same pinned Item index as 734.
+
+## NPC price reply
+
+A u8 count followed by that many pairs of little-endian u32 Item reference and
+u64 mean NPC buy price in whole gold, in request order. Zero indicates no
+positive whole-gold mean for that exact definition and revision. Each admitted
+positive gold BuyFromPlayer quote in the Channel service catalogue contributes
+one sample. Divide a stack quote by its unit count and round down before
+averaging the samples. Round the arithmetic mean down. Held offers and prices NPCs
+charge players are excluded. This metric is advisory and independent of
+character-specific shop access. Legacy command 734 retains its original reply.
