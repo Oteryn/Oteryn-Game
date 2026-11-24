@@ -32,8 +32,7 @@ const ROD: u32 = 3066;
 const WAND_MANA: u32 = 1;
 const ROD_MANA: u32 = 2;
 
-// These packet callers use the local signer in world::connect_character.
-// Gameplay checks can still run, but no packet can attest to the Platform issuer.
+// A packet admitted by the qualification-local signer cannot attest to the Platform issuer.
 pub(super) const PLATFORM_ADMISSION_GAP: &str =
     "need=platform-issued-admission-grant;observed=qualification-local-signer";
 
@@ -58,9 +57,6 @@ impl Row {
                 Err("missing-required-ranged-step".into())
             }
         });
-        let result = result.and(Err::<(), Box<dyn std::error::Error>>(
-            PLATFORM_ADMISSION_GAP.into(),
-        ));
         if let Err(error) = &result {
             evidence(&format!(
                 "C02_GAP step={} observed={error} need=accepted-native-reply-and-required-exact-deltas",
@@ -152,42 +148,101 @@ async fn wait_count(
     }
 }
 
+fn coin_references() -> TestResult<[(NonZeroU32, u64); 3]> {
+    Ok([
+        (reference(3031)?, 1),
+        (reference(3035)?, 100),
+        (reference(3043)?, 10_000),
+    ])
+}
+
+fn carried_gold(client: &DevClientSession, gold: &[(NonZeroU32, u64); 3]) -> TestResult<u64> {
+    Ok(client
+        .inventory()
+        .ok_or("gold-inventory-absent")?
+        .entries
+        .iter()
+        .map(|entry| {
+            gold.iter()
+                .find(|(key, _)| *key == entry.item_definition_ref)
+                .map_or(0, |(_, value)| u64::from(entry.count.get()) * value)
+        })
+        .sum())
+}
+
 pub(super) async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     needed: u64,
 ) -> TestResult {
-    let gold = [
-        (reference(3031)?, 1),
-        (reference(3035)?, 100),
-        (reference(3043)?, 10_000),
-    ];
-    let value = |client: &DevClientSession| -> TestResult<u64> {
-        Ok(client
-            .inventory()
-            .ok_or("gold-inventory-absent")?
-            .entries
-            .iter()
-            .map(|e| {
-                gold.iter()
-                    .find(|(k, _)| *k == e.item_definition_ref)
-                    .map_or(0, |(_, v)| u64::from(e.count.get()) * v)
-            })
-            .sum())
-    };
+    let gold = coin_references()?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    while value(client)? < needed {
+    while carried_gold(client, &gold)? < needed {
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
                 "gold-combat-budget:observed={}:needed={needed}",
-                value(client)?
+                carried_gold(client, &gold)?
             )
             .into());
         }
         travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
         client_hunt::hunt(client).await?;
+    }
+    Ok(())
+}
+
+async fn fund_ranged_purchase(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    needed: u64,
+) -> TestResult {
+    use oteryn_protocol_oteryn::atelier::resources as money;
+
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    let gold = coin_references()?;
+    let mut carried = carried_gold(client, &gold)?;
+    while carried < needed {
+        let hunt = tokio::time::timeout_at(deadline, async {
+            let reply = client
+                .session_mut()
+                .gated_command(
+                    money::CAPABILITY_ATELIER_RESOURCES_V1,
+                    money::COMMAND_TYPE_ATELIER_RESOURCES_QUERY,
+                    &[],
+                )
+                .await?;
+            if reply.status != CommandStatus::Accepted {
+                return Err(format!("funding-balance-query-refused:{reply:?}").into());
+            }
+            let balances = money::decode_reply(&reply.payload)
+                .map_err(|error| format!("funding-balance-decode:{error:?}"))?;
+            // Request one more spendable coin's worth from the shared observer.
+            // C02's deadline covers every invocation and its inventory check.
+            let required_total = balances
+                .bank_gold
+                .checked_add(balances.carried_gold.max(carried))
+                .and_then(|total| total.checked_add(1))
+                .ok_or("funding-balance-overflow")?;
+            full_e2ef7::earn_gold(client, world, required_total).await
+        })
+        .await;
+        let after = carried_gold(client, &gold)?;
+        hunt.map_err(|_| format!("gold-combat-budget:observed={after}:needed={needed}"))??;
+        if after <= carried {
+            return Err(format!(
+                "funding-hunt-without-carried-gold:before={carried}:after={after}:needed={needed}"
+            )
+            .into());
+        }
+        let corpse = client
+            .open_container()
+            .and_then(|view| view.container_handle);
+        evidence(&format!(
+            "C02_FUNDING creature=oteryn:creature.rat corpse_handle={corpse:?} needed={needed} carried_before={carried} carried_after={after}"
+        ));
+        carried = after;
     }
     Ok(())
 }
@@ -577,8 +632,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc2).await?;
-    earn_gold(&mut client, world, &metadata.spawns, 930)
+    let ranged =
+        character_prep::dedicated_character(clients, "NODE_BOOT_C02_RANGED_ACCOUNT").await?;
+    let ranged_clients = ranged.clients(clients);
+    let druid = character_prep::dedicated_character(clients, "NODE_BOOT_C02_DRUID_ACCOUNT").await?;
+    let druid_clients = druid.clients(clients);
+    if ranged_clients.characters == druid_clients.characters {
+        return Err("C02 ranged and Druid legs require distinct dedicated characters".into());
+    }
+    let mut client = connect_character(&ranged_clients, 0xc2, 0).await?;
+    fund_ranged_purchase(&mut client, world, 930)
         .await
         .map_err(|error| format!("fund-ranged-kit: {error}"))?;
     let mut purchase_sequences = Vec::new();
@@ -654,7 +717,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?;
     let expected_mana = client.actor_vitals().ok_or("logout-vitals-absent")?.mana;
     drop(client);
-    let mut fresh = connect_world(clients, 0xc3).await?;
+    let mut fresh = connect_character(&ranged_clients, 0xc3, 0).await?;
     let admitted_xp = experience(&mut fresh).await?;
     if fresh.join_snapshot().game_session_id == old
         || !durable_rewards_match(wand_xp, admitted_xp)
@@ -672,9 +735,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     drop(fresh);
 
     // The rod leg uses a distinct Character and its own earned purchase and XP.
-    let mut client = connect_character(clients, 0xc4, 0).await?;
+    let mut client = connect_character(&druid_clients, 0xc4, 0).await?;
     require_eligible_druid(&mut client).await?;
-    earn_gold(&mut client, world, &metadata.spawns, 500).await?;
+    fund_ranged_purchase(&mut client, world, 500)
+        .await
+        .map_err(|error| format!("fund-rod: {error}"))?;
     buy(&mut client, world, &metadata.npcs, ROD, 1).await?;
     equip(&mut client, rod, EquipmentSlot::RightHand)
         .await
@@ -697,7 +762,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("rod-logout-vitals-absent")?
         .mana;
     drop(client);
-    let mut fresh = connect_character(clients, 0xc5, 0).await?;
+    let mut fresh = connect_character(&druid_clients, 0xc5, 0).await?;
     let admitted_xp = experience(&mut fresh).await?;
     if fresh.join_snapshot().game_session_id == old
         || !durable_rewards_match(rod_xp, admitted_xp)
@@ -710,7 +775,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass(5, (wand_xp, rod_xp, admitted_xp));
-    logout(&mut fresh).await
+    logout(&mut fresh).await?;
+    if !requires_platform_grant(&ranged_clients.accounts[0])
+        || !requires_platform_grant(&druid_clients.accounts[0])
+    {
+        return Err(PLATFORM_ADMISSION_GAP.into());
+    }
+    Ok(())
 }
 
 async fn general_stats(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
