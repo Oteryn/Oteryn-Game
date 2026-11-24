@@ -282,7 +282,7 @@ fn derive_identity(root: &Path, slug: &str) -> Result<Identity, Error> {
         provenance_summary.push('/');
         provenance_summary.push_str(&text(entry, "package_provenance_digest", "lock entry")?);
     }
-    let collision = read(&world.join("crystal-item-collision.bin"))?;
+    let collision = read(&world.join("terrain/crystal-item-collision.bin"))?;
     if collision != oteryn_world_bundle::crystal_item_collision::SOURCE_BYTES {
         return Err(Error::Format(
             "Crystal item collision differs from the compiler's embedded source".into(),

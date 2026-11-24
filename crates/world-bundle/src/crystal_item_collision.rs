@@ -1,7 +1,8 @@
 //! Static Item collision projected by build_crystal_item_collision.py from Crystal 201189f8.
 
 /// The exact bytes used by both the compiler and the map boot owner.
-pub const SOURCE_BYTES: &[u8] = include_bytes!("../../../content/world/crystal-item-collision.bin");
+pub const SOURCE_BYTES: &[u8] =
+    include_bytes!("../../../content/world/terrain/crystal-item-collision.bin");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ItemCollision {
