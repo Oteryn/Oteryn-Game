@@ -180,7 +180,15 @@ fn fenced(
     node: &NodeIncarnationProof,
     context: &HouseActionContext,
 ) -> sqlx::query::Query<'static, sqlx::Postgres, sqlx::postgres::PgArguments> {
-    let fence = context.fence;
+    house_query(sql, node, context.fence, &context.house)
+}
+
+fn house_query(
+    sql: &'static str,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterItemFence,
+    house: &HouseId,
+) -> sqlx::query::Query<'static, sqlx::Postgres, sqlx::postgres::PgArguments> {
     sqlx::query(sql)
         .bind(fence.game_session_id.as_bytes().to_vec())
         .bind(fence.character_id.as_bytes().to_vec())
@@ -189,12 +197,25 @@ fn fenced(
         .bind(fence.scope_ownership_generation.get().to_string())
         .bind(node.fact().node_id().as_bytes().to_vec())
         .bind(node.fact().registration_revision().to_string())
-        .bind(context.house.world_id().as_bytes().to_vec())
-        .bind(context.house.house_key().to_owned())
+        .bind(house.world_id().as_bytes().to_vec())
+        .bind(house.house_key().to_owned())
 }
 
 const CURRENT: &str = "SELECT game_item_action_house_current(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5::text::numeric,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid,$9)";
 const SOURCE: &str = "SELECT * FROM game_item_action_house_source(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5::text::numeric,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid,$9,encode($10,'hex')::uuid)";
+
+pub(in crate::durability) async fn house_action_current_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterItemFence,
+    house: &HouseId,
+) -> Result<bool, DurabilityError> {
+    Ok(prove_current_incarnation(tx, node).await?
+        && house_query(CURRENT, node, fence, house)
+            .fetch_one(&mut **tx)
+            .await?
+            .try_get::<bool, _>(0)?)
+}
 
 impl DurabilityRoot {
     /// Probe an immutable House USE receipt before resolving a consumed kit or
@@ -320,11 +341,9 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx =
                         crate::durability::db::begin_semantic_transaction(holder, deadline).await?;
-                    let current = prove_current_incarnation(&mut tx, &node).await?
-                        && fenced(CURRENT, &node, &context)
-                            .fetch_one(&mut *tx)
-                            .await?
-                            .try_get::<bool, _>(0)?;
+                    let current =
+                        house_action_current_in_transaction(&mut tx, &node, context.fence, &context.house)
+                            .await?;
                     crate::durability::db::commit_semantic_transaction(tx, deadline).await?;
                     Ok(current)
                 })

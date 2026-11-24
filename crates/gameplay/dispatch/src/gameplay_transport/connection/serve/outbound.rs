@@ -205,7 +205,7 @@ where
         Dispatch::Use(outcome) | Dispatch::UseWithoutWalk(outcome) => {
             use_effects::use_effects(stream, authority, session, command, outcome).await?;
         }
-        Dispatch::Spell(outcome) => {
+        Dispatch::Spell(outcome) | Dispatch::ParameterSpell(outcome, _) => {
             effects::spell(stream, authority, session, outcome).await?;
         }
         Dispatch::Timed(_, deltas) | Dispatch::ContainerSort(deltas) => {
@@ -222,7 +222,9 @@ where
                 }
             }
         }
-        Dispatch::UseItem(_, Some(delta)) | Dispatch::ContainerView(_, Some(delta)) => {
+        Dispatch::UseItem(_, Some(delta))
+        | Dispatch::ContainerView(_, Some(delta))
+        | Dispatch::ContainerPage(_, delta) => {
             let Some((delta_sequence, frame)) =
                 item_view_delta(session.generation, session.sequence, &delta)
             else {
@@ -268,6 +270,30 @@ where
             session.sequence = sequence;
             session.admitted.continuity.server_sequence = sequence;
             if reply.outcome == oteryn_protocol_oteryn::stash::StashOutcome::Committed {
+                let Some(view) = session.item_view.as_mut() else {
+                    return Err(ServeEnd::Disconnected);
+                };
+                if item_use_view_refresh::refresh(
+                    stream,
+                    authority,
+                    session.actor,
+                    &mut session.admitted,
+                    view,
+                    session.container_views.as_mut(),
+                    &mut session.sequence,
+                )
+                .await
+                .is_none()
+                {
+                    return Err(ServeEnd::Disconnected);
+                }
+            }
+        }
+        Dispatch::CarriedBatch(reply) => {
+            if matches!(
+                reply,
+                oteryn_protocol_oteryn::container_batch::Reply::Committed(_)
+            ) {
                 let Some(view) = session.item_view.as_mut() else {
                     return Err(ServeEnd::Disconnected);
                 };
@@ -344,7 +370,12 @@ where
                 return Err(ServeEnd::Disconnected);
             }
         }
-        Dispatch::Reply(CommandStatus::Accepted, _) if forge::changes_inventory(command) => {
+        Dispatch::Reply(CommandStatus::Accepted, _)
+            if forge::changes_inventory(command)
+                || command.command_type
+                    == oteryn_protocol_oteryn::quick_loot::COMMAND_TYPE_QUICK_LOOT_DISTRIBUTE =>
+        {
+            session.inventory_capacity_refresh_at = None;
             forge::refresh(stream, authority, session).await?;
         }
         Dispatch::ItemMove(outcome, deltas, _) => {

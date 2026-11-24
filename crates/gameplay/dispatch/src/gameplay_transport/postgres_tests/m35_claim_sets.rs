@@ -13,7 +13,7 @@ use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[test]
-fn m35_alawar_dispatch_completes_only_on_last_chest() -> TestResult {
+fn m35_alawar_chests_grant_independently_before_the_journey_finishes() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -774,6 +774,28 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
 
+        let premium = if matches!(case, Case::Koshei) {
+            use crate::gameplay_transport::spell_premium_coordinator::{
+                SpellPremiumCoordinator, purchase_fixture,
+            };
+            let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+            Some(SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(h.root.clone()),
+            ))
+        } else {
+            None
+        };
         let channel_states = std::sync::Arc::new(
             crate::gameplay_transport::channel_states::ChannelSessionStates::default(),
         );
@@ -837,6 +859,10 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
             owner.quest_catalogue = catalogue.clone();
+            owner.premium_coordinator = premium.as_ref();
+            if premium.is_some() {
+                owner.admit_premium(id(40), admitted.game_session_id);
+            }
             owner.admit_progression_session(&mut admitted).await;
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
@@ -963,8 +989,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                             && index == 2
                         || matches!(
                             case,
-                            Case::Alawar
-                                | Case::Koshei
+                            Case::Koshei
                                 | Case::BlackKnight
                                 | Case::FireAxeAll
                                 | Case::EmperorCookies
@@ -1320,7 +1345,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     } else if pos == 0 {
                         ("oteryn:item.tibia.i645", 1)
                     } else {
-                        ("oteryn:item.tibia.i3035", 100)
+                        ("oteryn:item.tibia.i3035", 50)
                     };
                     expected.push((item.to_owned(), count));
                 }

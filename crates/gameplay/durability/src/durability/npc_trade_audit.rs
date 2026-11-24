@@ -107,7 +107,7 @@ pub struct OneItemNpcTradeCauseV1 {
 }
 
 /// One line. A BURN has both states (a whole burn ends `RETIRED` with no location); a MINT has
-/// only `after`, a fresh live stack in a new direct backpack entry.
+/// only `after`, a fresh live stack in the selected purchase destination.
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemNpcTradeLineV1 {
     /// 1 = coin BURN, 2 = coin MINT, 3 = item BURN, 4 = item MINT.
@@ -120,6 +120,9 @@ pub struct OneItemNpcTradeLineV1 {
     /// The entry before a BURN (and after a partial one), or the MINT's new entry.
     #[prost(uint64, tag = "4")]
     pub placement_ordinal: u64,
+    /// When present, the storage slot removed by this whole equipment burn.
+    #[prost(uint32, optional, tag = "5")]
+    pub source_equipment_slot: Option<u32>,
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
@@ -129,6 +132,10 @@ pub struct OneItemNpcTradeV1 {
     pub fluid_subtype: Option<u32>,
     #[prost(uint32, optional, tag = "20")]
     pub full_charges: Option<u32>,
+    #[prost(bytes = "vec", optional, tag = "21")]
+    pub shopping_bag: Option<Vec<u8>>,
+    #[prost(bool, tag = "22")]
+    pub include_equipped: bool,
     #[prost(message, optional, tag = "1")]
     pub cause: Option<OneItemNpcTradeCauseV1>,
     /// The command 8 the occurrence is bound to.
@@ -187,6 +194,7 @@ pub fn npc_trade_usage(value: &OneItemNpcTradeV1) -> TransactionResourceUsage {
         .filter(burn)
         .filter(|line| line.after.as_ref().is_some_and(|after| after.quantity == 0))
         .count() as u64;
+    let bags = u64::from(value.shopping_bag.is_some());
     let children = value
         .hireling_package
         .as_ref()
@@ -194,17 +202,17 @@ pub fn npc_trade_usage(value: &OneItemNpcTradeV1) -> TransactionResourceUsage {
     let count = value.lines.len() as u64;
     let minted = count - burns;
     TransactionResourceUsage {
-        touched_item_instances: count + children,
-        location_custody_lines: whole + minted + children,
+        touched_item_instances: count + children + bags,
+        location_custody_lines: whole + minted + children + bags,
         value_lines: u64::from(value.bank_debit.is_some()),
         transform_lines: 0,
-        container_expansion: children,
-        participants: count + children + u64::from(value.bank_debit.is_some()),
+        container_expansion: children + bags,
+        participants: count + children + bags + u64::from(value.bank_debit.is_some()),
         effect_work_units: 3 * whole
             + 2 * (burns - whole)
             + 2 * minted
             + 2 * u64::from(value.bank_debit.is_some())
-            + 2 * children
+            + 2 * (children + bags)
             + u64::from(value.house_furniture_kit.is_some())
             + u64::from(
                 value.fluid_subtype.is_some_and(|subtype| subtype != 0)
@@ -223,7 +231,7 @@ fn check_npc_trade_usage(
     package: bool,
     kit: bool,
     hireling_sell: bool,
-    bulk: bool,
+    (bulk, packed): (bool, bool),
     usage: &TransactionResourceUsage,
 ) -> Result<(), AuditError> {
     let (touched, custody, participants, work) = if package || kit {
@@ -259,7 +267,7 @@ fn check_npc_trade_usage(
             SELL_RL06_EFFECT_WORK_UNITS_MAX,
         )
     };
-    let extra = if package { 3 } else { 0 };
+    let extra = if package { 3 } else { u64::from(packed) };
     if usage.value_lines > u64::from(side == SIDE_BUY)
         || usage.transform_lines != 0
         || usage.container_expansion != extra
@@ -330,6 +338,7 @@ fn check_mint(line: &OneItemNpcTradeLineV1, world_id: &[u8]) -> Result<u32, Audi
     let after = line.after.as_ref().ok_or(AuditError::InvalidInput)?;
     check_state(after, world_id)?;
     if line.before.is_some()
+        || line.source_equipment_slot.is_some()
         || after.lifecycle != ITEM_LIFECYCLE_LIVE
         || after.quantity == 0
         || line.placement_ordinal == 0
@@ -473,17 +482,38 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
     } else {
         oteryn_gameplay_economy::npc_trade::NPC_TRADE_BULK_QUANTITY_MAX
     };
+    let packed = value.shopping_bag.is_some();
+    if let Some(bag) = &value.shopping_bag {
+        check_uuid_v7(bag)?;
+        if side != SIDE_BUY || value.house_key.is_some() || value.hireling_package.is_some()
+            || value.house_furniture_kit.is_some() || bag == &value.backpack_item_instance_id
+            || value.lines.iter().any(|line| line_item(line) == Some(bag.as_slice()))
+        {
+            return Err(AuditError::InvalidInput);
+        }
+    }
+    let bag_fee = if packed { super::npc_trade::shop_options::BAG_PRICE } else { 0 };
     if command.command_id == 0
+        || (value.include_equipped && (!sell_all || value.house_key.is_some()))
         || value.runtime_scope_ownership_generation == 0
         || (sell_all && side != SIDE_SELL)
         || !(1..=quantity_max).contains(&value.quantity)
-        || value.unit_price.checked_mul(u64::from(value.quantity)) != Some(value.total_gold_units)
+        || value.unit_price.checked_mul(u64::from(value.quantity)).and_then(|price| price.checked_add(bag_fee)) != Some(value.total_gold_units)
         || value.total_gold_units > total_max
     {
         return Err(AuditError::InvalidInput);
     }
     let mut identities = std::collections::BTreeSet::new();
+    let mut equipment = std::collections::BTreeSet::new();
     for line in &value.lines {
+        if let Some(slot) = line.source_equipment_slot
+            && (!value.include_equipped || line.kind != LINE_ITEM_BURN
+                || !matches!(slot, 1..=8 | 10)
+                || line.after.as_ref().is_none_or(|after| after.quantity != 0)
+                || !equipment.insert(slot))
+        {
+            return Err(AuditError::InvalidInput);
+        }
         let state = line
             .before
             .as_ref()
@@ -672,7 +702,7 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
         value.hireling_package.is_some(),
         value.house_furniture_kit.is_some(),
         hireling_sell,
-        ordinary_bulk(value),
+        (packed || ordinary_bulk(value), packed),
         &npc_trade_usage(value),
     )
 }

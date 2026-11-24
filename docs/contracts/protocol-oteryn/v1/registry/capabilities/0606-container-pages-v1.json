@@ -1,0 +1,16 @@
+{
+  "id": 606,
+  "name": "CONTAINER_PAGES_V1",
+  "owner_decision": "Native ordinary container pages (2026-11-22)",
+  "owner": "Current session item handles and container views",
+  "requires": [
+    4,
+    14
+  ],
+  "command_types": [
+    6375
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Requires the selected ordinary container tree."
+}

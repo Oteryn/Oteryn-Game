@@ -334,14 +334,22 @@ impl PresentationCache {
         });
     }
 
+    #[cfg(test)]
     pub(super) fn name(&mut self, name: &str, health: u8) -> NameLabel {
-        let colour = match health {
-            93.. => [0, 188, 0],
-            61..=92 => [80, 161, 80],
-            31..=60 => [161, 161, 0],
-            9..=30 => [191, 10, 10],
-            4..=8 => [145, 15, 15],
-            _ => [133, 12, 12],
+        self.actor_name(name, false, health)
+    }
+    pub(super) fn actor_name(&mut self, name: &str, covered: bool, health: u8) -> NameLabel {
+        let colour = if covered {
+            [96, 96, 96]
+        } else {
+            match health {
+                93.. => [0, 188, 0],
+                61..=92 => [80, 161, 80],
+                31..=60 => [161, 161, 0],
+                9..=30 => [191, 10, 10],
+                4..=8 => [145, 15, 15],
+                _ => [133, 12, 12],
+            }
         };
         let graphics = self.graphics.clone();
         let mut label = NameLabel::default();

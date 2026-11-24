@@ -161,7 +161,7 @@ psql_admin() { cat > "$QUERY"; printf '%s\n' "$INITIALIZED"; }
                 self.assertIn("SELECT game_world_reset_initialize(", sql)
                 self.assertIn("'TIBIA_SERVER_SAVE_BERLIN_06'", sql)
                 self.assertIn("EXECUTE login_local_world_epoch('11111111-1111-1111-1111-111111111111', "
-                              "'22222222-2222-2222-2222-222222222222', 'abc123');", sql)
+                              "'22222222-2222-2222-2222-222222222222', 'abc123', 'abc123');", sql)
                 if initialized == "t":
                     self.assertEqual(result.returncode, 0, result.stderr)
                     self.assertLess(result.stdout.index("world_epoch=0"),

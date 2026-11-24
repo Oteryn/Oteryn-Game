@@ -1,5 +1,50 @@
 use super::*;
 
+#[test]
+fn reviewed_world_callback_documents_load() -> Result<(), String> {
+    for source in [
+        include_bytes!(
+            "../../../../../../content/quests/authored-bindings/alawars_vault_journey.json"
+        )
+        .as_slice(),
+        include_bytes!(
+            "../../../../../../content/quests/authored-bindings/outlaw_camp_journey.json"
+        )
+        .as_slice(),
+        include_bytes!(
+            "../../../../../../content/quests/authored-bindings/paradox_tower_journey.json"
+        )
+        .as_slice(),
+        include_bytes!(
+            "../../../../../../content/quests/authored-bindings/thais_lighthouse_journey.json"
+        )
+        .as_slice(),
+    ] {
+        Bindings::parse(source)?;
+    }
+    crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    Ok(())
+}
+
+#[test]
+fn koshei_carried_seal_needs_no_dialogue_keywords() -> Result<(), String> {
+    let source = include_bytes!(
+        "../../../../../../content/quests/authored-bindings/koshei_the_deathless_journey.json"
+    );
+    let bindings = Bindings::parse(source)?;
+    let mut seal = bindings
+        .reward_callbacks()
+        .find(|callback| callback.key == "oteryn:quest-reward/koshei/tomb-seal")
+        .ok_or("tomb seal")?
+        .clone();
+    assert!(seal.keywords.is_empty());
+    assert!(seal.corpse_target.is_some());
+    seal.take.clear();
+    assert!(crate::quest::reward_callbacks::validate_callbacks(&[seal]).is_err());
+    Ok(())
+}
+
 fn binding() -> Result<Bindings, String> {
     Bindings::parse(include_bytes!("fixtures/talk.json"))
 }
@@ -557,7 +602,7 @@ mod main_native_contract {
             track(&stage.track, &arena.quest, stage.goal)?;
         }
         // Package C adds three Skull of Ratha claim markers and one Legion Helmet marker.
-        assert_eq!(additions.len(), 70);
+        assert_eq!(additions.len(), 72);
 
         let baseline = crate::quest::loader::lower_embedded_quest_state("native-admission-fixture")
             .map_err(|error| format!("{error:?}"))?;
@@ -572,7 +617,7 @@ mod main_native_contract {
         let after = explicit.catalogue();
         // Twenty Miles contributes 26 tracks across both registries, including song times
         // and replacements. Koshei adds its reward door and Sinatuki adds fish progress.
-        assert_eq!(before.tracks.len(), 2143 + 26 + 1 + 1);
+        assert_eq!(before.tracks.len(), 2145 + 26 + 1 + 1);
         for pharaoh in ["omruc", "vashresamun"] {
             let key = format!(
                 "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/{pharaoh}_sarcophagus_claim"
@@ -632,7 +677,7 @@ mod main_native_contract {
             }
         }
         assert_eq!(before.npc_legacy, after.npc_legacy);
-        assert_eq!(before.predecessors, after.predecessors);
+        assert_eq!(expected.predecessors, after.predecessors);
         assert_eq!(before.authored_bindings, after.authored_bindings);
         assert!(after.native_recipe_evidence.is_some());
         Ok(())

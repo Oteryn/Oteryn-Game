@@ -92,6 +92,15 @@ pub(super) struct Registry {
 }
 
 impl Registry {
+    pub(super) fn next_fire_due_us(&self, runtime: &ChannelRuntimeV1) -> Option<u64> {
+        self.active
+            .lock()
+            .ok()?
+            .iter()
+            .filter_map(|phase| phase.pending_fire_due_us(runtime))
+            .min()
+    }
+
     pub(super) fn blocks_channel_switch(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -537,6 +546,17 @@ impl ActivePhase {
         true
     }
 
+    fn pending_fire_due_us(&self, runtime: &ChannelRuntimeV1) -> Option<u64> {
+        let Fight::Arbaziloth(fight) = &self.fight else {
+            return None;
+        };
+        if self.fire.is_some() {
+            return None;
+        }
+        let shields = runtime.arbaziloth_shields(fight.normal_boss()?)?;
+        shields.fire_due_ms().map(|due| due.saturating_mul(1_000))
+    }
+
     fn tick_fire(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -549,12 +569,12 @@ impl ActivePhase {
         let Some(boss) = fight.normal_boss() else {
             return Ok(());
         };
-        if !runtime
+        let Some(due) = runtime
             .arbaziloth_shields(boss)
-            .is_some_and(|shields| shields.needs_fire())
-        {
+            .and_then(|shields| shields.fire_due_ms())
+        else {
             return Ok(());
-        }
+        };
         let position = runtime.read_actor_position(boss)?.position();
         if let Some(fire) = self.fire {
             let on_fire = position.x == i32::from(fire.x)
@@ -566,6 +586,10 @@ impl ActivePhase {
             {
                 shields.step_on_fire();
             }
+            return Ok(());
+        }
+
+        if now_ms < due {
             return Ok(());
         }
 
@@ -617,10 +641,34 @@ impl ActivePhase {
 }
 
 pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, now_us: u64) {
+    tick_phases(runtime, states, now_us, true);
+}
+
+pub(super) fn tick_due_fire(
+    runtime: &mut ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    now_us: u64,
+) {
+    tick_phases(runtime, states, now_us, false);
+}
+
+fn tick_phases(
+    runtime: &mut ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    now_us: u64,
+    periodic: bool,
+) {
     let Ok(mut active) = states.encounter_phases.active.lock() else {
         return;
     };
     active.retain_mut(|phase| {
+        if !periodic
+            && phase
+                .pending_fire_due_us(runtime)
+                .is_none_or(|due| due > now_us)
+        {
+            return true;
+        }
         match phase.retire_abandoned_arbaziloth(runtime, states, now_us) {
             Ok(true) => return false,
             Err(error) => {
@@ -641,6 +689,9 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, 
                 "encounter_phase_fire_deferred key={} reason={error:?}",
                 phase.key
             ));
+        }
+        if !periodic {
+            return true;
         }
         let ActivePhase {
             key, fight, cells, ..

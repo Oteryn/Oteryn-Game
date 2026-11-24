@@ -46,6 +46,8 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         (self.root / 'content/quests').mkdir(parents=True)
+        (self.root / 'content/quests/authored-bindings').symlink_to(
+            ROOT / 'content/quests/authored-bindings', target_is_directory=True)
         (self.root / 'content/interactions').symlink_to(ROOT / 'content/interactions', target_is_directory=True)
         (self.root / 'content/items').symlink_to(ROOT / 'content/items', target_is_directory=True)
         (self.root / 'content/assets').symlink_to(ROOT / 'content/assets', target_is_directory=True)
@@ -353,11 +355,15 @@ class QuestCallbackProfiles(unittest.TestCase):
         rows = {row['production_definition']['production_key']: row
                 for row in json.loads(self.generated[PROFILE])['records']}
         expected = {'oteryn:item.tibia.i9388'}
+        fire_axe_placements = []
         fire_axe_rewards = []
         for path in sorted((ROOT / 'content/interactions/reward_claims').glob('reward-claim*.json')):
             for record in json.loads(path.read_bytes())['records']:
                 definition = record['definition']
-                for placement in definition.get('native_contents', {}).get('placements', []):
+                placements = definition.get('native_contents', {}).get('placements', [])
+                if definition['identity']['key'] == 'oteryn:reward-claim.kv.fireaxe1':
+                    fire_axe_placements = placements
+                for placement in placements:
                     expected.add(placement['root']['key'])
                     expected.update(child['item']['key'] for child in placement['contents'])
                 if definition['identity']['key'] == 'oteryn:reward-claim.kv.fireaxe2':
@@ -373,11 +379,16 @@ class QuestCallbackProfiles(unittest.TestCase):
         expected.update(fire_axe_rewards)
         # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
         # 3083), with 3083 also used by Triangle Tower; retain the complete closure.
-        self.assertEqual(len(expected), 160)
+        self.assertEqual(len(expected), 159)
         # Goblin Temple adds pan3466 and snowball2992; vial2874 was already present.
         self.assertTrue({'oteryn:item.tibia.i3466','oteryn:item.tibia.i2992'} <= expected)
         # Draconia adds the one-charge ice rapier and serpent sword to full bags.
         self.assertTrue({'oteryn:item.tibia.i3284', 'oteryn:item.tibia.i3297'} <= expected)
+        # QA-REWARD-CHESTS-1 qualifies the Fire Axe quest's exact three bag children.
+        fire_axe_bag, = fire_axe_placements
+        self.assertEqual(fire_axe_bag['root']['key'], 'oteryn:item.tibia.i2853')
+        self.assertEqual([child['item']['key'] for child in fire_axe_bag['contents']],
+                         [f'oteryn:item.tibia.i{item}' for item in (3098, 3085, 3028)])
         # Dreamer adds certificate, bread and the source-selected wine vial to the exact closure.
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (6498, 3602, 2874)} <= expected)
         # Desert2 adds exactly its three previously absent child identities;

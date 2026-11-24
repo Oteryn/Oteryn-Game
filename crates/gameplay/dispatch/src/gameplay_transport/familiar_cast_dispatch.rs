@@ -513,7 +513,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     original,
                     owned.binding(),
                     &source,
-                    None,
+                    &mut FamiliarFinishProgress::default(),
                 )
                 .await
                 .map_err(|_| ());
@@ -567,7 +567,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             original,
             owned.binding(),
             &source,
-            None,
+            &mut FamiliarFinishProgress::default(),
         )
         .await
         .map_err(|_| ())
@@ -772,7 +772,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     actor, session, index, event, content, &owned, &source, None,
                 )
                 .await
-                .map(Some);
+                .map(Some)
+                .map_err(|_| ());
         }
         let config = content.familiar_config().ok_or(())?;
         let owned = self
@@ -808,6 +809,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
         .await
         .map(Some)
+        .map_err(|_| ())
     }
 
     /// #2199 Codex P2 4302041461: the owner-cadence return of a familiar this session's Login

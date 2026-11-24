@@ -123,7 +123,7 @@ async fn runtime_login(h: &fixture::Harness) -> TestResult<(String, String)> {
 }
 
 async fn assert_corpse_migration_reruns(h: &fixture::Harness) -> TestResult {
-    const MIGRATION: &str = include_str!("../../../migrations/2977_koshei_corpse_chain.sql");
+    const MIGRATION: &str = include_str!("../../../migrations/3170_koshei_corpse_chain.sql");
     sqlx::raw_sql(MIGRATION).execute(&h.pool).await?;
     let mut partial = h.pool.begin().await?;
     sqlx::raw_sql(

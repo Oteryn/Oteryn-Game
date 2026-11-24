@@ -72,9 +72,34 @@ fn project(
         let height = f32::from(preferences.arcs.height.unwrap_or(preferences.arcs.size)) * ui_scale;
         let distance = preferences.arcs.distance as f32 * ui_scale;
         let step = std::f32::consts::PI / SEGMENTS as f32;
-        for (mana, current, maximum, side, colour) in [
+        let progress = (preferences.arcs.experience || preferences.arcs.skill)
+            .then(|| play.link.skill_progress_panel());
+        let xp = progress
+            .as_ref()
+            .and_then(|p| p.complete.as_ref())
+            .map(|s| s.level_percent);
+        let skill_index = usize::from(preferences.arcs.tracked_skill);
+        let skill = progress
+            .as_ref()
+            .and_then(|p| p.snapshot.as_ref())
+            .and_then(|s| s.skills.get(skill_index))
+            .filter(|s| s.required != 0);
+        let colours = [
+            [0, 255, 204],
+            [153, 0, 204],
+            [204, 51, 153],
+            [255, 127, 0],
+            [105, 105, 105],
+            [166, 42, 42],
+            [102, 51, 0],
+            [255, 255, 51],
+        ];
+        let [r, g, b] = colours.get(skill_index).copied().unwrap_or(colours[0]);
+        for (mana, horizontal, enabled, current, maximum, side, colour) in [
             (
                 false,
+                false,
+                preferences.arcs.health,
                 vitals.health,
                 vitals.max_health,
                 -1.,
@@ -82,17 +107,33 @@ fn project(
             ),
             (
                 true,
+                false,
+                preferences.arcs.mana,
                 vitals.mana,
                 vitals.max_mana,
                 1.,
                 Color::srgb_u8(0, 70, 180),
             ),
+            (
+                false,
+                true,
+                preferences.arcs.experience,
+                u32::from(xp.unwrap_or(0)),
+                10000,
+                -1.,
+                Color::srgb_u8(236, 255, 87),
+            ),
+            (
+                false,
+                true,
+                preferences.arcs.skill,
+                skill.map_or(0, |s| u32::from(s.percent)),
+                10000,
+                1.,
+                Color::srgb_u8(r, g, b),
+            ),
         ] {
-            if !(if mana {
-                preferences.arcs.mana
-            } else {
-                preferences.arcs.health
-            }) {
+            if !enabled {
                 continue;
             }
             let filled = fill(current, maximum) * SEGMENTS as f32;
@@ -103,12 +144,19 @@ fn project(
                 }
                 // Fill from the bottom; the last segment preserves fractional vitals.
                 let angle = std::f32::consts::PI - (index as f32 + portion * 0.5) * step;
-                let at = center
-                    + Vec2::new(
-                        side * (distance + width * angle.sin()),
-                        -height * angle.cos(),
-                    );
-                let tangent = Vec2::new(side * width * angle.cos(), -height * angle.sin());
+                let (sin, cos) = angle.sin_cos();
+                let (delta, tangent) = if horizontal {
+                    (
+                        Vec2::new(width * cos, side * (distance + height * sin)),
+                        Vec2::new(-width * sin, -side * height * cos),
+                    )
+                } else {
+                    (
+                        Vec2::new(side * (distance + width * sin), -height * cos),
+                        Vec2::new(side * width * cos, -height * sin),
+                    )
+                };
+                let at = center + delta;
                 let sprite = Sprite::from_color(
                     colour.with_alpha(f32::from(preferences.arcs.opacity) / 100.),
                     Vec2::new(tangent.length() * step * portion, 3. * ui_scale) / scale,
@@ -198,6 +246,65 @@ mod tests {
             owner.settings.preferences.arcs.mana = true;
         }
 
+        app.update();
+        outbox.bevy_hud_skills_fixture()?;
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            let options = &mut owner.settings.preferences.arcs;
+            let mut value = serde_json::to_value(*options)?;
+            value["experience"] = true.into();
+            value["skill"] = true.into();
+            value["tracked_skill"] = 3.into();
+            *options = serde_json::from_value(value)?;
+        }
+        app.update();
+        assert_eq!(segment_count(&mut app), 16 + 32 + 16 + 29);
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            let mut value = serde_json::to_value(owner.settings.preferences.arcs)?;
+            value["experience"] = false.into();
+            value["skill"] = false.into();
+            owner.settings.preferences.arcs = serde_json::from_value(value)?;
+        }
+        {
+            let mut host = app.world_mut().non_send_mut::<HostOwner>();
+            let arcs = &mut host.settings.preferences.arcs;
+            arcs.health = false;
+            arcs.mana = false;
+            arcs.experience = true;
+        }
+        let xp_width = |app: &mut App| {
+            let (left, right) = app
+                .world_mut()
+                .query::<(&CircleSegment, &Transform)>()
+                .iter(app.world())
+                .map(|(_, t)| t.translation.x)
+                .fold((f32::INFINITY, f32::NEG_INFINITY), |(left, right), x| {
+                    (left.min(x), right.max(x))
+                });
+            right - left
+        };
+        app.update();
+        let original = xp_width(&mut app);
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences
+            .arcs
+            .width = Some(90);
+        app.update();
+        assert!(
+            (xp_width(&mut app) / original - 1.5).abs() < 0.01,
+            "Arc Width must resize the XP arc horizontally"
+        );
+        {
+            let mut host = app.world_mut().non_send_mut::<HostOwner>();
+            let arcs = &mut host.settings.preferences.arcs;
+            arcs.experience = false;
+            arcs.health = true;
+            arcs.mana = true;
+            arcs.width = None;
+        }
         app.update();
         let mut lengths = [0.; 2];
         for (segment, sprite) in app

@@ -1,0 +1,21 @@
+{
+  "id": 597,
+  "name": "ANALYSER_PARTY_INTERVAL_V1",
+  "constant": "analyser_party::CAPABILITY_ANALYSER_PARTY_INTERVAL_V1",
+  "requires": [
+    10,
+    42
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    6357,
+    6358
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

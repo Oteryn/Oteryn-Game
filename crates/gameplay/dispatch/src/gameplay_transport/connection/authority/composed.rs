@@ -21,6 +21,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn client_bulletin(&self) -> Option<String> {
         self.states.bulletin_source.as_ref()?.load().await
     }
+    async fn world_login_info(
+        &self,
+        world: [u8; 16],
+    ) -> Option<oteryn_protocol_oteryn::daily_boost::login::WorldInfo> {
+        self.read_world_login_information(world).await
+    }
     fn step_wait_receipts(&self) -> bool {
         #[cfg(test)]
         if let Some(enabled) = self.test_step_wait_receipts {
@@ -341,6 +347,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     fn session_commands(&self) -> Option<&session_ingress::SessionCommands> {
         Some(&self.states.command_ingress)
     }
+    async fn quest_tracker_is_premium(&self, session: GameSessionId) -> bool {
+        self.session_premium_gate(session).await.premium_current()
+    }
+
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,
@@ -599,6 +609,30 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         outcome
     }
 
+    async fn take_party_membership_notices(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Vec<crate::durability::world_party::MembershipNotice> {
+        let fence = {
+            let Ok(runtime) = self.runtime.try_lock() else {
+                return Vec::new();
+            };
+            party_command::party_notice_fence(&admitted, &runtime)
+        };
+        let Some((fence, house)) = fence else {
+            return Vec::new();
+        };
+        self.root
+            .with_periodic_lock_budget(self.root.take_party_membership_notices(
+                self.character,
+                self.holder,
+                fence,
+                house,
+            ))
+            .await
+            .unwrap_or_default()
+    }
+
     fn server_save_countdown(
         &self,
     ) -> Option<crate::gameplay_transport::server_save_countdown::DueServerSaveCountdown> {
@@ -611,9 +645,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     fn server_messages_joined(&self, admitted: AdmittedSession) -> bool {
         !raid_notices::selected(admitted)
-            || self.states.server_messages.join(
+            || self.states.server_messages.join_selected(
                 admitted.game_session_id,
                 admitted.continuity.connection_generation,
+                admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(oteryn_protocol_oteryn::zones_nologout::CAPABILITY_BOSS_DEFEATED_V1),
+                admitted.continuity.selected_capabilities.contains(
+                    oteryn_protocol_oteryn::zones_nologout::CAPABILITY_SERVER_MESSAGE_CATEGORY_V1,
+                ),
             )
     }
 
@@ -631,11 +672,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     fn take_server_notice(
         &self,
         admitted: AdmittedSession,
-    ) -> Option<oteryn_protocol_oteryn::zones_nologout::ServerMessage> {
+    ) -> Option<oteryn_protocol_oteryn::zones_nologout::ServerNotification> {
         if !raid_notices::selected(admitted) {
             return None;
         }
-        self.states.server_messages.take(
+        self.states.server_messages.take_notification(
             admitted.game_session_id,
             admitted.continuity.connection_generation,
         )
@@ -667,13 +708,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.states.tutorial_sessions.take(session)
     }
 
-    async fn npc_trade(
+    async fn npc_trade_with_delivery(
         &self,
         actor: ExactActorRef,
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+        packed: bool,
     ) -> npc_trade_command::NpcTradeStep {
-        npc_trade_command::npc_trade(self, actor, command, intent).await
+        npc_trade_command::npc_trade(self, actor, command, intent, packed).await
     }
 
     /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18.
@@ -804,6 +846,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         row_open: bool,
     ) -> Option<oteryn_protocol_oteryn::stash::StashReply> {
         stash::execute(self, actor, command, intent, filter, item, row_open).await
+    }
+
+    async fn stash_row_action(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::stash::StashRowIntent,
+        row_open: bool,
+    ) -> Result<Option<std::num::NonZeroU32>, crate::durability::DurabilityError> {
+        stash::row_action(self, actor, command, intent, row_open).await
     }
 
     async fn depot(
@@ -984,6 +1036,36 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             self.source_boss_exit_after_movement(actor, admitted.game_session_id, moved_to)
                 .await;
         }
+    }
+
+    async fn mana_shield_remaining(&self, admitted: AdmittedSession) -> Option<u32> {
+        let actor = admitted.runtime_actor?;
+        let session = admitted.game_session_id;
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        let state = if runtime.house_actor_state(actor, session).is_ok() {
+            let fence = admitted.item_fence?;
+            if fence.connection_generation.get() != admitted.continuity.connection_generation {
+                return None;
+            }
+            states.house_spell_state(&runtime, actor, session, fence)?
+        } else {
+            if runtime
+                .player_control_facts(actor, session)
+                .ok()?
+                .control_loss
+                .is_some()
+            {
+                return None;
+            }
+            states.get(&runtime, actor, session)?
+        };
+        Some(
+            state
+                .owned_conditions()
+                .mana_shield_at(self.owner_now().get())
+                .unwrap_or(0),
+        )
     }
 
     async fn turn_actor_valid(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
@@ -1650,6 +1732,20 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn cast_parameter_spell_completion(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
+    ) -> Option<(
+        actor_spell::SpellCastOutcome,
+        Option<oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult>,
+    )> {
+        self.complete_parameter_spell(actor, session, command_id, intent)
+            .await
+    }
+
     /// Display contract §4: a read-only query of the facts, no Character fence and no Channel
     /// owner lock. More facts than catalogue keys prove an unknown key, so one more than the
     /// catalogue's size is read and the page build refuses it.
@@ -1706,6 +1802,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             oteryn_protocol_oteryn::highscores::HighscoresQuery,
             Option<oteryn_protocol_oteryn::highscores_catalogue::WorldType>,
         )>,
+        include_battleye: bool,
     ) -> highscores::HighscoresReply {
         crate::durability::highscores_catalogue::answer_session(
             self.root,
@@ -1713,6 +1810,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             world,
             session,
             query,
+            include_battleye,
         )
         .await
     }
@@ -1874,6 +1972,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         owner.reconcile_terminal_session(admitted).await
     }
 
+    async fn choose_offline_training(
+        &self,
+        admitted: AdmittedSession,
+        family: usize,
+    ) -> Option<oteryn_protocol_oteryn::loop_training::TrainingResult> {
+        self.choose_offline_training(admitted, family).await
+    }
+    async fn offline_training_skills(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::loop_training::OfflineTrainingSkills> {
+        self.offline_training_skills(admitted).await
+    }
     async fn offline_training(
         &self,
         admitted: AdmittedSession,

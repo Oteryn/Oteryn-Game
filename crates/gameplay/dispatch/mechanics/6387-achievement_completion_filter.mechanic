@@ -1,0 +1,4 @@
+name=achievement_completion_filter
+commands=6387
+[route]
+routing::achievements::route(authority, &session.admitted, command).await

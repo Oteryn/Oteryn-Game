@@ -87,7 +87,24 @@ impl State {
             return routing::house_rotation::route(authority, admitted, command).await;
         }
         match command.command_type {
-            oteryn_protocol_oteryn::item_inscription::COMMAND_TYPE_ITEM_INSCRIPTION_READ => {
+            oteryn_protocol_oteryn::actor_spell::COMMAND_TYPE_MANA_SHIELD_REMAINING => {
+                return Some(
+                    routing::mana_shield_remaining::route(authority, *admitted, command.payload)
+                        .await,
+                );
+            }
+            oteryn_protocol_oteryn::target_move::COMMAND_TYPE_FOLLOW_STATE => {
+                let status = if command.payload.is_empty() {
+                    CommandStatus::Accepted
+                } else {
+                    CommandStatus::Rejected
+                };
+                // The House step owner has no FOLLOW route.
+                return Some(Dispatch::Reply(status, Vec::new()));
+            }
+            oteryn_protocol_oteryn::item_inscription::COMMAND_TYPE_ITEM_INSCRIPTION_READ
+            | oteryn_protocol_oteryn::item_inscription::COMMAND_TYPE_ITEM_INSCRIPTION_ATTRIBUTION =>
+            {
                 return Some(
                     routing::item_inscription::route(authority, admitted, command, &self.items)
                         .await,
@@ -123,7 +140,10 @@ impl State {
         {
             return Some(Dispatch::Unregistered);
         }
-        if command.command_type != stash::COMMAND_TYPE_STASH_INTENT {
+        if !matches!(
+            command.command_type,
+            stash::COMMAND_TYPE_STASH_INTENT | stash::COMMAND_TYPE_STASH_ROW_ACTION
+        ) {
             self.stash_rows = None;
         }
         match command.command_type {
@@ -251,6 +271,16 @@ impl State {
                     command,
                     &self.items,
                     &mut self.stash_rows,
+                )
+                .await
+            }
+            stash::COMMAND_TYPE_STASH_ROW_ACTION => {
+                routing::stash::row_action(
+                    authority,
+                    self.actor,
+                    admitted,
+                    command,
+                    self.stash_rows.as_deref(),
                 )
                 .await
             }
@@ -475,8 +505,8 @@ impl State {
                     view,
                     &entities,
                     self.items.as_mut(),
-                    sequence,
-                    self.spatial_revision,
+                    (sequence, self.spatial_revision),
+                    false,
                 )
                 .await;
             let (_, revision) = match projection {

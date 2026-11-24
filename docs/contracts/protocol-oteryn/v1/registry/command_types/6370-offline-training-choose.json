@@ -1,0 +1,10 @@
+{
+  "id": 6370,
+  "name": "OFFLINE_TRAINING_CHOOSE",
+  "owner_decision": "Server/client contract gaps package, 2026-11-22",
+  "capability": 604,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/offline-training-choice-v1.md#choose-a-skill",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/offline-training-choice-v1.md#choose-a-skill",
+  "max_payload_bytes": 1,
+  "max_result_payload_bytes": 32
+}

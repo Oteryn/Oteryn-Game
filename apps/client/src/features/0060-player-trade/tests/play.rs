@@ -108,11 +108,13 @@ fn player_trade_controls_encode_requests_and_apply_real_wire_state() -> Result<(
                         generation: 2,
                     }),
                     own: Some(player_trade::Offer {
+                        appearance_id: None,
                         definition: 10,
                         count: 1,
                         sub_type: 0,
                     }),
                     counter: Some(player_trade::Offer {
+                        appearance_id: None,
                         definition: 11,
                         count: 2,
                         sub_type: 3,

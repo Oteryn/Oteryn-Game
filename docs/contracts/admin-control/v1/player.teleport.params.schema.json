@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TeleportParams",
+  "type": "object",
+  "properties": {
+    "destination": {
+      "$ref": "#/$defs/TeleportDestination"
+    },
+    "preview_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "destination"
+  ],
+  "$defs": {
+    "CoordinateDestination": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/Coordinates"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "position"
+      ]
+    },
+    "Coordinates": {
+      "type": "string",
+      "enum": [
+        "coordinates"
+      ]
+    },
+    "Position": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "y": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "z": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y",
+        "z"
+      ]
+    },
+    "TeleportDestination": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TempleDestination"
+        },
+        {
+          "$ref": "#/$defs/CoordinateDestination"
+        }
+      ]
+    },
+    "Temple": {
+      "type": "string",
+      "enum": [
+        "temple"
+      ]
+    },
+    "TempleDestination": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/Temple"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ]
+    }
+  }
+}

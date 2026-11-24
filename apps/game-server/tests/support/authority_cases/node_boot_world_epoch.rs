@@ -37,15 +37,17 @@ fn node_boot_world_epoch_prepares_admission() -> fixture::TestResult {
                     let digest = "07".repeat(32);
                     for expected in [true, false] {
                         let initialized: bool = sqlx::query_scalar(setup)
-                            .bind(&world).bind(&channel).bind(&digest).fetch_one(&h.pool).await?;
+                            .bind(&world).bind(&channel).bind(&digest).bind(&digest).fetch_one(&h.pool).await?;
                         assert_eq!(initialized, expected);
                     }
                     let pins: (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, String) = sqlx::query_as(
                         "SELECT target_digest,server_digest,client_digest,frame_digest,map_revision FROM game_world_reset_epochs WHERE world_id=$1::uuid AND reset_epoch=0",
                     ).bind(&world).fetch_one(&h.pool).await?;
                     assert_eq!(pins, (vec![7;32],vec![1;32],vec![2;32],vec![3;32],format!("sha256:{digest}")));
+                    let conflicting_digest = "08".repeat(32);
                     let conflict = sqlx::query_scalar::<_, bool>(setup)
-                        .bind(&world).bind(&channel).bind("08".repeat(32)).fetch_one(&h.pool).await;
+                        .bind(&world).bind(&channel).bind(&conflicting_digest).bind(&conflicting_digest)
+                        .fetch_one(&h.pool).await;
                     assert_eq!(conflict.err().and_then(|e| e.as_database_error().and_then(|e| e.code()).map(|c| c.into_owned())).as_deref(), Some("23514"));
                     h.root.await_ready().await?;
                     // This is the same mandatory warm-up that fresh world admissions run.

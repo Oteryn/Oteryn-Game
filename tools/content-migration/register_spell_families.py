@@ -7,8 +7,8 @@ import copy
 import hashlib
 import importlib.util
 import json
-import sys
 import os
+import sys
 from pathlib import Path
 
 import import_current_spell_sources as current_sources
@@ -140,6 +140,38 @@ def admit_swimming_appearance(root, generated):
         generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
 
 
+def refresh_registered_loot(root: Path, generated: dict[str, bytes]) -> None:
+    from cake_native_successor import loot_successor
+    import questpc7_hot_corpse_loot
+    import questpc7_marsh_loot
+    import questpc7_slug_loot
+    import questpc7_smith_corpse_loot
+    import world_change_loot_inputs
+
+    item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
+    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
+    loot_path = REPOSITORY_PINS["loot_tables"]
+    canonical = spell_import.canonical_bytes
+    # Build the closure from this registration's Creature and Item candidates.
+    generated[loot_path] = loot_successor(
+        root, json.loads(generated[creature_path]), json.loads(generated[item_path])
+    )
+    manifest = json.loads(generated[NATIVE_MANIFEST])
+    manifest["loot_tables"] = {
+        "path": Path(os.path.relpath(loot_path, "content")).as_posix(),
+        "sha256": hashlib.sha256(generated[loot_path]).hexdigest(),
+    }
+    generated[NATIVE_MANIFEST] = canonical(manifest)
+    for overlay in (
+        world_change_loot_inputs,
+        questpc7_marsh_loot,
+        questpc7_slug_loot,
+        questpc7_smith_corpse_loot,
+        questpc7_hot_corpse_loot,
+    ):
+        overlay.apply(root, generated, item_path, NATIVE_MANIFEST, canonical)
+
+
 def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
     # A matching hash of an old key file is not a complete current registry.
     # This projection shares the staged canonical Item owner; it never creates
@@ -173,17 +205,8 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
         raise ValueError(
             "NATIVE_ITEM_KEYS_STALE: run build_full_spell_artifact.py --refresh-item-keys"
         )
+    refresh_registered_loot(root, generated)
     manifest = json.loads(generated[NATIVE_MANIFEST])
-    # W05d: pin the same fresh Creature/Item candidate's canonical loot closure,
-    # rather than a previous generation's on-disk Creature binding census.
-    from cake_native_successor import loot_successor
-
-    loot_path = REPOSITORY_PINS["loot_tables"]
-    generated[loot_path] = loot_successor(
-        root,
-        json.loads(generated[spell_import.PROVIDER_DESTINATIONS["creature_profiles"]]),
-        json.loads(generated[spell_import.PROVIDER_DESTINATIONS["item_profiles"]]),
-    )
     for key, path in REPOSITORY_PINS.items():
         manifest[key] = {
             "path": Path(os.path.relpath(path, "content")).as_posix(),
@@ -210,17 +233,6 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
             "sha256": hashlib.sha256(qualified[output]).hexdigest(),
         }
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
-    # The fresh Cake/native closure is pinned before WORLDCHG refines only its
-    # closed source admission facts and re-pins that same final loot document.
-    import world_change_loot_inputs
-
-    world_change_loot_inputs.apply(
-        root,
-        generated,
-        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
-        NATIVE_MANIFEST,
-        spell_import.canonical_bytes,
-    )
 
 
 GENERIC_ITEM = 40450
@@ -1185,21 +1197,12 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
-    import forge_item_profiles
-
-    forge_item_profiles.apply_native(
-        root,
-        generated,
-        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
-        NATIVE_MANIFEST,
-        spell_import.canonical_bytes,
-    )
     # Retain established native owners while admitting every shop and chest Item.
     import grizzly_shop_profiles
+    import qengine_reward_item_profiles
+    import quest_batch3_item_profiles
     import quest_callback_profiles
     import quests_2_emperor_item_profiles
-    import quest_batch3_item_profiles
-    import qengine_reward_item_profiles
 
     grizzly_shop_profiles.admit(
         root,
@@ -1229,6 +1232,15 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     import qready2_native_profiles
 
+    # Route scenery owns map collision facts independently of reward and tool custody.
+    quest_callback_profiles.admit_route_scenery(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     quest_callback_profiles.admit(
         root,
         generated,
@@ -1265,6 +1277,24 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         NATIVE_MANIFEST,
         provider_order,
         spell_import.canonical_bytes,
+    )
+
+    import quest_shared_boss_corpses
+
+    # Keep the existing native body policies with Crystal's 60 s, eight-slot stages.
+    arbaziloth_corpses = elephant_corpse_profiles.capture_chain(
+        root,
+        {50029: (60, 50028, 8), 50028: (60, 50027, 8), 50027: (60, 0, None)},
+        project_xml=quest_shared_boss_corpses.apply_arbaziloth_corpse_facts,
+    )
+    qengine_reward_item_profiles.admit_records(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+        arbaziloth_corpses,
     )
     import questpc7_hot_corpse_profiles
 
@@ -1417,9 +1447,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
-    import qready1_quest_item_profiles
-    import qready1_craft_item_profiles
     import qready1_cradle_item_profiles
+    import qready1_craft_item_profiles
+    import qready1_quest_item_profiles
 
     qready1_quest_item_profiles.admit(
         root,
@@ -1716,6 +1746,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
+    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions
@@ -1734,7 +1765,6 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # Owner-authored quest variants retain admitted attack closures, with no donor identity.
     import engenc_elemental_profiles
 
-    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     creatures = json.loads(generated[creature_path])
     engenc_elemental_profiles.apply(creatures)
     nrwicked_profiles.admit_creatures(
@@ -1778,10 +1808,24 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
+    import forge_item_profiles
+
+    forge_item_profiles.project(items, forge_item_profiles.owners(root))
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
     generated[item_path] = spell_import.canonical_bytes(items)
+    # Late custody sources may still carry writable facts with unresolved targets.
+    writable_item_profiles.apply_native(
+        root,
+        generated,
+        item_path,
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
+    # Complete ranged authoring for every admitted Item, including late loot yields.
+    ranged_item_profiles.apply_native(root, generated)
     # SRX-1 keeps the historical single-line provider byte-identical. The loader
     # composes only the changed records from a separately pinned small supplement.
     import srx1_profile_updates
@@ -1822,44 +1866,6 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
 
     pin_repository_inputs(root, generated)
-    # The pin refresh rebuilds the shared loot closure. Apply every exact
-    # source refinement to that final document, after the final Item overlay.
-    import questpc7_marsh_loot
-
-    questpc7_marsh_loot.apply(
-        root,
-        generated,
-        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
-        NATIVE_MANIFEST,
-        spell_import.canonical_bytes,
-    )
-    import questpc7_slug_loot
-
-    questpc7_slug_loot.apply(
-        root,
-        generated,
-        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
-        NATIVE_MANIFEST,
-        spell_import.canonical_bytes,
-    )
-    import questpc7_smith_corpse_loot
-
-    questpc7_smith_corpse_loot.apply(
-        root,
-        generated,
-        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
-        NATIVE_MANIFEST,
-        spell_import.canonical_bytes,
-    )
-    import questpc7_hot_corpse_loot
-
-    questpc7_hot_corpse_loot.apply(
-        root,
-        generated,
-        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
-        NATIVE_MANIFEST,
-        spell_import.canonical_bytes,
-    )
 
     # The model bootstraps from this same fresh provider without recursively
     # requiring the very Prey results it is about to produce.

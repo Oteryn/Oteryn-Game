@@ -21,6 +21,7 @@ pub(super) enum Dispatch {
     /// The quest tool's reach refusal is final for this command.
     UseWithoutWalk(UseOutcome),
     Spell(SpellCastOutcome),
+    ParameterSpell(SpellCastOutcome, Vec<u8>),
     Achievements(AccountAchievementsReply),
     CharacterInfo(crate::gameplay_transport::character_info::CharacterInfoReply),
     /// RANK-1 (HS-WIRE-1): command 14, a read of the session's World snapshots.
@@ -33,7 +34,12 @@ pub(super) enum Dispatch {
     UseItem(OpenDecision, Option<ItemViewDelta>),
     /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
     ContainerView(ContainerViewOutcome, Option<ItemViewDelta>),
+    ContainerPage(
+        oteryn_protocol_oteryn::container_tree::ContainerPage,
+        ItemViewDelta,
+    ),
     ContainerSort(Vec<ItemViewDelta>),
+    CarriedBatch(oteryn_protocol_oteryn::container_batch::Reply),
     /// ITEM-MOVE-1: command 9; the domain 11 and domain 9 deltas follow the result.
     /// PARITY-REFUSAL-DETAIL-1: the refusal detail a folded outcome hides, if any.
     ItemMove(

@@ -11,6 +11,11 @@ pub mod policy_registration {
 pub trait EquipmentPolicyLookup: policy_registration::Registered {
     fn source_digest(&self) -> [u8; 32];
     fn equipment_policy(&self, key: &str, revision: &str) -> Option<QualifiedEquipmentPolicy>;
+
+    /// Slot reservations of items whose equipment custody has already committed.
+    fn worn_equipment_policy(&self, key: &str, revision: &str) -> Option<QualifiedEquipmentPolicy> {
+        self.equipment_policy(key, revision)
+    }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EquipmentBaseVocation {

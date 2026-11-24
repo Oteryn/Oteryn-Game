@@ -82,6 +82,7 @@ struct ItemUseGate {
     unspendable: Vec<[u8; 16]>,
     /// The last decided CommandId and its result: a replay of it returns that result.
     last: Option<(u64, UseDisposition)>,
+    last_utterance: Option<oteryn_protocol_oteryn::world_object::PotionUtterance>,
     /// W09: retain a Cube PREPARE across cancellation/unknown COMMIT, never re-plan it.
     cube_pending: Option<Box<drome_cube::PendingCubeUse>>,
     source_pending: Option<Box<soul_war_source::PendingSourceUse>>,
@@ -172,6 +173,7 @@ impl ItemUseGate {
         }
         self.unspendable.extend_from_slice(ambiguous);
         self.last = Some((command_id, disposition));
+        self.last_utterance = None;
     }
 }
 
@@ -281,6 +283,7 @@ impl ItemUseGates {
             if *present == actor && *session == source {
                 *session = destination;
                 gate.last = None;
+                gate.last_utterance = None;
                 gate.essence_last = None;
                 gate.source_last = None;
                 gate.arbaziloth_rod_last = None;
@@ -336,6 +339,7 @@ pub(super) fn remember_hireling_result(
         gates.len() - 1
     };
     gates[index].2.last = Some((command, disposition));
+    gates[index].2.last_utterance = None;
 }
 
 pub(super) fn hireling_refusal(
@@ -425,14 +429,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         source: UseSource,
     ) -> UseOutcome {
-        let disposition = match self.item_use(actor, command, source).await {
+        let mut potion_utterance = None;
+        let disposition = match self
+            .item_use(actor, command, source, &mut potion_utterance)
+            .await
+        {
             Ok(disposition) | Err(disposition) => disposition,
         };
         UseOutcome {
             disposition,
             committed: None,
             earned: EarnedNotice::NoneEarned,
+            reward_granted: None,
             gate_message_id: None,
+            potion_utterance,
             refusal_detail: None,
         }
     }
@@ -442,7 +452,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         source: UseSource,
+        utterance: &mut Option<oteryn_protocol_oteryn::world_object::PotionUtterance>,
     ) -> Result<UseDisposition, UseDisposition> {
+        use oteryn_protocol_oteryn::world_object::PotionUtterance;
         let fence = command.item_fence.ok_or(UseDisposition::Rejected)?;
         let session = command.game_session_id;
         if !super::hireling::resolve_pending_lamp(self, actor, session).await {
@@ -559,9 +571,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Err(UseDisposition::Rejected);
             }
-            let gate = states.item_uses.gate(&runtime, actor, session);
-            gate.ok_or(UseDisposition::Rejected)?
-                .admit(command.command_id, self.owner_ms())?;
+            let gate = states
+                .item_uses
+                .gate(&runtime, actor, session)
+                .ok_or(UseDisposition::Rejected)?;
+            if gate.last.is_some_and(|(id, _)| id == command.command_id) {
+                *utterance = gate.last_utterance;
+            }
+            gate.admit(command.command_id, self.owner_ms())?;
         }
         let native = self
             .active_generation
@@ -629,7 +646,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &entry.item.definition.production_key,
             )
         {
-            return self
+            let result = self
                 .use_condition_potion(
                     &mut permit,
                     actor,
@@ -642,6 +659,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     potion,
                 )
                 .await;
+            if result == Ok(UseDisposition::Committed) {
+                *utterance = Some(condition_potions::utterance(potion));
+            }
+            return result;
         }
         if let Some(record) = record
             && let ReferenceItemField::Known(_) = &record.semantics.fluid
@@ -771,12 +792,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.owner_ms(),
             );
         }
+        if disposition == UseDisposition::Committed && matches!(kind, ItemUseKind::Potion) {
+            *utterance = Some(PotionUtterance::Restore);
+        }
         if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
             gate.settle(
                 command.command_id,
                 disposition,
                 if ambiguous { &reserved } else { &[] },
             );
+            gate.last_utterance = *utterance;
         }
         Ok(disposition)
     }
@@ -840,7 +865,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             committed: None,
             earned: EarnedNotice::NoneEarned,
+            reward_granted: None,
             gate_message_id: None,
+            potion_utterance: None,
             refusal_detail: None,
         })
     }

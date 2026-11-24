@@ -118,7 +118,9 @@ impl Integrity {
             Dispatch::Use(outcome) if outcome.disposition == UseDisposition::Exhausted => {
                 (&mut self.counts.exhaust, 1)
             }
-            Dispatch::Spell(outcome) | Dispatch::Chat(_, Some(outcome))
+            Dispatch::Spell(outcome)
+            | Dispatch::ParameterSpell(outcome, _)
+            | Dispatch::Chat(_, Some(outcome))
                 if outcome.disposition == SpellCastDisposition::CoolingDown =>
             {
                 (&mut self.counts.exhaust, 1)
@@ -128,7 +130,9 @@ impl Integrity {
             {
                 (&mut self.counts.reach, 2)
             }
-            Dispatch::Spell(outcome) | Dispatch::Chat(_, Some(outcome))
+            Dispatch::Spell(outcome)
+            | Dispatch::ParameterSpell(outcome, _)
+            | Dispatch::Chat(_, Some(outcome))
                 if outcome.disposition == SpellCastDisposition::TargetIllegal =>
             {
                 (&mut self.counts.reach, 2)

@@ -20,7 +20,9 @@ pub(in crate::bevy_shell::game_ui::chat) fn install(app: &mut App) {
             PostUpdate,
             (
                 queue_copy.before(bevy::text::EditableTextSystems),
-                finish_copy.after(bevy::text::EditableTextSystems),
+                finish_copy
+                    .after(bevy::text::EditableTextSystems)
+                    .before(super::super::submission::finish),
             ),
         );
 }

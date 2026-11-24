@@ -79,6 +79,13 @@ impl Stepper for Peer {
                         view: Some(party::encode_party_result(&self.view).map_err(|_| bad())?),
                     });
                 }
+                party::PartyIntent::Revoke(_) => {
+                    return Ok(PartyResponse {
+                        status: CommandStatus::Rejected,
+                        operation: Vec::new(),
+                        view: None,
+                    });
+                }
                 party::PartyIntent::PassLeadership(handle) => {
                     for entry in &mut self.view.members {
                         entry.leader = entry.handle == handle;

@@ -7,6 +7,17 @@ from functools import lru_cache
 from jsonschema import Draft202012Validator, ValidationError
 
 
+# These runtime journeys have their own stages in addition to the chosen
+# recipe steps. Only overlapping non-terminal TALK steps belong to this plan.
+NATIVE_JOURNEY_OWNERS = {
+    "the-ape-city.json": "oteryn:quest.the_ape_city_quest",
+    "the-explorer-society.json": "oteryn:quest.the_explorer_society_quest",
+    "the-new-frontier.json": "oteryn:quest.the_new_frontier_quest",
+    "the-shattered-isles.json": "oteryn:quest.the_shattered_isles_quest",
+    "to-blind-the-enemy.json": "oteryn:quest.to_blind_the_enemy_quest",
+}
+
+
 def require(condition, message):
     if not condition:
         raise ValueError(message)
@@ -98,10 +109,13 @@ def verify_talk_binding(root, definition, stage_key, reference, *, recipe_stage_
     return callbacks
 
 
-def registered_talk_bindings(root):
-    """Use the same immediate JSON registry as the Rust build-time consumer."""
+def planned_talk_bindings(root, stages, definitions):
+    """Select chosen TALK evidence from the same registry as the Rust consumer."""
     result = {}
     owners = set()
+    seen = set()
+    recovery = None
+    recovery_quest = "oteryn:quest.authored.top_of_the_city_quest"
     for path in sorted((root / "content/quests/authored-bindings").glob("*.json")):
         require(path.is_file() and not path.is_symlink(), "Native binding registry file type")
         document = json.loads(path.read_text(encoding="utf-8"))
@@ -114,12 +128,30 @@ def registered_talk_bindings(root):
                 if trigger["kind"] != "npc_dialogue":
                     continue
                 key = (quest["quest"], stage["key"])
-                require(key not in result, "Duplicate registered TALK stage")
+                require(key not in seen, "Duplicate registered TALK stage")
+                seen.add(key)
+                planned = stages.get(key)
+                require(key[0] in definitions, "Registered TALK stage has no canonical quest owner")
                 callbacks = [trigger["callback"]["key"]] + [c["key"] for c in trigger.get("alternatives", [])]
                 reference = {"kind": "npc_dialogue", "document": path.relative_to(root).as_posix(),
                              "stage": stage["key"]}
                 reference["callback" if len(callbacks) == 1 else "callbacks"] = callbacks[0] if len(callbacks) == 1 else callbacks
+                if key == (recovery_quest, "restart-pursuit"):
+                    recovery = reference
+                    continue
+                native_journey = NATIVE_JOURNEY_OWNERS.get(path.name) == key[0]
+                if native_journey and (planned is None or stage["completes"] is True):
+                    continue
+                require(planned is not None, "Registered TALK stage has no canonical plan owner")
+                if planned["event_identity_associations"]["kind"] != "talk":
+                    continue  # Completion/other trigger consumers retain their own policy.
                 result[key] = reference
+    if recovery is not None:
+        require((recovery_quest, "s1") in result,
+                "Top of the City recovery has no canonical start dialogue")
+        verify_talk_binding(
+            root, definitions[recovery_quest], "restart-pursuit", recovery, recipe_stage_key="s1"
+        )
     return result
 
 
@@ -130,28 +162,12 @@ def canonical_definitions(root):
             for row in json.loads((root / path).read_text())["records"]}
 
 
-def registered_recipe_talk_bindings(root, definitions):
-    """Verify the authored recovery route while projecting only canonical recipe stages."""
-    bindings = registered_talk_bindings(root)
-    quest = "oteryn:quest.authored.top_of_the_city_quest"
-    stage = "restart-pursuit"
-    recovery = bindings.pop((quest, stage), None)
-    if recovery is not None:
-        require(quest in definitions and (quest, "s1") in bindings,
-                "Top of the City recovery has no canonical start dialogue")
-        verify_talk_binding(root, definitions[quest], stage, recovery, recipe_stage_key="s1")
-    return bindings
-
-
 def apply_native_talk_bindings(root, plan, definitions):
     stages = {(record["quest"], stage["stage_key"]): stage
               for record in plan["records"] for stage in record["stages"]}
     paths = set()
-    for (quest, key), reference in registered_recipe_talk_bindings(root, definitions).items():
-        stage = stages.get((quest, key))
-        require(stage is not None and quest in definitions, "Registered TALK stage has no canonical plan owner")
-        if stage["event_identity_associations"]["kind"] != "talk":
-            continue  # Completion/other trigger consumers retain their own policy.
+    for (quest, key), reference in planned_talk_bindings(root, stages, definitions).items():
+        stage = stages[(quest, key)]
         verify_talk_binding(root, definitions[quest], key, reference)
         stage["native_dispatch_binding"] = reference
         stage["runtime_enabled"] = True

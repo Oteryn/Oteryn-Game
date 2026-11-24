@@ -43,6 +43,9 @@ LOOT_RECORDS_MAX = 4096
 APPEARANCES = ROOT / ('content/assets/files/appearances-'
                       '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat')
 MARKET_CATEGORY_CREATURE_PRODUCTS = 24
+# Retain the canonical stack policies qualified for the Arbaziloth and Minotaur loot closures.
+QUALIFIED_STACK_YIELDS = {f'oteryn:item.tibia.i{item}' for item in
+                          (3043, 7642, 23373, 7643, 23375, 23374, 3041, 3037, 11472)}
 
 
 def digest(raw: bytes) -> str:
@@ -483,9 +486,11 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
                 facts[definition['identity']['key']]['stackable'] = True
             if charge_count.get('state') == 'KNOWN' and charge_count['value'] > 0:
                 facts[definition['identity']['key']]['charges'] = charge_count['value']
-                if stackable.get('state') == 'KNOWN' and stackable.get('value') is False:
-                    # Preserve explicit false for qualified charged predecessors.
-                    facts[definition['identity']['key']]['stackable'] = False
+            if (
+                'charges' in facts[definition['identity']['key']]
+                or definition['identity']['key'] in QUALIFIED_STACK_YIELDS
+            ) and stackable.get('state') == 'KNOWN' and stackable.get('value') is False:
+                facts[definition['identity']['key']]['stackable'] = False
             client = re.fullmatch(r'oteryn:item\.tibia\.i(\d+)', definition['identity']['key'])
             if client is not None and int(client.group(1)) in products:
                 facts[definition['identity']['key']]['creature_product'] = True
@@ -804,10 +809,17 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
 
 
 def refresh_loot_tables(output: Path = LOOT_TABLES) -> str:
-    """Writes the loot section of the production Creature profiles. It is pinned only beside the
-    Item key set (OTNGP08)."""
-    _, creatures = read(CREATURE_PROFILES)
-    raw = loot_tables(creatures)
+    """Write the registered loot section using the current production providers."""
+    migration_tools = str(ROOT / 'tools/content-migration')
+    if migration_tools not in sys.path:
+        sys.path.insert(0, migration_tools)
+    import register_spell_families as registered
+
+    providers = registered.spell_import.PROVIDER_DESTINATIONS
+    inputs = (providers['item_profiles'], providers['creature_profiles'], registered.NATIVE_MANIFEST)
+    generated = {path: (ROOT / path).read_bytes() for path in inputs}
+    registered.refresh_registered_loot(ROOT, generated)
+    raw = generated[LOOT_TABLES.relative_to(ROOT).as_posix()]
     if len(raw) > LIMITS['loot_tables']:
         raise ValueError('Native input exceeds bounded provider size: loot_tables')
     output.write_bytes(raw)

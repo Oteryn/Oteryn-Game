@@ -605,13 +605,14 @@ pub struct QuestAdmission {
 /// The admission step of fresh admission and resume: load the Character's tracks, quest states
 /// and open obligations, then request each `PENDING` obligation again through the Character's
 /// revision slot. Without a catalogue (no quest content loaded) the obligations stay pending.
-pub async fn admit_character_quest_state(
+pub async fn admit_character_quest_state<G: grizzly::GrizzlyPremiumGate>(
     sequencer: &CharacterRevisionSequencer,
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
     fence: CurrentCharacterGameplayFence,
     catalogue: Option<&Arc<QuestStateCatalogue>>,
+    premium: &G,
 ) -> QuestAdmission {
     let Ok(mut copy) = root
         .read_character_quest_state(authority, fence.character_id)
@@ -628,7 +629,7 @@ pub async fn admit_character_quest_state(
         return QuestAdmission { copy: None, retry: false };
     }
     match request_pending_obligations(
-        sequencer, root, authority, node, fence, catalogue, &mut copy,
+        sequencer, root, authority, node, fence, catalogue, premium, &mut copy,
     )
     .await
     {
@@ -647,13 +648,18 @@ pub async fn admit_character_quest_state(
 /// and apply each outcome to `copy`. `Some(true)` when an attempt failed without an outcome
 /// (retry after the backoff); `None` when a committed receipt would take `copy` over
 /// `QUESTSTATE0-RL-08` (the copy is then unusable). A refusal is final (§5.4).
-pub async fn request_pending_obligations(
+#[allow(
+    clippy::too_many_arguments,
+    reason = "claim settlement forwards the existing transaction-scoped admission authority"
+)]
+pub async fn request_pending_obligations<G: grizzly::GrizzlyPremiumGate>(
     sequencer: &CharacterRevisionSequencer,
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
     fence: CurrentCharacterGameplayFence,
     catalogue: Option<&Arc<QuestStateCatalogue>>,
+    premium: &G,
     copy: &mut QuestStateCopy,
 ) -> Option<bool> {
     let Some(catalogue) = catalogue else {
@@ -664,7 +670,7 @@ pub async fn request_pending_obligations(
     for obligation in pending {
         let mut slot = sequencer.acquire(fence.character_id).await;
         let outcome = slot
-            .commit_quest_transition(
+            .commit_quest_transition_with_admission(
                 root,
                 authority,
                 node,
@@ -674,6 +680,7 @@ pub async fn request_pending_obligations(
                     cause: QuestCause::ClaimObligation(obligation.claim),
                 },
                 Arc::clone(catalogue),
+                premium,
             )
             .await;
         drop(slot);

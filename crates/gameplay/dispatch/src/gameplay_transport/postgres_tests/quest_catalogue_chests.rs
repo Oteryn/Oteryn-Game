@@ -9,29 +9,57 @@ use std::collections::BTreeSet;
 const CATALOGUE_SLICE_COUNT: usize = 24;
 const A_M_SLICE_COUNT: usize = 8;
 
-fn catalogue_slice(index: usize, count: usize, cases: &[CatalogueChest]) -> std::ops::Range<usize> {
+fn claim_ranges(cases: &[CatalogueChest]) -> impl Iterator<Item = std::ops::Range<usize>> + '_ {
     // cases() emits every placement for a claim consecutively.
-    let mut boundaries = vec![0];
-    boundaries.extend(
-        cases
-            .windows(2)
-            .enumerate()
-            .filter(|(_, pair)| pair[0].claim != pair[1].claim)
-            .map(|(index, _)| index + 1),
-    );
-    boundaries.push(cases.len());
+    let mut start = 0;
+    cases
+        .chunk_by(|left, right| left.claim == right.claim)
+        .map(move |claim| {
+            let placements = start..start + claim.len();
+            start = placements.end;
+            placements
+        })
+}
+
+fn catalogue_slice(index: usize, count: usize, cases: &[CatalogueChest]) -> std::ops::Range<usize> {
+    let boundaries: Vec<_> = std::iter::once(0)
+        .chain(claim_ranges(cases).map(|range| range.end))
+        .collect();
     let claims = boundaries.len() - 1;
-    boundaries[index * claims / count]
-        ..boundaries[(index + 1) * claims / count]
+    boundaries[index * claims / count]..boundaries[(index + 1) * claims / count]
+}
+
+fn catalogue_slices(cases: &[CatalogueChest]) -> TestResult<[Vec<usize>; CATALOGUE_SLICE_COUNT]> {
+    let mut claims: Vec<_> = claim_ranges(cases).collect();
+    // Charge one unit per placement. Assign large claims first so a large
+    // multi-placement claim cannot overload a slice of otherwise equal claims.
+    claims.sort_by_key(|placements| std::cmp::Reverse(placements.len()));
+    let mut slices: [Vec<usize>; CATALOGUE_SLICE_COUNT] = std::array::from_fn(|_| Vec::new());
+    let (pinned, ordinary) = slices.split_last_mut().ok_or("catalogue slices")?;
+    for placements in claims {
+        let slice = if cases[placements.clone()].iter().any(CatalogueChest::uses_pinned_world) {
+            // Keep the expensive pinned artifact read in one process.
+            &mut *pinned
+        } else {
+            ordinary.iter_mut().min_by_key(|slice| slice.len()).ok_or("ordinary slices")?
+        };
+        slice.extend(placements);
+    }
+    Ok(slices)
 }
 
 fn run_catalogue_slice(index: usize) -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    let mut cases = cases()?;
-    let range = catalogue_slice(index, CATALOGUE_SLICE_COUNT, &cases);
-    execute(cases.drain(range).collect())
+    let cases = cases()?;
+    let mut slices = catalogue_slices(&cases)?;
+    let mut selected = std::mem::take(&mut slices[index]);
+    selected.sort_unstable();
+    let mut selected = selected.into_iter().peekable();
+    execute(cases.into_iter().enumerate().filter_map(|(index, case)| {
+        selected.next_if_eq(&index).map(|_| case)
+    }).collect())
 }
 
 #[test]
@@ -47,11 +75,10 @@ fn quest_catalogue_chests_slices_cover_every_supported_source_placement() -> Tes
 
     let mut seen_claims = BTreeSet::new();
     let mut seen_placements = vec![false; cases.len()];
-    for index in 0..CATALOGUE_SLICE_COUNT {
-        let range = catalogue_slice(index, CATALOGUE_SLICE_COUNT, &cases);
-        assert!(!range.is_empty(), "slice {index} is empty");
+    for (index, placements) in catalogue_slices(&cases)?.into_iter().enumerate() {
+        assert!(!placements.is_empty(), "slice {index} is empty");
         let mut slice_claims = BTreeSet::new();
-        for placement in range {
+        for placement in placements {
             assert!(
                 !seen_placements[placement],
                 "placement {placement} appears twice"

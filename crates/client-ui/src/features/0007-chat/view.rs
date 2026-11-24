@@ -23,6 +23,8 @@ fn tab_text(
     tab: super::ConsoleTab,
     channel: Option<&super::ChannelTab>,
 ) -> String {
+    let view = panel.transcript_after_clear(tab, channel);
+    let panel = &*view;
     // A channel tab filters like the Private tab: it is not the combined All view.
     let tab = if channel.is_some() {
         super::ConsoleTab::Private
@@ -58,7 +60,9 @@ fn tab_text(
         if !presentation.shows(line) || !panel.console.filters.visible(tab, line) {
             continue;
         }
-        if !panel.console.communication.visible(line) {
+        let own_private = matches!(line, ChatLine::Private { .. })
+            && panel.recipients.get(index).is_some_and(Option::is_some);
+        if !own_private && !panel.console.communication.visible(line) {
             continue;
         }
         if !show_messages {
@@ -152,6 +156,10 @@ fn tab_text(
                     .metadata
                     .name(panel.console.display, &line.speaker_name);
                 let _ = writeln!(text, "{label}{name}: {}", line.text);
+            }
+            ChatLine::System { text: message } => {
+                text.push_str(message);
+                text.push('\n');
             }
             ChatLine::Dropped => text.push_str(tr!("[Some chat lines were dropped]\n")),
             ChatLine::Party {

@@ -3,13 +3,18 @@ use super::*;
 use crate::content::{
     ProjectV2AuthoringProfileData, ReferenceItemField::Known, native_gameplay::NativeGameplayState,
 };
-use oteryn_protocol_oteryn::charm_progression::catalogue::{self as wire, Card, Page, Request};
+use crate::domain::loot_data::LootTableEntry;
+use crate::durability::{item_loop_move::ItemLoopContent, item_mint::TypedDefinitionRef};
+use oteryn_protocol_oteryn::charm_progression::catalogue::{
+    self as wire, Card, Page, Request, quick_loot,
+};
 use std::{collections::BTreeSet, fmt::Write};
 
 pub(super) async fn dispatch(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     payload: &[u8],
+    include_animus_xp: bool,
 ) -> GuildReply {
     let named_races = if payload.starts_with(&[255,3]) && (4..=12).contains(&payload.len()) && payload.len().is_multiple_of(2) {
         let races:Vec<_>=payload[2..].as_chunks::<2>().0.iter().map(|b|u16::from_le_bytes(*b)).collect();
@@ -18,7 +23,16 @@ pub(super) async fn dispatch(
     } else { None };
     let charm_after = match payload { [255, 2, after] if *after <= 32 => Some(*after), _ => None };
     let metadata_after = if payload.first() == Some(&254) { match wire::decode_charm_request(payload) { Ok(after) => Some(after), Err(_) => return GuildReply::Rejected } } else { None };
-    let request = if metadata_after.is_some() || charm_after.is_some() || named_races.is_some() { Request { after: 0, race: 0, category: 0 } } else {
+    let drops_requested = payload.starts_with(&quick_loot::PREFIX);
+    let request = if drops_requested {
+        if !admitted.continuity.selected_capabilities.contains(quick_loot::CAPABILITY) {
+            return GuildReply::Rejected;
+        }
+        let Ok(request) = quick_loot::decode_request(payload) else {
+            return GuildReply::Rejected;
+        };
+        request
+    } else if metadata_after.is_some() || charm_after.is_some() || named_races.is_some() { Request { after: 0, race: 0, category: 0 } } else {
         let Ok(request) = wire::decode_request(payload) else { return GuildReply::Rejected; };
         request
     };
@@ -35,9 +49,9 @@ pub(super) async fn dispatch(
     if !super::super::battle_instinct_status::actor_is_current(&runtime, admitted) {
         return GuildReply::Rejected;
     }
-    if super::super::item_ref_admission::pinned_index(&runtime, owner.active_generation).is_none() {
+    let Some(index) = super::super::item_ref_admission::pinned_index(&runtime, owner.active_generation) else {
         return GuildReply::Rejected;
-    }
+    };
     drop(runtime);
     if let Some(after) = metadata_after {
         return super::metadata::project(owner.imported_charms, after)
@@ -58,7 +72,43 @@ pub(super) async fn dispatch(
     if let Some(after) = charm_after {
         return super::charm_details::page(owner.imported_charms, after).and_then(|page| wire::encode_page(&page).ok()).map_or(GuildReply::Rejected, GuildReply::Payload);
     }
+    if drops_requested {
+        let content = super::super::item_ref_admission::NativeItemWeights(native);
+        let mut references = Vec::new();
+        let catalogue = project_with_drops(native, request, |entry| {
+            let item = &entry.item;
+            let reference = index
+                .definition_ref(&item.family, &item.production_key, &item.revision_ref)
+                .filter(|_| {
+                    content.loop_facts(&TypedDefinitionRef {
+                        family: item.family.clone(),
+                        production_key: item.production_key.clone(),
+                        revision_ref: item.revision_ref.clone(),
+                    }).is_some()
+                });
+            references.push(reference);
+        });
+        return catalogue.and_then(|catalogue| quick_loot::Page { catalogue, references }.encode().ok())
+            .map_or(GuildReply::Rejected, GuildReply::Payload);
+    }
     let Some(page) = project(native, request) else { return GuildReply::Rejected; };
+    if include_animus_xp {
+        let Ok(masteries) = owner.root.read_current_animus_masteries(
+            owner.character, owner.holder, current.item_fence(),
+        ).await else {
+            return GuildReply::Rejected;
+        };
+        let Some(races) = super::canonical_races() else { return GuildReply::Rejected; };
+        let bonus = crate::combat::animus_mastery_bonus_basis_points(masteries.len());
+        let bonuses: Option<Vec<_>> = page.cards.iter().map(|card| {
+            let race = races.get(usize::from(card.race.checked_sub(1)?))?;
+            let mastered = masteries.binary_search_by(|key| key.as_str().cmp(race.key())).is_ok();
+            Some(if mastered { bonus } else { 0 })
+        }).collect();
+        return bonuses
+            .and_then(|bonuses| wire::encode_animus_xp_page(&page, &bonuses).ok())
+            .map_or(GuildReply::Rejected, GuildReply::Payload);
+    }
     if payload.len() == 8 {
         owner.echo_warden_bestiary_page(admitted, page).await
     } else {
@@ -96,6 +146,14 @@ fn card(native: &NativeGameplayState, race: &BestiaryRace, ordinal: u16) -> Opti
     })
 }
 fn project(native: &NativeGameplayState, request: Request) -> Option<Page> {
+    project_with_drops(native, request, |_| {})
+}
+
+fn project_with_drops(
+    native: &NativeGameplayState,
+    request: Request,
+    on_drop: impl FnMut(&LootTableEntry),
+) -> Option<Page> {
     let races = super::canonical_races()?;
     let categories: Vec<_> = races
         .iter()
@@ -110,7 +168,7 @@ fn project(native: &NativeGameplayState, request: Request) -> Option<Page> {
     if request.race != 0 {
         let race = races.get(usize::from(request.race - 1))?;
         let mut card = card(native, race, request.race)?;
-        let (detail, next) = details(native, race, request.after)?;
+        let (detail, next) = details(native, race, request.after, on_drop)?;
         card.detail = detail;
         return Some(Page {
             next,
@@ -147,6 +205,7 @@ fn details(
     native: &NativeGameplayState,
     race: &BestiaryRace,
     after: u16,
+    mut on_drop: impl FnMut(&LootTableEntry),
 ) -> Option<(String, Option<u16>)> {
     let policy = native
         .policies()
@@ -216,6 +275,7 @@ fn details(
             return Some((text, Some(index.try_into().ok()?)));
         }
         if index >= start {
+            on_drop(entry);
             let name = native
                 .item_policy(&entry.item.production_key, &entry.item.revision_ref)
                 .and_then(|p| {

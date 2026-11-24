@@ -300,7 +300,7 @@ struct CellFacts {
 }
 
 /// OTBM `TILESTATE_PROTECTIONZONE`.
-const FLAG_PROTECTION_ZONE: u32 = 1;
+pub(crate) const FLAG_PROTECTION_ZONE: u32 = 1;
 
 /// Cell facts by project-frame position.
 type Facts = BTreeMap<LegacyPosition, CellFacts>;

@@ -1,0 +1,21 @@
+[
+  {
+    "mechanic": "0604-offline-training-choice",
+    "kind": "handlers",
+    "id": "0604-offline-training-choice-unsupported",
+    "status": "unsupported",
+    "reason": "The client training panel uses the existing statue and bed actions. The negotiated skill comparison and direct choice commands await a client handler.",
+    "commands": [
+      6369,
+      6370
+    ],
+    "not_applicable": {
+      "state": "The client has no model for offline-training skill levels, pool and selected skill.",
+      "protocol": "The client has no negotiated handler for this capability.",
+      "view": "The native panel consumes the existing capabilities.",
+      "input": "The native panel uses the existing commands.",
+      "settings": "This capability does not introduce a client setting."
+    },
+    "direction": "client_to_server"
+  }
+]

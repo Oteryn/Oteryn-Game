@@ -100,7 +100,7 @@ pub(super) fn run(route: Route) -> TestResult {
             "content-1",
         )?;
         let generation = controller.active().ok_or("active generation")?;
-        let world = source_world(
+        let (world, _) = source_world(
             generation.native_gameplay().ok_or("native gameplay")?,
             start,
             matches!(
@@ -704,11 +704,11 @@ async fn level(
     Ok(())
 }
 
-fn source_world(
+pub(super) fn source_world(
     native: &crate::content::native_gameplay::NativeGameplayState,
     start: Position,
     elvenbane_combat: bool,
-) -> TestResult<crate::map::boot::BundleWorld> {
+) -> TestResult<(crate::map::boot::BundleWorld, oteryn_world_bundle::npc::Table)> {
     use oteryn_world_bundle::bundle;
     use oteryn_world_bundle_compiler::{compile, project, source};
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
@@ -783,7 +783,7 @@ fn source_world(
         ..pins
     };
     let base = crate::map::load(&compiled.bytes, &pins).map_err(debug)?;
-    crate::map::boot::boot(&compiled.bytes,&crate::map::boot::BootPins{map_revision:crate::map::overlay::map_revision(&base),bundle:pins,start:crate::map::overlay::TilePos{x:start.x,y:start.y,floor:start.floor}},crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,|key| {
+    let world = crate::map::boot::boot(&compiled.bytes,&crate::map::boot::BootPins{map_revision:crate::map::overlay::map_revision(&base),bundle:pins,start:crate::map::overlay::TilePos{x:start.x,y:start.y,floor:start.floor}},crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,|key| {
         use crate::content::{ReferenceItemField,ReferenceItemType};
         // Match the production node's boot_bundle_items (serve.rs): an indexed
         // static Item without a native profile retains the owner's sealed defaults.
@@ -798,5 +798,7 @@ fn source_world(
             pickupable: profile.is_some_and(|p| matches!(&p.semantics.physical, ReferenceItemField::Known(p) if p.pickupable == ReferenceItemField::Known(true))),
             door: profile.is_some_and(|p| matches!(&p.semantics.classification, ReferenceItemField::Known(c) if c.item_type == ReferenceItemField::Known(ReferenceItemType::Door))),
         })
-    }).map_err(debug)
+    }).map_err(debug)?;
+    let npcs = bundle::visit(&compiled.bytes, |_, _| Ok(())).map_err(debug)?.npcs;
+    Ok((world, npcs))
 }

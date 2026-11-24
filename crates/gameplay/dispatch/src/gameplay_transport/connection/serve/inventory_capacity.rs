@@ -74,6 +74,10 @@ pub(super) fn changes_carried_weight(dispatch: &Dispatch) -> bool {
         }
         Dispatch::NpcTrade(_, _, deltas) | Dispatch::NpcShop(_, _, _, deltas) => !deltas.is_empty(),
         Dispatch::Npc(_, _, changed) => *changed,
+        Dispatch::CarriedBatch(reply) => matches!(
+            reply,
+            oteryn_protocol_oteryn::container_batch::Reply::Committed(_)
+        ),
         Dispatch::Stash(reply) => {
             reply.outcome == oteryn_protocol_oteryn::stash::StashOutcome::Committed
         }

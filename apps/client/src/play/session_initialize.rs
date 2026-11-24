@@ -13,6 +13,11 @@ pub(super) fn initialize<T: Stepper>(
     outbox.map_initialize(session.feature_snapshot(17), session.world_position());
     outbox.discovery_initialize(session);
     outbox.hud_stamina_initialize(session.feature_selected(199));
+    {
+        let mut mailbox = mailbox::lock(&outbox.0);
+        mailbox.capture_observations.personal_boss_events = session.feature_selected(615);
+        mailbox.party.typed_feedback = session.feature_selected(617);
+    }
     outbox.properties_initialize(session);
     outbox.analyser_initialize(session.feature_selected(10));
     outbox

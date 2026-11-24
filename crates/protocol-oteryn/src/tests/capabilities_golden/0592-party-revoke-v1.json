@@ -1,0 +1,17 @@
+{
+  "id": 592,
+  "name": "PARTY_REVOKE_V1",
+  "constant": "party::CAPABILITY_PARTY_REVOKE_V1",
+  "requires": [
+    42
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

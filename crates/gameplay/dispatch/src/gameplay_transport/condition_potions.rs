@@ -303,6 +303,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
                     gate.settle(command.command_id, UseDisposition::Committed, &[]);
+                    gate.last_utterance = Some(utterance(potion));
                 }
                 Ok(UseDisposition::Committed)
             }
@@ -399,6 +400,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let actor = window.attempt().physical.batch().caster;
+        let potion =
+            PotionCondition::from_key(&window.attempt().request.source_definition.production_key);
         let disposition = match result {
             Ok(true) => {
                 let Ok(checked) = check_owner_batch(
@@ -444,7 +447,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .gate(&runtime, actor, original.game_session_id)
         {
             gate.settle(command.command_id().get(), disposition, &[]);
+            if disposition == UseDisposition::Committed {
+                gate.last_utterance = potion.map(utterance);
+            }
         }
+    }
+}
+
+pub(super) fn utterance(
+    potion: PotionCondition,
+) -> oteryn_protocol_oteryn::world_object::PotionUtterance {
+    use oteryn_gameplay_progression::condition_potions::ConditionPotion;
+    use oteryn_protocol_oteryn::world_object::PotionUtterance;
+    match potion {
+        PotionCondition::Antidote | PotionCondition::MagicShield => PotionUtterance::Restore,
+        PotionCondition::Skill(ConditionPotion::Berserk) => PotionUtterance::Berserk,
+        PotionCondition::Skill(ConditionPotion::Mastermind) => PotionUtterance::Mastermind,
+        PotionCondition::Skill(ConditionPotion::Bullseye) => PotionUtterance::Bullseye,
+        PotionCondition::Skill(ConditionPotion::Transcendence) => PotionUtterance::Transcendence,
     }
 }
 

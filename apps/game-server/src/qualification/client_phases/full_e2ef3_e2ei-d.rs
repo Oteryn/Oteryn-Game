@@ -476,7 +476,7 @@ async fn refine(
         return Err(format!("refinement before={saved:?} after={observed:?}").into());
     }
     check.action = "retained-draw";
-    Err("retained refining draw needs the original session command ID (mining/mod.rs:112, :132); world_context_use allocates a new ID (session_exchange.rs:188); stone consumption, pool output, and reloaded inventory matched".into())
+    Err(format!("SERVER-GAP original refinement command={} reply={:?}/{disposition:?}; reloaded-inventory={observed:?}; retained refining draw needs the original session command ID (mining/mod.rs:112, :132); world_context_use allocates a new ID (session_exchange.rs:188)", response.command_id, response.status).into())
 }
 
 fn equipped(client: &DevClientSession, active: NonZeroU32) -> Option<items::ItemHandle> {
@@ -621,9 +621,9 @@ async fn energy_ring(
         equipped(client, active)
     })
     .await?;
-    let remaining = paused
+    let remaining = restored
         .remaining_ms
-        .ok_or("paused timer missing remaining budget")?;
+        .ok_or("restored timer missing remaining budget")?;
     let retired = |client: &DevClientSession| {
         let count = quantities(client)
             .ok()?
@@ -643,6 +643,7 @@ async fn energy_ring(
         retired,
     )
     .await?;
+    let retirement_sequence = client.last_server_sequence();
     check.action = "relogin-timer";
     rejoin(client, clients).await?;
     if retired(client).is_none() {
@@ -652,12 +653,16 @@ async fn energy_ring(
         )
         .into());
     }
-    verify_ring_expiry_timing(&mut check.action, remaining)
+    verify_ring_expiry_timing(&mut check.action, remaining, retirement_sequence)
 }
 
-fn verify_ring_expiry_timing(action: &mut &'static str, remaining_ms: u64) -> TestResult {
+fn verify_ring_expiry_timing(
+    action: &mut &'static str,
+    remaining_ms: u64,
+    retirement_sequence: u64,
+) -> TestResult {
     *action = "verify-server-ring-expiry-timing";
-    Err(format!("SERVER-GAP missing server timestamps for Energy Ring resumed activation and retirement; restored budget={remaining_ms}ms; owner clock at timed_item_clock.rs:375; timer reply at timed_item.rs:42").into())
+    Err(format!("SERVER-GAP missing server timestamps for Energy Ring resumed activation and retirement; restored budget={remaining_ms}ms; retirement-observed-by-sequence={retirement_sequence}; owner clock at timed_item_clock.rs:375; timer reply at timed_item.rs:42").into())
 }
 
 async fn observe_shield(
@@ -731,11 +736,13 @@ async fn observe_shield(
 #[test]
 fn ring_expiry_requires_server_timestamps() {
     let mut action = "relogin-timer";
-    let result = verify_ring_expiry_timing(&mut action, 600);
+    let result = verify_ring_expiry_timing(&mut action, 600, 42);
     assert_eq!(action, "verify-server-ring-expiry-timing");
     assert!(result.is_err_and(|error| {
         let error = error.to_string();
-        error.contains("missing server timestamps") && error.contains("restored budget=600ms")
+        error.contains("missing server timestamps")
+            && error.contains("restored budget=600ms")
+            && error.contains("retirement-observed-by-sequence=42")
     }));
 }
 

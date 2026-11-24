@@ -116,6 +116,8 @@ pub fn result(panel: &mut Panel, reply: &GatedCommandResult) {
             panel
                 .party_adjustments
                 .retain(|name, _| rows.iter().any(|row| &row.name == name));
+            panel.party_import = None;
+            panel.party_split_error = None;
             panel.party = rows;
             panel.party_feedback = None;
         }

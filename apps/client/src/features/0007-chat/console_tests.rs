@@ -730,11 +730,70 @@ fn enabled_speaker_levels_query_the_first_line_after_login()
     outbox.console_result(&GatedCommandResult {
         command_id: 1,
         server_sequence: 1,
+        status: CommandStatus::Rejected,
+        payload: vec![],
+    });
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    let retry = loop {
+        settings.sync_local_preferences(&link);
+        if let Ok(crate::combat_input::PlayCommand::Feature(retry)) = commands.try_recv() {
+            break retry;
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "unchanged speaker did not retry"
+        );
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    };
+    assert_eq!(retry.payload, command.payload);
+    outbox.console_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
         status: CommandStatus::Accepted,
         payload: oteryn_client_runtime::chat::console::encode_levels(&[Some(7)]).ok_or("encode")?,
     });
     settings.sync_local_preferences(&link);
     assert!(commands.try_recv().is_err());
     assert!(panel_text(&link.chat_panel()).contains("Ada [current level 7]"));
+    Ok(())
+}
+
+#[test]
+fn sequenced_system_feedback_reaches_the_party_panel() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_protocol_oteryn::chat::line_extended::{ChatLineBody, decode_chat_line_extended};
+    let (link, _, outbox) = play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.party.awaiting_shared_feedback = true;
+        mailbox.party.typed_feedback = true;
+    }
+    let decoded = decode_chat_line_extended(b"\x08\x09\x3a\x11shared experience\x68\x07")
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(decoded.line_sequence, Some(7));
+    let ChatLineBody::Line(value) = decoded.body else {
+        return Err("expected chat line".into());
+    };
+    outbox.push(vec![oteryn_session::SessionEvent::ChatLine(
+        oteryn_session::AppliedDelta {
+            server_sequence: 9,
+            base_revision: 6,
+            new_revision: 7,
+            value,
+        },
+    )]);
+    assert_eq!(
+        link.party_panel().server_feedback.as_deref(),
+        Some("shared experience")
+    );
+    #[cfg(bevy_shell)]
+    {
+        let notices = link.take_window_notices();
+        assert_eq!(notices.len(), 1);
+        assert_eq!(
+            notices[0].kind,
+            crate::play::feature_local_text_messages::view::NoticeKind::System
+        );
+        assert_eq!(notices[0].text, "shared experience");
+    }
     Ok(())
 }

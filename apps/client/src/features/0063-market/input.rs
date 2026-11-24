@@ -114,6 +114,23 @@ impl PlayLink {
         stashback(&self.mailbox, &self.commands)
     }
 
+    #[cfg(bevy_shell)]
+    pub(crate) fn market_open_potions(&self) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.market_shutdown || !mailbox.market.open || mailbox.store.confirmed_purchase.is_some() {
+            return false;
+        }
+        let Some(command) = oteryn_client_ui::store::browse(&mut mailbox.store, "consumables", "potion", 0, 0) else { return false; };
+        if self.commands.send(PlayCommand::ServerMechanic(command)).is_err() {
+            mailbox.store.pending = false;
+            return false;
+        }
+        mailbox.market.open = false;
+        mailbox.store.page = oteryn_client_ui::store::StorePage::Catalogue;
+        mailbox.store.open = true;
+        true
+    }
+
     pub fn open_market(&self) {
         open_from_depot(&self.mailbox, &self.commands);
     }

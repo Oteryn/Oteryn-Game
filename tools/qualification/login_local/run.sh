@@ -731,9 +731,9 @@ if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
   # Epoch zero is created only by the Control initializer (as node_boot). Without it the
   # reset calendar is absent and the first Task Board query fails InvalidStoredState.
   epoch_result="$({
-    echo 'PREPARE login_local_world_epoch(UUID, UUID, TEXT) AS'
+    echo 'PREPARE login_local_world_epoch(UUID, UUID, TEXT, TEXT) AS'
     cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
-    printf "EXECUTE login_local_world_epoch('%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WB_DIGEST"
+    printf "EXECUTE login_local_world_epoch('%s', '%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WB_DIGEST" "$WB_DIGEST"
   } | psql_admin oteryn_login_local)"
   [[ "$epoch_result" == t ]] || { echo "World epoch initialization failed"; exit 1; }
   evidence "world_epoch=0 source=control_initializer calendar=TIBIA_SERVER_SAVE_BERLIN_06"
