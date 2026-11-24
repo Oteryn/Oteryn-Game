@@ -5,6 +5,8 @@ use oteryn_dev_client::{DevClientSession, EntityRef};
 
 use verdict::Row;
 
+include!("qualification_hunt_route.rs");
+
 // Detail stays on the GAP lines, separate from the report's single-token evidence field.
 // A failure is never turned into MISSING-SERVER merely because this journey is unfinished.
 const EVIDENCE: &str = "source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1";
@@ -280,13 +282,12 @@ async fn approach_position(
     other: TilePos,
     world: &BundleWorld,
 ) -> TestResult {
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+    f4_walk_to(client, world, "peer approach", |at| {
         at != other
             && at.floor == other.floor
             && at.x.abs_diff(other.x).max(at.y.abs_diff(other.y)) <= 1
     })
-    .ok_or("real-peer approach route unavailable")?;
-    walk(client, world, &path).await
+    .await
 }
 
 fn inventory_units(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
@@ -334,19 +335,28 @@ async fn relog(client: &mut DevClientSession, clients: &SeamClients<'_>) -> Test
 }
 
 async fn locker(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        near_locker(world, at)
-    })
-    .ok_or("no reachable production depot locker")?;
-    walk(client, world, &path).await
+    f4_walk_to(client, world, "depot locker", |at| near_locker(world, at)).await
 }
 
-/// Walks back to the entry tile before S01 approaches its peer from there.
 async fn town(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at == TOWN
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(240);
+    qualification_hunt_route(client, world, Some(TOWN), None, deadline).await?;
+    Ok(())
+}
+
+async fn f4_walk_to(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    purpose: &str,
+    goal: impl Fn(TilePos) -> bool,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = find_route(from, goal, |at, direction| {
+        destination(world, at, direction)
     })
-    .ok_or("E2EF4 town route unavailable")?;
+    .map_err(|visited| {
+        format!("F4 {purpose}: no route from {from:?} in {visited} reachable World tiles")
+    })?;
     walk(client, world, &path).await
 }
 
