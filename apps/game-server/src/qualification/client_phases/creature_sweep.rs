@@ -484,6 +484,7 @@ async fn recovery_spell(
     client: &mut DevClientSession,
 ) -> TestResult<(&'static str, std::num::NonZeroU32, u32)> {
     use crate::spell::{ManaCost, Vocation};
+    use oteryn_protocol_oteryn::actor_spell_catalog as catalogue;
     let (_, level, observed) = read_stats(client).await?;
     let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
     let key = if profile == "explorer" {
@@ -498,6 +499,12 @@ async fn recovery_spell(
         )
         .into());
     }
+    let snapshot = client
+        .session_mut()
+        .gated_snapshot(catalogue::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
+        .ok_or("recovery spell catalogue absent")?;
+    let served = catalogue::decode_catalog(&snapshot.payload)
+        .map_err(|error| format!("recovery catalogue reply={error:?}"))?;
     let book = native_spell_book()?;
     for words in ["exura infir ico", "exura infir", "exura"] {
         if let Some(entry) = book.spoken(words) {
@@ -508,12 +515,23 @@ async fn recovery_spell(
                 && !spell.learning_required
                 && spell.soul == 0
                 && let ManaCost::Fixed(mana) = spell.mana
+                && let Some(row) = served.iter().find(|row| {
+                    row.words == words
+                        && row.available
+                        && row.mana == mana
+                        && row.rune_item.is_none()
+                })
             {
-                return Ok((words, client_spell_journey::spell_index(book, words)?, mana));
+                let index =
+                    std::num::NonZeroU32::new(row.cast_index).ok_or("zero recovery cast index")?;
+                return Ok((words, index, mana));
             }
         }
     }
-    Err(format!("no free recovery spell for level={level} vocation={key}").into())
+    Err(
+        format!("no served recovery spell matches authored data for level={level} vocation={key}")
+            .into(),
+    )
 }
 
 async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
