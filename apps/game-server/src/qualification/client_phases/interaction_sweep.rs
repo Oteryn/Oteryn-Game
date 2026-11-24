@@ -89,6 +89,9 @@ struct Document {
 
 enum Entry {
     Document(Document),
+    MapDocument(Placement, String),
+    NestedMapDocument,
+    Interaction(Placement, MapAction),
     Claim,
     Shrine(DailyRewardContent),
 }
@@ -96,10 +99,53 @@ enum Entry {
 impl Entry {
     fn steps(&self) -> &'static [&'static str] {
         match self {
-            Self::Document(_) => &["bind", "walk", "open", "text"],
-            Self::Claim | Self::Shrine(_) => &["bind", "walk", "use", "effect", "reset"],
+            Self::Document(_) => &["bind", "query", "text"],
+            Self::MapDocument(..) | Self::NestedMapDocument => &["bind", "walk", "open", "text"],
+            Self::Interaction(..) | Self::Claim | Self::Shrine(_) => {
+                &["bind", "walk", "use", "effect", "reset"]
+            }
         }
     }
+}
+
+impl Entry {
+    fn family(&self) -> &'static str {
+        match self {
+            Self::Document(_) => "documents",
+            Self::MapDocument(..) | Self::NestedMapDocument => "map_documents",
+            Self::Interaction(..) => "interactions",
+            Self::Claim => "claims",
+            Self::Shrine(_) => "shrines",
+        }
+    }
+}
+
+const FAMILIES: &[&str] = &[
+    "documents",
+    "map_documents",
+    "interactions",
+    "claims",
+    "shrines",
+];
+
+fn slices(value: Option<&str>) -> TestResult<Vec<(&str, usize, usize)>> {
+    let Some(value) = value else {
+        return Ok(vec![("all", DEFAULT_BATCH.0, DEFAULT_BATCH.1)]);
+    };
+    if !value.contains('=') {
+        let (start, len) = batch(Some(value))?;
+        return Ok(vec![("all", start, len)]);
+    }
+    let mut selected = Vec::new();
+    for slice in value.split(',') {
+        let (family, range) = slice.split_once('=').ok_or("expected family=start:len")?;
+        if !FAMILIES.contains(&family) || selected.iter().any(|&(name, _, _)| name == family) {
+            return Err(format!("unknown or repeated sweep family {family:?}").into());
+        }
+        let (start, len) = batch(Some(range))?;
+        selected.push((family, start, len));
+    }
+    Ok(selected)
 }
 
 fn census(root: &Path) -> TestResult<BTreeMap<String, Entry>> {
@@ -220,30 +266,654 @@ impl Placement {
     }
 }
 
-fn readings(bytes: &[u8]) -> TestResult<BTreeMap<String, Option<Placement>>> {
-    let mut readings = BTreeMap::new();
-    oteryn_world_bundle::bundle::visit(bytes, |_, sector| {
+#[derive(Clone, Copy)]
+enum MapAction {
+    Door,
+    Ladder,
+    Rope,
+    Sewer,
+    Teleport(TilePos),
+    Terrain {
+        tool: u32,
+        after: u16,
+        decay: Duration,
+        final_state: Option<u16>,
+    },
+    Lever {
+        poses: [u16; 2],
+        reversible: bool,
+        has_passages: bool,
+    },
+    Callback,
+}
+
+fn map_entries(
+    bytes: &[u8],
+    world: &BundleWorld,
+    entries: &mut BTreeMap<String, Entry>,
+) -> TestResult {
+    use crate::map::floor::{is_ladder_appearance, is_rope_spot_item};
+    use oteryn_gameplay_quests::quest::world_callbacks::{self as callbacks, Trigger};
+    use oteryn_gameplay_world::terrain_tools::{TerrainTool, crystal_core_bindings};
+    let terrain = crystal_core_bindings();
+    let mut authored = BTreeMap::<TilePos, Vec<callbacks::Callback>>::new();
+    let mut by_appearance = BTreeMap::<u16, Vec<callbacks::Callback>>::new();
+    for callback in callbacks::load()? {
+        if callback.trigger != Trigger::Use {
+            continue;
+        }
+        if let Some(position) = callback
+            .selector
+            .native
+            .as_ref()
+            .map(|native| native.position)
+            .or(callback.selector.position)
+        {
+            let at = TilePos {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            };
+            authored.entry(at).or_default().push(callback);
+        } else if let Some(appearance) = callback.selector.appearance {
+            by_appearance.entry(appearance).or_default().push(callback);
+        }
+    }
+    let facts = world.facts().pinned();
+    oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
         for tile in sector.tiles {
             let at = TilePos {
                 x: tile.x,
                 y: tile.y,
                 floor: sector.floor,
             };
-            for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
-                if let Some(text) = item.attrs.text.as_ref().filter(|text| !text.is_empty())
-                    && let Ok(ordinal) = u8::try_from(ordinal)
-                    && let Some(key) = crate::map::view::placement_key(at, ordinal)
+            for (index, item) in tile.items.iter().enumerate() {
+                if item.depth != 0
+                    && item
+                        .attrs
+                        .text
+                        .as_ref()
+                        .is_some_and(|text| !text.is_empty())
                 {
-                    readings
-                        .entry(text.clone())
-                        .and_modify(|previous| *previous = None)
-                        .or_insert(Some(Placement { at, key }));
+                    let key = format!(
+                        "map-document.{:02}.{:05}.{:05}.nested-{index:03}",
+                        -i16::from(at.floor),
+                        at.x,
+                        at.y
+                    );
+                    entries.insert(key, Entry::NestedMapDocument);
+                }
+            }
+            for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
+                let Some(ordinal) = u8::try_from(ordinal).ok() else {
+                    continue;
+                };
+                let Some(key) = crate::map::view::placement_key(at, ordinal) else {
+                    continue;
+                };
+                let placement = Placement { at, key };
+                let suffix = format!(
+                    "{:02}.{:05}.{:05}.{:03}",
+                    -i16::from(at.floor),
+                    at.x,
+                    at.y,
+                    ordinal
+                );
+                if let Some(text) = item.attrs.text.as_ref().filter(|text| !text.is_empty()) {
+                    entries.insert(
+                        format!("map-document.{suffix}"),
+                        Entry::MapDocument(placement, text.clone()),
+                    );
+                }
+                let Some(palette) = manifest.palette.get(item.palette as usize) else {
+                    continue;
+                };
+                let appearance = facts
+                    .base_entry(at, ordinal, palette.id)
+                    .map_or(0, |entry| entry.appearance_id);
+                let source = palette
+                    .key
+                    .rsplit_once(".i")
+                    .and_then(|(_, id)| id.parse::<u32>().ok())
+                    .unwrap_or(u32::from(appearance));
+                let callback = authored
+                    .get(&at)
+                    .into_iter()
+                    .flatten()
+                    .chain(by_appearance.get(&appearance).into_iter().flatten())
+                    .find(|callback| {
+                        let selector = &callback.selector;
+                        if let Some(native) = &selector.native
+                            && native.position
+                                == (callbacks::Position {
+                                    x: at.x,
+                                    y: at.y,
+                                    floor: at.floor,
+                                })
+                            && native.ordinal == ordinal
+                            && world.facts().quest_callback_native_object(
+                                key,
+                                palette.id,
+                                native.appearance,
+                            )
+                        {
+                            return true;
+                        }
+                        (selector.position.is_some()
+                            || selector.action.is_some()
+                            || selector.unique.is_some()
+                            || selector.appearance.is_some())
+                            && selector.matches_position(callbacks::Position {
+                                x: at.x,
+                                y: at.y,
+                                floor: at.floor,
+                            })
+                            && selector
+                                .ordinal
+                                .is_none_or(|wanted| wanted == u16::from(ordinal))
+                            && world.facts().quest_callback_matches(
+                                key,
+                                selector.unique,
+                                selector.action,
+                                selector.appearance,
+                            )
+                    });
+                let action = if let Some(callback) = callback {
+                    Some(match callback.lever {
+                        Some(poses) => MapAction::Lever {
+                            poses,
+                            reversible: callback.reversible,
+                            has_passages: !callback.passages.is_empty()
+                                || callback.teleport.is_some()
+                                || callback.item_reward.is_some()
+                                || callback.success_message.is_some(),
+                        },
+                        None => MapAction::Callback,
+                    })
+                } else if world.facts().doors().contains(key) || item.attrs.door.is_some() {
+                    Some(MapAction::Door)
+                } else if is_ladder_appearance(appearance) {
+                    Some(MapAction::Ladder)
+                } else if appearance == 435 {
+                    Some(MapAction::Sewer)
+                } else if is_rope_spot_item(source, ordinal == 0) {
+                    Some(MapAction::Rope)
+                } else if let Some((x, y, floor)) = item.attrs.teleport {
+                    Some(MapAction::Teleport(TilePos {
+                        x,
+                        y,
+                        floor: floor as i8,
+                    }))
+                } else if let Some(binding) = terrain.iter().find(|binding| {
+                    binding.target == source && binding.required_action == item.attrs.action
+                }) {
+                    let tool = match binding.tool {
+                        TerrainTool::Shovel => 3457,
+                        TerrainTool::Pick => 3456,
+                        TerrainTool::Machete => 3308,
+                        TerrainTool::Scythe => 3453,
+                        TerrainTool::Sickle => 3293,
+                        TerrainTool::Crowbar => 3304,
+                        TerrainTool::SlimeGobbler => 12077,
+                        TerrainTool::ElementalSoil(tool) => u32::from(tool),
+                    };
+                    u16::try_from(binding.transformed)
+                        .ok()
+                        .map(|after| MapAction::Terrain {
+                            tool,
+                            after,
+                            decay: binding.decay.iter().map(|step| step.after).sum(),
+                            final_state: binding
+                                .decay
+                                .last()
+                                .and_then(|step| u16::try_from(step.state).ok()),
+                        })
+                } else if world.facts().quest_callback_source_bound(key) {
+                    Some(MapAction::Callback)
+                } else {
+                    None
+                };
+                if let Some(action) = action {
+                    entries.insert(
+                        format!("map-action.{suffix}"),
+                        Entry::Interaction(placement, action),
+                    );
                 }
             }
         }
         Ok(())
     })?;
-    Ok(readings)
+    Ok(())
+}
+
+// The reference profile binds each report to a creature; canonical Bestiary order
+// is the wire ordinal in charm_progression.rs:91. Some authoring creatures have
+// no Bestiary race. The detail owner (catalogue.rs:204) currently projects stats
+// and loot but omits the encyclopedia paragraphs.
+fn report_races(root: &Path) -> TestResult<BTreeMap<String, Option<u16>>> {
+    use crate::content::{ProjectEvidenceLimits, canonical_bestiary_rows};
+    let rows = canonical_bestiary_rows(ProjectEvidenceLimits {
+        max_documents: 5,
+        max_document_bytes: 2_500_000,
+        max_total_bytes: 8_000_000,
+        max_json_depth: 10,
+        max_decoded_fields: 65_000,
+        max_string_bytes: 1_000_000,
+        max_locator_bytes: 128,
+        max_locator_segments: 5,
+        max_reference_records: 4096,
+        max_import_records: 1,
+        max_reimport_states: 1,
+    })
+    .map_err(|error| format!("bestiary-catalogue: {error:?}"))?;
+    let ordinals = rows
+        .iter()
+        .enumerate()
+        .map(|(index, (race, _))| (race.key(), u16::try_from(index + 1).ok()))
+        .collect::<BTreeMap<_, _>>();
+    let mut reports = BTreeMap::new();
+    for file in std::fs::read_dir(root.join("content/creatures/definitions"))? {
+        let file = file?;
+        if !file.file_name().to_string_lossy().starts_with("creatures-") {
+            continue;
+        }
+        let shard: Shard = serde_json::from_reader(std::fs::File::open(file.path())?)?;
+        for record in shard.records {
+            let Some(report) =
+                record["authoring"]["profile"]["details"]["encyclopedia_document"]["key"].as_str()
+            else {
+                continue;
+            };
+            let creature = record["definition"]["identity"]["key"]
+                .as_str()
+                .ok_or("encyclopedia profile has no creature key")?;
+            let race = ordinals.get(creature).copied().flatten();
+            // Several profiles may cite the same report. Never select a race by
+            // matching its name to the report title.
+            reports
+                .entry(report.to_owned())
+                .and_modify(|current: &mut Option<u16>| {
+                    if let Some(race) = race {
+                        *current = Some(current.map_or(race, |old| old.min(race)));
+                    }
+                })
+                .or_insert(race);
+        }
+    }
+    Ok(reports)
+}
+
+async fn read_report(
+    client: &mut DevClientSession,
+    rows: &mut Rows<'_>,
+    race: u16,
+    expected: &str,
+) -> TestResult {
+    use oteryn_protocol_oteryn::charm_progression as charm;
+    let request = charm::catalogue::encode_request(charm::catalogue::Request {
+        after: 0,
+        race,
+        category: 0,
+    })
+    .map_err(|error| format!("bestiary-request: {error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            charm::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1,
+            charm::COMMAND_TYPE_CHARM_PROGRESSION,
+            &request,
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("bestiary-query-refused: {:?}", reply.status).into());
+    }
+    let page = charm::catalogue::decode_page(&reply.payload)
+        .map_err(|error| format!("bestiary-decode: {error:?}"))?;
+    let [card] = page.cards.as_slice() else {
+        return Err("bestiary-card-missing: expected one race".into());
+    };
+    if card.race != race {
+        return Err("bestiary-race-mismatch: wrong race in detail reply".into());
+    }
+    rows.pass("canonical-bestiary-detail-reply");
+    if card.detail != expected {
+        return Err(
+            "bestiary-report-text-missing: detail did not serve the exact authored report".into(),
+        );
+    }
+    rows.pass("byte-identical-authored-report");
+    Ok(())
+}
+
+fn map_face(client: &mut DevClientSession, placement: Placement) -> Option<(u16, u64)> {
+    use oteryn_protocol_oteryn::world_map::MapOrigin;
+    let (_, expected_ordinal) = crate::map::view::placement_of(placement.key)?;
+    let snapshot = client.session_mut().world_map_snapshot()?;
+    let tile = snapshot.tiles.iter().find(|tile| {
+        tile.position.x == i32::from(placement.at.x)
+            && tile.position.y == i32::from(placement.at.y)
+            && tile.position.floor == -i16::from(placement.at.floor)
+    })?;
+    tile.items.iter().find_map(|item| match item.origin {
+        MapOrigin::BaseOrdinal {
+            ordinal,
+            object_revision,
+        } if ordinal == expected_ordinal => Some((item.appearance_id, object_revision)),
+        _ => None,
+    })
+}
+
+async fn wait_face(
+    client: &mut DevClientSession,
+    placement: Placement,
+    matches: impl Fn((u16, u64)) -> bool,
+) -> TestResult<(u16, u64)> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        if let Some(face) = map_face(client, placement).filter(|face| matches(*face)) {
+            return Ok(face);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("map-appearance-mismatch: expected placement state absent on wire".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+}
+
+async fn tool_use(
+    client: &mut DevClientSession,
+    tool: oteryn_protocol_oteryn::item_view::ItemHandle,
+    target: WorldObjectTarget,
+) -> TestResult<UseDisposition> {
+    use oteryn_protocol_oteryn::world_object::{
+        MapUseTarget, UseIntent, UseTarget, decode_use_result, encode_item_use_intent,
+    };
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(tool),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(target)),
+        use_with_position: None,
+    })
+    .map_err(|error| format!("tool-intent: {error:?}"))?;
+    let reply = client.session_mut().world_context_use(&payload).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("tool-command-refused: {:?}", reply.status).into());
+    }
+    decode_use_result(&reply.payload).map_err(|error| format!("tool-result: {error:?}").into())
+}
+
+async fn use_map_action(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    placement: Placement,
+    action: MapAction,
+    tool: Option<oteryn_protocol_oteryn::item_view::ItemHandle>,
+    revision: u64,
+) -> TestResult {
+    if let MapAction::Teleport(_) = action {
+        let from = tile(client.world_spatial().actor_position)?;
+        let direction = [
+            (StepDirection::North, 0, -1),
+            (StepDirection::East, 1, 0),
+            (StepDirection::South, 0, 1),
+            (StepDirection::West, -1, 0),
+        ]
+        .into_iter()
+        .find_map(|(direction, dx, dy)| {
+            (from.x.checked_add_signed(dx) == Some(placement.at.x)
+                && from.y.checked_add_signed(dy) == Some(placement.at.y))
+            .then_some(direction)
+        })
+        .ok_or("teleport-approach: no cardinal activation step")?;
+        let outcome = client.step_retrying(direction).await?;
+        if outcome.disposition != StepDisposition::Moved {
+            return Err(format!("map-step-refused: {:?}", outcome.disposition).into());
+        }
+        return Ok(());
+    }
+    let mut target = placement.target(world);
+    target.expected_revision = revision;
+    let disposition = if let Some(tool) = tool {
+        tool_use(client, tool, target).await?
+    } else {
+        use_target(client, &target).await?
+    };
+    if disposition != UseDisposition::Committed {
+        return Err(format!("map-use-refused: {disposition:?}").into());
+    }
+    Ok(())
+}
+
+fn movement_landing(world: &BundleWorld, placement: TilePos, action: MapAction) -> Option<TilePos> {
+    if let MapAction::Teleport(destination) = action {
+        return Some(destination);
+    }
+    if matches!(action, MapAction::Sewer) {
+        return Some(TilePos {
+            floor: placement.floor.checked_sub(1)?,
+            ..placement
+        });
+    }
+    if !matches!(action, MapAction::Ladder | MapAction::Rope) {
+        return None;
+    }
+    // Floor ascent selects the first walkable adjacent upstairs tile in this order
+    // (map/floor/rope.rs:18, :207).
+    let floor = placement.floor.checked_add(1)?;
+    [
+        (0, 1),
+        (0, -1),
+        (1, 0),
+        (-1, 0),
+        (-1, 1),
+        (1, 1),
+        (-1, -1),
+        (1, -1),
+    ]
+    .into_iter()
+    .filter_map(|(dx, dy)| {
+        Some(TilePos {
+            x: placement.x.checked_add_signed(dx)?,
+            y: placement.y.checked_add_signed(dy)?,
+            floor,
+        })
+    })
+    .find(|at| {
+        world.enterable(*at)
+            && world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| tile.walkable())
+    })
+}
+
+async fn approach_action(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    target: TilePos,
+    action: MapAction,
+) -> TestResult {
+    if !matches!(action, MapAction::Teleport(_)) {
+        return approach(client, world, target).await;
+    }
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = find_route(
+        from,
+        |at| {
+            at.floor == target.floor
+                && u32::from(at.x.abs_diff(target.x)) + u32::from(at.y.abs_diff(target.y)) == 1
+        },
+        |at, direction| destination(world, at, direction),
+    )
+    .map_err(|visited| format!("no-route: teleport approach visited {visited} tiles"))?;
+    walk(client, world, &path).await
+}
+
+async fn map_action(
+    slot: &mut Option<DevClientSession>,
+    clients: &SeamClients<'_>,
+    rows: &mut Rows<'_>,
+    world: &BundleWorld,
+    placement: Placement,
+    action: MapAction,
+) -> TestResult {
+    let tool_id = match action {
+        MapAction::Rope => Some(3003),
+        MapAction::Terrain { tool, .. } => Some(tool),
+        _ => None,
+    };
+    let reference = tool_id
+        .map(|id| provisioning::item_reference(&provisioning::item_index()?, id))
+        .transpose()?;
+    let has_tool = |client: &DevClientSession| {
+        let reference = reference?;
+        client
+            .inventory()?
+            .entries
+            .iter()
+            .find(|entry| entry.item_definition_ref == reference)
+            .map(|entry| entry.handle)
+    };
+    session(slot, clients).await?;
+    // The existing fixture owner seeds the canonical rope and shovel. Preserve
+    // the session slot if the command refuses before it can be re-established.
+    if matches!(tool_id, Some(3003 | 3457)) && slot.as_ref().and_then(has_tool).is_none() {
+        let client = slot.take().ok_or("missing sweep session")?;
+        *slot = Some(
+            provisioning::provision(client, clients, 1)
+                .await
+                .map_err(|error| format!("fixture-seed: {error}"))?,
+        );
+    }
+    let client = session(slot, clients).await?;
+    approach_action(client, world, placement.at, action).await?;
+    rows.pass("adjacent-to-authored-action");
+    let tool = has_tool(client);
+    if reference.is_some() && tool.is_none() {
+        return Err(format!("fixture-tool-unavailable: {tool_id:?}").into());
+    }
+    let before = map_face(client, placement);
+    let revision = before.map_or(0, |(_, revision)| revision);
+    if matches!(
+        action,
+        MapAction::Door | MapAction::Lever { .. } | MapAction::Terrain { .. }
+    ) && before.is_none()
+    {
+        return Err("map-target-not-visible: missing placement and revision".into());
+    }
+    use_map_action(client, world, placement, action, tool, revision).await?;
+    rows.pass("committed-map-action");
+    match action {
+        MapAction::Door => {
+            let (appearance, revision) = before.ok_or("missing prior door pose")?;
+            let (_, next) = wait_face(client, placement, |(face, next)| {
+                face != appearance && next > revision
+            })
+            .await?;
+            rows.pass("same-door-revised-with-changed-appearance");
+            // Doors can step the user through; reacquire the reachable pose before toggling.
+            approach_action(client, world, placement.at, action).await?;
+            use_map_action(client, world, placement, action, None, next).await?;
+            wait_face(client, placement, |(face, latest)| {
+                face == appearance && latest > next
+            })
+            .await?;
+        }
+        MapAction::Terrain {
+            after,
+            decay,
+            final_state,
+            ..
+        } => {
+            wait_face(client, placement, |(face, next)| {
+                face == after && next > revision
+            })
+            .await?;
+            rows.pass("exact-authored-terrain-transform");
+            let Some(final_state) = final_state else {
+                rows.pass("content-has-no-decay-reset");
+                return Ok(());
+            };
+            if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_none() {
+                return Err(
+                    "terrain-reset-harness-unavailable: requires authored decay clock control"
+                        .into(),
+                );
+            }
+            full_e2ef7::advance_qualification_time(decay + Duration::from_secs(1))?;
+            wait_face(client, placement, |(face, next)| {
+                face == final_state && next > revision + 1
+            })
+            .await?;
+        }
+        MapAction::Lever {
+            poses,
+            reversible,
+            has_passages,
+        } => {
+            let (appearance, revision) = before.ok_or("missing prior lever pose")?;
+            let expected = if appearance == poses[0] {
+                poses[1]
+            } else if appearance == poses[1] {
+                poses[0]
+            } else {
+                return Err("lever-pose-mismatch: original face is outside authored pair".into());
+            };
+            let (_, next) = wait_face(client, placement, |(face, next)| {
+                face == expected && next > revision
+            })
+            .await?;
+            if has_passages {
+                if reversible {
+                    approach(client, world, placement.at).await?;
+                    use_map_action(client, world, placement, action, None, next).await?;
+                    wait_face(client, placement, |(face, latest)| {
+                        face == appearance && latest > next
+                    })
+                    .await?;
+                }
+                return Err("callback-effect-harness-unavailable: lever changed but authored secondary effects were not proved".into());
+            }
+            rows.pass("exact-authored-lever-pose");
+            if !reversible {
+                return Err(
+                    "callback-reset-harness-unavailable: one-way lever requires its authored reset"
+                        .into(),
+                );
+            }
+            approach(client, world, placement.at).await?;
+            use_map_action(client, world, placement, action, None, next).await?;
+            wait_face(client, placement, |(face, latest)| {
+                face == appearance && latest > next
+            })
+            .await?;
+        }
+        MapAction::Callback => {
+            return Err(
+                "callback-effect-harness-unavailable: no placement-specific effect oracle".into(),
+            );
+        }
+        _ => {
+            let expected = movement_landing(world, placement.at, action)
+                .ok_or("movement-landing-unavailable: owner landing absent from served map")?;
+            let actual = tile(client.world_spatial().actor_position)?;
+            if actual != expected {
+                return Err(format!(
+                    "movement-effect-mismatch: expected {expected:?}, observed {actual:?}"
+                )
+                .into());
+            }
+            rows.pass("exact-authored-movement-landing");
+            approach_action(client, world, placement.at, action).await?;
+            use_map_action(client, world, placement, action, tool, revision).await?;
+            if tile(client.world_spatial().actor_position)? != expected {
+                return Err("movement-reset-mismatch: second activation changed landing".into());
+            }
+        }
+    }
+    rows.pass("authored-reset-observed");
+    Ok(())
 }
 
 fn adjacent(a: TilePos, b: TilePos) -> bool {
@@ -640,37 +1310,59 @@ pub(super) async fn run(
         Err(std::env::VarError::NotPresent) => None,
         Err(error) => return Err(format!("invalid {BATCH_VARIABLE}: {error}").into()),
     };
-    let (start, len) = batch(setting.as_deref())?;
+    let slices = slices(setting.as_deref())?;
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     verdict::Harness::global().progress("interaction-sweep-census");
-    let entries = census(&root)?;
-    let documents = entries
-        .values()
-        .filter(|entry| matches!(entry, Entry::Document(_)))
-        .count();
-    let claims = entries
-        .values()
-        .filter(|entry| matches!(entry, Entry::Claim))
-        .count();
+    let mut entries = census(&root)?;
+    map_entries(bytes, world, &mut entries)?;
     let total = entries.len();
-    evidence(&format!(
-        "interaction_sweep census total={total} documents={documents} claims={claims} shrines=1"
-    ));
-    if start >= total {
-        return Err(format!("{BATCH_VARIABLE} start {start} is beyond the {total} entries").into());
+    for family in FAMILIES {
+        let count = entries
+            .values()
+            .filter(|entry| entry.family() == *family)
+            .count();
+        evidence(&format!(
+            "interaction_sweep census family={family} entries={count} total={total}"
+        ));
     }
-    let selected = len.min(total - start);
-    evidence(&format!(
-        "interaction_sweep batch start={start} len={len} selected={selected} mode=seeded"
-    ));
-    let entries = entries.iter().skip(start).take(selected);
+    let reports = slices
+        .iter()
+        .any(|&(family, _, _)| matches!(family, "all" | "documents"))
+        .then(|| report_races(&root))
+        .transpose()?
+        .unwrap_or_default();
+    let mut selected_entries = Vec::new();
+    for &(family, start, len) in &slices {
+        let matching = entries
+            .iter()
+            .filter(|(_, entry)| family == "all" || entry.family() == family);
+        let count = matching.clone().count();
+        if start >= count {
+            return Err(format!(
+                "{BATCH_VARIABLE} start {start} is beyond {family} census of {count}"
+            )
+            .into());
+        }
+        let selected = len.min(count - start);
+        evidence(&format!(
+            "interaction_sweep batch family={family} start={start} len={len} selected={selected} mode=seeded"
+        ));
+        selected_entries.extend(
+            matching
+                .skip(start)
+                .take(selected)
+                .map(|(key, entry)| (family, key, entry)),
+        );
+    }
+    let selected = selected_entries.len();
+    let entries = selected_entries.into_iter();
     let items = entries
         .clone()
-        .any(|(_, entry)| !matches!(entry, Entry::Document(_)))
+        .any(|(_, _, entry)| matches!(entry, Entry::Claim | Entry::Shrine(_)))
         .then(provisioning::item_index);
     let bindings = entries
         .clone()
-        .any(|(_, entry)| matches!(entry, Entry::Claim))
+        .any(|(_, _, entry)| matches!(entry, Entry::Claim))
         .then(|| {
             let items = items
                 .as_ref()
@@ -686,55 +1378,48 @@ pub(super) async fn run(
                 },
             )?)
         });
-    let readings = entries
-        .clone()
-        .any(|(_, entry)| matches!(entry, Entry::Document(_)))
-        .then(|| readings(bytes));
     let mut client = None;
-    let mut tally = Tally::default();
+    let mut tallies = BTreeMap::<&str, Tally>::new();
     let began = Instant::now();
-    for (key, entry) in entries {
+    for (family, key, entry) in entries {
         verdict::Harness::global().progress("interaction-sweep-entry");
         let mut rows = Rows {
             key: row_token(key),
             steps: entry.steps(),
             next: 0,
             lap: Instant::now(),
-            tally: &mut tally,
+            tally: tallies.entry(family).or_default(),
         };
         let result = tokio::time::timeout(Duration::from_secs(90), async {
             match entry {
                 Entry::Document(document) => {
-                    let expected = document.content.join("\n");
-                    // Reports have no item/placement reference. Require a unique exact
-                    // authored inscription before making a reading claim.
-                    let readings = readings
-                        .as_ref()
-                        .ok_or("missing document map index")?
-                        .as_ref()
-                        .map_err(|error| format!("document-map-index: {error}"))?;
-                    let placement = match readings.get(&expected) {
-                        Some(Some(placement)) => *placement,
-                        Some(None) => {
-                            return Err(
-                                "document-binding-ambiguous: multiple map inscriptions match"
-                                    .into(),
-                            );
-                        }
-                        None => return Err(
-                            "document-binding-missing: no item link or matching map inscription"
-                                .into(),
-                        ),
-                    };
-                    rows.pass("unique-authored-map-inscription");
+                    let race = reports.get(key).copied().flatten().ok_or(
+                        "bestiary-race-unavailable: authored report has no canonical wire race",
+                    )?;
+                    rows.pass("authored-creature-profile-to-bestiary-race");
+                    read_report(
+                        session(&mut client, clients).await?,
+                        &mut rows,
+                        race,
+                        &document.content.join("\n"),
+                    )
+                    .await
+                }
+                Entry::MapDocument(placement, text) => {
+                    rows.pass("authored-bundle-placement-text");
                     read_document(
                         session(&mut client, clients).await?,
                         &mut rows,
                         world,
-                        placement,
-                        &expected,
+                        *placement,
+                        text,
                     )
                     .await
+                }
+                Entry::NestedMapDocument => Err("nested-document-harness-unavailable: requires acquiring authored container custody".into()),
+                Entry::Interaction(placement, action) => {
+                    rows.pass("authored-action-placement");
+                    map_action(&mut client, clients, &mut rows, world, *placement, *action).await
                 }
                 Entry::Claim => {
                     let items = items
@@ -812,15 +1497,23 @@ pub(super) async fn run(
         }
         None => Ok(()),
     };
+    for (family, tally) in &tallies {
+        evidence(&format!(
+            "interaction_sweep slice family={family} rows_pass={} rows_fail={}",
+            tally.pass, tally.fail
+        ));
+    }
+    let pass: usize = tallies.values().map(|tally| tally.pass).sum();
+    let fail: usize = tallies.values().map(|tally| tally.fail).sum();
     evidence(&format!(
-        "interaction_sweep summary total={total} start={start} selected={selected} rows_pass={} rows_fail={} seconds={:.3} mode=seeded",
-        tally.pass,
-        tally.fail,
+        "interaction_sweep summary total={total} selected={selected} rows_pass={} rows_fail={} seconds={:.3} mode=seeded",
+        pass,
+        fail,
         began.elapsed().as_secs_f64()
     ));
     release?;
-    if tally.fail != 0 {
-        return Err(format!("interaction_sweep has {} FAIL rows", tally.fail).into());
+    if fail != 0 {
+        return Err(format!("interaction_sweep has {fail} FAIL rows").into());
     }
     Ok(())
 }
@@ -845,6 +1538,37 @@ mod tests {
             entries.get("oteryn:reward-claim.halls_of_hope.reward1"),
             Some(Entry::Claim)
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_interaction_report_races_follow_profile_references() -> TestResult {
+        let reports = report_races(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))?;
+        assert_eq!(reports.len(), 1609);
+        let prefix = "oteryn:document/monster-encyclopedia";
+        assert_eq!(reports.get(&format!("{prefix}/a_greedy_eye")), Some(&None));
+        assert!(
+            reports
+                .get(&format!("{prefix}/acid_blob"))
+                .copied()
+                .flatten()
+                .is_some()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_interaction_family_batches_are_independent() -> TestResult {
+        assert_eq!(
+            slices(Some(
+                "documents=0:40,map_documents=0:40,interactions=0:60,claims=0:40"
+            ))?
+            .len(),
+            4
+        );
+        assert_eq!(slices(Some("1:2"))?, vec![("all", 1, 2)]);
+        assert!(slices(Some("documents=0:40,documents=5:1")).is_err());
+        assert!(slices(Some("bogus=0:1")).is_err());
         Ok(())
     }
 

@@ -1089,7 +1089,7 @@ fn qualification_offset() -> Duration {
     }
 }
 
-fn advance_qualification_time(step: Duration) -> TestResult {
+pub(super) fn advance_qualification_time(step: Duration) -> TestResult {
     if let Some(path) = std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE") {
         if !cfg!(feature = "qualification-clock") {
             return Err("qualification clock requires the disposable build feature".into());

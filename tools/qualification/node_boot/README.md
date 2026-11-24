@@ -142,7 +142,10 @@ and inherits these opt-in groups’ batch selectors:
 
 - `creature_sweep` uses `OTERYN_E2E_CREATURE_BATCH`.
 - `interaction_sweep` uses `OTERYN_E2E_INTERACTION_SWEEP_BATCH=start:len`
-  (default `0:3`) over the key-sorted census of interaction and document records.
+  (default `0:3`) over the key-sorted census. To run independent family slices
+  in a single boot, set `OTERYN_E2E_INTERACTION_SWEEP_BATCH=documents=0:40,map_documents=0:40,interactions=0:60,claims=0:40`.
+  The `shrines` family is also selectable. Map counts describe the bundle served
+  by the selected world profile.
 
 The runner prints a
 summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
