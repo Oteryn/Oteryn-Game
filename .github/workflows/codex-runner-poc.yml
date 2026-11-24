@@ -58,12 +58,12 @@ jobs:
           docker push "$IMAGE"
 
   pg_partition:
-    name: Codex runner PoC / PostgreSQL e2e partition ${{ matrix.index }} of 5
+    name: Codex runner PoC / PostgreSQL e2e partition ${{ matrix.index }} of 20
     needs: relay
     strategy:
       fail-fast: false
       matrix:
-        index: [0, 1, 2, 3, 4]
+        index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     permissions:
       contents: read
       packages: read
@@ -74,7 +74,7 @@ jobs:
       SOURCE_SHA: 2b9bfde7e898dd7b28d017f2d172a08cf689ceb1
       BUILD_WORKSPACE: /home/runner/work/Oteryn-Game/Oteryn-Game
       ARCHIVE_INDEX: ${{ matrix.index }}
-      ARCHIVE_TOTAL: "5"
+      ARCHIVE_TOTAL: "20"
       CI_IMAGE: ghcr.io/oteryn/oteryn-game-ci-runner:pr-3469
     steps:
       # The Codex Cloud environment already holds a clone of this repository, the Rust toolchain
@@ -109,7 +109,10 @@ jobs:
           start=$(date +%s)
           export OTERYN_AUTO_START=0
           source /workspace/oteryn-env/env.sh
-          bash /workspace/oteryn-env/start.sh
+          if ! bash /workspace/oteryn-env/start.sh > "$RUNNER_TEMP/pg-start.log" 2>&1; then
+            grep -viE 'password|secret|token|://' "$RUNNER_TEMP/pg-start.log" | tail -n 30
+            exit 1
+          fi
           test -n "${OTERYN_TEST_POSTGRES_ADMIN_URL:-}" || { echo 'env.sh sets no OTERYN_TEST_POSTGRES_ADMIN_URL' >&2; exit 1; }
           echo "postgres start took $(( $(date +%s) - start ))s"
 
