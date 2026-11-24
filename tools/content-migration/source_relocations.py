@@ -23,7 +23,7 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
         "86d294671104ff928bc6070e4fab19b68c2f1598fbddbf9e0496ee37eee33197",
     ): (
         "content/world/placements/index.json",
-        "c5eabc5644d58fdd404fd5f12eed7d51757edcd2ed39345e20c6cecbf196ff18",
+        "7d067d8b1476e39f833aa3c72d5290273f0bdd98b74782d4242f15592bcc215c",
     ),
     (
         "content/world/placements/region-z07-x130-y127.b3",
@@ -51,7 +51,7 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
         "25000632406f556ca125613aa69a3ed52a6ddca472e4874c2c4b6f1761dd5f94",
     ): (
         "content/world/placements/region-z11-x129-y126.b3",
-        "10e4b1ca595b43df3499715a7910e01718eef5dbf99e9b95e0d0f28e82095af4",
+        "25cfa750b36f8d3c1183df455569c2e594fc179d81317318d1f38958ad3b7ece",
     ),
 }
 

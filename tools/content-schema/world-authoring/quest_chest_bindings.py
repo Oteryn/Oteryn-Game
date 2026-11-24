@@ -199,7 +199,9 @@ def outlaw_key_claim(definition):
 
 
 def numbered_key_claim(definition):
-    return any(key_claim(definition, number, 2969) for number in (3620, 3667, 4055, 4603))
+    return any(
+        key_claim(definition, number, 2969) for number in (3620, 3667, 4055, 4603)
+    )
 
 
 def key_claim(definition, number, item):

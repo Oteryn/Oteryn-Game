@@ -40,6 +40,15 @@ class RewardGreetingOwnership(unittest.TestCase):
             for name in CALLBACK_DOCUMENTS
             for callback in json.loads((ROOT / name).read_bytes())["callbacks"]
         ]
+        # Muhad's Nomads Land dialogue has its own greeting document.
+        nomads = json.loads(
+            (ROOT / "content/quests/npc-callbacks/nomads-land.json").read_bytes()
+        )
+        (arito_referral,) = [
+            callback for callback in nomads["callbacks"]
+            if callback["key"] == "oteryn:quest-reward/nomads-land-arito-referral"
+        ]
+        cls.callbacks.append(arito_referral)
         cls.inputs = qengine_rewards.donor_inputs()
 
     def test_actual_native_registry_has_one_row_per_npc(self):
