@@ -12,7 +12,10 @@
 //! apps/game-server/src/lifted_tests/auto/house_ownership_tests.rs:223.
 
 use super::*;
-use oteryn_dev_client::{DevClientSession, client_runtime::server_mechanic::CommandStatus};
+use oteryn_dev_client::{
+    DevClientSession,
+    client_runtime::{house as panel, server_mechanic::CommandStatus},
+};
 use oteryn_protocol_oteryn::house as wire;
 use serde::Deserialize;
 
@@ -195,142 +198,46 @@ fn compiled_house(world: &BundleWorld, house: &House) -> TestResult {
     Ok(())
 }
 
-#[derive(Debug, Default)]
-struct Listing {
-    key: String,
-    state: u64,
-    rent: Option<u64>,
-    owned: bool,
-    price: u64,
-    ends: Option<u64>,
-    own_maximum: Option<u64>,
-}
-
-fn push_varint(out: &mut Vec<u8>, mut value: u64) {
-    while value >= 0x80 {
-        out.push((value as u8 & 0x7f) | 0x80);
-        value >>= 7;
-    }
-    out.push(value as u8);
-}
-
-fn push_bytes(out: &mut Vec<u8>, field: u64, value: &[u8]) {
-    push_varint(out, (field << 3) | 2);
-    push_varint(out, value.len() as u64);
-    out.extend_from_slice(value);
-}
-
-fn read_varint(input: &[u8], cursor: &mut usize) -> TestResult<u64> {
-    let mut value = 0_u64;
-    for shift in (0..=63).step_by(7) {
-        let byte = *input.get(*cursor).ok_or("truncated varint")?;
-        *cursor += 1;
-        value |= u64::from(byte & 0x7f) << shift;
-        if byte & 0x80 == 0 {
-            return Ok(value);
-        }
-    }
-    Err("overlong varint".into())
-}
-
-fn read_bytes<'a>(input: &'a [u8], cursor: &mut usize) -> TestResult<&'a [u8]> {
-    let length = usize::try_from(read_varint(input, cursor)?)?;
-    let end = cursor.checked_add(length).ok_or("field length overflow")?;
-    let value = input.get(*cursor..end).ok_or("truncated field")?;
-    *cursor = end;
-    Ok(value)
-}
-
-fn listing(bytes: &[u8]) -> TestResult<Listing> {
-    let mut row = Listing::default();
-    let mut cursor = 0;
-    while cursor < bytes.len() {
-        let tag = read_varint(bytes, &mut cursor)?;
-        if tag == 10 {
-            row.key = std::str::from_utf8(read_bytes(bytes, &mut cursor)?)?.to_owned();
-        } else {
-            let value = read_varint(bytes, &mut cursor)?;
-            match tag {
-                16 => row.state = value,
-                24 => row.rent = Some(value),
-                40 => row.owned = value == 1,
-                56 => row.price = value,
-                64 => row.ends = Some(value),
-                72 => row.own_maximum = Some(value),
-                32 | 48 | 80 | 88 => {}
-                _ => return Err(format!("unknown house listing field {tag}").into()),
-            }
-        }
-    }
-    Ok(row)
-}
-
+// Use the same catalogue command and page decoder as the shipped house panel
+// (crates/client-ui/src/features/0049-house/protocol.rs:26). The separate auction-order
+// extension is optional and the shipped client does not negotiate it.
 async fn query(
     client: &mut DevClientSession,
     world: [u8; 16],
     house: &House,
-) -> TestResult<Listing> {
+) -> TestResult<panel::Row> {
     let mut next = None::<String>;
     // The owner limits queries to 1024 houses, and the wire limits pages to 20.
     for _ in 0..1024_usize.div_ceil(wire::PAGE_SIZE) {
-        let mut query = Vec::new();
-        push_bytes(&mut query, 1, &world);
-        push_bytes(&mut query, 2, house.town.key.as_bytes());
-        if let Some(cursor) = &next {
-            push_bytes(&mut query, 3, cursor.as_bytes());
-        }
-        wire::decode_house_query(&query).map_err(|error| format!("query encoding: {error:?}"))?;
+        let command = panel::query(world, &house.town.key, next.as_deref())?;
         let reply = client
             .session_mut()
-            .gated_command(
-                wire::CAPABILITY_HOUSE_AUCTION_ORDER_V1,
-                wire::COMMAND_TYPE_HOUSE_AUCTION_LIST,
-                &query,
-            )
+            .gated_command(command.capability, command.kind, &command.payload)
             .await?;
         if reply.status != CommandStatus::Accepted {
             return Err(format!("auction list status {:?}", reply.status).into());
         }
-        let bytes = &reply.payload;
-        let mut cursor = 0;
-        if read_varint(bytes, &mut cursor)? != 8
-            || read_varint(bytes, &mut cursor)? != wire::HouseDisposition::Ok as u64
+        let page = panel::page(&reply.payload)?;
+        if let Some(row) = page
+            .rows
+            .into_iter()
+            .find(|row| row.house == house.identity.key)
         {
-            return Err("auction list disposition was not Ok".into());
+            return Ok(row);
         }
-        let mut continuation = None;
-        while cursor < bytes.len() {
-            match read_varint(bytes, &mut cursor)? {
-                26 => {
-                    let row = listing(read_bytes(bytes, &mut cursor)?)?;
-                    if row.key == house.identity.key {
-                        return Ok(row);
-                    }
-                }
-                34 => {
-                    continuation =
-                        Some(std::str::from_utf8(read_bytes(bytes, &mut cursor)?)?.to_owned())
-                }
-                _ => return Err("unknown auction page field".into()),
-            }
-        }
-        if continuation.is_none() {
+        let Some(continuation) = page.cursor else {
             return Err("authored house missing from auction list".into());
-        }
-        if continuation == next {
+        };
+        if next.is_some_and(|previous| continuation <= previous) {
             return Err("auction cursor did not advance".into());
         }
-        next = continuation;
+        next = Some(continuation);
     }
     Err("auction pagination exceeded maximum catalogue size".into())
 }
 
-fn open_auction(row: &Listing, rent: u64, now: u64) -> TestResult {
-    if row.state != 2
-        || row.owned
-        || row.rent != Some(rent)
-        || row.ends.is_none_or(|ends| ends <= now)
-    {
+fn open_auction(row: &panel::Row, rent: u64, now: u64) -> TestResult {
+    if row.state != 2 || row.owned || row.rent != rent || row.ends.is_none_or(|ends| ends <= now) {
         return Err(format!("expected open auction with rent {rent}, observed {row:?}").into());
     }
     Ok(())
@@ -360,32 +267,19 @@ async fn bid(
     house: &House,
     maximum: u64,
 ) -> TestResult {
-    let mut amount = vec![8];
-    push_varint(&mut amount, maximum);
-    let mut target = Vec::new();
-    push_bytes(&mut target, 1, &world);
-    push_bytes(&mut target, 2, house.identity.key.as_bytes());
-    let mut payload = Vec::new();
-    push_bytes(&mut payload, 1, &amount);
-    push_bytes(&mut payload, 8, &target);
-    wire::decode_house_intent(&payload).map_err(|error| format!("bid encoding: {error:?}"))?;
+    let command = panel::mutation(world, &house.identity.key, 0, &panel::Action::Bid(maximum))?;
     let reply = client
         .session_mut()
-        .gated_command(
-            wire::CAPABILITY_HOUSE_V1,
-            wire::COMMAND_TYPE_HOUSE_INTENT,
-            &payload,
-        )
+        .gated_command(command.capability, command.kind, &command.payload)
         .await?;
-    let mut cursor = 0;
-    if reply.status != CommandStatus::Accepted || read_varint(&reply.payload, &mut cursor)? != 8 {
+    if reply.status != CommandStatus::Accepted {
         return Err(format!("bid command status {:?}", reply.status).into());
     }
-    let disposition = read_varint(&reply.payload, &mut cursor)?;
+    let (disposition, _) = panel::result(&reply.payload)?;
     if disposition != wire::HouseDisposition::Ok as u64 {
         return Err(format!("bid disposition {disposition}").into());
     }
-    if query(client, world, house).await?.own_maximum != Some(maximum) {
+    if query(client, world, house).await?.maximum != Some(maximum) {
         return Err("accepted bid missing from live auction projection".into());
     }
     Ok(())
@@ -779,10 +673,32 @@ mod tests {
 
     #[test]
     fn auction_projection_requires_live_deadline_and_exact_rent() -> TestResult {
-        let listing = listing(&[10, 1, b'h', 16, 2, 24, 50, 40, 0, 64, 101])?;
-        open_auction(&listing, 50, 100)?;
-        assert!(open_auction(&listing, 51, 100).is_err());
-        assert!(open_auction(&listing, 50, 101).is_err());
+        let bytes = wire::encode_house_page(
+            &[wire::HouseSummary {
+                details: None,
+                house: "h".into(),
+                kind: wire::HouseKind::PrivateHouse,
+                state: 2,
+                rent: 50,
+                revision: 1,
+                acl_revision: 1,
+                owned: false,
+                move_out_ms: None,
+                price: 0,
+                ends_ms: Some(101),
+                own_maximum: None,
+            }],
+            None,
+            true,
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let page = panel::page(&bytes)?;
+        let [listing] = page.rows.as_slice() else {
+            return Err("expected one house row".into());
+        };
+        open_auction(listing, 50, 100)?;
+        assert!(open_auction(listing, 51, 100).is_err());
+        assert!(open_auction(listing, 50, 101).is_err());
         Ok(())
     }
 
