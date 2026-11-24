@@ -1047,6 +1047,19 @@ pub(super) async fn journeys(
         started.elapsed().as_millis()
     ));
     let groups = verdict::Groups::from_env()?;
+    let transition = || {
+        transition_sweep::run(
+            clients,
+            world,
+            &bytes,
+            generation.server_artifact_digest,
+            generation.world_id,
+        )
+    };
+    // The opt-in sweep provisions its own Characters for every admission.
+    if groups.only("transition_sweep") {
+        return transition().await;
+    }
     // The required core keeps its ordinary pair; packet journeys own a separate pair.
     let mut client = connect_world(clients, 0x70).await?;
     let entered_at = tile(client.world_spatial().actor_position)?;
@@ -3203,14 +3216,7 @@ pub(super) async fn journeys(
     let transition_selected = groups.runs("transition_sweep")
         && std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty());
     if transition_selected {
-        transition_sweep::run(
-            clients,
-            world,
-            &bytes,
-            generation.server_artifact_digest,
-            generation.world_id,
-        )
-        .await?;
+        transition().await?;
     }
     if mp_selected || sweep_selected {
         let [mp_first, mp_second, sweep] = extra_world_fixtures(clients, packet_clients).await?;

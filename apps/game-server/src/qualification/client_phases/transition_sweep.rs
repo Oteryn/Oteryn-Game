@@ -681,11 +681,12 @@ struct Fixture<'a> {
 impl Fixture<'_> {
     async fn admit(
         &self,
+        admitted: &mut Option<DevClientSession>,
         eligible: bool,
         from: TilePos,
         gate: Gate,
         tool: Option<u32>,
-    ) -> TestResult<DevClientSession> {
+    ) -> TestResult {
         let provision = std::env::var("NODE_BOOT_TRANSITION_PROVISION")?;
         let world = uuid_text(&self.clients.world);
         let begun = std::time::Instant::now();
@@ -744,17 +745,17 @@ impl Fixture<'_> {
         let client = connect_character(&scoped, 0xd9, 0).await.map_err(|error| {
             format!("join after provision_s={provision_s:.3} seed_s={seed_s:.3}: {error}")
         })?;
-        let observed = tile(client.world_spatial().actor_position)?;
+        let observed = tile(client.world_spatial().actor_position);
+        *admitted = Some(client);
+        let observed = observed?;
         evidence(&format!(
             "{GROUP} prepare_timing provision_s={provision_s:.3} seed_s={seed_s:.3} join_s={:.3}",
             begun.elapsed().as_secs_f64() - provision_s - seed_s
         ));
         if observed != from {
-            let mut client = client;
-            let _ = release(&mut client).await;
             return Err(format!("seeded-origin={from:?} observed={observed:?}").into());
         }
-        Ok(client)
+        Ok(())
     }
 }
 
@@ -958,12 +959,12 @@ async fn sweep_entry(
         _ => (Gate::Ordinary, None),
     };
     if gate != Gate::Ordinary {
-        let mut negative = rows
-            .check("prepare-ineligible", async {
-                let (from, _, _) = approach.ok_or("no enterable adjacent fixture cell")?;
-                fixture.admit(false, from, gate, None).await
-            })
-            .await;
+        let mut negative = None;
+        rows.check("prepare-ineligible", async {
+            let (from, _, _) = approach.ok_or("no enterable adjacent fixture cell")?;
+            fixture.admit(&mut negative, false, from, gate, None).await
+        })
+        .await;
         rows.check("refuse", async {
             let client = negative.as_mut().ok_or("missing ineligible client")?;
             let (_, direction, _) = approach.ok_or("missing approach")?;
@@ -977,23 +978,24 @@ async fn sweep_entry(
         // The eligible fixture has its own admission and can still run after a failed refusal.
         rows.blocked = None;
     }
-    let mut client = rows
-        .check("prepare", async {
-            let (from, _, _) = approach.ok_or("no enterable adjacent fixture cell")?;
-            fixture
-                .admit(
-                    true,
-                    from,
-                    gate,
-                    if matches!(gate, Gate::Key(_)) {
-                        None
-                    } else {
-                        tool
-                    },
-                )
-                .await
-        })
-        .await;
+    let mut client = None;
+    rows.check("prepare", async {
+        let (from, _, _) = approach.ok_or("no enterable adjacent fixture cell")?;
+        fixture
+            .admit(
+                &mut client,
+                true,
+                from,
+                gate,
+                if matches!(gate, Gate::Key(_)) {
+                    None
+                } else {
+                    tool
+                },
+            )
+            .await
+    })
+    .await;
     let ordinal = match entry.action {
         Action::Door { ordinal, .. }
         | Action::Shovel { ordinal, .. }
