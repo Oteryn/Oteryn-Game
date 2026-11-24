@@ -2523,6 +2523,30 @@ mod tests {
     }
 
     #[test]
+    fn gryphon_taming_prerequisite_admits_the_head_slot() {
+        use oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup;
+
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let policy = decoded
+            .state
+            .equipment_policy("oteryn:item.tibia.i31369", "definition-r1")
+            .expect("a Gryphon Mask equipment policy");
+        let slots: Vec<_> = policy
+            .claims()
+            .iter()
+            .filter_map(|(slot, claim)| claim.is_ok().then_some(*slot))
+            .collect();
+        assert_eq!(slots, [1], "Gryphon Mask must occupy the head slot");
+    }
+
+    #[test]
     fn sugar_corpse_source_binding_and_ground_policy_are_closed() {
         // Canary47df sugar_daddy.lua:24; Crystal201189f items.cpp:163-174.
         // The source DAT-only body keeps the actual loader's capacity8, and

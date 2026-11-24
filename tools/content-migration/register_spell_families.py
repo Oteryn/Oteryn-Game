@@ -1316,6 +1316,16 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
+    import gryphon_mask_profile
+
+    gryphon_mask_profile.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     import qmech_npcfix2_item_profiles
 
     qmech_npcfix2_item_profiles.admit(
