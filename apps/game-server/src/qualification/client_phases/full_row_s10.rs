@@ -223,7 +223,7 @@ fn actor_at(
         .map(|entry| entry.entity)
 }
 
-async fn approach(
+pub(super) async fn approach(
     client: &mut DevClientSession,
     world: &crate::map::boot::BundleWorld,
     npc: &oteryn_world_bundle::npc::Npc,

@@ -392,6 +392,7 @@ pub(super) struct KillSample {
     pub raw_xp: u64,
     pub gained_xp: u64,
     pub fire_damage: bool,
+    pub damage_elements: u32,
 }
 
 fn corpse_handle(detail: oteryn_dev_client::EntityDetail) -> Option<oteryn_dev_client::ItemHandle> {
@@ -435,7 +436,7 @@ pub(super) async fn hunt_for_race(
     verdict::Harness::global().bounded_wait(deadline, "targeted-combat-and-credit");
     let mut last_position = target.position;
     let mut kills = Vec::new();
-    let mut fire_damage = false;
+    let mut damage_elements = 0;
     let mut experience = Vec::new();
     let (corpse, raw_xp, gained_xp) = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
@@ -463,10 +464,10 @@ pub(super) async fn hunt_for_race(
                     AnalyserFact::Kill { race } => kills.push(race),
                     AnalyserFact::Impact(
                         oteryn_protocol_oteryn::analyser::AnalyserImpact::Damage {
-                            element: oteryn_protocol_oteryn::damage_element::DamageElement::Fire,
+                            element,
                             ..
                         },
-                    ) => fire_damage = true,
+                    ) => damage_elements |= 1 << element.wire(),
                     AnalyserFact::Experience { raw, gained } => experience.push((raw, gained)),
                     _ => {}
                 }
@@ -581,7 +582,8 @@ pub(super) async fn hunt_for_race(
         race,
         raw_xp,
         gained_xp,
-        fire_damage,
+        fire_damage: damage_elements & (1 << 2) != 0,
+        damage_elements,
     })
 }
 

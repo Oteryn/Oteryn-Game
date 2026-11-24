@@ -8,7 +8,7 @@ use std::num::NonZeroU32;
 
 const BATCH: &str = "OTERYN_E2E_PROGRESS_SWEEP_BATCH";
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Family {
     Achievement,
     Charm,
@@ -22,7 +22,7 @@ impl Family {
             Self::Achievement => &["trigger", "grant", "once"],
             Self::Charm => &["unlock", "assign", "effect"],
             Self::Craft => &["use", "inputs", "output"],
-            Self::Proficiency => &["progress", "perks"],
+            Self::Proficiency => &["progress", "perks", "effect"],
         }
     }
 }
@@ -31,6 +31,7 @@ struct Entry {
     family: Family,
     key: String,
     content: Value,
+    source: String,
 }
 
 fn batch(value: Option<&str>) -> TestResult<(usize, usize)> {
@@ -49,6 +50,17 @@ fn batch(value: Option<&str>) -> TestResult<(usize, usize)> {
         .and_then(|(start, len)| Some((parse(start)?, parse(len)?)))
         .filter(|(_, len)| *len > 0)
         .ok_or_else(|| format!("invalid {BATCH}={value:?}: expected start:len with len > 0").into())
+}
+
+fn family_batch(setting: Option<&str>) -> TestResult<(Option<Family>, (usize, usize))> {
+    let (family, range) = match setting.and_then(|value| value.split_once(':')) {
+        Some(("achievements", range)) => (Some(Family::Achievement), Some(range)),
+        Some(("charms", range)) => (Some(Family::Charm), Some(range)),
+        Some(("craft", range)) => (Some(Family::Craft), Some(range)),
+        Some(("proficiencies", range)) => (Some(Family::Proficiency), Some(range)),
+        _ => (None, setting),
+    };
+    Ok((family, batch(range)?))
 }
 
 fn document(path: &Path) -> TestResult<Value> {
@@ -73,7 +85,8 @@ fn census(root: &Path) -> TestResult<Vec<Entry>> {
                 .and_then(|name| name.to_str())
                 .is_some_and(|name| name.starts_with(prefix) && name.ends_with(".json"))
         }) {
-            let source = document(shard)?;
+            let bytes = std::fs::read(shard)?;
+            let source: Value = serde_json::from_slice(&bytes)?;
             for record in list(&source["records"])? {
                 let content = record.get("definition").unwrap_or(record);
                 let key = string(&content["identity"]["key"])?;
@@ -81,6 +94,17 @@ fn census(root: &Path) -> TestResult<Vec<Entry>> {
                     family,
                     key: key.to_owned(),
                     content: content.clone(),
+                    source: format!(
+                        "content/{}:{}",
+                        shard.strip_prefix(root)?.display(),
+                        bytes
+                            .split(|byte| *byte == b'\n')
+                            .position(|line| line
+                                .windows(key.len())
+                                .any(|part| part == key.as_bytes()))
+                            .ok_or("content key has no source line")?
+                            + 1
+                    ),
                 });
                 ordinal += 1;
             }
@@ -164,9 +188,10 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
         Err(std::env::VarError::NotPresent) => None,
         Err(error) => return Err(error.into()),
     };
-    let (start, len) = batch(setting.as_deref())?;
+    let (family, (start, len)) = family_batch(setting.as_deref())?;
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content");
-    let entries = census(&root)?;
+    let mut entries = census(&root)?;
+    entries.retain(|entry| family.is_none_or(|family| entry.family == family));
     let end = start.saturating_add(len).min(entries.len());
     if start >= end {
         return Err(format!("{BATCH} start {start} outside {} entries", entries.len()).into());
@@ -249,6 +274,268 @@ async fn achievement(
     world: &BundleWorld,
     rows: &mut Rows<'_>,
 ) -> TestResult {
+    let trigger = achievement_trigger(client, world, rows.entry)
+        .await
+        .map_err(|error| format!("{error}-{}", rows.entry.source))?;
+    let points = number(&rows.entry.content["points"])?;
+    let (before, initial) = achievement_facts(client, &rows.entry.key).await?;
+    if !initial.is_empty() {
+        return Err("harness-achievement-already-earned".into());
+    }
+    trigger
+        .fire(client, world, false)
+        .await
+        .map_err(|error| format!("{error}-{}", rows.entry.source))?;
+    rows.pass(trigger.label());
+    let (after, facts) = achievement_facts(client, &rows.entry.key).await?;
+    // A kill can grant another achievement in the same transaction. The target fact
+    // still must appear exactly once and carry the authored point value.
+    let grant_matches = if matches!(trigger, AchievementTrigger::Kill(..)) {
+        facts == [points] && after.0 > before.0 && after.1 >= before.1.saturating_add(points)
+    } else {
+        granted_once(before, after, points, &facts)
+    };
+    if !grant_matches {
+        return Err(format!(
+            "server-achievement-grant-mismatch-expected-once-{points}-actual-{facts:?}-owner-{}-Crystal-201189f8-{}",
+            trigger.owner(), trigger.donor()
+        )
+        .into());
+    }
+    rows.pass(&format!("points-{points}"));
+    trigger.fire(client, world, true).await?;
+    if achievement_facts(client, &rows.entry.key).await?.1 != facts {
+        return Err(format!(
+            "server-repeated-trigger-changed-achievement-facts-owner-{}",
+            trigger.owner()
+        )
+        .into());
+    }
+    rows.pass("repeated-trigger-preserved-single-grant");
+    Ok(())
+}
+
+enum AchievementTrigger {
+    Kill(&'static str, u32),
+    ConsumeItem {
+        item: u32,
+        donor: &'static str,
+    },
+    NpcTalk {
+        npc: &'static str,
+        keyword: &'static str,
+        reward: u32,
+    },
+    RewardChest(Vec<u8>),
+}
+
+impl AchievementTrigger {
+    fn label(&self) -> &'static str {
+        match self {
+            Self::Kill(..) => "kill-count",
+            Self::ConsumeItem { .. } => "item-use",
+            Self::NpcTalk { .. } => "npc-talk",
+            Self::RewardChest(_) => "quest-reward",
+        }
+    }
+
+    fn owner(&self) -> &'static str {
+        match self {
+            Self::Kill(..) => "crates/gameplay/durability/src/durability/bestiary_progress.rs:776",
+            Self::ConsumeItem { .. } => {
+                "crates/gameplay/durability/src/durability/consume_transform.rs:1150"
+            }
+            Self::NpcTalk { .. } => {
+                "crates/gameplay/durability/src/durability/quest_state/npc_program/achievements.rs:42"
+            }
+            Self::RewardChest(_) => {
+                "crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:332"
+            }
+        }
+    }
+
+    fn donor(&self) -> &'static str {
+        match self {
+            Self::Kill(..) => {
+                "data/scripts/creaturescripts/monster/terrified_elephant_death.lua:15"
+            }
+            Self::ConsumeItem { donor, .. } => donor,
+            _ => "unverified",
+        }
+    }
+
+    async fn fire(
+        &self,
+        client: &mut DevClientSession,
+        world: &BundleWorld,
+        replay: bool,
+    ) -> TestResult {
+        use oteryn_protocol_oteryn::world_object::UseDisposition;
+        match self {
+            Self::Kill(species, count) => {
+                let bytes = world_bytes()?;
+                let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+                for _ in 0..*count {
+                    full_row_p05::hunt_for_race(client, world, &metadata.spawns, species).await?;
+                }
+            }
+            Self::ConsumeItem { item, .. } => {
+                let index = provisioning::item_index()?;
+                let reference = provisioning::item_reference(&index, *item)?;
+                if quantity(&inventory(client)?, reference) == 0 {
+                    full_row_i14::acquire(client, world, *item, 1)
+                        .await
+                        .map_err(|error| {
+                            format!("harness-achievement-item-prerequisite-{item}-{error}")
+                        })?;
+                }
+                let reply = client.use_item(handle(client, reference)?).await?;
+                if reply.disposition != UseDisposition::Committed {
+                    return Err(format!(
+                        "harness-achievement-item-use-refused-{:?}",
+                        reply.disposition
+                    )
+                    .into());
+                }
+            }
+            Self::NpcTalk {
+                npc,
+                keyword,
+                reward,
+            } => {
+                use oteryn_dev_client::client_runtime::npc_shop;
+                use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
+                let bytes = world_bytes()?;
+                let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+                let npc = metadata
+                    .npcs
+                    .npcs
+                    .iter()
+                    .find(|row| row.key == *npc)
+                    .ok_or_else(|| format!("harness-npc-placement-missing-{npc}"))?;
+                let actor = full_row_s10::approach(client, world, npc)
+                    .await
+                    .map_err(|error| format!("harness-npc-approach-{error}"))?;
+                let index = provisioning::item_index()?;
+                let reference = provisioning::item_reference(&index, *reward)?;
+                let before = quantity(&inventory(client)?, reference);
+                for text in ["hi", *keyword] {
+                    let reply = npc_shop::talk(
+                        client.session_mut(),
+                        &NpcTalkIntent {
+                            npc_actor: actor,
+                            text: text.into(),
+                        },
+                    )
+                    .await?;
+                    if reply != NpcIntentDisposition::Ok {
+                        return Err(format!("harness-npc-talk-{text}-refused-{reply:?}").into());
+                    }
+                }
+                if !replay {
+                    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+                    while quantity(&inventory(client)?, reference) <= before {
+                        if tokio::time::Instant::now() >= deadline {
+                            return Err(
+                                "harness-npc-mission-prerequisites-or-reward-unverified".into()
+                            );
+                        }
+                        client.service_liveness(Duration::from_millis(50)).await?;
+                    }
+                }
+            }
+            Self::RewardChest(placement) => {
+                let response = client.session_mut().use_object(placement, 0).await?;
+                if !replay && response.disposition != UseDisposition::Committed {
+                    return Err(format!(
+                        "harness-quest-trigger-refused-{:?}",
+                        response.disposition
+                    )
+                    .into());
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+async fn achievement_trigger(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    entry: &Entry,
+) -> TestResult<AchievementTrigger> {
+    use oteryn_gameplay_progression::{
+        achievement_granters, bestiary_achievement, item_use_achievement,
+    };
+    let key = entry.key.as_str();
+    if bestiary_achievement::kill_count_keys("oteryn:creature.terrified_elephant", 5)
+        .any(|rule| rule == key)
+    {
+        return Ok(AchievementTrigger::Kill(
+            "oteryn:creature.terrified_elephant",
+            5,
+        ));
+    }
+    if key == item_use_achievement::POTION_ADDICT.key {
+        // The counter owner requires 100,000 successful uses. A seeded fixture
+        // must establish N-1 before this one real potion use can be meaningful.
+        return Err("harness-item-use-counter-seed-missing".into());
+    }
+    if bestiary_achievement::all_keys().any(|rule| rule == key) {
+        return Err("harness-bestiary-completion-seed-missing".into());
+    }
+    use oteryn_gameplay_items::novelty_items::{self, NoveltyKind};
+    if let Some(rule) = novelty_items::rules()
+        .into_iter()
+        .flatten()
+        .find(|rule| rule.achievement.as_deref() == Some(key))
+    {
+        if rule.kind == NoveltyKind::ConsumeEffect
+            && let Some(&item) = rule.item_ids.first()
+        {
+            return Ok(AchievementTrigger::ConsumeItem {
+                item,
+                donor: &rule.donor,
+            });
+        }
+        return Err("harness-targeted-item-use-fixture-missing".into());
+    }
+    let known_gap = match key {
+        "oteryn:achievement/a_reliable_friend" | "oteryn:achievement/backpack_tourist" => {
+            Some("quest-mission")
+        }
+        "oteryn:achievement/bastard" => {
+            // Same final conversation and reward as the server's M41 grant fixture.
+            return Ok(AchievementTrigger::NpcTalk {
+                npc: "oteryn:npc.eldoran_the_ambitious",
+                keyword: "news",
+                reward: 52824,
+            });
+        }
+        key if key == achievement_granters::SHIPS_KOBOLD.key => Some("paid-travel"),
+        key if [
+            achievement_granters::ASHES_TO_DUST.key,
+            achievement_granters::SKIN_DEEP.key,
+            achievement_granters::HERE_FISHY_FISHY.key,
+            achievement_granters::EXQUISITE_TASTE.key,
+        ]
+        .contains(&key) =>
+        {
+            Some("collection")
+        }
+        key if [
+            achievement_granters::POLISHER.key,
+            item_use_achievement::PETROLOGIST.key,
+        ]
+        .contains(&key) =>
+        {
+            Some("item-use")
+        }
+        _ => None,
+    };
+    if let Some(kind) = known_gap {
+        return Err(format!("harness-{kind}-trigger-fixture-missing").into());
+    }
     let index = provisioning::item_index()?;
     let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
         world.base().as_ref(),
@@ -258,13 +545,11 @@ async fn achievement(
         },
     )?;
     let here = tile(client.world_spatial().actor_position)?;
-    let (placement, path) = report
+    let placement = report
         .served
         .into_iter()
         .flat_map(|claim| claim.placements)
-        .filter(|placement| {
-            placement.placement.achievement.as_deref() == Some(rows.entry.key.as_str())
-        })
+        .filter(|placement| placement.placement.achievement.as_deref() == Some(key))
         .filter_map(|placement| {
             let cell = placement.cell;
             let target = TilePos {
@@ -275,34 +560,19 @@ async fn achievement(
             route(world, here, |at| adjacent(at, target))
                 .map(|path| (placement.bundle_placement_key, path))
         })
-        .min_by_key(|(_, path)| path.len())
-        .ok_or("no-reachable-authored-achievement-chest-driver")?;
-    let points = number(&rows.entry.content["points"])?;
-    let placement = placement_bytes(world, placement);
+        .min_by_key(|(_, path)| path.len());
+    let Some((placement, path)) = placement else {
+        let reason = if matches!(key, "oteryn:achievement/annihilator") {
+            "harness-quest-reward-placement-unreachable"
+        } else {
+            "harness-no-trigger-path-in-game-identified"
+        };
+        return Err(reason.into());
+    };
     walk(client, world, &path).await?;
-    let (before, initial) = achievement_facts(client, &rows.entry.key).await?;
-    if !initial.is_empty() {
-        return Err("achievement-already-earned".into());
-    }
-    let response = client.session_mut().use_object(&placement, 0).await?;
-    if response.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
-        return Err(format!("achievement-trigger-refused-{:?}", response.disposition).into());
-    }
-    rows.pass("authored-chest-committed");
-    let (after, facts) = achievement_facts(client, &rows.entry.key).await?;
-    if !granted_once(before, after, points, &facts) {
-        return Err(format!(
-            "achievement-grant-mismatch-expected-points-{points}-observed-{facts:?}"
-        )
-        .into());
-    }
-    rows.pass(&format!("points-{points}"));
-    client.session_mut().use_object(&placement, 0).await?;
-    if achievement_facts(client, &rows.entry.key).await? != (after, facts) {
-        return Err("repeated-trigger-changed-achievement-facts".into());
-    }
-    rows.pass("repeated-trigger-preserved-single-grant");
-    Ok(())
+    Ok(AchievementTrigger::RewardChest(placement_bytes(
+        world, placement,
+    )))
 }
 
 fn granted_once(before: (u32, u32), after: (u32, u32), points: u32, facts: &[u32]) -> bool {
@@ -555,10 +825,17 @@ async fn charm(
     if !observed.effect_active {
         return Err(format!("charm-content-effect-inactive-{effect}").into());
     }
-    if rows.entry.content["effect"]["element"] != "fire" || effect != "attack_proc_damage" {
-        return Err(format!("charm-wire-effect-driver-missing-{effect}").into());
-    }
-    // P01's combat sample observes attributed outgoing fire damage on an unarmed hunt.
+    use oteryn_protocol_oteryn::damage_element::DamageElement;
+    let element = match (effect, content["effect"]["element"].as_str()) {
+        ("attack_proc_damage", Some("fire")) => DamageElement::Fire,
+        ("attack_proc_damage", Some("earth")) => DamageElement::Earth,
+        ("attack_proc_damage", Some("energy")) => DamageElement::Energy,
+        ("attack_proc_damage", Some("ice")) => DamageElement::Ice,
+        ("attack_proc_damage", Some("holy")) => DamageElement::Holy,
+        ("attack_proc_damage", Some("death")) => DamageElement::Death,
+        _ => return Err(format!("harness-charm-wire-effect-probe-missing-{effect}").into()),
+    };
+    // An unarmed hunt supplies physical damage as the baseline.
     if client.inventory().is_none_or(|inventory| {
         inventory.equipment.iter().any(|item| {
             use oteryn_protocol_oteryn::item_view::EquipmentSlot;
@@ -568,18 +845,20 @@ async fn charm(
             )
         })
     }) {
-        return Err("charm-fire-probe-needs-unarmed-baseline".into());
+        return Err("harness-charm-effect-probe-needs-unarmed-baseline".into());
     }
     for _ in 0..12 {
         if full_row_p05::hunt_for_race(client, world, &metadata.spawns, species)
             .await?
-            .fire_damage
+            .damage_elements
+            & (1 << element.wire())
+            != 0
         {
-            rows.pass("attributed-fire-proc");
+            rows.pass(&format!("observed-{element:?}-proc"));
             return Ok(());
         }
     }
-    Err("charm-fire-proc-unobserved-within-hunt-budget".into())
+    Err(format!("harness-charm-{element:?}-proc-unobserved-within-hunt-budget").into())
 }
 
 type Quantities = BTreeMap<NonZeroU32, i64>;
@@ -1155,7 +1434,8 @@ async fn proficiency(
             }
         }
     }
-    Err("proficiency-selected-perk-runtime-effect-unverified".into())
+    rows.pass("catalogue-and-perk-selections-verified");
+    Err("harness-proficiency-selected-perk-runtime-effect-unverified".into())
 }
 
 #[cfg(test)]
@@ -1178,6 +1458,25 @@ mod tests {
         ] {
             assert!(batch(Some(invalid)).is_err(), "{invalid}");
         }
+        Ok(())
+    }
+
+    #[test]
+    fn progress_sweep_family_batches_keep_offsets_local() -> TestResult {
+        for (name, family, size) in [
+            ("achievements", Family::Achievement, 40),
+            ("charms", Family::Charm, 25),
+            ("craft", Family::Craft, 40),
+            ("proficiencies", Family::Proficiency, 40),
+        ] {
+            assert_eq!(
+                family_batch(Some(&format!("{name}:0:{size}")))?,
+                (Some(family), (0, size))
+            );
+        }
+        assert_eq!(family_batch(Some("571:25"))?, (None, (571, 25)));
+        assert!(family_batch(Some("craft:0:0")).is_err());
+        assert!(family_batch(Some("weapons:0:40")).is_err());
         Ok(())
     }
 

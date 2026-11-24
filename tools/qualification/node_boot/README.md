@@ -145,7 +145,7 @@ at the path reported on stderr. It exits nonzero if any group fails.
 | Opt-in group | Batch setting |
 | --- | --- |
 | `creature_sweep` | `OTERYN_E2E_CREATURE_BATCH=start:len` |
-| `progress_sweep` | `OTERYN_E2E_PROGRESS_SWEEP_BATCH=start:len` over all four content families in key order (default `0:3`) |
+| `progress_sweep` | `OTERYN_E2E_PROGRESS_SWEEP_BATCH=start:len` over all four content families in key order (default `0:3`). Prefix with `achievements:`, `charms:`, `craft:`, or `proficiencies:` for a family-local range |
 
 ## Parallel stacks, the single-row loop and diagnostics
 

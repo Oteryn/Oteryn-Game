@@ -444,6 +444,7 @@ fn boost_comparison_rejects_a_different_race_or_base_award() -> TestResult {
         raw_xp: 20,
         gained_xp: 20,
         fire_damage: false,
+        damage_elements: 0,
     };
     let boosted = KillSample {
         gained_xp: 25,
