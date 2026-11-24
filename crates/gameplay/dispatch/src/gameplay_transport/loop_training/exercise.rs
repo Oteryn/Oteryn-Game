@@ -88,6 +88,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         kind: u32,
     ) -> bool {
+        use oteryn_protocol_oteryn::{
+            actor_spell::COMMAND_TYPE_MANA_SHIELD_REMAINING,
+            loop_training::COMMAND_TYPE_OFFLINE_TRAINING_SKILLS,
+            target_move::COMMAND_TYPE_FOLLOW_STATE,
+        };
+        if matches!(
+            kind,
+            COMMAND_TYPE_OFFLINE_TRAINING_SKILLS
+                | COMMAND_TYPE_FOLLOW_STATE
+                | COMMAND_TYPE_MANA_SHIELD_REMAINING
+        ) {
+            return true;
+        }
         // Exercise commands own their cadence and stop decisions after decoding.
         if kind == COMMAND_TYPE_EXERCISE_TRAINING {
             return true;

@@ -350,10 +350,18 @@ fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
     settle_geometry(&mut app);
     let mut restart = App::new();
     restart.add_plugins(LayoutStore::load(Some(path.clone())).primary_window_plugin());
+    let mut owner = crate::bevy_shell::owner::HostOwner::new(None)?;
+    owner.settings.preferences.graphics.monitor = 1;
+    restart
+        .insert_non_send(owner)
+        .init_resource::<UiScale>()
+        .add_systems(Update, crate::bevy_shell::project_window);
+    restart.update();
     let mut primary = restart
         .world_mut()
         .query_filtered::<&mut Window, With<PrimaryWindow>>();
     let mut restored = primary.single_mut(restart.world_mut())?;
+    assert_eq!(restored.position, WindowPosition::At(IVec2::new(40, 80)));
     // Windowed creation requests this logical size from winit, which scales it
     // to the monitor before reporting the physical resolution to Bevy.
     restored
@@ -508,5 +516,93 @@ fn concurrent_height_edit_preserves_large_width() -> std::io::Result<()> {
     tall.remember_bounds(WINDOW, [0, 0, 1200, 900]);
     drop(tall);
     assert_eq!(LayoutStore::load(path).window(), Some([0, 0, 5000, 900]));
+    Ok(())
+}
+
+#[test]
+fn saved_maximized_state_is_requested_on_window_creation() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let path = folder.path().join("layout.json");
+    let mut store = LayoutStore::load(Some(path.clone()));
+    store.remember_bounds("window.maximized", [1, 0, 1, 1]);
+    drop(store);
+    let mut window = LayoutStore::load(Some(path))
+        .primary_window_plugin()
+        .primary_window
+        .ok_or("primary window")?;
+    assert_eq!(window.internal.take_maximize_request(), Some(true));
+    Ok(())
+}
+
+#[test]
+fn upper_pane_height_resizes_only_the_upper_game_region() -> TestResult {
+    let mut app = app();
+    let bar = app.world().resource::<super::super::StatusBar>().0;
+    let mut owner = crate::bevy_shell::owner::HostOwner::new(None)?;
+    let mut saved = serde_json::to_value(owner.settings.preferences.game_window)?;
+    saved["upper_pane_height"] = 86.into();
+    owner.settings.preferences.game_window = serde_json::from_value(saved)?;
+    app.insert_non_send(owner);
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(bar).ok_or("upper pane")?.height,
+        px(86.)
+    );
+    Ok(())
+}
+
+#[test]
+fn hiding_status_bars_collapses_the_region_shared_by_vitals_and_weapon_progress() -> TestResult {
+    let mut app = app();
+    let bar = app.world().resource::<super::super::StatusBar>().0;
+    app.insert_non_send(crate::bevy_shell::owner::HostOwner::new(None)?);
+    for (visible, display) in [(false, Display::None), (true, Display::Flex)] {
+        let mut owner = app
+            .world_mut()
+            .non_send_mut::<crate::bevy_shell::owner::HostOwner>();
+        owner.settings.preferences.status_bar_visible = visible;
+        owner.settings.preferences.game_window.upper_pane_height = 86;
+        app.update();
+        let region = app.world().get::<Node>(bar).ok_or("shared status region")?;
+        assert_eq!(region.display, display);
+        assert_eq!(region.height, px(86.));
+    }
+    Ok(())
+}
+
+#[test]
+fn hud_preferences_hide_toolbar_and_move_compact_status_below_map() -> TestResult {
+    let mut app = app();
+    let mut owner = crate::bevy_shell::owner::HostOwner::new(None)?;
+    owner.settings.preferences.top_menu_visible = false;
+    owner.settings.preferences.status_bar_bottom = true;
+    app.insert_non_send(owner)
+        .add_systems(Update, super::super::projection::project_regions);
+    app.update();
+    let menu = app
+        .world_mut()
+        .query_filtered::<&Node, With<super::super::ToolbarRegion>>()
+        .single(app.world())?;
+    assert_eq!(menu.display, Display::None);
+    let bar = app.world().resource::<super::super::StatusBar>().0;
+    let home = app
+        .world()
+        .get::<ChildOf>(bar)
+        .ok_or("status parent")?
+        .parent();
+    assert_eq!(
+        app.world().get::<Children>(home).ok_or("layout")?.get(1),
+        Some(&bar)
+    );
+    app.world_mut()
+        .non_send_mut::<crate::bevy_shell::owner::HostOwner>()
+        .settings
+        .preferences
+        .status_bar_bottom = false;
+    app.update();
+    assert_eq!(
+        app.world().get::<Children>(home).ok_or("layout")?.first(),
+        Some(&bar)
+    );
     Ok(())
 }

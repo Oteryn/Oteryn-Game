@@ -4,25 +4,38 @@ use oteryn_protocol_oteryn::hazard as wire;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn admit_hazard(&self, admitted: AdmittedSession) -> bool {
-        let Some(actor) = admitted.runtime_actor else {
-            return false;
-        };
-        let Some(fence) =
-            super::character_gameplay_fence::current(self, admitted.game_session_id, false).await
-        else {
-            return false;
-        };
-        let Ok(Some((_, selected, _))) = self
+        // A transfer has already installed the destination actor. A busy
+        // holder must not interrupt publication of that successor between
+        // physical installation and the connection's scope barrier.
+        super::AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || self.admit_hazard_once(admitted).await)
+            .await
+            .is_ok()
+    }
+
+    pub(super) async fn admit_hazard_once(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<(), super::AdmissionRefusal> {
+        use super::AdmissionRefusal::Rejected;
+        let actor = admitted.runtime_actor.ok_or(Rejected)?;
+        let fence = super::character_gameplay_fence::current_once(
+            self, admitted.game_session_id, false,
+        )
+        .await
+        .map_err(super::post_entry_checkout_refusal)?
+        .ok_or(Rejected)?;
+        let (_, selected, _) = self
             .root
             .character_hazard(self.character, self.holder, fence, None)
             .await
-        else {
-            return false;
-        };
+            .map_err(super::post_entry_progression_refusal)?
+            .ok_or(Rejected)?;
         let mut runtime = self.runtime.lock().await;
         let frame = qualified_source_frame(&runtime, self.movement_cells()).unwrap_or("");
-        runtime.install_hazard_world_frame(actor, admitted.game_session_id, frame).is_ok()
-            && runtime.install_hazard_level(actor, admitted.game_session_id, selected).is_ok()
+        runtime.install_hazard_world_frame(actor, admitted.game_session_id, frame).map_err(|_| Rejected)?;
+        runtime.install_hazard_level(actor, admitted.game_session_id, selected).map_err(|_| Rejected)?;
+        Ok(())
     }
 
     pub(super) async fn hazard_wire(

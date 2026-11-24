@@ -29,10 +29,13 @@ class ItemDeliveryReferenceTests(unittest.TestCase):
             if flags.get('flags.skillwheel_gem'):
                 expected = {('BuyFromPlayer', (2500, 5000, 10000)[flags['skillwheel_gem.gem_quality_id']])}
             else:
-                expected = {('SellToPlayer', {'oteryn:item.tibia.i46625': 750000,
-                                             'oteryn:item.tibia.i46626': 2250000,
-                                             'oteryn:item.tibia.i46627': 500}[key])}
-            self.assertEqual(declarations, expected)
+                # Tibia's NPC price data lists buyback prices for both fragments.
+                expected = {
+                    'oteryn:item.tibia.i46625': {('BuyFromPlayer', 500), ('SellToPlayer', 750000)},
+                    'oteryn:item.tibia.i46626': {('BuyFromPlayer', 2500), ('SellToPlayer', 2250000)},
+                    'oteryn:item.tibia.i46627': {('SellToPlayer', 500)},
+                }[key]
+            self.assertEqual(declarations, expected, key)
         coverage = data['client_icon_coverage']
         self.assertEqual([coverage[x] for x in ('reference_crops', 'bindings',
                                               'pixel_equal_fallback_crops',

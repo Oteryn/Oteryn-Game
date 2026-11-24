@@ -76,12 +76,14 @@ pub(in crate::play) fn apply(
     if !panel.pending || panel.pending_kind != command.kind {
         return;
     }
+    let riding = panel.riding_after_apply.take();
     panel.pending = false;
     panel.feedback = if !accepted(result) {
         tr!("The server refused the appearance request").into()
     } else {
         match wire::ChangeResult::decode(&result.payload) {
             Ok(wire::ChangeResult::Committed(revision)) => {
+                panel.committed_riding = riding;
                 lfmt!(
                     "Appearance committed at revision {revision}; catalogue updates follow",
                     revision = revision
@@ -94,9 +96,9 @@ pub(in crate::play) fn apply(
         }
     };
 }
-fn catalogue(panel: &mut Panel, value: wire::Catalogue) {
+fn catalogue(panel: &mut Panel, value: wire::Catalogue) -> Vec<String> {
+    let mut unlocked = Vec::new();
     if let Some(before) = &panel.catalogue {
-        let mut unlocked = Vec::new();
         for outfit in &value.outfits {
             match before.outfits.iter().find(|old| old.key == outfit.key) {
                 None => unlocked.push(lfmt!("Unlocked outfit: {}", outfit.key)),
@@ -168,6 +170,7 @@ fn catalogue(panel: &mut Panel, value: wire::Catalogue) {
         value.palette.len().saturating_sub(1)
     ));
     panel.catalogue = Some(value);
+    unlocked
 }
 impl Outbox {
     pub(in crate::play) fn appearance_initialize<T: Stepper>(&self, session: &T) {
@@ -197,7 +200,11 @@ impl crate::play::mailbox::Mailbox {
             match event {
                 oteryn_session::SessionEvent::Appearance(delta) => {
                     if let oteryn_session::AppearanceUpdate::Catalogue(value) = &delta.value {
-                        catalogue(panel, value.clone());
+                        let unlocked = catalogue(panel, value.clone());
+                        #[cfg(bevy_shell)]
+                        self.achievement_banners.extend(unlocked);
+                        #[cfg(not(bevy_shell))]
+                        drop(unlocked);
                     }
                 }
                 oteryn_session::SessionEvent::GatedSnapshotReplaced(delta)

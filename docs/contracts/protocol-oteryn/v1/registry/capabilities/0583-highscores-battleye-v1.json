@@ -1,0 +1,15 @@
+{
+  "id": 583,
+  "name": "HIGHSCORES_BATTLEYE_V1",
+  "owner_decision": "Server protocol gap closure",
+  "owner": "Game current World policies",
+  "requires": [
+    507
+  ],
+  "command_types": [
+    6329
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only."
+}

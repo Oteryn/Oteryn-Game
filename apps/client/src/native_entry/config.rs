@@ -2,7 +2,6 @@ use crate::CLIENT_BUILD;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::path::PathBuf;
 use std::sync::Arc;
-#[cfg(test)]
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -39,7 +38,14 @@ impl SystemBrowser {
 #[derive(Default)]
 pub(crate) struct BrowserEpoch {
     #[cfg(test)]
-    spawn_for_test: Option<Arc<dyn Fn() -> std::io::Result<std::process::Child> + Send + Sync>>,
+    prepare_for_test: Option<Arc<dyn Fn() -> std::io::Result<std::process::Command> + Send + Sync>>,
+    #[cfg(test)]
+    before_os_spawn: Option<Arc<dyn Fn() + Send + Sync>>,
+    #[cfg(test)]
+    launches: std::sync::atomic::AtomicUsize,
+    #[cfg(test)]
+    spawned: Option<Arc<dyn Fn(u32) + Send + Sync>>,
+    spawn_guard: Mutex<()>,
     ended: CancellationToken,
 }
 
@@ -47,15 +53,47 @@ impl BrowserEpoch {
     fn spawn_helper(
         &self,
         command: &mut std::process::Command,
+        admission: Option<&BrowserEpoch>,
+        cancelled: impl Fn() -> bool,
     ) -> std::io::Result<std::process::Child> {
         #[cfg(test)]
-        if let Some(spawn) = &self.spawn_for_test {
-            return spawn();
+        if let Some(spawn) = &self.prepare_for_test {
+            *command = spawn()?;
         }
-        command.spawn()
+        let child = {
+            // Lock order is system browser, then admission. Close takes only its own
+            // epoch lock. Preparation, observation and child cleanup run outside both.
+            let _system = self.spawn_guard.lock().unwrap_or_else(|e| e.into_inner());
+            let _admission = admission
+                .filter(|epoch| !std::ptr::eq(*epoch, self))
+                .map(|epoch| epoch.spawn_guard.lock().unwrap_or_else(|e| e.into_inner()));
+            if cancelled() {
+                return Err(std::io::ErrorKind::Interrupted.into());
+            }
+            #[cfg(test)]
+            if let Some(pause) = &self.before_os_spawn {
+                pause();
+            }
+            let child = command.spawn()?;
+            #[cfg(test)]
+            self.launches
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            child
+        };
+        #[cfg(test)]
+        if let Some(spawned) = &self.spawned {
+            spawned(child.id());
+        }
+        if cancelled() {
+            let mut child = child;
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(std::io::ErrorKind::Interrupted.into());
+        }
+        Ok(child)
     }
 
-    #[cfg(bevy_shell)]
+    #[cfg(any(test, bevy_shell))]
     pub(crate) fn cancellation(&self) -> CancellationToken {
         self.ended.clone()
     }
@@ -75,6 +113,7 @@ impl BrowserEpoch {
     }
 
     pub(crate) fn close(&self) {
+        let _guard = self.spawn_guard.lock().unwrap_or_else(|e| e.into_inner());
         self.ended.cancel();
     }
 }
@@ -223,7 +262,9 @@ fn deliver_system_url(
             if cancelled() {
                 return;
             }
-            let Ok(mut child) = worker_scope.spawn_helper(&mut command) else {
+            let Ok(mut child) =
+                worker_scope.spawn_helper(&mut command, worker_epoch.as_deref(), cancelled)
+            else {
                 return;
             };
             let deadline = std::time::Instant::now() + HELPER_OBSERVATION;
@@ -248,11 +289,8 @@ fn deliver_system_url(
                 }
             }
             let _ = child.kill();
-            // The OS may already have accepted the URL. Only the helper is ours to reap.
-            let deadline = std::time::Instant::now() + Duration::from_secs(2);
-            while matches!(child.try_wait(), Ok(None)) && std::time::Instant::now() < deadline {
-                std::thread::sleep(Duration::from_millis(10));
-            }
+            // Reaping runs on the helper worker, independently of the closing caller.
+            let _ = child.wait();
         });
     worker.is_ok()
         && delivery.recv().unwrap_or(false)
@@ -421,7 +459,7 @@ mod browser_command_tests {
         let (release, resume) = std::sync::mpsc::channel();
         let resume = Mutex::new(resume);
         let workers = Arc::new(BrowserEpoch {
-            spawn_for_test: Some(Arc::new(move || {
+            prepare_for_test: Some(Arc::new(move || {
                 let _ = start.send(());
                 if let Ok(receiver) = resume.lock() {
                     let _ = receiver.recv_timeout(Duration::from_secs(5));
@@ -480,3 +518,7 @@ mod browser_command_tests {
         Ok(())
     }
 }
+
+#[cfg(all(test, unix))]
+#[path = "admission_browser_tests.rs"]
+mod admission_browser_tests;

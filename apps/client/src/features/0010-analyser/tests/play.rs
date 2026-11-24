@@ -356,6 +356,9 @@ mod activity;
 
 #[cfg(bevy_shell)]
 impl crate::play::Outbox {
+    pub(crate) fn bevy_analyser_initialize(&self) {
+        self.analyser_initialize(true);
+    }
     pub(crate) fn bevy_analyser_catalogue_result(
         &self,
         result: &oteryn_session::GatedCommandResult,
@@ -547,4 +550,15 @@ fn check_reset_chart(tool: oteryn_client_ui::analyser::Tool) {
         "{text}"
     );
     assert!(bars.iter().all(|line| *line == expected), "{text}");
+}
+
+#[cfg(bevy_shell)]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_party_accounting_result(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_session::GatedCommandResult,
+    ) {
+        self.analyser_result(command, result);
+    }
 }

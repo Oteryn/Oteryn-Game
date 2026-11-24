@@ -25,6 +25,7 @@ IDS = {21897, 21898, 21899, 21901, 21902, 21905, 21906, 30168, 30169, 37002, 370
 IDS |= {22731, 22775}
 # M51 arena trophy custody is qualified from the same pinned physical sources.
 CUSTODY_PROMOTIONS = {5805, 5806}
+CUSTODY_PROMOTION_KEYS = {f'oteryn:item.tibia.i{item}' for item in CUSTODY_PROMOTIONS}
 # Closed source qualification admits zero speed only for these three native Items.
 SOURCE_KNOWN_SPEED_IDS = frozenset({2833, 5805, 5806})
 # Rottin Wood: carried hammer, handcrafted ribbon and rabbit's foot lucky charm.
@@ -258,7 +259,7 @@ def reconcile(existing, observed):
     key = existing.get('production_definition', {}).get('production_key')
     old_custody = dict(materializable=False, stack_class='NonStackable', legal_destinations=['Ground'])
     portable = dict(materializable=True, stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground'])
-    if (key in {'oteryn:item.tibia.i5805', 'oteryn:item.tibia.i5806'}
+    if (key in CUSTODY_PROMOTION_KEYS
             and existing.get('admission') == old_custody and observed.get('admission') == portable):
         existing = dict(existing, admission=portable)
     for field in ('production_definition', 'production_binding', 'admission'):
@@ -303,6 +304,12 @@ def admit_records(root,generated,profile_path,manifest_path,order,canonical,reco
         known_speed = _admitted_known_speed(record, present.get(key))
         if key in present:
             prior = present[key]
+            if key in CUSTODY_PROMOTION_KEYS and 'readable_writeable' in prior['semantics']:
+                # The text owner retains an unresolved write-once target for these trophies.
+                record = {**record, 'semantics': {
+                    **record['semantics'],
+                    'readable_writeable': prior['semantics']['readable_writeable'],
+                }}
             inert = prior['admission'] == {
                 'materializable': False,
                 'stack_class': record['admission']['stack_class'],

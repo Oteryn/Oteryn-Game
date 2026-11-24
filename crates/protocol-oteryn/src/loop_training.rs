@@ -10,6 +10,51 @@ pub const COMMAND_TYPE_EXERCISE_TRAINING: u32 = 67;
 pub const MAX_TRAINING_REQUEST_BYTES: usize = 32;
 pub const MAX_TRAINING_RESULT_BYTES: usize = 32;
 
+pub const CAPABILITY_OFFLINE_TRAINING_CHOICE_V1: u32 = 604;
+pub const COMMAND_TYPE_OFFLINE_TRAINING_SKILLS: u32 = 6369;
+pub const COMMAND_TYPE_OFFLINE_TRAINING_CHOOSE: u32 = 6370;
+
+pub fn decode_offline_training_skill(bytes: &[u8]) -> WireResult<usize> {
+    match bytes {
+        [skill @ 0..=5] => Ok(usize::from(*skill)),
+        _ => Err(CyclopediaWireError::Malformed),
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OfflineTrainingSkills {
+    /// Magic, fist, club, sword, axe and distance, in selection ID order.
+    pub levels: [u16; 6],
+    pub pool_minutes: u16,
+}
+
+impl OfflineTrainingSkills {
+    pub fn encode(self) -> Vec<u8> {
+        self.levels
+            .into_iter()
+            .chain([self.pool_minutes])
+            .flat_map(u16::to_le_bytes)
+            .collect()
+    }
+
+    pub fn decode(bytes: &[u8]) -> WireResult<Self> {
+        let bytes: &[u8; 14] = bytes
+            .try_into()
+            .map_err(|_| CyclopediaWireError::Malformed)?;
+        let ([magic, fist, club, sword, axe, distance, pool], _) = bytes.as_chunks::<2>() else {
+            return Err(CyclopediaWireError::Malformed);
+        };
+        let pool_minutes = u16::from_le_bytes(*pool);
+        if pool_minutes > 720 {
+            return Err(CyclopediaWireError::Malformed);
+        }
+        Ok(Self {
+            levels: [*magic, *fist, *club, *sword, *axe, *distance].map(u16::from_le_bytes),
+            pool_minutes,
+        })
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExerciseIntent {
     Start {

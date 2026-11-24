@@ -23,12 +23,13 @@ use std::sync::Arc;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[path = "quest_container_chests/forgemaster.rs"]
-mod forgemaster;
+pub(super) mod forgemaster;
 
 pub(super) use forgemaster::AccessPolicy as ForgemasterAccessPolicy;
 
 #[derive(Clone, Copy)]
 pub(super) enum Case {
+    TreasureOccurrence,
     Authored,
     Bear,
     Key,
@@ -80,6 +81,7 @@ fn scenario(case: Case) -> TestResult {
 pub(super) struct CatalogueBatch<'a> {
     pub(super) template: &'a super::fixture::MigratedDatabaseTemplate,
     pub(super) quests: Arc<QuestStateCatalogue>,
+    pub(super) pinned_world: Option<&'a crate::map::boot::BundleWorld>,
 }
 
 pub(super) fn embedded_catalogue() -> TestResult<Arc<QuestStateCatalogue>> {
@@ -296,7 +298,10 @@ fn scenario_case(
             super::qc_pinned_world::COMPLETION_CHEST_UIDS.contains(&chest.unique)
         });
         let world = if pinned_completion_chest {
-            super::qc_pinned_world::world(native)?
+            match batch.and_then(|batch| batch.pinned_world) {
+                Some(pinned_world) => pinned_world.fresh_channel_for_test()?,
+                None => super::qc_pinned_world::world(native)?,
+            }
         } else if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
             super::quest_callbacks_fixtures::source_world_choices_with_door(
                 chest,
@@ -982,6 +987,36 @@ fn scenario_case(
                 owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;
                 phase("owner_admission");
+                if matches!(case, Case::TreasureOccurrence) {
+                    use super::cyclopedia_fixtures::support::exchange;
+                    use crate::gameplay_transport::capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities};
+                    use oteryn_protocol_oteryn::world_object::{
+                        CAPABILITY_GAMEPLAY_OCCURRENCES_V1, COMMAND_TYPE_USE_INTENT,
+                        decode_use_reward_result, encode_use_intent,
+                    };
+                    let payload = encode_use_intent(&target).map_err(debug)?;
+                    let mut connection = admitted;
+                    connection.continuity.selected_capabilities = SelectedCapabilities::select(
+                        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                        if cold_replay { &[] } else { &[CAPABILITY_GAMEPLAY_OCCURRENCES_V1] },
+                    ).ok_or("treasure capability")?;
+                    let (status, wire) = exchange(&owner, &mut connection, 1, COMMAND_TYPE_USE_INTENT, &payload).await?;
+                    assert_eq!(status, CommandStatus::Accepted);
+                    if cold_replay {
+                        assert_eq!(wire, [0x08, 0x01], "legacy USE stays byte-for-byte unchanged");
+                    } else {
+                        let event: Vec<u8> = sqlx::query_scalar(
+                            "SELECT uuid_send(event_id) FROM game_reward_claim_mint_receipts WHERE claim_production_key=$1",
+                        ).bind(claim).fetch_one(&harness.pool).await?;
+                        let event: [u8; 16] = event.try_into().map_err(|_| "reward event ID length")?;
+                        assert_eq!(decode_use_reward_result(&wire), Ok((UseDisposition::Committed, None, Some(event))));
+                        assert_eq!(
+                            exchange(&owner, &mut connection, 1, COMMAND_TYPE_USE_INTENT, &payload).await?,
+                            (CommandStatus::DuplicateReplay, wire),
+                        );
+                    }
+                    continue;
+                }
                 if cold_replay {
                     assert_eq!(
                         wire_use_targets(&owner, admitted, &[(1, &target)]).await?,

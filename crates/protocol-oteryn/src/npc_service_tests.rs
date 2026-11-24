@@ -715,7 +715,7 @@ fn the_registries_bind_the_npc_service_constants() {
             COMMAND_TYPE_NPC_TRADE_INTENT,
             "NPC_TRADE_INTENT",
             "NpcTradeIntentV1",
-            MAX_NPC_TRADE_INTENT_BYTES,
+            MAX_NPC_TRADE_INTENT_OPTIONS_BYTES,
         ),
     ] {
         let command = find("command_types", id);
@@ -1022,4 +1022,22 @@ fn npc_quote_window_rejects_one_byte_above_registered_ceiling() {
         Err(NpcServiceWireError::LimitExceeded)
     );
     assert_eq!(MAX_NPC_TRADE_WINDOW_DETAILS_BYTES, 170_026);
+}
+
+#[test]
+fn npc_trade_pack_option_requires_selection_and_buy() -> Result<(), NpcServiceWireError> {
+    let buy = NpcTradeIntent {
+        side: NpcTradeSide::Buy,
+        ..trade()
+    };
+    let packed = encode_npc_trade_intent_for(&buy, true)?;
+    assert_eq!(decode_npc_trade_intent_for(&packed, true)?, (buy, true));
+    assert!(decode_npc_trade_intent(&packed).is_err());
+    assert!(decode_npc_trade_intent_for(&[packed.as_slice(), &[56, 1]].concat(), true).is_err());
+    let sell = NpcTradeIntent {
+        side: NpcTradeSide::Sell,
+        ..buy
+    };
+    assert!(encode_npc_trade_intent_for(&sell, true).is_err());
+    Ok(())
 }

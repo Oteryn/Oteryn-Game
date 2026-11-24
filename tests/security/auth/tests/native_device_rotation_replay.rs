@@ -243,24 +243,45 @@ async fn journey(t: Topology) -> TestResult {
         .begin(&offline_client, options, CancellationToken::new())
         .await
         .map_err(|_| "lifecycle_begin_failed")?
-        .ok_or("lifecycle_disabled")?;
+        .ok_or("lifecycle_initial_attempt_missing")?;
     attempt
         .enroll(&offline_client, &token, CancellationToken::new())
         .await
         .map_err(|_| "lifecycle_enrollment_failed")?;
     check(attempt.has_session(), "lifecycle_did_not_store_session")?;
     drop(attempt);
+    let active_families = format!(
+        "SELECT count(*) FROM device_sessions WHERE account_id='{}' AND revoked_at IS NULL;",
+        t.input.accounts[1].account_id
+    );
+    check(
+        sql(&t.database, "offline_active_family", &active_families)? == "1",
+        "offline_family_missing",
+    )?;
     portal.stop().await?;
     check(
         lifecycle.sign_out(&offline_client).await.is_err(),
         "offline_signout_reported_remote_revocation",
     )?;
+    check(
+        lifecycle
+            .begin(&offline_client, options, CancellationToken::new())
+            .await
+            .map_err(|_| "offline_begin_failed")?
+            .is_none(),
+        "offline_signout_allowed_attempt",
+    )?;
+    portal.restart(&t).await?;
     let attempt = lifecycle
         .begin(&offline_client, options, CancellationToken::new())
         .await
-        .map_err(|_| "offline_begin_failed")?
-        .ok_or("lifecycle_disabled")?;
+        .map_err(|_| "restored_begin_failed")?
+        .ok_or("restored_attempt_missing")?;
     check(!attempt.has_session(), "offline_signout_kept_local_session")?;
+    check(
+        sql(&t.database, "offline_revocation_replayed", &active_families)? == "0",
+        "offline_signout_kept_remote_family",
+    )?;
     t.no_admissions()?;
     println!(
         "NODE_BOOT_EVIDENCE flow=native_device_rotation result=pass rotations=4 replay_refused=1 signout_offline=1"

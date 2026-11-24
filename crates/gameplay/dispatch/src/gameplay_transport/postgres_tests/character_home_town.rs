@@ -200,6 +200,40 @@ fn scenario(p20: Option<PremiumEntry>) -> TestResult {
             floor: 7,
         };
         assert_eq!(owner.home_temple(session).await, Some(temple));
+        let facts = &owner.bundle_map().ok_or("Adventurers' Guild map")?.facts;
+        let cursor = facts
+            .movement_effects_since(0)
+            .last()
+            .map_or(0, |event| event.0);
+        let (outcome, _) = owner
+            .ordinary_paced_step(actor, session, StepDirection::East, None, None)
+            .await;
+        let arrival = outcome.moved_to.ok_or("Adventurers' Guild portal step")?;
+        assert_eq!(
+            arrival.actor_position.x, 8,
+            "AID 4253 returns to the citizen temple"
+        );
+        assert_eq!(
+            deps.runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            temple
+        );
+        let effects: Vec<_> = facts
+            .movement_effects_since(cursor)
+            .into_iter()
+            .map(|(_, at, effect)| (at.x, at.y, at.floor, effect))
+            .collect();
+        assert_eq!(effects, [(9, 11, -7, 11), (8, 11, -7, 11)]);
+        assert_eq!(
+            revisions(&h).await?,
+            (2, 2),
+            "the portal preserves citizenship"
+        );
+        eprintln!("W12_CHAROS_PORTAL_POSTGRES_EXECUTED: AID 4253 returns to the stored hometown");
         let channel = owner.channel_id;
         owner.channel_id = crate::foundation::ChannelId::decode(&id(44)).map_err(debug)?;
         assert_eq!(owner.home_town(session, Some((actor, 8))).await, None);
@@ -649,6 +683,7 @@ fn world(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::Bund
                 palette: 0,
                 depth: 0,
                 attrs: Attrs {
+                    action: (x == 9).then_some(4253),
                     unique: (x == 3).then_some(9056),
                     ..Attrs::default()
                 },

@@ -14,6 +14,10 @@ pub struct ActionBarPreferences {
     pub three_rows: bool,
     pub labels: bool,
     pub cooldowns: bool,
+    pub cooldown_numbers: bool,
+    pub graphical_cooldown: bool,
+    pub show_spell_parameters: bool,
+    pub show_hotkey: bool,
     pub cooldown_bar_enabled: bool,
 }
 impl Default for ActionBarPreferences {
@@ -30,6 +34,10 @@ impl Default for ActionBarPreferences {
             three_rows: false,
             labels: true,
             cooldowns: true,
+            cooldown_numbers: true,
+            graphical_cooldown: true,
+            show_hotkey: true,
+            show_spell_parameters: true,
             cooldown_bar_enabled: true,
         }
     }
@@ -74,7 +82,9 @@ impl ActionBarPreferences {
                         || line
                             .strip_suffix(" ms")
                             .is_some_and(|value| value.parse::<u64>().is_ok());
-                    ((i != 0 || self.labels) && (!cooldown || self.cooldowns)).then_some(line)
+                    ((i != 0 || self.labels)
+                        && (!cooldown || self.cooldowns && self.cooldown_numbers))
+                        .then_some(line)
                 })
                 .collect::<Vec<_>>()
                 .join("\n");

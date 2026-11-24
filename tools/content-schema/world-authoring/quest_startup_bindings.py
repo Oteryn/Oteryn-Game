@@ -21,6 +21,8 @@ SUMMARY = "tools/content-schema/world-authoring/samples/world-base-capture-v1.js
 SPECS = (
     ("tile.lua", "TileAction", 50022, "action"),
     ("teleport.lua", "TeleportAction", 50022, "action"),
+    # Adventurers' Guild exits (adventurers_guild.lua).
+    ("teleport.lua", "TeleportAction", 4253, "action"),
     ("door_level.lua", "LevelDoorAction", 1070, "action"),
     ("lever.lua", "LeverUnique", 30034, "unique"),
     # World change returns: the Fury Dungeon archway (fury_gates.lua) and the

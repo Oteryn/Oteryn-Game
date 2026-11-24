@@ -81,6 +81,7 @@ pub(super) async fn exercise(
             objects.collision_cells(),
             native,
             &root,
+            &[],
             0,
             reader.budget,
             false,
@@ -101,6 +102,7 @@ pub(super) async fn exercise(
             objects.collision_cells(),
             native,
             &root,
+            &[],
             50_000,
             reader.budget,
             false,
@@ -117,6 +119,7 @@ pub(super) async fn exercise(
             objects.collision_cells(),
             native,
             &root,
+            &[],
             due,
             reader.budget,
             false,
@@ -133,6 +136,7 @@ pub(super) async fn exercise(
         "shared-budget retry moved without another think"
     );
     let home_due = table.step_due_for_test(rat).ok_or("second native step")?;
+    let think_due = table.due(rat).ok_or("walkback think")?;
     table
         .drive_current_movement(
             &mut runtime,
@@ -140,6 +144,7 @@ pub(super) async fn exercise(
             objects.collision_cells(),
             native,
             &root,
+            &[],
             home_due,
             reader.budget,
             false,
@@ -151,15 +156,41 @@ pub(super) async fn exercise(
         cell(4)
     );
     assert_eq!(
+        table.last_report_for_test(rat).ok_or("report")?.sequence,
+        sequence,
+        "walkback movement does not run a think"
+    );
+    assert_eq!(table.step_due_for_test(rat), None);
+    assert_eq!(table.due(rat), Some(think_due.min(home_due)));
+    // The step schedules a think so the normal think owner can transition to idle.
+    let mut idle_reader =
+        NativeMonsterThinkRead::new(reader.map, native, reader.budget, home_due, false);
+    let reports = table
+        .run_due_current_thinks(
+            &mut runtime,
+            home_due,
+            &root,
+            &revisions,
+            &[],
+            &mut idle_reader,
+            |runtime, table, actor, report, reader| {
+                monster_summons
+                    .consume_report(runtime, table, native, actor, report, reader, home_due)
+            },
+        )
+        .await;
+    let [(actor, idle)] = reports.as_slice() else {
+        return Err("expected one idle think at home".into());
+    };
+    assert_eq!(*actor, rat);
+    assert_eq!(idle.sequence, sequence + 1);
+    assert!(idle.idle);
+    assert_eq!(
         table.due(rat),
         None,
-        "the completed walkback idles until the real player admission wakes it"
+        "the idle think stops scheduling until a real player admission wakes the rat"
     );
-    assert_eq!(
-        table.last_report_for_test(rat).ok_or("report")?.sequence,
-        sequence
-    );
-    drop(reader);
+    drop(idle_reader);
     tx.rollback().await?;
     Ok(())
 }

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MessageParams",
+  "type": "object",
+  "properties": {
+    "preview_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "text": {
+      "$ref": "#/$defs/MessageText"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "text"
+  ],
+  "$defs": {
+    "MessageText": {
+      "type": "string",
+      "maxLength": 255,
+      "minLength": 1
+    }
+  }
+}

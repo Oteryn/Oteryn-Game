@@ -6,7 +6,102 @@ pub(crate) struct LookMessage {
 }
 
 #[cfg(bevy_shell)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum NoticeKind {
+    Boosted,
+    Hotkey,
+    OfflineTraining,
+    Private,
+    System,
+    Store,
+}
+#[cfg(bevy_shell)]
+impl NoticeKind {
+    pub(crate) fn visible(self, preferences: &crate::play::ReferencePreferences) -> bool {
+        let p = preferences.game_window;
+        match self {
+            Self::Boosted => p.boosted_messages,
+            Self::Hotkey => p.hotkey_messages,
+            Self::OfflineTraining => p.offline_training_messages,
+            Self::System => true,
+            Self::Private => p.private_messages,
+            Self::Store => p.store_messages,
+        }
+    }
+}
+#[cfg(bevy_shell)]
+#[derive(Debug)]
+pub(crate) struct WindowNotice {
+    pub kind: NoticeKind,
+    pub text: String,
+    private_receipt: Option<u64>,
+}
+#[cfg(bevy_shell)]
+impl crate::play::mailbox::Mailbox {
+    pub(in crate::play) fn window_notice(&mut self, kind: NoticeKind, text: String) {
+        // Each category contributes at most its newest notice between frames.
+        self.window_notices.retain(|notice| notice.kind != kind);
+        let private_receipt = (kind == NoticeKind::Private).then(|| {
+            self.chat.received.wrapping_add(self.chat.pending_lines).wrapping_add(1)
+        });
+        self.window_notices.push_back(WindowNotice { kind, text, private_receipt });
+    }
+}
+#[cfg(bevy_shell)]
 impl crate::play::PlayLink {
+    #[cfg(test)]
+    pub(crate) fn take_window_notices(&self) -> std::collections::VecDeque<WindowNotice> {
+        std::mem::take(&mut crate::play::mailbox::lock(&self.mailbox).window_notices)
+    }
+    pub(crate) fn take_screen_notices(
+        &self,
+        cursor: &mut Option<(u64, u64)>,
+    ) -> (bool, std::collections::VecDeque<WindowNotice>) {
+        let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let mut notices = std::mem::take(&mut mailbox.window_notices);
+        let panel = &mailbox.chat;
+        let previous = cursor.replace((panel.scope, panel.received));
+        let reset = previous.is_none_or(|(scope, _)| scope != panel.scope);
+        let received = previous.filter(|(scope, _)| *scope == panel.scope).map_or(0, |(_, n)| n);
+        let count = usize::try_from(panel.received.wrapping_sub(received)).unwrap_or(usize::MAX);
+        let Some(receipt) = notices.iter().find_map(|notice| notice.private_receipt) else {
+            return (reset, notices);
+        };
+        // Only a published receipt can be classified by the transcript's recipient metadata.
+        let ahead = receipt.wrapping_sub(panel.received);
+        if count == 0 || (1..=panel.pending_lines).contains(&ahead) {
+            return (reset, notices);
+        }
+        let start = panel.lines.len().saturating_sub(count);
+        let latest = panel.lines[start..]
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(index, line)| {
+                if let oteryn_session::ChatLine::Private { speaker_name, text } = line
+                    && panel
+                        .recipients
+                        .get(start + index)
+                        .is_none_or(Option::is_none)
+                    && !speaker_name.eq_ignore_ascii_case(&mailbox.party.own_character_name)
+                    && panel.console.communication.visible(line)
+                {
+                    Some(format!("{speaker_name}: {text}"))
+                } else {
+                    None
+                }
+            });
+        // Published history carries recipient metadata for the sender’s own echoes.
+        notices.retain_mut(|notice| {
+            if notice.kind != NoticeKind::Private { return true; }
+            if let Some(text) = &latest {
+                notice.text.clone_from(text);
+                return true;
+            }
+            false
+        });
+        (reset, notices)
+    }
     pub(crate) fn look_message(&self) -> Option<LookMessage> {
         crate::play::mailbox::lock(&self.mailbox)
             .screen_look
@@ -58,3 +153,95 @@ pub(in crate::play) fn record_look(
 
 #[cfg(all(test, bevy_shell))]
 mod tests;
+
+#[cfg(bevy_shell)]
+#[derive(Debug, Default)]
+pub(in crate::play) struct LootMessage {
+    receipt: u64,
+    items: Vec<oteryn_session::analyser_transport::AnalyserItemCount>,
+    gold: u64,
+    presented: bool,
+    market_prices: std::collections::BTreeMap<u32, u64>,
+}
+
+#[cfg(bevy_shell)]
+impl LootMessage {
+    pub(in crate::play) fn record(
+        &mut self,
+        items: &[oteryn_session::analyser_transport::AnalyserItemCount],
+        gold: u64,
+    ) {
+        self.receipt = self.receipt.wrapping_add(1);
+        if std::mem::take(&mut self.presented) {
+            self.items.clear();
+            self.gold = 0;
+        }
+        use oteryn_session::analyser_transport::{
+            MAX_ANALYSER_BATCH_FACTS, MAX_ANALYSER_LOOT_ITEMS,
+        };
+        let limit = MAX_ANALYSER_BATCH_FACTS * MAX_ANALYSER_LOOT_ITEMS;
+        let surplus = (self.items.len() + items.len()).saturating_sub(limit);
+        self.items.drain(..surplus.min(self.items.len()));
+        self.items.extend_from_slice(items);
+        if items.is_empty() {
+            self.gold = self.gold.saturating_add(gold);
+        }
+    }
+    pub(in crate::play) fn market_price(&mut self, id: u32, price: Option<u64>) {
+        if let Some(price) = price {
+            if self.market_prices.len() >= oteryn_client_ui::analyser::tracking::MAX_RECENT
+                && !self.market_prices.contains_key(&id)
+            {
+                self.market_prices.pop_first();
+            }
+            self.market_prices.insert(id, price);
+        } else {
+            self.market_prices.remove(&id);
+        }
+    }
+}
+
+#[cfg(bevy_shell)]
+impl crate::play::PlayLink {
+    pub(crate) fn loot_receipt(&self) -> u64 {
+        let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
+        mailbox.screen_loot.presented = true;
+        mailbox.screen_loot.receipt
+    }
+    pub(crate) fn loot_values(&self) -> Vec<(String, u64)> {
+        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let mut values = Vec::new();
+        for item in &mailbox.screen_loot.items {
+            let id = item.item_type.get();
+            let info = mailbox.analyser.item_info.get(&id);
+            let name = info.map_or_else(|| format!("#{id}"), |info| info.name.clone());
+            let worth = mailbox
+                .analyser
+                .loot_prices
+                .get(&id)
+                .copied()
+                .or_else(|| info.map(|i| i.coin_worth).filter(|n| *n > 0))
+                .or_else(|| mailbox.screen_loot.market_prices.get(&id).copied())
+                .or_else(|| {
+                    mailbox
+                        .npc_shop
+                        .live
+                        .window
+                        .offers
+                        .iter()
+                        .filter(|offer| {
+                            offer.item_definition_ref == id
+                                && offer.side == oteryn_session::NpcTradeSide::Sell
+                        })
+                        .map(|offer| u64::from(offer.unit_price))
+                        .max()
+                })
+                .unwrap_or(0);
+            values.push((format!("{} × {name}", item.count), worth));
+        }
+        if mailbox.screen_loot.gold > 0 {
+            values.push((format!("{} gold", mailbox.screen_loot.gold), 1));
+        }
+        values
+    }
+}

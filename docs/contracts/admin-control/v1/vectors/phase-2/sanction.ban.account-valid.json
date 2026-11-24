@@ -1,0 +1,86 @@
+{
+  "canonical_signed_utf8": "{\"actor\":{\"admin_id\":\"a-17\",\"ip_hash\":\"test-hash\",\"mfa_at\":\"2026-11-05T11:59:00Z\",\"permission\":\"game.sanction.ban\",\"roles\":[\"fixture\"],\"session_ref\":\"test-session\",\"step_up_at\":\"2026-11-05T11:59:50Z\"},\"admin_operation_id\":\"019a5620-0000-7000-8001-000000000033\",\"approvals\":[],\"contract\":\"oteryn.admin-control.v1\",\"dry_run\":false,\"expires_at\":\"2026-11-05T12:01:00Z\",\"issued_at\":\"2026-11-05T12:00:00Z\",\"kind\":\"command\",\"nonce\":\"ISEhISEhISEhISEhISEhIQ\",\"operation\":\"sanction.ban.account\",\"operation_version\":1,\"params\":{\"decision_revision\":1,\"effective_at_ms\":1793880000000,\"expires_at_ms\":null,\"operation_id\":\"019a5620-0000-7000-8001-000000000033\",\"sanction_stream_id\":\"019a0000-0000-7000-8000-000000000201\"},\"reason\":{\"code\":\"TEST\",\"text\":\"Conformance vector.\",\"ticket_ref\":null},\"request_id\":\"019a5620-0000-7000-8000-000000000033\",\"risk_class\":\"R3\",\"signer_key_id\":\"platform-admin-signer-1\",\"target\":{\"account_ref\":\"019a0000-0000-7000-8000-000000000002\",\"character_id\":null,\"node_id\":null,\"world_id\":null}}",
+  "clock": 1793880000,
+  "expected_error": null,
+  "expected_result_valid": true,
+  "nonce_seen": false,
+  "policy": {
+    "operations": [
+      {
+        "allowed_permissions": [
+          "game.sanction.ban"
+        ],
+        "min_risk_class": "R3",
+        "operation": "sanction.ban.account",
+        "worlds": [
+          "w-antica"
+        ]
+      }
+    ]
+  },
+  "precondition_error": null,
+  "preview_digest": null,
+  "prior_params_digest": null,
+  "prior_result": null,
+  "request": {
+    "actor": {
+      "admin_id": "a-17",
+      "ip_hash": "test-hash",
+      "mfa_at": "2026-11-05T11:59:00Z",
+      "permission": "game.sanction.ban",
+      "roles": [
+        "fixture"
+      ],
+      "session_ref": "test-session",
+      "step_up_at": "2026-11-05T11:59:50Z"
+    },
+    "admin_operation_id": "019a5620-0000-7000-8001-000000000033",
+    "approvals": [],
+    "contract": "oteryn.admin-control.v1",
+    "dry_run": false,
+    "expires_at": "2026-11-05T12:01:00Z",
+    "issued_at": "2026-11-05T12:00:00Z",
+    "kind": "command",
+    "nonce": "ISEhISEhISEhISEhISEhIQ",
+    "operation": "sanction.ban.account",
+    "operation_version": 1,
+    "params": {
+      "decision_revision": 1,
+      "effective_at_ms": 1793880000000,
+      "expires_at_ms": null,
+      "operation_id": "019a5620-0000-7000-8001-000000000033",
+      "sanction_stream_id": "019a0000-0000-7000-8000-000000000201"
+    },
+    "reason": {
+      "code": "TEST",
+      "text": "Conformance vector.",
+      "ticket_ref": null
+    },
+    "request_id": "019a5620-0000-7000-8000-000000000033",
+    "risk_class": "R3",
+    "signature": "dFT5q0rV0wJiNLsgnDilzB9catjdhVyN1L-f2H1MXkGUi10w1Re5rYiPiIlDZfsG8Z3op0W8IFCPCrjDXNXMDg",
+    "signer_key_id": "platform-admin-signer-1",
+    "target": {
+      "account_ref": "019a0000-0000-7000-8000-000000000002",
+      "character_id": null,
+      "node_id": null,
+      "world_id": null
+    }
+  },
+  "result": {
+    "decision_revision": 1,
+    "operation_id": "019a5620-0000-7000-8001-000000000033",
+    "profile": "ban_account",
+    "runtime_effect": "online_applied",
+    "sanction_state": "active",
+    "sanction_stream_id": "019a0000-0000-7000-8000-000000000201"
+  },
+  "trusted_signers": [
+    {
+      "key_id": "platform-admin-signer-1",
+      "not_after": "2027-01-01T00:00:00Z",
+      "not_before": "2026-01-01T00:00:00Z",
+      "public_key": "6kpsY-KcUgq-9VB7Ey7F-ZVHdq6-vnuSQh7qaRRG0iw"
+    }
+  ]
+}

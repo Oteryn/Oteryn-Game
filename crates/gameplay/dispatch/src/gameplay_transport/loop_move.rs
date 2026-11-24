@@ -138,6 +138,100 @@ impl ItemLoopContent for NativeItemWeights<'_> {
                 )
             })
     }
+    fn managed_item_category(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Option<oteryn_gameplay_items::quick_loot::LootCategory> {
+        use crate::content::{
+            ReferenceEquipmentSlot as Slot, ReferenceItemConsumption as Consume,
+            ReferenceItemField::Known, ReferenceItemType, ReferenceWeaponType as Weapon,
+        };
+        use oteryn_gameplay_items::quick_loot::LootCategory as Category;
+        if crate::durability::item_loop_move::is_loot_coin(definition) {
+            return Some(Category::Gold);
+        }
+        if self.is_quiver(definition) {
+            return Some(Category::Quiver);
+        }
+        let policy = self
+            .0
+            .item_policy(&definition.production_key, &definition.revision_ref)?;
+        let item = policy.record();
+        let semantics = &item.semantics;
+        if let Known(weapon) = &semantics.weapon
+            && let Known(kind) = weapon.weapon_type
+        {
+            return Some(match kind {
+                Weapon::Ammunition => Category::Ammunition,
+                Weapon::Axe => Category::Axe,
+                Weapon::Club => Category::Club,
+                Weapon::Distance => Category::DistanceWeapon,
+                Weapon::Fist => Category::FistWeapon,
+                Weapon::Shield | Weapon::Spellbook => Category::Shield,
+                Weapon::Sword => Category::Sword,
+                Weapon::Wand => Category::Wand,
+            });
+        }
+        if let Known(equipment) = &semantics.equipment
+            && let Known(patterns) = &equipment.patterns
+            && let Some(category) = patterns
+                .iter()
+                .find_map(|pattern| match pattern.primary_slot {
+                    Known(Slot::Head) => Some(Category::Helmet),
+                    Known(Slot::Amulet) => Some(Category::Necklace),
+                    Known(Slot::Container) => Some(Category::Containers),
+                    Known(Slot::Torso) => Some(Category::Armor),
+                    Known(Slot::Legs) => Some(Category::Legs),
+                    Known(Slot::Feet) => Some(Category::Boots),
+                    Known(Slot::Ring) => Some(Category::Ring),
+                    Known(Slot::Shield) => Some(Category::Shield),
+                    _ => None,
+                })
+        {
+            return Some(category);
+        }
+        if let Known(consumption) = &semantics.consumption {
+            return Some(match consumption {
+                Consume::Food(_) => Category::Food,
+                Consume::Potion(_) => Category::Potion,
+            });
+        }
+        if matches!(semantics.container, Known(_)) {
+            return Some(Category::Containers);
+        }
+        if matches!(&semantics.classification, Known(kind) if kind.item_type == Known(ReferenceItemType::Rune))
+        {
+            return Some(Category::Rune);
+        }
+        let taxonomy = item.authoring.taxonomy.as_ref()?;
+        match taxonomy.primary.to_ascii_lowercase().as_str() {
+            "amulets and necklaces" => Some(Category::Necklace),
+            "ammunition" => Some(Category::Ammunition),
+            "armors" => Some(Category::Armor),
+            "axe weapons" => Some(Category::Axe),
+            "boots" => Some(Category::Boots),
+            "club weapons" | "clavas" => Some(Category::Club),
+            "containers" => Some(Category::Containers),
+            "creature products" => Some(Category::CreatureProduct),
+            "decoration" | "decorations" => Some(Category::Decoration),
+            "distance weapons" | "armas de arremesso" => Some(Category::DistanceWeapon),
+            "fist fighting weapons" => Some(Category::FistWeapon),
+            "food" => Some(Category::Food),
+            "helmets" => Some(Category::Helmet),
+            "legs" => Some(Category::Legs),
+            "potions" => Some(Category::Potion),
+            "quivers" => Some(Category::Quiver),
+            "rings" => Some(Category::Ring),
+            "runes" | "attack runes" | "healing runes" | "support runes" => Some(Category::Rune),
+            "shields" | "spellbooks" => Some(Category::Shield),
+            "sword weapons" => Some(Category::Sword),
+            "tools" => Some(Category::Tools),
+            "valuables" => Some(Category::Valuables),
+            "wands" | "rods" => Some(Category::Wand),
+            _ => None,
+        }
+    }
+
     fn loot_category(
         &self,
         definition: &TypedDefinitionRef,

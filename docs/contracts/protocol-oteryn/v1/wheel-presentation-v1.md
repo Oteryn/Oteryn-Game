@@ -15,3 +15,22 @@ A single existing-owner transaction reads actual current progression, promotion,
 Metadata uses the canonical WheelRuleset topology and pinned WheelGemData names. Every number in a configured-effect preview comes from existing derive_runtime_effects, WheelStages and contribute_gems; no donor description or duplicate bonus table is used. Per-point/full-slot components and revelation stages are potential configurations. Conditional perks are named as condition-dependent available configurations; combat and spells still check their actual live conditions. Invalid drafts have an explicit real-owner refusal, and the writer checks its action interval again before applying anything.
 
 The original6x6 diagram layout draws only supplied unlock links. Clicking a node and the accessible slot selector use the same painted-request nonce fence. Point edits are local; Save requires a reply matching the exact current revisions, points and vessels. Reset first clears the draft and obtains a new validated preview, then explicit Apply reset sends original161 action2. Stale replies, scope changes and end paths invalidate previews; native window epochs prevent an old close from affecting a replacement window. Original161 explicit Retry reuses the same unresolved occurrence; no mutation is retried automatically. Unsupported scopes or missing optional capability show unavailable presentation without inventing eligibility.
+
+## Inspect another Character (6378)
+
+Capability 148 gates this request. Its payload is one 16-byte Character UUIDv7.
+A well-formed request returns `Rejected` with the literal UTF-8 text
+`Sorry, not possible.` regardless of the target's existence, privacy, or activity.
+Malformed requests have an empty rejection. Use 6119 for one's own Wheel.
+[Crystal rejects foreign Wheel requests](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/game/game.cpp#L11325-L11342).
+
+## Gift of Life status (6379)
+
+Capability 148 gates an empty request. An accepted response is the current
+revelation stage (one byte, 0 through 3) followed by a little-endian u64 remaining
+online cooldown in milliseconds, rounded up. Stage zero denotes inactive. An
+unavailable timer or a stale actor/session yields an empty rejection. The client
+can use the stage and timer for a passive action-bar assignment. Assignment is a
+client preference. This query cannot activate Gift of Life, which triggers in
+the existing damage owner.
+[Crystal cooldown status](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/wheel/player_wheel.cpp#L1646-L1668).

@@ -1,0 +1,19 @@
+{
+  "mechanic": "0584-death-and-blessings",
+  "kind": "handlers",
+  "id": "0584-death-and-blessings-commands",
+  "status": "unsupported",
+  "commands": [
+    6330,
+    6331
+  ],
+  "direction": "client_to_server",
+  "reason": "The client death and blessings lanes have yet to select the extended reports capability.",
+  "not_applicable": {
+    "state": "Committed deaths and current Character holdings are stored on the server.",
+    "protocol": "The protocol registry defines the capability and its command schemas.",
+    "view": "The native blessings and death displays use commands 388 and 664.",
+    "input": "Both commands request a self-only snapshot.",
+    "settings": "The capability adds no client settings."
+  }
+}

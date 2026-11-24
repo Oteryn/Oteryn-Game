@@ -156,6 +156,9 @@ fn miscellaneous_character_scope_uses_the_original_base_sidecar_and_retains_flag
 fn portable_import_then_apply_preserves_session_options() -> TestResult {
     let temp = Temp::new()?;
     let flags = MiscellaneousPreferences {
+        startup_engine: None,
+        character_sort_column: 2,
+        character_sort_descending: true,
         stay_logged_in: true,
         remember_device: true,
         quick_login: true,
@@ -255,7 +258,7 @@ fn c2d_sign_out_queues_session_options_without_contention() -> TestResult {
     let mut state = SettingsState::new(Some(temp.preferences()));
     state.use_background_preferences();
     state.record_device_opt_out()()?;
-        state.finish_device_opt_out();
+    state.finish_device_opt_out();
     assert!(state.local_preference_writes_pending());
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
     while state.local_preference_writes_pending() {
@@ -287,7 +290,7 @@ fn opt_out_survives_process_exit(settings: bool) -> TestResult {
         if settings {
             let mut state = SettingsState::new(Some(path));
             state.record_device_opt_out()()?;
-        state.finish_device_opt_out();
+            state.finish_device_opt_out();
             drop(state);
         } else {
             let mut config = crate::reentry::Reentry::device_test_config(

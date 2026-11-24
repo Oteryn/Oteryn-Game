@@ -94,10 +94,12 @@ pub fn authorize(
     }
     let rule = p.operations.get(&r.operation).ok_or(E::AdmForbidden)?;
     if !rule.allowed_permissions.contains(&r.actor.permission)
-        || r.target
-            .world_id
-            .as_ref()
-            .is_some_and(|w| !rule.worlds.contains(w))
+        || (!op.is_global_read()
+            && (rule.worlds.is_empty()
+                || r.target
+                    .world_id
+                    .as_ref()
+                    .is_some_and(|w| !rule.worlds.contains(w))))
     {
         return Err(E::AdmForbidden);
     }

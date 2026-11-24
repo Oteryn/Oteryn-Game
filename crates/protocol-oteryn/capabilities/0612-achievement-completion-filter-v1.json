@@ -1,0 +1,17 @@
+{
+  "id": 612,
+  "name": "ACHIEVEMENT_COMPLETION_FILTER_V1",
+  "constant": "account_achievements::CAPABILITY_ACHIEVEMENT_COMPLETION_FILTER_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    6387
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

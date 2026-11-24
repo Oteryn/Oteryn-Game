@@ -1,6 +1,9 @@
 //! Self appearance gallery. Familiar entries describe the active content catalogue,
 //! never an account unlock; outfit and mount entries are confirmed available choices.
 use crate::charm_wire::CyclopediaWireError as Error;
+#[path = "gallery/owned.rs"]
+pub mod owned;
+
 pub const SELECTOR: u8 = 129;
 pub const PAGE_SIZE: usize = 24;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

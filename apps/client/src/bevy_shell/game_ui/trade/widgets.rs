@@ -13,6 +13,7 @@ pub(super) fn build(
     generation: u64,
     revision: u64,
     panel: &PlayerTradePanel,
+    partner_name: Option<&str>,
 ) -> Entity {
     let root = commands
         .spawn((
@@ -37,7 +38,7 @@ pub(super) fn build(
     commands.entity(dock).add_child(root);
     source::dialog_caption(commands, root, "Trade", skins.font.clone());
     let labels = row(commands, root);
-    for label in ["Your offer", "Their offer"] {
+    for label in ["Your offer", partner_name.unwrap_or("Their offer")] {
         let text = label_text(commands, skins, labels, label);
         commands.entity(text).insert(Node {
             width: px(80.),

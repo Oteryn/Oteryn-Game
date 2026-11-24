@@ -1,0 +1,16 @@
+{
+  "id": 602,
+  "name": "MANAGED_CONTAINER_MOVE_V1",
+  "owner_decision": "Managed container moves with preview and confirmation",
+  "owner": "Game carried item loop",
+  "requires": [
+    4,
+    98
+  ],
+  "command_types": [
+    6365
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only"
+}

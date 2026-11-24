@@ -313,3 +313,46 @@ fn transcript_supports_read_only_selection_and_copy() -> TestResult {
 }
 
 include!("text_input_interaction.rs");
+
+#[test]
+fn link_copy_after_same_frame_selection_requests_confirmation() -> TestResult {
+    use bevy::{ecs::system::RunSystemOnce, text::TextEdit};
+    let (mut app, editor, _) = app()?;
+    app.world_mut()
+        .run_system_once(crate::bevy_shell::ui::setup)
+        .map_err(|e| format!("{e:?}"))?;
+    widgets::copy_link::install(&mut app);
+    let mut field = app
+        .world_mut()
+        .get_mut::<EditableText>(editor)
+        .ok_or("editor")?;
+    field.queue_edit(TextEdit::Insert(" https://example.org".into()));
+    field.queue_edit(TextEdit::SelectAll);
+    field.queue_edit(TextEdit::Copy);
+    app.update();
+    app.update();
+    assert!(app.world().resource::<ChatState>().menu.is_some());
+    Ok(())
+}
+
+#[test]
+fn copy_then_insert_and_enter_wait_for_the_new_draft() -> TestResult {
+    use bevy::{ecs::system::RunSystemOnce, text::TextEdit};
+    let (mut app, editor, mut commands) = app()?;
+    app.world_mut()
+        .run_system_once(crate::bevy_shell::ui::setup)
+        .map_err(|e| format!("{e:?}"))?;
+    widgets::copy_link::install(&mut app);
+    let mut text = app
+        .world_mut()
+        .get_mut::<EditableText>(editor)
+        .ok_or("editor")?;
+    text.queue_edit(TextEdit::Copy);
+    text.queue_edit(TextEdit::Insert("o".into()));
+    key(&mut app, KeyCode::Enter, Key::Enter, None);
+    app.update();
+    assert!(sent(&mut commands).is_none());
+    app.update();
+    assert!(matches!(sent(&mut commands), Some(ChatIntent::Say { text, .. }) if text == "hello"));
+    Ok(())
+}

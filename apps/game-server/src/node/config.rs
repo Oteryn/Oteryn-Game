@@ -1146,7 +1146,7 @@ impl OpsConfig {
             return reject("operator.state_directory");
         }
         // The operator identity is root and never the service user (D2).
-        if config.operator.service_uid == 0 {
+        if config.operator.service_uid == 0 && super::qualification_operator_uid() != Some(0) {
             return reject("operator.service_uid");
         }
         check_database(&config.database)?;

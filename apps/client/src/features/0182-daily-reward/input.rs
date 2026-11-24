@@ -7,6 +7,16 @@ use oteryn_client_ui::daily_reward::{Intent, request};
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
+    #[cfg(bevy_shell)]
+    pub(crate) fn open_reward_store_offers(&self, search: &str) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if let Err(message) = self.open_product_offers(&mut mailbox.store, search) {
+            mailbox.daily_reward.feedback = Some(message);
+            return false;
+        }
+        true
+    }
+
     pub fn daily_reward_close(&self) {
         lock(&self.mailbox).daily_reward.open = false;
     }
@@ -17,9 +27,16 @@ impl PlayLink {
         intent: Intent,
     ) -> bool {
         let mut mailbox = lock(&self.mailbox);
-        if mailbox.world_input_blocked() || mailbox.daily_reward != *expected
-            || !expected.open || !expected.selected || expected.pending
-            || (intent == Intent::Claim && expected.wall.is_none_or(|wall| wall.claimed || !wall.claim_enabled)) {
+        if mailbox.world_input_blocked()
+            || mailbox.daily_reward != *expected
+            || !expected.open
+            || !expected.selected
+            || expected.pending
+            || (intent == Intent::Claim
+                && expected
+                    .wall
+                    .is_none_or(|wall| wall.claimed || !wall.claim_enabled))
+        {
             return false;
         }
         enqueue(&mut mailbox, &self.commands, intent);

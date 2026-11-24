@@ -125,6 +125,18 @@ values: `NODE_BOOT_SERVICE_USER` (`oteryn-node-boot[-suffix]`), `NODE_BOOT_BASE`
 (skip the basic fixture pass). `NODE_BOOT_E2E_ONLY`, `NODE_BOOT_NO_FAILFAST` and
 `NODE_BOOT_NO_PROGRESS_S` are passed to the seam harness when set.
 
+On a host without sudo, set `NODE_BOOT_UNPRIVILEGED=1` for a disposable
+`qualification-unprivileged` run. The runner uses a private temporary deployment
+directory and runs Game's operator and service with the caller's UID. Docker
+and the pinned Platform checkout are still required. Operator/service isolation
+checks are skipped and the output records `mode=unprivileged` so a successful
+run cannot satisfy privileged qualification.
+
+Set `RUNNER_TEMP` to a short path you own, such as `/workspace/nbtmp` (mode
+0700). The directory and each ancestor up to `/` must be owned by you or root.
+The runner checks ownership before building, including when it defaults to
+`/tmp`.
+
 Single-row loop (refused when `CI=true` or `GITHUB_ACTIONS` is set):
 
 ```sh

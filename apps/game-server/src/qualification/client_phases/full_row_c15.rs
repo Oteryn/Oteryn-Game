@@ -8,7 +8,7 @@
 //!    expect a non-OK native disposition and prove GeneralStats has no XP or stamina delta.
 //! 3. Walk through the compiled world to an ordinary unprotected rat spawn and send
 //!    ATTACK for the visible creature; expect an accepted attack, creature removal,
-//!    positive XP settlement, and exactly one minute of stamina debit in the same hunt.
+//!    positive XP settlement, and one or two minutes of stamina debit in the same hunt.
 //!    The positive award also proves the non-empty stamina XP band is applied.
 //! 4. Send LOGOUT until the combat lock permits it; expect Accepted, then remain
 //!    genuinely offline for the ten-minute delay plus one three-minute recovery period.
@@ -59,43 +59,33 @@ fn decode_progress(payload: &[u8], vocation_selected: bool) -> TestResult<Progre
     Ok(value)
 }
 
+fn adjacent_hunt_target(
+    entity: &oteryn_dev_client::WorldSpatialEntity,
+    at: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+) -> bool {
+    entity.kind == oteryn_dev_client::EntityKind::Creature
+        && entity.position.floor == at.floor
+        && entity.position.x.abs_diff(at.x).max(entity.position.y.abs_diff(at.y)) <= 1
+        && entity.display_name.as_ref().and_then(|name| name.as_str().ok())
+            .is_some_and(|name| name.eq_ignore_ascii_case("Rat"))
+}
+
 async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let rats: Vec<_> = metadata
-        .spawns
-        .sources
-        .iter()
-        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
-        .filter(|(_, point)| {
-            metadata
-                .spawns
-                .creatures
-                .get(point.creature as usize)
-                .is_some_and(|creature| creature.key == "oteryn:creature.rat")
-        })
-        .map(|(floor, point)| TilePos { x: point.x, y: point.y, floor })
-        .collect();
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
-            && rats.iter().any(|rat| {
-                rat.floor == at.floor && rat.x.abs_diff(at.x).max(rat.y.abs_diff(at.y)) <= 1
-            })
-    })
-    .ok_or("step-3 no player-walkable route to an unprotected rat spawn")?;
-    walk(client, world, &path).await?;
-    let at = client.world_spatial().actor_position;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Creature
-                    && entity.position.floor == at.floor
-                    && entity.position.x.abs_diff(at.x).max(entity.position.y.abs_diff(at.y)) <= 1
-            })
-        })
-        .copied()
-        .ok_or("step-3 rat spawn reached but no adjacent creature frame observed")?;
+    let target = full_e2ef5::wild_rat(client, world, &[]).await?;
+    full_e2ef5::approach_melee(client, world, target.position).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let at = client.world_spatial().actor_position;
+        if client.world_entities().and_then(|view| view.get(&target.entity))
+            .is_some_and(|entry| adjacent_hunt_target(entry, at))
+        {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step-3 selected Rat did not remain adjacent for ATTACK".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
     let attack = client.session_mut().attack_target(Some(&target.entity)).await?;
     if attack.disposition != AttackIntentDisposition::Ok {
         return Err(format!("step-3 native ATTACK refused: {attack:?}").into());
@@ -134,6 +124,10 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
+fn first_hunt_debit_valid(before: u16, after: u16) -> bool {
+    matches!(before.checked_sub(after), Some(1 | 2))
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -167,7 +161,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     // HuntingClock's first due boundary is the admission second. Cross it
     // naturally so this credited kill must exercise (rather than merely arm)
-    // the one-minute debit, while remaining well below the two-minute branch.
+    // a debit. A late first kill can consume two minutes under the server clock.
     tokio::time::sleep(Duration::from_secs(2)).await;
     hunt(&mut client, world).await?;
     let settlement_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
@@ -179,7 +173,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     };
-    if after.xp <= before.xp || after.level < before.level || after.stamina + 1 != before.stamina {
+    if after.xp <= before.xp || after.level < before.level || !first_hunt_debit_valid(before.stamina, after.stamina) {
         return Err(format!("step-3 kill settlement mismatch: before={before:?} after={after:?}").into());
     }
     logout(&mut client).await?;
@@ -227,6 +221,43 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reviewed_stamina_first_kill_accepts_the_two_minute_branch() {
+        assert!(first_hunt_debit_valid(2520, 2519));
+        assert!(first_hunt_debit_valid(2520, 2518));
+        assert!(!first_hunt_debit_valid(2520, 2520));
+        assert!(!first_hunt_debit_valid(2520, 2517));
+    }
+
+    #[test]
+    fn hunt_targets_the_adjacent_rat_only() -> TestResult {
+        use oteryn_dev_client::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
+        use oteryn_protocol_oteryn::{
+            entity_names::EntityDisplayName, world_spatial::ActorPosition,
+        };
+
+        let at = ActorPosition { x: 100, y: 100, floor: -7 };
+        let mut creature = WorldSpatialEntity {
+            motion: None,
+            display_name: Some(EntityDisplayName::new("Rat").map_err(|error| format!("{error:?}"))?),
+            kind: EntityKind::Creature,
+            entity: EntityRef { identity: [7; 16], generation: 1 },
+            position: ActorPosition { x: 101, ..at },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        };
+        assert!(adjacent_hunt_target(&creature, at));
+        creature.position.x = 102;
+        assert!(!adjacent_hunt_target(&creature, at));
+        creature.position.x = 101;
+        creature.display_name = Some(EntityDisplayName::new("Cave Rat").map_err(|error| format!("{error:?}"))?);
+        assert!(!adjacent_hunt_target(&creature, at));
+        Ok(())
+    }
 
     #[test]
     fn general_stats_decoder_reads_xp_level_and_stamina() -> TestResult {

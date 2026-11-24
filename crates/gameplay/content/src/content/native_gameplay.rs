@@ -1366,7 +1366,9 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         m25_corpse_items::admit_exact_bindings(&mut admitted, &m25_items)?;
         source_reward_items.extend(m25_items);
         source_reward_items.extend(galthen_furniture::qualified_records()?);
-        source_reward_items.extend(galthen_loot::qualified_records()?);
+        let galthen_source = galthen_loot::qualified_records()?;
+        let galthen_global = galthen_loot::qualified_global_records(&galthen_source)?;
+        source_reward_items.extend(galthen_source);
         let item_detail_weights: BTreeMap<String, u32> = serde_json::from_slice(include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/item-detail-weight-facts.json"
         ))
@@ -1401,7 +1403,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 .iter()
                 .find(|expected| expected.production_binding.external_id == binding.external_id)
             {
-                if record != expected {
+                if record != expected && galthen_global.get(&binding.external_id) != Some(record) {
                     // Accept the verified Global weight in addition to the historical
                     // donor record. Compare the entire profile in both cases.
                     use super::ReferenceItemField as F;
@@ -3819,6 +3821,83 @@ mod tests {
         invalid_section.progression = Some(pinned(b"{}"));
         assert!(compile_native_gameplay(baseline.compiled(), &invalid_section).is_err());
     }
+
+    #[test]
+    fn itemglob3_loaded_item_stats() {
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller.active().unwrap().native_gameplay().unwrap();
+        let armor = native
+            .item_policy("oteryn:item.tibia.i3361", "definition-r1")
+            .unwrap();
+        let forge = armor.record().authoring.forge.unwrap();
+        assert_eq!((forge.classification, forge.max_tier), (1, 1));
+        assert!(matches!(
+            &armor.record().semantics.protection,
+            crate::content::ReferenceItemField::Known(protection)
+                if protection.armor == crate::content::ReferenceItemField::Known(crate::content::ReferenceSignedPoints(4))
+        ));
+        for (id, pointer, value) in [
+            (
+                8063,
+                "/imbuement/value/slot_count/value",
+                serde_json::json!(1),
+            ),
+            (
+                8063,
+                "/skill_modifiers/value/modifiers/value/0/parameter/value/value",
+                serde_json::json!(2),
+            ),
+            (8078, "/weapon/value/defense/value", serde_json::json!(47)),
+            (
+                34088,
+                "/protection/value/resistances/value/0/kind",
+                serde_json::json!("HOLY"),
+            ),
+            (
+                34088,
+                "/equipment/value/patterns/value/0/level/value",
+                serde_json::json!(400),
+            ),
+            (
+                761,
+                "/use_requirements/value/min_level/value",
+                serde_json::json!(20),
+            ),
+        ] {
+            let policy = native
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap();
+            let semantics = serde_json::to_value(&policy.record().semantics).unwrap();
+            assert_eq!(
+                semantics.pointer(pointer),
+                Some(&value),
+                "Item {id} {pointer}"
+            );
+        }
+    }
+
+    #[test]
+    fn itemglob3_loaded_launcher_combat_values() {
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller.active().unwrap().native_gameplay().unwrap();
+        for (id, expected_range, expected_hit) in [(7438, 6, 3), (22866, 6, 3), (22867, 5, 3)] {
+            let launcher = native
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap();
+            assert!(
+                matches!(
+                    launcher.record().authoring.ranged,
+                    Some(crate::content::ProjectV2RangedWeapon::Distance { range_cells, hit_chance, .. })
+                        if (range_cells, hit_chance) == (expected_range, expected_hit)
+                ),
+                "launcher {id}: {:?}",
+                launcher.record().authoring.ranged
+            );
+        }
+    }
+
     #[test]
     fn production_manifest_activates_with_the_rat_reward_row() {
         let world = test_source(1).unwrap().world_id;
@@ -4620,12 +4699,38 @@ impl oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup
         revision: &str,
     ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
     {
+        self.project_equipment_policy(key, revision, true)
+    }
+
+    fn worn_equipment_policy(
+        &self,
+        key: &str,
+        revision: &str,
+    ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
+    {
+        self.project_equipment_policy(key, revision, false)
+    }
+}
+
+impl NativeGameplayState {
+    fn project_equipment_policy(
+        &self,
+        key: &str,
+        revision: &str,
+        require_eligibility: bool,
+    ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
+    {
         use super::ReferenceItemField;
         let policy = self.item_policy(key, revision)?;
         let semantics = &policy.record().semantics;
         let claims = [1, 2, 3, 4, 5, 6, 7, 8, 10]
             .into_iter()
-            .map(|slot| (slot, projected_equipment_claims(semantics, slot)))
+            .map(|slot| {
+                (
+                    slot,
+                    projected_equipment_claims(semantics, slot, require_eligibility),
+                )
+            })
             .collect();
         let capacity = match &semantics.container {
             ReferenceItemField::Known(container) => match container.capacity {
@@ -4645,6 +4750,7 @@ impl oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup
 fn projected_equipment_claims(
     semantics: &super::ReferenceItemSemantics,
     slot: u8,
+    require_eligibility: bool,
 ) -> Result<oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentClaims, &'static str> {
     use super::{ReferenceBaseVocation, ReferenceEquipmentSlot, ReferenceItemField};
     use oteryn_gameplay_domain::domain::equipment_policy_abi::{
@@ -4684,11 +4790,16 @@ fn projected_equipment_claims(
     let ReferenceItemField::Known(groups) = &pattern.mutually_exclusive_groups else {
         return Err(rejected("unknown equipment groups"));
     };
-    let ReferenceItemField::Known(level) = pattern.level else {
-        return Err(rejected("unknown equipment required level"));
-    };
-    let ReferenceItemField::Known(vocations) = &pattern.vocations else {
-        return Err(rejected("unknown equipment required vocations"));
+    let (level, vocations) = if require_eligibility {
+        let ReferenceItemField::Known(level) = pattern.level else {
+            return Err(rejected("unknown equipment required level"));
+        };
+        let ReferenceItemField::Known(vocations) = &pattern.vocations else {
+            return Err(rejected("unknown equipment required vocations"));
+        };
+        (level, vocations.as_slice())
+    } else {
+        (0, &[][..])
     };
     let mut occupied = vec![slot];
     for value in additional {
@@ -4742,7 +4853,7 @@ mod equipment_projection_tests {
         use ReferenceItemField::{Known, Unknown};
         let mut semantics: ReferenceItemSemantics =
             serde_json::from_str("{}").expect("unknown semantics");
-        assert!(projected_equipment_claims(&semantics, 5).is_err());
+        assert!(projected_equipment_claims(&semantics, 5, true).is_err());
         let pattern = ReferenceEquipmentPattern {
             pattern_id: 1,
             primary_slot: Known(ReferenceEquipmentSlot::Weapon),
@@ -4755,25 +4866,29 @@ mod equipment_projection_tests {
         semantics.equipment = Known(ReferenceItemEquipment {
             patterns: Known(vec![pattern.clone()]),
         });
-        let claims = projected_equipment_claims(&semantics, 5).expect("qualified weapon");
+        let claims = projected_equipment_claims(&semantics, 5, true).expect("qualified weapon");
         assert_eq!(claims.slots, vec![5, 6]);
         assert_eq!(claims.level, 20);
         assert_eq!(
             claims.vocations,
             vec![oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentBaseVocation::Paladin]
         );
-        assert!(projected_equipment_claims(&semantics, 6).is_err());
+        assert!(projected_equipment_claims(&semantics, 6, true).is_err());
         let mut incomplete = pattern.clone();
         incomplete.level = Unknown;
+        incomplete.vocations = Unknown;
         semantics.equipment = Known(ReferenceItemEquipment {
             patterns: Known(vec![incomplete]),
         });
-        assert!(projected_equipment_claims(&semantics, 5).is_err());
+        assert!(projected_equipment_claims(&semantics, 5, true).is_err());
+        let worn = projected_equipment_claims(&semantics, 5, false).expect("worn reservations");
+        assert_eq!(worn.slots, vec![5, 6]);
+        assert!(projected_equipment_claims(&semantics, 6, false).is_err());
         semantics.equipment = Known(ReferenceItemEquipment {
             patterns: Known(vec![pattern.clone(), pattern]),
         });
         assert_eq!(
-            projected_equipment_claims(&semantics, 5).err(),
+            projected_equipment_claims(&semantics, 5, true).err(),
             Some("equipment ambiguous source pattern")
         );
     }
@@ -4799,7 +4914,7 @@ mod equipment_projection_tests {
                 .expect("profile record");
             let semantics: ReferenceItemSemantics =
                 serde_json::from_value(record["semantics"].clone()).expect("semantics");
-            let claims = projected_equipment_claims(&semantics, 5).expect(key);
+            let claims = projected_equipment_claims(&semantics, 5, true).expect(key);
             assert_eq!((claims.slots, claims.level), (vec![5], 0), "{key}");
             assert!(claims.vocations.is_empty(), "{key}");
         }

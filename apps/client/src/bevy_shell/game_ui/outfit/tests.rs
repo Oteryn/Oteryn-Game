@@ -404,6 +404,18 @@ fn outfit_preview_rotates_verified_artwork() -> Result<(), Box<dyn std::error::E
     Ok(())
 }
 
+fn finish_draw(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while app.world().resource::<State>().draw.is_some() {
+        if std::time::Instant::now() >= deadline {
+            return Err("outfit draw timed out".into());
+        }
+        std::thread::yield_now();
+        app.update();
+    }
+    Ok(())
+}
+
 #[test]
 fn outfit_preview_buttons_animate_the_retained_image_without_sending_a_change()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -454,29 +466,41 @@ fn outfit_preview_buttons_animate_the_retained_image_without_sending_a_change()
             .and_then(|image| image.data.clone())
             .ok_or_else(|| "image".into())
     };
+    let placeholder = pixels(&app)?;
     app.update();
+    assert_eq!(
+        pixels(&app)?,
+        placeholder,
+        "sprite sheets were drawn on the input frame"
+    );
+    finish_draw(&mut app)?;
     let south = pixels(&app)?;
     app.world_mut().trigger(Activate { entity: right });
     app.update();
+    finish_draw(&mut app)?;
     assert!(pixels(&app)? != south);
     app.world_mut().trigger(Activate { entity: left });
     app.update();
+    finish_draw(&mut app)?;
     assert_eq!(pixels(&app)?, south);
     app.world_mut()
         .resource_mut::<Time<Real>>()
         .advance_by(Duration::from_millis(300));
     app.update();
+    finish_draw(&mut app)?;
     assert!(
         pixels(&app)? != south,
         "walking must advance the rendered frame"
     );
     app.world_mut().trigger(Activate { entity: stop });
     app.update();
+    finish_draw(&mut app)?;
     let standing = pixels(&app)?;
     app.world_mut()
         .resource_mut::<Time<Real>>()
         .advance_by(Duration::from_secs(1));
     app.update();
+    finish_draw(&mut app)?;
     assert_eq!(pixels(&app)?, standing);
     app.world_mut().trigger(Activate { entity: walk });
     assert!(app.world().resource::<State>().playback.moving);
@@ -494,6 +518,7 @@ fn outfit_preview_buttons_animate_the_retained_image_without_sending_a_change()
     );
     app.world_mut().resource_mut::<State>().rendered = None;
     app.update();
+    finish_draw(&mut app)?;
     assert_eq!(app.world().resource::<State>().playback.direction, 2);
     Ok(())
 }
@@ -779,3 +804,6 @@ fn actor_motion_outfit_toggle_sends_mount_action_independently_of_selection()
     assert_eq!(command.payload, [8, 0]);
     Ok(())
 }
+
+#[path = "gallery_tests.rs"]
+mod gallery_tests;

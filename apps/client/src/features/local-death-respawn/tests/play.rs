@@ -216,6 +216,35 @@ fn coalesced_respawn_before_reset_drain_cannot_leave_movement_pending() -> Resul
 }
 
 #[test]
+fn arrow_waits_for_death_reset_after_respawn_acknowledgement() -> Result<(), String> {
+    let (link, mut commands, outbox) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[]).map_err(|e| e.to_string())?;
+    for health in [0, 150] {
+        outbox.vitals(Some(ActorVitals {
+            health,
+            max_health: 150,
+            ..Default::default()
+        }));
+        assert_eq!(view.tick(&link), Ok(()));
+    }
+    assert!(view.acknowledge_death(&link));
+
+    // Input can arrive after acknowledgement but before the next view tick.
+    view.arrow(StepDir::South);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert!(!view.in_flight);
+    assert!(commands.try_recv().is_err());
+    assert!(outbox.death_command(&mut commands).is_err());
+
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(
+        outbox.death_command(&mut commands),
+        Ok(crate::combat_input::PlayCommand::Step(StepDir::South))
+    );
+    Ok(())
+}
+
+#[test]
 fn death_notice_preserves_logout_feedback_and_server_warning() -> Result<(), String> {
     let (link, _commands, outbox) = play_channel();
     let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[]).map_err(|e| e.to_string())?;

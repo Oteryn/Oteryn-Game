@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MarketPriceSeriesParams",
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string"
+    },
+    "grain": {
+      "$ref": "#/$defs/Grain"
+    },
+    "params": {
+      "$ref": "#/$defs/MarketPriceSeriesFilters"
+    },
+    "query_id": {
+      "$ref": "#/$defs/MarketPriceSeriesId"
+    },
+    "to": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "query_id",
+    "params",
+    "from",
+    "to",
+    "grain"
+  ],
+  "$defs": {
+    "Grain": {
+      "type": "string",
+      "enum": [
+        "minute",
+        "hour",
+        "day"
+      ]
+    },
+    "MarketPriceSeriesFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "item_type_id"
+      ]
+    },
+    "MarketPriceSeriesId": {
+      "type": "string",
+      "enum": [
+        "market_price_series"
+      ]
+    }
+  }
+}

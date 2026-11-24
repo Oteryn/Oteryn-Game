@@ -4,6 +4,7 @@
 //! is never re-executed here: without terminal truth that session cannot resume.
 use super::capabilities::SelectedCapabilities;
 use super::connection::AdmittedSession;
+use super::item_look::LookWindow;
 use crate::foundation::{
     CommandId, CommandIngress, CommandSemanticIdentity, DuplicateDisposition,
     FoundationProtocolError, GameSessionId, IngressDecision, NormalizedSemanticIntentIdentity,
@@ -31,6 +32,7 @@ mod native_tests;
 #[derive(Default)]
 struct SessionIngress {
     ingress: CommandIngress,
+    market_statistics: Option<LookWindow>,
     retained: Option<Vec<u8>>,
     result_sequence_floor: u64,
     active: bool,
@@ -438,6 +440,17 @@ impl SessionCommandStream {
         })
     }
 
+    /// The owner retains this window with the command stream across socket loss.
+    pub(super) fn admit_market_statistics(&self, now: tokio::time::Instant) -> Option<bool> {
+        let mut state = self.state.as_ref()?.lock().ok()?;
+        Some(
+            state
+                .market_statistics
+                .get_or_insert(LookWindow::EMPTY)
+                .admit(now),
+        )
+    }
+
     pub(super) const fn next_command_id(&self) -> u64 {
         self.next
     }
@@ -535,9 +548,9 @@ impl SessionCommandStream {
             COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDisposition, decode_step_intent_selected,
             encode_step_outcome,
         };
-        let Some(entry) = &self.state else {
+        if self.state.is_none() {
             return Some(());
-        };
+        }
         let envelope = oteryn_protocol_oteryn::decode_wire_envelope(frame).ok()?;
         let command = envelope.client_command(generation).ok()?;
         if command.command_type != COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT
@@ -545,18 +558,38 @@ impl SessionCommandStream {
         {
             return None;
         }
-        let id = CommandId::new(command.command_id).ok()?;
+        self.cancel_undispatched(
+            command.command_id,
+            generation,
+            server_sequence,
+            &encode_step_outcome(self.selected.as_slice(), StepDisposition::Rejected, 0),
+        )
+    }
+
+    /// Retain a refusal without writing it. The caller must own the original
+    /// reservation and know that it did not enter command dispatch.
+    pub(super) fn cancel_undispatched(
+        &mut self,
+        command_id: u64,
+        generation: u64,
+        server_sequence: u64,
+        payload: &[u8],
+    ) -> Option<()> {
+        let Some(entry) = &self.state else {
+            return Some(());
+        };
+        let id = CommandId::new(command_id).ok()?;
         let result_sequence = server_sequence.checked_add(1)?;
         let mut state = entry.lock().ok()?;
         let pending = state.pending_delivery?;
         if !state.active
             || state.activity_recovery
             || state.ingress.outstanding() != 1
-            || pending.command != command.command_id
+            || pending.command != command_id
             || pending.generation != generation
             || pending.selected != self.selected
             || pending.proven_native.is_some()
-            || command.command_id.checked_add(1) != Some(self.next)
+            || command_id.checked_add(1) != Some(self.next)
             || state.ingress.next_command_id().map(CommandId::get) != Some(self.next)
             || state.result_sequence_floor > server_sequence
             || pending.sequence > result_sequence
@@ -567,14 +600,10 @@ impl SessionCommandStream {
         {
             return None;
         }
-        // Periodic pushes may have advanced the wire while the STEP waited. The
-        // retained cancellation follows the actual final sequence, not its reservation.
+        // Periodic pushes can advance the wire after the original reservation.
+        // Retain the cancellation immediately after the last actual frame.
         state.pending_delivery.as_mut()?.sequence = result_sequence;
-        state.complete_reconciled(
-            id,
-            true,
-            &encode_step_outcome(self.selected.as_slice(), StepDisposition::Rejected, 0),
-        )
+        state.complete_reconciled(id, true, payload)
     }
 
     #[cfg(test)]

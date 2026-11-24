@@ -166,3 +166,41 @@ fn graphics_preferences_reach_live_scene_lighting_and_gpu_floor_separation()
     std::fs::remove_file(path)?;
     Ok(())
 }
+
+#[test]
+fn fit_game_window_mode_recalculates_tiles_after_resize() -> Result<(), Box<dyn std::error::Error>>
+{
+    let mut play = view()?;
+    let mut prefs = play.preferences().clone();
+    let mut saved = serde_json::to_value(prefs.graphics)?;
+    saved["fit_viewport"] = true.into();
+    prefs.graphics = serde_json::from_value(saved)?;
+    play.set_preferences(prefs)?;
+    for side in [64, 80] {
+        play.set_world_viewport([
+            side * crate::scene::SCENE_COLUMNS,
+            side * crate::scene::SCENE_ROWS,
+        ])?;
+        assert_eq!(play.scene().view().tile_px(), side);
+    }
+    Ok(())
+}
+
+#[test]
+fn renderer_startup_reads_engine_applied_by_a_character() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::play::SettingsState;
+    use oteryn_renderer::GraphicsEngine;
+    let folder = tempfile::tempdir()?;
+    let path = folder.path().join("preferences.json");
+    let mut settings = SettingsState::new(Some(path.clone()));
+    settings.select_character(Some([9; 16]));
+    let mut preferences = settings.preferences.clone();
+    preferences.graphics.engine = GraphicsEngine::Vulkan;
+    settings.apply(preferences);
+    let mut startup = SettingsState::new(Some(path));
+    assert_eq!(startup.preferences.graphics.engine, GraphicsEngine::Vulkan);
+    startup.select_character(Some([8; 16]));
+    assert_eq!(startup.preferences.graphics.engine, GraphicsEngine::Vulkan);
+    Ok(())
+}

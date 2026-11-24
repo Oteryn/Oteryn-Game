@@ -85,6 +85,20 @@ impl Mailbox {
         self.dialogue_events(&events);
         self.npc_shop_events(&events);
         for event in &events {
+            if let SessionEvent::ServerSaveCountdown(delta) = event {
+                let duration =
+                    std::time::Duration::from_secs(u64::from(delta.value.minutes_remaining) * 60);
+                // The server rounds the remaining interval up to a whole minute.
+                // Repeated notices for this epoch can tighten its upper bound.
+                let epoch = delta.value.ending_epoch;
+                if let Some(bound) = received_at.into_std().checked_add(duration) {
+                    let upper = self
+                        .reward_reset
+                        .filter(|(previous, _)| *previous == epoch)
+                        .map_or(bound, |(_, previous)| previous.min(bound));
+                    self.reward_reset = Some((epoch, upper));
+                }
+            }
             if let SessionEvent::GatedSnapshotReplaced(delta) = event
                 && delta.value.domain_id == 1
             {
@@ -130,7 +144,7 @@ impl Mailbox {
                 .apply(oteryn_client_runtime::tutorial_notices::Notice::ServerSave { minutes });
         }
         let deltas = std::mem::take(&mut self.pushed.quests);
-        super::super::feature_0016_quest_log::protocol::reduce(&mut self.quest, deltas);
+        super::super::feature_0016_quest_log::protocol::reduce(self, deltas);
         super::super::feature_0240_chat_party_room::protocol::reset_if_replaced(self);
         for line in std::mem::take(&mut self.pushed.chat_lines) {
             oteryn_client_ui::party::push_feedback(&mut self.party, &line);
@@ -152,6 +166,13 @@ impl Mailbox {
                     self.vip_channel_notices.push((serial, notice));
                 }
             }
+            self.chat.console.communication.vip_names = presence
+                .entries
+                .iter()
+                .map(|entry| entry.name.to_lowercase())
+                .collect();
+            self.chat_private.communication = self.chat.console.communication.clone();
+            self.chat_party_room.communication = self.chat.console.communication.clone();
             self.vip_presence_confirmed_at = Some(received_at);
             oteryn_client_ui::vip_presence::replace(&mut self.vip_presence, presence);
         }
@@ -173,7 +194,9 @@ impl Outbox {
     }
 
     pub(in crate::play) fn logout_refused(&self, result: Option<LogoutResult>) {
-        lock(&self.0).logout_refused = Some(result);
+        let mut mailbox = lock(&self.0);
+        mailbox.logout_requested = None;
+        mailbox.logout_refused = Some(result);
     }
 
     /// The first end wins.
@@ -197,6 +220,8 @@ impl Outbox {
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
+        mailbox.capture_attackers.clear();
+        mailbox.combat_capture = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
@@ -260,6 +285,8 @@ impl Outbox {
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
+        mailbox.capture_attackers.clear();
+        mailbox.combat_capture = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
@@ -361,7 +388,48 @@ impl PlayLink {
     pub fn request_logout(&self) {
         let mut mailbox = lock(&self.mailbox);
         oteryn_client_ui::target_move::cancel(&mut mailbox.target_walk);
-        let _ = self.commands.send(PlayCommand::Logout);
+        if !mailbox.scope_pending
+            && mailbox.logout_requested.is_none()
+            && self.commands.send(PlayCommand::Logout).is_ok()
+        {
+            mailbox.logout_requested = Some(std::time::Instant::now());
+        }
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn stalled_logout(&self, now: std::time::Instant) -> Option<std::time::Instant> {
+        let mailbox = lock(&self.mailbox);
+        mailbox
+            .logout_requested
+            .filter(|sent| {
+                now.saturating_duration_since(*sent) >= std::time::Duration::from_secs(5)
+            })
+            .or_else(|| {
+                mailbox.traffic.as_ref()?.last_read().filter(|read| {
+                    // Two missed five-second idle probes allow ordinary network jitter.
+                    now.saturating_duration_since(*read) >= std::time::Duration::from_secs(10)
+                })
+            })
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn set_session_task(&self, handle: tokio::task::AbortHandle) {
+        lock(&self.mailbox).connection.session_task = Some(handle);
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn force_disconnect(&self, sent: std::time::Instant) -> bool {
+        let mailbox = lock(&self.mailbox);
+        let current = mailbox.logout_requested == Some(sent)
+            || mailbox
+                .traffic
+                .as_ref()
+                .and_then(|traffic| traffic.last_read())
+                == Some(sent);
+        if current && let Some(task) = &mailbox.connection.session_task {
+            task.abort();
+        }
+        current
     }
 
     /// The next event: pushes older than the step outcome, the outcome, coalesced pushes, then end.
@@ -428,6 +496,8 @@ impl Drop for PlayLink {
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
+        mailbox.capture_attackers.clear();
+        mailbox.combat_capture = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();

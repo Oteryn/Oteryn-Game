@@ -199,6 +199,7 @@ fn scenario(tokens: bool) -> TestResult {
                         request_binding: [7; 32],
                     },
                     crate::durability::daily_reward_delivery::DailyRewardDeliveryPlan {
+                        remote: false,
                         content_revision: content.revision.clone(),
                     },
                     &crate::gameplay_transport::spell_premium_coordinator::DailyRewardPremium(None),

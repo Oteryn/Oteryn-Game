@@ -32,6 +32,30 @@
   "bindings": [
     {
       "position": [
+        32209,
+        32292,
+        6
+      ],
+      "item": 1949,
+      "attribute": "action",
+      "action": 4253,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 5
+    },
+    {
+      "position": [
+        32210,
+        32292,
+        6
+      ],
+      "item": 1949,
+      "attribute": "action",
+      "action": 4253,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 5
+    },
+    {
+      "position": [
         32573,
         32121,
         7

@@ -880,7 +880,11 @@ impl ChannelRuntimeV1 {
         }) {
             // Canary spawn_monster.cpp:26,381-389 @47dfd51f: boost rate 2,
             // with the same one-second minimum after applying rates.
-            timing.respawn_delay_micros = (timing.respawn_delay_micros / 2).max(1_000_000);
+            timing.respawn_delay_micros =
+                oteryn_gameplay_foundation::scheduled_events::scale_respawn_delay_micros(
+                    timing.respawn_delay_micros,
+                    200,
+                );
         }
         timing.respawn_delay_micros =
             oteryn_gameplay_foundation::scheduled_events::scale_respawn_delay_micros(

@@ -38,10 +38,13 @@ enum Command {
     Chase(ChaseMode),
     Secure(bool),
     Expert(u8),
+    ToggleExpert,
     BattleList(usize),
     BattleListEditor,
     /// Opens or closes the battle list menu (sort, lists, list editor).
     BattleMenu,
+    BattleCycle(bool),
+    BattleToggleFilters,
     /// Toggles a type filter of the active battle list.
     BattleFilter(battle::Filter),
     Analyser(oteryn_client_ui::analyser::Tool),
@@ -50,6 +53,25 @@ enum Command {
 /// secure target follow the live session.
 #[derive(Component)]
 struct CombatControl;
+
+#[derive(Component)]
+struct ExpertControls;
+#[derive(Resource, Default)]
+struct ExpertVisibility(Option<u64>);
+
+fn project_expert_group(
+    owner: NonSend<HostOwner>,
+    visibility: Res<ExpertVisibility>,
+    mut groups: Query<&mut Node, With<ExpertControls>>,
+) {
+    for mut group in &mut groups {
+        group.display = if visibility.0 == Some(owner.generation()) {
+            Display::Grid
+        } else {
+            Display::None
+        };
+    }
+}
 /// The combat column of the inventory widget (Inventory.qml): a 42 px column with the Stop
 /// button over 20x20 buttons in three rows, filled top to bottom.
 const COMBAT_COLUMN: f32 = 42.;
@@ -68,6 +90,7 @@ pub(super) fn install(app: &mut App) {
     blessings::spawn(app);
     skills::install(app);
     app.init_resource::<DevOverlay>()
+        .init_resource::<ExpertVisibility>()
         .init_resource::<battle::Menu>()
         .init_resource::<EquipmentWidget>();
     vip::install(app);
@@ -80,8 +103,15 @@ pub(super) fn install(app: &mut App) {
         (
             project,
             battle::project,
+            project_expert_group,
+            battle::marks::captions,
+            battle::marks::hover,
+            battle::portrait::project,
             status_icons::project,
+            top_bar::equipped_weapon,
             top_bar::project,
+            top_bar::project_skills,
+            top_bar::project_style,
         )
             .chain(),
     )
@@ -138,6 +168,7 @@ fn activate(
     actions: Query<&HudAction>,
     mut owner: NonSendMut<HostOwner>,
     mut menu: ResMut<battle::Menu>,
+    mut expert_visibility: ResMut<ExpertVisibility>,
 ) {
     if !guard.allows(event.entity) {
         return;
@@ -155,7 +186,7 @@ fn activate(
             menu.0 = !menu.0;
             return;
         }
-        Command::BattleFilter(filter) => {
+        Command::BattleFilter(_) | Command::BattleToggleFilters => {
             let Some(active) = owner
                 .play
                 .as_ref()
@@ -167,9 +198,13 @@ fn activate(
             let Some(list) = preferences.battle_lists.get_mut(active) else {
                 return;
             };
-            match filter {
-                battle::Filter::Players => list.players = !list.players,
-                battle::Filter::Monsters => list.creatures = !list.creatures,
+            if let Command::BattleFilter(filter) = action.command {
+                match filter {
+                    battle::Filter::Players => list.players = !list.players,
+                    battle::Filter::Monsters => list.creatures = !list.creatures,
+                }
+            } else {
+                list.filters_collapsed = !list.filters_collapsed;
             }
             owner.settings.apply(preferences);
             return;
@@ -194,16 +229,49 @@ fn activate(
                 Action::Attack(target)
             },
         ),
+        Command::BattleCycle(previous) => {
+            // Target cycling follows the primary list even while editing another list.
+            let rows = play.link.filtered_battle_rows(0);
+            let targets: Vec<_> = rows
+                .iter()
+                .filter(|row| row.kind != oteryn_session::EntityKind::Npc)
+                .map(|row| row.entity)
+                .collect();
+            if !targets.is_empty() {
+                let current = play
+                    .link
+                    .battle_panel()
+                    .combat
+                    .and_then(|combat| combat.target);
+                let index = targets
+                    .iter()
+                    .position(|target| Some(*target) == current)
+                    .map_or(0, |i| {
+                        if previous {
+                            (i + targets.len() - 1) % targets.len()
+                        } else {
+                            (i + 1) % targets.len()
+                        }
+                    });
+                play.link.battle_request(Action::Attack(targets[index]));
+            }
+        }
         Command::Stop => play.link.battle_request(Action::Stop),
         Command::Fight(mode) => play.link.battle_request(Action::Fight(mode)),
         Command::Chase(mode) => play.link.battle_request(Action::Chase(mode)),
         Command::Secure(secure) => battle::request_pvp(&play.link, Some(secure), None),
+        Command::ToggleExpert => {
+            expert_visibility.0 =
+                (expert_visibility.0 != Some(owner.generation())).then_some(owner.generation());
+        }
         Command::Expert(mode) => battle::request_pvp(&play.link, None, Some(mode)),
         Command::BattleList(index) => {
             let _ = play.link.battle_select_list(index);
         }
         Command::BattleListEditor => play.link.battle_list_editor_open(),
-        Command::BattleMenu | Command::BattleFilter(_) => {}
+        Command::BattleMenu | Command::BattleToggleFilters | Command::BattleFilter(_) => {
+            unreachable!("settings actions return before combat dispatch")
+        }
         Command::Analyser(tool) => {
             super::analyser::open(&owner, tool);
         }
@@ -402,6 +470,7 @@ mod tests;
 
 #[derive(Component)]
 struct VipNameLabel {
+    group: Option<u8>,
     generation: u64,
     entry: u64,
 }

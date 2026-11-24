@@ -31,6 +31,10 @@ pub struct PreferenceStore {
     #[cfg(bevy_shell)]
     queued: usize,
     #[cfg(bevy_shell)]
+    deferred_impact_records: Option<[u32; 2]>,
+    #[cfg(bevy_shell)]
+    retry_impact_at: Option<std::time::Instant>,
+    #[cfg(bevy_shell)]
     io_baseline: Option<std::sync::Arc<std::sync::Mutex<ReferencePreferences>>>,
 }
 
@@ -82,6 +86,14 @@ impl PreferenceStore {
             }
             if let Some(contexts) = fields.remove("hotkey_profiles") {
                 fields.insert("hotkey_contexts".into(), contexts);
+            }
+        }
+        // The single visibility setting in older files applied to both HUD regions.
+        if let Some(fields) = document.as_object_mut() {
+            match (fields.get("status_panel_visible"), fields.get("status_bar_visible")) {
+                (Some(panel), None) => { fields.insert("status_bar_visible".into(), panel.clone()); }
+                (None, Some(bar)) => { fields.insert("status_panel_visible".into(), bar.clone()); }
+                _ => {}
             }
         }
         let legacy = document
@@ -153,6 +165,10 @@ impl PreferenceStore {
             #[cfg(bevy_shell)]
             queued: 0,
             #[cfg(bevy_shell)]
+            deferred_impact_records: None,
+            #[cfg(bevy_shell)]
+            retry_impact_at: None,
+            #[cfg(bevy_shell)]
             io_baseline: None,
         }
     }
@@ -174,6 +190,10 @@ impl PreferenceStore {
             replacing: false,
             #[cfg(bevy_shell)]
             queued: 0,
+            #[cfg(bevy_shell)]
+            deferred_impact_records: None,
+            #[cfg(bevy_shell)]
+            retry_impact_at: None,
             #[cfg(bevy_shell)]
             io_baseline: None,
         })
@@ -211,6 +231,11 @@ impl PreferenceStore {
 #[cfg(bevy_shell)]
 impl Drop for PreferenceStore {
     fn drop(&mut self) {
+        // No further submissions can arrive. Chain the one coalesced save before detaching.
+        self.queued = 0;
+        if let Err(error) = self.flush_impact_records() {
+            eprintln!("Could not save impact records: {error}");
+        }
         if let Some(task) = self.save_task.take() {
             bevy_tasks::IoTaskPool::get()
                 .spawn(async move {
