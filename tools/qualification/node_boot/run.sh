@@ -163,8 +163,8 @@ NODE_READINESS_WAIT_SECONDS=60
 # The NPC sweep uses authored placement cells in addition to the normal profile.
 # Retain the town entry and existing qualification facts in the same bundle.
 if [[ "$NODE_BOOT_WORLD" == 1 && ",${NODE_BOOT_E2E_ONLY:-}," == *,npc_sweep,* ]]; then
-  # Loading the expanded region set continues after the content activation event.
-  NODE_READINESS_WAIT_SECONDS=180
+  # Expanded crops can finish loading several minutes after content activation.
+  NODE_READINESS_WAIT_SECONDS=300
   WORLD_REGIONS="$(python3 - "$GAME_SOURCE" "$WORLD_REGIONS" "${OTERYN_E2E_NPC_SWEEP_BATCH:-0:3}" <<'PY_NPC_REGIONS'
 import json
 import re
