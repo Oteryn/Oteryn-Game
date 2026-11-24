@@ -286,3 +286,11 @@ the detached fxi replay (no seed rows), the `110:120` retry
 contain no `NODE_BOOT_RESULT`. Six observed bed keys in `10:100`
 had no matching reachable house placement in the town bundle.
 The remaining observed key, 14248, returned `DefinitionNotFound`.
+
+| Fresh-stack seed replay | Seed PASS | Seed FAIL | Terminal result |
+| --- | ---: | ---: | --- |
+| Eight carried cases from earlier generic admission failures | 8 | 0 | `NODE_BOOT_FAIL` |
+
+The eight successful seeds were 23375, 23529, 23542, 268, 27270, 27565, 2813
+and 2814. The only failing step was the potion 268 cleanup projection
+deadline. The remaining ledger now contains 1,395 keys.
