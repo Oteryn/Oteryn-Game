@@ -569,6 +569,70 @@ def materialize_item_tree(reference, declarations, editor, sources):
     return item_records, item_shards, authoring_by_target, editors, bindings, tables
 
 
+def write_services(declarations, declarations_blob_sha):
+    service_records = [
+        row for row in declarations["records"] if row.get("kind") == "Service"
+    ]
+    if len(service_records) != 400:
+        raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
+
+    service_shards: dict[str, list[str]] = {}
+    service_counts: dict[str, int] = {}
+    for family, (node, stem, field) in SERVICE_FAMILIES.items():
+        # Native serialization omits empty arrays; source-held merchants keep their
+        # existing trade identities and Service declarations even with no offers.
+        records = [
+            row
+            for row in service_records
+            if field in row
+            or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")
+        ]
+        service_counts[family] = len(records)
+        service_shards[family] = []
+        for start in range(0, len(records), ITEM_SHARD_SIZE):
+            rows = [
+                {"declaration": declaration}
+                for declaration in records[start : start + ITEM_SHARD_SIZE]
+            ]
+            end = start + len(rows) - 1
+            relative = f"{node}{stem}-{start:05d}-{end:05d}.json"
+            service_shards[family].append(relative)
+            write(
+                relative,
+                {
+                    "schema": "OTERYN_SERVICE_AUTHORING_SHARD/v1",
+                    "family": family,
+                    "source_legacy_role": "content/world/definitions/declarations.json",
+                    "shard": {
+                        "index": start // ITEM_SHARD_SIZE,
+                        "start": start,
+                        "end": end,
+                        "count": len(rows),
+                    },
+                    "records": rows,
+                },
+            )
+        write(
+            f"{node}index.json",
+            {
+                "schema": "OTERYN_FAMILY_INDEX/v1",
+                "family": family,
+                "record_count": len(records),
+                "shard_size": ITEM_SHARD_SIZE,
+                "shards": service_shards[family],
+                "legacy_source": {
+                    "path": "content/world/definitions/declarations.json",
+                    "git_blob_sha": declarations_blob_sha,
+                    "schema": declarations["schema"],
+                },
+            },
+        )
+    if sum(service_counts.values()) != len(service_records):
+        raise RuntimeError(f"SERVICE_FIELD_SPLIT_MISMATCH:{service_counts}")
+
+    return service_counts, service_shards
+
+
 def main(*, items_only: bool = False) -> int:
     if items_only:
         records, shards, _, _, _, _ = materialize_item_tree(
@@ -1126,65 +1190,7 @@ def main(*, items_only: bool = False) -> int:
         },
     )
 
-    service_records = [
-        row for row in declarations["records"] if row.get("kind") == "Service"
-    ]
-    if len(service_records) != 400:
-        raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
-
-    service_shards: dict[str, list[str]] = {}
-    service_counts: dict[str, int] = {}
-    for family, (node, stem, field) in SERVICE_FAMILIES.items():
-        # Native serialization omits empty arrays; source-held merchants keep their
-        # existing trade identities and Service declarations even with no offers.
-        records = [
-            row
-            for row in service_records
-            if field in row
-            or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")
-        ]
-        service_counts[family] = len(records)
-        service_shards[family] = []
-        for start in range(0, len(records), ITEM_SHARD_SIZE):
-            rows = [
-                {"declaration": declaration}
-                for declaration in records[start : start + ITEM_SHARD_SIZE]
-            ]
-            end = start + len(rows) - 1
-            relative = f"{node}{stem}-{start:05d}-{end:05d}.json"
-            service_shards[family].append(relative)
-            write(
-                relative,
-                {
-                    "schema": "OTERYN_SERVICE_AUTHORING_SHARD/v1",
-                    "family": family,
-                    "source_legacy_role": "content/world/definitions/declarations.json",
-                    "shard": {
-                        "index": start // ITEM_SHARD_SIZE,
-                        "start": start,
-                        "end": end,
-                        "count": len(rows),
-                    },
-                    "records": rows,
-                },
-            )
-        write(
-            f"{node}index.json",
-            {
-                "schema": "OTERYN_FAMILY_INDEX/v1",
-                "family": family,
-                "record_count": len(records),
-                "shard_size": ITEM_SHARD_SIZE,
-                "shards": service_shards[family],
-                "legacy_source": {
-                    "path": "content/world/definitions/declarations.json",
-                    "git_blob_sha": declarations_blob_sha,
-                    "schema": declarations["schema"],
-                },
-            },
-        )
-    if sum(service_counts.values()) != len(service_records):
-        raise RuntimeError(f"SERVICE_FIELD_SPLIT_MISMATCH:{service_counts}")
+    service_counts, service_shards = write_services(declarations, declarations_blob_sha)
 
     charm_index = load(ROOT / CHARM_INDEX)
     if (
