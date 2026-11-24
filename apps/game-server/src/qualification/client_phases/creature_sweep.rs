@@ -1720,6 +1720,18 @@ mod evidence_tests {
     }
 
     #[test]
+    fn qualification_sweep_hunting_area_uses_global_ground_floor() -> TestResult {
+        let anchor = crate::qualification_wild_spawn::SWEEP_HUNT_POSITION;
+        let position = ActorPosition {
+            x: anchor.x,
+            y: anchor.y,
+            floor: anchor.floor,
+        };
+        assert_eq!(tile(position)?.floor, TOWN.floor);
+        Ok(())
+    }
+
+    #[test]
     fn qualification_sweep_recovery_does_not_repeat_fresh_build() -> TestResult {
         let (_, ready) = include_str!("creature_sweep.rs")
             .split_once("async fn ready(")
