@@ -132,6 +132,35 @@ class Diagnostics(unittest.TestCase):
                 self.assertEqual((diagnostics / name).read_text(), f'Error: "{REASON}"\nAuthorization: Bearer [REDACTED]\n')
                 self.assertEqual((diagnostics / name).stat().st_mode & 0o777, 0o600)
 
+    def test_rotation_failure_reports_driver_diagnostics(self):
+        lifecycle = Path(__file__).with_name("lifecycle.sh")
+        reason = "form_handler_missing_or_refused:oauth_authorize:expected_200:observed_503"
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            diagnostics = work / "diagnostics"
+            diagnostics.mkdir(mode=0o700)
+            (work / "native_device_rotation_replay.log").write_text(
+                f'Error: "{reason}"\nAuthorization: Bearer private-value\n'
+            )
+            completed = subprocess.run(
+                ["bash", "-c", 'source "$1"; game_platform_fail native_device_rotation_replay journey_assertion_failed 101',
+                 "bash", str(lifecycle)],
+                env={**os.environ, "GAME_SOURCE": str(lifecycle.resolve().parents[3]),
+                     "WORK": str(work), "NODE_BOOT_FAILURE_LOG_DIR": str(diagnostics),
+                     "GAME_PLATFORM_RESULT_FILE": str(work / "result")},
+                capture_output=True, check=False, text=True,
+            )
+            self.assertEqual(completed.returncode, 1)
+            self.assertEqual(
+                completed.stdout,
+                "GAME_PLATFORM_EVIDENCE flow=native_device_rotation_replay expected_exit=0 observed_exit=101\n"
+                f"GAME_PLATFORM_EVIDENCE flow=native_device_rotation_replay driver_reason={reason}\n",
+            )
+            self.assertEqual(
+                (work / "result").read_text(),
+                "GAME_PLATFORM_RESULT=FAIL flow=native_device_rotation_replay reason=journey_assertion_failed\n",
+            )
+
     def test_node_boot_harness_failure_retains_and_prints_redacted_log(self):
         root = Path(__file__).resolve().parents[3]
         with tempfile.TemporaryDirectory() as directory:

@@ -625,6 +625,14 @@ class QuestPc7QuestRewards(unittest.TestCase):
             ]["addons"],
             1,
         )
+        for stage in ("commission", "first-token", "second-token", "complete"):
+            fiend = callbacks[f"questpc7-fiend-{stage}"]
+            self.assertNotIn("completed_quests", fiend["requirements"], stage)
+            self.assertEqual(fiend["requires"], [{
+                "track": "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/reward",
+                "minimum": 1,
+                "maximum": 1,
+            }], stage)
         self.assertNotIn("questpc7-inquisition-first-token", callbacks)
         self.assertNotIn("questpc7-inquisition-second-token", callbacks)
         for slug in ("fiend", "inquisition"):

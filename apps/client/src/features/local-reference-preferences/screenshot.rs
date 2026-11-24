@@ -9,7 +9,7 @@ pub(super) use backlog::ScreenshotRuntime;
 #[cfg(bevy_shell)]
 pub(crate) use backlog::{CaptureAction, ScreenshotBatch};
 use std::{
-    fs::{DirBuilder, File},
+    fs::File,
     io::{self, BufWriter, Write},
     path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
@@ -100,6 +100,9 @@ impl Pixels {
 pub(crate) struct CaptureObservations {
     tracked_loot: u64,
     pub(in crate::play) tracker: [u64; 3],
+    pub(in crate::play) personal_boss_events: bool,
+    boss_revision: u64,
+    pending_boss_defeats: u64,
     credited_kills: u64,
     kill_feed: bool,
     low_health: u64,
@@ -116,20 +119,24 @@ impl crate::play::mailbox::Mailbox {
             {
                 self.screen_loot.record(corpse_items, *gold);
             }
-            if let AnalyserFact::KillLoot { corpse_items, .. } = fact
-                && corpse_items
-                    .iter()
-                    .any(|item| self.analyser.loot_tracked.contains(&item.item_type.get()))
-            {
-                self.capture_observations.tracked_loot =
-                    self.capture_observations.tracked_loot.wrapping_add(1);
-            }
             if matches!(fact, AnalyserFact::Kill { .. }) {
                 self.capture_observations.credited_kills =
                     self.capture_observations.credited_kills.wrapping_add(1);
             }
         };
         match event {
+            SessionEvent::ServerMessage(delta)
+                if matches!(delta.value, oteryn_session::ServerMessage::BossDefeated(_)) =>
+            {
+                let observed = &mut self.capture_observations;
+                if oteryn_client_ui::boss_defeated::advanced(
+                    delta.new_revision,
+                    observed.boss_revision,
+                ) {
+                    observed.boss_revision = delta.new_revision;
+                    observed.pending_boss_defeats = observed.pending_boss_defeats.saturating_add(1);
+                }
+            }
             SessionEvent::AnalyserFacts(delta) => delta.value.iter().for_each(&mut observe),
             SessionEvent::AnalyserAttributedFacts(delta) => {
                 delta.value.iter().for_each(|row| observe(&row.fact))
@@ -149,9 +156,23 @@ impl crate::play::mailbox::Mailbox {
     }
 }
 impl crate::play::PlayLink {
+    fn take_boss_defeat(&self, enabled: bool, capture_pending: bool) -> bool {
+        let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let count = &mut mailbox.capture_observations.pending_boss_defeats;
+        if !enabled {
+            *count = 0;
+        }
+        if *count == 0 || capture_pending {
+            return false;
+        }
+        *count -= 1;
+        true
+    }
+
     fn capture_observations(&self) -> CaptureObservations {
         let mailbox = crate::play::mailbox::lock(&self.mailbox);
         CaptureObservations {
+            tracked_loot: mailbox.analyser.tracked_loot_receipts,
             kill_feed: mailbox.analyser.selected,
             ..mailbox.capture_observations
         }
@@ -200,9 +221,19 @@ pub(crate) fn retry_capture_name<T>(mut attempt: impl FnMut() -> io::Result<T>) 
     attempt()
 }
 
+#[cfg(windows)]
+#[path = "screenshot_windows.rs"]
+mod windows;
+
 /// Newly created screenshot directories have the same privacy whether opened or saved into.
+#[cfg(windows)]
 pub(crate) fn ensure_screenshot_directory(path: &Path) -> io::Result<()> {
-    let mut directory = DirBuilder::new();
+    windows::create_private_directory(path)
+}
+
+#[cfg(not(windows))]
+pub(crate) fn ensure_screenshot_directory(path: &Path) -> io::Result<()> {
+    let mut directory = std::fs::DirBuilder::new();
     directory.recursive(true);
     #[cfg(unix)]
     {

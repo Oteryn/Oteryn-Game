@@ -39063,7 +39063,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "2fb81c42be1f957a4cf0198a35e5c4de7ae11d132cd8d5ab87482e6333474e08",
+        "canonical_definition_sha256": "c4157bd1d9bad2bf3d750aa50aa3bd64a81b9547ad06b709759d7a25987e3219",
         "canonical_name": "summerblade",
         "canonical_path": "content/items/definitions/items-17000-17499.json",
         "wiki_observations": [
@@ -39159,7 +39159,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "91df7edbc9a5a2788d231db413148d7dbd119ebf6cd2806f3008f78dd39a9565",
+        "canonical_definition_sha256": "781fa8c6710f41142fcfa47a0df9a944b3fade696a5edb91b965549737f275fd",
         "canonical_name": "winterblade",
         "canonical_path": "content/items/definitions/items-17000-17499.json",
         "wiki_observations": [
@@ -42792,7 +42792,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "342550a4344c38e2e76432adb7b349219e605af2b8f7c5aba09fa9077d93c3f9",
+        "canonical_definition_sha256": "bd400f50424d8e741719020c266734ee00250b266d3c14238387741cf4355cbf",
         "canonical_name": "soulcrusher",
         "canonical_path": "content/items/definitions/items-20500-20999.json",
         "wiki_observations": [
@@ -47244,7 +47244,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "7ff0aae35de83d1500aea238cbe87dc1c2f651cd89332ef09a9f00d44c0a6f28",
+        "canonical_definition_sha256": "d2ec2e26745b629b0e2bdff7ec447b4215345e20332beea2e6bb0c5c1070fa0d",
         "canonical_name": "eldritch wand",
         "canonical_path": "content/items/definitions/items-21500-21999.json",
         "wiki_observations": [
@@ -47348,7 +47348,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "174f4d5c319c3b6335bac304e00d3985e1036ada383d29ce2524ba057b9a4f75",
+        "canonical_definition_sha256": "26c22e4f41ad77e9d163b6cdc2889d8e4ffd72dc4b82cf5d8bc3be27d0ce499c",
         "canonical_name": "gilded eldritch wand",
         "canonical_path": "content/items/definitions/items-21500-21999.json",
         "wiki_observations": [
@@ -47949,7 +47949,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "496444be6232506b5c52ecabaede0d32146357d354e8e089e8c31e3ce9809473",
+        "canonical_definition_sha256": "02c80356c87444bf5eed2e2678dfb726cc5db2dc53575f20794bf7f2b4e0396c",
         "canonical_name": "eldritch rod",
         "canonical_path": "content/items/definitions/items-21500-21999.json",
         "wiki_observations": [
@@ -48064,7 +48064,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "1d17abe98cf9aa603faadd9441507487dafb8099099fd71e6084bbd1d638d8d9",
+        "canonical_definition_sha256": "4d56ec004222e95329942227b0bfc361c43f4895ef82ebc6b98c7baed849e8fe",
         "canonical_name": "gilded eldritch rod",
         "canonical_path": "content/items/definitions/items-21500-21999.json",
         "wiki_observations": [
@@ -50098,7 +50098,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "b5839ee2042ef831d7ccaeed2d4e08a0a75ac97881420a3229e08b1596f55789",
+        "canonical_definition_sha256": "5bff4bac593fabeeace7e790491158ff094efaf9102c21b0c32fa7b36934d03e",
         "canonical_name": "naga wand",
         "canonical_path": "content/items/definitions/items-24000-24499.json",
         "wiki_observations": [
@@ -50194,7 +50194,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "924812c32e4f3ec43b1f1833753b60075c3c19a803d7f369768d1de2e072f87f",
+        "canonical_definition_sha256": "f1acae546fa259e5470aa1cbe6e35016021df7cf4875ff8e092901e21521db25",
         "canonical_name": "naga rod",
         "canonical_path": "content/items/definitions/items-24000-24499.json",
         "wiki_observations": [
@@ -52919,7 +52919,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "33020292818bffd6d4737563abee57f0aeeaeaf0876dcb9f38c9bcdac1e215ae",
+        "canonical_definition_sha256": "512dbc76c838c0f2ac1e09346df7a58aba55841d20e8640dbd55fcbeecdaa349",
         "canonical_name": "sanguine coil",
         "canonical_path": "content/items/definitions/items-25500-25999.json",
         "wiki_observations": [
@@ -53023,7 +53023,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "9fb06426f781b23bff83fe07e83d83e1ae95ae9a9e150ad07b1e444100baaad4",
+        "canonical_definition_sha256": "1379a210247da960ee5da6eebc49178df6931ac657b1dcd44f86bc9a009c5372",
         "canonical_name": "grand sanguine coil",
         "canonical_path": "content/items/definitions/items-25500-25999.json",
         "wiki_observations": [
@@ -53254,7 +53254,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "1d88cdc5430e5278bd1bff89f53002e9642808be2408d0826269f7fed6ff1cee",
+        "canonical_definition_sha256": "afcd468b1b208737ab962a0bf6e54b3a6dabae28b5061531c4b689a736444d30",
         "canonical_name": "sanguine rod",
         "canonical_path": "content/items/definitions/items-25500-25999.json",
         "wiki_observations": [
@@ -54989,7 +54989,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "536933e784247a3d4d91a73ee6954ae706a96d383767e2e9b6a50a22cabdeeb1",
+        "canonical_definition_sha256": "1ad93e0db65859645d0124a34823c279789f3eec040c598e601128b53d16ee15",
         "canonical_name": "biscuit barrier",
         "canonical_path": "content/items/definitions/items-25500-25999.json",
         "wiki_observations": [
@@ -55085,7 +55085,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "47a9c2fad4c0ccf5d03b3ff6d4781692e49143543e0602badc10ae1ce2b7e451",
+        "canonical_definition_sha256": "5442fd0b93a3ecfaa51faa6f6e42a337192420c30fcd789315c9d476f8553e93",
         "canonical_name": "amber slayer",
         "canonical_path": "content/items/definitions/items-26000-26499.json",
         "wiki_observations": [
@@ -55188,7 +55188,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "736ea8e7d52f11f1d891810dc9e2c2afc8c496b06ee6cf97816baa24bd8a42c3",
+        "canonical_definition_sha256": "38a07744b1495ceee4374ae9fabfbdb455ab23dfeb55972b8f2fb9f92765a063",
         "canonical_name": "amber greataxe",
         "canonical_path": "content/items/definitions/items-26000-26499.json",
         "wiki_observations": [
@@ -55291,7 +55291,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "d161c21d8d8ac530c0dd2447c33a924d097fa3e242e61d4f5d70d3e051aa658a",
+        "canonical_definition_sha256": "3fc5c176b5d2f87ea1817bc30ecebf235feb336466515da168ebc137511cba09",
         "canonical_name": "amber bludgeon",
         "canonical_path": "content/items/definitions/items-26000-26499.json",
         "wiki_observations": [
@@ -55516,7 +55516,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "3c448dacbbf40467da29644a4fbf789a027fd993e9afab6bd6a1a25e2ce556ce",
+        "canonical_definition_sha256": "2832baecc3aff63cc2c656f9750689f8c9342a166fb6f405ee6db944d21dabc2",
         "canonical_name": "amber wand",
         "canonical_path": "content/items/definitions/items-26000-26499.json",
         "wiki_observations": [
@@ -55620,7 +55620,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "b70e9bb990ee7a1defeeec6e96612e5527ea6b7d82b551c183f192198d1614f2",
+        "canonical_definition_sha256": "aea13a7534896af2f07e14bd4a8f1d1b16c31b94c4a47dea53bc109e79b26f02",
         "canonical_name": "amber rod",
         "canonical_path": "content/items/definitions/items-26000-26499.json",
         "wiki_observations": [
@@ -55716,7 +55716,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "504fda969ac7843df025a212455190df254780aee878e7ac9988f98dbc206c3d",
+        "canonical_definition_sha256": "01b899831103771e61874ebdc9138cd216685f82a2bf37ff4da5c319c8049b4e",
         "canonical_name": "amber sabre",
         "canonical_path": "content/items/definitions/items-26000-26499.json",
         "wiki_observations": [
@@ -55819,7 +55819,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "d04f20e25738c4e49d680fdc9ec00d39900ab1bd81f3e89b5e0f075b454f02f9",
+        "canonical_definition_sha256": "4ff81eb05d512e3e29d79416b0a7d6300ad5683d3aec810d62600a142a9598ab",
         "canonical_name": "amber axe",
         "canonical_path": "content/items/definitions/items-26000-26499.json",
         "wiki_observations": [
@@ -55915,7 +55915,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "36729a187cac4186152d21f8576f8fb88712ccf6e183736c33d8aab7a471e040",
+        "canonical_definition_sha256": "99e93fb936628305bbd905178dd353e9b03fede10213cd89d7f67efc052d6fcc",
         "canonical_name": "amber cudgel",
         "canonical_path": "content/items/definitions/items-26000-26499.json",
         "wiki_observations": [
@@ -56183,7 +56183,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "bf2e2e2f5e71f8290a295490a1221542ec7da69e3f5e4b0a3ef11acc0678eb38",
+        "canonical_definition_sha256": "c12f53dbd90670c50993344ba03717116d82f3e9cc9b481d737b07c750f03b0b",
         "canonical_name": "bursa obscura",
         "canonical_path": "content/items/definitions/items-27000-27499.json",
         "wiki_observations": [
@@ -56691,7 +56691,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "0c580e54bc71f24a1ebf7da2445277d90d7e5f653542d17da7cd2754c496905e",
+        "canonical_definition_sha256": "31c8378078bb90851a4d63c062a6fbaaaecd86434ed9a1483922829c04036f64",
         "canonical_name": "inferniarch greataxe",
         "canonical_path": "content/items/definitions/items-27000-27499.json",
         "wiki_observations": [
@@ -56921,7 +56921,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "464090e3ad78117aee7a8fef0caef4885e1c68fa6a9145013446626944e9903c",
+        "canonical_definition_sha256": "4f5ce6c084b83146250c2cdf6a7654215d615fa72a82daf9d6e2f9fa70fb9605",
         "canonical_name": "inferniarch warhammer",
         "canonical_path": "content/items/definitions/items-27000-27499.json",
         "wiki_observations": [
@@ -57146,7 +57146,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "d621333666fb2637ab1977e9413a1b9b99de5c8dbcf9313dfcf416af2258e346",
+        "canonical_definition_sha256": "f456561102e57ef0b13d116dd058e1455ebabf698140fa5847bf8cb33789f516",
         "canonical_name": "inferniarch wand",
         "canonical_path": "content/items/definitions/items-27000-27499.json",
         "wiki_observations": [
@@ -57250,7 +57250,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "df014f4bad9e777687a3c120d1bc3785d7ff07fd1dabe7cf55657adbf2fe85dc",
+        "canonical_definition_sha256": "a9ba849e2b27f9bb9b922d76e33b896804f1a4ec3f641c76892c5f47930fc625",
         "canonical_name": "inferniarch rod",
         "canonical_path": "content/items/definitions/items-27000-27499.json",
         "wiki_observations": [
@@ -57371,7 +57371,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "5d6e32647ef5ec559fe1fc2dfeb7fc5ef5b9e872016e9c18df8d7b58925697fa",
+        "canonical_definition_sha256": "2d7aa1b6befd8b46a3d68d2245929637f08e1289165b6d087ead6925db09fee0",
         "canonical_name": "inferniarch slayer",
         "canonical_path": "content/items/definitions/items-27000-27499.json",
         "wiki_observations": [
@@ -59273,7 +59273,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "248e82c5e622fe85b9c5110d778190e98fc731f44e5d34283973d860e4af0865",
+        "canonical_definition_sha256": "e9025ae881d9421e6a48250a4445531914aabec67913aba62dd9a106f01932e7",
         "canonical_name": "rending inferniarch greataxe",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -59393,7 +59393,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "f1a52c4a58081bfdb32619664489a0cfe792beb1681a54f1ca949d6c3bc4d38e",
+        "canonical_definition_sha256": "3d48b9be44c6129265fb2742e2d7a99d2ccdf6b9b132f68d7daca6f0d64190ab",
         "canonical_name": "draining inferniarch greataxe",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -59527,7 +59527,7 @@
       },
       "evidence_status": "DERIVED_SELECTED_OVER_STALE_HELPER",
       "identity_evidence": {
-        "canonical_definition_sha256": "cc0f7cc982adea2bbbc018d2dc48aeffc5939229d0a79708f030371d5bd752ff",
+        "canonical_definition_sha256": "d98ff96f643266668f64290eb20a33226ee3442736da582a86a885ae273ef23d",
         "canonical_name": "siphoning inferniarch greataxe",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -59863,7 +59863,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "9a18c418f9e6d0d4845ba7e91787dd6a7f48e021f7aadd5ff4a6525a8a4c1e9b",
+        "canonical_definition_sha256": "26166aefc17df16c080e78aee619206f51e86080c7e537161880f53e5e99531e",
         "canonical_name": "siphoning inferniarch flail",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -59964,7 +59964,7 @@
       },
       "evidence_status": "COMMUNITY_SINGLE_SOURCE",
       "identity_evidence": {
-        "canonical_definition_sha256": "75be415e1ba32d2627a140e1ce608b49d3eac56b2203c0c3e8233b9dfc8e3882",
+        "canonical_definition_sha256": "ca03f3c1ee01ab5d71d2cac0f52e0d2ac61b46c8ed76cb24977f3a970ba8dba6",
         "canonical_name": "rending inferniarch warhammer",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -60074,7 +60074,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "06ea6dca5d25efa9286fd8f4faf825b5da8db425a598cf7a0aa868cc79519b4e",
+        "canonical_definition_sha256": "47ae130f729ed1975cbb8a9a625955165c07d7f59b58685b2c96a2c9e0efa7f4",
         "canonical_name": "draining inferniarch warhammer",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -60184,7 +60184,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "be0e6b546c14eb71bf0d8b38642a30e22f54a4478ec488132c649526d32255f4",
+        "canonical_definition_sha256": "a2ece186aaea1468a0052be0a99c199a82a0204294d08a86170679690e68d95c",
         "canonical_name": "siphoning inferniarch warhammer",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -60636,7 +60636,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "e44a477991b70417beb69e76aeddfd68748d3829fcb2c63151129e4d8f9c8141",
+        "canonical_definition_sha256": "956996d9a3acfebbac81294c0654d794b7d5c62a5aa988ea4f0684f617d3f9a2",
         "canonical_name": "rending inferniarch slayer",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -60746,7 +60746,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "869d596932953025a7fce4c156b313a03d2bf96452f792e132bcbfeaf5b5029c",
+        "canonical_definition_sha256": "dbd029500a0d6d34369090a735ff6f2b685e11ed6fd1dbde6a504ea1eea5233f",
         "canonical_name": "draining inferniarch slayer",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -60856,7 +60856,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "6bc4eb25e383ac6d4fa1cf1fd564d0a571ae748734167497f50a72c39475575d",
+        "canonical_definition_sha256": "d1d233e0648197f0800e5ce87958382711573707676e31eec14cd539154969a0",
         "canonical_name": "siphoning inferniarch slayer",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -60964,7 +60964,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "a977c7a471dbcf1b52ca13aa2c5c0eb342ff4c5d9deae9758c1f7de6a0bd3877",
+        "canonical_definition_sha256": "3574182158f201a4d3a7b71a6192ebdf805937f55620e4eb871faa3e658cd874",
         "canonical_name": "rending inferniarch wand",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -61072,7 +61072,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "8d212f242d26367d57126e58c7168c9471ceb57943409cb9dd7561f8f72bb7ef",
+        "canonical_definition_sha256": "84b2d18ec5e796ea909fb5ef4feb3dd4657dbc1d53b083372ce1f8626fa4d06b",
         "canonical_name": "draining inferniarch wand",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -61186,7 +61186,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "29495f3b71d43e8b168714bc193dedf634c7826b5bf51cdd2a29dda4b4eb7970",
+        "canonical_definition_sha256": "c13223da033cd687ff25d109f76f1160ddae0eb260ac4c7131ed0cac5c95b39e",
         "canonical_name": "siphoning inferniarch wand",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -61294,7 +61294,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "f173b8633a13c1fdfc3306b28897fb7d4d6a2275ea8638ee615c439fc546984d",
+        "canonical_definition_sha256": "4f6ac4b9370df4c6359c9666f952af443e26deb2cc4734926093775b53575087",
         "canonical_name": "rending inferniarch rod",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -61402,7 +61402,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "c3892a0a7235f6e80b9efe7c53f4a83536dbea58a406aef9174ef1ae5876ae46",
+        "canonical_definition_sha256": "7d0957e70a09b6d86177c315563d26f2242385134cc39cd4c8b83c59ab7cc542",
         "canonical_name": "draining inferniarch rod",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -61510,7 +61510,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "7ad9d87c0cc067dfebfc1ee4f8776b5c6c51d657b9940391257d13ca3bc2dc8b",
+        "canonical_definition_sha256": "52b75cf4c6a21423d8aedc809998c23e3035ecca24c2bebacc5b2783a75d155e",
         "canonical_name": "siphoning inferniarch rod",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -61639,7 +61639,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "ea6859849946fba29d6cc32a1d4006970630c185d316de4e015c1487b73800c8",
+        "canonical_definition_sha256": "770bb4efdb0462ece5bf82ddd0a70d4aef0f2ca0b68706360161e5ce0db91b34",
         "canonical_name": "sanguine claws",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -61768,7 +61768,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "8e8770d1cd718a5349ea680bb2110b304b823d431ecbe47f7315e4fe2ebfb6ed",
+        "canonical_definition_sha256": "d4781b06251812a381bb4a2f69bd777a5af92d69f0c0f5defd62e4fdf5d741f9",
         "canonical_name": "grand sanguine claws",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -61897,7 +61897,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "92e13bc6a6874921e0d4106957376cce947e6bd4f43f6c3e93f26a5989afa497",
+        "canonical_definition_sha256": "b8d227c1d493551007a77a6062337c88628ee3fb80a97bc040c257187814fffa",
         "canonical_name": "soulkamas",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -62026,7 +62026,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "889843172536e3a80ffb61da50d2af29a89c57258b0248bcc7b7eee9b99cd8e9",
+        "canonical_definition_sha256": "90e718f04f7b1a303f6fda7147430ed92fffb863c786b4a7ae32b77dee0995fe",
         "canonical_name": "naga katar",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -62168,7 +62168,7 @@
       },
       "evidence_status": "DERIVED_SELECTED_OVER_STALE_HELPER",
       "identity_evidence": {
-        "canonical_definition_sha256": "f1f484a136b46220d45d297bfbc3ba860998b5b139b3017515dd6e75b375e159",
+        "canonical_definition_sha256": "38763e0860540e38c045b786d5209635caeb0499d7561d546be44b258cb17719",
         "canonical_name": "falcon sai",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -62309,7 +62309,7 @@
       },
       "evidence_status": "DERIVED_SELECTED_OVER_STALE_HELPER",
       "identity_evidence": {
-        "canonical_definition_sha256": "c550577a20874b1c56658ee83b1d0f85fa68750c5da118ed22484d6f5094ecd3",
+        "canonical_definition_sha256": "669989519808999500e8ee558a3f858c68283c0a881ba94c26e8bf955fd9cd41",
         "canonical_name": "lion claws",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -62480,7 +62480,7 @@
       },
       "evidence_status": "DERIVED_SELECTED_OVER_STALE_HELPER",
       "identity_evidence": {
-        "canonical_definition_sha256": "24bc6772d893bc3c745b71c2b145eaecebf8a43e3f05a11a2cb66b7265a4dad4",
+        "canonical_definition_sha256": "2ee8a3dac336634d01ee4c38aeb2d72645f3d3d65c522ac4f7c37a26044a6073",
         "canonical_name": "umbral katar",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -62609,7 +62609,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "61f29582383260d3217ff90050b5e103dc0b6811209b9025953f14a5730a8e4d",
+        "canonical_definition_sha256": "bdd459acb795ca91575980aefd31c49d9f7cac93dcde1038472c3716a24e0b9a",
         "canonical_name": "umbral master katar",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -62753,7 +62753,7 @@
       },
       "evidence_status": "DERIVED_SELECTED_OVER_STALE_HELPER",
       "identity_evidence": {
-        "canonical_definition_sha256": "1e3e6d8112738ee63261c97e6323939e43f726406c18fa8b464ce0384d2ab4e9",
+        "canonical_definition_sha256": "b782a22e858607c89edcf0e98a71c19cb2f97c24bae65b5f120a94bee84debc5",
         "canonical_name": "cobra bo",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -62882,7 +62882,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "1a643c509cadb417ade8ec3a67f2d4c0d30d0af040fdf26379b4399501f49d51",
+        "canonical_definition_sha256": "bc82455ab9e2e4fbd7e1fb4d4a2d0a6a564ee5b35d2a51e96865c61b57e04212",
         "canonical_name": "nunchaku of destruction",
         "canonical_path": "content/items/definitions/items-27500-27999.json"
       },
@@ -64016,7 +64016,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "5c1eafe2ae20aae39e727783210be69a4558f381be5887a08785dc3c09a1e931",
+        "canonical_definition_sha256": "006fb63b5393df932de0546ad6e612a39afd45e0d6b470d969ca20f763bbe652",
         "canonical_name": "amber kusarigama",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -64373,7 +64373,7 @@
       },
       "evidence_status": "DERIVED_SELECTED_OVER_STALE_HELPER",
       "identity_evidence": {
-        "canonical_definition_sha256": "75ea34622409295140eb70587d960b8d54529dd3d6da87b349bce46ac4a7dacb",
+        "canonical_definition_sha256": "438481fe21162260570a1c908a45c3ae0390a0e486b8a4edcbe9ac967b86f4f5",
         "canonical_name": "rending inferniarch claws",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -64514,7 +64514,7 @@
       },
       "evidence_status": "DERIVED_SELECTED_OVER_STALE_HELPER",
       "identity_evidence": {
-        "canonical_definition_sha256": "90ca1d100f2b9d48ac8481a3771639f343498661b7d31b7683190f03c7adf741",
+        "canonical_definition_sha256": "e6925cc38864fd5dd2d813a91ca113854a477965a8fc72ec708bac40757010ec",
         "canonical_name": "draining inferniarch claws",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -64655,7 +64655,7 @@
       },
       "evidence_status": "DERIVED_SELECTED_OVER_STALE_HELPER",
       "identity_evidence": {
-        "canonical_definition_sha256": "7afb69935fb907ffde1023683db6df765974629ff8017921f19636b85b588f2e",
+        "canonical_definition_sha256": "49057ebfe73dafc886c907e05f01324e7d7f0eb57e40cacf8ab9450608ef31ca",
         "canonical_name": "siphoning inferniarch claws",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -65677,7 +65677,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "e81b36e9757c049a6a0b23b380f852b8fd93fb3a35490bf4e3d1a521afcc1818",
+        "canonical_definition_sha256": "19bbac1e55fdc247a771fa4683c955b4a1bbfb9f00cdc592d4425bbe01538cd1",
         "canonical_name": "bambus jo",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [
@@ -66791,7 +66791,7 @@
       },
       "evidence_status": "COMMUNITY_SINGLE_SOURCE",
       "identity_evidence": {
-        "canonical_definition_sha256": "4551c9d6d64f7d2c4e44e8b051a041ade0bfcf332377ab07c86db753ecc40819",
+        "canonical_definition_sha256": "39705538ae271d354f0e1a4aad3acf4dafd26900913c3ff3a234d1dc9bfa5dad",
         "canonical_name": "norcferatu bonehood",
         "canonical_path": "content/items/definitions/items-28000-28499.json",
         "wiki_observations": [
@@ -67316,7 +67316,7 @@
       },
       "evidence_status": "COMMUNITY_SINGLE_SOURCE",
       "identity_evidence": {
-        "canonical_definition_sha256": "c409b9acfab3b4785a696b439cbf289002d89238a3a3e17fb544347ca3dff301",
+        "canonical_definition_sha256": "bfc336baaa478aa08dce034eb44249582a07cc49a2d44f1e00f879db5e3d667e",
         "canonical_name": "ink sword",
         "canonical_path": "content/items/definitions/items-28000-28499.json",
         "wiki_observations": [
@@ -67692,7 +67692,7 @@
       },
       "evidence_status": "COMMUNITY_SINGLE_SOURCE",
       "identity_evidence": {
-        "canonical_definition_sha256": "cf1ef3028c218349d60b2f2a2f7631096bafd7d4f976d2ca77fdb5fea6cd7d00",
+        "canonical_definition_sha256": "917a2113ac3b160f8978c00731a55c7e01dee8b29fb6e07aa94b83bb1cd6cfcd",
         "canonical_name": "crypt strike",
         "canonical_path": "content/items/definitions/items-28000-28499.json",
         "wiki_observations": [
@@ -69370,7 +69370,7 @@
       },
       "evidence_status": "COMMUNITY_SINGLE_SOURCE",
       "identity_evidence": {
-        "canonical_definition_sha256": "4b83f5d8fc252fc5ce9ebca4b5842b476ab217af3523d8aadd88e16ebd681b6f",
+        "canonical_definition_sha256": "85848eab0c106dbf591e0b77cf3ebabd26fb84eaa9b17d210a87b5d05b5664ce",
         "canonical_name": null,
         "canonical_path": "content/items/definitions/items-28500-28999.json",
         "wiki_observations": [
@@ -69461,7 +69461,7 @@
       },
       "evidence_status": "COMMUNITY_SINGLE_SOURCE",
       "identity_evidence": {
-        "canonical_definition_sha256": "9d49ce2407b8df379759f59f187de08be1688beadbb643f655889158fe1e4ea6",
+        "canonical_definition_sha256": "294c617be15cee27d33aa1161731846d7687940571f018a0a5b40421f73d00b6",
         "canonical_name": null,
         "canonical_path": "content/items/definitions/items-28500-28999.json",
         "wiki_observations": [
@@ -69552,7 +69552,7 @@
       },
       "evidence_status": "COMMUNITY_SINGLE_SOURCE",
       "identity_evidence": {
-        "canonical_definition_sha256": "b7c122d7827f7fe6ca68c9b4278d5640be320f5ece6bfe884a87008838ece344",
+        "canonical_definition_sha256": "86136ab646231dc73d3e1516b4a3509752029e98896103ae2bb5c5badba73176",
         "canonical_name": null,
         "canonical_path": "content/items/definitions/items-28500-28999.json",
         "wiki_observations": [
@@ -69643,7 +69643,7 @@
       },
       "evidence_status": "COMMUNITY_SINGLE_SOURCE",
       "identity_evidence": {
-        "canonical_definition_sha256": "42b52b11cf966931d47f7f76f9f3826d8c96ab9b37bdc50855304db41bbf31c8",
+        "canonical_definition_sha256": "7a5a0d9990cec9719bc73ecab3bd181ee67a9fe000459135da0c2f446a8b7da0",
         "canonical_name": null,
         "canonical_path": "content/items/definitions/items-28500-28999.json",
         "wiki_observations": [

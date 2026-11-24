@@ -8,13 +8,17 @@ from questpc7_grave_programme import PASSAGES, counter, state
 
 DECISION = "owner:questpc7:selected-outfit-item-bindings:2026-11-07"
 ITEM_ACTIONS = "tools/content-schema/native-gameplay/item-cosmetic-actions.json"
+FORGEMASTER_REWARD = (
+    "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/"
+    "forgemaster_door/reward"
+)
 SPECS = [
     (
         "fiend_slayer_outfits_quest",
         "fiend",
         "the_forgemaster",
         "fiend_slayer",
-        "no_rest_for_the_wicked_quest",
+        None,
         (50060, 50061),
         (1, 2),
     ),
@@ -94,7 +98,6 @@ def append(root, callbacks, inputs, pin):
             for key, value in definitions.items()
             if key.endswith("." + suffix)
         )
-        parent = next(key for key in definitions if key.endswith("." + parent_suffix))
         recipe = (
             definition.get("recipe") or definition["oteryn_recipe"]["payload"]["recipe"]
         )
@@ -109,8 +112,9 @@ def append(root, callbacks, inputs, pin):
         requirements = {
             "min_level": recipe["requirements"]["min_level"],
             "premium": recipe["requirements"]["premium"],
-            "completed_quests": [parent],
         }
+        if parent_suffix is not None:
+            requirements["completed_quests"] = [next(key for key in definitions if key.endswith("." + parent_suffix))]
         sources = [
             f"canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}",
             f"crystal:{pin}:{source}:1-{len(inputs[source].splitlines())}:sha256:{hashlib.sha256(inputs[source]).hexdigest()}",
@@ -252,10 +256,14 @@ def append(root, callbacks, inputs, pin):
             add("complete", 0, 3, owned=3, completes=True)
             callbacks[-1]["storage"][0]["maximum"] = 2
             continue
+        begin = len(callbacks)
         add("commission", -1, 0, addon=0)
         add("first token", 0, 1, give=items[0], owned=0)
         add("second token", 1, 2, give=items[1], owned=bits[0])
         add("complete", 2, 3, owned=3, completes=True)
+        if slug == "fiend":
+            for callback in callbacks[begin:]:
+                callback["requires"] = [{"track": FORGEMASTER_REWARD, "minimum": 1, "maximum": 1}]
 
 
 def append_formal(root, callbacks, inputs, pin):

@@ -90,6 +90,16 @@ pub(in crate::play) fn activate(m: &mut Mailbox, s: &UnboundedSender<PlayCommand
                 .as_ref()
                 .is_some_and(|v| v.revision == revision && v.gems.iter().any(|g| g.id == id))
             {
+                if let Some(slot) = m
+                    .wheel
+                    .confirmed_atelier
+                    .as_ref()
+                    .and_then(|v| v.gems.iter().find(|gem| gem.id == id && gem.vessel))
+                    .map(|gem| gem.domain)
+                    .filter(|slot| *slot < m.wheel.vessel_slot_count())
+                {
+                    m.wheel.vessel_slot = slot;
+                }
                 m.wheel.select_gem(Some(id));
             }
         }

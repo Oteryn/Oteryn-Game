@@ -1,0 +1,20 @@
+{
+  "id": 586,
+  "name": "STORE_HOME_V1",
+  "constant": "store::browse::CAPABILITY_HOME_V1",
+  "requires": [
+    154
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    6335,
+    6336
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

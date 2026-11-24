@@ -11,6 +11,7 @@ pub const DOOR: &str =
     "oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/king_zelos_door";
 pub const OUTFIT: &str = "oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/inquisition_outfit_received";
 pub const START: &str = "oteryn:quest-transition/grave-danger/start";
+pub const ZELOS_DEATH: &str = "oteryn:quest-death/questpc7-grave-king_zelos";
 pub const ACCESS: &str = "oteryn:quest-transition/grave-danger/zelos-access";
 pub const FINISH: &str = "oteryn:quest-transition/grave-danger/final-report";
 pub const FINISH_HELD: &str = "oteryn:quest-transition/grave-danger/final-report-outfit-held";

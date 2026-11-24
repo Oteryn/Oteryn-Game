@@ -1,0 +1,4 @@
+name=familiar_appearance
+commands=6324,6325
+[route]
+routing::appearance::route(authority, session.actor, &session.admitted, command).await

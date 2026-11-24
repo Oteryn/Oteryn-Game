@@ -81,9 +81,30 @@ class WritableProfilesTests(unittest.TestCase):
         self.apply(generated)
         self.assertEqual(json.loads(generated["profiles"]), expected)
         rows = {r["production_definition"]["production_key"]: r for r in self.native["records"]}
+        # An empty provider isolates the writable owner's admission decisions.
+        isolated = {"profiles": b'{"records":[]}', "manifest": b'{"item_profiles":{}}'}
+        self.apply(isolated, stage="legacy")
+        legacy_profiles = json.loads(writing.outputs(crystal_carried=False)[writing.PATH])
+        owned = {r["production_definition"]["production_key"]: r
+                 for r in json.loads(isolated["profiles"])["records"]}
+        self.assertEqual(owned.keys(), {
+            profile["item"]["key"] for profile in legacy_profiles["records"]
+            if profile["qualification"] in {
+                "REWRITE_TEXT_SEMANTICS_ONLY", "WRITE_ONCE_TEXT_SEMANTICS_ONLY",
+                "FIXED_TEXT_SEMANTICS_ONLY", "UNRESOLVED_WRITE_ONCE_TARGET",
+            }
+        })
+        for profile in legacy_profiles["records"]:
+            if profile["qualification"] == "UNRESOLVED_WRITE_ONCE_TARGET":
+                text = owned[profile["item"]["key"]]["semantics"]["readable_writeable"]["value"]
+                self.assertEqual(text["writeable"], {"state": "UNKNOWN"})
+                self.assertEqual(text["write_once_target"], {"state": "UNKNOWN"})
+                self.assertEqual(text["max_text_length"], writing.known(profile["max_characters"]))
         sources = writing.reading.item_rows(writing.ROOT)
         for profile in self.profiles["records"]:
             key = profile["item"]["key"]
+            if key in owned:
+                self.assertEqual(owned[key]["admission"]["materializable"], sources[key]["materializable"])
             qualification = profile["qualification"]
             carried = qualification in {"CRYSTAL_CARRIED_REWRITE", "CRYSTAL_CARRIED_WRITE_ONCE"}
             # MAIL E09 and the card/poem owners already admit these Items.
@@ -155,9 +176,14 @@ class WritableProfilesTests(unittest.TestCase):
             self.assertEqual(generated, before)
 
         # Owner-authorized replacements must not hide unrelated corruption.
-        for number, field, value in [(27932, "max_text_length", writing.known(1501)),
-                                     (2819, "writeable", {"state": "CONFLICT"}),
-                                     (173, "writeable", {"state": "CONFLICT"})]:
+        owner_conflict = "WRITABLE_OWNER_REPLACEMENT_CONFLICT"
+        for number, field, value, error in [
+            (27932, "max_text_length", writing.known(1501), owner_conflict),
+            (2819, "writeable", {"state": "CONFLICT"}, owner_conflict),
+            (173, "writeable", {"state": "CONFLICT"}, owner_conflict),
+            (6386, "writeable", {"state": "CONFLICT"},
+             "^WRITABLE_LEAF_CONFLICT:oteryn:item.tibia.i6386:writeable$"),
+        ]:
             generated = self.generated()
             document = json.loads(generated["profiles"])
             row = next(r for r in document["records"]
@@ -166,7 +192,7 @@ class WritableProfilesTests(unittest.TestCase):
             generated["profiles"] = json.dumps(document).encode()
             before = copy.deepcopy(generated)
             with self.subTest(number=number), self.assertRaisesRegex(
-                    ValueError, "WRITABLE_OWNER_REPLACEMENT_CONFLICT"):
+                    ValueError, error):
                 self.apply(generated)
             self.assertEqual(generated, before)
 

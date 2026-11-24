@@ -34,7 +34,8 @@ def policies(root=ROOT):
     manifest = json.loads((root / 'content/spells.manifest.json').read_bytes())
     if hashlib.sha256(raw).hexdigest() != manifest['creature_profiles']['sha256']:
         raise ValueError('NATIVE_GOAL_CREATURE_PROFILE_PIN')
-    roots = set()
+    # Crystal201189f action_boss.lua:4 requires the fresh Koshei corpse.
+    roots = {7535}
     for creature in creatures:
         rows = [r['profile'] for r in json.loads(raw)['records'] if r['profile']['target']['key'] == creature]
         if len(rows) != 1:

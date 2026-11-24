@@ -1126,7 +1126,7 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
       ],
       "fee": {
         "gold": 500000000,
@@ -1162,7 +1162,7 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
       ],
       "requires_outfits": [
         "oteryn:outfit.golden"
@@ -1197,7 +1197,7 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
       ],
       "fee": {
         "gold": 250000000,
@@ -1236,7 +1236,7 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
       ],
       "requires_addons": [
         {
@@ -1271,7 +1271,7 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
       ],
       "completes": true,
       "requires_addons": [
@@ -1310,7 +1310,7 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
       ],
       "fee": {
         "gold": 250000000,
@@ -1350,7 +1350,7 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
       ],
       "completes": true,
       "requires_addons": [

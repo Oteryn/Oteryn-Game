@@ -167,28 +167,12 @@ impl PlayLink {
             }
             WheelControl::Node(index) => return adjust(&mut m.wheel, index, remove, false),
             WheelControl::PresetVessel(slot) => {
-                if !editable(&m.wheel) || !m.wheel.atelier_v2 || m.wheel.dirty() {
+                if !editable(&m.wheel) {
                     return false;
                 }
-                let Some(&wanted) = m
-                    .wheel
-                    .preset_vessels
-                    .as_ref()
-                    .and_then(|v| v.get(usize::from(slot)))
-                else {
+                let Some(wanted) = m.wheel.preset_vessel_change(slot) else {
                     return false;
                 };
-                let Some(vessel) = m
-                    .wheel
-                    .vessel_board
-                    .as_ref()
-                    .and_then(|b| b.slots.get(usize::from(slot)))
-                else {
-                    return false;
-                };
-                if !vessel.open || vessel.gem == wanted {
-                    return false;
-                }
                 m.wheel.vessel_slot = slot;
                 m.wheel.select_gem(wanted);
                 let intent = if wanted.is_some() {

@@ -1,0 +1,154 @@
+{
+  "oteryn:item.tibia.i8078": {
+    "state": "KNOWN",
+    "value": {
+      "ammunition": {
+        "state": "NOT_APPLICABLE"
+      },
+      "attack": {
+        "state": "KNOWN",
+        "value": 0
+      },
+      "defense": {
+        "state": "KNOWN",
+        "value": 47
+      },
+      "elemental": {
+        "state": "KNOWN",
+        "value": []
+      },
+      "extra_defense": {
+        "state": "KNOWN",
+        "value": 0
+      },
+      "hit_chance": {
+        "state": "NOT_APPLICABLE"
+      },
+      "max_hit_chance": {
+        "state": "NOT_APPLICABLE"
+      },
+      "range": {
+        "state": "KNOWN",
+        "value": 1
+      },
+      "weapon_type": {
+        "state": "KNOWN",
+        "value": "SHIELD"
+      }
+    }
+  },
+  "oteryn:item.tibia.i8079": {
+    "state": "KNOWN",
+    "value": {
+      "ammunition": {
+        "state": "NOT_APPLICABLE"
+      },
+      "attack": {
+        "state": "KNOWN",
+        "value": 0
+      },
+      "defense": {
+        "state": "KNOWN",
+        "value": 51
+      },
+      "elemental": {
+        "state": "KNOWN",
+        "value": []
+      },
+      "extra_defense": {
+        "state": "KNOWN",
+        "value": 0
+      },
+      "hit_chance": {
+        "state": "NOT_APPLICABLE"
+      },
+      "max_hit_chance": {
+        "state": "NOT_APPLICABLE"
+      },
+      "range": {
+        "state": "KNOWN",
+        "value": 1
+      },
+      "weapon_type": {
+        "state": "KNOWN",
+        "value": "SHIELD"
+      }
+    }
+  },
+  "oteryn:item.tibia.i8080": {
+    "state": "KNOWN",
+    "value": {
+      "ammunition": {
+        "state": "NOT_APPLICABLE"
+      },
+      "attack": {
+        "state": "KNOWN",
+        "value": 0
+      },
+      "defense": {
+        "state": "KNOWN",
+        "value": 47
+      },
+      "elemental": {
+        "state": "KNOWN",
+        "value": []
+      },
+      "extra_defense": {
+        "state": "KNOWN",
+        "value": 0
+      },
+      "hit_chance": {
+        "state": "NOT_APPLICABLE"
+      },
+      "max_hit_chance": {
+        "state": "NOT_APPLICABLE"
+      },
+      "range": {
+        "state": "KNOWN",
+        "value": 1
+      },
+      "weapon_type": {
+        "state": "KNOWN",
+        "value": "SHIELD"
+      }
+    }
+  },
+  "oteryn:item.tibia.i8081": {
+    "state": "KNOWN",
+    "value": {
+      "ammunition": {
+        "state": "NOT_APPLICABLE"
+      },
+      "attack": {
+        "state": "KNOWN",
+        "value": 0
+      },
+      "defense": {
+        "state": "KNOWN",
+        "value": 49
+      },
+      "elemental": {
+        "state": "KNOWN",
+        "value": []
+      },
+      "extra_defense": {
+        "state": "KNOWN",
+        "value": 0
+      },
+      "hit_chance": {
+        "state": "NOT_APPLICABLE"
+      },
+      "max_hit_chance": {
+        "state": "NOT_APPLICABLE"
+      },
+      "range": {
+        "state": "KNOWN",
+        "value": 1
+      },
+      "weapon_type": {
+        "state": "KNOWN",
+        "value": "SHIELD"
+      }
+    }
+  }
+}

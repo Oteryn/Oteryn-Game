@@ -1,6 +1,46 @@
 //! Durable callback commit followed by its prepared map effects.
 use super::*;
 use crate::durability::character_revision_sequencer::RevisionSlot;
+use crate::map::facts::QuestCallbackProjection;
+
+fn shared_projection_target(
+    projection: Option<&QuestCallbackProjection>,
+    source: u64,
+) -> Result<Option<u64>, UseDisposition> {
+    // An unknown acknowledgement keeps the affected placement reserved for replay.
+    Ok(match projection {
+        Some(QuestCallbackProjection::MerchantTrap { barricade, .. }) => match barricade {
+            Some((at, _)) => {
+                Some(crate::map::view::placement_key(*at, 0).ok_or(UseDisposition::Rejected)?)
+            }
+            None => Some(source),
+        },
+        Some(
+            QuestCallbackProjection::ReleaseMerchant { .. }
+            | QuestCallbackProjection::TimedRemoval { .. },
+        ) => Some(source),
+        Some(QuestCallbackProjection::TimedTransform { .. }) => Some(source),
+        Some(QuestCallbackProjection::TimedTargetTransform { key, .. }) => Some(*key),
+        Some(QuestCallbackProjection::TimedPassages { entries, .. }) if entries.len() == 1 => {
+            entries.first().map(|entry| entry.key)
+        }
+        _ => None,
+    })
+}
+
+fn refresh_source_reset(projection: Option<&mut QuestCallbackProjection>, published_due: u64) {
+    if let Some(
+        QuestCallbackProjection::TimedTransform { due, .. }
+        | QuestCallbackProjection::TimedRemoval { due, .. }
+        | QuestCallbackProjection::ReadsetTransforms {
+            reset: Some((due, _)),
+            ..
+        },
+    ) = projection
+    {
+        *due = published_due;
+    }
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
@@ -244,10 +284,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
-            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
-                due,
-                restore: before,
-            });
+            projection = Some(
+                if callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|tool| tool.target_remove)
+                {
+                    crate::map::facts::QuestCallbackProjection::TimedRemoval {
+                        due,
+                        restore: before,
+                    }
+                } else {
+                    crate::map::facts::QuestCallbackProjection::TimedTransform {
+                        due,
+                        restore: before,
+                    }
+                },
+            );
         }
         if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
             let Some(crate::map::facts::QuestCallbackProjection::TimedTransform { due, restore }) =
@@ -285,6 +338,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .item_on_target
             .as_ref()
             .is_some_and(|item| item.target_remove)
+            && callback.effects.reset_after_ms.is_none()
         {
             if projection.is_some() {
                 return UseDisposition::Rejected;
@@ -505,29 +559,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(projection) => projection,
             Err(result) => return result,
         };
-        let projection_target = match &projection {
-            // Keep the source and shared entrance reserved until the exact
-            // USE receipt can settle, including when its acknowledgment is lost.
-            Some(crate::map::facts::QuestCallbackProjection::MerchantTrap {
-                barricade, ..
-            }) => match barricade {
-                Some((at, _)) => match crate::map::view::placement_key(*at, 0) {
-                    Some(entrance) => Some(entrance),
-                    None => return UseDisposition::Rejected,
-                },
-                None => Some(key),
-            },
-            Some(crate::map::facts::QuestCallbackProjection::ReleaseMerchant { .. }) => Some(key),
-            Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. }) => Some(key),
-            Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
-                key, ..
-            }) => Some(*key),
-            Some(crate::map::facts::QuestCallbackProjection::TimedPassages { entries, .. })
-                if entries.len() == 1 =>
-            {
-                entries.first().map(|entry| entry.key)
-            }
-            _ => None,
+        let projection_target = match shared_projection_target(projection.as_ref(), key) {
+            Ok(target) => target,
+            Err(refusal) => return refusal,
         };
         if let Some(target) = projection_target
             && !self
@@ -1450,17 +1484,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     return UseDisposition::Exhausted;
                 };
-                match projection.as_mut() {
-                    Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
-                        due,
-                        ..
-                    })
-                    | Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
-                        reset: Some((due, _)),
-                        ..
-                    }) => *due = published_due,
-                    _ => {}
-                }
+                refresh_source_reset(projection.as_mut(), published_due);
             }
             if let Some(target) = &callback.effects.target_transform
                 && let Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
@@ -1734,5 +1758,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.states.chat.push_quest_feedback(session, &message);
         }
         UseDisposition::Committed
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn timed_removal_reserves_source_and_resets_at_publication() {
+        let mut projection = QuestCallbackProjection::TimedRemoval {
+            due: 100,
+            restore: crate::map::view::EntryFacts {
+                definition: oteryn_protocol_oteryn::world_map::MapDefinition::Item(
+                    std::num::NonZeroU32::MIN,
+                ),
+                terrain_kind: None,
+                appearance_id: 132,
+                blocks_projectile: false,
+                pickupable: false,
+                bound: true,
+                count: 1,
+                sub_type: 0,
+            },
+        };
+        assert_eq!(
+            shared_projection_target(Some(&projection), 42),
+            Ok(Some(42))
+        );
+        refresh_source_reset(Some(&mut projection), 200);
+        assert!(matches!(
+            projection,
+            QuestCallbackProjection::TimedRemoval { due: 200, .. }
+        ));
     }
 }

@@ -7,6 +7,17 @@ from functools import lru_cache
 from jsonschema import Draft202012Validator, ValidationError
 
 
+# These runtime journeys have their own stages in addition to the chosen
+# recipe steps. Only overlapping non-terminal TALK steps belong to this plan.
+NATIVE_JOURNEY_OWNERS = {
+    "the-ape-city.json": "oteryn:quest.the_ape_city_quest",
+    "the-explorer-society.json": "oteryn:quest.the_explorer_society_quest",
+    "the-new-frontier.json": "oteryn:quest.the_new_frontier_quest",
+    "the-shattered-isles.json": "oteryn:quest.the_shattered_isles_quest",
+    "to-blind-the-enemy.json": "oteryn:quest.to_blind_the_enemy_quest",
+}
+
+
 def require(condition, message):
     if not condition:
         raise ValueError(message)
@@ -97,10 +108,11 @@ def verify_talk_binding(root, definition, stage_key, reference):
     return callbacks
 
 
-def registered_talk_bindings(root):
-    """Use the same immediate JSON registry as the Rust build-time consumer."""
+def planned_talk_bindings(root, stages, definitions):
+    """Select chosen TALK evidence from the same registry as the Rust consumer."""
     result = {}
     owners = set()
+    seen = set()
     for path in sorted((root / "content/quests/authored-bindings").glob("*.json")):
         require(path.is_file() and not path.is_symlink(), "Native binding registry file type")
         document = json.loads(path.read_text(encoding="utf-8"))
@@ -113,7 +125,16 @@ def registered_talk_bindings(root):
                 if trigger["kind"] != "npc_dialogue":
                     continue
                 key = (quest["quest"], stage["key"])
-                require(key not in result, "Duplicate registered TALK stage")
+                require(key not in seen, "Duplicate registered TALK stage")
+                seen.add(key)
+                planned = stages.get(key)
+                require(key[0] in definitions, "Registered TALK stage has no canonical quest owner")
+                native_journey = NATIVE_JOURNEY_OWNERS.get(path.name) == key[0]
+                if native_journey and (planned is None or stage["completes"] is True):
+                    continue
+                require(planned is not None, "Registered TALK stage has no canonical plan owner")
+                if planned["event_identity_associations"]["kind"] != "talk":
+                    continue  # Completion/other trigger consumers retain their own policy.
                 callbacks = [trigger["callback"]["key"]] + [c["key"] for c in trigger.get("alternatives", [])]
                 reference = {"kind": "npc_dialogue", "document": path.relative_to(root).as_posix(),
                              "stage": stage["key"]}
@@ -133,11 +154,8 @@ def apply_native_talk_bindings(root, plan, definitions):
     stages = {(record["quest"], stage["stage_key"]): stage
               for record in plan["records"] for stage in record["stages"]}
     paths = set()
-    for (quest, key), reference in registered_talk_bindings(root).items():
-        stage = stages.get((quest, key))
-        require(stage is not None and quest in definitions, "Registered TALK stage has no canonical plan owner")
-        if stage["event_identity_associations"]["kind"] != "talk":
-            continue  # Completion/other trigger consumers retain their own policy.
+    for (quest, key), reference in planned_talk_bindings(root, stages, definitions).items():
+        stage = stages[(quest, key)]
         verify_talk_binding(root, definitions[quest], key, reference)
         stage["native_dispatch_binding"] = reference
         stage["runtime_enabled"] = True

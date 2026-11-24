@@ -97,6 +97,14 @@ impl DeathObjective {
     }
 }
 
+pub fn is_grave_boss(transition: &str) -> bool {
+    transition.starts_with("oteryn:quest-death/questpc7-grave-")
+}
+
+/// Crystal 201189f sir_nictros.lua: only Baeloc has a reward chest. Nictros is
+/// the other half of the passage, whose guard also requires Baeloc's credit.
+pub const GRAVE_NICTROS: &str = "oteryn:creature.sir_nictros";
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Document {
@@ -251,10 +259,50 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
         });
         transitions.push(objective.transition());
     }
+    // Derive the deployed definition before Zelos also advanced the questline.
+    // Existing saves retain their pin and all of their original track defaults.
+    let quest = "oteryn:quest.grave_danger_quest";
+    let previous = QuestStateCatalogue::new(
+        &catalogue.content_revision,
+        tracks
+            .iter()
+            .filter(|track| track.quest == quest)
+            .cloned()
+            .collect(),
+        transitions
+            .iter()
+            .filter(|transition| transition.quest == quest)
+            .cloned()
+            .map(|mut transition| {
+                if transition.key == super::grave_danger::ZELOS_DEATH {
+                    transition
+                        .effects
+                        .retain(|effect| effect.track != super::grave_danger::QUESTLINE);
+                }
+                transition
+            })
+            .collect(),
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    let hash = previous
+        .definition_hash(quest)
+        .ok_or("Grave Danger predecessor")?;
+
     let mut extended = QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))?;
     extended.npc_legacy = catalogue.npc_legacy;
     extended.predecessors = catalogue.predecessors;
+    extended
+        .predecessors
+        .entry(quest.into())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash,
+            defaults: previous
+                .declared_tracks()
+                .map(|track| (track.key.clone(), track.initial))
+                .collect(),
+        });
     extended.authored_bindings = catalogue.authored_bindings;
     extended.native_recipe_evidence = catalogue.native_recipe_evidence;
     Ok(extended)

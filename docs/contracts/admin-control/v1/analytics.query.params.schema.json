@@ -1,0 +1,371 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnalyticsQueryParams",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/GoldSourcesSinksParams"
+    },
+    {
+      "$ref": "#/$defs/GoldSupplyParams"
+    },
+    {
+      "$ref": "#/$defs/ItemSupplyByTypeParams"
+    },
+    {
+      "$ref": "#/$defs/MarketPriceSeriesParams"
+    },
+    {
+      "$ref": "#/$defs/MarketVolumeParams"
+    },
+    {
+      "$ref": "#/$defs/NpcTradeFlowParams"
+    },
+    {
+      "$ref": "#/$defs/TopWealthParams"
+    }
+  ],
+  "$defs": {
+    "GoldSourcesSinksFilters": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "GoldSourcesSinksId": {
+      "type": "string",
+      "enum": [
+        "gold_sources_sinks"
+      ]
+    },
+    "GoldSourcesSinksParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/GoldSourcesSinksFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/GoldSourcesSinksId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "GoldSupplyFilters": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "GoldSupplyId": {
+      "type": "string",
+      "enum": [
+        "gold_supply"
+      ]
+    },
+    "GoldSupplyParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/GoldSupplyFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/GoldSupplyId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "Grain": {
+      "type": "string",
+      "enum": [
+        "minute",
+        "hour",
+        "day"
+      ]
+    },
+    "ItemSupplyByTypeFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "ItemSupplyByTypeId": {
+      "type": "string",
+      "enum": [
+        "item_supply_by_type"
+      ]
+    },
+    "ItemSupplyByTypeParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/ItemSupplyByTypeFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/ItemSupplyByTypeId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "MarketPriceSeriesFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "item_type_id"
+      ]
+    },
+    "MarketPriceSeriesId": {
+      "type": "string",
+      "enum": [
+        "market_price_series"
+      ]
+    },
+    "MarketPriceSeriesParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/MarketPriceSeriesFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/MarketPriceSeriesId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "MarketVolumeFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "MarketVolumeId": {
+      "type": "string",
+      "enum": [
+        "market_volume"
+      ]
+    },
+    "MarketVolumeParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/MarketVolumeFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/MarketVolumeId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "NpcTradeFlowFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "npc_type_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "NpcTradeFlowId": {
+      "type": "string",
+      "enum": [
+        "npc_trade_flow"
+      ]
+    },
+    "NpcTradeFlowParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/NpcTradeFlowFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/NpcTradeFlowId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "PageLimit": {
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 100,
+      "minimum": 1
+    },
+    "TopWealthFilters": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "$ref": "#/$defs/PageLimit"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "limit"
+      ]
+    },
+    "TopWealthId": {
+      "type": "string",
+      "enum": [
+        "top_wealth"
+      ]
+    },
+    "TopWealthParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/TopWealthFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/TopWealthId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "mechanic": "0599-analyser-npc-prices",
+  "kind": "handlers",
+  "id": "0599-analyser-npc-prices-commands",
+  "status": "unsupported",
+  "commands": [
+    6360
+  ],
+  "direction": "client_to_server",
+  "reason": "NPC mean buy prices commands await the client analyser integration.",
+  "not_applicable": {
+    "state": "NPC mean buy prices state is supplied by the server reply.",
+    "protocol": "The server contract defines the negotiated request and reply.",
+    "view": "The current native analyser has no view for this reply.",
+    "input": "The current native analyser has no input that sends these commands.",
+    "settings": "The current native analyser has no setting for this capability."
+  }
+}

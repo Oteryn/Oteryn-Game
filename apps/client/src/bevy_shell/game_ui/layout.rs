@@ -205,7 +205,7 @@ fn remember(
     time: Res<Time<Real>>,
     splitters: Query<&Splitter>,
     nodes: Query<&Node>,
-    windows: Query<(Entity, &Window), With<PrimaryWindow>>,
+    windows: Query<(Entity, Ref<Window>), With<PrimaryWindow>>,
     _main_thread: bevy::ecs::system::NonSendMarker,
 ) {
     if store.path.is_none() || splitters.iter().any(|splitter| splitter.gesture.is_some()) {
@@ -223,6 +223,7 @@ fn remember(
         store.remember_bounds(splitter.id, bounds);
     }
     if let Ok((entity, window)) = windows.single()
+        && window.is_changed()
         && window.mode == WindowMode::Windowed
     {
         let maximized = bevy::winit::WINIT_WINDOWS.with(|windows| {

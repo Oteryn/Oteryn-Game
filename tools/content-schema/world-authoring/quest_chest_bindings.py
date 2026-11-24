@@ -172,19 +172,29 @@ def supported_claim(definition):
     )
 
 
+OUTLAW_KEYS = {3301: 2970, 3302: 2969, 3303: 2970, 3304: 2972}
+
+
 def source_key_claim(definition):
+    return key_claim(definition, 3600, 2969) or panpipe_key_claim(definition) or outlaw_key_claim(definition)
+
+
+def outlaw_key_claim(definition):
+    return any(
+        key_claim(definition, number, item) for number, item in OUTLAW_KEYS.items()
+    )
+
+
+def panpipe_key_claim(definition):
+    return key_claim(definition, 4055, 2969)
+
+
+def key_claim(definition, number, item):
     """Select the existing key-only lowering, with its exact source key number."""
-    key = definition["identity"]["key"]
-    item_and_number = {
-        "oteryn:reward-claim.quest.key.id3600": (2969, 3600),
-        "oteryn:reward-claim.quest.key.id4055": (2969, 4055),
-    }.get(key)
-    if item_and_number is None:
-        return False
-    item, number = item_and_number
     variant = definition.get("source_variant", {})
     return (
-        definition.get("definition_profile") == "authored_variant_v1"
+        definition["identity"]["key"] == f"oteryn:reward-claim.quest.key.id{number}"
+        and definition.get("definition_profile") == "authored_variant_v1"
         and definition.get("readiness") == "waiting_implementation"
         and definition.get("native_admission") == "WAITING_IMPLEMENTATION"
         and definition.get("data_holds") == []
@@ -392,6 +402,30 @@ def selections(root=ROOT):
                 raise ValueError("QUEST_CHEST_CANONICAL_SELECTOR_DRIFT")
             bindings[position] = row
         captured_claims = {r["claim"] for r in document["bindings"]}
+        if "journey" in document:
+            journey = document["journey"]
+            terminal, passage = journey["terminal"], journey["passage"]
+            if (
+                path.name != "outlaw-camp.json"
+                or journey["quest"] != "oteryn:quest.the_outlaw_camp_quest"
+                or captured_claims
+                != {
+                    f"oteryn:reward-claim.quest.key.id{number}"
+                    for number in OUTLAW_KEYS
+                }
+                or terminal["position"] != [32620, 32198, 10]
+                or terminal["appearance"] != 2472
+                or terminal["unique"] != 14091
+                or passage["position"] != [32620, 32199, 10]
+                or passage["appearance"] != 6251
+                or passage["action"] != 3303
+            ):
+                raise ValueError("OUTLAW_CAMP_SOURCE_SELECTOR_DRIFT")
+            for rows, row in ((bindings, terminal), (doors, passage)):
+                position = tuple(row["position"])
+                if position in rows:
+                    raise ValueError("OUTLAW_CAMP_SOURCE_SELECTOR_CONFLICT")
+                rows[position] = row
         for row in document.get("level_access", []):
             position = tuple(row["position"])
             if (
@@ -435,7 +469,7 @@ def selections(root=ROOT):
             ("oteryn:reward-claim.quest.key.id3600", (32506, 32175, 14), 5106, 3600),
             ("oteryn:reward-claim.kv.panpipe", (32643, 32128, 8), 1631, 4055),
         )
-        if any(row["claim"] == claim for row in bindings.values())
+        if any(row.get("claim") == claim for row in bindings.values())
     ]
     if key_doors:
         path = "tools/content-schema/quest-authoring/samples/doors/gates.json"
@@ -470,13 +504,64 @@ def selections(root=ROOT):
         sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
     # Use the draw-well handler on this retained Ghoul Room placement.
     if any(
-        row["claim"] == "oteryn:reward-claim.quest.key.id3600"
+        row.get("claim") == "oteryn:reward-claim.quest.key.id3600"
         for row in bindings.values()
     ):
         position = (32508, 32176, 13)
         if position in doors:
             raise ValueError("GHOUL_ROOM_WELL_ACTION_CONFLICT")
         doors[position] = {"appearance": 1931, "action": 1000}
+    alias_path = "content/quests/native-reward-placement-aliases.json"
+    key = "oteryn:reward-claim.quest.key.id3899"
+    if (root / alias_path).is_file() and any(
+        alias["claim"] == key
+        for alias in json.loads((root / alias_path).read_bytes())["aliases"]
+    ):
+        position = (32479, 31903, 4)
+        gates_path = "tools/content-schema/quest-authoring/samples/doors/gates.json"
+        manifest_path = (
+            "tools/content-schema/quest-authoring/samples/doors/manifest.json"
+        )
+        gate_key = "canary:door-gate/key/3899"
+        gates_raw = (root / gates_path).read_bytes()
+        manifest_raw = (root / manifest_path).read_bytes()
+        (gate,) = (
+            row
+            for row in json.loads(gates_raw)["gates"]
+            if row["identity"]["key"] == gate_key
+        )
+        (entry,) = (
+            row
+            for row in json.loads(manifest_raw)["entries"]
+            if row.get("destination") == gate_key
+        )
+        if (
+            gate["condition"]["key_binding"] != "canary:door-key/3899"
+            or [claim["key"] for claim in gate["condition"]["key_from_claims"]]
+            != ["canary:reward-claim/quest/key/id3899"]
+            or gate["placements"]
+            != [{"position": dict(zip("xyz", position)), "appearance": None}]
+            or tuple(entry["position"]) != position
+            or entry["status"] != "mapped"
+            or {row["source"] for row in entry["sources"]}
+            != {"canary", "crystalserver"}
+            or any(
+                row["action_key"] != "Storage.Quest.Key.ID3899"
+                for row in entry["sources"]
+            )
+            or position in doors
+        ):
+            raise ValueError("PARADOX_KEY_DOOR_SOURCE_DRIFT")
+        doors[position] = {
+            "position": list(position),
+            "appearance": 1631,
+            "action": 3899,
+            "claims": [key],
+        }
+        for path, raw in ((gates_path, gates_raw), (manifest_path, manifest_raw)):
+            evidence = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
+            if evidence not in sources:
+                sources.append(evidence)
     return {"unique": bindings, "action": doors}, sources
 
 

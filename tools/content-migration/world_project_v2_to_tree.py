@@ -15,8 +15,8 @@ import json
 import re
 import subprocess
 import sys
-from pathlib import Path
 from collections import Counter
+from pathlib import Path
 from typing import Any
 
 from item_taxonomy import build_taxonomy, taxonomy_inputs
@@ -26,8 +26,20 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 ADMISSION_MAIN = "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c"
 REVISION = "tree-npc-reviewed-definitions-r1"
-FIELD_CENSUS = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
-WAVE1_STAGED = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-item-enrichment-wave1-staged.json"
+FIELD_CENSUS = (
+    ROOT
+    / "docs"
+    / "agents"
+    / "evidence"
+    / "OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
+)
+WAVE1_STAGED = (
+    ROOT
+    / "docs"
+    / "agents"
+    / "evidence"
+    / "OTV2-20260925-item-enrichment-wave1-staged.json"
+)
 # Charm is a static family authored under tools/content-schema/charm-authoring (`charm_authoring.py content`);
 # it has no legacy WorldProject source, so this generator only registers the committed family.
 CHARM_INDEX = "content/charms/index.json"
@@ -67,28 +79,44 @@ CAPABILITY_RULES = (
     ("rulesets/items/imbuements/", "imbuement.slot_count>=1"),
 )
 
+
 def canonical_bytes(value: Any) -> bytes:
-    return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+    return (
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        + "\n"
+    ).encode("utf-8")
+
 
 def load(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
+
 
 def write(relative: str, value: Any) -> None:
     path = ROOT / relative
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_bytes(value))
 
+
 def write_registry(relative: str, value: Any) -> None:
     # One key per line, so PRs that register different families merge without a textual conflict.
     text = json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
     (ROOT / relative).write_text(text, encoding="utf-8", newline="\n")
 
+
 def refresh_bestiary_inventory(root: Path) -> None:
     """Refresh strict canonical populations in readers, validators and goldens."""
     index = load(root / "content/creatures/definitions/index.json")
     shards = index["shards"]
-    if (not shards or len(shards) != len(set(shards))
-            or any(not re.fullmatch(r"content/creatures/definitions/creatures-[0-9]{5}-[0-9]{5}\.json", path) for path in shards)):
+    if (
+        not shards
+        or len(shards) != len(set(shards))
+        or any(
+            not re.fullmatch(
+                r"content/creatures/definitions/creatures-[0-9]{5}-[0-9]{5}\.json", path
+            )
+            for path in shards
+        )
+    ):
         raise RuntimeError("BESTIARY_SHARD_INVENTORY")
     records = [record for path in shards for record in load(root / path)["records"]]
     count = len(records)
@@ -97,8 +125,11 @@ def refresh_bestiary_inventory(root: Path) -> None:
     bestiary_count = 0
     for record in records:
         authoring = record.get("authoring")
-        if (not isinstance(authoring, dict) or authoring.get("kind") != "Creature"
-                or not isinstance(authoring.get("profile"), dict)):
+        if (
+            not isinstance(authoring, dict)
+            or authoring.get("kind") != "Creature"
+            or not isinstance(authoring.get("profile"), dict)
+        ):
             raise RuntimeError("BESTIARY_AUTHORING_SHAPE")
         bestiary = authoring["profile"].get("bestiary")
         if bestiary is not None:
@@ -112,29 +143,49 @@ def refresh_bestiary_inventory(root: Path) -> None:
     target = root / "crates/gameplay/content/src/content/project/bestiary.rs"
     text = target.read_text()
     replacements = (
-        (r"const SHARDS: \[\(&str, &\[u8\]\); [0-9]+\] = \[[\s\S]*?\n\];\nconst CREATURE_COUNT: usize = [0-9_]+;\nconst BESTIARY_COUNT: usize = [0-9_]+;", body),
-        (r"assert_eq!\(catalogue\.bestiary\.len\(\), [0-9_]+\);", f"assert_eq!(catalogue.bestiary.len(), {bestiary_count:_});"),
-        (r"assert_eq!\(limits\(\)\.max_reference_records, [0-9_]+\);", f"assert_eq!(limits().max_reference_records, {count:_});"),
-        (r"fn canonical_projection_retains_all_[0-9]+_admitted_bestiary_blocks", f"fn canonical_projection_retains_all_{bestiary_count}_admitted_bestiary_blocks"),
+        (
+            r"const SHARDS: \[\(&str, &\[u8\]\); [0-9]+\] = \[[\s\S]*?\n\];\nconst CREATURE_COUNT: usize = [0-9_]+;\nconst BESTIARY_COUNT: usize = [0-9_]+;",
+            body,
+        ),
+        (
+            r"assert_eq!\(catalogue\.bestiary\.len\(\), [0-9_]+\);",
+            f"assert_eq!(catalogue.bestiary.len(), {bestiary_count:_});",
+        ),
+        (
+            r"assert_eq!\(limits\(\)\.max_reference_records, [0-9_]+\);",
+            f"assert_eq!(limits().max_reference_records, {count:_});",
+        ),
+        (
+            r"fn canonical_projection_retains_all_[0-9]+_admitted_bestiary_blocks",
+            f"fn canonical_projection_retains_all_{bestiary_count}_admitted_bestiary_blocks",
+        ),
     )
     for pattern, replacement in replacements:
-        text, replaced = re.subn(pattern, lambda _: replacement, text)
+        text, replaced = re.subn(pattern, lambda _, value=replacement: value, text)
         if replaced != 1:
             raise RuntimeError("BESTIARY_INVENTORY_SEAM")
     validator = root / "tools/content-migration/validate_world_project_v2_to_tree.py"
     validator_text = validator.read_text()
     pin = f"LEGACY_CREATURE_COUNT = {count:_}"
-    validator_text, pinned = re.subn(r"^LEGACY_CREATURE_COUNT = [0-9_]+$", pin, validator_text, flags=re.M)
+    validator_text, pinned = re.subn(
+        r"^LEGACY_CREATURE_COUNT = [0-9_]+$", pin, validator_text, flags=re.MULTILINE
+    )
     if pinned == 0:
         anchor = 'LEGACY = ROOT / "content" / "world"\n'
         if validator_text.count(anchor) != 1:
             raise RuntimeError("BESTIARY_VALIDATOR_PIN_SEAM")
-        validator_text = validator_text.replace(anchor, anchor + "# Generated by refresh_bestiary_inventory from the canonical Creature shards.\n" + pin + "\n")
+        validator_text = validator_text.replace(
+            anchor,
+            anchor
+            + "# Generated by refresh_bestiary_inventory from the canonical Creature shards.\n"
+            + pin
+            + "\n",
+        )
     elif pinned != 1:
         raise RuntimeError("BESTIARY_VALIDATOR_PIN_SEAM")
     validator_text, guarded = re.subn(
-        r"require\(counts\['Creature'\] == (?:[0-9_]+|LEGACY_CREATURE_COUNT), 'LEGACY_CREATURE_COUNT'\)",
-        "require(counts['Creature'] == LEGACY_CREATURE_COUNT, 'LEGACY_CREATURE_COUNT')",
+        r"""require\(counts\[(['"])Creature\1\] == (?:[0-9_]+|LEGACY_CREATURE_COUNT), (['"])LEGACY_CREATURE_COUNT\2\)""",
+        'require(counts["Creature"] == LEGACY_CREATURE_COUNT, "LEGACY_CREATURE_COUNT")',
         validator_text,
     )
     if guarded != 1:
@@ -142,13 +193,18 @@ def refresh_bestiary_inventory(root: Path) -> None:
     golden = root / "tools/content-migration/test_world_project_v2_to_tree.py"
     golden_text = golden.read_text()
     for pattern in (
-        r'''(?m)^([ \t]*assert family_counts\[(?:'Creature'|"Creature")\] == )[0-9_]+$''',
+        r"""(?m)^([ \t]*assert family_counts\[(?:'Creature'|"Creature")\] == )[0-9_]+$""",
         r'(?m)^([ \t]*assert lock\["source_binding_counts"\] == \{[^{}]*?"Creature":\s*)[0-9_]+',
     ):
-        golden_text, guarded = re.subn(pattern, lambda match: match.group(1) + f"{count:_}", golden_text)
+        golden_text, guarded = re.subn(
+            pattern, lambda match: match.group(1) + f"{count:_}", golden_text
+        )
         if guarded != 1:
             raise RuntimeError("BESTIARY_CORPUS_GOLDEN_SEAM")
-    charm = root / "crates/gameplay/dispatch/src/gameplay_transport/charm_progression_tests.rs"
+    charm = (
+        root
+        / "crates/gameplay/dispatch/src/gameplay_transport/charm_progression_tests.rs"
+    )
     charm_text, charm_pinned = re.subn(
         r"assert_eq!\(bestiary\.races\.len\(\), [0-9_]+\);",
         f"assert_eq!(bestiary.races.len(), {bestiary_count:_});",
@@ -173,7 +229,10 @@ def retained_quest_registration(root: Path) -> tuple[dict[str, Any], list[str]]:
     if registration.get("index") != QUEST_INDEX:
         raise RuntimeError("QUEST_INDEX_PATH")
     index = load(root / QUEST_INDEX)
-    if index.get("schema") != "OTERYN_FAMILY_INDEX/v1" or index.get("family") != "Quest":
+    if (
+        index.get("schema") != "OTERYN_FAMILY_INDEX/v1"
+        or index.get("family") != "Quest"
+    ):
         raise RuntimeError("QUEST_INDEX_MISSING")
     count = index.get("record_count")
     if type(count) is not int or count < 0 or registration.get("records") != count:
@@ -183,10 +242,14 @@ def retained_quest_registration(root: Path) -> tuple[dict[str, Any], list[str]]:
         raise RuntimeError("QUEST_SHARDS")
     actual = 0
     for relative in shards:
-        if not isinstance(relative, str) or not re.fullmatch(r"content/quests/definitions/quests-[0-9]{5}-[0-9]{5}\.json", relative):
+        if not isinstance(relative, str) or not re.fullmatch(
+            r"content/quests/definitions/quests-[0-9]{5}-[0-9]{5}\.json", relative
+        ):
             raise RuntimeError("QUEST_SHARD_PATH")
         shard = load(root / relative)
-        if shard.get("family") != "Quest" or shard.get("shard", {}).get("count") != len(shard.get("records", [])):
+        if shard.get("family") != "Quest" or shard.get("shard", {}).get("count") != len(
+            shard.get("records", [])
+        ):
             raise RuntimeError("QUEST_SHARD_COUNT")
         actual += len(shard["records"])
     if actual != count:
@@ -197,37 +260,64 @@ def retained_quest_registration(root: Path) -> tuple[dict[str, Any], list[str]]:
 def target_id(target: dict[str, Any]) -> tuple[str, str, str]:
     return (target["family"], target["key"], target["revision"])
 
-def capability_relations(definition: dict[str, Any], authoring: dict[str, Any] | None) -> list[dict[str, str]]:
+
+def capability_relations(
+    definition: dict[str, Any], authoring: dict[str, Any] | None
+) -> list[dict[str, str]]:
     semantics = definition.get("semantics", {})
     imbuement = semantics.get("imbuement", {})
-    slots = imbuement.get("value", {}).get("slot_count", {}) if imbuement.get("state") == "KNOWN" else {}
+    slots = (
+        imbuement.get("value", {}).get("slot_count", {})
+        if imbuement.get("state") == "KNOWN"
+        else {}
+    )
     facts = {
-        "lifecycle.enchantable=true": bool(authoring and (authoring.get("lifecycle") or {}).get("enchantable") is True),
+        "lifecycle.enchantable=true": bool(
+            authoring and (authoring.get("lifecycle") or {}).get("enchantable") is True
+        ),
         "forge": bool(authoring and authoring.get("forge")),
-        "imbuement.slot_count>=1": slots.get("state") == "KNOWN" and slots["value"] >= 1,
+        "imbuement.slot_count>=1": slots.get("state") == "KNOWN"
+        and slots["value"] >= 1,
     }
-    return [{"relation": "CAPABILITY_GOVERNED_BY", "ruleset": ruleset, "basis": basis} for ruleset, basis in CAPABILITY_RULES if facts[basis]]
+    return [
+        {"relation": "CAPABILITY_GOVERNED_BY", "ruleset": ruleset, "basis": basis}
+        for ruleset, basis in CAPABILITY_RULES
+        if facts[basis]
+    ]
+
 
 def item_alias_targets() -> dict[str, str]:
     """The current alias target of every retired Item key (latest entry version wins)."""
     current: dict[str, dict[str, Any]] = {}
     for entry in load(ITEM_ALIASES)["entries"]:
         current[entry["key"]] = entry
-    return {key: entry["target"] for key, entry in current.items() if entry["state"] == "ALIAS"}
+    return {
+        key: entry["target"]
+        for key, entry in current.items()
+        if entry["state"] == "ALIAS"
+    }
 
-def canonical_item_target(target: dict[str, Any], aliases: dict[str, str]) -> dict[str, Any]:
+
+def canonical_item_target(
+    target: dict[str, Any], aliases: dict[str, str]
+) -> dict[str, Any]:
     if target["family"] != "Item" or target["key"] not in aliases:
         raise RuntimeError(f"STAGED_ITEM_TARGET_WITHOUT_ALIAS:{target['key']}")
     return {**target, "key": aliases[target["key"]]}
 
+
 def git_blob_sha(path: Path) -> str:
     data = path.read_bytes()
-    return hashlib.sha1(b"blob " + str(len(data)).encode("ascii") + b"\0" + data).hexdigest()
+    return hashlib.sha1(
+        b"blob " + str(len(data)).encode("ascii") + b"\0" + data
+    ).hexdigest()
 
 
 def apply_summer_item_admissions(definitions, root=ROOT):
     spec = importlib.util.spec_from_file_location(
-        "summer_corpse_items", root / "tools/content-schema/native-gameplay/summer_corpse_items.py")
+        "summer_corpse_items",
+        root / "tools/content-schema/native-gameplay/summer_corpse_items.py",
+    )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.apply_admissions(definitions, root)
@@ -235,7 +325,9 @@ def apply_summer_item_admissions(definitions, root=ROOT):
 
 def apply_primal_item_admissions(definitions, root=ROOT):
     spec = importlib.util.spec_from_file_location(
-        "primal_corpse_items", root / "tools/content-schema/native-gameplay/primal_corpse_items.py")
+        "primal_corpse_items",
+        root / "tools/content-schema/native-gameplay/primal_corpse_items.py",
+    )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.apply_admissions(definitions, root)
@@ -243,31 +335,66 @@ def apply_primal_item_admissions(definitions, root=ROOT):
 
 def apply_encounter_corpse_admissions(definitions, root=ROOT):
     spec = importlib.util.spec_from_file_location(
-        "encounter_corpse_items", root / "tools/content-schema/native-gameplay/encounter_corpse_items.py")
+        "encounter_corpse_items",
+        root / "tools/content-schema/native-gameplay/encounter_corpse_items.py",
+    )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.apply_admissions(definitions, root)
     spec = importlib.util.spec_from_file_location(
-        "native_goal_corpse_items", root / "tools/content-schema/native-gameplay/native_goal_corpse_items.py")
+        "native_goal_corpse_items",
+        root / "tools/content-schema/native-gameplay/native_goal_corpse_items.py",
+    )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.apply_admissions(definitions, root)
 
     spec = importlib.util.spec_from_file_location(
-        "native_goal_loot_items", root / "tools/content-schema/native-gameplay/native_goal_loot_items.py")
+        "native_goal_loot_items",
+        root / "tools/content-schema/native-gameplay/native_goal_loot_items.py",
+    )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.apply_admissions(definitions, root)
     sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
     import questpc2_soul_loot_items
+
     questpc2_soul_loot_items.apply_admissions(definitions, root)
     import questpc2_rotten_loot_items
+
     questpc2_rotten_loot_items.apply_admissions(definitions, root)
+
+
+def item_projection_tables(item_records, authoring):
+    """Derive catalogue taxonomy and capability relations from effective Item facts."""
+    definitions = {target_id(row["identity"]): row for row in item_records}
+    assignments = load(FIELD_CENSUS)["family_assignments"]
+    taxonomy = build_taxonomy(
+        definitions, authoring, assignments, *taxonomy_inputs(ROOT)
+    )
+    relations = []
+    for key, definition in sorted(definitions.items()):
+        if rules := capability_relations(definition, authoring.get(key)):
+            relations.append({"source": definition["identity"], "relations": rules})
+    return {
+        "content/items/taxonomy/items.json": {
+            "schema": "OTERYN_ITEM_TAXONOMY/v1",
+            "family_profile_contract": "tools/content-schema/item-authoring/profile-catalog.json",
+            "legacy_family_profile_contract": "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json#family_assignments",
+            "records": taxonomy,
+        },
+        "content/items/relations/items.json": {
+            "schema": "OTERYN_ITEM_RELATIONS/v1",
+            "records": relations,
+        },
+    }
 
 
 def materialize_item_tree(reference, declarations, editor, sources):
     """Write the complete Item cohort through the normal admission owners."""
-    authoring_by_target = {target_id(row["item"]): row for row in declarations.get("item_authoring", [])}
+    authoring_by_target = {
+        target_id(row["item"]): row for row in declarations.get("item_authoring", [])
+    }
     editors = {target_id(row["target"]): row for row in editor["entries"]}
     bindings: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
     for row in sources["source_identity_bindings"]:
@@ -275,84 +402,139 @@ def materialize_item_tree(reference, declarations, editor, sources):
     for rows in bindings.values():
         rows.sort(key=canonical_bytes)
 
-    item_records = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
+    item_records = [
+        row for row in reference["records"] if row["identity"]["family"] == "Item"
+    ]
     # Accepted reward Item facts are tree-first; retain them across legacy regeneration.
     from quest_reward_item_semantics import apply_admissions
+
     apply_admissions(item_records, ROOT)
     apply_summer_item_admissions(item_records)
     apply_primal_item_admissions(item_records)
     apply_encounter_corpse_admissions(item_records)
     from amber_item_semantics import apply_container_fact
+
     apply_container_fact(item_records, ROOT)
     from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
+
     apply_enchanting_admissions(item_records)
-    from boss_conditional_item_reference import extend_records as extend_conditional_reference
+    from boss_conditional_item_reference import (
+        extend_records as extend_conditional_reference,
+    )
+
     extend_conditional_reference(item_records, ROOT)
-    from boss_movement_item_profiles import extend_records as extend_boss_movement_references
+    from boss_movement_item_profiles import (
+        extend_records as extend_boss_movement_references,
+    )
+
     extend_boss_movement_references(item_records, ROOT)
-    from boss_corpse_terminal_reference import extend_records as extend_corpse_terminal_reference
+    from boss_corpse_terminal_reference import (
+        extend_records as extend_corpse_terminal_reference,
+    )
+
     extend_corpse_terminal_reference(item_records, ROOT)
     from qready1_cradle_item_profiles import extend_records as extend_cradle_references
+
     extend_cradle_references(item_records, ROOT)
     from cake_bridge_reference import extend_records as extend_cake_bridge_reference
+
     extend_cake_bridge_reference(item_records, ROOT)
     from nrwicked_profiles import extend_records as extend_arbaziloth_fire
+
     extend_arbaziloth_fire(item_records, ROOT)
-    from encounter_loot_item_admissions import apply_admissions as apply_encounter_loot_admissions
+    from encounter_loot_item_admissions import (
+        apply_admissions as apply_encounter_loot_admissions,
+    )
+
     apply_encounter_loot_admissions(item_records, ROOT)
     from itemhold_q import apply_admissions as apply_quest_item_holds
+
     apply_quest_item_holds(item_records, ROOT)
     from tainted_talisman import apply_admissions as apply_tainted_talisman
+
     apply_tainted_talisman(item_records, ROOT)
     from engclaim_item_profiles import apply_admissions as apply_engclaim_items
+
     apply_engclaim_items(item_records, ROOT)
-    # Captured Global client weights win over the legacy package (ITEMGLOB).
-    from import_cyclopedia_global import apply_admissions as apply_client_weights
-    apply_client_weights(item_records, ROOT)
+    # Replay the captured Global details over the sealed legacy admission.
+    from import_cyclopedia_global import apply_admissions as apply_client
+    from import_cyclopedia_global import load_capture, project_item_authoring
+
+    capture = load_capture(ROOT)
+    apply_client(item_records, ROOT, rows=capture)
+    authoring_by_target = project_item_authoring(
+        ROOT,
+        {target_id(row["identity"]): row for row in item_records},
+        authoring_by_target,
+        rows=capture,
+    )
     # Global healing potion facts win over the legacy package (HEALPAR).
     from healing_global_overrides import apply_definitions as apply_global_potions
+
     apply_global_potions(item_records)
     from writable_item_profiles import old_paper_definition
     item_records.append(old_paper_definition(ROOT))
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []
-        for definition in item_records[start:start + ITEM_SHARD_SIZE]:
+        for definition in item_records[start : start + ITEM_SHARD_SIZE]:
             key = target_id(definition["identity"])
             row: dict[str, Any] = {"definition": definition}
             if key in editors:
                 row["editor"] = editors[key]
             if key in bindings:
                 row["source_bindings"] = bindings[key]
-            authoring = {field: value for field, value in authoring_by_target.get(key, {}).items() if field not in {"item", "taxonomy"}}
+            authoring = {
+                field: value
+                for field, value in authoring_by_target.get(key, {}).items()
+                if field not in {"item", "taxonomy"}
+            }
             if authoring:
                 row["authoring"] = authoring
             rows.append(row)
         end = start + len(rows) - 1
         relative = f"content/items/definitions/items-{start:05d}-{end:05d}.json"
         item_shards.append(relative)
-        write(relative, {
-            "schema": "OTERYN_ITEM_AUTHORING_SHARD/v1",
-            "family": "Item",
-            "source_legacy_role": "content/world/definitions/reference.json",
-            "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
-            "records": rows,
-        })
+        write(
+            relative,
+            {
+                "schema": "OTERYN_ITEM_AUTHORING_SHARD/v1",
+                "family": "Item",
+                "source_legacy_role": "content/world/definitions/reference.json",
+                "shard": {
+                    "index": start // ITEM_SHARD_SIZE,
+                    "start": start,
+                    "end": end,
+                    "count": len(rows),
+                },
+                "records": rows,
+            },
+        )
 
     # Ranged projection scans canonical Item shards directly. Remove only this
     # owner's superseded numeric shards before it reads the new complete cohort.
     retained = set(item_shards)
     for stale in sorted((ROOT / "content/items/definitions").glob("items-*.json")):
-        if (re.fullmatch(r"items-[0-9]{5}-[0-9]{5}\.json", stale.name)
-                and stale.relative_to(ROOT).as_posix() not in retained):
+        if (
+            re.fullmatch(r"items-[0-9]{5}-[0-9]{5}\.json", stale.name)
+            and stale.relative_to(ROOT).as_posix() not in retained
+        ):
             stale.unlink()
 
-    from ranged_item_profiles import outputs as ranged_outputs, RANGED_PROFILES
+    from ranged_item_profiles import RANGED_PROFILES
+    from ranged_item_profiles import outputs as ranged_outputs
+
     ranged_generated = ranged_outputs(ROOT)
     (ROOT / RANGED_PROFILES).write_bytes(ranged_generated[RANGED_PROFILES])
 
-    item_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Item"]
-    write("content/items/index.json", {
+    item_bindings = [
+        row
+        for row in sources["source_identity_bindings"]
+        if row["target"]["family"] == "Item"
+    ]
+    index_path = "content/items/index.json"
+    prior_index = load(ROOT / index_path) if (ROOT / index_path).is_file() else {}
+    index = {
         "schema": "OTERYN_FAMILY_INDEX/v1",
         "family": "Item",
         **item_index_fields(ROOT, item_shards),
@@ -363,20 +545,40 @@ def materialize_item_tree(reference, declarations, editor, sources):
             "world_id": reference["world_id"],
             "coordinate_frame": reference["coordinate_frame"],
         },
-        "attached_editor_entries": sum(row["target"]["family"] == "Item" for row in editor["entries"]),
+        "attached_editor_entries": sum(
+            row["target"]["family"] == "Item" for row in editor["entries"]
+        ),
         "attached_source_bindings": len(item_bindings),
         "attached_authoring_entries": len(authoring_by_target),
-    })
-    return item_records, item_shards, authoring_by_target, editors, bindings
+    }
+    if "spell_imports" in prior_index:
+        index["spell_imports"] = prior_index["spell_imports"]
+    write(index_path, index)
+    tables = item_projection_tables(item_records, authoring_by_target)
+    for relative, table in tables.items():
+        write(relative, table)
+    lock_path = "content/content.lock.json"
+    if (ROOT / lock_path).is_file():
+        lock = load(ROOT / lock_path)
+        lock["item_authoring_counts"] = {
+            "authoring": len(authoring_by_target),
+            "taxonomy": len(tables["content/items/taxonomy/items.json"]["records"]),
+            "relation_sources": len(
+                tables["content/items/relations/items.json"]["records"]
+            ),
+        }
+        write_registry(lock_path, lock)
+    return item_records, item_shards, authoring_by_target, editors, bindings, tables
 
 
 def main(*, items_only: bool = False) -> int:
     if items_only:
-        records, shards, _, _, _ = materialize_item_tree(
+        records, shards, _, _, _, _ = materialize_item_tree(
             load(LEGACY / "definitions/reference.json"),
             load(LEGACY / "definitions/declarations.json"),
             load(LEGACY / "editor/author.json"),
-            load(LEGACY / "provenance/sources.json"))
+            load(LEGACY / "provenance/sources.json"),
+        )
         print(f"PASS Item prerequisites items={len(records)} item_shards={len(shards)}")
         return 0
     # D1093: canonical cosmetics are tree-first. Validate before writing any derived output;
@@ -386,7 +588,9 @@ def main(*, items_only: bool = False) -> int:
     cosmetics_outputs = {}
     if cosmetics_source.exists() or cosmetics_output.exists():
         tool = ROOT / "tools/content-schema/cosmetics-authoring/cosmetics_authoring.py"
-        spec = importlib.util.spec_from_file_location("canonical_cosmetics_authoring", tool)
+        spec = importlib.util.spec_from_file_location(
+            "canonical_cosmetics_authoring", tool
+        )
         if spec is None or spec.loader is None:
             raise RuntimeError("COSMETICS_MATERIALIZER_MISSING")
         module = importlib.util.module_from_spec(spec)
@@ -395,28 +599,35 @@ def main(*, items_only: bool = False) -> int:
     reference = load(LEGACY / "definitions" / "reference.json")
     # Crystal's explicit monster.loot={} is distinct from unavailable loot data.
     from primal_reference_overlay import apply_reference as apply_primal_reference
+
     apply_primal_reference(reference["records"], ROOT)
     declarations = load(LEGACY / "definitions" / "declarations.json")
     editor = load(LEGACY / "editor" / "author.json")
     sources = load(LEGACY / "provenance" / "sources.json")
     imports = load(LEGACY / "provenance" / "imports.json")
 
-    family_assignments = load(FIELD_CENSUS)["family_assignments"]
     wave1 = load(WAVE1_STAGED)
     item_aliases = item_alias_targets()
-    item_records, item_shards, authoring_by_target, editors, bindings = materialize_item_tree(
-        reference, declarations, editor, sources)
+    item_records, item_shards, authoring_by_target, editors, bindings, tables = (
+        materialize_item_tree(reference, declarations, editor, sources)
+    )
     from ranged_item_profiles import RANGED_PROFILES
 
     declarations_blob_sha = git_blob_sha(LEGACY / "definitions" / "declarations.json")
 
-    mount_declarations = [row for row in declarations["records"] if row.get("kind") == "Mount"]
+    mount_declarations = [
+        row for row in declarations["records"] if row.get("kind") == "Mount"
+    ]
     if len(mount_declarations) != 252:
         raise RuntimeError(f"MOUNT_SOURCE_COUNT_MISMATCH:{len(mount_declarations)}")
 
     mount_rows = []
     for declaration in mount_declarations:
-        target = {"family": "Mount", "key": declaration["identity"]["key"], "revision": declaration["identity"]["revision"]}
+        target = {
+            "family": "Mount",
+            "key": declaration["identity"]["key"],
+            "revision": declaration["identity"]["revision"],
+        }
         key = target_id(target)
         row: dict[str, Any] = {"declaration": declaration}
         if key in editors:
@@ -424,26 +635,27 @@ def main(*, items_only: bool = False) -> int:
         if key in bindings:
             row["source_bindings"] = bindings[key]
         mount_rows.append(row)
-    mount_relative = f"content/cosmetics/mounts/mounts-00000-{len(mount_rows)-1:05d}.json"
-    write(mount_relative, {
-        "schema": "OTERYN_MOUNT_AUTHORING_SHARD/v1",
-        "family": "Mount",
-        "source_legacy_role": "content/world/definitions/declarations.json",
-        "shard": {"index": 0, "start": 0, "end": len(mount_rows) - 1, "count": len(mount_rows)},
-        "records": mount_rows,
-    })
-
-    definitions_by_target = {target_id(row["identity"]): row for row in reference["records"]}
-    taxonomy_rows = build_taxonomy(
-        definitions_by_target, authoring_by_target, family_assignments, *taxonomy_inputs(ROOT)
+    mount_relative = (
+        f"content/cosmetics/mounts/mounts-00000-{len(mount_rows) - 1:05d}.json"
     )
-    relation_rows = []
-    for key, definition in sorted(definitions_by_target.items()):
-        if key[0] != "Item":
-            continue
-        relations = capability_relations(definition, authoring_by_target.get(key))
-        if relations:
-            relation_rows.append({"source": definition["identity"], "relations": relations})
+    write(
+        mount_relative,
+        {
+            "schema": "OTERYN_MOUNT_AUTHORING_SHARD/v1",
+            "family": "Mount",
+            "source_legacy_role": "content/world/definitions/declarations.json",
+            "shard": {
+                "index": 0,
+                "start": 0,
+                "end": len(mount_rows) - 1,
+                "count": len(mount_rows),
+            },
+            "records": mount_rows,
+        },
+    )
+
+    taxonomy_rows = tables["content/items/taxonomy/items.json"]["records"]
+    relation_rows = tables["content/items/relations/items.json"]["records"]
     wave1_facts = [
         {
             "target": canonical_item_target(item["target"], item_aliases),
@@ -462,8 +674,12 @@ def main(*, items_only: bool = False) -> int:
         for item in wave1["items"]
     ]
 
-    profiles = {target_id(row["target"]): row["data"] for row in declarations.get("authoring_profiles", [])}
+    profiles = {
+        target_id(row["target"]): row["data"]
+        for row in declarations.get("authoring_profiles", [])
+    }
     from spite_global_event_rule import apply as apply_spite_global_event_rule
+
     apply_spite_global_event_rule(profiles, ROOT)
     for key, profile in profiles.items():
         if key[0] == "Creature":
@@ -471,12 +687,14 @@ def main(*, items_only: bool = False) -> int:
     creature_shards: dict[str, list[str]] = {}
     creature_counts: dict[str, int] = {}
     for family, (node, stem) in CREATURE_FAMILIES.items():
-        records = [row for row in reference["records"] if row["identity"]["family"] == family]
+        records = [
+            row for row in reference["records"] if row["identity"]["family"] == family
+        ]
         creature_counts[family] = len(records)
         creature_shards[family] = []
         for start in range(0, len(records), ITEM_SHARD_SIZE):
             rows = []
-            for definition in records[start:start + ITEM_SHARD_SIZE]:
+            for definition in records[start : start + ITEM_SHARD_SIZE]:
                 key = target_id(definition["identity"])
                 row = {"definition": definition}
                 if key in profiles:
@@ -487,54 +705,173 @@ def main(*, items_only: bool = False) -> int:
             end = start + len(rows) - 1
             relative = f"{node}{stem}-{start:05d}-{end:05d}.json"
             creature_shards[family].append(relative)
-            write(relative, {
-                "schema": "OTERYN_CREATURE_ADMISSION_SHARD/v1",
+            write(
+                relative,
+                {
+                    "schema": "OTERYN_CREATURE_ADMISSION_SHARD/v1",
+                    "family": family,
+                    "source_legacy_role": "content/world/definitions/reference.json",
+                    "shard": {
+                        "index": start // ITEM_SHARD_SIZE,
+                        "start": start,
+                        "end": end,
+                        "count": len(rows),
+                    },
+                    "records": rows,
+                },
+            )
+        write(
+            f"{node}index.json",
+            {
+                "schema": "OTERYN_FAMILY_INDEX/v1",
                 "family": family,
-                "source_legacy_role": "content/world/definitions/reference.json",
-                "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
-                "records": rows,
-            })
-        write(f"{node}index.json", {
-            "schema": "OTERYN_FAMILY_INDEX/v1",
-            "family": family,
-            "record_count": len(records),
-            "shard_size": ITEM_SHARD_SIZE,
-            "shards": creature_shards[family],
-            "legacy_source": {
-                "path": "content/world/definitions/reference.json",
-                "git_blob_sha": git_blob_sha(LEGACY / "definitions" / "reference.json"),
-                "schema": reference["schema"],
+                "record_count": len(records),
+                "shard_size": ITEM_SHARD_SIZE,
+                "shards": creature_shards[family],
+                "legacy_source": {
+                    "path": "content/world/definitions/reference.json",
+                    "git_blob_sha": git_blob_sha(
+                        LEGACY / "definitions" / "reference.json"
+                    ),
+                    "schema": reference["schema"],
+                },
+                "attached_authoring_profiles": sum(
+                    target_id(row["identity"]) in profiles for row in records
+                ),
+                "attached_source_bindings": sum(
+                    len(bindings.get(target_id(row["identity"]), [])) for row in records
+                ),
             },
-            "attached_authoring_profiles": sum(target_id(row["identity"]) in profiles for row in records),
-            "attached_source_bindings": sum(len(bindings.get(target_id(row["identity"]), [])) for row in records),
-        })
+        )
 
-    creature_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Creature"]
-    item_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Item"]
-    mount_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Mount"]
+    creature_bindings = [
+        row
+        for row in sources["source_identity_bindings"]
+        if row["target"]["family"] == "Creature"
+    ]
+    item_bindings = [
+        row
+        for row in sources["source_identity_bindings"]
+        if row["target"]["family"] == "Item"
+    ]
+    mount_bindings = [
+        row
+        for row in sources["source_identity_bindings"]
+        if row["target"]["family"] == "Mount"
+    ]
     # Import-only TibiaWiki evidence (a facts file naming its own batch, e.g. the Item family fallback) is not
     # part of WorldProject/v2; keep its source and batch rows when regenerating the shared import indexes.
     wiki_facts = sorted((ROOT / "imports/tibiawiki/facts").glob("*.json"))
-    import_only = {load(path).get("batch_id") for path in wiki_facts} - {row["batch_id"] for row in imports["batches"]} - {None}
-    kept_sources = [row for row in load(ROOT / "imports/tibiawiki/sources.json")["sources"] if row["import_batch_id"] in import_only]
-    kept_batches = [row for row in load(ROOT / "imports/tibiawiki/batches.json")["batches"] if row["batch_id"] in import_only]
+    import_only = (
+        {load(path).get("batch_id") for path in wiki_facts}
+        - {row["batch_id"] for row in imports["batches"]}
+        - {None}
+    )
+    kept_sources = [
+        row
+        for row in load(ROOT / "imports/tibiawiki/sources.json")["sources"]
+        if row["import_batch_id"] in import_only
+    ]
+    kept_batches = [
+        row
+        for row in load(ROOT / "imports/tibiawiki/batches.json")["batches"]
+        if row["batch_id"] in import_only
+    ]
     outputs = {
-        "imports/crystalserver/sources.json": {"schema": "OTERYN_IMPORT_SOURCES/v1", "sources": [row for row in sources["sources"] if row["key"] == "oteryn:source.crystalserver"]},
-        "imports/crystalserver/batches.json": {"schema": "OTERYN_IMPORT_BATCHES/v1", "batches": [row for row in imports["batches"] if row["source_repository"] == "zimbadev/crystalserver"]},
-        "imports/canary/sources.json": {"schema": "OTERYN_IMPORT_SOURCES/v1", "sources": [row for row in sources["sources"] if row["key"] == "oteryn:source.canary"]},
-        "imports/canary/batches.json": {"schema": "OTERYN_IMPORT_BATCHES/v1", "batches": [row for row in imports["batches"] if row["source_repository"] == "opentibiabr/canary"]},
-        "imports/canary/bindings/creatures.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Creature",
-                                                   "bindings": [row for row in creature_bindings if row["source_key"] == "oteryn:source.canary"]},
+        "imports/crystalserver/sources.json": {
+            "schema": "OTERYN_IMPORT_SOURCES/v1",
+            "sources": [
+                row
+                for row in sources["sources"]
+                if row["key"] == "oteryn:source.crystalserver"
+            ],
+        },
+        "imports/crystalserver/batches.json": {
+            "schema": "OTERYN_IMPORT_BATCHES/v1",
+            "batches": [
+                row
+                for row in imports["batches"]
+                if row["source_repository"] == "zimbadev/crystalserver"
+            ],
+        },
+        "imports/canary/sources.json": {
+            "schema": "OTERYN_IMPORT_SOURCES/v1",
+            "sources": [
+                row
+                for row in sources["sources"]
+                if row["key"] == "oteryn:source.canary"
+            ],
+        },
+        "imports/canary/batches.json": {
+            "schema": "OTERYN_IMPORT_BATCHES/v1",
+            "batches": [
+                row
+                for row in imports["batches"]
+                if row["source_repository"] == "opentibiabr/canary"
+            ],
+        },
+        "imports/canary/bindings/creatures.json": {
+            "schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1",
+            "family": "Creature",
+            "bindings": [
+                row
+                for row in creature_bindings
+                if row["source_key"] == "oteryn:source.canary"
+            ],
+        },
         # Game version 15.30: creatures CrystalServer has at its pinned 15.30 commit and Canary lacks bind to the Crystal file.
-        "imports/crystalserver/bindings/creatures.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Creature",
-                                                          "bindings": [row for row in creature_bindings if row["source_key"] == "oteryn:source.crystalserver"]},
-        "imports/tibiawiki/sources.json": {"schema": "OTERYN_IMPORT_SOURCES/v1", "sources": [row for row in sources["sources"] if row["key"] == "oteryn:source.tibiawiki"] + kept_sources},
-        "imports/tibiawiki/batches.json": {"schema": "OTERYN_IMPORT_BATCHES/v1", "batches": [row for row in imports["batches"] if row["batch_id"] in {source["import_batch_id"] for source in sources["sources"] if source["key"] == "oteryn:source.tibiawiki"}] + kept_batches},
-        "imports/tibiawiki/bindings/items.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Item", "bindings": item_bindings},
-        "imports/tibiawiki/bindings/mounts.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Mount", "bindings": mount_bindings},
+        "imports/crystalserver/bindings/creatures.json": {
+            "schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1",
+            "family": "Creature",
+            "bindings": [
+                row
+                for row in creature_bindings
+                if row["source_key"] == "oteryn:source.crystalserver"
+            ],
+        },
+        "imports/tibiawiki/sources.json": {
+            "schema": "OTERYN_IMPORT_SOURCES/v1",
+            "sources": [
+                row
+                for row in sources["sources"]
+                if row["key"] == "oteryn:source.tibiawiki"
+            ]
+            + kept_sources,
+        },
+        "imports/tibiawiki/batches.json": {
+            "schema": "OTERYN_IMPORT_BATCHES/v1",
+            "batches": [
+                row
+                for row in imports["batches"]
+                if row["batch_id"]
+                in {
+                    source["import_batch_id"]
+                    for source in sources["sources"]
+                    if source["key"] == "oteryn:source.tibiawiki"
+                }
+            ]
+            + kept_batches,
+        },
+        "imports/tibiawiki/bindings/items.json": {
+            "schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1",
+            "family": "Item",
+            "bindings": item_bindings,
+        },
+        "imports/tibiawiki/bindings/mounts.json": {
+            "schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1",
+            "family": "Mount",
+            "bindings": mount_bindings,
+        },
         # D44 wiki-authored creatures bind to their TibiaWiki page id.
-        "imports/tibiawiki/bindings/creatures.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Creature",
-                                                      "bindings": [row for row in creature_bindings if row["source_key"] == "oteryn:source.tibiawiki"]},
+        "imports/tibiawiki/bindings/creatures.json": {
+            "schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1",
+            "family": "Creature",
+            "bindings": [
+                row
+                for row in creature_bindings
+                if row["source_key"] == "oteryn:source.tibiawiki"
+            ],
+        },
         "imports/tibiawiki/facts/items-wave1.json": {
             "schema": "OTERYN_IMPORTED_FACT_PROVENANCE/v1",
             "family": "Item",
@@ -542,41 +879,42 @@ def main(*, items_only: bool = False) -> int:
             "snapshot_sha256": wave1["source"]["snapshot_sha256"],
             "records": wave1_facts,
         },
-        "content/items/taxonomy/items.json": {
-            "schema": "OTERYN_ITEM_TAXONOMY/v1",
-            "family_profile_contract": "tools/content-schema/item-authoring/profile-catalog.json",
-            "legacy_family_profile_contract": "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json#family_assignments",
-            "records": taxonomy_rows,
-        },
-        "content/items/relations/items.json": {
-            "schema": "OTERYN_ITEM_RELATIONS/v1",
-            "records": relation_rows,
-        },
     }
     for relative, value in outputs.items():
         write(relative, value)
 
-    write("content/cosmetics/mounts/index.json", {
-        "schema": "OTERYN_FAMILY_INDEX/v1",
-        "family": "Mount",
-        "record_count": len(mount_rows),
-        "shards": [mount_relative],
-        "legacy_source": {
-            "path": "content/world/definitions/declarations.json",
-            "git_blob_sha": declarations_blob_sha,
-            "schema": declarations["schema"],
+    write(
+        "content/cosmetics/mounts/index.json",
+        {
+            "schema": "OTERYN_FAMILY_INDEX/v1",
+            "family": "Mount",
+            "record_count": len(mount_rows),
+            "shards": [mount_relative],
+            "legacy_source": {
+                "path": "content/world/definitions/declarations.json",
+                "git_blob_sha": declarations_blob_sha,
+                "schema": declarations["schema"],
+            },
+            "attached_editor_entries": sum(
+                row["target"]["family"] == "Mount" for row in editor["entries"]
+            ),
+            "attached_source_bindings": len(mount_bindings),
         },
-        "attached_editor_entries": sum(row["target"]["family"] == "Mount" for row in editor["entries"]),
-        "attached_source_bindings": len(mount_bindings),
-    })
+    )
 
-    npc_declarations = [row for row in declarations["records"] if row.get("kind") == "NPC"]
+    npc_declarations = [
+        row for row in declarations["records"] if row.get("kind") == "NPC"
+    ]
     if len(npc_declarations) != 1282:
         raise RuntimeError(f"NPC_SOURCE_COUNT_MISMATCH:{len(npc_declarations)}")
 
     npc_rows = []
     for declaration in npc_declarations:
-        target = {"family": "NPC", "key": declaration["identity"]["key"], "revision": declaration["identity"]["revision"]}
+        target = {
+            "family": "NPC",
+            "key": declaration["identity"]["key"],
+            "revision": declaration["identity"]["revision"],
+        }
         key = target_id(target)
         row = {"declaration": declaration}
         if key in bindings:
@@ -585,36 +923,59 @@ def main(*, items_only: bool = False) -> int:
 
     npc_shards: list[str] = []
     for start in range(0, len(npc_rows), ITEM_SHARD_SIZE):
-        rows = npc_rows[start:start + ITEM_SHARD_SIZE]
+        rows = npc_rows[start : start + ITEM_SHARD_SIZE]
         end = start + len(rows) - 1
         relative = f"content/npcs/definitions/npcs-{start:05d}-{end:05d}.json"
         npc_shards.append(relative)
-        write(relative, {
-            "schema": "OTERYN_NPC_AUTHORING_SHARD/v1",
+        write(
+            relative,
+            {
+                "schema": "OTERYN_NPC_AUTHORING_SHARD/v1",
+                "family": "NPC",
+                "source_legacy_role": "content/world/definitions/declarations.json",
+                "shard": {
+                    "index": start // ITEM_SHARD_SIZE,
+                    "start": start,
+                    "end": end,
+                    "count": len(rows),
+                },
+                "records": rows,
+            },
+        )
+    npc_bindings = [
+        row
+        for row in sources["source_identity_bindings"]
+        if row["target"]["family"] == "NPC"
+    ]
+    write(
+        "content/npcs/definitions/index.json",
+        {
+            "schema": "OTERYN_FAMILY_INDEX/v1",
             "family": "NPC",
-            "source_legacy_role": "content/world/definitions/declarations.json",
-            "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
-            "records": rows,
-        })
-    npc_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "NPC"]
-    write("content/npcs/definitions/index.json", {
-        "schema": "OTERYN_FAMILY_INDEX/v1",
-        "family": "NPC",
-        "record_count": len(npc_rows),
-        "shard_size": ITEM_SHARD_SIZE,
-        "shards": npc_shards,
-        "legacy_source": {
-            "path": "content/world/definitions/declarations.json",
-            "git_blob_sha": declarations_blob_sha,
-            "schema": declarations["schema"],
+            "record_count": len(npc_rows),
+            "shard_size": ITEM_SHARD_SIZE,
+            "shards": npc_shards,
+            "legacy_source": {
+                "path": "content/world/definitions/declarations.json",
+                "git_blob_sha": declarations_blob_sha,
+                "schema": declarations["schema"],
+            },
+            "attached_source_bindings": sum(
+                len(row.get("source_bindings", [])) for row in npc_rows
+            ),
         },
-        "attached_source_bindings": sum(len(row.get("source_bindings", [])) for row in npc_rows),
-    })
+    )
 
     # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1): declaration, profile and source binding per row.
     encounter_rows = []
-    for declaration in (row for row in declarations["records"] if row.get("kind") == "Encounter"):
-        key = ("Encounter", declaration["identity"]["key"], declaration["identity"]["revision"])
+    for declaration in (
+        row for row in declarations["records"] if row.get("kind") == "Encounter"
+    ):
+        key = (
+            "Encounter",
+            declaration["identity"]["key"],
+            declaration["identity"]["revision"],
+        )
         row = {"declaration": declaration}
         if key in profiles:
             row["authoring"] = profiles[key]
@@ -623,84 +984,153 @@ def main(*, items_only: bool = False) -> int:
         encounter_rows.append(row)
     encounter_shards: list[str] = []
     for start in range(0, len(encounter_rows), ITEM_SHARD_SIZE):
-        rows = encounter_rows[start:start + ITEM_SHARD_SIZE]
+        rows = encounter_rows[start : start + ITEM_SHARD_SIZE]
         end = start + len(rows) - 1
-        relative = f"content/encounters/definitions/encounters-{start:05d}-{end:05d}.json"
+        relative = (
+            f"content/encounters/definitions/encounters-{start:05d}-{end:05d}.json"
+        )
         encounter_shards.append(relative)
-        write(relative, {
-            "schema": "OTERYN_ENCOUNTER_AUTHORING_SHARD/v1",
+        write(
+            relative,
+            {
+                "schema": "OTERYN_ENCOUNTER_AUTHORING_SHARD/v1",
+                "family": "Encounter",
+                "source_legacy_role": "content/world/definitions/declarations.json",
+                "shard": {
+                    "index": start // ITEM_SHARD_SIZE,
+                    "start": start,
+                    "end": end,
+                    "count": len(rows),
+                },
+                "records": rows,
+            },
+        )
+    encounter_bindings = [
+        row
+        for row in sources["source_identity_bindings"]
+        if row["target"]["family"] == "Encounter"
+    ]
+    write(
+        "content/encounters/definitions/index.json",
+        {
+            "schema": "OTERYN_FAMILY_INDEX/v1",
             "family": "Encounter",
-            "source_legacy_role": "content/world/definitions/declarations.json",
-            "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
-            "records": rows,
-        })
-    encounter_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Encounter"]
-    write("content/encounters/definitions/index.json", {
-        "schema": "OTERYN_FAMILY_INDEX/v1",
-        "family": "Encounter",
-        "record_count": len(encounter_rows),
-        "shard_size": ITEM_SHARD_SIZE,
-        "shards": encounter_shards,
-        "legacy_source": {
-            "path": "content/world/definitions/declarations.json",
-            "git_blob_sha": declarations_blob_sha,
-            "schema": declarations["schema"],
+            "record_count": len(encounter_rows),
+            "shard_size": ITEM_SHARD_SIZE,
+            "shards": encounter_shards,
+            "legacy_source": {
+                "path": "content/world/definitions/declarations.json",
+                "git_blob_sha": declarations_blob_sha,
+                "schema": declarations["schema"],
+            },
+            "attached_authoring_profiles": sum(
+                "authoring" in row for row in encounter_rows
+            ),
+            "attached_source_bindings": sum(
+                len(row.get("source_bindings", [])) for row in encounter_rows
+            ),
         },
-        "attached_authoring_profiles": sum("authoring" in row for row in encounter_rows),
-        "attached_source_bindings": sum(len(row.get("source_bindings", [])) for row in encounter_rows),
-    })
+    )
 
-    dialogue_declarations = [row for row in declarations["records"] if row.get("kind") == "Dialogue"]
+    dialogue_declarations = [
+        row for row in declarations["records"] if row.get("kind") == "Dialogue"
+    ]
     if len(dialogue_declarations) != 836:
-        raise RuntimeError(f"DIALOGUE_SOURCE_COUNT_MISMATCH:{len(dialogue_declarations)}")
+        raise RuntimeError(
+            f"DIALOGUE_SOURCE_COUNT_MISMATCH:{len(dialogue_declarations)}"
+        )
 
     # No source bindings exist for Dialogue declarations (WorldProject/v2 NPC admission wave A).
-    dialogue_rows = [{"declaration": declaration} for declaration in dialogue_declarations]
+    dialogue_rows = [
+        {"declaration": declaration} for declaration in dialogue_declarations
+    ]
     dialogue_shards: list[str] = []
     for start in range(0, len(dialogue_rows), ITEM_SHARD_SIZE):
-        rows = dialogue_rows[start:start + ITEM_SHARD_SIZE]
+        rows = dialogue_rows[start : start + ITEM_SHARD_SIZE]
         end = start + len(rows) - 1
         relative = f"content/dialogues/definitions/dialogues-{start:05d}-{end:05d}.json"
         dialogue_shards.append(relative)
-        write(relative, {
-            "schema": "OTERYN_DIALOGUE_AUTHORING_SHARD/v1",
+        write(
+            relative,
+            {
+                "schema": "OTERYN_DIALOGUE_AUTHORING_SHARD/v1",
+                "family": "Dialogue",
+                "source_legacy_role": "content/world/definitions/declarations.json",
+                "shard": {
+                    "index": start // ITEM_SHARD_SIZE,
+                    "start": start,
+                    "end": end,
+                    "count": len(rows),
+                },
+                "records": rows,
+            },
+        )
+    write(
+        "content/dialogues/definitions/index.json",
+        {
+            "schema": "OTERYN_FAMILY_INDEX/v1",
             "family": "Dialogue",
-            "source_legacy_role": "content/world/definitions/declarations.json",
-            "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
-            "records": rows,
-        })
-    write("content/dialogues/definitions/index.json", {
-        "schema": "OTERYN_FAMILY_INDEX/v1",
-        "family": "Dialogue",
-        "record_count": len(dialogue_rows),
-        "shard_size": ITEM_SHARD_SIZE,
-        "shards": dialogue_shards,
-        "legacy_source": {
-            "path": "content/world/definitions/declarations.json",
-            "git_blob_sha": declarations_blob_sha,
-            "schema": declarations["schema"],
+            "record_count": len(dialogue_rows),
+            "shard_size": ITEM_SHARD_SIZE,
+            "shards": dialogue_shards,
+            "legacy_source": {
+                "path": "content/world/definitions/declarations.json",
+                "git_blob_sha": declarations_blob_sha,
+                "schema": declarations["schema"],
+            },
         },
-    })
+    )
 
-    document_rows = [{"declaration": row} for row in declarations["records"] if row.get("kind") == "Document"]
-    if len(document_rows) != 1609 or any(row["target"]["family"] == "Document" for row in sources["source_identity_bindings"]):
+    document_rows = [
+        {"declaration": row}
+        for row in declarations["records"]
+        if row.get("kind") == "Document"
+    ]
+    if len(document_rows) != 1609 or any(
+        row["target"]["family"] == "Document"
+        for row in sources["source_identity_bindings"]
+    ):
         raise RuntimeError("DOCUMENT_SOURCE_COUNT_OR_BINDING_MISMATCH")
     document_shards = []
     for start in range(0, len(document_rows), ITEM_SHARD_SIZE):
-        rows = document_rows[start:start + ITEM_SHARD_SIZE]
+        rows = document_rows[start : start + ITEM_SHARD_SIZE]
         end = start + len(rows) - 1
         relative = f"content/documents/documents-{start:05d}-{end:05d}.json"
         document_shards.append(relative)
-        write(relative, {"schema": "OTERYN_DOCUMENT_AUTHORING_SHARD/v1", "family": "Document",
-                         "source_legacy_role": "content/world/definitions/declarations.json",
-                         "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
-                         "records": rows})
-    write("content/documents/index.json", {"schema": "OTERYN_FAMILY_INDEX/v1", "family": "Document",
-          "record_count": len(document_rows), "shard_size": ITEM_SHARD_SIZE, "shards": document_shards,
-          "legacy_source": {"path": "content/world/definitions/declarations.json", "git_blob_sha": declarations_blob_sha,
-                            "schema": declarations["schema"]}})
+        write(
+            relative,
+            {
+                "schema": "OTERYN_DOCUMENT_AUTHORING_SHARD/v1",
+                "family": "Document",
+                "source_legacy_role": "content/world/definitions/declarations.json",
+                "shard": {
+                    "index": start // ITEM_SHARD_SIZE,
+                    "start": start,
+                    "end": end,
+                    "count": len(rows),
+                },
+                "records": rows,
+            },
+        )
+    write(
+        "content/documents/index.json",
+        {
+            "schema": "OTERYN_FAMILY_INDEX/v1",
+            "family": "Document",
+            "record_count": len(document_rows),
+            "shard_size": ITEM_SHARD_SIZE,
+            "shards": document_shards,
+            "legacy_source": {
+                "path": "content/world/definitions/declarations.json",
+                "git_blob_sha": declarations_blob_sha,
+                "schema": declarations["schema"],
+            },
+        },
+    )
 
-    service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
+    service_records = [
+        row for row in declarations["records"] if row.get("kind") == "Service"
+    ]
     if len(service_records) != 400:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
@@ -709,51 +1139,81 @@ def main(*, items_only: bool = False) -> int:
     for family, (node, stem, field) in SERVICE_FAMILIES.items():
         # Native serialization omits empty arrays; source-held merchants keep their
         # existing trade identities and Service declarations even with no offers.
-        records = [row for row in service_records
-                   if field in row or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")]
+        records = [
+            row
+            for row in service_records
+            if field in row
+            or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")
+        ]
         service_counts[family] = len(records)
         service_shards[family] = []
         for start in range(0, len(records), ITEM_SHARD_SIZE):
-            rows = [{"declaration": declaration} for declaration in records[start:start + ITEM_SHARD_SIZE]]
+            rows = [
+                {"declaration": declaration}
+                for declaration in records[start : start + ITEM_SHARD_SIZE]
+            ]
             end = start + len(rows) - 1
             relative = f"{node}{stem}-{start:05d}-{end:05d}.json"
             service_shards[family].append(relative)
-            write(relative, {
-                "schema": "OTERYN_SERVICE_AUTHORING_SHARD/v1",
+            write(
+                relative,
+                {
+                    "schema": "OTERYN_SERVICE_AUTHORING_SHARD/v1",
+                    "family": family,
+                    "source_legacy_role": "content/world/definitions/declarations.json",
+                    "shard": {
+                        "index": start // ITEM_SHARD_SIZE,
+                        "start": start,
+                        "end": end,
+                        "count": len(rows),
+                    },
+                    "records": rows,
+                },
+            )
+        write(
+            f"{node}index.json",
+            {
+                "schema": "OTERYN_FAMILY_INDEX/v1",
                 "family": family,
-                "source_legacy_role": "content/world/definitions/declarations.json",
-                "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
-                "records": rows,
-            })
-        write(f"{node}index.json", {
-            "schema": "OTERYN_FAMILY_INDEX/v1",
-            "family": family,
-            "record_count": len(records),
-            "shard_size": ITEM_SHARD_SIZE,
-            "shards": service_shards[family],
-            "legacy_source": {
-                "path": "content/world/definitions/declarations.json",
-                "git_blob_sha": declarations_blob_sha,
-                "schema": declarations["schema"],
+                "record_count": len(records),
+                "shard_size": ITEM_SHARD_SIZE,
+                "shards": service_shards[family],
+                "legacy_source": {
+                    "path": "content/world/definitions/declarations.json",
+                    "git_blob_sha": declarations_blob_sha,
+                    "schema": declarations["schema"],
+                },
             },
-        })
+        )
     if sum(service_counts.values()) != len(service_records):
         raise RuntimeError(f"SERVICE_FIELD_SPLIT_MISMATCH:{service_counts}")
 
     charm_index = load(ROOT / CHARM_INDEX)
-    if charm_index.get("schema") != "OTERYN_FAMILY_INDEX/v1" or charm_index.get("family") != "Charm":
+    if (
+        charm_index.get("schema") != "OTERYN_FAMILY_INDEX/v1"
+        or charm_index.get("family") != "Charm"
+    ):
         raise RuntimeError("CHARM_INDEX_MISSING")
     charm_count = charm_index["record_count"]
     proficiency_index = load(ROOT / PROFICIENCY_INDEX)
-    if proficiency_index.get("schema") != "OTERYN_FAMILY_INDEX/v1" or proficiency_index.get("family") != "Proficiency":
+    if (
+        proficiency_index.get("schema") != "OTERYN_FAMILY_INDEX/v1"
+        or proficiency_index.get("family") != "Proficiency"
+    ):
         raise RuntimeError("PROFICIENCY_INDEX_MISSING")
     proficiency_count = proficiency_index["record_count"]
     reward_claim_index = load(ROOT / REWARD_CLAIM_INDEX)
-    if reward_claim_index.get("schema") != "OTERYN_FAMILY_INDEX/v1" or reward_claim_index.get("family") != "RewardClaim":
+    if (
+        reward_claim_index.get("schema") != "OTERYN_FAMILY_INDEX/v1"
+        or reward_claim_index.get("family") != "RewardClaim"
+    ):
         raise RuntimeError("REWARD_CLAIM_INDEX_MISSING")
     reward_claim_count = reward_claim_index["record_count"]
     starter_kit_index = load(ROOT / STARTER_KIT_INDEX)
-    if starter_kit_index.get("schema") != "OTERYN_FAMILY_INDEX/v1" or starter_kit_index.get("family") != "StarterKit":
+    if (
+        starter_kit_index.get("schema") != "OTERYN_FAMILY_INDEX/v1"
+        or starter_kit_index.get("family") != "StarterKit"
+    ):
         raise RuntimeError("STARTER_KIT_INDEX_MISSING")
     starter_kit_count = starter_kit_index["record_count"]
     quest_families, quest_managed = retained_quest_registration(ROOT)
@@ -765,141 +1225,314 @@ def main(*, items_only: bool = False) -> int:
         path = ROOT / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
-    managed = sorted([*cosmetics_outputs, *(["content/cosmetics/outfits/authoring.json"] if cosmetics_outputs else []),
-                      *item_shards, RANGED_PROFILES, mount_relative, "content/items/index.json", "content/cosmetics/mounts/index.json",
-                      *creature_managed, *npc_shards, "content/npcs/definitions/index.json",
-                      *encounter_shards, "content/encounters/definitions/index.json",
-                      *dialogue_shards, "content/dialogues/definitions/index.json",
-                      *document_shards, "content/documents/index.json",
-                      *service_managed, CHARM_INDEX, *charm_index["shards"],
-                      PROFICIENCY_INDEX, *proficiency_index["shards"], PROFICIENCY_BINDINGS,
-                      REWARD_CLAIM_INDEX, *reward_claim_index["shards"],
-                      STARTER_KIT_INDEX, *starter_kit_index["shards"], *quest_managed, *outputs.keys()])
+    managed = sorted(
+        [
+            *cosmetics_outputs,
+            *(
+                ["content/cosmetics/outfits/authoring.json"]
+                if cosmetics_outputs
+                else []
+            ),
+            *item_shards,
+            RANGED_PROFILES,
+            mount_relative,
+            "content/items/index.json",
+            "content/cosmetics/mounts/index.json",
+            *creature_managed,
+            *npc_shards,
+            "content/npcs/definitions/index.json",
+            *encounter_shards,
+            "content/encounters/definitions/index.json",
+            *dialogue_shards,
+            "content/dialogues/definitions/index.json",
+            *document_shards,
+            "content/documents/index.json",
+            *service_managed,
+            CHARM_INDEX,
+            *charm_index["shards"],
+            PROFICIENCY_INDEX,
+            *proficiency_index["shards"],
+            PROFICIENCY_BINDINGS,
+            REWARD_CLAIM_INDEX,
+            *reward_claim_index["shards"],
+            STARTER_KIT_INDEX,
+            *starter_kit_index["shards"],
+            *quest_managed,
+            *outputs.keys(),
+        ]
+    )
     # A family that grows renames its last shard; drop the superseded shard files so every shard is managed.
     shard_name = re.compile(r"-\d{5}-\d{5}\.json$")
     managed_set = set(managed)
-    for directory in sorted({(ROOT / path).parent for path in managed if shard_name.search(path)}):
+    for directory in sorted(
+        {(ROOT / path).parent for path in managed if shard_name.search(path)}
+    ):
         for stale in sorted(directory.glob("*.json")):
             relative = stale.relative_to(ROOT).as_posix()
             if shard_name.search(stale.name) and relative not in managed_set:
                 stale.unlink()
-    write_registry("content/manifest.json", {
-        "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1",
-        "project_revision": REVISION,
-        "admission_main": ADMISSION_MAIN,
-        "managed_files": [{"path": path} for path in managed],
-        "families": {
-            "Item": {"records": len(item_records), "index": "content/items/index.json"},
-            "Mount": {"records": len(mount_rows), "index": "content/cosmetics/mounts/index.json"},
-            "Charm": {"records": charm_count, "index": CHARM_INDEX},
-            "Proficiency": {"records": proficiency_count, "index": PROFICIENCY_INDEX},
-            "RewardClaim": {"records": reward_claim_count, "index": REWARD_CLAIM_INDEX},
-            "StarterKit": {"records": starter_kit_count, "index": STARTER_KIT_INDEX},
-            **quest_families,
-            **{family: {"records": creature_counts[family], "index": f"{node}index.json"}
-               for family, (node, _) in CREATURE_FAMILIES.items()},
-            "NPC": {"records": len(npc_rows), "index": "content/npcs/definitions/index.json"},
-            "Encounter": {"records": len(encounter_rows), "index": "content/encounters/definitions/index.json"},
-            "Dialogue": {"records": len(dialogue_rows), "index": "content/dialogues/definitions/index.json"},
-            "Document": {"records": len(document_rows), "index": "content/documents/index.json"},
-            **{family: {"records": service_counts[family], "index": f"{node}index.json"}
-               for family, (node, _, _) in SERVICE_FAMILIES.items()},
+    write_registry(
+        "content/manifest.json",
+        {
+            "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1",
+            "project_revision": REVISION,
+            "admission_main": ADMISSION_MAIN,
+            "managed_files": [{"path": path} for path in managed],
+            "families": {
+                "Item": {
+                    "records": len(item_records),
+                    "index": "content/items/index.json",
+                },
+                "Mount": {
+                    "records": len(mount_rows),
+                    "index": "content/cosmetics/mounts/index.json",
+                },
+                "Charm": {"records": charm_count, "index": CHARM_INDEX},
+                "Proficiency": {
+                    "records": proficiency_count,
+                    "index": PROFICIENCY_INDEX,
+                },
+                "RewardClaim": {
+                    "records": reward_claim_count,
+                    "index": REWARD_CLAIM_INDEX,
+                },
+                "StarterKit": {
+                    "records": starter_kit_count,
+                    "index": STARTER_KIT_INDEX,
+                },
+                **quest_families,
+                **{
+                    family: {
+                        "records": creature_counts[family],
+                        "index": f"{node}index.json",
+                    }
+                    for family, (node, _) in CREATURE_FAMILIES.items()
+                },
+                "NPC": {
+                    "records": len(npc_rows),
+                    "index": "content/npcs/definitions/index.json",
+                },
+                "Encounter": {
+                    "records": len(encounter_rows),
+                    "index": "content/encounters/definitions/index.json",
+                },
+                "Dialogue": {
+                    "records": len(dialogue_rows),
+                    "index": "content/dialogues/definitions/index.json",
+                },
+                "Document": {
+                    "records": len(document_rows),
+                    "index": "content/documents/index.json",
+                },
+                **{
+                    family: {
+                        "records": service_counts[family],
+                        "index": f"{node}index.json",
+                    }
+                    for family, (node, _, _) in SERVICE_FAMILIES.items()
+                },
+            },
+            "compatibility": {
+                "legacy_root": "content/world",
+                "legacy_mutated": False,
+                "runtime_switch_authorized": False,
+            },
         },
-        "compatibility": {"legacy_root": "content/world", "legacy_mutated": False, "runtime_switch_authorized": False},
-    })
-    write_registry("content/content.lock.json", {
-        "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
-        "project_revision": REVISION,
-        "admission_main": ADMISSION_MAIN,
-        "legacy_blobs": {
-            "reference": git_blob_sha(LEGACY / "definitions" / "reference.json"),
-            "declarations": declarations_blob_sha,
-            "editor": git_blob_sha(LEGACY / "editor" / "author.json"),
-            "sources": git_blob_sha(LEGACY / "provenance" / "sources.json"),
-            "imports": git_blob_sha(LEGACY / "provenance" / "imports.json"),
+    )
+    write_registry(
+        "content/content.lock.json",
+        {
+            "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
+            "project_revision": REVISION,
+            "admission_main": ADMISSION_MAIN,
+            "legacy_blobs": {
+                "reference": git_blob_sha(LEGACY / "definitions" / "reference.json"),
+                "declarations": declarations_blob_sha,
+                "editor": git_blob_sha(LEGACY / "editor" / "author.json"),
+                "sources": git_blob_sha(LEGACY / "provenance" / "sources.json"),
+                "imports": git_blob_sha(LEGACY / "provenance" / "imports.json"),
+            },
+            "family_counts": {
+                "Item": len(item_records),
+                "Mount": len(mount_rows),
+                **creature_counts,
+                "NPC": len(npc_rows),
+                "Encounter": len(encounter_rows),
+                "Dialogue": len(dialogue_rows),
+                "Document": len(document_rows),
+                **service_counts,
+                "Charm": charm_count,
+                "Proficiency": proficiency_count,
+                "RewardClaim": reward_claim_count,
+                "StarterKit": starter_kit_count,
+                **{
+                    family: value["records"] for family, value in quest_families.items()
+                },
+            },
+            "item_authoring_counts": {
+                "authoring": len(authoring_by_target),
+                "taxonomy": len(taxonomy_rows),
+                "relation_sources": len(relation_rows),
+            },
+            "source_binding_counts": {
+                "Item": len(item_bindings),
+                "Mount": len(mount_bindings),
+                "Creature": len(creature_bindings),
+                "NPC": len(npc_bindings),
+                "Encounter": len(encounter_bindings),
+            },
+            "authoring_profile_counts": dict(
+                sorted(Counter(family for family, _, _ in profiles).items())
+            ),
+            "editor_entry_counts": {
+                "Item": sum(
+                    row["target"]["family"] == "Item" for row in editor["entries"]
+                ),
+                "Mount": sum(
+                    row["target"]["family"] == "Mount" for row in editor["entries"]
+                ),
+            },
         },
-        "family_counts": {"Item": len(item_records), "Mount": len(mount_rows), **creature_counts,
-                           "NPC": len(npc_rows), "Encounter": len(encounter_rows), "Dialogue": len(dialogue_rows),
-                           "Document": len(document_rows),
-                           **service_counts, "Charm": charm_count, "Proficiency": proficiency_count,
-                           "RewardClaim": reward_claim_count, "StarterKit": starter_kit_count,
-                           **{family: value["records"] for family, value in quest_families.items()}},
-        "item_authoring_counts": {"authoring": len(authoring_by_target), "taxonomy": len(taxonomy_rows), "relation_sources": len(relation_rows)},
-        "source_binding_counts": {"Item": len(item_bindings), "Mount": len(mount_bindings), "Creature": len(creature_bindings),
-                                   "NPC": len(npc_bindings), "Encounter": len(encounter_bindings)},
-        "authoring_profile_counts": dict(sorted(Counter(family for family, _, _ in profiles).items())),
-        "editor_entry_counts": {
-            "Item": sum(row["target"]["family"] == "Item" for row in editor["entries"]),
-            "Mount": sum(row["target"]["family"] == "Mount" for row in editor["entries"]),
+    )
+    write_registry(
+        "content/project.json",
+        {
+            "schema": "OTERYN_GAME_CONTENT_TREE_PROJECT/v1",
+            "project_revision": REVISION,
+            "manifest": "content/manifest.json",
+            "content_lock": "content/content.lock.json",
+            "migrated_families": [
+                "Item",
+                "Mount",
+                *CREATURE_FAMILIES,
+                "NPC",
+                "Encounter",
+                "Dialogue",
+                "Document",
+                "Service",
+                "Charm",
+                "Proficiency",
+                "RewardClaim",
+                "StarterKit",
+                *quest_families,
+            ],
+            "legacy_compatibility_root": "content/world",
+            "runtime_source": "legacy_until_separately_qualified",
+            "next_population_families": [
+                family
+                for family in [
+                    "Quest",
+                    "Achievement",
+                    "Outfit",
+                    "Area",
+                    "House",
+                    "WorldObject",
+                ]
+                if family not in quest_families
+            ],
         },
-    })
-    write_registry("content/project.json", {
-        "schema": "OTERYN_GAME_CONTENT_TREE_PROJECT/v1",
-        "project_revision": REVISION,
-        "manifest": "content/manifest.json",
-        "content_lock": "content/content.lock.json",
-        "migrated_families": ["Item", "Mount", *CREATURE_FAMILIES, "NPC", "Encounter", "Dialogue", "Document", "Service", "Charm",
-                             "Proficiency", "RewardClaim", "StarterKit", *quest_families],
-        "legacy_compatibility_root": "content/world",
-        "runtime_source": "legacy_until_separately_qualified",
-        "next_population_families": [family for family in
-            ["Quest", "Achievement", "Outfit", "Area", "House", "WorldObject"]
-            if family not in quest_families],
-    })
+    )
     # ITEMHOLD-Q changes shared shards, but no selected shop/potion record.
     # Repin only after proving the old digest and every selected row against
     # the exact pre-change base; ordinary source-capture validation stays strict.
     import questpc2_soul_loot_items
+
     questpc2_soul_loot_items.refresh_input_pins(ROOT)
     from grizzly_shop_profiles import refresh_canonical_input_pins
-    refresh_canonical_input_pins(ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb')
+
+    # The merge regenerator seeds derived profiles from the incoming package.
+    # Prove their selected rows against that exact Git parent before repinning.
+    incoming = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", "MERGE_HEAD^{commit}"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    profile_baseline = incoming or "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+    refresh_canonical_input_pins(ROOT, profile_baseline)
     import condition_potion_profiles
+
     refresh_canonical_input_pins(
-        ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb',
+        ROOT,
+        profile_baseline,
         packet_path=condition_potion_profiles.PATH,
-        keys={f'oteryn:item.tibia.i{i}' for i in condition_potion_profiles.IDS})
+        keys={f"oteryn:item.tibia.i{i}" for i in condition_potion_profiles.IDS},
+    )
     # Weight imports may change a shared shard without changing the qualified rod.
     import gathering_item_profiles
+
     gathering_item_profiles.refresh_qualified_proof(ROOT)
     # These recipe captures select unchanged records from the same shared shards.
     from refresh_item_overlay_inputs import refresh
-    for name in ('quest-batch3-item-profiles.json', 'qnpcfx-item-profiles.json'):
-        relative = 'tools/content-schema/native-gameplay/' + name
-        (ROOT / relative).write_bytes(refresh(relative, root=ROOT))
+
+    for name in ("quest-batch3-item-profiles.json", "qnpcfx-item-profiles.json"):
+        relative = "tools/content-schema/native-gameplay/" + name
+        (ROOT / relative).write_bytes(refresh(relative, root=ROOT, base=incoming or "HEAD"))
     refresh_bestiary_inventory(ROOT)
     # Reference-only source successors (including the approved Cake bridge) must
     # enter the sorted native lookup without implying an inventory Item policy.
-    subprocess.run([sys.executable,
-                    str(ROOT / "tools/content-schema/native-gameplay/build_full_spell_artifact.py"),
-                    "--refresh-item-keys"], cwd=ROOT, check=True)
+    subprocess.run(
+        [
+            sys.executable,
+            str(
+                ROOT
+                / "tools/content-schema/native-gameplay/build_full_spell_artifact.py"
+            ),
+            "--refresh-item-keys",
+        ],
+        cwd=ROOT,
+        check=True,
+    )
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
     import m42_cooking_canonical
+
     m42_cooking_canonical.refresh(ROOT)
     import prey_difficulty
+
     prey_difficulty.regenerate(ROOT)
     # Preserve independently authored spell collections on every regeneration.
     from register_spell_families import outputs as spell_outputs
+
     for relative, data in spell_outputs(ROOT).items():
         destination = ROOT / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(data)
-    print(f"PASS items={len(item_records)} creatures={creature_counts['Creature']} creature_records={sum(creature_counts.values())} creature_profiles={len(profiles)} item_shards={len(item_shards)} mounts={len(mount_rows)} authoring={len(authoring_by_target)} taxonomy={len(taxonomy_rows)} relation_sources={len(relation_rows)} relations={sum(len(row['relations']) for row in relation_rows)} npcs={len(npc_rows)} encounters={len(encounter_rows)} npc_bindings={len(npc_bindings)} dialogues={len(dialogue_rows)} service_trade={service_counts['Service.Trade']} service_travel={service_counts['Service.Travel']}")
+    print(
+        f"PASS items={len(item_records)} creatures={creature_counts['Creature']} creature_records={sum(creature_counts.values())} creature_profiles={len(profiles)} item_shards={len(item_shards)} mounts={len(mount_rows)} authoring={len(authoring_by_target)} taxonomy={len(taxonomy_rows)} relation_sources={len(relation_rows)} relations={sum(len(row['relations']) for row in relation_rows)} npcs={len(npc_rows)} encounters={len(encounter_rows)} npc_bindings={len(npc_bindings)} dialogues={len(dialogue_rows)} service_trade={service_counts['Service.Trade']} service_travel={service_counts['Service.Travel']}"
+    )
     # Static rulesets are outside the legacy DefinitionFamily registry. Restore
     # their separately qualified registration after rebuilding the legacy tree.
-    subprocess.run([sys.executable,
-                    str(ROOT / "tools/content-schema/imbuement-authoring/imbuement_content.py"),
-                    "content"], cwd=ROOT, check=True)
-    subprocess.run([sys.executable,
-                    str(ROOT / "tools/content-schema/craft-authoring/craft_authoring.py"),
-                    "content"], cwd=ROOT, check=True)
+    subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "tools/content-schema/imbuement-authoring/imbuement_content.py"),
+            "content",
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+    subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "tools/content-schema/craft-authoring/craft_authoring.py"),
+            "content",
+        ],
+        cwd=ROOT,
+        check=True,
+    )
     return 0
+
 
 def cli(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--items-only", action="store_true",
-                      help="refresh Item prerequisites without other families or registry generation")
+    mode.add_argument(
+        "--items-only",
+        action="store_true",
+        help="refresh Item prerequisites without other families or registry generation",
+    )
     mode.add_argument("--refresh-bestiary-inventory", action="store_true")
     args = parser.parse_args(argv)
     if args.refresh_bestiary_inventory:

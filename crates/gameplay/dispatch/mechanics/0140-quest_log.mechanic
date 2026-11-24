@@ -1,5 +1,5 @@
 name=quest_log
-commands=22
+commands=22,6318
 [route]
 match routing::quest_log::route(
     authority,

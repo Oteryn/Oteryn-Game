@@ -41,6 +41,7 @@ pub(super) fn capture(
     held: Res<ButtonInput<KeyCode>>,
     owner: NonSend<HostOwner>,
     guard: super::super::modal::ModalGuard,
+    overlays: Query<Entity, With<map_picker::Overlay>>,
     mut editors: Query<(Entity, &mut Editor)>,
     mut fields: Query<(&Field, &mut EditableText)>,
 ) {
@@ -48,6 +49,16 @@ pub(super) fn capture(
         keys.clear();
         return;
     };
+    if editor.map_pick && overlays.iter().any(|overlay| guard.allows(overlay)) {
+        if keys.read().any(|key| {
+            key.key_code == KeyCode::Escape
+                && key.state == bevy::input::ButtonState::Pressed
+                && !key.repeat
+        }) {
+            editor.map_pick = false;
+        }
+        return;
+    }
     if !editor.capturing {
         keys.clear();
         return;

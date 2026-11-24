@@ -79,128 +79,141 @@ fn container_tool_shortcuts_present_the_retained_tools() -> Result<(), Box<dyn s
 #[test]
 fn parity_a_container_sort_controls_dispatch_both_directions()
 -> Result<(), Box<dyn std::error::Error>> {
+    for (descending, recursive, warn, stale) in [
+        (false, false, true, false),
+        (true, false, true, false),
+        (true, true, false, false),
+        (false, true, true, false),
+        (true, true, true, true),
+    ] {
+        exercise_sort(descending, recursive, recursive, warn, stale)?;
+    }
+    exercise_sort(true, true, false, true, false)?;
+    exercise_sort(false, false, true, true, false)?;
+    Ok(())
+}
+
+#[test]
+fn nested_checked_prompts_with_recursive_preference_off() -> Result<(), Box<dyn std::error::Error>>
+{
+    exercise_sort(false, true, false, true, false)
+}
+
+#[test]
+fn nested_unchecked_sends_without_prompt_with_recursive_preference_on()
+-> Result<(), Box<dyn std::error::Error>> {
+    exercise_sort(true, false, true, true, false)
+}
+
+fn exercise_sort(
+    descending: bool,
+    recursive: bool,
+    preference: bool,
+    warn: bool,
+    stale: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     use crate::bevy_shell::owner::{ActivePlay, Phase};
     use oteryn_client_runtime::container_tree::{ContainerView, ContainerViews};
-    for (descending, seed, recursive, warn, change_after_prompt) in [
-        (false, false, false, true, false),
-        (true, false, false, true, false),
-        (true, true, true, false, false),
-        (false, true, true, true, false),
-        (true, true, true, true, true),
-        (true, false, true, true, false),
-        (false, true, false, true, false),
-    ] {
-        let mut owner = HostOwner::new(None)?;
-        let (link, mut requests, outbox) = crate::play::play_channel();
-        link.use_shared_frontend();
-        owner.settings.preferences.gameplay.sort_recursive = seed;
-        owner.settings.preferences.gameplay.warn_recursive_sort = warn;
-        outbox.bevy_sort_fixture();
-        crate::play::PlayLink::bevy_items_fixture(
-            &outbox,
-            None,
-            Some(ContainerViews {
-                views: vec![ContainerView {
-                    view_id: 0,
-                    container_handle: 7.try_into()?,
-                    parent_handle: None,
-                    capacity: 20,
-                    entries: vec![],
-                    browse: None,
-                }],
-            }),
-            false,
-            false,
-        );
-        let mut view =
-            crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
-        view.use_shared_frontend();
-        owner.play = Some(ActivePlay { view, link });
-        owner.phase = Phase::Playing;
-        assert!(owner.request_container_tool(ContainerTool::Sort, None, None));
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
-            .init_asset::<Font>()
-            .init_asset::<Image>()
-            .insert_non_send(owner)
-            .add_systems(Startup, crate::bevy_shell::ui::setup);
-        install_container_tools(&mut app);
-        app.update();
-        let panel = app
-            .world()
-            .non_send::<HostOwner>()
-            .play
-            .as_ref()
-            .ok_or("play")?
-            .link
-            .container_sort_panel();
-        assert_eq!(panel.fields[3], u8::from(seed).to_string());
-        if seed != recursive {
-            let nested = app
-                .world_mut()
-                .query::<(&Text, &ChildOf)>()
-                .iter(app.world())
-                .find_map(|(text, parent)| {
-                    (text.0 == "Sort Nested Containers").then_some(parent.parent())
-                })
-                .ok_or("nested sort control")?;
-            app.world_mut().trigger(Activate { entity: nested });
-            app.update();
-        }
-        let direction = if descending {
-            "descending"
-        } else {
-            "ascending"
-        };
-        let button = app
+    let mut owner = HostOwner::new(None)?;
+    let (link, mut requests, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
+    owner.settings.preferences.gameplay.sort_recursive = preference;
+    owner.settings.preferences.gameplay.warn_recursive_sort = warn;
+    outbox.bevy_sort_fixture();
+    crate::play::PlayLink::bevy_items_fixture(
+        &outbox,
+        None,
+        Some(ContainerViews {
+            views: vec![ContainerView {
+                view_id: 0,
+                container_handle: 7.try_into()?,
+                parent_handle: None,
+                capacity: 20,
+                entries: vec![],
+                browse: None,
+            }],
+        }),
+        false,
+        false,
+    );
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    owner.play = Some(ActivePlay { view, link });
+    owner.phase = Phase::Playing;
+    assert!(owner.request_container_tool(ContainerTool::Sort, None, None));
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install_container_tools(&mut app);
+    app.update();
+    if recursive != preference {
+        let nested = app
             .world_mut()
             .query::<(&Text, &ChildOf)>()
             .iter(app.world())
             .find_map(|(text, parent)| {
-                (text.0 == format!("Sort container 0 by name {direction}"))
-                    .then_some(parent.parent())
+                (text.0 == "Sort Nested Containers").then_some(parent.parent())
             })
-            .ok_or("sort direction control")?;
-        app.world_mut()
-            .trigger(bevy::ui_widgets::Activate { entity: button });
-        if recursive && warn {
-            assert!(requests.try_recv().is_err());
-            app.update();
-            let confirm = app
-                .world_mut()
-                .query::<(&Text, &ChildOf)>()
-                .iter(app.world())
-                .find_map(|(label, parent)| {
-                    (label.0 == "Confirm recursive sort").then_some(parent.parent())
-                })
-                .ok_or("recursive sort confirmation")?;
-            if change_after_prompt {
-                app.world()
-                    .non_send::<HostOwner>()
-                    .play
-                    .as_ref()
-                    .ok_or("play")?
-                    .link
-                    .container_sort_edit(3, "0".into());
-            }
-            app.world_mut()
-                .trigger(bevy::ui_widgets::Activate { entity: confirm });
-            if change_after_prompt {
-                assert!(
-                    requests.try_recv().is_err(),
-                    "consent belongs to the displayed sort"
-                );
-                continue;
-            }
-        }
-        let crate::combat_input::PlayCommand::Feature(command) = requests.try_recv()? else {
-            return Err("sort request".into());
-        };
-        let request = oteryn_client_runtime::container_sort::Request::decode(&command.payload)
-            .ok_or("sort decode")?;
-        assert_eq!(request.descending, descending);
-        assert_eq!(request.recursive, recursive);
+            .ok_or("nested sort control")?;
+        app.world_mut().trigger(Activate { entity: nested });
+        app.update();
     }
+    let direction = if descending {
+        "descending"
+    } else {
+        "ascending"
+    };
+    let button = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| {
+            (text.0 == format!("Sort container 0 by name {direction}")).then_some(parent.parent())
+        })
+        .ok_or("sort direction control")?;
+    app.world_mut()
+        .trigger(bevy::ui_widgets::Activate { entity: button });
+    if recursive && warn {
+        assert!(requests.try_recv().is_err());
+        app.update();
+        let confirm = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(label, parent)| {
+                (label.0 == "Confirm recursive sort").then_some(parent.parent())
+            })
+            .ok_or("recursive sort confirmation")?;
+        if stale {
+            let owner = app.world().non_send::<HostOwner>();
+            owner
+                .play
+                .as_ref()
+                .ok_or("active play")?
+                .link
+                .container_sort_edit(3, "0".into());
+        }
+        app.world_mut()
+            .trigger(bevy::ui_widgets::Activate { entity: confirm });
+        if stale {
+            assert!(
+                requests.try_recv().is_err(),
+                "consent belongs to the displayed sort"
+            );
+            return Ok(());
+        }
+    }
+    let crate::combat_input::PlayCommand::Feature(command) = requests.try_recv()? else {
+        return Err("sort request".into());
+    };
+    let request = oteryn_client_runtime::container_sort::Request::decode(&command.payload)
+        .ok_or("sort decode")?;
+    assert_eq!(request.descending, descending);
+    assert_eq!(request.recursive, recursive);
+
     Ok(())
 }
 

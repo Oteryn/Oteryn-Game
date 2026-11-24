@@ -10,7 +10,7 @@ pub const ITEM_STACK_FALSE_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20261001-item-stack-false-promotion-v1.json"
 );
 pub const ITEM_STACK_FALSE_PACKET_SHA256: &str =
-    "1ffcecb3362361985aa789f59a8c8129beb2385682d4f0ebf0d5626d912afd17";
+    "6eb6002f097ecf6de5cb3ea83c545505cc56403ee95ca7ae060a392e5fae5b63";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,

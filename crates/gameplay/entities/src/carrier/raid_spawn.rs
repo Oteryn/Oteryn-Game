@@ -427,6 +427,20 @@ impl ChannelRuntimeV1 {
         Ok(first)
     }
 
+    /// Whether the raid source qualified this exact current body as a boss.
+    pub fn is_raid_boss(&self, actor: ExactActorRef) -> bool {
+        self.owner_fence().is_ok()
+            && self.raid_spawns.receipts.values().any(|receipt| {
+                receipt.spec.boss
+                    && self
+                        .raid_spawns
+                        .bodies
+                        .get(&receipt.identity)
+                        .map_or(receipt.outcome, |body| RaidSpawnOutcome::Placed(body.actor))
+                        == RaidSpawnOutcome::Placed(actor)
+            })
+    }
+
     pub fn raid_creatures(
         &self,
         firing_id: [u8; 16],

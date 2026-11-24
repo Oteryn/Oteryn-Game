@@ -2,6 +2,7 @@
 pub mod channel;
 pub mod config;
 pub mod policy;
+mod read;
 pub mod store;
 pub mod verifier;
 

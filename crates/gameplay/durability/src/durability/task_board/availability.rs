@@ -17,6 +17,7 @@ pub(super) async fn refresh(
     view: &mut TaskBoardView,
 ) -> Result<(), DurabilityError> {
     view.delivery_available.clear();
+    view.delivery_definition_refs.clear();
     let Some(weekly) = &view.data.weekly else {
         return Ok(());
     };
@@ -28,6 +29,8 @@ pub(super) async fn refresh(
         view.delivery_available.insert(delivery.item_id, 0);
         if let Some(item) = catalogue.items.get(&delivery.item_id) {
             requested.insert(delivery.item_id, item.key.clone());
+            view.delivery_definition_refs
+                .insert(delivery.item_id, item.definition_ref.get());
         }
     }
     if requested.is_empty() {

@@ -28,6 +28,7 @@ impl Presentation {
             ChatLine::Guild(_) => self.visible[2],
             ChatLine::Room { .. } => self.visible[3],
             ChatLine::Party { .. } => self.visible[4],
+            ChatLine::System { .. } => true,
             ChatLine::Dropped => self.dropped,
         }
     }

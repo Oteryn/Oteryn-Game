@@ -30,6 +30,7 @@ impl Mailbox {
         self.quest_pending = false;
         self.animus.pending = Default::default();
         self.arena.pending = Default::default();
+        self.boss_capture = Default::default();
         self.boss_encounter.pending = Default::default();
         self.boss_encounter.pending_catalogue = None;
         self.boss_encounter.catalogue_query = None;
@@ -110,7 +111,6 @@ impl Mailbox {
         self.discovery.loot.pending = Default::default();
         self.discovery.inspection.pending = Default::default();
         self.discovery.inspection.invalidate_catalogue();
-        self.discovery.inspection.invalidate_catalogue();
         self.properties.cyclopedia_map.region_atlas = None;
         self.properties.cyclopedia_map.atlas_after = 0;
         self.properties.cyclopedia_map.map = None;
@@ -118,6 +118,8 @@ impl Mailbox {
         self.discovery.leader.pending = Default::default();
         self.discovery.teams.pending = Default::default();
         self.discovery.history.pending = Default::default();
+        self.properties.appearance.riding_after_apply = None;
+        self.properties.appearance.committed_riding = None;
         self.properties.appearance.pending = Default::default();
         self.properties.charm_progression.pending = Default::default();
         self.properties.charm_progression.catalogue = Default::default();
@@ -163,6 +165,9 @@ impl Mailbox {
         // moves the whole staged group.
         // Discard origin targets and feedback before applying fresh destination snapshots.
         self.bar_actions.scope = crate::play::feature_0017_attack::view::next_edit();
+        self.capture_observations = Default::default();
+        self.analyser.pending_drop_groups.clear();
+        self.analyser.pending_drop_values.clear();
         self.before = Pushed::default();
         self.pushed = Pushed {
             scope_changed: true,

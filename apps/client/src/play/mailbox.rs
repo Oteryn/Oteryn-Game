@@ -323,6 +323,9 @@ pub(super) struct Mailbox {
     pub(super) imbue_shutdown: bool,
     pub(super) player_trade: oteryn_client_ui::player_trade::PlayerTradePanel,
     pub(super) vip: oteryn_client_ui::vip::VipPanel,
+    pub(super) party_summons: std::sync::Arc<
+        std::collections::BTreeMap<oteryn_session::EntityRef, oteryn_session::EntityRef>,
+    >,
     pub(super) party: oteryn_client_ui::party::PartyPanel,
     pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
     pub(super) hireling_shutdown: bool,

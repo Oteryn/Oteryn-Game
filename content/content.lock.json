@@ -42,12 +42,12 @@
     "item_conversion": 130
   },
   "item_authoring_counts": {
-    "authoring": 700,
-    "relation_sources": 880,
+    "authoring": 1153,
+    "relation_sources": 1161,
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "8b1b9c5d9603f29a57c942283ab5721a0084c6d9",
+    "declarations": "0e1c90ee976f783e3d6c9aa2c453c881bbd3ad78",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "307cf0a3d2c62e222a27ceab4f3b19af9f8b3edf",
     "reference": "e8c4487697f321137afbd4b4962a7d0e202a4331",
@@ -71,15 +71,15 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "ca1eca5e253cd199ac21feb88dcf09081388f26ac7c78447a5cb4e8338331074"
+        "sha256": "c6c70c068df5af6588b2f57018b516fbc26662e454858a7c8f690ef2f2b35728"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
-        "sha256": "a5376bad4c05f67947f02068d424a53f987cafa1253b25fe0ab62417584f1fd3"
+        "sha256": "541f361c7a35936d3fbffc0bba25a538469d4254715977bfcac3ef91c1221b94"
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "9200ca2eb87b79e6212e9ad5c9ac289f584100af66fcf7eb751f2e482bfc6afc"
+        "sha256": "1da0add887d67afbcca8fc62dfcf6121c5179181353d12e1a197b62d08bb113b"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "f2bc8e4231a2e887514379b92a9cee1ad43bd1627dd6422cf01c8adc46fd6e3c"
+          "sha256": "1daa7a6cedf225bffb00b0e35ecbcfd63cbbb14b09265ea527650977627041a9"
         },
         {
           "creates_canonical_identities": false,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6779,
+          "record_count": 6832,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "2a2cff004216e564ad737c3ec5d1e4ec3b7a5b69b76056a91a203566cec15056"
+          "sha256": "fc21fceec13b291f62a380366939528e1f7c441370b3c10c9fe8fed24fa0690a"
         },
         {
           "creates_canonical_identities": false,

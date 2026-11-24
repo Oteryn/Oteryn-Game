@@ -294,8 +294,6 @@ pub(in crate::play) fn refresh_party(
     mailbox: &mut Mailbox,
     commands: &UnboundedSender<PlayCommand>,
 ) {
-    mailbox.analyser.party_split_error = None;
-    mailbox.analyser.party_import = None;
     if !mailbox.party.selected {
         mailbox.analyser.party_feedback =
             Some(tr!("Party membership is unavailable in this session"));

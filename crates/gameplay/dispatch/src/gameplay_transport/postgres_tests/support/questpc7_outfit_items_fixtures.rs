@@ -101,9 +101,19 @@ pub(super) async fn exercise(
         .iter()
         .find(|c| c.key == format!("oteryn:quest-reward/questpc7-{slug}-commission"))
         .ok_or("intro")?;
-    let parent = intro.requirements.as_ref().ok_or("requirements")?.completed_quests.first();
     let intro_word = intro.keywords.first().ok_or("report keyword")?;
-    let [npc] = super::classic_quests_fixtures::install(owner, admitted, [intro.npc.as_str()]).await?;
+    let fiend = slug == "fiend";
+    let parent = if fiend {
+        "oteryn:quest.no_rest_for_the_wicked_quest"
+    } else {
+        "oteryn:quest.grave_danger_quest"
+    };
+    let parent_revision = completion_revision(h, parent).await?;
+    let [npc] = if fiend {
+        super::classic_quests_fixtures::install_above(owner, admitted, [intro.npc.as_str()]).await?
+    } else {
+        super::classic_quests_fixtures::install(owner, admitted, [intro.npc.as_str()]).await?
+    };
     let mut npc_sequence = 2000_u64;
     let mut selected = admitted
         .continuity
@@ -134,27 +144,24 @@ pub(super) async fn exercise(
         )
         .await?,
         NpcIntentDisposition::Rejected,
-        "the prerequisite completion is authoritative"
+        "commission requires its prerequisite"
     );
-    eprintln!("QUESTPC7_OUTFIT_ITEMS parent refusal complete");
-    // Only this prerequisite is a fenced fixture; the subject programme and all
-    // inventory/appearance milestones start fresh and run through their real owners.
-    let parent_revision = if let Some(parent) = parent {
-        super::questpc7_eligibility_fixtures::complete_parent_key(owner, admitted, parent).await?;
-        Some(sqlx::query_scalar::<_, String>("SELECT completed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(parent).fetch_one(&h.pool).await?)
+    eprintln!("QUESTPC7_OUTFIT_ITEMS prerequisite refusal complete");
+    if fiend {
+        super::quest_container_chests_fixtures::forgemaster::claim_for_fiend(h, owner, admitted)
+            .await?;
     } else {
         super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
             h, owner, admitted,
             &[(oteryn_gameplay_quests::quest::grave_danger::QUESTLINE.into(), 4)], 233,
         ).await?;
         owner.refresh_quest_session(admitted.game_session_id, false).await;
-        None
-    };
+    }
     assert_eq!(
         talk(owner, admitted, npc, &mut npc_sequence, "hi").await?,
         NpcIntentDisposition::Ok
     );
-    if parent.is_some() {
+    if fiend {
     for words in [format!("{slug} commission"), format!("{slug} first token")] {
         eprintln!("QUESTPC7_OUTFIT_ITEMS requesting {words}");
         assert_eq!(
@@ -233,9 +240,13 @@ pub(super) async fn exercise(
     );
     let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(&intro.quest).fetch_one(&h.pool).await?;
     assert!(completed);
-    if let (Some(parent), Some(parent_revision)) = (parent, parent_revision) {
-    let after:String=sqlx::query_scalar("SELECT completed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(parent).fetch_one(&h.pool).await?;
-    assert_eq!(after, parent_revision, "prerequisite remains read-only");
+    assert_eq!(
+        completion_revision(h, parent).await?,
+        parent_revision,
+        "the outfit programme does not complete its prerequisite quest"
+    );
+    if fiend {
+        assert_eq!(parent_revision, None, "the Fiend journey starts uncompleted");
     }
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let observed = owner
@@ -294,4 +305,16 @@ pub(super) async fn exercise(
         oteryn_protocol_oteryn::appearance::ChangeResult::Committed(_)
     ));
     Ok(())
+}
+
+async fn completion_revision(h: &Harness, quest: &str) -> TestResult<Option<String>> {
+    Ok(sqlx::query_scalar(
+        "SELECT completed_character_revision::text FROM game_character_quest_states
+         WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
+    )
+    .bind(id(41).as_slice())
+    .bind(quest)
+    .fetch_optional(&h.pool)
+    .await?
+    .flatten())
 }

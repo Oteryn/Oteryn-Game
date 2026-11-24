@@ -5,9 +5,11 @@ use super::{ComposedFreshAdmission, connection::AdmittedSession, item_view::Item
 use crate::content::ReferenceItemField::Known;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::domain::item_definition::TypedDefinitionRef;
+use crate::durability::item_use::CarriedItemText;
 use crate::durability::mail_text_policy::NativeGameplayMailTextPolicyExt;
 use oteryn_protocol_oteryn::item_inscription::{
-    CAPABILITY_ITEM_INSCRIPTION_READ_V1, MAX_TEXT_LENGTH, Reply,
+    CAPABILITY_ITEM_INSCRIPTION_ATTRIBUTION_V1, CAPABILITY_ITEM_INSCRIPTION_READ_V1,
+    MAX_TEXT_LENGTH, Reply,
 };
 
 /// The item's content text profile: readable with a known maximum. `writable` is exactly
@@ -21,12 +23,16 @@ pub(super) fn reply(
     // stamped definition's zero write limit still permits reading that text.
     if definition.production_key == oteryn_gameplay_items::mail::STAMPED_LETTER_KEY {
         native.item_index()?.definition_ref(
-            &definition.family, &definition.production_key, &definition.revision_ref,
+            &definition.family,
+            &definition.production_key,
+            &definition.revision_ref,
         )?;
         let reply = Reply {
             text,
             max_length: u32::try_from(crate::domain::mail::LETTER_TEXT_SCALARS_MAX).ok()?,
             writable: false,
+            writer_name: None,
+            written_at_unix_ms: None,
         };
         return reply.valid().then_some(reply);
     }
@@ -43,6 +49,8 @@ pub(super) fn reply(
         text,
         max_length,
         writable: native.mail_text_policy(definition).is_ok(),
+        writer_name: None,
+        written_at_unix_ms: None,
     };
     reply.valid().then_some(reply)
 }
@@ -52,11 +60,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
         item: Option<ItemKey>,
+        attributed: bool,
     ) -> Option<Vec<u8>> {
+        let capability = if attributed {
+            CAPABILITY_ITEM_INSCRIPTION_ATTRIBUTION_V1
+        } else {
+            CAPABILITY_ITEM_INSCRIPTION_READ_V1
+        };
         if !admitted
             .continuity
             .selected_capabilities
-            .contains(CAPABILITY_ITEM_INSCRIPTION_READ_V1)
+            .contains(capability)
             || admitted.controller.is_none()
         {
             return None;
@@ -65,7 +79,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         };
         let native = self.active_generation?.native_gameplay()?;
-        let (definition, text) = self
+        let (definition, inscription) = self
             .root
             .read_carried_item_text(
                 self.character,
@@ -76,7 +90,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .ok()??;
-        reply(native, &definition, text)?.encode()
+        let CarriedItemText {
+            text,
+            writer_name,
+            written_at_unix_ms,
+        } = inscription;
+        let mut reply = reply(native, &definition, text)?;
+        if attributed {
+            reply.writer_name = writer_name.filter(|_| written_at_unix_ms.is_some());
+            reply.written_at_unix_ms = written_at_unix_ms;
+        }
+        reply.encode()
     }
 }
 
@@ -86,6 +110,7 @@ macro_rules! authority_methods {
             &self,
             _admitted: $crate::gameplay_transport::AdmittedSession,
             _item: Option<$crate::gameplay_transport::item_view::ItemKey>,
+            _attributed: bool,
         ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
             async { None }
         }
@@ -98,8 +123,9 @@ macro_rules! composed_methods {
             &self,
             admitted: $crate::gameplay_transport::AdmittedSession,
             item: Option<$crate::gameplay_transport::item_view::ItemKey>,
+            attributed: bool,
         ) -> Option<Vec<u8>> {
-            self.item_inscription_wire(admitted, item).await
+            self.item_inscription_wire(admitted, item, attributed).await
         }
     };
 }
@@ -120,8 +146,7 @@ mod tests {
     #[test]
     fn inscription_reply_uses_the_content_maximum_and_the_mail_writer_policy()
     -> Result<(), Box<dyn std::error::Error>> {
-        let world =
-            crate::foundation::WorldId::decode(&crate::bestiary_postgres_harness::id(42))?;
+        let world = crate::foundation::WorldId::decode(&crate::bestiary_postgres_harness::id(42))?;
         let (controller, _) =
             crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
         let native = controller
@@ -136,10 +161,22 @@ mod tests {
                 text: "Old inscription".into(),
                 max_length: 1_999,
                 writable: true,
+                writer_name: None,
+                written_at_unix_ms: None,
             }
         );
-        let stamped = reply(native, &definition(3506), "Delivered".into()).ok_or("stamped letter")?;
-        assert_eq!(stamped, Reply { text: "Delivered".into(), max_length: 1_999, writable: false });
+        let stamped =
+            reply(native, &definition(3506), "Delivered".into()).ok_or("stamped letter")?;
+        assert_eq!(
+            stamped,
+            Reply {
+                text: "Delivered".into(),
+                max_length: 1_999,
+                writable: false,
+                writer_name: None,
+                written_at_unix_ms: None
+            }
+        );
         // The write-once document target 2834 shows its text and refuses a rewrite.
         let sealed = reply(native, &definition(2834), "Sealed".into()).ok_or("read-only")?;
         assert!(!sealed.writable);
