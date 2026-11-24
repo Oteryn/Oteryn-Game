@@ -1010,63 +1010,7 @@ async fn seed_taming_prerequisites(
     }
     if let Some(key) = &binding.required_equipment {
         seed_item(clients, key, 1, items).await?;
-        if key == "oteryn:item.tibia.i31369" {
-            let item = items
-                .last()
-                .ok_or("harness-taming-fixture: gryphon mask missing")?;
-            seed_gryphon_mask_slot(clients, item).await?;
-        }
     }
-    Ok(())
-}
-
-// The reference gryphon mask has a head slot but is not materializable through
-// live equip. Set up the wearing prerequisite only on the disposable actor.
-async fn seed_gryphon_mask_slot(clients: &SeamClients<'_>, item: &[u8]) -> TestResult {
-    use oteryn_protocol_oteryn::item_view::EquipmentSlot;
-
-    let mut db = sqlx::PgConnection::connect(clients.url).await?;
-    let mut tx = sqlx::Connection::begin(&mut db).await?;
-    sqlx::query("SET LOCAL session_replication_role = replica")
-        .execute(&mut *tx)
-        .await?;
-    let placed: i64 = sqlx::query_scalar(
-        "WITH mask AS (
-            DELETE FROM game_item_container_entries
-            WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid
-            RETURNING character_id, world_id, item_instance_id, placed_transaction_id,
-                      parent_item_instance_id, placement_ordinal
-        ), prior_head AS MATERIALIZED (
-            SELECT slots.character_id, slots.item_instance_id, slots.world_id
-            FROM game_character_equipment_slots slots JOIN mask USING (character_id)
-            WHERE slots.slot=$3
-        ), equipped AS (
-            INSERT INTO game_character_equipment_slots
-                (character_id, world_id, item_instance_id, placed_transaction_id, slot)
-            SELECT character_id, world_id, item_instance_id, placed_transaction_id, $3 FROM mask
-            ON CONFLICT (character_id, slot) DO UPDATE
-              SET item_instance_id=EXCLUDED.item_instance_id,
-                  placed_transaction_id=EXCLUDED.placed_transaction_id
-            RETURNING character_id
-        ), stowed AS (
-            INSERT INTO game_item_container_entries
-                (character_id, world_id, item_instance_id, placed_transaction_id,
-                 parent_item_instance_id, placement_ordinal)
-            SELECT prior_head.character_id, prior_head.world_id, prior_head.item_instance_id,
-                   game_character_uuid_v7(), mask.parent_item_instance_id, mask.placement_ordinal
-            FROM prior_head JOIN equipped USING (character_id) JOIN mask USING (character_id)
-        )
-        SELECT count(*) FROM equipped",
-    )
-    .bind(clients.characters[0].as_slice())
-    .bind(item)
-    .bind(EquipmentSlot::Head as i16)
-    .fetch_one(&mut *tx)
-    .await?;
-    if placed != 1 {
-        return Err("harness-taming-fixture: gryphon mask did not enter head slot".into());
-    }
-    tx.commit().await?;
     Ok(())
 }
 
@@ -1170,7 +1114,7 @@ async fn obtain_taming(
                 || result.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
             {
                 return Err(format!(
-                    "harness-taming-equipment: {key} equip returned {:?}/{:?}",
+                    "server-taming-equipment: {key} equip returned {:?}/{:?}",
                     result.status, result.outcome
                 )
                 .into());
