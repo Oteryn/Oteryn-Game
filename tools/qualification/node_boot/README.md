@@ -155,6 +155,9 @@ The other 28 reports linked to creatures that had no canonical wire race
 The `documents=40:400` slice added 217 accepted replies with missing text and
 183 reports with no canonical race. It emitted 434 PASS and 766 FAIL step rows
 and ended with `NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged`.
+The `documents=440:1169` slice completed the 1,609-report census with 1,050
+PASS and 2,457 FAIL step rows. Across the three slices, 754 detail replies
+omitted the authored report and 855 reports had no canonical wire race.
 
 The runner prints a
 summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
