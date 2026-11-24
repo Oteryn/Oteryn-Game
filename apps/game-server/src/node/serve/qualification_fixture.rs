@@ -16,8 +16,9 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     )
     .then_some((session, profile))
     .or_else(|| {
-        (cfg!(any(test, feature = "qualification-spawn")) && profile == "progress-baking")
-            .then_some((session, profile))
+        (cfg!(any(test, feature = "qualification-spawn"))
+            && matches!(profile, "progress-baking" | "progress-charms"))
+        .then_some((session, profile))
     })
 }
 
@@ -665,6 +666,9 @@ async fn prepare_build(
     if profile == "progress-baking" {
         return prepare_items(root, authority, proof, &current, native, deadline, &[3604]).await;
     }
+    if profile == "progress-charms" {
+        return prepare_charm_points(root, authority, proof, &current, native, deadline).await;
+    }
     let character = crate::domain::CharacterId::from_bytes(
         *current.current_character_lease().character_id().as_bytes(),
     )
@@ -723,6 +727,89 @@ async fn prepare_build(
         &[3276, 3003, 3457],
     )
     .await
+}
+
+/// Fund the disposable sweep through the Charm owner's first-species earning path.
+/// The activated creature generation supplies both the identities and authored stars.
+async fn prepare_charm_points(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    current: &crate::foundation::GameSessionAuthoritySnapshot<
+        crate::foundation::AuthenticatedTransportRefV1,
+    >,
+    native: &NativeGameplayState,
+    deadline: tokio::time::Instant,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::domain::echo_warden::first_species_charm_points;
+    use crate::durability::bestiary_progress::BestiaryKillOccurrence;
+    use crate::durability::character_progression::CurrentCharacterGameplayFence;
+
+    let character = crate::domain::CharacterId::from_bytes(
+        *current.current_character_lease().character_id().as_bytes(),
+    )?;
+    let record = qualification_build::retry_holder(
+        Some(root),
+        deadline,
+        qualification_build::authority_busy,
+        async || root.read_current_character(authority, character).await,
+    )
+    .await
+    .map_err(|error| format!("qualification charm authority: {error:?}"))?;
+    let fence = CurrentCharacterGameplayFence {
+        character_id: character,
+        game_session_id: current.current_game_session_id(),
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: current.current_character_lease().generation(),
+        runtime_scope: current.current_runtime_scope(),
+        scope_ownership_generation: current.current_scope_generation(),
+        expected_character_revision: record.revision,
+    };
+    let catalogue = crate::content::charm_source::CanonicalCharmCatalogue::embedded()?;
+    let needed: u32 = catalogue
+        .catalogue()
+        .definitions()
+        .filter(|definition| definition.category == crate::domain::charm::CharmCategory::Major)
+        .map(|definition| definition.stage_costs[0])
+        .sum();
+    let mut species: Vec<_> = native
+        .creature_profiles()
+        .records
+        .iter()
+        .filter_map(|record| {
+            let key = record.profile.target.key.as_str();
+            let stars = native.reward_table().encounter_facts(key)?.bestiary_stars?;
+            let points = first_species_charm_points(stars);
+            (points != 0).then_some((std::cmp::Reverse(points), key, stars))
+        })
+        .collect();
+    species.sort_unstable();
+    let mut funded = 0;
+    for (_, key, stars) in species {
+        let receipt = BestiaryKillOccurrence::from_bytes(fixture_occurrence(
+            character.as_bytes(),
+            "progress-charms",
+            key.as_bytes(),
+        ))?;
+        let outcome = qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            qualification_build::progression_busy,
+            async || {
+                root.credit_echo_warden_kill(authority, proof, fence, receipt, key, stars)
+                    .await
+            },
+        )
+        .await?;
+        funded += outcome.points;
+        if funded >= needed {
+            return Ok(());
+        }
+    }
+    if funded == 0 {
+        return Err("qualification charm earnings unavailable".into());
+    }
+    Ok(())
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -1706,6 +1793,7 @@ mod tests {
             "druid",
             "monk",
             "progress-baking",
+            "progress-charms",
         ] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }

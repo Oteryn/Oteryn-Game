@@ -205,6 +205,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
     let mut pass = 0;
     let mut fail = 0;
     let mut session = None;
+    let mut charm_funded = false;
     for entry in &entries[start..end] {
         verdict::Harness::global().progress("progress-sweep-entry");
         let mut rows = Rows {
@@ -221,7 +222,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
                 let client = session.as_mut().ok_or("fixture admission missing")?;
                 match entry.family {
                     Family::Achievement => achievement(client, world, &mut rows).await,
-                    Family::Charm => charm(client, world, &mut rows).await,
+                    Family::Charm => charm(client, world, &mut rows, &mut charm_funded).await,
                     Family::Craft => craft(client, clients, world, &mut rows).await,
                     Family::Proficiency => proficiency(client, world, &root, &mut rows).await,
                 }
@@ -724,6 +725,7 @@ async fn charm(
     client: &mut DevClientSession,
     world: &BundleWorld,
     rows: &mut Rows<'_>,
+    funded: &mut bool,
 ) -> TestResult {
     use oteryn_protocol_oteryn::charm::{
         CharmAssignDisposition, CharmKind, CharmUnlockDisposition,
@@ -800,6 +802,15 @@ async fn charm(
             }
             before = charm_command(client, Action::Query).await?;
         }
+    }
+    let balance = charm_balance(&before.charms, minor);
+    if !minor && balance < cost && !*funded {
+        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+        request_fixture_control(session, "--profile", "progress-charms".into())
+            .await
+            .map_err(|error| format!("harness-charm-funding-fixture-{error}"))?;
+        *funded = true;
+        before = charm_command(client, Action::Query).await?;
     }
     let balance = charm_balance(&before.charms, minor);
     if balance < cost {
