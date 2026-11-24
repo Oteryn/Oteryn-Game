@@ -1052,6 +1052,10 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
+        },
         "item": {
           "family": "Item",
           "key": "candidate:item/875",
@@ -3876,6 +3880,10 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
+        },
         "item": {
           "family": "Item",
           "key": "candidate:item/3403",
@@ -6482,6 +6490,8 @@
         }
       },
       "attributes": {
+        "always_on_top": true,
+        "always_on_top_order": 2,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -6524,6 +6534,9 @@
           "family": "Item",
           "key": "candidate:item/4055",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Fluid Containers"
         }
       },
       "semantics": {
@@ -6624,6 +6637,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": true,
         "blocks_projectile": false,
         "field_condition": null,
@@ -6766,6 +6781,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -6809,6 +6826,9 @@
           "family": "Item",
           "key": "candidate:item/4834",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -6927,6 +6947,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -6970,6 +6992,9 @@
           "family": "Item",
           "key": "candidate:item/4837",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -7087,6 +7112,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -7130,6 +7157,9 @@
           "family": "Item",
           "key": "candidate:item/4844",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Books"
         }
       },
       "semantics": {
@@ -7248,6 +7278,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -7291,6 +7323,9 @@
           "family": "Item",
           "key": "candidate:item/4845",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -7409,6 +7444,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -7452,6 +7489,9 @@
           "family": "Item",
           "key": "candidate:item/4847",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -7570,6 +7610,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -7779,6 +7821,9 @@
           "family": "Item",
           "key": "candidate:item/4863",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -7897,6 +7942,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -7940,6 +7987,9 @@
           "family": "Item",
           "key": "candidate:item/4864",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -8058,6 +8108,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -8267,6 +8319,9 @@
           "family": "Item",
           "key": "candidate:item/4868",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -8385,6 +8440,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -8428,6 +8485,9 @@
           "family": "Item",
           "key": "candidate:item/4872",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -8546,6 +8606,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -8710,6 +8772,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -8853,6 +8917,8 @@
         }
       },
       "attributes": {
+        "always_on_top": true,
+        "always_on_top_order": 2,
         "blocks_movement": true,
         "blocks_projectile": false,
         "field_condition": null,
@@ -9224,6 +9290,10 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
+        },
         "item": {
           "family": "Item",
           "key": "candidate:item/5903",
@@ -13328,6 +13398,9 @@
           "family": "Item",
           "key": "candidate:item/9605",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Containers"
         }
       },
       "semantics": {
@@ -13498,6 +13571,8 @@
         }
       },
       "attributes": {
+        "always_on_top": false,
+        "always_on_top_order": 0,
         "blocks_movement": false,
         "blocks_projectile": false,
         "field_condition": null,
@@ -15346,6 +15421,10 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
+        },
         "item": {
           "family": "Item",
           "key": "candidate:item/11700",
@@ -15554,6 +15633,10 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 3,
+          "max_tier": 3
+        },
         "item": {
           "family": "Item",
           "key": "candidate:item/11701",
@@ -17746,6 +17829,10 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
+        },
         "item": {
           "family": "Item",
           "key": "candidate:item/12599",
