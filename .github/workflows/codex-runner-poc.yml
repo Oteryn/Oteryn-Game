@@ -117,8 +117,31 @@ jobs:
           mkdir -p "$logs"
           evidence="$logs/qualification-client.log"
           started=$SECONDS
-          # The harness work directory must sit under root- or self-owned ancestors: use /tmp.
-          (unset RUNNER_TEMP; NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_FAILURE_LOG_DIR="$logs" \
+          # The harness work directory must sit under root- or self-owned ancestors. Task
+          # containers differ, so take the first candidate whose whole chain qualifies.
+          owned_chain() {
+            local a; a="$(realpath -e -- "$1" 2>/dev/null)" || return 1
+            while :; do
+              local o; o="$(stat -c %u -- "$a")" || return 1
+              [[ "$o" == 0 || "$o" == "$EUID" ]] || return 1
+              [[ "$a" != / ]] || return 0
+              a="${a%/*}"; a="${a:-/}"
+            done
+          }
+          work_parent=""
+          for cand in /tmp /var/tmp /dev/shm "$RUNNER_TEMP" /workspace; do
+            chain=""; a="$(realpath -m -- "$cand")"
+            while :; do chain+="$a:$(stat -c %u -- "$a" 2>/dev/null || echo -) "; [[ "$a" != / ]] || break; a="${a%/*}"; a="${a:-/}"; done
+            echo "::notice title=work parent candidate::euid=$EUID $chain"
+            if [[ -z "$work_parent" ]] && owned_chain "$cand"; then work_parent="$cand"; fi
+          done
+          if [[ -z "$work_parent" ]]; then
+            mine="$(mktemp -d /tmp/nb-parent.XXXXXX 2>/dev/null || true)"
+            echo "::notice title=no qualifying work parent::fallback $mine"
+            work_parent="${mine:-/tmp}"
+          fi
+          echo "::notice title=work parent::$work_parent"
+          (export RUNNER_TEMP="$work_parent"; NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_FAILURE_LOG_DIR="$logs" \
             bash tools/qualification/node_boot/run.sh) > "$evidence" 2>&1
           code=$?
           echo "shard ${SHARD_NAME:-?} exit=$code seconds=$((SECONDS - started))"
