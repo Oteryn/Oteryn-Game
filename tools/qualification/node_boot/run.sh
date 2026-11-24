@@ -45,13 +45,28 @@ readonly PG_IMAGE=postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d77
 # Local parallel stacks override the service user, base directory, Compose project and
 # ports; CI keeps the defaults. Everything is checked before any sudo or Docker use:
 # cleanup kills the service user's processes and removes BASE as root.
+readonly NODE_BOOT_UNPRIVILEGED="${NODE_BOOT_UNPRIVILEGED:-0}"
+operator_command=(sudo)
 SERVICE_USER="${NODE_BOOT_SERVICE_USER:-oteryn-node-boot}"
+service_command=(sudo -u "$SERVICE_USER")
+root_owner=(-o root)
+root_group=(-g root)
 BASE="${NODE_BOOT_BASE:-/srv/oteryn-node-boot}"
-[[ "$SERVICE_USER" =~ ^oteryn-node-boot(-[a-z0-9]{1,16})?$ ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_service_user'; exit 2; }
-node_boot_tmp="$(realpath -m -- "${TMPDIR:-/tmp}")"
-if [[ "$BASE" != "$(realpath -m -- "$BASE")" ]] \
-  || ! [[ "$BASE" == /srv/?* || ( "$node_boot_tmp" != / && "$BASE" == "$node_boot_tmp"/?* ) ]]; then
-  echo 'NODE_BOOT_RESULT=BLOCKED reason=base_outside_srv_or_tmpdir'; exit 2
+if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+  if [[ "${CI:-}" == true || -n "${GITHUB_ACTIONS:-}" ]]; then
+    echo 'NODE_BOOT_RESULT=BLOCKED reason=unprivileged_mode_is_cloud_only'; exit 2
+  fi
+  operator_command=()
+  service_command=()
+  root_owner=()
+  root_group=()
+else
+  [[ "$SERVICE_USER" =~ ^oteryn-node-boot(-[a-z0-9]{1,16})?$ ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_service_user'; exit 2; }
+  node_boot_tmp="$(realpath -m -- "${TMPDIR:-/tmp}")"
+  if [[ "$BASE" != "$(realpath -m -- "$BASE")" ]] \
+    || ! [[ "$BASE" == /srv/?* || ( "$node_boot_tmp" != / && "$BASE" == "$node_boot_tmp"/?* ) ]]; then
+    echo 'NODE_BOOT_RESULT=BLOCKED reason=base_outside_srv_or_tmpdir'; exit 2
+  fi
 fi
 [[ -z "${NODE_BOOT_PROJECT+x}" || "$NODE_BOOT_PROJECT" =~ ^[a-z0-9][a-z0-9_-]{0,47}$ ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_project'; exit 2; }
 for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_PORT NODE_BOOT_PVP_GAME_PORT; do
@@ -60,9 +75,8 @@ for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_P
 done
 # The native Platform lifecycle reads the game port from the environment (prepare.py route).
 export NODE_BOOT_GAME_PORT="${NODE_BOOT_GAME_PORT:-17181}"
-readonly SERVICE_USER BASE
+readonly SERVICE_USER
 # The Open PvP node has its own listener. Allow an override for parallel stacks.
-readonly PVP_BASE="$BASE/pvp"
 node_boot_game_port="${NODE_BOOT_GAME_PORT:-17181}"
 # Port zero lets the real listener bind atomically and report its assigned port.
 PVP_GAME_PORT="${NODE_BOOT_PVP_GAME_PORT:-0}"
@@ -84,6 +98,10 @@ case "$NODE_BOOT_KEEP_STACK/$NODE_BOOT_REUSE_STACK" in
   *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_stack_reuse_mode'; exit 2 ;;
 esac
 
+if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]] &&
+  [[ "$NODE_BOOT_KEEP_STACK/$NODE_BOOT_REUSE_STACK" != 0/0 || "${NODE_BOOT_LIFECYCLE:-native_reference}" != native_reference ]]; then
+  echo 'NODE_BOOT_RESULT=BLOCKED reason=unprivileged_requires_disposable_native_stack'; exit 2
+fi
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
 # The separately pinned portal-rs lane owns only Platform lifecycle and its stages.
@@ -100,7 +118,11 @@ case "${NODE_BOOT_LIFECYCLE:-}" in
     ;;
   *) echo 'NODE_BOOT_RESULT=BLOCKED reason=unknown_lifecycle'; exit 2 ;;
 esac
-for program in docker python3 node openssl cargo sudo psql setsid timeout; do
+programs=(docker python3 node openssl cargo sudo psql setsid timeout)
+if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+  programs=(docker python3 node npm openssl cargo setsid timeout)
+fi
+for program in "${programs[@]}"; do
   command -v "$program" >/dev/null 2>&1 || { echo "NODE_BOOT_RESULT=BLOCKED reason=missing_binary_$program"; exit 2; }
 done
 NODE_BOOT_PLATFORM_PIN="$PLATFORM_SHA"
@@ -147,6 +169,9 @@ esac
 readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
 # A kept or reused stack is one topology, so it never runs the separate basic pass.
 # The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
+if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 && -n "${NODE_BOOT_E2E_ONLY:-}" ]]; then
+  NODE_BOOT_SKIP_BASIC=1
+fi
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
   && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
   && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
@@ -170,7 +195,6 @@ if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   # The staging root is the repository root: the manifest keeps its repository-relative path.
   [[ "$NODE_BOOT_SPELL_MANIFEST" == "$GAME_SOURCE"/* ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=spell_manifest_outside_repository'; exit 2; }
   NODE_BOOT_SPELL_MANIFEST_REL="${NODE_BOOT_SPELL_MANIFEST#"$GAME_SOURCE"/}"
-  NODE_GAMEPLAY_ENV=("OTERYN_NATIVE_GAMEPLAY_MANIFEST=$BASE/gameplay/$NODE_BOOT_SPELL_MANIFEST_REL")
 fi
 # ADMIT-CAP-1: the entry-room seam stages run against a Channel that requires LOGOUT_V1 (21)
 # and prove the owner's capability refusals; the spell scenarios declare no required set.
@@ -182,8 +206,9 @@ if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
 elif [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
   NODE_REQUIRED_CAPABILITIES='[]'
 fi
+platform_source_override="${PLATFORM_SOURCE:-}"
 PLATFORM_SOURCE="${PLATFORM_SOURCE:-$GAME_SOURCE/_platform}"
-if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$NODE_BOOT_PLATFORM_PIN" ]]; then
+if [[ "$NODE_BOOT_UNPRIVILEGED" != 1 && "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$NODE_BOOT_PLATFORM_PIN" ]]; then
   echo 'NODE_BOOT_RESULT=BLOCKED reason=exact_platform_checkout_missing'
   exit 2
 fi
@@ -209,6 +234,13 @@ if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
     variant=qualification-clock
   fi
   TARGET="$GAME_SOURCE/target/debug"
+  if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+    NODE_SPAWN_FEATURES+=(--features qualification-unprivileged)
+    TARGET="$(realpath -m -- "${CARGO_TARGET_DIR:-$GAME_SOURCE/target}")/debug"
+    if [[ -n "${NODE_BOOT_PREBUILT_DIR:-}" ]]; then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=unprivileged_requires_local_build'; exit 2
+    fi
+  fi
   if [[ -n "${NODE_BOOT_PREBUILT_DIR:-}" ]]; then
     prebuilt="$GAME_SOURCE/tools/qualification/node_boot/prebuilt.py"
     if ! python3 "$prebuilt" verify "$variant" "$NODE_BOOT_PREBUILT_DIR"; then
@@ -236,6 +268,17 @@ if [[ "$NODE_BOOT_SPELLS" == 1 && "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
 fi
 
 WORK="$(mktemp -d "${RUNNER_TEMP:-/tmp}/node-boot.XXXXXX")"
+if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+  BASE="$WORK/base"
+fi
+readonly BASE
+readonly PVP_BASE="$BASE/pvp"
+if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
+  NODE_GAMEPLAY_ENV=("OTERYN_NATIVE_GAMEPLAY_MANIFEST=$BASE/gameplay/$NODE_BOOT_SPELL_MANIFEST_REL")
+fi
+if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+  NODE_GAMEPLAY_ENV+=("OTERYN_UNPRIVILEGED_QUALIFICATION=1")
+fi
 node_log="$WORK/node.log"
 failed_node_log="$WORK/failed-node.log"
 WP5_PKI="$WORK/pki"
@@ -243,6 +286,10 @@ WP5_SCRATCH="$WORK/scratch"
 mkdir -p "$WP5_PKI" "$WP5_SCRATCH"
 WP5_PORT="${NODE_BOOT_PLATFORM_PORT:-18463}"
 WP5_PROJECT="${NODE_BOOT_PROJECT:-nodeboot${GITHUB_RUN_ID:-local}${GITHUB_RUN_ATTEMPT:-1}}"
+if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+  work_suffix="${WORK##*.}"
+  WP5_PROJECT="$WP5_PROJECT-${work_suffix,,}"
+fi
 WP5_DB_PASSWORD="$(openssl rand -hex 24)"
 WP5_DB_ROOT_PASSWORD="$(openssl rand -hex 24)"
 WP5_APP_KEY="base64:$(openssl rand -base64 32 | tr -d '\n')"
@@ -394,6 +441,15 @@ interrupted() {
   evidence "interrupted signal=$1 stage=$ACTIVE_STAGE world_bundle=$NODE_BOOT_WORLD"
   exit "$2"
 }
+node_kill() {
+  if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+    [[ "$2" =~ ^[1-9][0-9]*$ && /proc/$2/exe -ef "$BASE/bin/oteryn-game-server" ]] || return 1
+    kill "$@"
+  else
+    sudo kill "$@"
+  fi
+}
+
 cleanup() {
   local rc=$?
   trap - EXIT INT TERM
@@ -404,16 +460,31 @@ cleanup() {
   if [[ ${STACK_KEPT:-0} == 1 ]]; then
     evidence "stack=kept project=$WP5_PROJECT rerun=NODE_BOOT_REUSE_STACK=1 remove=NODE_BOOT_REUSE_STACK=teardown"
   else
-    [[ -z "$NODE_PID" ]] || sudo kill -TERM "$NODE_PID" 2>/dev/null || true
-    sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
+    if [[ "${NODE_BOOT_UNPRIVILEGED:-0}" == 1 ]]; then
+      local pid_file pid attempt
+      for pid_file in "$WORK/node.pid" "$WORK/pvp-node.pid"; do
+        [[ -f "$pid_file" ]] && read -r pid < "$pid_file" || continue
+        node_kill -TERM "$pid" 2>/dev/null || continue
+        for attempt in {1..20}; do
+          node_kill -0 "$pid" 2>/dev/null || break
+          sleep 0.1
+        done
+        node_kill -KILL "$pid" 2>/dev/null || true
+      done
+    else
+      [[ -z "$NODE_PID" ]] || sudo kill -TERM "$NODE_PID" 2>/dev/null || true
+      sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
+    fi
     if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
       game_platform_cleanup
     else
       compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
     fi
     docker rm --force --volumes "$PG_CONTAINER" >/dev/null 2>&1 || true
-    sudo rm -rf "$BASE" || true
-    [[ -z "${REUSE_STATE:-}" ]] || rm -f -- "$REUSE_STATE"
+    if [[ "${NODE_BOOT_UNPRIVILEGED:-0}" != 1 ]]; then
+      sudo rm -rf "$BASE" || true
+      [[ -z "${REUSE_STATE:-}" ]] || rm -f -- "$REUSE_STATE"
+    fi
   fi
   if [[ $rc != 0 && -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
     mkdir -p "$NODE_BOOT_FAILURE_LOG_DIR"
@@ -427,8 +498,12 @@ cleanup() {
     [[ ! -d "${PG_OBS:-}" ]] || cp -R "$PG_OBS" "$NODE_BOOT_FAILURE_LOG_DIR/postgres-world$NODE_BOOT_WORLD-spells$NODE_BOOT_SPELLS"
   fi
   if [[ ${STACK_KEPT:-0} != 1 ]]; then
-    find "$WORK" -type f -delete 2>/dev/null || true
-    find "$WORK" -depth -type d -empty -delete 2>/dev/null || true
+    if [[ "${NODE_BOOT_UNPRIVILEGED:-0}" == 1 ]]; then
+      rm -rf -- "$WORK"
+    else
+      find "$WORK" -type f -delete 2>/dev/null || true
+      find "$WORK" -depth -type d -empty -delete 2>/dev/null || true
+    fi
   fi
   evidence "cleanup=complete"
   evidence "result_scope world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS stage=$ACTIVE_STAGE exit=$rc"
@@ -438,6 +513,24 @@ cleanup() {
 trap cleanup EXIT
 trap 'interrupted INT 130' INT
 trap 'interrupted TERM 143' TERM
+
+if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+  if [[ -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
+    mkdir -p -- "$NODE_BOOT_FAILURE_LOG_DIR"
+  fi
+  if [[ -z "$platform_source_override" && ! -e "$PLATFORM_SOURCE" ]]; then
+    # Fetch the exact revision without downloading the Platform history.
+    if ! git clone --depth 1 --revision "$PLATFORM_SHA" \
+      https://github.com/Oteryn/Oteryn-Platform.git "$PLATFORM_SOURCE"; then
+      result='BLOCKED reason=platform_clone_failed'
+      exit 2
+    fi
+  fi
+  if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$NODE_BOOT_PLATFORM_PIN" ]]; then
+    result='BLOCKED reason=exact_platform_checkout_missing'
+    exit 2
+  fi
+fi
 if [[ "$NODE_BOOT_REUSE_STACK" == teardown ]]; then
   result=NODE_BOOT_TEARDOWN
   exit 0
@@ -512,7 +605,11 @@ echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
 
 # Use the merged native producer for every shard; the PHP producer is retired.
-game_platform_start
+if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+  npm_config_cache="${npm_config_cache:-$WORK/npm-cache}" game_platform_start
+else
+  game_platform_start
+fi
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
   seed_mp_accounts
 fi
@@ -524,10 +621,16 @@ if [[ -z "$NODE_BOOT_LIBTEST" ]]; then
 fi
 
 # Deployment administration: service user, directories, roles, migration.
-sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
-SERVICE_UID="$(id -u "$SERVICE_USER")"
-sudo install -d -o root -g root -m 0755 "$BASE" "$BASE/bin" "$BASE/state" "$BASE/fence-parent" "$BASE/node"
-sudo install -d -o root -g root -m 0700 "$BASE/ops"
+service_owner=()
+if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+  SERVICE_UID="$(id -u)"
+else
+  sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
+  SERVICE_UID="$(id -u "$SERVICE_USER")"
+  service_owner=(-o "$SERVICE_UID")
+fi
+"${operator_command[@]}" install -d "${root_owner[@]}" "${root_group[@]}" -m 0755 "$BASE" "$BASE/bin" "$BASE/state" "$BASE/fence-parent" "$BASE/node"
+"${operator_command[@]}" install -d "${root_owner[@]}" "${root_group[@]}" -m 0700 "$BASE/ops"
 if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   # Stage only declared, hash-bound inputs; never publish unrelated siblings.
   python3 - "$NODE_BOOT_SPELL_MANIFEST" "$GAME_SOURCE" "$WORK/gameplay" <<'PY_STAGE'
@@ -578,9 +681,9 @@ for name, data in selected.items():
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_bytes(data)
 PY_STAGE
-  sudo install -d -o root -g root -m 0755 "$BASE/gameplay"
-  sudo cp -R "$WORK/gameplay/." "$BASE/gameplay/"
-  sudo chmod -R a+rX "$BASE/gameplay"
+  "${operator_command[@]}" install -d "${root_owner[@]}" "${root_group[@]}" -m 0755 "$BASE/gameplay"
+  "${operator_command[@]}" cp -R "$WORK/gameplay/." "$BASE/gameplay/"
+  "${operator_command[@]}" chmod -R a+rX "$BASE/gameplay"
   evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$NODE_BOOT_SPELL_MANIFEST" | cut -d ' ' -f 1) activation_wait_seconds=$NODE_ACTIVATION_WAIT_SECONDS"
 fi
 MAP_REVISION=map-s3b-1
@@ -598,14 +701,14 @@ with open(sys.argv[3], "w") as output:
     json.dump(pin, output, sort_keys=True)
 PY_REGION_PIN
   WORLD_DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["digest"])' "$PIN")"
-  sudo install -d -o root -g root -m 0755 "$BASE/world"
-  sudo install -o root -g root -m 0644 "$WORK/world.otwb" "$BASE/world/world.otbundle"
-  sudo install -o root -g root -m 0644 "$PIN" "$BASE/world/world.json"
+  "${operator_command[@]}" install -d "${root_owner[@]}" "${root_group[@]}" -m 0755 "$BASE/world"
+  "${operator_command[@]}" install "${root_owner[@]}" "${root_group[@]}" -m 0644 "$WORK/world.otwb" "$BASE/world/world.otbundle"
+  "${operator_command[@]}" install "${root_owner[@]}" "${root_group[@]}" -m 0644 "$PIN" "$BASE/world/world.json"
   MAP_REVISION="$WORLD_DIGEST"
 fi
-sudo install -d -o "$SERVICE_UID" -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
-sudo install -d -o "$SERVICE_UID" -m 0755 "$BASE/node/secrets"
-sudo install -o root -m 0755 "$TARGET/oteryn-game-server" "$TARGET/oteryn-game-ops" "$TARGET/oteryn-game-migrate" "$BASE/bin/"
+"${operator_command[@]}" install -d "${service_owner[@]}" -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
+"${operator_command[@]}" install -d "${service_owner[@]}" -m 0755 "$BASE/node/secrets"
+"${operator_command[@]}" install "${root_owner[@]}" -m 0755 "$TARGET/oteryn-game-server" "$TARGET/oteryn-game-ops" "$TARGET/oteryn-game-migrate" "$BASE/bin/"
 OTERYN_GAME_MIGRATION_DATABASE_URL="$ADMIN_URL" "$BASE/bin/oteryn-game-migrate"
 psql_admin oteryn_node_boot <<SQL
 CREATE ROLE nb_control LOGIN PASSWORD '$CONTROL_PASSWORD' IN ROLE oteryn_game_control;
@@ -613,7 +716,11 @@ CREATE ROLE nb_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_ru
 GRANT CONNECT ON DATABASE oteryn_node_boot TO nb_control, nb_runtime;
 SQL
 secret_to() { # owner source destination
-  sudo install -o "$1" -m 0600 "$2" "$3"
+  if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+    install -m 0600 "$2" "$3"
+  else
+    sudo install -o "$1" -m 0600 "$2" "$3"
+  fi
 }
 printf '%s\n' "$CONTROL_PASSWORD" > "$WORK/control-password"
 printf '%s\n' "$RUNTIME_PASSWORD" > "$WORK/runtime-password"
@@ -644,7 +751,7 @@ fence_directory = "$BASE/fence-parent/fence"
 authority_scope_id = "character-primary"
 issuer_identity = "game-ops"
 TOML
-sudo install -o root -m 0600 "$WORK/ops.toml" "$BASE/ops/ops.toml"
+"${operator_command[@]}" install "${root_owner[@]}" -m 0600 "$WORK/ops.toml" "$BASE/ops/ops.toml"
 # One descriptor installation time: changed facts under an unchanged
 # revision are refused at boot, as D3 requires.
 DESCRIPTOR_INSTALLED_AT="$(date +%s)"
@@ -724,15 +831,21 @@ start_y = 32238
 start_floor = 7''')
 PY_WORLD
   fi
-  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
+  if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+    python3 "$GAME_SOURCE/tools/qualification/node_boot/platform_config.py" "$WORK" "$WORK/node.toml" "$BASE"
+  elif [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
     game_platform_config "$WORK/node.toml"
   fi
-  sudo install -o root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
+  "${operator_command[@]}" install "${root_owner[@]}" -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
 # Root/client writes an atomic offset; the service can only read it. Start at
 # zero on every disposable run, and keep it across the shutdown/restart probes.
 if (( ${#NODE_CLOCK_FEATURES[@]} )); then
-  sudo install -d -o "$(id -u)" -m 0755 "$BASE/qualification-clock"
+  if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+    install -d -m 0755 "$BASE/qualification-clock"
+  else
+    sudo install -d -o "$(id -u)" -m 0755 "$BASE/qualification-clock"
+  fi
   export OTERYN_QUALIFICATION_CLOCK_FILE="$BASE/qualification-clock/offset-ms"
   printf '0' > "$OTERYN_QUALIFICATION_CLOCK_FILE"
   chmod 0644 "$OTERYN_QUALIFICATION_CLOCK_FILE"
@@ -741,12 +854,15 @@ fi
 fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler
 
-ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
+ops() { "${operator_command[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
 start_node() {
   # Detached from the stage's output pipe, so the stage ends while it serves.
-  sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
+  "${service_command[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
     < /dev/null > /dev/null 2> "$node_log" &
   NODE_PID=$!
+  if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+    printf '%s\n' "$NODE_PID" > "$WORK/node.pid"
+  fi
 }
 await_log() { # pattern seconds
   for _ in $(seq 1 "$2"); do grep -q "$1" "$node_log" && return 0; sleep 1; done
@@ -1134,15 +1250,15 @@ operator_setup() { # §4.1 operator setup before the node starts
 }
 
 configuration_negatives() { # exit before binding, no secret in output
-  sudo cp "$BASE/node/node.toml" "$BASE/node/insecure.toml"; sudo chmod 0666 "$BASE/node/insecure.toml"
-  sudo ln -sf "$BASE/node/node.toml" "$BASE/node/link.toml"
-  sudo sed '/^map_revision/d' "$BASE/node/node.toml" | sudo tee "$BASE/node/missing.toml" >/dev/null
-  sudo sed 's/^max_connections = 256/max_connections = 257/' "$BASE/node/node.toml" | sudo tee "$BASE/node/over.toml" >/dev/null
-  sudo chmod 0644 "$BASE/node/missing.toml" "$BASE/node/over.toml"
+  "${operator_command[@]}" cp "$BASE/node/node.toml" "$BASE/node/insecure.toml"; "${operator_command[@]}" chmod 0666 "$BASE/node/insecure.toml"
+  "${operator_command[@]}" ln -sf "$BASE/node/node.toml" "$BASE/node/link.toml"
+  "${operator_command[@]}" sed '/^map_revision/d' "$BASE/node/node.toml" | "${operator_command[@]}" tee "$BASE/node/missing.toml" >/dev/null
+  "${operator_command[@]}" sed 's/^max_connections = 256/max_connections = 257/' "$BASE/node/node.toml" | "${operator_command[@]}" tee "$BASE/node/over.toml" >/dev/null
+  "${operator_command[@]}" chmod 0644 "$BASE/node/missing.toml" "$BASE/node/over.toml"
   local config code failed=0
   for config in insecure link missing over; do
     set +e
-    sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/$config.toml" 2>> "$WORK/negative.log"
+    "${service_command[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/$config.toml" 2>> "$WORK/negative.log"
     code=$?
     set -e
     echo "configuration $config exit=$code"
@@ -1233,13 +1349,31 @@ node_complete_assignment() {
     [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
     evidence "world_epoch=0 source=control_initializer bundle=compiled content=issued replay=idempotent"
   fi
-  [[ "$(sudo stat -c '%u %a' "$BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "control socket mode"
+  [[ "$("${operator_command[@]}" stat -c '%u %a' "$BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "control socket mode"
   [[ "$(echo 'SELECT count(*) FROM game_node_registrations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "operator registered an incarnation"
   evidence "world_boot_seconds=$((SECONDS - boot_started)) world_bundle=$NODE_BOOT_WORLD"
   evidence "node registered=1 assignment=operator ungranted=refused content_activation=sequence_1 content_ungranted=refused content_replay=exact content_stale=refused readiness=true control_socket=uid${SERVICE_UID}_0600"
 }
 
-control_socket_peer() { # a non-root peer is closed without an answer
+control_socket_peer() {
+  if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+    python3 - "$BASE/run/control.sock" <<'PY_PEER'
+import json
+import socket
+import sys
+
+with socket.socket(socket.AF_UNIX) as peer:
+    peer.settimeout(5)
+    peer.connect(sys.argv[1])
+    peer.sendall(b"health\n")
+    peer.shutdown(socket.SHUT_WR)
+    with peer.makefile("rb") as response:
+        if json.load(response).get("readiness") is not True:
+            raise SystemExit("qualification peer did not receive ready health")
+PY_PEER
+    evidence "control_socket current_uid_peer=accepted service_user_isolation=unverified"
+    return
+  fi
   sudo -u "$SERVICE_USER" python3 - "$BASE/run/control.sock" "${INTENT_OPERATIONS[0]}" <<'PY'
 import socket, sys
 s = socket.socket(socket.AF_UNIX)
@@ -1394,11 +1528,11 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
 }
 
 graceful_shutdown() { # ready=false first, socket removed
-  sudo kill -TERM "$NODE_PID"
+  node_kill -TERM "$NODE_PID"
   local code=0
   wait "$NODE_PID" 2>/dev/null || code=$?
   # A process started by another stage's subshell is not our child; wait for it.
-  for _ in $(seq 1 30); do sudo kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
+  for _ in $(seq 1 30); do node_kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
   grep -q "event=readiness .*ready=false" "$node_log" || fail "no ready=false on shutdown"
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "no clean shutdown"
   [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after graceful shutdown"
@@ -1410,7 +1544,7 @@ restart_without_supersession() { # fails at S2 custody, never ready
   ops authorization issue --file launch-b.json --binding node-boot-b
   write_node_config launch-b.json
   local code=0
-  sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" 2> "$WORK/restart.log" || code=$?
+  "${service_command[@]}" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" 2> "$WORK/restart.log" || code=$?
   cat "$WORK/restart.log"
   [[ $code == 13 ]] || fail "restart without supersession exit=$code"
   local line node revision
@@ -1436,8 +1570,8 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   # A new incarnation starts with no active Content and reactivates only the current issuance.
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
-  sudo kill -TERM "$NODE_PID"
-  for _ in $(seq 1 30); do sudo kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
+  node_kill -TERM "$NODE_PID"
+  for _ in $(seq 1 30); do node_kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "replacement did not shut down cleanly"
   evidence "replacement=superseding custody=claimed content=reactivated_current_issuance readiness=cas"
 }
@@ -1448,7 +1582,7 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
   : > "$node_log"
   start_node
   await_log awaiting_assignment 120
-  sudo kill -TERM "$NODE_PID"
+  node_kill -TERM "$NODE_PID"
   local code=0
   wait "$NODE_PID" 2>/dev/null || code=$?
   cat "$node_log"
@@ -1466,7 +1600,7 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
 # so this World gets its own database in the same PostgreSQL container and its own node.
 # Platform, PKI, secrets, binaries, bundle and gameplay inputs are shared; the steps mirror
 # operator_setup, node_deployment_grants, node_complete_assignment and character_bootstrap.
-pvp_ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$PVP_BASE/ops/ops.toml" "$@"; }
+pvp_ops() { "${operator_command[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$PVP_BASE/ops/ops.toml" "$@"; }
 pvp_fail() { echo "--- PvP node log"; tail -n 120 "$WORK/pvp-node.log" 2>/dev/null || true; fail "$@"; }
 pvp_await_log() { # pattern seconds
   for _ in $(seq 1 "$2"); do grep -q "$1" "$WORK/pvp-node.log" && return 0; sleep 1; done
@@ -1478,14 +1612,14 @@ pvp_world_ready() {
   echo "CREATE DATABASE $PVP_DATABASE" | psql_admin postgres
   OTERYN_GAME_MIGRATION_DATABASE_URL="$pvp_url" "$BASE/bin/oteryn-game-migrate"
   echo "GRANT CONNECT ON DATABASE $PVP_DATABASE TO nb_control, nb_runtime" | psql_admin "$PVP_DATABASE"
-  sudo install -d -o root -g root -m 0755 "$PVP_BASE" "$PVP_BASE/state" "$PVP_BASE/fence-parent" "$PVP_BASE/node"
-  sudo install -d -o root -g root -m 0700 "$PVP_BASE/ops"
-  sudo install -d -o "$SERVICE_UID" -m 0700 "$PVP_BASE/fence-parent/fence" "$PVP_BASE/run"
+  "${operator_command[@]}" install -d "${root_owner[@]}" "${root_group[@]}" -m 0755 "$PVP_BASE" "$PVP_BASE/state" "$PVP_BASE/fence-parent" "$PVP_BASE/node"
+  "${operator_command[@]}" install -d "${root_owner[@]}" "${root_group[@]}" -m 0700 "$PVP_BASE/ops"
+  "${operator_command[@]}" install -d "${service_owner[@]}" -m 0700 "$PVP_BASE/fence-parent/fence" "$PVP_BASE/run"
   sed -e "s|^state_directory = .*|state_directory = \"$PVP_BASE/state\"|" \
     -e "s|^database = .*|database = \"$PVP_DATABASE\"|" \
     -e "s|^fence_directory = .*|fence_directory = \"$PVP_BASE/fence-parent/fence\"|" \
     "$WORK/ops.toml" > "$WORK/pvp-ops.toml"
-  sudo install -o root -m 0600 "$WORK/pvp-ops.toml" "$PVP_BASE/ops/ops.toml"
+  "${operator_command[@]}" install "${root_owner[@]}" -m 0600 "$WORK/pvp-ops.toml" "$PVP_BASE/ops/ops.toml"
   pvp_ops authorization issue --file launch-pvp.json --binding node-boot-pvp
   # The existing World's launch-a configuration with this World's scope, port, store and paths.
   sed -e "s|^address = .*|address = \"127.0.0.1:$PVP_GAME_PORT\"|" \
@@ -1501,19 +1635,22 @@ pvp_world_ready() {
     "$WORK/node.toml" > "$WORK/pvp-node.toml"
   # Platform's testing assignment reporter is authorized only for the baseline
   # scope. PvP uses Game's scoped assignment and its own LCFA epoch fence.
-  printf '0\n' | sudo install -o "$SERVICE_UID" -m 0600 /dev/stdin "$PVP_BASE/run/lcfa-epoch-fence"
+  printf '0\n' | "${operator_command[@]}" install "${service_owner[@]}" -m 0600 /dev/stdin "$PVP_BASE/run/lcfa-epoch-fence"
   local line
   for line in "address = \"127.0.0.1:$PVP_GAME_PORT\"" "world_id = \"$PVP_WORLD_ID\"" "channel_id = \"$PVP_CHANNEL_ID\"" \
     "database = \"$PVP_DATABASE\"" "socket_path = \"$PVP_BASE/run/control.sock\"" "[world_bundle]"; do
     grep -qxF "$line" "$WORK/pvp-node.toml" || fail "PvP node configuration lacks: $line"
   done
-  sudo install -o root -m 0644 "$WORK/pvp-node.toml" "$PVP_BASE/node/node.toml"
+  "${operator_command[@]}" install "${root_owner[@]}" -m 0644 "$WORK/pvp-node.toml" "$PVP_BASE/node/node.toml"
   pvp_ops s2 issue --node-config "$PVP_BASE/node/node.toml" --file s2-fresh-store.json --namespace node-boot-pvp --authorization disposable-qualification
   pvp_ops character fresh-store --request fresh-store.json
   pvp_ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"
-  sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$PVP_BASE/node/node.toml" \
+  "${service_command[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$PVP_BASE/node/node.toml" \
     < /dev/null > /dev/null 2> "$WORK/pvp-node.log" &
   PVP_NODE_PID=$!
+  if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+    printf '%s\n' "$PVP_NODE_PID" > "$WORK/pvp-node.pid"
+  fi
   remember PVP_NODE_PID "$PVP_NODE_PID"
   pvp_await_log awaiting_assignment 120
   local node revision
@@ -1547,7 +1684,7 @@ SQL
     printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$PVP_WORLD_ID" "$PVP_CHANNEL_ID" "$WORLD_DIGEST"
   } | psql_admin "$PVP_DATABASE")"
   [[ "$epoch_result" == t ]] || fail "PvP World epoch initialization"
-  [[ "$(sudo stat -c '%u %a' "$PVP_BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "PvP control socket mode"
+  [[ "$("${operator_command[@]}" stat -c '%u %a' "$PVP_BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "PvP control socket mode"
   [[ "$PVP_GAME_PORT" != "$NODE_BOOT_GAME_PORT" && "$PVP_NODE_PID" != "$NODE_PID" ]] || fail "PvP listener or process reused the baseline node"
   [[ "$(echo "SELECT world_type FROM game_spell_field_world_policies WHERE world_id='$WORLD_ID'" | psql_admin oteryn_node_boot)" == 1 ]] || fail "Baseline World policy is not no-PvP"
   evidence "pvp_world world_type=2 database=$PVP_DATABASE port=$PVP_GAME_PORT node=separate_process readiness=true world_epoch=0 boot_seconds=$((SECONDS - boot_started)) world=$PVP_WORLD_ID channel=$PVP_CHANNEL_ID pid=$PVP_NODE_PID baseline_port=$NODE_BOOT_GAME_PORT baseline_pid=$NODE_PID baseline_world_type=1"
@@ -1583,8 +1720,8 @@ SQL
 }
 
 pvp_world_shutdown() { # the Open PvP World's node ends cleanly before the lifecycle probes
-  sudo kill -TERM "$PVP_NODE_PID"
-  for _ in $(seq 1 30); do sudo kill -0 "$PVP_NODE_PID" 2>/dev/null || break; sleep 1; done
+  node_kill -TERM "$PVP_NODE_PID"
+  for _ in $(seq 1 30); do node_kill -0 "$PVP_NODE_PID" 2>/dev/null || break; sleep 1; done
   grep -q "event=shutdown .*state=complete" "$WORK/pvp-node.log" || pvp_fail "PvP node did not shut down cleanly"
   [[ ! -e "$PVP_BASE/run/control.sock" ]] || fail "PvP socket left after graceful shutdown"
   evidence "pvp_world shutdown=complete socket=removed"

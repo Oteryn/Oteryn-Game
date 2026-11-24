@@ -115,6 +115,28 @@ wait, readiness's 60-second wait, and all grant/replay/stale-predecessor asserti
 are unchanged. `content_full_manifest_boot` exercises those real content APIs,
 checks the exact issued pins and sequence, and uses the runner's same wait profile.
 
+## Unprivileged Codex Cloud runs
+
+Source the bundled `env.sh`, then select one group per Cloud task. Each task
+starts its own disposable stack, and PostgreSQL commands run inside the
+database container.
+
+```sh
+NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY=core bash tools/qualification/node_boot/run.sh
+```
+
+Use `core`, `f4`, `f5`, `f6`, `f7add`, `f7clock`, `f7cont`, `f7forge`,
+`f7run`, `mp`, or `rows`. With a group selected, the run goes directly to the
+World pass. The runner builds the Cloud qualification binaries locally and
+uses the pinned Platform checkout. If `PLATFORM_SOURCE` is unset and the
+repository has no `_platform` checkout, it clones the pin there.
+
+The operator still validates ownership of the state directory and its
+ancestors. In Codex Cloud, use a shell that exposes the actual ownership of
+`/` and `/tmp`, and run as your current UID. The node and operator share that
+UID. Service-user isolation stays unverified here. The privileged PC or CI
+run remains its gate.
+
 ## Parallel stacks, the single-row loop and diagnostics
 
 Local runs can start several isolated stacks at once. Unset knobs keep the CI

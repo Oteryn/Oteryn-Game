@@ -2966,7 +2966,20 @@ fn control_diagnose(request: &[u8]) -> Option<String> {
     .ok()
 }
 
-/// One request at a time, bounded size and deadline; only uid 0 is served.
+fn control_peer_allowed(peer: u32, operator: u32) -> bool {
+    peer == 0 || (cfg!(feature = "qualification-unprivileged") && peer == operator)
+}
+
+#[cfg(any(test, feature = "qualification-unprivileged"))]
+fn qualification_operator_uid(current: u32, setting: Option<&std::ffi::OsStr>) -> u32 {
+    if setting == Some(std::ffi::OsStr::new("1")) {
+        current
+    } else {
+        0
+    }
+}
+
+/// One request at a time, bounded size and deadline, with kernel peer credentials.
 #[allow(clippy::too_many_arguments)]
 async fn control_loop(
     listener: &UnixListener,
@@ -2980,6 +2993,13 @@ async fn control_loop(
     spawn: Option<qualification_fixture::SpawnOwners<'_>>,
     stop: &CancellationToken,
 ) {
+    #[cfg(not(feature = "qualification-unprivileged"))]
+    let operator = 0;
+    #[cfg(feature = "qualification-unprivileged")]
+    let operator = qualification_operator_uid(
+        effective_uid(),
+        std::env::var_os("OTERYN_UNPRIVILEGED_QUALIFICATION").as_deref(),
+    );
     let capacity = TransientCapacity::new();
     while let Some(accepted) = first(listener.accept(), stop.cancelled()).await {
         let Ok((mut stream, _)) = accepted else {
@@ -2989,7 +3009,7 @@ async fn control_loop(
         // The peer is checked before any byte is read.
         if !stream
             .peer_cred()
-            .is_ok_and(|credentials| credentials.uid() == 0)
+            .is_ok_and(|credentials| control_peer_allowed(credentials.uid(), operator))
         {
             continue;
         }
@@ -4081,6 +4101,23 @@ mod future_stack_tests;
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
+
+    #[test]
+    fn unprivileged_qualification_control_peer_requires_feature_and_setting() {
+        use std::ffi::OsStr;
+
+        let current = 1000;
+        let operator = super::qualification_operator_uid(current, None);
+        assert!(super::control_peer_allowed(0, operator));
+        assert!(!super::control_peer_allowed(current, operator));
+
+        let operator = super::qualification_operator_uid(current, Some(OsStr::new("1")));
+        assert_eq!(
+            super::control_peer_allowed(current, operator),
+            cfg!(feature = "qualification-unprivileged")
+        );
+        assert!(!super::control_peer_allowed(current + 1, operator));
+    }
 
     #[test]
     fn identity_checks_skip_disabled_optional_transports() {

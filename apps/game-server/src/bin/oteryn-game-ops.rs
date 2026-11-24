@@ -1,7 +1,7 @@
 //! `oteryn-game-ops`: control-plane actions for one GameNode deployment
 //! (OPS-NODE-BOOT-01 D2).
 //!
-//! The tool runs only as root and never as the node's service user. It holds
+//! In deployment, the tool runs only as root and has a distinct UID from the node. It holds
 //! only the control-plane database credential, never registers a GameNode
 //! incarnation, and writes the complete request for every database or fence
 //! mutation durably under its validated state directory before submitting it.
@@ -171,6 +171,7 @@ impl Arguments {
 }
 
 struct Operator {
+    uid: u32,
     config: OpsConfig,
     state: OwnedFd,
     root: DurabilityRoot,
@@ -886,12 +887,12 @@ fn reporter(
         "--report-config",
         std::path::Path::new(&path),
         FileClass::Trusted,
-        0,
+        operator.uid,
         scope_assignment::CONFIG_BYTES,
     )?;
     let config = ReportConfig::parse(&document).map_err(|_| invalid("document"))?;
     let pem = |key: &'static str, path: &std::path::Path, class| {
-        read_file(key, path, class, 0, MAX_PEM_BYTES)
+        read_file(key, path, class, operator.uid, MAX_PEM_BYTES)
     };
     let roots = certificates(&pem(
         "trust_roots_file",
@@ -1657,14 +1658,40 @@ fn resync_outcome(result: Result<u64, oteryn_game_server::node::serve::ResyncErr
     }
 }
 
+#[cfg(any(test, feature = "qualification-unprivileged"))]
+fn unprivileged_qualification(invoking: u32, setting: Option<&std::ffi::OsStr>) -> bool {
+    invoking != 0 && setting == Some(std::ffi::OsStr::new("1"))
+}
+
+fn check_operator_uid(invoking: u32, unprivileged: bool) -> Outcome {
+    if invoking != 0 && !(cfg!(feature = "qualification-unprivileged") && unprivileged) {
+        return Err(Failure::Identity("oteryn-game-ops runs only as root"));
+    }
+    Ok(())
+}
+
+fn check_service_uid(invoking: u32, service_uid: u32, unprivileged: bool) -> Outcome {
+    if service_uid == invoking && !(cfg!(feature = "qualification-unprivileged") && unprivileged) {
+        return Err(Failure::Identity(
+            "oteryn-game-ops refuses to run as the service user",
+        ));
+    }
+    Ok(())
+}
+
 async fn run(raw: Vec<String>) -> Outcome {
     let mut arguments = Arguments::parse(raw)?;
     let config_path = PathBuf::from(arguments.take("config")?);
-    // The one supported operator identity is root, never the service user.
+    // The deployed operator identity is root and the node uses a separate UID.
     let invoking = secure_file::effective_uid();
-    if invoking != 0 {
-        return Err(Failure::Identity("oteryn-game-ops runs only as root"));
-    }
+    #[cfg(not(feature = "qualification-unprivileged"))]
+    let unprivileged = false;
+    #[cfg(feature = "qualification-unprivileged")]
+    let unprivileged = unprivileged_qualification(
+        invoking,
+        std::env::var_os("OTERYN_UNPRIVILEGED_QUALIFICATION").as_deref(),
+    );
+    check_operator_uid(invoking, unprivileged)?;
     let document = read_file(
         "--config",
         &config_path,
@@ -1673,11 +1700,7 @@ async fn run(raw: Vec<String>) -> Outcome {
         oteryn_game_server::node::config::MAX_CONFIG_BYTES,
     )?;
     let config = OpsConfig::parse(&document).map_err(|error| Failure::Input(error.to_string()))?;
-    if config.operator.service_uid == invoking {
-        return Err(Failure::Identity(
-            "oteryn-game-ops refuses to run as the service user",
-        ));
-    }
+    check_service_uid(invoking, config.operator.service_uid, unprivileged)?;
     dispatch(
         config,
         invoking,
@@ -1703,6 +1726,7 @@ async fn dispatch(
         .map_err(|error| Failure::Input(format!("operator.state_directory: {error:?}")))?;
     let root = connect(&config.database).await?;
     let operator = Operator {
+        uid: invoking,
         config,
         state,
         root,
@@ -1797,6 +1821,37 @@ fn main() -> ExitCode {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
+
+    #[test]
+    fn unprivileged_qualification_operator_requires_feature_and_setting() {
+        use std::ffi::OsStr;
+
+        let current = 1000;
+        let enabled = super::unprivileged_qualification(current, None);
+        assert!(matches!(
+            super::check_operator_uid(current, enabled),
+            Err(super::Failure::Identity(
+                "oteryn-game-ops runs only as root"
+            ))
+        ));
+        assert!(matches!(
+            super::check_service_uid(current, current, enabled),
+            Err(super::Failure::Identity(
+                "oteryn-game-ops refuses to run as the service user"
+            ))
+        ));
+
+        let enabled = super::unprivileged_qualification(current, Some(OsStr::new("1")));
+        assert_eq!(
+            super::check_operator_uid(current, enabled).is_ok(),
+            cfg!(feature = "qualification-unprivileged")
+        );
+        assert_eq!(
+            super::check_service_uid(current, current, enabled).is_ok(),
+            cfg!(feature = "qualification-unprivileged")
+        );
+        assert!(!super::unprivileged_qualification(0, Some(OsStr::new("1"))));
+    }
 
     #[test]
     fn retained_s2_unicode_descriptor_facts_return_input_error() {
