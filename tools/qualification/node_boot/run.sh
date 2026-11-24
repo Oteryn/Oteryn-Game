@@ -878,6 +878,24 @@ fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler
 
 ops() { "${as_operator[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
+npc_catalogue_args=()
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  npc_project_sha256="$(python3 - "$GAME_SOURCE/deploy/synology-game/npc-data.pin.json" <<'PY_NPC_PIN'
+import json
+import re
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as source:
+    pin = json.load(source)
+digest = pin.get("project_sha256")
+if pin.get("schema") != "OTERYN_NPC_DATA_PIN/v1" or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+    raise SystemExit("invalid generated NPC project pin")
+print(digest)
+PY_NPC_PIN
+  )" || fail "NPC project pin unavailable"
+  npc_catalogue_args=(--npc-data-project "$GAME_SOURCE/content/world"
+    --npc-data-sha256 "$npc_project_sha256")
+fi
 launch_node() { # PID variable, config, log
   # Detached from the stage's output pipe, so the stage ends while it serves.
   (
@@ -889,7 +907,7 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2"
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2" "${npc_catalogue_args[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
 }
@@ -1592,7 +1610,7 @@ restart_without_supersession() { # fails at S2 custody, never ready
   ops authorization issue --file launch-b.json --binding node-boot-b
   write_node_config launch-b.json
   local code=0
-  "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" 2> "$WORK/restart.log" || code=$?
+  "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" "${npc_catalogue_args[@]}" 2> "$WORK/restart.log" || code=$?
   cat "$WORK/restart.log"
   [[ $code == 13 ]] || fail "restart without supersession exit=$code"
   local line node revision
