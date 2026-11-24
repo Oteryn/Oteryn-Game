@@ -20,7 +20,14 @@ const CONJURED_CHARGES: u64 = 10;
 const XODET: &str = "oteryn:npc.xodet";
 const XODET_WANDER_RADIUS: u32 = 2;
 
+const PREPARATION: character_prep::Seeded = character_prep::Seeded {
+    profile: "c06-sorcerer",
+    reason: "C06 tests native rune purchase, conjure and use at the authored spell eligibility level.",
+};
+const PREREQUISITES: &str = "level-15-sorcerer";
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    character_prep::declare_seeded("C06", PREREQUISITES, PREPARATION.reason);
     let started = std::time::Instant::now();
     let result =
         verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
@@ -32,7 +39,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         evidence(&format!("C06_GAP {error}"));
     }
     evidence(&format!(
-        "SEAM_EVIDENCE e2e_all scenario=C06.full status={} seconds={:.3}{}",
+        "SEAM_EVIDENCE e2e_all scenario=C06.full status={} seconds={:.3} mode=seeded prerequisites={PREREQUISITES}{}",
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64(),
         if result.is_ok() {
@@ -66,7 +73,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let damage = provisioning::item_reference(&index, DAMAGE_RUNE_ID)?;
     let healing = provisioning::item_reference(&index, HEAL_RUNE_ID)?;
     let blank = provisioning::item_reference(&index, BLANK_RUNE_ID)?;
-    let mut client = connect_world(clients, 0xc6).await?;
+    let mut client = PREPARATION.connect(clients, 0xc6, 1).await?;
     // Xodet's pinned price is ten gold per blank rune. The second blank
     // makes the immediate repeat test cooldown rather than reagent absence.
     super::full_row_c02::earn_gold(&mut client, world, &metadata.spawns, 20)
