@@ -9,6 +9,28 @@ mod gameplay_idle;
 pub use gameplay_idle::{GameplayIdlePolicy, GameplayIdleState};
 mod moved_step;
 mod routing;
+#[cfg(test)]
+pub(super) async fn test_analyser_route(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    view: &mut super::party_command::SessionPartyView,
+) -> Option<Vec<u8>> {
+    let reply = if command.command_type
+        == oteryn_protocol_oteryn::analyser_catalogue::COMMAND_TYPE_ANALYSER_NPC_PRICES
+    {
+        routing::analyser_catalogue::route(owner, admitted, command).await
+    } else {
+        routing::analyser_party::route(owner, admitted, command, view).await
+    };
+    match reply {
+        routing::Dispatch::Reply(crate::foundation::CommandStatus::Accepted, payload) => {
+            Some(payload)
+        }
+        _ => None,
+    }
+}
+
 mod serve;
 use crate::combat_pickup::GroundPickupError;
 use routing::Dispatch;
@@ -185,8 +207,8 @@ use oteryn_protocol_oteryn::npc_service::{
     DELTA_TYPE_NPC_CONVERSATION_V1, DELTA_TYPE_NPC_TRADE_WINDOW_V1, NpcConversation,
     NpcIntentDisposition, NpcTalkIntent, NpcTradeWindow, SNAPSHOT_TYPE_NPC_CONVERSATION_V1,
     SNAPSHOT_TYPE_NPC_TRADE_WINDOW_V1, STATE_DOMAIN_NPC_CONVERSATION,
-    STATE_DOMAIN_NPC_TRADE_WINDOW, decode_npc_talk_intent, decode_npc_trade_intent,
-    encode_npc_conversation, encode_npc_intent_result, encode_npc_trade_window,
+    STATE_DOMAIN_NPC_TRADE_WINDOW, decode_npc_talk_intent, encode_npc_conversation,
+    encode_npc_intent_result, encode_npc_trade_window,
 };
 use oteryn_protocol_oteryn::quest_log::{
     DELTA_TYPE_QUEST_LOG_V1, SNAPSHOT_TYPE_QUEST_LOG_V1, STATE_DOMAIN_QUEST_LOG,
@@ -202,8 +224,7 @@ use oteryn_protocol_oteryn::world_object::{
     DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1, MAX_GATE_MESSAGE_ID, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
     STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, UseIntent, UseTarget,
     WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
-    encode_use_result_with_gate, encode_world_object_overlay_delta,
-    encode_world_object_overlay_snapshot,
+    encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef as WireEntityRef;
 use oteryn_protocol_oteryn::world_weather::{
@@ -606,6 +627,8 @@ pub struct UseCommand {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UseOutcome {
     pub disposition: oteryn_protocol_oteryn::world_object::UseDisposition,
+    /// Immutable reward-mint event ID for an admitted treasure claim.
+    pub reward_granted: Option<[u8; 16]>,
     pub committed: Option<oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry>,
     /// ACH-NOTIFY-1/2: what the grant of this `USE` earned, after its commit. The loop acts on
     /// it only for a session that selected capability 8.
@@ -613,6 +636,7 @@ pub struct UseOutcome {
     /// The gate message id of a `SEALED` outcome (1 to 127): carried to the result under
     /// capability 11, required by the codec for `SEALED` and absent for every other disposition.
     pub gate_message_id: Option<u8>,
+    pub potion_utterance: Option<oteryn_protocol_oteryn::world_object::PotionUtterance>,
     /// PARITY-REFUSAL-DETAIL-1: the refusal detail the disposition alone does not name (the
     /// floor of a target out of reach). `None` sends the disposition's own detail under
     /// capability 66; nothing is sent without it.
@@ -625,7 +649,9 @@ impl UseOutcome {
             disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Rejected,
             committed: None,
             earned: EarnedNotice::NoneEarned,
+            reward_granted: None,
             gate_message_id: None,
+            potion_utterance: None,
             refusal_detail: None,
         }
     }
@@ -1656,6 +1682,10 @@ mod tests;
 #[cfg(test)]
 #[allow(clippy::expect_used, clippy::panic)]
 mod visibility_tests;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use visibility_tests::{
+    prime_player_status_clock, regression_player_status,
+};
 
 #[cfg(test)]
 #[path = "item_look_dispatch_tests.rs"]

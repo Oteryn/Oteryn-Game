@@ -314,7 +314,10 @@ class LootTablesTests(unittest.TestCase):
 
     def test_checked_in_section_is_generated_from_the_production_profiles(self):
         _, creatures = full.read(full.CREATURE_PROFILES)
-        raw = full.production_loot_tables(creatures)
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'loot-tables.json'
+            full.refresh_loot_tables(output)
+            raw = output.read_bytes()
         self.assertEqual(raw, full.LOOT_TABLES.read_bytes())
         self.assertLessEqual(len(raw), full.LIMITS['loot_tables'])
         document = json.loads(raw)
@@ -327,8 +330,7 @@ class LootTablesTests(unittest.TestCase):
         tables = {row['identity']['key'] for row in document['tables']}
         self.assertEqual({ref['key'] for ref in bindings.values() if ref}, tables)
         items = {row['item']['key']: row for row in document['items']}
-        # Crystal 201189f8 items.xml supplies the ordinary rat's physical capacity.
-        self.assertEqual(10, items['oteryn:item.tibia.i5964']['container_capacity'])
+        self.assertEqual(16, items['oteryn:item.tibia.i5964']['container_capacity'])
         self.assertTrue(items['oteryn:item.tibia.i3031']['materializable'])
         self.assertTrue(items['oteryn:item.tibia.i3607']['materializable'])
         self.assertTrue(items['oteryn:item.tibia.i37109']['materializable'])

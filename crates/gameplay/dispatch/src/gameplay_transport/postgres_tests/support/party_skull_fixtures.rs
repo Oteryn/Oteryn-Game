@@ -216,6 +216,106 @@ pub(super) async fn check(
     Ok(())
 }
 
+pub(super) async fn check_situation_replacement(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    characters: &[[u8; 16]; 2],
+) -> TestResult {
+    let original = admitted.continuity.selected_capabilities;
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42, 134])
+            .ok_or("legacy PvP selection")?;
+    let legacy = observe_pvp(owner, admitted, &[], &h.pool).await?;
+    assert_eq!(legacy.len(), 1);
+    assert!(legacy[0].incoming);
+    assert_eq!(legacy[0].situation_id, None);
+
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42, 134, 616])
+            .ok_or("extended PvP selection")?;
+    let extended = observe_pvp(owner, admitted, characters, &h.pool).await?;
+    assert_eq!(extended.len(), 3);
+    assert!(extended.iter().all(|edge| edge.incoming));
+    assert!(extended[0].situation_id.is_some());
+    assert_eq!(extended[0].situation_id, extended[1].situation_id);
+    assert_ne!(extended[1].situation_id, extended[2].situation_id);
+    // The same attacker, deadline, placement and direction were reinserted.
+    // Compare at an equal presentation time regardless of PostgreSQL round-trip latency.
+    assert_eq!(extended[1], PvpSituation {
+        situation_id: extended[0].situation_id,
+        remaining_ms: extended[1].remaining_ms,
+        ..extended[0]
+    });
+    assert_eq!(extended[2], PvpSituation {
+        situation_id: extended[2].situation_id,
+        remaining_ms: extended[2].remaining_ms,
+        ..extended[0]
+    });
+    admitted.continuity.selected_capabilities = original;
+    Ok(())
+}
+
+async fn observe_pvp(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    replace: &[[u8; 16]],
+    pool: &sqlx::PgPool,
+) -> TestResult<Vec<PvpSituation>> {
+    let current = *admitted;
+    let generation = current.continuity.connection_generation;
+    let (mut server, mut client) = tokio::io::duplex(32_768);
+    let serving = async move {
+        let ended = serve_admitted(&mut server, current, owner, IDLE_LIVENESS).await;
+        drop(server);
+        ended
+    };
+    let driving = async move {
+        icon_snapshot_revision(&mut client, generation).await?;
+        let mut observations = Vec::new();
+        let count = if replace.is_empty() { 1 } else { 3 };
+        for offset in 0..count {
+            if offset == 2 {
+                let mut tx = pool.begin().await?;
+                // Preserve every legacy observation field's source while replacing the edge.
+                sqlx::query("WITH removed AS (DELETE FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND target=encode($2,'hex')::uuid RETURNING attacker,target,until_at,scope_generation,attacker_placement,target_placement) INSERT INTO game_character_pvp_aggression(attacker,target,until_at,scope_generation,attacker_placement,target_placement) SELECT * FROM removed")
+                    .bind(replace[0].as_slice()).bind(replace[1].as_slice()).execute(&mut *tx).await?;
+                tx.commit().await?;
+            }
+            let command_id = current.continuity.next_command_id + offset;
+            let request = encode_client_command(generation, &ClientCommandValue {
+                command_id, command_type: COMMAND_TYPE_PARTY_SKULL_QUERY, payload: &[8, 1],
+            }).map_err(debug)?;
+            write_frame(&mut client, &request).await?;
+            loop {
+                let frame = super::party_membership_fixtures::read_live_frame(&mut client, generation).await?;
+                let env = decode_wire_envelope(&frame).map_err(debug)?;
+                if env.message_type() == MessageType::CommandResult {
+                    let result = decode_command_result(env.payload()).map_err(debug)?;
+                    assert_eq!(result.command_id, command_id);
+                    assert_eq!(result.status, CommandStatus::Accepted);
+                    let status = PvpStatus::decode(result.payload).map_err(debug)?;
+                    assert_eq!(status.situations.len(), 1);
+                    observations.push(status.situations[0]);
+                    break;
+                }
+            }
+        }
+        client.shutdown().await?;
+        TestResult::Ok(observations)
+    };
+    let (end, result) = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        super::fixture::join_two(serving, driving),
+    ).await?;
+    let observations = result?;
+    let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+        return Err(format!("PvP status connection: {end:?}").into());
+    };
+    admitted.continuity = ended.continuity;
+    Ok(observations)
+}
+
 pub(super) async fn logout(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,

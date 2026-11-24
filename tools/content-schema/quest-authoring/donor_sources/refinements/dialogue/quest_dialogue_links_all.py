@@ -257,7 +257,22 @@ def qualify(packet,corpus_manifest,ast_root,repo_root,all_source_quests=False):
     return expected["summary"]
 
 def main():
-    p=argparse.ArgumentParser()
-    for k in ('corpus-manifest','ast-root','repo-root','out'):p.add_argument('--'+k,type=Path,required=True)
-    p.add_argument('--all-source-quests',action='store_true');a=p.parse_args();out=build(a.corpus_manifest,a.ast_root,a.repo_root,a.all_source_quests);raw=stable(out)+b'\n';a.out.parent.mkdir(parents=True,exist_ok=True);a.out.write_bytes(gzip.compress(raw,mtime=0) if a.out.suffix=='.gz' else raw);print(json.dumps(out['summary']))
+    parser = argparse.ArgumentParser()
+    for name in ('corpus-manifest', 'ast-root', 'repo-root', 'out'):
+        parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--all-source-quests', action='store_true')
+    args = parser.parse_args()
+    packet = build(args.corpus_manifest, args.ast_root, args.repo_root, args.all_source_quests)
+    raw = stable(packet) + b'\n'
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    if args.out.suffix == '.gz':
+        # GzipFile writes the published OS byte (255) on every supported Python.
+        with (
+            args.out.open('wb') as output,
+            gzip.GzipFile(filename='', mode='wb', fileobj=output, mtime=0) as archive,
+        ):
+            archive.write(raw)
+    else:
+        args.out.write_bytes(raw)
+    print(json.dumps(packet['summary']))
 if __name__=='__main__':main()

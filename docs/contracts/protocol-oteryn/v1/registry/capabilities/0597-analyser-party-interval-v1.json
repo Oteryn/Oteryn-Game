@@ -1,0 +1,17 @@
+{
+  "id": 597,
+  "name": "ANALYSER_PARTY_INTERVAL_V1",
+  "owner_decision": "Server analyser client gaps",
+  "owner": "Party accounting",
+  "requires": [
+    10,
+    42
+  ],
+  "command_types": [
+    6357,
+    6358
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES with the pinned item index."
+}

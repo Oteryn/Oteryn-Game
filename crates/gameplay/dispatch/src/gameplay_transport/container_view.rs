@@ -29,8 +29,8 @@ use oteryn_protocol_oteryn::browse_field::{
     BROWSE_FIELD_CAPACITY, BrowseFieldIntent, BrowseFieldPage,
 };
 use oteryn_protocol_oteryn::container_tree::{
-    ContainerView, ContainerViewIntent, ContainerViewOutcome, ContainerViews, MAX_CONTAINER_VIEWS,
-    encode_container_views_with_appearances,
+    ContainerPage, ContainerSeek, ContainerView, ContainerViewIntent, ContainerViewOutcome,
+    ContainerViews, MAX_CONTAINER_VIEWS, encode_container_views_with_appearances,
 };
 use oteryn_protocol_oteryn::item_view::ItemEntry;
 use oteryn_protocol_oteryn::item_view::WorldTilePosition;
@@ -80,6 +80,7 @@ struct OpenView {
     entries: Vec<ViewItem>,
     browse: Option<BrowseFieldPage>,
     browse_lease: Option<browse_cache::BrowseLease>,
+    page: Option<(u16, u8)>,
 }
 
 impl OpenView {
@@ -110,7 +111,14 @@ impl OpenView {
                 let end = (start + usize::from(BROWSE_FIELD_CAPACITY)).min(self.entries.len());
                 &self.entries[start..end]
             }
-            None => &self.entries,
+            None => {
+                let Some((offset, width)) = self.page else {
+                    return &self.entries;
+                };
+                let start = usize::from(offset);
+                let end = (start + usize::from(width)).min(self.entries.len());
+                &self.entries[start..end]
+            }
         }
     }
 }
@@ -237,6 +245,15 @@ impl ContainerViewState {
                 observation.and_then(|o| self.observed_view(view.container, o))
             {
                 refreshed.keep_browse_order(view);
+                if let Some((offset, width)) = view.page
+                    && refreshed.browse.is_none()
+                    && width <= refreshed.capacity
+                {
+                    let last = refreshed.entries.len().saturating_sub(1) / usize::from(width);
+                    let last = u16::try_from(last).map_err(|_| ItemViewError::Encode)?;
+                    refreshed.page =
+                        Some((offset.min(last.saturating_mul(u16::from(width))), width));
+                }
                 if let (Some(previous), Some(page)) = (view.browse, refreshed.browse.as_mut()) {
                     page.index = browse_rules::refresh_index(previous.index, page.total);
                 }
@@ -267,6 +284,7 @@ impl ContainerViewState {
                 entries: entries.clone(),
                 browse: None,
                 browse_lease: None,
+                page: None,
             }),
             ContainerObservation::BrowseField {
                 position,
@@ -283,6 +301,7 @@ impl ContainerViewState {
                     total: u16::try_from(entries.len()).ok()?,
                 }),
                 browse_lease: lease.clone(),
+                page: None,
             }),
             _ => None,
         }
@@ -309,6 +328,43 @@ impl ContainerViewState {
             }
         };
         ContainerPlan::Observe(PendingOpen { key, slot })
+    }
+
+    pub(super) fn ordinary_page_container(&self, id: u8) -> Option<ItemKey> {
+        self.views
+            .get(&id)
+            .filter(|view| view.browse.is_none())
+            .map(|view| view.container)
+    }
+
+    pub(super) fn apply_page(
+        &mut self,
+        item_view: &mut SessionItemView,
+        seek: ContainerSeek,
+        observation: ContainerObservation,
+    ) -> Result<Option<(ContainerPage, ItemViewDelta)>, ItemViewError> {
+        let Some(key) = self.ordinary_page_container(seek.view_id) else {
+            return Ok(None);
+        };
+        let Some(mut view) = self
+            .observed_view(key, &observation)
+            .filter(|view| view.browse.is_none() && seek.page_size <= view.capacity)
+        else {
+            return Ok(None);
+        };
+        let total = u16::try_from(view.entries.len()).map_err(|_| ItemViewError::Encode)?;
+        if seek.offset != 0 && seek.offset >= total {
+            return Ok(None);
+        }
+        view.page = Some((seek.offset, seek.page_size));
+        let mut next = self.views.clone();
+        next.insert(seek.view_id, view);
+        let page = ContainerPage {
+            offset: seek.offset,
+            total,
+            page_size: seek.page_size,
+        };
+        Ok(self.commit(item_view, next)?.map(|delta| (page, delta)))
     }
 
     /// The first step of one command 21: a close is decided here; an open or up names the

@@ -39,7 +39,9 @@ pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<Offere
             available
                 || !matches!(
                     capability.id,
-                    wire::CAPABILITY_TASK_BOARD_V1 | wire::full::CAPABILITY_WEEKLY_RESULTS_V1
+                    wire::CAPABILITY_TASK_BOARD_V1
+                        | wire::full::CAPABILITY_WEEKLY_RESULTS_V1
+                        | wire::full::CAPABILITY_TASK_BOARD_DAILY_BOUNTY_V1
                 )
         })
         .collect()
@@ -72,6 +74,7 @@ fn decode_action(payload: &[u8]) -> Option<(TaskBoardAction, bool)> {
             17 => TaskBoardAction::BuyTalisman,
             18 => TaskBoardAction::UpgradeTalisman { path: slot },
             19 => TaskBoardAction::SetElite { enabled: slot == 1 },
+            wire::full::ACTION_CLAIM_DAILY_BOUNTY_TOKEN => TaskBoardAction::ClaimDailyBountyToken,
             _ => return None,
         };
         return Some((action, false));
@@ -126,7 +129,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let results_query = kind == wire::full::COMMAND_WEEKLY_RESULTS;
         let elite_command = kind == wire::full::COMMAND_ELITE_BOUNTY;
-        if (kind != wire::COMMAND_TYPE_TASK_BOARD && !results_query && !elite_command)
+        let daily_command = kind == wire::full::COMMAND_CLAIM_DAILY_BOUNTY_TOKEN;
+        let daily_capability = admitted.continuity.selected_capabilities
+            .contains(wire::full::CAPABILITY_TASK_BOARD_DAILY_BOUNTY_V1);
+        if daily_command != (action == TaskBoardAction::ClaimDailyBountyToken)
+            || (daily_command && !daily_capability)
+        {
+            return TaskBoardReply::Rejected;
+        }
+        if (kind != wire::COMMAND_TYPE_TASK_BOARD && !results_query && !elite_command && !daily_command)
             || (results_query
                 && (legacy
                     || action != TaskBoardAction::Query
@@ -157,9 +168,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(command) = CommandId::new(id) else {
             return TaskBoardReply::Rejected;
         };
-        if self.quest_catalogue.is_none() || self.task_board_catalogue().is_none() {
+        let Some(catalogue) = self.task_board_catalogue() else {
             return TaskBoardReply::Rejected;
-        }
+        };
         {
             let runtime = self.runtime.lock().await;
             let binding = runtime.binding();
@@ -275,6 +286,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .continuity
                     .selected_capabilities
                     .contains(wire::full::CAPABILITY_WEEKLY_RESULTS_V1),
+                daily_capability.then_some(&catalogue.items),
             )
             .and_then(|reply| wire::full::encode_reply(&reply).ok())
         };

@@ -7,3 +7,9 @@ use crate::bestiary_postgres_harness::TestResult;
 fn party_membership_real_dispatch_postgres_end_to_end() -> TestResult {
     run(false)
 }
+
+#[test]
+fn party_membership_join_and_leave_push_to_both_live_peers() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    super::party_membership_fixtures::run_notices(admin)
+}

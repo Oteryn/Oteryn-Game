@@ -191,7 +191,7 @@ pub struct ItemMintCause {
     loot_table: TypedDefinitionRef,
     purpose_key: String,
     draw_ordinal: u32,
-    corpse_race: Option<crate::domain::bestiary::BestiaryRace>,
+    corpse_race: Option<TypedDefinitionRef>,
 }
 
 impl ItemMintCause {
@@ -250,11 +250,23 @@ impl ItemMintCause {
 
     /// Bind source Creature identity only to the committed death's own corpse.
     /// Skinning never derives race from a shared corpse Item definition.
-    pub fn with_corpse_race(mut self, race: crate::domain::bestiary::BestiaryRace) -> Result<Self> {
-        if self.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY || self.draw_ordinal != 0 {
+    pub fn with_corpse_race(self, race: crate::domain::bestiary::BestiaryRace) -> Result<Self> {
+        self.with_corpse_source(TypedDefinitionRef {
+            family: "Creature".into(),
+            production_key: race.key().into(),
+            revision_ref: race.definition_revision().into(),
+        })
+    }
+
+    pub fn with_corpse_source(mut self, source: TypedDefinitionRef) -> Result<Self> {
+        if self.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY
+            || self.draw_ordinal != 0
+            || source.family != "Creature"
+        {
             return Err(ItemMintError::InvalidInput);
         }
-        self.corpse_race = Some(race);
+        validate_definition(&source)?;
+        self.corpse_race = Some(source);
         Ok(self)
     }
 
@@ -1920,8 +1932,8 @@ fn intent_binding_format(
     // Absent provenance retains the byte layout of historical reservations.
     if let Some(race) = &cause.corpse_race {
         push_text(&mut semantic, b"corpse-source-race.v1")?;
-        push_text(&mut semantic, race.key().as_bytes())?;
-        push_text(&mut semantic, race.definition_revision().as_bytes())?;
+        push_text(&mut semantic, race.production_key.as_bytes())?;
+        push_text(&mut semantic, race.revision_ref.as_bytes())?;
     }
     let digest: [u8; 32] = Sha256::digest(&semantic).into();
     let mut binding = [0_u8; 33];
@@ -2450,8 +2462,8 @@ async fn insert_receipt(
         )
         .bind(frozen.item_instance_id.as_slice())
         .bind(frozen.transaction_id.as_slice())
-        .bind(race.key())
-        .bind(race.definition_revision())
+        .bind(&race.production_key)
+        .bind(&race.revision_ref)
         .execute(&mut **tx)
         .await?;
     }
@@ -3228,14 +3240,11 @@ mod tests {
                         .expect("different Instance")
             },
             |r| {
-                r.cause.corpse_race = Some(
-                    crate::domain::bestiary::BestiaryRace::new(
-                        "oteryn:creature.dragon",
-                        "dragon-r1",
-                        vec![5, 50, 500],
-                    )
-                    .expect("race"),
-                )
+                r.cause.corpse_race = Some(TypedDefinitionRef {
+                    family: "Creature".into(),
+                    production_key: "oteryn:creature.dragon".into(),
+                    revision_ref: "dragon-r1".into(),
+                })
             },
             |r| {
                 r.cause.death.scope_ownership_generation =

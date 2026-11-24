@@ -1,20 +1,25 @@
 //! Manual loot is a batch of the existing item loop's conserved moves, in one transaction.
 use super::*;
-use crate::durability::character_quick_loot::{self as settings_owner, DurableQuickLootSettings};
+use crate::durability::character_quick_loot as settings_owner;
 use oteryn_gameplay_items::quick_loot::{
     Corpse, LootCategory, LootItem, LootSettings, MAX_NEARBY_CORPSES, MAX_TRANSFERS_PER_COMMAND,
     ManualLootMode, Recipient, TransferCommit, execute_bounded_plan, plan_manual_loot,
 };
 use oteryn_protocol_oteryn::quick_loot::{
     self as wire, QuickLootAction, QuickLootCategory, QuickLootItemResult, QuickLootRecipient,
-    QuickLootRequest, QuickLootResult,
+    QuickLootDestination, QuickLootDestinations, QuickLootRequest, QuickLootResult,
 };
 
 #[derive(Clone, Copy)]
 pub(super) struct MoveContext {
-    pub(super) corpse: [u8; 16],
-    pub(super) cell: [u8; 10],
+    pub(super) source: MoveSource,
     pub(super) ordinal: i16,
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum MoveSource {
+    Corpse { id: [u8; 16], cell: [u8; 10] },
+    Carried([u8; 16]),
 }
 
 pub fn is_loot_coin(definition: &TypedDefinitionRef) -> bool {
@@ -25,21 +30,26 @@ pub fn is_loot_coin(definition: &TypedDefinitionRef) -> bool {
         )
 }
 
-fn category(value: QuickLootCategory) -> LootCategory {
-    match value {
-        QuickLootCategory::Gold => LootCategory::Gold,
-        QuickLootCategory::CreatureProduct => LootCategory::CreatureProduct,
-        QuickLootCategory::Equipment => LootCategory::Equipment,
-        QuickLootCategory::Consumable => LootCategory::Consumable,
-        QuickLootCategory::Other => LootCategory::Other,
+const _: () = {
+    assert!(LootCategory::ALL.len() == QuickLootCategory::ALL.len());
+    let mut index = 0;
+    while index < LootCategory::ALL.len() {
+        assert!(LootCategory::ALL[index] as usize == index);
+        assert!(QuickLootCategory::ALL[index] as usize == index + 1);
+        index += 1;
     }
+};
+
+fn category(value: QuickLootCategory) -> LootCategory {
+    LootCategory::ALL[(value as usize) - 1]
 }
 
 pub(super) async fn assert_corpse_source(
     tx: &mut Transaction<'_, Postgres>,
     fence: &CurrentCharacterItemFence,
     item: [u8; 16],
-    context: MoveContext,
+    corpse: [u8; 16],
+    cell: [u8; 10],
 ) -> LoopResult<()> {
     let (world, channel) =
         scope_of(fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
@@ -56,9 +66,9 @@ pub(super) async fn assert_corpse_source(
             OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid
             OR EXISTS (SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id)
                 WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)))")
-        .bind(item.as_slice()).bind(context.corpse.as_slice()).bind(world.as_bytes().as_slice())
+        .bind(item.as_slice()).bind(corpse.as_slice()).bind(world.as_bytes().as_slice())
         .bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string())
-        .bind(context.cell.as_slice()).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        .bind(cell.as_slice()).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
     if allowed {
         Ok(())
     } else {
@@ -66,7 +76,7 @@ pub(super) async fn assert_corpse_source(
     }
 }
 
-async fn recipient<C: ItemLoopContent>(
+pub(super) async fn recipient<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
     character: CharacterId,
     world: [u8; 16],
@@ -104,45 +114,86 @@ async fn recipient<C: ItemLoopContent>(
     Ok(LoopDestination::Container(id))
 }
 
+/// The receipt keeps the original wire binding for handle-bearing commands.
+pub enum QuickLootInput<'a> {
+    Legacy(QuickLootRequest),
+    Managed { command_type: u32, payload: &'a [u8], request: Option<QuickLootRequest> },
+}
+
+/// One manual command, retaining the input bytes' identity separately from Channel resolution.
+pub struct QuickLootCommand<'a> {
+    pub command: CommandRef,
+    pub cell: [u8; 10],
+    pub loop_map_revision: Option<String>,
+    pub premium: bool,
+    pub input: QuickLootInput<'a>,
+    pub selected_corpse: Option<[u8; 16]>,
+}
+
 impl DurabilityRoot {
     /// Command 114: replay, settings and all accepted transfers share one fenced item transaction.
-    #[allow(clippy::too_many_arguments)]
     pub async fn commit_quick_loot<C: ItemLoopContent>(
         &self,
         permit: &SpellLanePermit,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-        command: CommandRef,
         content: &C,
-        cell: [u8; 10],
-        loop_map_revision: Option<String>,
-        premium: bool,
-        request: QuickLootRequest,
-    ) -> std::result::Result<std::result::Result<QuickLootResult, LoopMoveRefusal>, DurabilityError>
+        input: QuickLootCommand<'_>,
+    ) -> std::result::Result<std::result::Result<Vec<u8>, LoopMoveRefusal>, DurabilityError>
     {
+        let QuickLootCommand { command, cell, loop_map_revision, premium, input, selected_corpse } = input;
         permit.check_scope(fence.runtime_scope)?;
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        let encoded = wire::encode_quick_loot_request(&request)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let (encoded, request, legacy) = match input {
+            QuickLootInput::Legacy(request) => (
+                wire::encode_quick_loot_request(&request).map_err(|_| DurabilityError::InvalidStoredState)?,
+                Some(request),
+                true,
+            ),
+            QuickLootInput::Managed { command_type, payload, request } => {
+                let mut encoded = command_type.to_le_bytes().to_vec();
+                encoded.extend_from_slice(payload);
+                (encoded, request, false)
+            }
+        };
+        let has_corpse = request.is_some_and(|request| {
+            matches!(request.action, QuickLootAction::Click | QuickLootAction::LootAll)
+                && request.corpse.is_some()
+        });
+        if selected_corpse.is_some() != has_corpse {
+            return Err(DurabilityError::InvalidStoredState);
+        }
         let mut context = (permit, content);
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
             let (permit, content) = *context;
             let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &record).await?;
             lock_loop_command(&mut tx, command).await?;
+            if !legacy && let Err(error) = assert_current_equipment_in_transaction(
+                &mut tx, &record, &node, &fence, Some(command), content.loop_content_digest(),
+            ).await {
+                tx.rollback().await?;
+                return loop_error(error.into()).map(Err);
+            }
             if let Some(row) = sqlx::query("SELECT character_id::text,request,result FROM game_quick_loot_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut *tx).await? {
                 if uuid_text(row.try_get("character_id")?)? != *fence.character_id.as_bytes() || row.try_get::<Vec<u8>,_>("request")? != encoded { tx.rollback().await?; return Ok(Err(LoopMoveRefusal::Rejected)); }
-                let result = wire::decode_quick_loot_result(&row.try_get::<Vec<u8>,_>("result")?).map_err(|_| DurabilityError::InvalidStoredState)?;
+                let result = row.try_get::<Vec<u8>,_>("result")?;
                 super::super::db::commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(result));
             }
-            let attempt: LoopResult<QuickLootResult> = async {
-                assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await?;
+            let Some(request) = request else {
+                tx.rollback().await?;
+                return Ok(Err(LoopMoveRefusal::Stale));
+            };
+            let attempt: LoopResult<Vec<u8>> = async {
+                if legacy {
+                    assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await?;
+                }
                 let (world, channel) = scope_of(&fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
                 let world = *world.as_bytes();
                 let mut settings = settings_owner::load(&mut tx, fence.character_id.as_bytes()).await?;
@@ -154,37 +205,104 @@ impl DurabilityRoot {
                         content.loop_facts(&definition).ok_or(LoopError::Refused(LoopMoveRefusal::Rejected))?;
                         Some(definition.production_key)
                     } else {None};
-                    let list=if settings.accept_only {&settings.accepted_items} else {&settings.skipped_items};
-                    if request.action==QuickLootAction::FilterAdd && list.len()>=oteryn_gameplay_items::quick_loot::MAX_FILTER_ITEMS && !key.as_ref().is_some_and(|key|list.contains(key)) { return refuse(LoopMoveRefusal::NoRoom); }
-                    let accepted=settings.accept_only;
-                    let revision:String=sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-                    settings_owner::store(&mut tx,fence.character_id,revision.parse().map_err(|_|DurabilityError::InvalidStoredState)?,settings).await?;
-                    match request.action {
-                        QuickLootAction::FilterAdd=>{sqlx::query("INSERT INTO game_character_quick_loot_filters(character_id,accepted,item_production_key) VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING").bind(fence.character_id.as_bytes().as_slice()).bind(accepted).bind(key.ok_or(DurabilityError::InvalidStoredState)?).execute(&mut *tx).await?;},
-                        QuickLootAction::FilterRemove=>{sqlx::query("DELETE FROM game_character_quick_loot_filters WHERE character_id=encode($1,'hex')::uuid AND accepted=$2 AND item_production_key=$3").bind(fence.character_id.as_bytes().as_slice()).bind(accepted).bind(key.ok_or(DurabilityError::InvalidStoredState)?).execute(&mut *tx).await?;},
-                        QuickLootAction::FilterClear=>{sqlx::query("DELETE FROM game_character_quick_loot_filters WHERE character_id=encode($1,'hex')::uuid AND accepted=$2").bind(fence.character_id.as_bytes().as_slice()).bind(accepted).execute(&mut *tx).await?;},
-                        QuickLootAction::FilterSelect=>{},
-                        _=>return refuse(LoopMoveRefusal::Rejected),
+                    if let Some(key) = key {
+                        if !settings_owner::edit_filter_in_transaction(&mut tx,fence.character_id,settings,&key,
+                            request.action==QuickLootAction::FilterAdd).await? {
+                            return refuse(LoopMoveRefusal::NoRoom);
+                        }
+                    } else {
+                        let accepted=settings.accept_only;
+                        let revision:String=sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                        settings_owner::store(&mut tx,fence.character_id,revision.parse().map_err(|_|DurabilityError::InvalidStoredState)?,settings).await?;
+                        if request.action==QuickLootAction::FilterClear {
+                            sqlx::query("DELETE FROM game_character_quick_loot_filters WHERE character_id=encode($1,'hex')::uuid AND accepted=$2")
+                                .bind(fence.character_id.as_bytes().as_slice()).bind(accepted).execute(&mut *tx).await?;
+                        }
                     }
-                    return Ok(QuickLootResult {items:Vec::new()});
+                    return Ok(Vec::new());
                 }
-                if request.action == QuickLootAction::Assign {
-                    if request.category.is_some() && !premium { return refuse(LoopMoveRefusal::Rejected); }
-                    let target = match (request.recipient, request.recipient_id) {
-                        (Some(QuickLootRecipient::MainContainer), None) => Recipient::MainContainer,
-                        (Some(QuickLootRecipient::Container), Some(id)) => Recipient::Container(id),
-                        (Some(QuickLootRecipient::GoldPouch), Some(id)) => Recipient::GoldPouch(id),
+                if !matches!(request.action, QuickLootAction::Click | QuickLootAction::LootAll) {
+                    match request.action {
+                        QuickLootAction::ReviewDestinations => {
+                            let obtain = settings_owner::load_obtain(&mut tx, fence.character_id.as_bytes()).await?;
+                            let loot = std::iter::once((None, settings.unassigned_target))
+                                .chain(settings.category_targets.into_iter().map(|(key, target)| (Some(key), target)));
+                            let projection = QuickLootDestinations {
+                                loot: loot.map(destination_row).collect(),
+                                obtain: obtain.into_iter().map(destination_row).collect(),
+                                fallback_to_main: settings.fallback_to_main,
+                            };
+                            return wire::encode_quick_loot_destinations(&projection)
+                                .map_err(|_| DurabilityError::InvalidStoredState.into());
+                        }
+                        QuickLootAction::Assign | QuickLootAction::AssignLoot | QuickLootAction::AssignAllLoot | QuickLootAction::UnassignLoot => {
+                            if (request.category.is_some() || request.action == QuickLootAction::AssignAllLoot) && !premium {
+                                return refuse(LoopMoveRefusal::Rejected);
+                            }
+                            let target = if request.action == QuickLootAction::UnassignLoot {
+                                None
+                            } else {
+                                let target = assignment(request)?;
+                                recipient(&mut tx, fence.character_id, world, content, target).await?;
+                                settings.fallback_to_main = request.fallback_to_main;
+                                Some(target)
+                            };
+                            match (request.action, request.category, target) {
+                                (QuickLootAction::AssignAllLoot, _, Some(target)) => {
+                                    settings.unassigned_target = target;
+                                    for key in QuickLootCategory::ALL {
+                                        settings.category_targets.insert(category(key), target);
+                                    }
+                                }
+                                (_, Some(key), Some(target)) => {
+                                    settings.category_targets.insert(category(key), target);
+                                }
+                                (_, Some(key), None) => {
+                                    settings.category_targets.remove(&category(key));
+                                }
+                                (_, None, target) => {
+                                    settings.unassigned_target = target.unwrap_or(Recipient::MainContainer);
+                                }
+                            }
+                            let next: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                                .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                            let next = next.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
+                            settings_owner::store(&mut tx, fence.character_id, next, settings).await?;
+                            return Ok(Vec::new());
+                        }
+                        QuickLootAction::AssignObtain | QuickLootAction::AssignAllObtain | QuickLootAction::UnassignObtain => {
+                            if !premium {
+                                return refuse(LoopMoveRefusal::Rejected);
+                            }
+                            let target = if request.action == QuickLootAction::UnassignObtain {
+                                None
+                            } else {
+                                let target = assignment(request)?;
+                                recipient(&mut tx, fence.character_id, world, content, target).await?;
+                                Some(target)
+                            };
+                            let categories = if request.action == QuickLootAction::AssignAllObtain {
+                                std::iter::once(None).chain(QuickLootCategory::ALL.map(|key| Some(category(key)))).collect()
+                            } else {
+                                vec![request.category.map(category)]
+                            };
+                            for key in categories {
+                                settings_owner::set_obtain(&mut tx, fence.character_id.as_bytes(), key, target).await?;
+                            }
+                            return Ok(Vec::new());
+                        }
+                        QuickLootAction::Distribute => {
+                            if !premium {
+                                return refuse(LoopMoveRefusal::Rejected);
+                            }
+                            let source = request.corpse.ok_or(LoopError::Refused(LoopMoveRefusal::Stale))?;
+                            let mut context = (&mut tx, permit, &record, &node, &fence, command, content);
+                            let result = distribute(&mut context, source).await?;
+                            return wire::encode_quick_loot_result(&result)
+                                .map_err(|_| DurabilityError::InvalidStoredState.into());
+                        }
                         _ => return refuse(LoopMoveRefusal::Rejected),
-                    };
-                    recipient(&mut tx, fence.character_id, world, content, target).await?;
-                    if let Some(value) = request.category { settings.category_targets.insert(category(value), target); }
-                    else { settings.unassigned_target = target; }
-                    settings.fallback_to_main = request.fallback_to_main;
-                    let next: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-                        .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-                    let next = next.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
-                    settings_owner::store(&mut tx, fence.character_id, next, settings).await?;
-                    return Ok(QuickLootResult { items: Vec::new() });
+                    }
                 }
                 // A bounded tile query, ordered before LIMIT so distant corpses cannot mask nearby ones.
                 let x=i32::from_be_bytes(cell[0..4].try_into().map_err(|_| DurabilityError::InvalidStoredState)?);
@@ -202,7 +320,7 @@ impl DurabilityRoot {
                 }}
                 let corpses=sqlx::query("SELECT i.item_instance_id::text,g.spatial_position,(floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= r.materialized_at + 10000 OR r.corpse_top_damage_character_id=encode($7,'hex')::uuid OR EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=r.corpse_top_damage_character_id AND b.character_id=encode($7,'hex')::uuid)) AS loot_allowed FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_item_mint_receipts r USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND (g.spatial_position=ANY($3) OR g.spatial_position=ANY($8)) AND CASE WHEN g.map_revision=$9 AND game_ordinary_corpse_loop_ground(g.item_instance_id) THEN g.spatial_position=ANY($8) ELSE g.spatial_position=ANY($3) END AND (g.runtime_scope_ownership_generation=$4::text::numeric OR (g.runtime_scope_ownership_generation<$4::text::numeric AND (game_ordinary_corpse_loop_ground(g.item_instance_id) OR game_ordinary_corpse_drag_source(g.item_instance_id)))) AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY i.item_instance_id LIMIT $6 FOR UPDATE OF i")
                     .bind(world.as_slice()).bind(channel.as_bytes().as_slice()).bind(cells).bind(fence.scope_ownership_generation.get().to_string())
-                    .bind(request.corpse.as_ref().map(<[u8;16]>::as_slice)).bind(MAX_NEARBY_CORPSES as i64).bind(fence.character_id.as_bytes().as_slice()).bind(loop_cells).bind(loop_map_revision).fetch_all(&mut *tx).await?;
+                    .bind(selected_corpse.as_ref().map(<[u8;16]>::as_slice)).bind(MAX_NEARBY_CORPSES as i64).bind(fence.character_id.as_bytes().as_slice()).bind(loop_cells).bind(loop_map_revision).fetch_all(&mut *tx).await?;
                 let mut result=QuickLootResult { items: Vec::new() };
                 for corpse in corpses {
                     let corpse_id=uuid_text(corpse.try_get("item_instance_id")?)?;
@@ -211,16 +329,16 @@ impl DurabilityRoot {
                         .bind(corpse_id.as_slice()).bind((MAX_TRANSFERS_PER_COMMAND-result.items.len()) as i64).fetch_all(&mut *tx).await?;
                     let entries: Vec<_> = entries.into_iter().map(|entry| Ok((uuid_text(entry.try_get("item_instance_id")?)?, definition_of(&entry)?))).collect::<LoopResult<_>>()?;
                     let policy_settings = LootSettings { category_targets: settings.category_targets.clone(), unassigned_target: settings.unassigned_target, fallback_to_main: settings.fallback_to_main };
-                    let corpse = Corpse { key: corpse_id, distance: 0, age_millis: 0, top_damage_or_party: corpse.try_get("loot_allowed")?, items: entries.iter().map(|(item,definition)| LootItem { key: *item, category: content.loot_category(definition), is_coin: is_loot_coin(definition), allowed_by_filter: if settings.accept_only {settings.accepted_items.contains(&definition.production_key)} else {!settings.skipped_items.contains(&definition.production_key)} }).collect() };
+                    let corpse = Corpse { key: corpse_id, distance: 0, age_millis: 0, top_damage_or_party: corpse.try_get("loot_allowed")?, items: entries.iter().map(|(item,definition)| LootItem { key: *item, category: preferred_category(content, definition, |category| settings.category_targets.contains_key(&category)), is_coin: is_loot_coin(definition), allowed_by_filter: if settings.accept_only {settings.accepted_items.contains(&definition.production_key)} else {!settings.skipped_items.contains(&definition.production_key)} }).collect() };
                     let mode = if request.action == QuickLootAction::Click { ManualLootMode::Click } else { ManualLootMode::AllNearby };
-                    let plan = plan_manual_loot(mode, request.corpse, premium, &policy_settings, &[corpse]);
+                    let plan = plan_manual_loot(mode, selected_corpse, premium, &policy_settings, &[corpse]);
                     let base_ordinal = result.items.len();
                     let mut move_context = (&mut tx, permit, &record, &node, &fence, command, content, &entries, &settings, corpse_id, corpse_cell, base_ordinal);
                     let execution = execute_bounded_plan(&plan, &mut move_context, |context, move_| Box::pin(async move {
                         let (tx, permit, record, node, fence, command, content, entries, settings, corpse_id, corpse_cell, base_ordinal) = context;
                         let (index,(_,definition)) = entries.iter().enumerate().find(|(_, (item,_))| *item == move_.item).ok_or(DurabilityError::InvalidStoredState)?;
-                        let context=MoveContext { corpse:*corpse_id, cell:*corpse_cell, ordinal:i16::try_from(*base_ordinal+index+1).map_err(|_| DurabilityError::InvalidStoredState)? };
-                        let accepted=attempt_move(tx, permit, record, node, fence, *command, *content, context, move_.item, definition, move_.recipient, settings).await?;
+                        let context=MoveContext { source: MoveSource::Corpse { id: *corpse_id, cell: *corpse_cell }, ordinal:i16::try_from(*base_ordinal+index+1).map_err(|_| DurabilityError::InvalidStoredState)? };
+                        let accepted=attempt_move(tx, permit, record, node, fence, *command, *content, context, move_.item, definition, move_.recipient, settings.fallback_to_main).await?;
                         Ok::<_,LoopError>(if accepted { TransferCommit::Committed } else { TransferCommit::Refused })
                     })).await?;
                     for (item,_) in entries {
@@ -228,13 +346,15 @@ impl DurabilityRoot {
                     }
                     if result.items.len()==MAX_TRANSFERS_PER_COMMAND { break; }
                 }
-                Ok(result)
+                wire::encode_quick_loot_result(&result)
+                    .map_err(|_| DurabilityError::InvalidStoredState.into())
             }.await;
             match attempt {
                 Ok(result) => {
-                    let bytes=wire::encode_quick_loot_result(&result).map_err(|_| DurabilityError::InvalidStoredState)?;
-                    sqlx::query("INSERT INTO game_quick_loot_receipts(game_session_id,command_id,character_id,request,result) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,$5)")
-                        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(encoded).bind(bytes).execute(&mut *tx).await?;
+                    if request.action != QuickLootAction::ReviewDestinations {
+                        sqlx::query("INSERT INTO game_quick_loot_receipts(game_session_id,command_id,character_id,request,result) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,$5)")
+                        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(encoded).bind(&result).execute(&mut *tx).await?;
+                    }
                     super::super::db::commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(result))
                 }
@@ -242,6 +362,88 @@ impl DurabilityRoot {
             }
         })).await
     }
+}
+
+fn assignment(request: QuickLootRequest) -> LoopResult<Recipient<[u8; 16]>> {
+    match (request.recipient, request.recipient_id) {
+        (Some(QuickLootRecipient::MainContainer), None) => Ok(Recipient::MainContainer),
+        (Some(QuickLootRecipient::Container), Some(id)) => Ok(Recipient::Container(id)),
+        (Some(QuickLootRecipient::GoldPouch), Some(id)) => Ok(Recipient::GoldPouch(id)),
+        _ => refuse(LoopMoveRefusal::Rejected),
+    }
+}
+
+fn destination_row((category, target): (Option<LootCategory>, Recipient<[u8; 16]>)) -> QuickLootDestination {
+    let category = category.map(|key| QuickLootCategory::ALL[key as usize]);
+    let (recipient, recipient_id) = match target {
+        Recipient::MainContainer => (QuickLootRecipient::MainContainer, None),
+        Recipient::Container(id) => (QuickLootRecipient::Container, Some(id)),
+        Recipient::GoldPouch(id) => (QuickLootRecipient::GoldPouch, Some(id)),
+    };
+    QuickLootDestination { category, recipient, recipient_id }
+}
+
+pub(super) fn preferred_category<C: ItemLoopContent>(
+    content: &C,
+    definition: &TypedDefinitionRef,
+    assigned: impl FnOnce(LootCategory) -> bool,
+) -> LootCategory {
+    content.managed_item_category(definition).filter(|&category| assigned(category))
+        .unwrap_or_else(|| content.loot_category(definition))
+}
+
+type BatchContext<'a, 'tx, C> = (
+    &'a mut Transaction<'tx, Postgres>,
+    &'a SpellLanePermit,
+    &'a crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    &'a NodeIncarnationProof,
+    &'a CurrentCharacterItemFence,
+    CommandRef,
+    &'a C,
+);
+
+async fn distribute<C: ItemLoopContent>(
+    context: &mut BatchContext<'_, '_, C>,
+    source: [u8; 16],
+) -> LoopResult<QuickLootResult> {
+    let (tx, permit, record, node, fence, command, content) = context;
+    let world = *fence.runtime_scope.world_id().as_bytes();
+    recipient(tx, fence.character_id, world, *content, Recipient::Container(source)).await?;
+    let targets = settings_owner::load_obtain(tx, fence.character_id.as_bytes()).await?;
+    let rows = sqlx::query(
+        "SELECT i.item_instance_id::text, i.definition_family, i.definition_production_key,
+                i.definition_revision_ref
+         FROM (
+            SELECT item_instance_id, placement_ordinal FROM game_item_container_entries
+            WHERE parent_item_instance_id=encode($1,'hex')::uuid
+            UNION ALL
+            SELECT item_instance_id, placement_ordinal FROM game_item_nested_entries
+            WHERE parent_item_instance_id=encode($1,'hex')::uuid
+         ) e JOIN game_item_instances i USING (item_instance_id)
+         WHERE i.lifecycle=1 AND i.world_id=encode($2,'hex')::uuid
+         ORDER BY e.placement_ordinal, i.item_instance_id LIMIT $3 FOR UPDATE OF i",
+    )
+    .bind(source.as_slice()).bind(world.as_slice()).bind(MAX_TRANSFERS_PER_COMMAND as i64)
+    .fetch_all(&mut ***tx).await?;
+    let mut items = Vec::with_capacity(rows.len());
+    for (index, row) in rows.iter().enumerate() {
+        let item = uuid_text(row.try_get("item_instance_id")?)?;
+        let definition = definition_of(row)?;
+        let category = preferred_category(*content, &definition, |category| targets.contains_key(&Some(category)));
+        let target = targets.get(&Some(category)).or_else(|| targets.get(&None));
+        let accepted = if let Some(&target) = target {
+            let context = MoveContext {
+                source: MoveSource::Carried(source),
+                ordinal: i16::try_from(index + 1).map_err(|_| DurabilityError::InvalidStoredState)?,
+            };
+            attempt_move(tx, permit, record, node, fence, *command, *content, context,
+                item, &definition, target, false).await?
+        } else {
+            false
+        };
+        items.push(QuickLootItemResult { item, accepted });
+    }
+    Ok(QuickLootResult { items })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -257,10 +459,10 @@ async fn attempt_move<C: ItemLoopContent>(
     item: [u8; 16],
     definition: &TypedDefinitionRef,
     target: Recipient<[u8; 16]>,
-    settings: &DurableQuickLootSettings,
+    fallback_to_main: bool,
 ) -> LoopResult<bool> {
     let mut targets = vec![target];
-    if settings.fallback_to_main && target != Recipient::MainContainer {
+    if fallback_to_main && target != Recipient::MainContainer {
         targets.push(Recipient::MainContainer);
     }
     for target in targets {
@@ -279,6 +481,16 @@ async fn attempt_move<C: ItemLoopContent>(
                 target,
             )
             .await?;
+            if let MoveSource::Carried(source) = context.source {
+                let destination_id = match destination {
+                    LoopDestination::Container(id) => Some(id),
+                    LoopDestination::MainBackpack => load_slot(tx, fence.character_id).await?.map(|slot| slot.item_instance_id),
+                    LoopDestination::Ground(_) => None,
+                };
+                if destination_id == Some(source) {
+                    return refuse(LoopMoveRefusal::NotSupported);
+                }
+            }
             let request = LoopMoveRequest {
                 item,
                 count: None,
@@ -297,7 +509,7 @@ async fn attempt_move<C: ItemLoopContent>(
                 &request,
                 &intent,
                 None,
-                Some(context),
+                Some(MoveBatch::QuickLoot(context)),
                 None,
                 None,
             )

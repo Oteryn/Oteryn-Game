@@ -370,7 +370,8 @@ fn queries_round_trip_within_62_bytes_and_fail_closed() {
         vec![0x1a, 0x03, 0x0a, 0x01, 0x05],
         vec![0x0a, 0x02, 0x08, 0x01],
         vec![0x12, 0x02, 0x10, 0x01],
-        vec![0x2a, 0x00],
+        vec![0x2a, 0x00], // a tracked mission requires a one-mission line
+        vec![0x32, 0x00], // unknown field
         vec![0x22, 0x02, 0x08, 0x01],
     ] {
         assert_eq!(
@@ -573,4 +574,30 @@ fn personal_map_mark_round_trip_and_bounds() {
         .is_err()
     );
     assert!(decode_quest_log(&[0x22, 0]).is_err());
+}
+
+#[test]
+fn mission_tracking_codec_checks_distinct_pairs_and_the_premium_bound() {
+    let pairs: Vec<_> = (0..25)
+        .map(|mission_index| TrackedMission {
+            quest_index: u32::MAX,
+            mission_index: u32::MAX - mission_index,
+        })
+        .collect();
+    let encoded = encode_quest_mission_track(&pairs).expect("mission replacement");
+    assert_eq!(encoded.len(), MAX_QUEST_MISSION_TRACK_BYTES);
+    assert_eq!(decode_quest_mission_track(&encoded), Ok(pairs.clone()));
+    assert_eq!(decode_quest_mission_track(&[]), Ok(Vec::new()));
+    assert!(encode_quest_mission_track(&[pairs[0], pairs[0]]).is_err());
+    assert!(decode_quest_mission_track(&[10, 2, 8, 0]).is_err());
+
+    let mut over = pairs;
+    over.push(TrackedMission {
+        quest_index: 0,
+        mission_index: 0,
+    });
+    assert_eq!(
+        encode_quest_mission_track(&over),
+        Err(QuestLogWireError::LimitExceeded)
+    );
 }

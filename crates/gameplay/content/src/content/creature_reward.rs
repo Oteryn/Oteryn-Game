@@ -534,7 +534,7 @@ impl CreatureRewardTable {
         section: Option<&LootTablesSection>,
         items: Option<&super::native_gameplay::ItemProfilesDocument>,
     ) -> Self {
-        let verified = verified_soul_war_corpses(items);
+        let verified = verified_source_corpses(items);
         section.map_or_else(Self::default, |section| {
             Self::build_with_native_corpses(creatures, section, canonical_races(), &verified)
         })
@@ -880,7 +880,7 @@ fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
                 }))
 }
 
-fn verified_soul_war_corpses(
+fn verified_source_corpses(
     items: Option<&super::native_gameplay::ItemProfilesDocument>,
 ) -> HashSet<String> {
     use super::native_gameplay::{NativeItemDestination, NativeItemStackClass};
@@ -1451,7 +1451,7 @@ mod source_48_corpse_tests {
         // The exact source closure includes sixteen48-capacity bodies and
         // five plain bodies; unrelated admitted Items remain excluded.
         assert_eq!(
-            verified_soul_war_corpses(Some(&items)),
+            verified_source_corpses(Some(&items)),
             std::collections::HashSet::from(
                 [
                     "oteryn:item.tibia.i33792",
@@ -1490,14 +1490,14 @@ mod source_48_corpse_tests {
             .admission
             .legal_destinations
             .push(NativeItemDestination::CharacterInventory);
-        assert!(!verified_soul_war_corpses(Some(&items)).contains(greed_key));
+        assert!(!verified_source_corpses(Some(&items)).contains(greed_key));
         items.records[original] = record.clone();
         if let F::Known(container) = &mut items.records[original].semantics.container {
             container.capacity = F::Known(47);
         }
-        assert!(!verified_soul_war_corpses(Some(&items)).contains(greed_key));
+        assert!(!verified_source_corpses(Some(&items)).contains(greed_key));
         items.records[original] = record;
-        assert!(verified_soul_war_corpses(Some(&items)).contains(greed_key));
+        assert!(verified_source_corpses(Some(&items)).contains(greed_key));
         let mut profile: ProjectV2CreatureAuthoring = serde_json::from_value(serde_json::json!({
             "details": {
                 "display_name":"Goshnar's Greed","inspection":"","defense":0,"critical_chance_ppm":0,
@@ -1871,12 +1871,19 @@ mod ordinary_corpse_slice2_tests {
         let source: SourceAdmission = serde_json::from_slice(SOURCE)?;
         assert_eq!(source.admissions.len(), 283);
         for (creature, id) in source.admissions {
-            let key = format!("oteryn:item.tibia.i{id}");
+            let captured_key = format!("oteryn:item.tibia.i{id}");
             let record = source
                 .records
                 .iter()
-                .find(|record| record.production_definition.production_key == key)
+                .find(|record| record.production_definition.production_key == captured_key)
                 .ok_or("source Item record")?;
+            let key = if creature == "oteryn:creature.koshei_the_deathless" {
+                // The quest uses the fresh seven-slot body from the same source chain.
+                assert_eq!(id, 7538);
+                "oteryn:item.tibia.i7535".to_owned()
+            } else {
+                captured_key
+            };
             let plain = match &record.semantics.container {
                 F::Known(container) => {
                     let facts = loot.items.iter().find(|facts| facts.item.key == key);

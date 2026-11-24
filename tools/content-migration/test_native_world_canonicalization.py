@@ -178,11 +178,51 @@ class NativeWorldCompletion(unittest.TestCase):
         native.assert_called_once()
         self.assertEqual(canonical.read_documents(default_world), self.original)
 
-    def test_qualification_installs_travel_before_native_serialization(self):
+    def test_qualification_installs_travel_and_trades_before_native_serialization(self):
+        item = {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3361",
+            "revision": "fixture-r1",
+        }
+        service = {"key": "oteryn:service.trade.dixi", "revision": "fixture-r1"}
+        offer = {"item": item, "direction": "SellToPlayer", "unit_price": 31}
+        self.write(
+            self.world / "definitions/reference.json",
+            encode({"records": [{"kind": "Item", "identity": item}]}),
+        )
+        self.write(
+            self.world / "definitions/declarations.json",
+            encode(
+                {
+                    "records": [
+                        {"kind": "Service", "identity": service, "offers": [offer]},
+                        {
+                            "kind": "NPC",
+                            "identity": {"key": "oteryn:npc.dixi"},
+                            "services": [service],
+                        },
+                    ],
+                    "authoring_profiles": [],
+                }
+            ),
+        )
+
         def native(command, **kwargs):
             staging = Path(command[command.index("--input-root") + 1])
             install_buddel.assert_called_once_with(self.repo, staging)
             project_routes.assert_called_once_with(self.repo, staging)
+            capture.assert_called_once_with(self.repo)
+            locator = "definitions/declarations.json"
+            declarations = (staging / locator).read_bytes()
+            self.assertEqual(
+                json.loads(declarations)["records"][0]["offers"],
+                [dict(offer, unit_price=25)],
+            )
+            manifest = json.loads((staging / "manifest.json").read_bytes())
+            (seal,) = [
+                row for row in manifest["documents"] if row["locator"] == locator
+            ]
+            self.assertEqual(seal["sha256"], hashlib.sha256(declarations).hexdigest())
             return self.native_output(command, **kwargs)
 
         argv = [
@@ -196,6 +236,10 @@ class NativeWorldCompletion(unittest.TestCase):
             patch.object(sys, "argv", argv),
             patch("buddel_travel.install_buddel") as install_buddel,
             patch("travel_route_corrections.project_routes") as project_routes,
+            patch(
+                "import_cyclopedia_global.load_capture",
+                return_value={3361: {"npc_buy_from": [{"npc": "Dixi", "price": 25}]}},
+            ) as capture,
             patch.object(canonical.subprocess, "run", side_effect=native),
         ):
             canonical.main()

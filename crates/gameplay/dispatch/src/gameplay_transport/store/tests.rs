@@ -243,3 +243,26 @@ fn store_capability_requires_a_composed_platform_client() {
     assert!(!with_store_offer(BASE, false).iter().any(|row| row.id == wire::CAPABILITY_STORE_V1));
     assert!(with_store_offer(BASE, true).iter().any(|row| row.id == wire::CAPABILITY_STORE_V1));
 }
+
+#[test]
+fn store_extensions_fit_full_bundle_admission_selection() -> Result<(), Box<dyn std::error::Error>>
+{
+    use super::super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
+    use super::super::world_required_capabilities::RequiredCapabilities;
+
+    let offered = with_store_offer(BUNDLE_WORLD_OFFERED_CAPABILITIES, true);
+    let supported: Vec<_> = offered.iter().map(|row| row.id).collect();
+    let required = RequiredCapabilities::for_boot(&[], &supported, offered, &[])
+        .map_err(|error| format!("{error:?}"))?;
+    let selected = required
+        .select_for_session(&supported, &[])
+        .map_err(|error| format!("{error:?}"))?;
+    for id in [
+        oteryn_protocol_oteryn::player_report::CAPABILITY_RULE_VIOLATION_V1,
+        wire::browse::CAPABILITY_HOME_V1,
+        wire::CAPABILITY_NAME_INPUT_V1,
+    ] {
+        assert!(selected.contains(id), "capability {id} was dropped");
+    }
+    Ok(())
+}

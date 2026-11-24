@@ -1,0 +1,371 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.serpentine_tower_quest",
+      "recipe_sha256": "bd4f995f9de9279530a7ac3395deaef1aed9cdc69f665acd231ce7cb2db88a2a",
+      "admission": {
+        "minimum_level": 0,
+        "premium": true
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/0/definition/oteryn_recipe/payload/recipe:sha256:bd4f995f9de9279530a7ac3395deaef1aed9cdc69f665acd231ce7cb2db88a2a",
+        "https://www.tibiawiki.com.br/index.php?title=Serpentine_Tower_Quest&oldid=324884",
+        "Chosen trial uses the donor portal destination without the optional pot puzzle and retains the donor return portal.",
+        "The lever retains the four wall cells. A blocked closing cell refuses the toggle through the existing World occupancy check.",
+        "WorldPlacement.Base, region-z07/z08/z09-x129-y128.b3; exact top-level ordinals replace donor startup AIDs."
+      ],
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/authored/serpentine-tower/stage",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 5
+        }
+      ],
+      "stages": [
+        {
+          "key": "enter",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-serpentine-tower-enter",
+              "quest": "oteryn:quest.serpentine_tower_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": null,
+                "unique": null,
+                "action": null,
+                "appearance": null,
+                "native": {
+                  "position": {
+                    "x": 33148,
+                    "y": 32864,
+                    "floor": -7
+                  },
+                  "ordinal": 1,
+                  "appearance": 1949
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33151,
+                "y": 32864,
+                "floor": -7
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/serpentine-tower/stage",
+                  "minimum": 0,
+                  "maximum": 5,
+                  "set": 1,
+                  "at_least": true
+                }
+              ],
+              "premium_required": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/0/definition/oteryn_recipe/payload/recipe:sha256:bd4f995f9de9279530a7ac3395deaef1aed9cdc69f665acd231ce7cb2db88a2a",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/teleport.lua#L44-L48",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/white_pearl/movements_white_pearl.lua#L26-L35"
+              ]
+            }
+          }
+        },
+        {
+          "key": "exit",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-serpentine-tower-exit",
+              "quest": "oteryn:quest.serpentine_tower_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": null,
+                "unique": null,
+                "action": null,
+                "appearance": null,
+                "native": {
+                  "position": {
+                    "x": 33150,
+                    "y": 32864,
+                    "floor": -7
+                  },
+                  "ordinal": 1,
+                  "appearance": 1949
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33147,
+                "y": 32864,
+                "floor": -7
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/serpentine-tower/stage",
+                  "minimum": 1,
+                  "maximum": 5,
+                  "set": 1,
+                  "read_only": true
+                }
+              ],
+              "premium_required": false,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": null,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/0/definition/oteryn_recipe/payload/recipe:sha256:bd4f995f9de9279530a7ac3395deaef1aed9cdc69f665acd231ce7cb2db88a2a",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/teleport.lua#L49-L53",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/white_pearl/movements_white_pearl.lua#L7-L10"
+              ]
+            }
+          }
+        },
+        {
+          "key": "torch",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-serpentine-tower-torch",
+              "quest": "oteryn:quest.serpentine_tower_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33151,
+                  "y": 32861,
+                  "floor": -7
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 2928,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [
+                {
+                  "position": {
+                    "x": 33151,
+                    "y": 32866,
+                    "floor": -8
+                  },
+                  "appearance": 1345
+                }
+              ],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/serpentine-tower/stage",
+                  "minimum": 1,
+                  "maximum": 5,
+                  "set": 2,
+                  "at_least": true
+                }
+              ],
+              "premium_required": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/0/definition/oteryn_recipe/payload/recipe:sha256:bd4f995f9de9279530a7ac3395deaef1aed9cdc69f665acd231ce7cb2db88a2a",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item.lua#L1421-L1425",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_serpentine_tower_torch.lua#L2-L13"
+              ]
+            }
+          }
+        },
+        {
+          "key": "lever",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-serpentine-tower-lever",
+              "quest": "oteryn:quest.serpentine_tower_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33152,
+                  "y": 32866,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 2772,
+                "ordinal": 1
+              },
+              "lever": [
+                2772,
+                2773
+              ],
+              "reversible": true,
+              "passages": [
+                {
+                  "position": {
+                    "x": 33148,
+                    "y": 32867,
+                    "floor": -9
+                  },
+                  "appearance": 2129
+                },
+                {
+                  "position": {
+                    "x": 33148,
+                    "y": 32868,
+                    "floor": -9
+                  },
+                  "appearance": 2129
+                },
+                {
+                  "position": {
+                    "x": 33149,
+                    "y": 32867,
+                    "floor": -9
+                  },
+                  "appearance": 2129
+                },
+                {
+                  "position": {
+                    "x": 33149,
+                    "y": 32868,
+                    "floor": -9
+                  },
+                  "appearance": 2129
+                }
+              ],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/serpentine-tower/stage",
+                  "minimum": 2,
+                  "maximum": 5,
+                  "set": 3,
+                  "at_least": true
+                }
+              ],
+              "premium_required": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/0/definition/oteryn_recipe/payload/recipe:sha256:bd4f995f9de9279530a7ac3395deaef1aed9cdc69f665acd231ce7cb2db88a2a",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/lever.lua#L79-L83",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_serpentine_tower_lever.lua#L1-L33"
+              ]
+            }
+          }
+        },
+        {
+          "key": "passage",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-serpentine-tower-passage",
+              "quest": "oteryn:quest.serpentine_tower_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 33148,
+                  "y": 32868,
+                  "floor": -9
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 422,
+                "ordinal": 0
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/serpentine-tower/stage",
+                  "minimum": 3,
+                  "maximum": 5,
+                  "set": 4,
+                  "at_least": true
+                }
+              ],
+              "premium_required": true,
+              "completes": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/0/definition/oteryn_recipe/payload/recipe:sha256:bd4f995f9de9279530a7ac3395deaef1aed9cdc69f665acd231ce7cb2db88a2a",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/others/actions_serpentine_tower_lever.lua#L1-L19"
+              ]
+            }
+          }
+        },
+        {
+          "key": "pearl",
+          "completes": true,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-serpentine-tower-pearl",
+              "quest": "oteryn:quest.serpentine_tower_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33150,
+                  "y": 32862,
+                  "floor": -7
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 2472,
+                "ordinal": 1
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/serpentine-tower/stage",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                }
+              ],
+              "premium_required": true,
+              "completes": true,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/0/definition/oteryn_recipe/payload/recipe:sha256:bd4f995f9de9279530a7ac3395deaef1aed9cdc69f665acd231ce7cb2db88a2a",
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2025-L2031"
+              ],
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i3026",
+                  "count": 1,
+                  "contents": []
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

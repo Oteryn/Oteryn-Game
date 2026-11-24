@@ -4,6 +4,14 @@ use crate::map::facts::QuestCallbackProjection;
 use oteryn_gameplay_quests::quest::world_callbacks::TargetTransform;
 
 impl PendingCallbacks {
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) fn reserved_target_for_test(
+        &self,
+        session: GameSessionId,
+    ) -> Option<u64> {
+        self.records.lock().ok()?.get(&session)?.projection_target
+    }
+
     /// An uncertain durable commit reserves both objects until its original cause settles.
     pub(in crate::gameplay_transport) fn source_target_available(
         &self,

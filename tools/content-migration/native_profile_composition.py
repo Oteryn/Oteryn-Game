@@ -78,6 +78,18 @@ def compact_item_profile(row):
     }
     if compact.get("production_binding_qualification") is None:
         compact.pop("production_binding_qualification", None)
+    classification = compact["semantics"].get("classification", {})
+    if (
+        classification.get("state") == "KNOWN"
+        and classification["value"].get("capabilities") == {"state": "UNKNOWN"}
+    ):
+        compact["semantics"]["classification"] = {
+            **classification,
+            "value": {
+                key: value for key, value in classification["value"].items()
+                if key != "capabilities"
+            },
+        }
     return compact
 
 

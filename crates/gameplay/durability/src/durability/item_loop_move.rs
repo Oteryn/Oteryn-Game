@@ -80,6 +80,7 @@ pub const ITEM_LOOP_DROP_REF_PREFIX: &[u8] = b"OTERYN_ITEM_LOOP_DROP/v1:";
 
 #[path = "container_sort.rs"]
 pub mod container_sort;
+pub mod managed_container_move;
 
 const KIND_NONE: i16 = 0;
 const KIND_MAIN: i16 = 1;
@@ -93,7 +94,7 @@ const KIND_INBOX: i16 = 6;
 const KIND_CUSTODY_NESTED: i16 = 7;
 #[path = "item_quick_loot.rs"]
 mod quick_loot;
-pub use quick_loot::is_loot_coin;
+pub use quick_loot::{QuickLootCommand, QuickLootInput, is_loot_coin};
 pub(super) use quick_loot::pouch_weight;
 #[path = "depot_move.rs"]
 mod depot_move;
@@ -231,6 +232,13 @@ pub trait ItemLoopContent: ItemWeightLookup {
     fn is_ammunition(&self, _definition: &TypedDefinitionRef) -> bool {
         false
     }
+    fn managed_item_category(
+        &self,
+        _definition: &TypedDefinitionRef,
+    ) -> Option<oteryn_gameplay_items::quick_loot::LootCategory> {
+        None
+    }
+
     fn loot_category(
         &self,
         _definition: &TypedDefinitionRef,
@@ -338,7 +346,7 @@ fn definition_of(row: &sqlx::postgres::PgRow) -> LoopResult<TypedDefinitionRef> 
 }
 
 /// The per-CommandRef serialization point of the loop writer and its replay read.
-async fn lock_loop_command(
+pub(super) async fn lock_loop_command(
     tx: &mut Transaction<'_, Postgres>,
     command: CommandRef,
 ) -> std::result::Result<(), sqlx::Error> {
@@ -1067,6 +1075,12 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     })
 }
 
+#[derive(Clone, Copy)]
+enum MoveBatch {
+    QuickLoot(quick_loot::MoveContext),
+    Managed(i16),
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn apply_loop_move<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
@@ -1079,7 +1093,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     request: &LoopMoveRequest,
     intent: &[u8],
     depot: Option<DepotMove>,
-    quick: Option<quick_loot::MoveContext>,
+    batch: Option<MoveBatch>,
     search: Option<i16>,
     house: Option<&house::HouseLoopContext>,
 ) -> LoopResult<LoopMoveReceipt> {
@@ -1126,7 +1140,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
         return refuse(LoopMoveRefusal::Stale);
     };
     let row = sqlx::query(
-        "SELECT e.character_id::text AS entry_character, \
+        "SELECT e.character_id::text AS entry_character, e.parent_item_instance_id::text AS entry_parent, \
                 d.character_id::text AS depot_character, d.town_id, d.box_number, \
                 x.character_id::text AS inbox_character, \
                 n.parent_item_instance_id::text AS nested_parent, \
@@ -1163,8 +1177,19 @@ async fn apply_loop_move<C: ItemLoopContent>(
     }
     let depot_character = optional_uuid(row.try_get("depot_character")?)?;
     let inbox_character = optional_uuid(row.try_get("inbox_character")?)?;
-    let source = if let Some(context) = quick {
-        quick_loot::assert_corpse_source(tx, fence, request.item, context).await?;
+    let quick_source = match batch {
+        Some(MoveBatch::QuickLoot(context)) => Some(context.source),
+        _ => None,
+    };
+    if let Some(quick_loot::MoveSource::Carried(expected)) = quick_source {
+        let main = entry_character == Some(*character.as_bytes())
+            && optional_uuid(row.try_get("entry_parent")?)? == Some(expected);
+        if !main && nested_parent != Some(expected) {
+            return refuse(LoopMoveRefusal::Stale);
+        }
+    }
+    let source = if let Some(quick_loot::MoveSource::Corpse { id, cell }) = quick_source {
+        quick_loot::assert_corpse_source(tx, fence, request.item, id, cell).await?;
         SourceKind::Corpse
     } else if search.is_some() && depot_character.is_none() {
         // Depot search: an Inbox root, or an entry nested under a depot or Inbox root.
@@ -1515,7 +1540,11 @@ async fn apply_loop_move<C: ItemLoopContent>(
     .bind(intent)
     .bind(depot.map(|access| i32::from(access.town)))
     .bind(depot.map(|access| i16::from(access.box_number)))
-    .bind(quick.map_or(search.unwrap_or(0), |q| q.ordinal))
+    .bind(match batch {
+        Some(MoveBatch::QuickLoot(context)) => context.ordinal,
+        Some(MoveBatch::Managed(ordinal)) => ordinal,
+        None => search.unwrap_or(0),
+    })
     .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
     .execute(&mut **tx)
     .await?;
@@ -1680,7 +1709,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     // Run the deferred proofs inside the attempt, so a violation is a refusal, not a commit error.
     // A quick-loot or depot-search batch proves each exact line before the next child may top
     // it up. Its terminal parent receipt and all other deferred guards still run at batch commit.
-    sqlx::query(if quick.is_some() || search.is_some() {
+    sqlx::query(if batch.is_some() || search.is_some() {
         "SET CONSTRAINTS game_item_loop_line_proven IMMEDIATE"
     } else {
         "SET CONSTRAINTS ALL IMMEDIATE"

@@ -1,0 +1,4 @@
+name=follow_state
+commands=6371
+[route]
+target_move::follow_state(authority, session, command.payload).await

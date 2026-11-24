@@ -6,6 +6,7 @@ use crate::charm_wire::{
 use crate::world_spatial_entities::EntityRef;
 
 pub const CAPABILITY_PLAYER_TRADE_V1: u32 = 60;
+pub const CAPABILITY_PLAYER_TRADE_ARTWORK_V1: u32 = 590;
 pub const COMMAND_TYPE_PLAYER_TRADE_INTENT: u32 = 78;
 pub const STATE_DOMAIN_PLAYER_TRADE: u32 = 26;
 pub const MAX_INTENT_BYTES: usize = 64;
@@ -75,6 +76,7 @@ pub struct Offer {
     pub definition: u32,
     pub count: u32,
     pub sub_type: u32,
+    pub appearance_id: Option<std::num::NonZeroU16>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {
@@ -215,13 +217,16 @@ pub fn decode_intent(bytes: &[u8]) -> Result<Intent, Error> {
     encode_intent(intent)?;
     Ok(intent)
 }
-fn offer(value: Offer) -> Result<Vec<u8>, Error> {
+fn offer(value: Offer, artwork: bool) -> Result<Vec<u8>, Error> {
     if value.definition == 0 || value.count == 0 || value.count > 100 {
         return Err(Error::Malformed);
     }
     let mut out = Vec::new();
     for (field, n) in [(1, value.definition), (2, value.count), (3, value.sub_type)] {
         push_varint_field(&mut out, field, n.into());
+    }
+    if let Some(id) = value.appearance_id.filter(|_| artwork) {
+        push_varint_field(&mut out, 4, u64::from(id.get()));
     }
     Ok(out)
 }
@@ -231,6 +236,14 @@ pub fn encode_state(state: &State) -> Result<Vec<u8>, Error> {
 
 /// Capability 501 adds the complete frozen contents on each disclosed side.
 pub fn encode_state_for(state: &State, details: bool) -> Result<Vec<u8>, Error> {
+    encode_state_negotiated(state, details, false)
+}
+
+pub fn encode_state_negotiated(
+    state: &State,
+    details: bool,
+    artwork: bool,
+) -> Result<Vec<u8>, Error> {
     if !(1..=4).contains(&state.phase)
         || state.reason > 5
         || (state.phase == 4) != (state.reason != 0)
@@ -252,10 +265,10 @@ pub fn encode_state_for(state: &State, details: bool) -> Result<Vec<u8>, Error> 
         push_message_field(&mut out, 2, &entity(value)?);
     }
     if let Some(value) = state.own {
-        push_message_field(&mut out, 3, &offer(value)?);
+        push_message_field(&mut out, 3, &offer(value, artwork)?);
     }
     if let Some(value) = state.counter {
-        push_message_field(&mut out, 4, &offer(value)?);
+        push_message_field(&mut out, 4, &offer(value, artwork)?);
     }
     for (field, value) in [
         (5, u64::from(state.accepted[0])),
@@ -272,7 +285,7 @@ pub fn encode_state_for(state: &State, details: bool) -> Result<Vec<u8>, Error> 
             check_contents(tree, if side == 0 { state.own } else { state.counter })?;
             for node in tree {
                 let mut body = Vec::new();
-                push_message_field(&mut body, 1, &offer(node.item)?);
+                push_message_field(&mut body, 1, &offer(node.item, artwork)?);
                 push_varint_field(
                     &mut body,
                     2,
@@ -301,6 +314,10 @@ pub fn decode_state(bytes: &[u8]) -> Result<State, Error> {
 
 /// Decode only the tree extension negotiated for this session.
 pub fn decode_state_for(bytes: &[u8], details: bool) -> Result<State, Error> {
+    decode_state_negotiated(bytes, details, false)
+}
+
+pub fn decode_state_negotiated(bytes: &[u8], details: bool, artwork: bool) -> Result<State, Error> {
     let mut contents: [Vec<ContentsItem>; 2] = Default::default();
     if bytes.len()
         > if details {
@@ -319,8 +336,11 @@ pub fn decode_state_for(bytes: &[u8], details: bool) -> Result<State, Error> {
         match read_varint(bytes, &mut at)? {
             10 => set_once(&mut trade_id, id(read_bytes(bytes, &mut at)?)?)?,
             18 => set_once(&mut partner, read_entity(read_bytes(bytes, &mut at)?)?)?,
-            26 => set_once(&mut own, read_offer(read_bytes(bytes, &mut at)?)?)?,
-            34 => set_once(&mut counter, read_offer(read_bytes(bytes, &mut at)?)?)?,
+            26 => set_once(&mut own, read_offer(read_bytes(bytes, &mut at)?, artwork)?)?,
+            34 => set_once(
+                &mut counter,
+                read_offer(read_bytes(bytes, &mut at)?, artwork)?,
+            )?,
             40 => set_once(&mut accepted_own, boolean(read_varint(bytes, &mut at)?)?)?,
             48 => set_once(
                 &mut accepted_counter,
@@ -341,7 +361,7 @@ pub fn decode_state_for(bytes: &[u8], details: bool) -> Result<State, Error> {
                 if tree.len() == MAX_CONTENTS_ITEMS {
                     return Err(Error::LimitExceeded);
                 }
-                tree.push(read_contents_item(read_bytes(bytes, &mut at)?)?);
+                tree.push(read_contents_item(read_bytes(bytes, &mut at)?, artwork)?);
             }
             _ => return Err(Error::Malformed),
         }
@@ -361,7 +381,7 @@ pub fn decode_state_for(bytes: &[u8], details: bool) -> Result<State, Error> {
         message: message.unwrap_or_default(),
         look: look.unwrap_or_default(),
     };
-    encode_state_for(&state, details)?;
+    encode_state_negotiated(&state, details, artwork)?;
     Ok(state)
 }
 
@@ -380,14 +400,15 @@ fn text(bytes: &[u8], limit: usize) -> Result<String, Error> {
     String::from_utf8(bytes.to_vec()).map_err(|_| Error::Malformed)
 }
 
-fn read_offer(bytes: &[u8]) -> Result<Offer, Error> {
-    let (mut definition, mut count, mut sub_type) = (None, None, None);
+fn read_offer(bytes: &[u8], artwork: bool) -> Result<Offer, Error> {
+    let (mut definition, mut count, mut sub_type, mut appearance_id) = (None, None, None, None);
     let mut at = 0;
     while at < bytes.len() {
         let slot = match read_varint(bytes, &mut at)? {
             8 => &mut definition,
             16 => &mut count,
             24 => &mut sub_type,
+            32 if artwork => &mut appearance_id,
             _ => return Err(Error::Malformed),
         };
         set_once(
@@ -399,8 +420,16 @@ fn read_offer(bytes: &[u8]) -> Result<Offer, Error> {
         definition: definition.ok_or(Error::Malformed)?,
         count: count.ok_or(Error::Malformed)?,
         sub_type: sub_type.unwrap_or_default(),
+        appearance_id: appearance_id
+            .map(|id| {
+                u16::try_from(id)
+                    .ok()
+                    .and_then(std::num::NonZeroU16::new)
+                    .ok_or(Error::Malformed)
+            })
+            .transpose()?,
     };
-    offer(value)?;
+    offer(value, artwork)?;
     Ok(value)
 }
 
@@ -460,12 +489,12 @@ fn check_contents(tree: &[ContentsItem], root: Option<Offer>) -> Result<(), Erro
     }
     Ok(())
 }
-fn read_contents_item(bytes: &[u8]) -> Result<ContentsItem, Error> {
+fn read_contents_item(bytes: &[u8], artwork: bool) -> Result<ContentsItem, Error> {
     let (mut item, mut parent, mut name) = (None, None, None);
     let mut at = 0;
     while at < bytes.len() {
         match read_varint(bytes, &mut at)? {
-            10 => set_once(&mut item, read_offer(read_bytes(bytes, &mut at)?)?)?,
+            10 => set_once(&mut item, read_offer(read_bytes(bytes, &mut at)?, artwork)?)?,
             16 => set_once(
                 &mut parent,
                 u8::try_from(read_varint(bytes, &mut at)?).map_err(|_| Error::Malformed)?,

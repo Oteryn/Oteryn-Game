@@ -1,5 +1,5 @@
 name=analyser_party
-commands=735
+commands=735,6357,6358,6359
 transport=analyser_party
 composed=analyser_party
 authority=analyser_party

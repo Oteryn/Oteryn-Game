@@ -158,14 +158,18 @@ def apply_items(root, items, provider_order, shared_ids):
         else:
             items["records"].append(record)
     present = {
-        row["production_definition"]["production_key"] for row in items["records"]
+        row["production_definition"]["production_key"]: row for row in items["records"]
     }
     for record in movable_stage_profiles(root):
         key = record["production_definition"]["production_key"]
         if key in present:
-            raise ValueError(f"Movable corpse stage already has an Item owner: {key}")
-        items["records"].append(record)
-        present.add(key)
+            # Koshei's native goal already admits these two exact decay stages.
+            if record["production_binding"]["external_id"] not in {"7539", "7540"}:
+                raise ValueError(f"Movable corpse stage already has an Item owner: {key}")
+            merge_shared_item(present[key], record)
+        else:
+            items["records"].append(record)
+            present[key] = record
     qualify_inherited_portable_stages(root, items["records"])
     qualify_native_decay_edges(root, items["records"])
     items["records"].sort(key=provider_order)

@@ -139,7 +139,7 @@ def corpse_definition(definition, capacity, duration, target, movable, weight=0)
         "duration": {"state": "KNOWN", "value": duration},
         "stop_duration": {"state": "KNOWN", "value": False},
         "decay_target": target_field,
-    }}
+    }} if duration is not None else {"state": "NOT_APPLICABLE"}
     return replacement
 
 

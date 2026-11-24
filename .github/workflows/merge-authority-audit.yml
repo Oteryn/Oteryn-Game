@@ -26,9 +26,9 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "32f0bea7c7e0d071888670c36c39181697fb021b"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "46f0f120cbdb5a750ebc1256ae04cb5b2e6d59b8"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
-      EXPECTED_MERGE_GATE_BLOB: "9bc51a8097123f853782bc6105858123591dd76f"
+      EXPECTED_MERGE_GATE_BLOB: "6064cf59f4dec0d7317b5c8a9aa8987a7d4b4711"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -310,7 +310,7 @@ jobs:
               f'          name: mq-postgres-test-inventory-{archive_matrix_expression}\n',
               '          pattern: mq-postgres-test-inventory-*\n',
               f'          name: mq-postgres-test-archives-{affinity_archive_expression}\n',
-              "          echo 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a  tools/ci/pg_archive_affinity.py' | sha256sum -c -\n",
+              "          echo '84a076b61932722644423a5fa05e3e68edeb210b1480fb8076dc9a2d39404a8c  tools/ci/pg_archive_affinity.py' | sha256sum -c -\n",
               '          python3 tools/ci/pg_archive_affinity.py route "$PG_ARCHIVES" "$JOB_INDEX" "$JOB_TOTAL"\n',
               '          python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq \\\n',
               '            "$PG_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$GITHUB_WORKSPACE" tools/ci/plan_pg_partitions.py\n',

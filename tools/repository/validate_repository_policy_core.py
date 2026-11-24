@@ -43,12 +43,12 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
 """
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = "c68a68a46fbe0ff499480f118ef86622954ab87f2127b858b8d6f6b1040668c0"
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "e88e302c86da693e0f0d3feb4a6cfa50d643aacf3d06344bad7b1511a4773c1e"
-EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "a845179dae52c1379778f7f589d916dab7f27f6c23fd5ba5208ad8ab9a2708fb"
+EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "1888c00d2b5a34672a3763f58260635823c663a6dba63a06a7aebc541b1e627f"
 EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "3f488a4e42d3c3c61186ec6a7d38ea5528b43b852da51b0d98a58d2ff090a7bd"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "b3423b858c7cad5c2814cef0708819f41c4b5bb328bae5450d202c2e18a92631"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "32f0bea7c7e0d071888670c36c39181697fb021b"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "46f0f120cbdb5a750ebc1256ae04cb5b2e6d59b8"
 EXPECTED_POST_MERGE_RUST_SHA256 = "e14581834f2ceec245d87380e97f446ca3b06524a90b733adf20eca38380902e"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -513,7 +513,7 @@ def main() -> int:
             "dependency_review": (
                 "    name: Merge Queue / dependency review\n",
                 "    needs: candidate\n",
-                "actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294",
+                "actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec",
                 "base-ref: ${{ needs.candidate.outputs.base_sha }}",
                 "head-ref: ${{ github.event.merge_group.head_sha || github.sha }}",
             ),
@@ -634,7 +634,7 @@ def main() -> int:
                 "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
                 "pattern: mq-postgres-test-inventory-*",
                 "name: mq-postgres-test-archives-${{ steps.affinity.outputs.archive }}",
-                "echo 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a  tools/ci/pg_archive_affinity.py' | sha256sum -c -",
+                "echo '84a076b61932722644423a5fa05e3e68edeb210b1480fb8076dc9a2d39404a8c  tools/ci/pg_archive_affinity.py' | sha256sum -c -",
                 'python3 tools/ci/pg_archive_affinity.py route "$PG_ARCHIVES" "$JOB_INDEX" "$JOB_TOTAL"',
                 'python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq',
                 '"$PG_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$GITHUB_WORKSPACE" tools/ci/plan_pg_partitions.py',

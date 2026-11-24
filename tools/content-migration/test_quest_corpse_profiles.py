@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 from unittest.mock import patch
 
 import quest_corpse_profiles as corpse
+from native_profile_composition import compact_item_profile
 
 UNKNOWN_CLASSIFICATION_ITEMS = {f'oteryn:item.tibia.i{number}' for number in [
     3987, 3989, 3991, 3992, 4007, 4008, 4009, 4137, 4139, 4291, 4292,
@@ -75,8 +76,8 @@ class CorpseQualification(unittest.TestCase):
             25815, 27714, 27718, 30272, 31453, 31599, 31611, 33821, 50029})
         self.assertEqual(len(self.plan.records), 144)
         for number, duration, target in [(6017, 10000, 4301), (4301, 300000, 4302),
-                                         (4302, 300000, 4303), (50029, 300000, 50028),
-                                         (50028, 300000, 50027)]:
+                                         (4302, 300000, 4303), (50029, 60000, 50028),
+                                         (50028, 60000, 50027)]:
             row = self.plan.records[f'oteryn:item.tibia.i{number}']
             temporal = row['semantics']['temporal']['value']
             self.assertEqual(temporal['duration'], corpse.grizzly.source.K(duration))
@@ -100,7 +101,7 @@ class CorpseQualification(unittest.TestCase):
                          corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(20)}))
         for number in (50029, 50028):
             self.assertEqual(self.plan.records[f'oteryn:item.tibia.i{number}']['semantics']['container'],
-                             corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(15)}))
+                             corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(8)}))
         self.assertEqual(self.plan.records['oteryn:item.tibia.i50027']['semantics']['container'],
                          corpse.grizzly.source.NA)
 
@@ -264,8 +265,9 @@ class CorpseQualification(unittest.TestCase):
         self.assertEqual(set(after) - set(before), set(self.plan.records) - set(before))
         for key, record in self.plan.records.items():
             self.assertEqual(record['semantics']['classification']['state'], 'KNOWN', key)
-            self.assertEqual(after[key]['semantics']['classification'],
-                             record['semantics']['classification'], key)
+            self.assertEqual(
+                compact_item_profile(after[key])['semantics']['classification'],
+                compact_item_profile(record)['semantics']['classification'], key)
 
         conflict = copy.deepcopy(generated)
         document = json.loads(conflict[profile])

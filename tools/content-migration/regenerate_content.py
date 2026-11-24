@@ -136,6 +136,7 @@ CHECKS = (
     ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/arena_completion.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
+    ["python3", "tools/content-schema/world-object-authoring/alawar_static.py", "--check"],
     [
         "python3",
         "tools/content-schema/world-object-authoring/feroxa_static.py",
@@ -1152,12 +1153,12 @@ def main() -> int:
             "--refresh-native-pin",
         ]
     )
+    run(["python3", "tools/content-schema/world-object-authoring/alawar_static.py"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
+    run(["python3", "tools/content-schema/world-authoring/quest_startup_bindings.py", "--apply"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
     run(["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py"])
-    # Callback witnesses add authored props to the native index; rooms must pin that final index.
-    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     for tool in AUTHORING_TOOLS:
         if tool.endswith("/reward_claim_authoring.py"):
             run(
@@ -1180,6 +1181,9 @@ def main() -> int:
             "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json",
         ]
     )
+    # Callback witnesses pin the final Quest shards and update authored props.
+    # Materialize them before refreshing the room provenance.
+    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_state_lowering.py"])
     run(
         [
@@ -1191,6 +1195,8 @@ def main() -> int:
     # These standalone compilers consume the final Quest and placement inputs;
     # native qualification and its censuses must see their registered bindings.
     run(["python3", "tools/content-schema/quest-authoring/qengine_access.py"])
+    # M24 pins the candidate's bytes, and the completion matrix reads its receipt.
+    run(["python3", "tools/content-schema/quest-authoring/quest_completion_import.py"])
     run(["python3", "tools/content-schema/quest-authoring/qmech_m24_kill_bindings.py"])
     # Claims above may add complete native container recipes. Rebuild their
     # Item closure only after those final claims exist, before census and pins.
@@ -1215,6 +1221,11 @@ def main() -> int:
             "--refresh-native-pin",
         ]
     )
+    refresh_world_metadata()
+    # The palette refresh can change the placement index after the scenery pass.
+    run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
+    # Reward callback citations include the final placement index.
+    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     # Room provenance includes the native Item provider, including NPC inputs.
     # Refresh after all native/map producers, before freshness checks and staging.
     run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
@@ -1222,7 +1233,6 @@ def main() -> int:
         run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
     run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
     run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
-    refresh_world_metadata()
     # Variant evidence pins the final Claim, Item and Achievement inventories.
     run(
         [
@@ -1236,7 +1246,6 @@ def main() -> int:
         "quest_completion_matrix",
         "quest_v2_export",
         "source_lowered_binding_plan",
-        "quest_completion_import",
         "collect_claim_candidates",
         "use_trigger_candidates",
         "quest_explore_area_candidates",

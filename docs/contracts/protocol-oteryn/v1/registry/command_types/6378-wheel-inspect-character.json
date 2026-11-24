@@ -1,0 +1,10 @@
+{
+  "id": 6378,
+  "name": "WHEEL_INSPECT_CHARACTER",
+  "owner_decision": "Native Wheel and action-bar gaps (2026-11-22)",
+  "capability": 148,
+  "payload_schema": "wheel-presentation-v1.md",
+  "result_schema": "wheel-presentation-v1.md",
+  "max_payload_bytes": 16,
+  "max_result_payload_bytes": 20
+}

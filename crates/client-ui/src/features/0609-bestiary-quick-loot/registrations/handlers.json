@@ -1,0 +1,16 @@
+{
+  "mechanic": "0609-bestiary-quick-loot",
+  "kind": "handlers",
+  "id": "0609-bestiary-quick-loot-reply",
+  "status": "unsupported",
+  "commands": [],
+  "direction": "server_to_client",
+  "reason": "Bestiary drop-list Quick Loot controls are pending client wiring.",
+  "not_applicable": {
+    "state": "The server returns a request-scoped page.",
+    "protocol": "Bestiary drop-list Quick Loot controls are pending client wiring.",
+    "view": "Bestiary drop-list Quick Loot controls are pending client wiring.",
+    "input": "Bestiary drop-list Quick Loot controls are pending client wiring.",
+    "settings": "The capability adds no client setting."
+  }
+}

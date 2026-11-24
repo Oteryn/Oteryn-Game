@@ -160,6 +160,10 @@ const INVENTORY_OFFERS: &[OfferedCapability] = &[
         id: 511,
         requires: &[4, 115],
     },
+    OfferedCapability {
+        id: 596,
+        requires: &[511],
+    },
 ];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -98,6 +98,17 @@ impl Mailbox {
     }
 }
 
+impl PlayLink {
+    /// The acknowledged respawn is still waiting for the session to drain old commands.
+    pub(in crate::play) fn death_reset_pending(&self) -> bool {
+        let mailbox = lock(&self.mailbox);
+        mailbox.death_reset_commands
+            && !mailbox.death.dead
+            && !mailbox.death.awaiting_acknowledgement()
+            && !mailbox.scope_pending
+    }
+}
+
 impl PlayView {
     /// Acknowledge only the displayed death, after the server restored health.
     /// This is local presentation state, never a synthetic respawn request.

@@ -1568,6 +1568,11 @@ mod weapon_tests {
         assert_eq!(weapon_of(&[(5, 3277)]), Some(SwingWeapon::Fists));
         assert_eq!(weapon_of(&[(5, 25760)]), Some(SwingWeapon::Fists));
         assert_eq!(
+            weapon_of(&[(6, 3059), (5, 3074)]),
+            Some(SwingWeapon::Fists),
+            "the starter spellbook must let the main-hand wand reach ranged resolution"
+        );
+        assert_eq!(
             weapon_of(&[(6, 3447), (5, 3264)]),
             Some(SwingWeapon::Melee {
                 attack: 14,

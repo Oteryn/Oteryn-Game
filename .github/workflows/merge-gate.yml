@@ -1,6 +1,6 @@
 name: Merge gate
 
-run-name: Merge gate • pull_request • ${{ github.event.pull_request.number }}
+run-name: Merge gate • pull_request • ${{ github.event.pull_request.number }}${{ github.event.changes.base && ' • retargeted' || '' }}
 
 on:
   pull_request:
@@ -455,7 +455,7 @@ jobs:
       contents: read
     steps:
       - name: Review dependency changes
-        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
         with:
           fail-on-severity: high
           base-ref: ${{ needs.scope.outputs.base_sha }}
@@ -1673,12 +1673,12 @@ jobs:
         run: |
           test "$LEGACY_VALIDATE" = "success" &&
             [[ "$RUST_FAST_BUILD" == success || "$RUST_FAST_BUILD" == skipped ]]
-      - name: Revalidate isolated edit target before publishing game-gate
-        if: github.event.action == 'edited' && github.event.changes.base == null
+      - name: Revalidate the live target before publishing game-gate
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          ISOLATED_EDIT: ${{ github.event.action == 'edited' && github.event.changes.base == null }}
           EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
           EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
           EXPECTED_BASE_REF: ${{ needs.scope.outputs.base_ref }}
@@ -1689,30 +1689,52 @@ jobs:
           import re
           import urllib.request
 
+          # Every attempt, reruns and job retries included: the qualified head and
+          # base ref must still be live, so a retry cannot reuse another base's jobs.
           repository = os.environ['REPOSITORY']
           number = os.environ['PR_NUMBER']
           expected_head = os.environ['EXPECTED_HEAD']
           expected_base = os.environ['EXPECTED_BASE']
+          isolated_edit = os.environ.get('ISOLATED_EDIT') == 'true'
           if re.fullmatch(r'[1-9][0-9]*', number) is None or any(
               re.fullmatch(r'[0-9a-f]{40}', sha) is None for sha in (expected_head, expected_base)
           ):
-              raise SystemExit('isolated edit has invalid scope identity')
-          request = urllib.request.Request(
-              f'https://api.github.com/repos/{repository}/pulls/{number}',
-              headers={'Accept': 'application/vnd.github+json',
-                       'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
-                       'X-GitHub-Api-Version': '2022-11-28'},
-          )
-          with urllib.request.urlopen(request, timeout=30) as response:
-              pull = json.load(response)
+              raise SystemExit('live target fence has invalid scope identity')
+          headers = {'Accept': 'application/vnd.github+json',
+                     'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
+                     'X-GitHub-Api-Version': '2022-11-28'}
+
+          def get(url):
+              request = urllib.request.Request(f'https://api.github.com/repos/{repository}/{url}', headers=headers)
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          pull = get(f'pulls/{number}')
           if (pull.get('number') != int(number) or pull.get('state') != 'open'
               or pull.get('head', {}).get('sha') != expected_head
               or pull.get('head', {}).get('repo', {}).get('full_name') != repository
               or pull.get('base', {}).get('ref') not in ('main', 'staging')
               or pull.get('base', {}).get('ref') != os.environ['EXPECTED_BASE_REF']
-              or pull.get('base', {}).get('sha') != expected_base):
-              raise SystemExit('isolated edit target changed after qualification; current qualification is required')
-          print('Isolated edit still matches the qualified live head and base.')
+              or (isolated_edit and pull.get('base', {}).get('sha') != expected_base)):
+              raise SystemExit('pull request target changed after qualification; current qualification is required')
+          # A retarget taints this head until a push: no later edit, rerun or job
+          # retry may publish game-gate for it.
+          marker = f'Merge gate • pull_request • {number} • retargeted'
+          page = 1
+          while True:
+              runs = get(f'actions/workflows/merge-gate.yml/runs?head_sha={expected_head}&per_page=100&page={page}')
+              batch = runs.get('workflow_runs')
+              if not isinstance(batch, list):
+                  raise SystemExit('merge gate run history is unreadable')
+              # The filtered run listing stops at 1000 runs: never read a cut history as clean.
+              if type(runs.get('total_count')) is not int or runs['total_count'] > 1000:
+                  raise SystemExit('merge gate run history is too long to prove the head was never retargeted')
+              if any(not isinstance(run, dict) or run.get('display_title') == marker for run in batch):
+                  raise SystemExit('this head was retargeted; push a new commit to qualify the new base')
+              if len(batch) < 100:
+                  break
+              page += 1
+          print('The qualified head and base are still live and the head was never retargeted.')
           PY
       - name: Check out protected qualification verifier
         if: needs.lanes.outputs.reuse_rust == 'true'

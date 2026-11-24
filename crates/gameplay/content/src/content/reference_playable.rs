@@ -448,6 +448,7 @@ pub struct ReferenceItemPresentation {
 #[serde(deny_unknown_fields)]
 pub struct ReferenceItemClassification {
     pub item_type: ReferenceItemField<ReferenceItemType>,
+    #[serde(default)]
     pub capabilities: ReferenceItemField<[ReferenceItemField<bool>; 24]>,
 }
 

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TeleportResult",
+  "type": "object",
+  "properties": {
+    "from_position": {
+      "$ref": "#/$defs/Position"
+    },
+    "to_position": {
+      "$ref": "#/$defs/Position"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "from_position",
+    "to_position"
+  ],
+  "$defs": {
+    "Position": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "y": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "z": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y",
+        "z"
+      ]
+    }
+  }
+}

@@ -3866,6 +3866,8 @@ pub async fn read_creature_empty_tiles_in_transaction(
         .iter()
         .map(|position| opposite_ground_floor(position))
         .collect();
+    // Plan for the actual scope. A cached generic plan can scan both tables
+    // when channel and instance populations are uneven.
     Ok(sqlx::query_scalar("WITH requested AS MATERIALIZED (
         SELECT * FROM unnest($3::bytea[], $6::bytea[]) AS addresses(native, loop)
     ), occupied AS MATERIALIZED (
@@ -3874,9 +3876,9 @@ pub async fn read_creature_empty_tiles_in_transaction(
         JOIN game_item_instances i USING(item_instance_id)
         LEFT JOIN requested p ON g.spatial_position=p.native
             OR (g.spatial_position=p.loop AND game_item_loop_drop_ref(g.corpse_ref))
-        WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$4
-          AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid
-          AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid
+        WHERE g.world_id=encode($1,'hex')::uuid
+          AND (($4=1 AND g.scope_kind=1 AND g.channel_id=encode($2,'hex')::uuid AND g.instance_id IS NULL)
+            OR ($4=2 AND g.scope_kind=2 AND g.instance_id=encode($5,'hex')::uuid AND g.channel_id IS NULL))
           AND i.lifecycle=1
           AND (octet_length(g.spatial_position)<>10 OR g.spatial_position=ANY($3)
                OR g.spatial_position=ANY($6))
@@ -3885,6 +3887,7 @@ pub async fn read_creature_empty_tiles_in_transaction(
     )
     SELECT p.native FROM requested p
     WHERE NOT EXISTS(SELECT 1 FROM occupied WHERE native IS NULL OR native=p.native)")
+        .persistent(false)
         .bind(authority.world.as_slice())
         .bind(channel.map(|id| id.to_vec()))
         .bind(positions)

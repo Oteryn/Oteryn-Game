@@ -39,24 +39,25 @@ pub(super) async fn dispatch(
             .daily_reward_returner(actor, command, command_type, payload)
             .await;
     }
-    if command_type == wire::details::COMMAND_TYPE {
+    if matches!(
+        command_type,
+        wire::details::COMMAND_TYPE | wire::details::COMMAND_TYPE_WITH_RESET
+    ) {
         if !payload.is_empty() {
             return None;
         }
-        return authority.daily_reward_details(actor, command).await;
+        return authority
+            .daily_reward_details(actor, command, command_type)
+            .await;
     }
-    let claim = if command_type == wire::COMMAND_TYPE_DAILY_REWARD_CLAIM {
-        match wire::DailyRewardClaim::decode(payload) {
-            Ok(claim) => Some(claim),
-            Err(_) => return refusal(3),
-        }
-    } else {
-        if wire::decode_daily_reward_query(payload).is_err() {
-            return None;
-        }
-        None
-    };
-    authority.daily_reward(actor, command, claim).await
+    let is_claim = matches!(
+        command_type,
+        wire::COMMAND_TYPE_DAILY_REWARD_CLAIM | wire::COMMAND_TYPE_DAILY_REWARD_REMOTE_CLAIM
+    );
+    if wire::decode_daily_reward_query(payload).is_err() {
+        return if is_claim { refusal(3) } else { None };
+    }
+    authority.daily_reward(actor, command, command_type).await
 }
 fn refusal(disposition: u8) -> Option<Vec<u8>> {
     wire::DailyRewardResult {
@@ -69,11 +70,26 @@ fn refusal(disposition: u8) -> Option<Vec<u8>> {
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
     let mut result = base.to_vec();
+    result.retain(|capability| {
+        !matches!(
+            capability.id,
+            wire::CAPABILITY_DAILY_REWARD_V2 | wire::CAPABILITY_DAILY_REWARD_ACCESS_V1
+        )
+    });
     if available {
-        result.push(OfferedCapability {
-            id: wire::CAPABILITY_DAILY_REWARD_V2,
-            requires: &[],
-        });
+        for capability in [
+            OfferedCapability {
+                id: wire::CAPABILITY_DAILY_REWARD_V2,
+                requires: &[],
+            },
+            OfferedCapability {
+                id: wire::CAPABILITY_DAILY_REWARD_ACCESS_V1,
+                requires: &[wire::CAPABILITY_DAILY_REWARD_V2],
+            },
+        ] {
+            let at = result.partition_point(|entry| entry.id < capability.id);
+            result.insert(at, capability);
+        }
     }
     result
 }
@@ -87,7 +103,9 @@ pub(super) fn result(
         Some(bytes) => (
             if matches!(
                 command_type,
-                wire::COMMAND_TYPE_DAILY_REWARD_CLAIM | wire::returner::CLAIM
+                wire::COMMAND_TYPE_DAILY_REWARD_CLAIM
+                    | wire::COMMAND_TYPE_DAILY_REWARD_REMOTE_CLAIM
+                    | wire::returner::CLAIM
             ) && !matches!(bytes.get(1), Some(1 | 2))
             {
                 CommandStatus::Rejected
@@ -242,7 +260,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         command: UseCommand,
-        claim: Option<wire::DailyRewardClaim>,
+        kind: u32,
     ) -> Option<Vec<u8>> {
         let (_, content) = self.daily_content()?;
         let fence = command.item_fence?;
@@ -251,6 +269,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             CommandId::new(command.command_id).ok()?,
         );
         let _permit = self.spell_lane_permit().await?;
+        let remote = matches!(
+            kind,
+            wire::COMMAND_TYPE_DAILY_REWARD_REMOTE_CLAIM
+                | wire::COMMAND_TYPE_DAILY_REWARD_REMOTE_QUERY
+        );
+        let remote_query = kind == wire::COMMAND_TYPE_DAILY_REWARD_REMOTE_QUERY;
+        if remote {
+            let runtime = self.runtime.lock().await;
+            if !runtime
+                .player_control_facts(actor, command.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+                || self.states.spell_states.lock().await.is_dead(actor)
+                || super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+                    .is_none()
+            {
+                return if remote_query { None } else { refusal(7) };
+            }
+        }
         let reachable = self
             .daily_in_reach(actor, command.game_session_id, content)
             .await;
@@ -269,22 +305,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(view) => view,
+            Err(_) if remote_query => return None,
             Err(_) => return refusal(5),
         };
         self.states
             .resting_areas
             .install(command.game_session_id, actor, view.streak);
-        let Some(_claim) = claim else {
-            return wire::DailyRewardWall {
+        if matches!(
+            kind,
+            wire::COMMAND_TYPE_DAILY_REWARD_QUERY | wire::COMMAND_TYPE_DAILY_REWARD_REMOTE_QUERY
+        ) {
+            let wall = wire::DailyRewardWall {
                 lane_day: view.lane_day,
                 streak: view.streak,
                 jokers: view.jokers,
                 claimed: view.receipt.is_some(),
                 claim_enabled: opened && reachable && view.receipt.is_none(),
+            };
+            return if remote {
+                let pending_spell = self
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .has_pending_spell_commit(actor, command.game_session_id);
+                let busy_trade = self
+                    .states
+                    .player_trades
+                    .transitioning(command.game_session_id);
+                wall.encode_remote(
+                    view.receipt.is_none()
+                        && view.instant_access_tokens > 0
+                        && !pending_spell
+                        && !busy_trade,
+                    view.instant_access_tokens,
+                )
+            } else {
+                wall.encode()
             }
-            .encode()
             .ok();
-        };
+        }
         if !self
             .states
             .player_trades
@@ -293,11 +353,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return refusal(5);
         }
         // One immutable server plan per content revision. No client choices enter it.
-        let binding = Sha256::new()
+        let mut binding = Sha256::new()
             .chain_update(b"oteryn:daily-reward:v2\0")
-            .chain_update(content.revision.as_bytes())
-            .finalize()
-            .into();
+            .chain_update(content.revision.as_bytes());
+        if remote {
+            binding.update(b"\0remote");
+        }
+        let binding = binding.finalize().into();
         if let Some(receipt) = view.settled.or(view.receipt) {
             return refusal(if receipt.request_binding == binding {
                 2
@@ -305,7 +367,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 6
             });
         }
-        if !opened || !reachable {
+        if !remote && (!opened || !reachable) {
             return refusal(4);
         }
         {
@@ -314,7 +376,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return refusal(7);
             }
         }
-        let plan = plan(content, view.lane_day)?;
+        let plan = plan(content, view.lane_day, remote)?;
         let transaction_id = crate::operator_files::uuid_v7().ok()?;
         let request = DailyRewardClaimRequest {
             command: command_ref,
@@ -351,15 +413,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(DailyRewardClaimError::BindingMismatch) => refusal(6),
             Err(DailyRewardClaimError::InvalidRequest) => refusal(3),
             Err(DailyRewardClaimError::AuthorityRejected) => refusal(7),
+            Err(DailyRewardClaimError::InstantAccessUnavailable) => refusal(4),
             Err(_) => refusal(5),
         }
     }
 }
 
-fn plan(content: &DailyRewardContent, day: u8) -> Option<DailyRewardDeliveryPlan> {
+fn plan(content: &DailyRewardContent, day: u8, remote: bool) -> Option<DailyRewardDeliveryPlan> {
     content.reward(day, false)?;
     Some(DailyRewardDeliveryPlan {
         content_revision: content.revision.clone(),
+        remote,
     })
 }
 
@@ -380,6 +444,7 @@ macro_rules! authority_methods {
             &self,
             _actor: crate::foundation::ExactActorRef,
             _command: $crate::gameplay_transport::connection::UseCommand,
+            _kind: u32,
         ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
             async { None }
         }
@@ -390,7 +455,7 @@ macro_rules! authority_methods {
             &self,
             _actor: crate::foundation::ExactActorRef,
             _command: $crate::gameplay_transport::connection::UseCommand,
-            _claim: Option<oteryn_protocol_oteryn::daily_reward::DailyRewardClaim>,
+            _kind: u32,
         ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
             async { None }
         }
@@ -412,8 +477,9 @@ macro_rules! composed_methods {
             &self,
             actor: ExactActorRef,
             command: connection::UseCommand,
+            kind: u32,
         ) -> Option<Vec<u8>> {
-            self.daily_details(actor, command).await
+            self.daily_details(actor, command, kind).await
         }
         fn daily_reward_available(&self) -> bool {
             self.daily_content().is_some()
@@ -422,9 +488,9 @@ macro_rules! composed_methods {
             &self,
             actor: ExactActorRef,
             command: connection::UseCommand,
-            claim: Option<oteryn_protocol_oteryn::daily_reward::DailyRewardClaim>,
+            kind: u32,
         ) -> Option<Vec<u8>> {
-            self.daily_command(actor, command, claim).await
+            self.daily_command(actor, command, kind).await
         }
     };
 }
@@ -454,11 +520,16 @@ mod picker_retired_tests {
             .split(',')
             .map(str::parse::<u32>)
             .collect::<Result<Vec<_>, _>>()?;
-        let owned = oteryn_protocol_oteryn::capability_tables::GATED
+        let owned: Vec<_> = oteryn_protocol_oteryn::capability_tables::GATED
             .iter()
-            .find(|(capability, _, _)| *capability == wire::CAPABILITY_DAILY_REWARD_V2)
-            .map(|(_, commands, _)| commands.to_vec())
-            .ok_or("capability 182")?;
+            .filter(|(capability, _, _)| {
+                matches!(
+                    *capability,
+                    wire::CAPABILITY_DAILY_REWARD_V2 | wire::CAPABILITY_DAILY_REWARD_ACCESS_V1
+                )
+            })
+            .flat_map(|(_, commands, _)| commands.iter().copied())
+            .collect();
         assert_eq!(routed, owned);
         assert_eq!(
             routed,
@@ -468,10 +539,16 @@ mod picker_retired_tests {
                 wire::details::COMMAND_TYPE,
                 wire::returner::QUERY,
                 wire::returner::CLAIM,
+                wire::COMMAND_TYPE_DAILY_REWARD_REMOTE_CLAIM,
+                wire::COMMAND_TYPE_DAILY_REWARD_REMOTE_QUERY,
+                wire::details::COMMAND_TYPE_WITH_RESET,
             ]
         );
         for retired in [wire::picker::QUERY, wire::picker::CLAIM] {
-            assert!(!routed.contains(&retired), "picker command {retired} is not routed");
+            assert!(
+                !routed.contains(&retired),
+                "picker command {retired} is not routed"
+            );
         }
         Ok(())
     }

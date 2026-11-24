@@ -1,0 +1,20 @@
+{
+  "mechanic": "0580-daily-reward-access",
+  "kind": "handlers",
+  "id": "0580-daily-reward-access-commands",
+  "status": "unsupported",
+  "commands": [
+    6321,
+    6322,
+    6323
+  ],
+  "direction": "client_to_server",
+  "reason": "The client lane owns the native controls for these negotiated commands.",
+  "not_applicable": {
+    "state": "Game owns the state.",
+    "protocol": "The commands require the negotiated capability.",
+    "view": "The native client controls are pending.",
+    "input": "The native client controls are pending.",
+    "settings": "No client setting is required."
+  }
+}

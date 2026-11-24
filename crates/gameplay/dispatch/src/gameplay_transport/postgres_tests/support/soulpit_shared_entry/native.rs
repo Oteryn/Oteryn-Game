@@ -517,6 +517,7 @@ fn scenario_inner(drive_native: bool, capacity: usize, soulseals:Option<super::s
                         offset: 0,
                         limit: 50,
                     },
+                    false,
                 )
                 .await
                 .ok_or("earned mastery native query")?;
@@ -593,6 +594,7 @@ fn scenario_inner(drive_native: bool, capacity: usize, soulseals:Option<super::s
                         offset: 0,
                         limit: 50,
                     },
+                    false,
                 )
                 .await
                 .ok_or("returned native mastery query")?;

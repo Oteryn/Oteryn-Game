@@ -57,12 +57,12 @@ pub mod mining;
 pub mod mount_taming;
 pub mod proficiency_catalyst;
 pub mod proficiency_orb;
-pub mod temple_scroll;
 pub mod rotten_essence;
 pub mod soul_war_source;
+pub mod temple_scroll;
 mod tibiadrome;
 
-pub use carried_inventory::ItemUseInventory;
+pub use carried_inventory::{CarriedItemText, ItemUseInventory};
 mod hireling_lamp;
 pub(super) use carried_inventory::{read_carried_inventory, read_use_inventory};
 use carried_source::lock_use_path;

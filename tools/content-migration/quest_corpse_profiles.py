@@ -16,6 +16,7 @@ from pathlib import Path
 
 import grizzly_shop_profiles as grizzly
 import quest_reward_item_semantics as custody
+import quest_shared_boss_corpses
 
 ROOT = Path(__file__).resolve().parents[2]
 XML = 'imports/canary/items-xml/items.xml'
@@ -110,7 +111,6 @@ def required_with_loot_scope(root, creatures):
                 or details['system_eligibility']['reward_boss']):
             raise ValueError('QUEST_CORPSE_LOOT_SOURCE_BODY_CHANGED')
         loot_roots.add(number)
-    import quest_shared_boss_corpses
     roots.update(quest_shared_boss_corpses.roots(by_creature))
     import questpc7_corpse_requirements
     roots.update(questpc7_corpse_requirements.roots(root, by_creature))
@@ -283,6 +283,8 @@ def qualifications(root=ROOT, creatures=None):
     if hashlib.sha256(raw).hexdigest() != XML_SHA:
         raise ValueError('QUEST_CORPSE_XML_PIN')
     xml = grizzly.source.xml_index(raw)
+    if 50029 in roots:
+        quest_shared_boss_corpses.apply_arbaziloth_corpse_facts(xml)
     limits, source_capacities = projection_limits(root, roots, xml)
     selected = decay_closure(roots, xml)
     ordinary_loot_only = selected - decay_closure(roots - ordinary_loot_roots, xml)
@@ -326,8 +328,14 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                 raise ValueError('QUEST_CORPSE_EXISTING_NATIVE_CONFLICT')
             # Complete only UNKNOWN classification facts from this exact pinned
             # XML/DAT corpse closure. All other existing policy/attributes remain.
-            prior['semantics']['classification'] = grizzly.accepted_first(
-                prior['semantics']['classification'], record['semantics']['classification'])
+            prior_class = prior['semantics']['classification']
+            classification = grizzly.accepted_first(
+                prior_class, record['semantics']['classification'])
+            if (prior_class['state'] == 'KNOWN'
+                    and 'capabilities' not in prior_class['value']
+                    and classification['value'].get('capabilities') == grizzly.source.U):
+                del classification['value']['capabilities']
+            prior['semantics']['classification'] = classification
             continue
         document['records'].append(record)
     document['records'].sort(key=order)

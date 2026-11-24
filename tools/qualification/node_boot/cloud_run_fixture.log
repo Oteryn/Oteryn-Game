@@ -1,0 +1,16 @@
+NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged
+SEAM_EVIDENCE e2e_all scenario=P16.full status=PASS seconds=0.094
+SEAM_EVIDENCE e2e_all scenario=P17.client status=FAIL seconds=0.013
+SEAM_EVIDENCE E2EF1_GAP row=P17 expected rat route
+Error: P17 postgres://fixture.invalid/db
+Error: P17 timed out
+P17 refusal: fixture unavailable
+DIAG P17 attempt=1
+DIAG P17 attempt=2
+DIAG P17 attempt=3
+DIAG P17 attempt=4
+DIAG P17a unrelated row
+SEAM_EVIDENCE e2e_all scenario=P17.full status=FAIL seconds=0.033 cause=precondition root=P17/admission
+DIAG CS.rat expected loot from fixture
+SEAM_EVIDENCE e2e_all scenario=CS.rat.full status=FAIL seconds=0.155 evidence=expected-loot
+NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged
