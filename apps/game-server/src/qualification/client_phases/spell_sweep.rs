@@ -237,7 +237,7 @@ async fn sweep(
         rows.record("effect", Err("blocked-by-cast_cost".into()));
         rows.record("cooldown", Err("blocked-by-cast_cost".into()));
     }
-    rows.record("release", creature_sweep::release(&mut client).await);
+    rows.record("release", release_fixture(&mut client).await);
 }
 
 async fn prepare(
@@ -314,7 +314,7 @@ async fn prepare(
     match setup {
         Ok(rune) => Ok((client, rune)),
         Err(error) => {
-            creature_sweep::release(&mut client).await?;
+            release_fixture(&mut client).await?;
             Err(error)
         }
     }
@@ -388,6 +388,26 @@ async fn cast(
     }
 }
 
+async fn release_fixture(client: &mut DevClientSession) -> TestResult {
+    let clear = async {
+        if client
+            .session_mut()
+            .combat_state()
+            .is_some_and(|state| state.target.is_some())
+        {
+            let reply = client.session_mut().attack_target(None).await?;
+            require(
+                reply.disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok,
+                format!("could not clear temporary attack target: {reply:?}"),
+            )?;
+        }
+        Ok(())
+    }
+    .await;
+    let release = creature_sweep::release(client).await;
+    clear.and(release)
+}
+
 async fn select_attack_target(
     client: &mut DevClientSession,
     rune: Option<NonZeroU32>,
@@ -445,7 +465,7 @@ async fn ineligible(
         )
     }
     .await;
-    let release = creature_sweep::release(&mut client).await;
+    let release = release_fixture(&mut client).await;
     result.and(release)
 }
 
