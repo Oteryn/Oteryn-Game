@@ -3022,15 +3022,17 @@ async fn control_loop(
                 ),
                 Some(request) if request.starts_with(b"qualify ") => (
                     Box::pin(qualification_fixture::prepare(
-                        root,
-                        authority,
-                        proof,
-                        config,
-                        native,
-                        #[cfg(feature = "qualification-spawn")]
-                        premium,
-                        #[cfg(feature = "qualification-spawn")]
-                        spawn,
+                        qualification_fixture::PrepareContext {
+                            root,
+                            authority,
+                            proof,
+                            config,
+                            native,
+                            #[cfg(feature = "qualification-spawn")]
+                            premium,
+                            #[cfg(feature = "qualification-spawn")]
+                            spawn,
+                        },
                         &request,
                     ))
                     .await

@@ -116,18 +116,31 @@ fn early_refusal_warning(reason: EarlyRefusal) -> oteryn_error_codes::Line<'stat
         .field("reason", FieldValue::Token(reason))
 }
 
-pub(super) async fn prepare(
-    root: &DurabilityRoot,
-    authority: &ReconciledCharacterAuthority<'_, '_>,
-    proof: &NodeIncarnationProof,
-    config: &NodeConfig,
-    native: Option<&NativeGameplayState>,
-    #[cfg(feature = "qualification-spawn")] premium: Option<
-        &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
-    >,
-    #[cfg(feature = "qualification-spawn")] spawn: Option<SpawnOwners<'_>>,
-    bytes: &[u8],
-) -> &'static str {
+pub(super) struct PrepareContext<'a, 'connection, 'transaction> {
+    pub(super) root: &'a DurabilityRoot,
+    pub(super) authority: &'a ReconciledCharacterAuthority<'connection, 'transaction>,
+    pub(super) proof: &'a NodeIncarnationProof,
+    pub(super) config: &'a NodeConfig,
+    pub(super) native: Option<&'a NativeGameplayState>,
+    #[cfg(feature = "qualification-spawn")]
+    pub(super) premium:
+        Option<&'a crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator>,
+    #[cfg(feature = "qualification-spawn")]
+    pub(super) spawn: Option<SpawnOwners<'a>>,
+}
+
+pub(super) async fn prepare(context: PrepareContext<'_, '_, '_>, bytes: &[u8]) -> &'static str {
+    let PrepareContext {
+        root,
+        authority,
+        proof,
+        config,
+        native,
+        #[cfg(feature = "qualification-spawn")]
+        premium,
+        #[cfg(feature = "qualification-spawn")]
+        spawn,
+    } = context;
     let (native, session, profile) =
         match prepare_request(config.qualification_fixture, native, bytes) {
             Ok(prepared) => prepared,
