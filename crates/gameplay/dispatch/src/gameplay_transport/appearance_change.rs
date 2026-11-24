@@ -100,15 +100,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         riding: bool,
     ) -> Option<bool> {
-        let fence =
-            super::character_gameplay_fence::current(self, command.game_session_id, false).await?;
-        if command.item_fence != Some(fence.item_fence()) {
-            return Some(false);
-        }
-        let (_, content) = self.appearance_context()?;
-        let state = observation::read_state(self, fence, content.earned_grant_keys())
+        AdmissionRetryBudget::for_command(self.root)
+            .retry_durability("mount_toggle", || self.set_mount_once(actor, command, riding))
             .await
-            .ok()??;
+            .ok()
+            .flatten()
+    }
+
+    async fn set_mount_once(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        riding: bool,
+    ) -> Result<Option<bool>, crate::durability::DurabilityError> {
+        let Some(fence) =
+            super::character_gameplay_fence::current_once(self, command.game_session_id, false)
+                .await?
+        else {
+            return Ok(None);
+        };
+        if command.item_fence != Some(fence.item_fence()) {
+            return Ok(Some(false));
+        }
+        let Some((_, content)) = self.appearance_context() else {
+            return Ok(None);
+        };
+        let state = match observation::read_state(self, fence, content.earned_grant_keys()).await {
+            Ok(Some(state)) => state,
+            Err(observation::ReadFailure::Durable(error)) => return Err(error),
+            _ => return Ok(None),
+        };
         let (base, _) = catalogue::base(&content, &state);
         let (mount, bonus) = if riding {
             let Some(mount) = base
@@ -116,7 +137,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .as_deref()
                 .and_then(|key| content.mount_metadata(key))
             else {
-                return Some(false);
+                return Ok(Some(false));
             };
             (mount.0, mount.1)
         } else {
@@ -130,7 +151,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &fence,
             &content,
         ) {
-            return Some(false);
+            return Ok(Some(false));
         }
         let result = match fence.runtime_scope {
             crate::foundation::RuntimeScopeRefV1::Instance { .. } =>
@@ -138,7 +159,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             crate::foundation::RuntimeScopeRefV1::Channel { .. } =>
                 runtime.set_riding(actor, command.game_session_id, mount, bonus),
         };
-        Some(result.is_ok())
+        Ok(Some(result.is_ok()))
     }
 
     pub(super) async fn refresh_riding(
@@ -164,11 +185,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mount = self.current_mount(actor, command.game_session_id).await?;
         let fence = super::character_gameplay_fence::current(self, command.game_session_id, false).await?;
-        self.set_mount(
+        self.set_mount_once(
             actor,
             UseCommand { item_fence: Some(fence.item_fence()), ..command },
             mount != 0,
-        ).await?.then_some(())
+        ).await.ok()??.then_some(())
     }
 
     pub(super) fn appearance_context(&self) -> Option<(wire::Context, NativeCosmeticsView)> {

@@ -70,6 +70,17 @@ fn scenario() -> TestResult {
             .await
             .ok_or("initial appearance projection")?;
 
+        let fence = owner
+            .root
+            .observe_current_gameplay_fence(&authority, session, false)
+            .await
+            .map_err(debug)?
+            .ok_or("current mount fence")?;
+        let command = crate::gameplay_transport::connection::UseCommand {
+            game_session_id: session,
+            command_id: 1,
+            item_fence: Some(fence.item_fence()),
+        };
         // Reproduce the real monster-owner order: runtime, spell state, then holder.
         // Its existing pass can outlast COMMAND_HOLDER_WINDOW. Demand must already
         // be retained while waiting for those guards; the one-second DB retry
@@ -133,6 +144,27 @@ fn scenario() -> TestResult {
                 &initial,
             );
         }
+        owner
+            .runtime
+            .lock()
+            .await
+            .set_riding(actor, session, 140, 10)
+            .map_err(debug)?;
+        let holder = owner
+            .root
+            .try_issue_background_semantic_pass()
+            .map_err(debug)?;
+        let (unmounted, ()) = fixture::join_two(owner.mount(actor, command, false), async {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            drop(holder);
+        })
+        .await;
+        assert_eq!(unmounted, Some(true), "unmount survives holder contention");
+        assert_eq!(
+            owner.runtime.lock().await.actor_motion(actor).ok_or("motion")?.2,
+            0
+        );
+
         drop(
             owner
                 .root
