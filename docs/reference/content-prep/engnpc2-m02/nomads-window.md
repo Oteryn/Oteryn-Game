@@ -15,4 +15,4 @@ The captured room contains drawers `2434` at `(33220,32858,9)`, a large amphora 
 
 Existing bindings identify crate `oteryn:item.tibia.i2471`; its hireling profile is pickupable, 8000 weight and container capacity 15. The house profile identifies large amphora `oteryn:item.tibia.i2904` as movable, non-pickupable and Ground-only. Enabling a consumer therefore also requires checking the native Ground-to-Ground move path, rather than treating the amphora as a carried bag Item.
 
-Current region SHA-256: `5f1c4081bc48d6e2481d0e29f37fed6b6823d6e749d1d9e75ecbfba15706d3bc`.
+Current region SHA-256: `736362926151abcf887b052b3486c50dd687fa7e929105733f3d434b744bbe5b`.

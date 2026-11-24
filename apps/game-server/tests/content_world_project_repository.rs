@@ -217,7 +217,8 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // WEATHER-1 adds the `content/weather/` sibling of `world` under `content/`: +1 (measured, 231).
         // CRAFT-CONTENT-1 adds content/craft/: +1 (measured, 232).
         // Native Activity registry adds one root entry to each of 11 locator scans.
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1 + 11,
+        // Citizenship placement provenance adds one entry to each of the two provenance lookups.
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1 + 11 + 2,
     }
 }
 

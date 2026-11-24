@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """List the appearance-only ids of the base map as evidence for the WO lane.
 
-An appearance-only id is a palette id that the pinned CrystalServer `items.xml` does not
-declare and that only the official client knows. It has no Item and no A12 section 4.6
-catalogue record, so its palette key stays provisional. Each row carries the id, its
-appearance class and its occurrences on the committed base map. `class` follows one ordered
+An appearance-only id is a provisional palette id that the pinned CrystalServer `items.xml`
+does not declare and that the official client knows. Each row carries the id, its appearance
+class and the occurrences of its provisional entry on the committed base map. `class` follows one ordered
 rule over the client flags:
 
     bank flag            -> ground      (walkable surface; `speed` is the bank waypoints value)
@@ -145,7 +144,9 @@ def build(declared: set[int], root: Path = ROOT, workers: int = 1) -> dict[str, 
     palette = json.loads((root / PLACEMENTS_INDEX).read_text(encoding="utf-8"))[
         "palette"
     ]
-    position = {row["source_item_id"]: i for i, row in enumerate(palette)}
+    position = {
+        row["source_item_id"]: i for i, row in enumerate(palette) if row["provisional"]
+    }
     ids = sorted(
         row["source_item_id"]
         for row in palette

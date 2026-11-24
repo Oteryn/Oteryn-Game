@@ -299,6 +299,26 @@ impl SessionVisibility {
         self.published
     }
 
+    /// Reuse published names for exact incarnations and defer actors without a name.
+    pub(crate) fn defer_unnamed_actors(&self, channel: &mut ChannelEntities) {
+        channel.entities.retain_mut(|entity| {
+            if matches!(
+                entity.kind,
+                VisibleKind::Corpse { .. } | VisibleKind::GroundItem { .. }
+            ) {
+                return true;
+            }
+            if entity.display_name.is_none() {
+                entity.display_name = self
+                    .entities
+                    .get(&entity.identity)
+                    .filter(|known| known.entity.generation == entity.generation)
+                    .and_then(|known| known.display_name);
+            }
+            entity.display_name.is_some()
+        });
+    }
+
     /// A view that shows objects (corpses) when `objects`, the session's capability 4.
     pub fn with_objects(objects: bool) -> Self {
         Self {

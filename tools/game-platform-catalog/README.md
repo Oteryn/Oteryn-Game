@@ -2,12 +2,18 @@
 
 This directory contains the schema-v1 deterministic producer/validator for `docs/contracts/OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md`.
 
-`build.py /tmp/game-platform-catalog.json` invokes the shared Rust CONTENT
-loader/view and this validator without retaining a normalized input file.
-See [CATALOG-CONTRACT-NOTES.md](../../docs/reference/CATALOG-CONTRACT-NOTES.md)
-for the visibility rules, CI step and explicit payload-promotion blockers.
-The resulting physical artifact currently remains `unsupported/unknown` for
-every capability; the candidate view is not a populated Platform catalogue.
+`build.py /tmp/game-platform-catalog.json` is the protected-main build path.
+Its eight v1 capabilities remain `unsupported/unknown` while Platform’s inactive
+consumer is pending. The artifact contains empty entity, relation and tombstone lists.
+
+Run `build.py --preproduction /tmp/game-platform-catalog-preproduction.json` to
+export the populated revision 1 WorldProject for offline use under
+[the export contract](../../docs/contracts/OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md#public-worldproject-payloads-revision-1).
+Support follows emitted records and completeness follows admitted source coverage.
+Both builds pin the Rust projection, WorldProject, Python producer and UTC commit
+timestamp to the same Git commit captured from HEAD.
+Builds stage the committed workspace sources and catalogue data listed in
+`build.py` in a private directory on the output volume.
 The Rust filesystem adapter runs on Linux, matching the existing CONTENT
 capture boundary. Test discovery requires Cargo and the repository's existing
 `jsonschema` schema-tool dependency; the Python producer itself remains portable.
@@ -27,6 +33,16 @@ The producer writes:
 - canonical `game-platform-catalog.json`;
 - `game-platform-catalog.json.sha256` over the exact artifact bytes.
 
+The local output paths are symlinks to one generation in a sibling
+`.catalogue.<basename-digest>` directory. Existing aliases under `.catalogue/<output-basename>`
+continue to use that directory. Publication requires a filesystem and account that can
+create symlinks. Use a regular output basename that does not end in `.sha256`.
+The producer preserves a valid regular-file pair during migration and recovers
+an incomplete or mismatched pair using the new snapshot. It retains published
+generations so a reader can resolve the JSON path once and read the digest
+beside that resolved JSON, even during a subsequent build. Copy the file
+contents when moving the pair outside the output directory.
+
 ## Verify
 
 ```powershell
@@ -42,11 +58,12 @@ python -m unittest discover -s tools/game-platform-catalog -p "test_*.py" -v
 
 The tests cover deterministic ordering, semantic and artifact digests, stable native identity, manifest alignment, capability taxonomy, duplicate/dangling/contradictory records, tombstone completeness, strict JSON, hard bounds and provenance integrity.
 
-## Current content status
+## Fixtures
 
-The committed unsupported fixture is intentionally non-activatable. At its pinned Game revision, this task does not claim a complete native item, creature, loot, NPC/shop, spell, quest or achievement inventory.
-
-A later Game-owned adapter may populate supported capabilities only from canonical native content evidence. Changing a capability from `unsupported/unknown` to `supported/complete` requires task-specific proof; this producer never infers that transition from an empty or legacy dataset.
+`unsupported-native-input.json` is the negative-semantics fixture.
+`supported-native-input.json` samples admitted public records using the exact
+payload revision and declares partial coverage for the sampled capabilities.
+Build the populated artifact with `build.py --preproduction` from a checkout of the desired Game commit.
 
 ## Production boundary
 
