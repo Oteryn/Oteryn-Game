@@ -174,6 +174,9 @@ fn census(root: &Path) -> TestResult<BTreeMap<String, Entry>> {
         "shared-access-callbacks.json",
         "shared-outfit-callbacks.json",
         "chosen-reward-callbacks.json",
+        "shared-reward-callbacks.json",
+        "questpc7-world-callbacks.json",
+        "world-callbacks.json",
     ] {
         let document: Value =
             serde_json::from_slice(&std::fs::read(root.join("quests").join(name))?)?;
@@ -637,6 +640,24 @@ impl Journey<'_, '_> {
         }
         let before = self.receipts(quest, transition).await?;
         if !before.is_empty() {
+            // Starting a weekly programme can advance several quest bindings
+            // in one server transaction. Verify the saved transition for each.
+            if stage.trigger.kind == "task_board_use"
+                && let [receipt] = before.as_slice()
+            {
+                let (_, keys, old, after, _) = receipt;
+                let mut stored = self.tracks(quest).await?;
+                if keys
+                    .iter()
+                    .zip(after)
+                    .all(|(track, value)| stored.get(track) == Some(value))
+                {
+                    stored.extend(keys.iter().cloned().zip(old.iter().copied()));
+                    if receipt_matches(receipt, self.catalogue, definition, &stored) {
+                        return self.check_log(quest).await;
+                    }
+                }
+            }
             return Err("stage-already-driven".into());
         }
         let before_tracks = self.tracks(quest).await?;
@@ -1306,7 +1327,7 @@ fn plan<'a>(quest: &'a Quest, claims: &'a BTreeMap<String, Vec<BoundPlacement>>)
                 .or_else(|| {
                     matches!(
                         stage.trigger.kind.as_str(),
-                        "terrain_use" | "task_board_use"
+                        "terrain_use" | "task_board_use" | "door_use"
                     )
                     .then_some(stage.trigger.usage.as_ref())
                     .flatten()
