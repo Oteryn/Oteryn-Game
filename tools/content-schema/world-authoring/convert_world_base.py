@@ -1213,6 +1213,10 @@ def build(
     m01c_key_doors.overlay_outputs(
         out, capture_bytes=blobs.get(m01c_key_doors.CAPTURE.as_posix())
     )
+    if quest_access_bindings.CAPTURE not in blobs:
+        import citizenship_portals
+
+        citizenship_portals.overlay_outputs(out)
     return out
 
 
@@ -1262,6 +1266,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     rework = summary.get("edron", {})
     drafted = summary.get("draft", {})
     authored = summary.get("source", {}).get("last_creep_native", {})
+    citizenship = summary.get("source", {}).get("citizenship_portals", {})
     from engclaim_placements import donor_delta as engclaim_delta
     from npcfix2_shared_sources import donor_delta as shared_source_delta
     from qh_jimmy_stub import donor_delta as jimmy_stub_delta
@@ -1275,6 +1280,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
 
     return {
         "items": totals["items"]
+        - count(citizenship, "items_added")
         - authored_clock_items
         - engclaim_delta(summary)
         - shared_source_delta(summary)

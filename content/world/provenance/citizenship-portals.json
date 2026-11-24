@@ -1,0 +1,160 @@
+{
+  "coordinates": "https://www.tibiawiki.com.br/index.php?oldid=443278",
+  "uids": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/movements/teleport/citizen.lua#L1-L19",
+  "appearance": "oteryn:item.tibia.i1949",
+  "placements": [
+    {
+      "town": "Carlin",
+      "unique": 9056,
+      "position": [
+        32360,
+        31784,
+        8
+      ]
+    },
+    {
+      "town": "Thais",
+      "unique": 9057,
+      "position": [
+        32369,
+        32246,
+        6
+      ]
+    },
+    {
+      "town": "Venore",
+      "unique": 9058,
+      "position": [
+        32951,
+        32035,
+        7
+      ]
+    },
+    {
+      "town": "Ab'Dendriel",
+      "unique": 9059,
+      "position": [
+        32607,
+        31682,
+        7
+      ]
+    },
+    {
+      "town": "Kazordoon",
+      "unique": 9060,
+      "position": [
+        32642,
+        31925,
+        12
+      ]
+    },
+    {
+      "town": "Darashia",
+      "unique": 9061,
+      "position": [
+        33216,
+        32455,
+        2
+      ]
+    },
+    {
+      "town": "Ankrahmun",
+      "unique": 9062,
+      "position": [
+        33195,
+        32849,
+        6
+      ]
+    },
+    {
+      "town": "Edron",
+      "unique": 9063,
+      "position": [
+        33210,
+        31804,
+        8
+      ]
+    },
+    {
+      "town": "Liberty Bay",
+      "unique": 9064,
+      "position": [
+        32313,
+        32818,
+        7
+      ]
+    },
+    {
+      "town": "Port Hope",
+      "unique": 9065,
+      "position": [
+        32595,
+        32749,
+        6
+      ]
+    },
+    {
+      "town": "Svargrond",
+      "unique": 9066,
+      "position": [
+        32214,
+        31133,
+        5
+      ]
+    },
+    {
+      "town": "Yalahar",
+      "unique": 9067,
+      "position": [
+        32785,
+        31277,
+        7
+      ]
+    },
+    {
+      "town": "Farmine",
+      "unique": 9068,
+      "position": [
+        33023,
+        31520,
+        11
+      ]
+    },
+    {
+      "town": "Gray Beach",
+      "unique": 9240,
+      "position": [
+        33447,
+        31326,
+        9
+      ]
+    },
+    {
+      "town": "Roshamuul",
+      "unique": 9500,
+      "position": [
+        33524,
+        32373,
+        7
+      ]
+    },
+    {
+      "town": "Rathleton",
+      "unique": 9510,
+      "position": [
+        33587,
+        31898,
+        6
+      ]
+    },
+    {
+      "town": "Issavi",
+      "unique": 9515,
+      "position": [
+        33926,
+        31477,
+        5
+      ]
+    }
+  ]
+}
