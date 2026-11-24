@@ -154,16 +154,31 @@ pub(super) fn compiled_region(
     start: crate::map::overlay::TilePos,
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    if minimum.x / 256 != maximum.x / 256 || minimum.y / 256 != maximum.y / 256 {
+        return Err("invalid source region route bounds".into());
+    }
+    compiled_regions(minimum, maximum, start, native)
+}
+
+pub(super) fn compiled_regions(
+    minimum: crate::map::overlay::TilePos,
+    maximum: crate::map::overlay::TilePos,
+    start: crate::map::overlay::TilePos,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle_compiler::{compile, project};
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    if minimum.x / 256 != maximum.x / 256
-        || minimum.y / 256 != maximum.y / 256
+    if minimum.x > maximum.x
+        || minimum.y > maximum.y
         || minimum.floor > maximum.floor
         || !(minimum.floor..=maximum.floor).contains(&start.floor)
     {
         return Err("invalid source region route bounds".into());
     }
-    let project = source::project_regions(&root, &[(minimum.x / 256, minimum.y / 256)])?;
+    let regions: Vec<_> = (minimum.x / 256..=maximum.x / 256)
+        .flat_map(|x| (minimum.y / 256..=maximum.y / 256).map(move |y| (x, y)))
+        .collect();
+    let project = source::project_regions(&root, &regions)?;
     let (registry, palette) = source::registry(&root, &project)?;
     let identity: bundle::Identity = serde_json::from_slice(&std::fs::read(
         root.join("content/world/pins/oteryn.identity.json"),
@@ -187,15 +202,12 @@ pub(super) fn compiled_region(
         },
         &registry,
     )?;
-    assert!(
-        compiled
-            .diagnostics
-            .iter()
-            .all(|d| !(minimum.floor..=maximum.floor).contains(&d.floor)
-                || !(minimum.x..=maximum.x).contains(&d.x)
-                || !(minimum.y..=maximum.y).contains(&d.y)),
-        "unresolved source quest geometry"
-    );
+    let unresolved = compiled.diagnostics.iter().find(|diagnostic| {
+        (minimum.floor..=maximum.floor).contains(&diagnostic.floor)
+            && (minimum.x..=maximum.x).contains(&diagnostic.x)
+            && (minimum.y..=maximum.y).contains(&diagnostic.y)
+    });
+    assert!(unresolved.is_none(), "unresolved source quest geometry: {unresolved:?}");
     let pins = crate::map::BundlePins {
         digest: compiled.digest,
         ..pins

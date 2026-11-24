@@ -209,8 +209,8 @@ class CorpseQualification(unittest.TestCase):
             (6017, 10000, 4301),
             (4301, 300000, 4302),
             (4302, 300000, 4303),
-            (50029, 300000, 50028),
-            (50028, 300000, 50027),
+            (50029, 60000, 50028),
+            (50028, 60000, 50027),
             (18030, 300000, 18031),
             (18038, 300000, 18039),
             (18110, 10000, 18111),
@@ -263,7 +263,7 @@ class CorpseQualification(unittest.TestCase):
                 self.plan.records[f"oteryn:item.tibia.i{number}"]["semantics"][
                     "container"
                 ],
-                corpse.grizzly.source.K({"capacity": corpse.grizzly.source.K(15)}),
+                corpse.grizzly.source.K({"capacity": corpse.grizzly.source.K(8)}),
             )
         self.assertEqual(
             self.plan.records["oteryn:item.tibia.i50027"]["semantics"]["container"],

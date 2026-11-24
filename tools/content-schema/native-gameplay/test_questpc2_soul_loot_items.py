@@ -7,9 +7,9 @@ import questpc2_soul_loot_items as tool
 
 ROOT = Path(__file__).resolve().parents[3]
 EXISTING = frozenset({'oteryn:item.tibia.i3035', 'oteryn:item.tibia.i7439', 'oteryn:item.tibia.i7440', 'oteryn:item.tibia.i7443', 'oteryn:item.tibia.i9058', 'oteryn:item.tibia.i23374', 'oteryn:item.tibia.i49271', 'oteryn:item.tibia.i3041', 'oteryn:item.tibia.i3043', 'oteryn:item.tibia.i3039', 'oteryn:item.tibia.i23375', 'oteryn:item.tibia.i3037', 'oteryn:item.tibia.i23373'})
-EXISTING_SHA256 = 'cfadd635e050604a0b654fe660bc652b81f9a1bf0034df0cb1eb8a714b422481'
+EXISTING_SHA256 = '6b18234a7e4ad5d0a8e3c7b30d1dcf24aa973c158b153af15ff8b19074f1ee33'
 NATIVE_PHYSICAL = frozenset({'oteryn:item.tibia.i34075', 'oteryn:item.tibia.i30061', 'oteryn:item.tibia.i30060', 'oteryn:item.tibia.i33922', 'oteryn:item.tibia.i3039', 'oteryn:item.tibia.i3036', 'oteryn:item.tibia.i34021', 'oteryn:item.tibia.i281', 'oteryn:item.tibia.i32622', 'oteryn:item.tibia.i34073', 'oteryn:item.tibia.i3038', 'oteryn:item.tibia.i9058', 'oteryn:item.tibia.i34076', 'oteryn:item.tibia.i30053', 'oteryn:item.tibia.i3043', 'oteryn:item.tibia.i34018', 'oteryn:item.tibia.i23375', 'oteryn:item.tibia.i34074', 'oteryn:item.tibia.i3037', 'oteryn:item.tibia.i34072', 'oteryn:item.tibia.i33924', 'oteryn:item.tibia.i30059', 'oteryn:item.tibia.i32623', 'oteryn:item.tibia.i3035', 'oteryn:item.tibia.i7440', 'oteryn:item.tibia.i33928', 'oteryn:item.tibia.i33952', 'oteryn:item.tibia.i3041', 'oteryn:item.tibia.i34109', 'oteryn:item.tibia.i32769', 'oteryn:item.tibia.i23373', 'oteryn:item.tibia.i34020', 'oteryn:item.tibia.i34019', 'oteryn:item.tibia.i7439', 'oteryn:item.tibia.i7443', 'oteryn:item.tibia.i33927', 'oteryn:item.tibia.i23374', 'oteryn:item.tibia.i49271', 'oteryn:item.tibia.i33926', 'oteryn:item.tibia.i33953', 'oteryn:item.tibia.i33923', 'oteryn:item.tibia.i33925', 'oteryn:item.tibia.i33920', 'oteryn:item.tibia.i33921'})
-NATIVE_PHYSICAL_SHA256 = 'f928889642e1e23ab055d6ff1423a5dd142ce69e0de0e4f1063bb50675931a63'
+NATIVE_PHYSICAL_SHA256 = 'b9d461390816870d1849fa1204062774813cfdfc6ec82e679af0ab4d84f4dcf2'
 
 
 class SoulLootClosureTests(unittest.TestCase):

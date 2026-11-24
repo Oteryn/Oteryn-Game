@@ -329,8 +329,7 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
     result
 }
 
-/// Actual command transport with decoded native feedback, including the short
-/// post-result egress window. No direct callback or invented target is invoked.
+/// Actual command transport with native feedback observed through a CHAT egress marker.
 async fn flame_wire(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
@@ -338,8 +337,10 @@ async fn flame_wire(
     payload: Vec<u8>,
 ) -> TestResult<(Vec<u8>, Vec<oteryn_protocol_oteryn::chat::ChatLine>)> {
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
-    use oteryn_protocol_oteryn as protocol;
+    use oteryn_protocol_oteryn::{self as protocol, chat::ChatLine};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    const CHAT_MARKER: &str = "SRX3 flame test egress marker";
     let frame = protocol::encode_client_command(
         1,
         &protocol::ClientCommandValue {
@@ -354,33 +355,15 @@ async fn flame_wire(
         .write_all(&u32::try_from(frame.len())?.to_be_bytes())
         .await?;
     client.write_all(&frame).await?;
-    let reader = tokio::spawn(async move {
-        let result: TestResult<_> = async {
+    let admitted_session = *admitted;
+    let session = admitted_session.game_session_id;
+    let reader = async move {
+        tokio::time::timeout(std::time::Duration::from_secs(5), async move {
             let mut result = None;
             let mut feedback = Vec::new();
             loop {
                 let mut prefix = [0; 4];
-                let read = if result.is_some() {
-                    match tokio::time::timeout(
-                        std::time::Duration::from_millis(200),
-                        client.read_exact(&mut prefix),
-                    )
-                    .await
-                    {
-                        Ok(read) => read,
-                        Err(_) => {
-                            client.shutdown().await?;
-                            break;
-                        }
-                    }
-                } else {
-                    client.read_exact(&mut prefix).await
-                };
-                match read {
-                    Ok(_) => {}
-                    Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => break,
-                    Err(e) => return Err(e.into()),
-                };
+                client.read_exact(&mut prefix).await?;
                 let mut frame = vec![0; u32::from_be_bytes(prefix) as usize];
                 client.read_exact(&mut frame).await?;
                 let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
@@ -389,24 +372,34 @@ async fn flame_wire(
                         protocol::decode_command_result(envelope.payload()).map_err(debug)?;
                     assert_eq!(reply.command_id, command);
                     result = Some(reply.payload.to_vec());
+                    // The command has already queued its feedback. The same FIFO
+                    // delivers the marker after every line queued by the command.
+                    owner.states.chat.push_quest_feedback(session, CHAT_MARKER);
                 } else if envelope.message_type() == protocol::MessageType::StateDelta {
                     let delta = protocol::decode_state_delta(envelope.payload()).map_err(debug)?;
                     if delta.domain_id == protocol::chat::STATE_DOMAIN_CHAT
                         && delta.delta_type == protocol::chat::DELTA_TYPE_CHAT_LINE_V1
                     {
-                        feedback
-                            .push(protocol::chat::decode_chat_line(delta.payload).map_err(debug)?);
+                        let line =
+                            protocol::chat::decode_chat_line(delta.payload).map_err(debug)?;
+                        if matches!(&line, ChatLine::Private { speaker_name, text }
+                            if speaker_name == "Game" && text == CHAT_MARKER)
+                        {
+                            let reply =
+                                result.ok_or("CHAT marker arrived before the flame result")?;
+                            return Ok::<_, Box<dyn std::error::Error>>((reply, feedback));
+                        }
+                        feedback.push(line);
                     }
                 }
             }
-            Ok((result.ok_or("no native flame result")?, feedback))
-        }
-        .await;
-        result.map_err(|e| e.to_string())
-    });
-    let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
-    drop(server);
-    let result = reader.await?.map_err(Into::into);
+        })
+        .await
+        .map_err(|_| "timed out waiting for flame command and CHAT egress")?
+    };
+    let serving =
+        async move { serve_admitted(&mut server, admitted_session, owner, IDLE_LIVENESS).await };
+    let (end, result) = tokio::join!(serving, reader);
     if let ConnectionEnd::AdmittedThenDisconnected(a) | ConnectionEnd::AdmittedThenClosed(a, _) =
         end
     {

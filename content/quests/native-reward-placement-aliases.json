@@ -114,6 +114,38 @@
       ]
     },
     {
+      "claim": "oteryn:reward-claim.kv.lighthouse1",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6014,
+      "project_position": {
+        "x": 32225,
+        "y": 32265,
+        "z": 10
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L685",
+        "content/world/placements/region-z10-x125-y126.b3:sha256:626a2a0a0e128cf4c978c927a37659e17561761a7588294904fabd21d0170c5b selector 32225,32265,10 ordinal 1 has appearance 2472 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.lighthouse2",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6015,
+      "project_position": {
+        "x": 32226,
+        "y": 32265,
+        "z": 10
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L693",
+        "content/world/placements/region-z10-x125-y126.b3:sha256:626a2a0a0e128cf4c978c927a37659e17561761a7588294904fabd21d0170c5b selector 32226,32265,10 ordinal 1 has appearance 2472 and the tile has no unique tags."
+      ]
+    },
+    {
       "claim": "oteryn:reward-claim.kv.mintwallincyclops",
       "expected_revision": "reward-claim-r1",
       "expected_source_uid": 6138,
@@ -142,35 +174,19 @@
       ]
     },
     {
-      "claim": "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow",
+      "claim": "oteryn:reward-claim.quest.key.id3899",
       "expected_revision": "reward-claim-r1",
-      "expected_source_uid": 6191,
+      "expected_source_uid": 5011,
       "project_position": {
-        "x": 32369,
-        "y": 32795,
-        "z": 10
+        "x": 32497,
+        "y": 31887,
+        "z": 7
       },
-      "appearance": 2472,
-      "ordinal": 1,
+      "appearance": 3634,
+      "ordinal": 2,
       "sources": [
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2083",
-        "content/world/placements/region-z10-x126-y128.b3:sha256:bf2401896fcc4c4f55e007cb314dbeef42f66c614ec692c1891c7f0d8c5df921 selector 32369,32795,10 ordinal 1 has appearance 2472 and no unique tag."
-      ]
-    },
-    {
-      "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya",
-      "expected_revision": "reward-claim-r1",
-      "expected_source_uid": 6215,
-      "project_position": {
-        "x": 32483,
-        "y": 31110,
-        "z": 8
-      },
-      "appearance": 2523,
-      "ordinal": 1,
-      "sources": [
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2266",
-        "content/world/placements/region-z08-x126-y121.b3:sha256:0afd733ace063eb1a72d42301098639f2a88446188618ae9cbdb9f8d2e29c38a selector 32483,31110,8 ordinal 1 has appearance 2523 and no unique tag."
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L449-L455",
+        "content/world/placements/region-z07-x126-y124.b3:sha256:71d0f001114257d94cc70fc7bf7405d0e7dc5f05266e71eb87cfab37ba0d43f6 selector 32497,31887,7 ordinal 2 has appearance 3634 and the tile has no unique tags."
       ]
     }
   ]

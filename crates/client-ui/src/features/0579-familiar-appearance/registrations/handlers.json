@@ -1,0 +1,19 @@
+{
+  "mechanic": "0579-familiar-appearance",
+  "kind": "handlers",
+  "id": "0579-familiar-appearance-commands",
+  "status": "unsupported",
+  "commands": [
+    6324,
+    6325
+  ],
+  "direction": "client_to_server",
+  "reason": "The client lane owns the native controls for these negotiated commands.",
+  "not_applicable": {
+    "state": "Game owns the state.",
+    "protocol": "The commands require the negotiated capability.",
+    "view": "The native client controls are pending.",
+    "input": "The native client controls are pending.",
+    "settings": "No client setting is required."
+  }
+}

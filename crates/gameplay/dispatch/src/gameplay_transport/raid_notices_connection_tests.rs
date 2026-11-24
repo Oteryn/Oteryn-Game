@@ -30,9 +30,9 @@ impl FreshAdmissionAuthority for WireNoticeAuthority {
         self.hub.leave(admitted.game_session_id, admitted.continuity.connection_generation);
     }
 
-    fn take_server_notice(&self, admitted: AdmittedSession) -> Option<ServerMessage> {
+    fn take_server_notice(&self, admitted: AdmittedSession) -> Option<ServerNotification> {
         if !selected(admitted) { return None; }
-        self.hub.take(admitted.game_session_id, admitted.continuity.connection_generation)
+        self.hub.take_notification(admitted.game_session_id, admitted.continuity.connection_generation)
     }
 
     async fn server_messages_changed(&self, admitted: AdmittedSession) {
@@ -91,12 +91,12 @@ fn raid_notice_handoff_guard_cannot_erase_a_reconnected_destination() -> TestRes
     Ok(())
 }
 
-async fn wire_notice_connection(has_capability: bool) -> TestResult {
+async fn wire_notice_connection(has_capability: bool, categorized: bool) -> TestResult {
     use crate::foundation::{ExactActorRef, MessageType, WorldId};
     use crate::gameplay_transport::capabilities::{PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities};
     use crate::gameplay_transport::connection::{FirstEntryOutcome, LivenessPolicy, SessionContinuity, serve_admitted};
     use oteryn_protocol_oteryn::{decode_state_delta, decode_wire_envelope};
-    use oteryn_protocol_oteryn::zones_nologout::decode_server_message;
+    use oteryn_protocol_oteryn::zones_nologout::{CAPABILITY_SERVER_MESSAGE_CATEGORY_V1, decode_server_notification};
     use std::future::Future;
     use std::time::Duration;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -113,8 +113,12 @@ async fn wire_notice_connection(has_capability: bool) -> TestResult {
         continuity: SessionContinuity::FRESH, item_fence: None,
     };
     if has_capability {
+        let mut supported = vec![21, CAPABILITY_ZONES_NOLOGOUT_V1];
+        if categorized {
+            supported.push(CAPABILITY_SERVER_MESSAGE_CATEGORY_V1);
+        }
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-            PRODUCTION_OFFERED_CAPABILITIES, &[21, CAPABILITY_ZONES_NOLOGOUT_V1],
+            PRODUCTION_OFFERED_CAPABILITIES, &supported,
         ).ok_or("capability selection")?;
     }
     let (mut server, mut client) = tokio::io::duplex(1 << 16);
@@ -133,19 +137,29 @@ async fn wire_notice_connection(has_capability: bool) -> TestResult {
         publish(&authority.hub, 1)?;
         let advance = ServerMessage::Advance("The army has arrived!".into());
         authority.hub.publish(step(2)?, advance.clone()).map_err(|()| "advance publication")?;
+        authority.hub.staff_publish("wire-broadcast", None, "Staff broadcast")
+            .map_err(|()| "staff publication")?;
         let mut received = Vec::new();
         if has_capability {
-            while received.len() < 2 {
+            while received.len() < 3 {
                 let frame = crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
                 let envelope = decode_wire_envelope(&frame)?;
                 if envelope.message_type() == MessageType::StateDelta {
                     let delta = decode_state_delta(envelope.payload())?;
                     if delta.domain_id == 57 {
-                        received.push(decode_server_message(delta.payload).map_err(|error| format!("{error:?}"))?);
+                        let notice = decode_server_notification(delta.payload)
+                            .map_err(|error| format!("{error:?}"))?;
+                        let category = match (categorized, received.len()) {
+                            (false, _) => ServerMessageCategory::Default,
+                            (true, 2) => ServerMessageCategory::Global,
+                            (true, _) => ServerMessageCategory::Raid,
+                        };
+                        assert_eq!(notice.category, category);
+                        received.push(notice.message);
                     }
                 }
             }
-            assert_eq!(received, vec![warning(), advance]);
+            assert_eq!(received, vec![warning(), advance, ServerMessage::Warning("Staff broadcast".into())]);
         }
         publish(&authority.hub, 1)?;
         client.shutdown().await?;
@@ -179,8 +193,8 @@ async fn wire_notice_connection(has_capability: bool) -> TestResult {
 #[test]
 fn raid_production_connection_wakes_without_input_and_suppresses_unselected_or_replayed_notices() -> TestResult {
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
-        for selected in [false, true] {
-            tokio::time::timeout(std::time::Duration::from_secs(2), wire_notice_connection(selected)).await??;
+        for (selected, categorized) in [(false, false), (true, false), (true, true)] {
+            tokio::time::timeout(std::time::Duration::from_secs(2), wire_notice_connection(selected, categorized)).await??;
         }
         Ok(())
     })

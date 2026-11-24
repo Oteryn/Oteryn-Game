@@ -236,26 +236,113 @@ mod bulk {
 }
 
 #[test]
-fn container_action_slot_opens_and_closes_the_assigned_handle() -> Result<(), Box<dyn std::error::Error>> {
-    use oteryn_session::container_tree::{ContainerView,ContainerViews,ContainerViewIntent};
+fn container_action_slot_opens_and_closes_the_assigned_handle()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::container_tree::{ContainerView, ContainerViewIntent, ContainerViews};
     let (link, mut commands, outbox) = play_channel();
     let item = oteryn_session::ItemEntry {
-        appearance_id: 2854, handle: 7.try_into()?, item_definition_ref: 42.try_into()?, count: 1.try_into()?, sub_type: 0,
+        appearance_id: 2854,
+        handle: 7.try_into()?,
+        item_definition_ref: 42.try_into()?,
+        count: 1.try_into()?,
+        sub_type: 0,
     };
-    outbox.inventory_initialize(Some(oteryn_session::CharacterInventory { main_backpack: Some(item), ..Default::default() }), false);
-    let action = serde_json::from_value(serde_json::json!({"kind":"ToggleContainer","definition":42}))?;
-    assert!(link.assign_bar_action(0,action));
-    for opened in [false,true] {
+    outbox.inventory_initialize(
+        Some(oteryn_session::CharacterInventory {
+            main_backpack: Some(item),
+            ..Default::default()
+        }),
+        false,
+    );
+    let action =
+        serde_json::from_value(serde_json::json!({"kind":"ToggleContainer","definition":42}))?;
+    assert!(link.assign_bar_action(0, action));
+    for opened in [false, true] {
         if opened {
-            outbox.container_result(Some(oteryn_session::container_tree::ContainerViewOutcome::Opened));
+            outbox.container_result(Some(
+                oteryn_session::container_tree::ContainerViewOutcome::Opened,
+            ));
         }
-        let mut views = if opened {vec![ContainerView {view_id: 3, container_handle: item.handle, parent_handle: None, capacity:20, entries:vec![], browse:None}]} else {vec![]};
-        views.push(ContainerView {view_id:4, container_handle:20.try_into()?, parent_handle:None, capacity:20,
-            entries:vec![oteryn_session::ItemEntry {handle:2.try_into()?, ..item}], browse:None});
-        outbox.container_initialize(Some(ContainerViews {views}));
+        let mut views = if opened {
+            vec![ContainerView {
+                view_id: 3,
+                container_handle: item.handle,
+                parent_handle: None,
+                capacity: 20,
+                entries: vec![],
+                browse: None,
+            }]
+        } else {
+            vec![]
+        };
+        views.push(ContainerView {
+            view_id: 4,
+            container_handle: 20.try_into()?,
+            parent_handle: None,
+            capacity: 20,
+            entries: vec![oteryn_session::ItemEntry {
+                handle: 2.try_into()?,
+                ..item
+            }],
+            browse: None,
+        });
+        outbox.container_initialize(Some(ContainerViews { views }));
         link.cast_spell_slot(NonZeroU32::MIN);
-        let expected = if opened { ContainerViewIntent::Close {view_id:3} } else {ContainerViewIntent::Open {handle:item.handle, replace_view:None}};
-        assert_eq!(commands.try_recv()?, crate::combat_input::PlayCommand::ContainerView(expected));
+        let expected = if opened {
+            ContainerViewIntent::Close { view_id: 3 }
+        } else {
+            ContainerViewIntent::Open {
+                handle: item.handle,
+                replace_view: None,
+            }
+        };
+        assert_eq!(
+            commands.try_recv()?,
+            crate::combat_input::PlayCommand::ContainerView(expected)
+        );
     }
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+#[test]
+fn bulk_filter_can_read_mailbox_and_rejects_a_changed_source()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::container_tree::{ContainerView, ContainerViews};
+    let (link, mut commands, outbox) = play_channel();
+    let source = ContainerView {
+        view_id: 0,
+        container_handle: 1u64.try_into()?,
+        parent_handle: None,
+        capacity: 5,
+        browse: None,
+        entries: vec![oteryn_session::ItemEntry {
+            handle: 2u64.try_into()?,
+            appearance_id: 0,
+            item_definition_ref: 3u32.try_into()?,
+            count: 1u32.try_into()?,
+            sub_type: 0,
+        }],
+    };
+    let target = ContainerView {
+        view_id: 1,
+        container_handle: 4u64.try_into()?,
+        entries: vec![],
+        ..source.clone()
+    };
+    outbox.container_initialize(Some(ContainerViews {
+        views: vec![source.clone(), target.clone()],
+    }));
+    assert!(!link.container_move_filtered_bound(&source, &target, |_| {
+        assert!(
+            link.mailbox.try_lock().is_ok(),
+            "classification must run outside the play mailbox"
+        );
+        outbox.container_initialize(Some(ContainerViews {
+            views: vec![target.clone()],
+        }));
+        true
+    }));
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

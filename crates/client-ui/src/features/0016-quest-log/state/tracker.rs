@@ -26,6 +26,9 @@ pub struct QuestTracker {
     needs_fresh_list: bool,
 }
 impl QuestTracker {
+    pub fn observed_list(&self) -> bool {
+        self.seen.is_some()
+    }
     /// Refresh command membership after resync, retaining the discovery baseline.
     pub fn reconcile(&mut self) {
         self.awaiting = None;

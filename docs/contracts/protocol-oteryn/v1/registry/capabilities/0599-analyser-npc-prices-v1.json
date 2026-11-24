@@ -1,0 +1,15 @@
+{
+  "id": 599,
+  "name": "ANALYSER_NPC_PRICES_V1",
+  "owner_decision": "Server analyser client gaps",
+  "owner": "Analyser item metadata",
+  "requires": [
+    10
+  ],
+  "command_types": [
+    6360
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES with the pinned item index."
+}

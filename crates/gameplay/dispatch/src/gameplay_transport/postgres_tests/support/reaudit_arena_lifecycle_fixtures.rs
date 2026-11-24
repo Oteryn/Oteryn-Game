@@ -13,6 +13,7 @@ pub(super) enum Physical {
     Exploding,
     Grace,
     Source,
+    RotationRestart,
     DelayedObservation,
     PendingCorpseEffects,
     ThreeWaveCommandCatchup,
@@ -88,7 +89,10 @@ pub(super) fn physical_context(
     large_hazards: bool,
     case: Physical,
 ) -> TestResult {
-    let exploding = matches!(case, Physical::Exploding | Physical::PendingCorpseEffects);
+    let exploding = matches!(
+        case,
+        Physical::Exploding | Physical::PendingCorpseEffects | Physical::RotationRestart
+    );
     let grace = matches!(case, Physical::Grace);
     use super::fixture::{debug, id, run};
     use super::{Dependencies, prepare_current_session};
@@ -113,13 +117,15 @@ pub(super) fn physical_context(
             .map_err(debug)?;
         let funded = true;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
-            deps.admitted.world_id,
-            "content-1",
-        )?;
+        let (controller, pin) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?;
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
-        let world = if matches!(case, Physical::Source) {
+        let source_hall = matches!(case, Physical::Source | Physical::RotationRestart);
+        let world = if source_hall {
             source_map::world(deps.admitted.world_id, deps.admitted.channel_id, native)?
         } else {
             let (bytes, pins) = fixture::bundle(native)?;
@@ -150,7 +156,7 @@ pub(super) fn physical_context(
             )
             .map_err(debug)?
         };
-        if matches!(case, Physical::Source) {
+        if source_hall {
             fixture::runtime_at(&mut deps, active, &pin, &world, source_map::ENTRY)?;
         } else {
             fixture::runtime(&mut deps, active, &pin, &world)?;
@@ -1125,6 +1131,113 @@ pub(super) fn physical_context(
         .await?;
         assert_eq!(next.disposition, 4);
         assert!(next.cooldown > 0);
+        if matches!(case, Physical::RotationRestart) {
+            use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+            use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction, DromeAction};
+
+            assert_eq!(status.rank, 1, "the actual wave clear enters the rankings");
+            {
+                let runtime = deps.runtime.lock().await;
+                assert_eq!(
+                    runtime
+                        .read_actor_position(deps.actor)
+                        .map_err(debug)?
+                        .position(),
+                    source_map::ENTRY,
+                );
+                assert!(!runtime.is_tibiadrome(deps.actor));
+                assert!(
+                    runtime
+                        .visible_entities()
+                        .creatures
+                        .iter()
+                        .all(|creature| { !runtime.is_tibiadrome(creature.actor) }),
+                    "defeat must remove the practice opponents"
+                );
+            }
+            let mut settled = persisted_drome_record(&harness).await?;
+            assert!(!settled.active);
+            assert_eq!((settled.progress.level, settled.progress.waves), (1, 1));
+            let current_rotation = settled.progress.rotation;
+            settled.progress.rotation = current_rotation.checked_sub(1).ok_or("prior rotation")?;
+            // Age the real score and matching progress into the previous rotation
+            // without advancing PostgreSQL's wall clock. No scores or awards are seeded.
+            let mut tx = harness.pool.begin().await?;
+            let moved = sqlx::query(
+                "UPDATE game_tibiadrome_scores SET rotation=$2 WHERE character_id=encode($1,'hex')::uuid AND rotation=$3 AND level=1",
+            )
+            .bind(id(41).as_slice())
+            .bind(i64::from(settled.progress.rotation))
+            .bind(i64::from(current_rotation))
+            .execute(&mut *tx)
+            .await?;
+            assert_eq!(moved.rows_affected(), 1);
+            sqlx::query(
+                "UPDATE game_character_tibiadrome SET body=$2 WHERE character_id=encode($1,'hex')::uuid",
+            )
+            .bind(id(41).as_slice())
+            .bind(serde_json::to_value(&settled)?)
+            .execute(&mut *tx)
+            .await?;
+            tx.commit().await?;
+
+            // Rebuild the Channel runtime and dispatch state against the same durable session.
+            drop(owner);
+            let mut restarted = Dependencies::new()?;
+            fixture::runtime_at(&mut restarted, active, &pin, &world, source_map::ENTRY)?;
+            admitted.runtime_actor = Some(restarted.actor);
+            let mut owner = restarted.owner(&harness, &authority);
+            owner.active_generation = Some(active);
+            owner.movement_cells = (&cells).into();
+            let claim = wire::encode_match_request(ArenaAction::Drome(DromeAction::ClaimPotion))
+                .map_err(debug)?;
+            let claim_id = admitted.continuity.next_command_id;
+            // The fresh Channel has no per-connection ingress queue. Invoke the
+            // arena command owner with the retained durable session and next id.
+            let bytes = owner
+                .arena_match_command(admitted, claim_id, &claim)
+                .await
+                .ok_or("Drome potion claim after restart")?;
+            let reward = wire::DromeResult::decode(&bytes).map_err(debug)?;
+            assert_eq!(
+                (
+                    reward.disposition,
+                    reward.level,
+                    reward.points,
+                    reward.potions
+                ),
+                (1, 0, 10, 2),
+                "the first reward command after rollover must include settled rotation points"
+            );
+            let replay = owner
+                .arena_match_command(admitted, claim_id, &claim)
+                .await
+                .ok_or("persisted Drome reward reply")?;
+            assert_eq!(replay, bytes);
+            let award: (i64, i32, i32) = sqlx::query_as(
+                "SELECT rank,potions,claimed FROM game_tibiadrome_awards WHERE character_id=encode($1,'hex')::uuid AND rotation=$2",
+            )
+            .bind(id(41).as_slice())
+            .bind(i64::from(settled.progress.rotation))
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(award, (1, 3, 1));
+            let minted: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key BETWEEN 'oteryn:item.tibia.i36723' AND 'oteryn:item.tibia.i36742'",
+            )
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(minted, 1);
+            let receipt: Vec<u8> = sqlx::query_scalar(
+                "SELECT d.reply FROM game_tibiadrome_receipts d JOIN game_reward_claim_mint_receipts m USING(game_session_id,command_id) WHERE d.game_session_id=encode($1,'hex')::uuid AND d.command_id=$2::text::numeric",
+            )
+            .bind(session.as_bytes().as_slice())
+            .bind(claim_id.to_string())
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(receipt, bytes);
+            assert_eq!(persisted_drome_record(&harness).await?.progress.points, 10);
+        }
         Ok(())
     })
 }

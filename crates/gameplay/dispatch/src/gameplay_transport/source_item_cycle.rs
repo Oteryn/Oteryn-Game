@@ -57,7 +57,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .chain(
                         self.rooms()
                             .gate_monster_ai()
-                            .map(|_| states.next_monster_ai_pass_us),
+                            .map(|_| states.next_monster_ai_due_us(&runtime)),
                     )
                     .chain(
                         npc_voices

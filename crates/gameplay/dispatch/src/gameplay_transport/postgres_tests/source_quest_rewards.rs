@@ -1,6 +1,6 @@
 //! T..Z reward claims: source placements -> wire USE -> durable custody and replay.
 //! This certifies the reward path, not any untested access puzzle or NPC mission.
-use super::source_quest_rewards_fixtures::{legacy_world_owned};
+use super::source_quest_rewards_fixtures::{admit_reward_character, legacy_world_owned, reward_premium};
 
 use super::fixture::{Harness, debug, id, run};
 use super::quest_callbacks_fixtures::{source_world_positions, wire_use_targets_retained};
@@ -135,6 +135,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "source_quest_rewards", false, false)
             .await?;
+        let premium = reward_premium(&h, &chest.claim).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -173,6 +174,8 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                     .iter()
                     .any(|placement| placement.placement.quest_transition.is_some())
         }) || world_owned
+            || oteryn_gameplay_quests::quest::completion_sets::mint_transition_for_claim(&chest.claim)?
+                .is_some()
         {
             let lowered =
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -288,6 +291,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
         };
         {
             let mut owner = deps.owner(&h, &authority);
+            owner.premium_coordinator = premium.as_ref();
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
             owner.quest_catalogue = catalogue.clone();
@@ -296,6 +300,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 owner.admit_quest_session(&admitted).await;
             }
             deps.initialize(&owner).await;
+            admit_reward_character(&owner, &admitted, &chest.claim).await?;
             if super::source_quest_rewards_fixtures::paradox_reward(&chest.claim) {
                 super::source_quest_rewards_fixtures::seed_paradox_riddle(
                     &owner, &admitted, &h, &authority,
@@ -322,6 +327,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
         let mut first_root = None;
         for cold in [false, true] {
             let mut owner = deps.owner(&h, &authority);
+            owner.premium_coordinator = premium.as_ref();
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
             owner.quest_catalogue = catalogue.clone();
@@ -331,6 +337,7 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 owner.admit_quest_session(&stream).await;
             }
             deps.initialize(&owner).await;
+            admit_reward_character(&owner, &stream, &chest.claim).await?;
             use oteryn_protocol_oteryn::world_spatial::{
                 COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition,
                 decode_step_result, encode_step_intent,

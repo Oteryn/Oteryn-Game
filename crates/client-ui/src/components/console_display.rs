@@ -45,7 +45,7 @@ pub fn speaker(line: &ChatLine) -> Option<&str> {
         | ChatLine::Party { speaker_name, .. } => Some(speaker_name),
         ChatLine::Guild(line) => Some(&line.speaker_name),
         ChatLine::PrivateChannel(line) => Some(&line.speaker_name),
-        ChatLine::Dropped => None,
+        ChatLine::System { .. } | ChatLine::Dropped => None,
     }
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -55,21 +55,39 @@ pub struct Metadata {
     pub next_names: usize,
     queried: std::collections::BTreeSet<String>,
     speakers_changed: bool,
+    retry_at: Option<std::time::Instant>,
     previous: Vec<ChatLine>,
     receipts: Vec<u64>,
 }
 impl Metadata {
     pub(super) fn begin_query(&mut self, names: Vec<String>) -> Option<Vec<u8>> {
         let payload = oteryn_client_runtime::chat::console::encode_names(&names)?;
-        self.queried.extend(names.iter().cloned());
+
         self.pending = Some(names);
         Some(payload)
     }
 
+    pub fn finish_query(&mut self, names: &[String], accepted: bool) {
+        if accepted {
+            self.queried.extend(names.iter().cloned());
+        } else {
+            for name in names {
+                self.queried.remove(name);
+                self.levels.remove(name);
+            }
+            self.speakers_changed = true;
+            self.retry_at = Some(std::time::Instant::now() + std::time::Duration::from_secs(2));
+        }
+    }
     /// Query new speakers once, including an unavailable level. Opening the console
     /// explicitly can still refresh a previously answered name.
     pub fn query_new_speakers(&mut self, lines: &[ChatLine]) -> Option<Vec<u8>> {
-        if self.pending.is_some() || !self.speakers_changed {
+        if self.pending.is_some()
+            || !self.speakers_changed
+            || self
+                .retry_at
+                .is_some_and(|time| time > std::time::Instant::now())
+        {
             return None;
         }
         let visible: std::collections::BTreeSet<_> = lines.iter().filter_map(speaker).collect();
@@ -99,6 +117,7 @@ impl Metadata {
         self.receipts.push(received_seconds);
     }
     pub fn reset_history(&mut self) {
+        self.retry_at = None;
         self.queried.clear();
         self.speakers_changed = true;
         self.previous.clear();
@@ -125,6 +144,9 @@ impl Metadata {
                 .iter()
                 .any(|line| speaker(line) == Some(name.as_str()))
         });
+    }
+    pub(super) fn skip_receipts(&mut self, count: usize) {
+        self.receipts.drain(..count.min(self.receipts.len()));
     }
     pub fn prefix(&self, display: ConsoleDisplay, index: usize) -> String {
         if !display.time {

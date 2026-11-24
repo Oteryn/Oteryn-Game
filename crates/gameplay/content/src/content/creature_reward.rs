@@ -534,7 +534,7 @@ impl CreatureRewardTable {
         section: Option<&LootTablesSection>,
         items: Option<&super::native_gameplay::ItemProfilesDocument>,
     ) -> Self {
-        let verified = verified_soul_war_corpses(items);
+        let verified = verified_source_corpses(items);
         section.map_or_else(Self::default, |section| {
             Self::build_with_native_corpses(creatures, section, canonical_races(), &verified)
         })
@@ -808,7 +808,7 @@ fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
         && SOURCE_PLAIN_CORPSES.contains(&(creature, corpse.key.as_str()))
 }
 
-fn verified_soul_war_corpses(
+fn verified_source_corpses(
     items: Option<&super::native_gameplay::ItemProfilesDocument>,
 ) -> HashSet<String> {
     use super::native_gameplay::{NativeItemDestination, NativeItemStackClass};
@@ -1341,7 +1341,7 @@ mod source_48_corpse_tests {
         // The exact source closure includes sixteen48-capacity bodies and
         // five plain bodies; unrelated admitted Items remain excluded.
         assert_eq!(
-            verified_soul_war_corpses(Some(&items)),
+            verified_source_corpses(Some(&items)),
             std::collections::HashSet::from(
                 [
                     "oteryn:item.tibia.i33792",
@@ -1380,14 +1380,14 @@ mod source_48_corpse_tests {
             .admission
             .legal_destinations
             .push(NativeItemDestination::CharacterInventory);
-        assert!(!verified_soul_war_corpses(Some(&items)).contains(greed_key));
+        assert!(!verified_source_corpses(Some(&items)).contains(greed_key));
         items.records[original] = record.clone();
         if let F::Known(container) = &mut items.records[original].semantics.container {
             container.capacity = F::Known(47);
         }
-        assert!(!verified_soul_war_corpses(Some(&items)).contains(greed_key));
+        assert!(!verified_source_corpses(Some(&items)).contains(greed_key));
         items.records[original] = record;
-        assert!(verified_soul_war_corpses(Some(&items)).contains(greed_key));
+        assert!(verified_source_corpses(Some(&items)).contains(greed_key));
         let mut profile: ProjectV2CreatureAuthoring = serde_json::from_value(serde_json::json!({
             "details": {
                 "display_name":"Goshnar's Greed","inspection":"","defense":0,"critical_chance_ppm":0,

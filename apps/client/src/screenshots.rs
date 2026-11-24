@@ -99,6 +99,55 @@ pub fn save_bmp(path: &Path, width: u32, height: u32, bgra: &[u8], crop: Rect) -
 
 /// Server-owned observations sampled by the desktop shell. The first sample is a baseline.
 #[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct CombatCaptureFacts {
+    pub record_resets: u64,
+    pub damage_record: u32,
+    pub healing_record: u32,
+    pub player_hits: u64,
+    pub reward_collections: u64,
+}
+
+const MAX_TRACKED_ATTACKERS: usize = 256;
+
+impl CombatCaptureFacts {
+    pub(crate) fn reset_impact_records(&mut self) {
+        self.record_resets = self.record_resets.saturating_add(1);
+        self.damage_record = 0;
+        self.healing_record = 0;
+    }
+
+    pub(crate) fn observe(
+        &mut self,
+        fact: &oteryn_session::analyser_transport::AnalyserFact,
+        attackers: &mut std::collections::BTreeSet<Option<oteryn_session::EntityRef>>,
+        attacker: Option<oteryn_session::EntityRef>,
+    ) {
+        use oteryn_session::analyser_transport::{
+            AnalyserDamageSource, AnalyserFact, AnalyserImpact,
+        };
+        if let AnalyserFact::Impact(impact) = fact {
+            match impact {
+                AnalyserImpact::Damage { value, .. } => {
+                    self.damage_record = self.damage_record.max(value.get())
+                }
+                AnalyserImpact::Healing(value) => {
+                    self.healing_record = self.healing_record.max(value.get())
+                }
+            }
+        } else if matches!(
+            fact,
+            AnalyserFact::DamageInput {
+                source: AnalyserDamageSource::Player,
+                ..
+            }
+        ) && attackers.len() < MAX_TRACKED_ATTACKERS
+            && attackers.insert(attacker)
+        {
+            self.player_hits = self.player_hits.saturating_add(1);
+        }
+    }
+}
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Facts {
     pub level: Option<u32>,
     pub deaths: u64,

@@ -6038,11 +6038,11 @@
   "corpus_manifest_sha256": "9823fd5e25796d5cfcd88a586530a60c0d7a9ca8a4f1130df25afbc2fb21b693",
   "external_wiki_read": false,
   "input_sha256": {
-    "content/quests/definitions/quests-00000-00099.json": "cf31e6ca516abd340ae04ec98dbdd79b3f8d4b6dbd74d9ba4b149c23f7ac048e",
-    "content/quests/definitions/quests-00100-00199.json": "523ceb2790713f43f49e7fa6d2ec8e103c7e218f6efa78283638eefd15be7722",
-    "content/quests/definitions/quests-00200-00299.json": "737cd9d1851d888ca8cae611d77071923d76001cac3977c3680a6b360f694019",
+    "content/quests/definitions/quests-00000-00099.json": "b8032f462870c95cddcfcb2df43280ea38e267dc447610ab131410866d6f2814",
+    "content/quests/definitions/quests-00100-00199.json": "2e8b08a3d2ac5cc32d7a9080238d9b50d1e81a52dd99a7f3ada5178002a2bdd7",
+    "content/quests/definitions/quests-00200-00299.json": "2fd46ebe0ab34c8eadb80cfe2a65491bc5993c1c6779fcc66995acec4e8fa4fa",
     "content/quests/definitions/quests-00300-00351.json": "2651cbcf9f4e77cd7c35a1e970bcb0bcb5fc55618c21e9780942e73511e22fa5",
-    "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json": "7f5207eee0a940909bb4eebdbf5904f136a13f97002250efe44d2e20d8c1ccc2",
+    "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json": "ea2f19577a0fd2d12f3ef3e819a1c190000ddee80938d1e59a40fe08cb307469",
     "tools/content-schema/quest-authoring/samples/source_migration/bundle.json": "5f9c5a6aa180e67f638adc7d234b84dcc2514ffb912495ee12fb0bf7cd81ed1e"
   },
   "quests": [
@@ -6267,10 +6267,6 @@
           "code": "reported_source_gap",
           "count": 2,
           "field": "unresolved_items"
-        },
-        {
-          "code": "claim_native_lowering_missing",
-          "source_key": "canary:reward-claim/quest/key/id4502"
         }
       ],
       "quest_completeness": "NOT_ASSESSED",
@@ -6279,15 +6275,10 @@
     {
       "accepted_component_ids": [],
       "candidate_component_ids": [],
-      "definition_readiness": "waiting_data",
+      "definition_readiness": "definition_ready",
       "display_name": "An Interest In Botany Quest",
       "native_admission": "NOT_ASSESSED",
-      "original_missing_data": [
-        {
-          "code": "claim_native_lowering_missing",
-          "source_key": "canary:reward-claim/quest/u8_6/an_interest_in_botany/botany_almanach"
-        }
-      ],
+      "original_missing_data": [],
       "quest_completeness": "NOT_ASSESSED",
       "quest_key": "oteryn:quest.an_interest_in_botany_quest"
     },
@@ -11747,18 +11738,6 @@
           "field": "unresolved_items"
         },
         {
-          "code": "claim_native_lowering_missing",
-          "source_key": "canary:reward-claim/quest/u7_6/explorer_society/books/hengis"
-        },
-        {
-          "code": "claim_native_lowering_missing",
-          "source_key": "canary:reward-claim/quest/u7_6/explorer_society/skull_of_ratha/bag1"
-        },
-        {
-          "code": "claim_native_lowering_missing",
-          "source_key": "canary:reward-claim/quest/u7_6/explorer_society/skull_of_ratha/bag2"
-        },
-        {
           "code": "quest_native_lowering_missing"
         }
       ],
@@ -12018,10 +11997,6 @@
           "field": "unresolved_items"
         },
         {
-          "code": "claim_native_lowering_missing",
-          "source_key": "canary:reward-claim/quest/u8_54/the_new_frontier/reward/potions"
-        },
-        {
           "code": "requirement_unknown",
           "field": "min_level"
         },
@@ -12093,22 +12068,6 @@
           "field": "unresolved_items"
         },
         {
-          "code": "claim_native_lowering_missing",
-          "source_key": "canary:reward-claim/quest/key/id3301"
-        },
-        {
-          "code": "claim_native_lowering_missing",
-          "source_key": "canary:reward-claim/quest/key/id3302"
-        },
-        {
-          "code": "claim_native_lowering_missing",
-          "source_key": "canary:reward-claim/quest/key/id3303"
-        },
-        {
-          "code": "claim_native_lowering_missing",
-          "source_key": "canary:reward-claim/quest/key/id3304"
-        },
-        {
           "code": "quest_native_lowering_missing"
         }
       ],
@@ -12131,10 +12090,6 @@
           "code": "reported_source_gap",
           "count": 41,
           "field": "unresolved_items"
-        },
-        {
-          "code": "claim_native_lowering_missing",
-          "source_key": "canary:reward-claim/quest/key/id3899"
         },
         {
           "code": "quest_native_lowering_missing"
@@ -12700,14 +12655,6 @@
           "code": "reported_source_gap",
           "count": 1,
           "field": "unresolved_items"
-        },
-        {
-          "code": "claim_native_lowering_missing",
-          "source_key": "canary:reward-claim/quest/u8_1/to_blind_the_enemy/bp1"
-        },
-        {
-          "code": "claim_native_lowering_missing",
-          "source_key": "canary:reward-claim/quest/u8_1/to_blind_the_enemy/bp2"
         }
       ],
       "quest_completeness": "NOT_ASSESSED",

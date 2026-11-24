@@ -6,6 +6,7 @@ use super::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::OnceLock;
 
 #[cfg(test)]
 mod capture_tests;
@@ -520,6 +521,35 @@ impl RewardCallback {
                     })
             })
     }
+
+    /// A dialogue can advance its topic under the existing quest and Premium
+    /// guards while leaving durable progress and inventory unchanged.
+    fn is_guarded_topic_change(&self) -> bool {
+        if self.topic == self.next_topic
+            || self.storage.is_empty()
+            || self.storage.iter().any(|state| {
+                state.set_if.is_some()
+                    || state.add.is_some()
+                    || state.increment
+                    || state.at_least
+                    || state.read_only
+                    || (!state.preserve
+                        && (state.minimum != state.maximum || state.set != state.minimum))
+            })
+        {
+            return false;
+        }
+        // Opt in only to conversation state and read predicates. Comparing the
+        // closed shape also excludes newly added reward effects by default.
+        let dialogue = serde_json::from_value::<Self>(serde_json::json!({
+            "key": self.key, "quest": self.quest, "npc": self.npc, "keywords": self.keywords,
+            "topic": self.topic, "next_topic": self.next_topic, "storage": self.storage,
+            "requires": self.requires, "requires_premium": self.requires_premium,
+            "take": [], "give": null, "outfit": null, "achievement": null,
+            "reply": self.reply, "failure_reply": self.failure_reply, "sources": self.sources
+        }));
+        dialogue.is_ok_and(|callback| callback == *self)
+    }
 }
 
 /// Source-bound track metadata; writable declarations name the exact existing owner.
@@ -608,7 +638,11 @@ pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback
 }
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
-    embedded_document().map(|document| document.callbacks)
+    // The embedded sources do not change between quest receipts.
+    static CALLBACKS: OnceLock<Result<Vec<RewardCallback>, String>> = OnceLock::new();
+    CALLBACKS
+        .get_or_init(|| embedded_document().map(|document| document.callbacks))
+        .clone()
 }
 
 fn embedded_document() -> Result<Document, String> {
@@ -1099,7 +1133,8 @@ fn validate_document_with_capacity(
                 && !c.is_save_restart_only()
                 && c.storage
                     .iter()
-                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                && !c.is_guarded_topic_change())
             || c.required_receipts.len() > 8
             || c.required_receipts.iter().collect::<BTreeSet<_>>().len()
                 != c.required_receipts.len()
@@ -1147,7 +1182,7 @@ fn validate_document_with_capacity(
                 != c.cosmetic_targets().count()
             || c.cosmetic_targets()
                 .any(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
-            || (c.keywords.is_empty() && c.world_claim.is_none())
+            || (c.keywords.is_empty() && c.world_claim.is_none() && c.carried_item.is_none())
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
             || c.keywords.iter().any(|s| {
@@ -1856,6 +1891,64 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn fiend_programme_requires_the_forgemaster_reward_at_every_stage() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let catalogue = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let claimed = callbacks
+            .iter()
+            .filter(|callback| {
+                callback
+                    .world_claim
+                    .as_ref()
+                    .is_some_and(|claim| claim.key == "oteryn:reward-claim.nrwicked-forgemaster")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(claimed.len(), 11);
+        for (stage, addons) in [
+            ("commission", None),
+            ("first-token", Some(0)),
+            ("second-token", Some(1)),
+            ("complete", Some(3)),
+        ] {
+            let callback = callbacks
+                .iter()
+                .find(|c| c.key == format!("oteryn:quest-reward/questpc7-fiend-{stage}"))
+                .ok_or("Fiend programme stage")?;
+            let requirements = callback.requirements.as_ref().ok_or("Fiend requirements")?;
+            assert_eq!(
+                requirements
+                    .owned_cosmetics
+                    .first()
+                    .map(|outfit| outfit.addons),
+                addons,
+                "{stage}"
+            );
+            assert_eq!(
+                requirements.owned_cosmetics.len(),
+                usize::from(addons.is_some()),
+                "{stage}"
+            );
+            assert!(requirements.premium);
+            assert_eq!(requirements.min_level, 250);
+            assert!(requirements.completed_quests.is_empty(), "{stage}");
+            let [gate] = callback.requires.as_slice() else {
+                return Err(format!("{stage} needs one Forgemaster claim predicate"));
+            };
+            assert!(!gate.holds(catalogue.catalogue(), &std::collections::BTreeMap::new()));
+            for reward in &claimed {
+                let [write] = reward.storage.as_slice() else {
+                    return Err("expected one Forgemaster reward write".into());
+                };
+                assert_eq!(write.track, gate.track);
+                let tracks = std::collections::BTreeMap::from([(write.track.clone(), write.set)]);
+                assert!(gate.holds(catalogue.catalogue(), &tracks), "{stage}");
+            }
+        }
+        Ok(())
+    }
+
     #[test]
     fn warmaster_crest_callbacks_refuse_an_owned_target_addon() -> Result<(), String> {
         let rows = super::load()?;

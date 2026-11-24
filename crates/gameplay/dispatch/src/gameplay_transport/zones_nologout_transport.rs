@@ -70,7 +70,7 @@ pub(super) async fn drain<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         let Some(message) = authority.take_server_notice(*admitted) else {
             break;
         };
-        emit_message(stream, admitted, sequence, &message).await?;
+        emit_notification(stream, admitted, sequence, &message).await?;
     }
     Some(())
 }
@@ -81,10 +81,46 @@ pub(super) async fn emit_message<S: AsyncWrite + Unpin>(
     sequence: &mut u64,
     message: &ServerMessage,
 ) -> Option<()> {
+    emit_notification(stream, admitted, sequence, &message.clone().into()).await
+}
+
+pub(super) async fn emit_notification<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    admitted: &mut AdmittedSession,
+    sequence: &mut u64,
+    notice: &ServerNotification,
+) -> Option<()> {
     if !selected(admitted) {
         return Some(());
     }
-    let payload = encode_server_message(message).ok()?;
+    if matches!(notice.message, ServerMessage::BossDefeated(_))
+        && !admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_BOSS_DEFEATED_V1)
+    {
+        return Some(());
+    }
+    let payload = if admitted
+        .continuity
+        .selected_capabilities
+        .contains(CAPABILITY_SERVER_MESSAGE_CATEGORY_V1)
+    {
+        encode_server_notification(notice)
+    } else {
+        encode_server_message(&notice.message)
+    }
+    .ok()?;
+    emit_delta(stream, admitted, sequence, 1, &payload).await
+}
+
+pub(super) async fn emit_delta<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    admitted: &mut AdmittedSession,
+    sequence: &mut u64,
+    delta_type: u32,
+    payload: &[u8],
+) -> Option<()> {
     let next_sequence = sequence.checked_add(1)?;
     let revision = admitted.continuity.server_message_revision;
     let next_revision = revision.checked_add(1)?;
@@ -94,8 +130,8 @@ pub(super) async fn emit_message<S: AsyncWrite + Unpin>(
         STATE_DOMAIN_SERVER_MESSAGES,
         revision,
         next_revision,
-        1,
-        &payload,
+        delta_type,
+        payload,
     )
     .ok()?;
     write_frame(stream, &frame).await.ok()?;

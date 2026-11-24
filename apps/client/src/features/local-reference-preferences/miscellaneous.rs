@@ -9,6 +9,8 @@ pub struct MiscellaneousPreferences {
     pub stay_logged_in: bool,
     pub remember_device: bool,
     pub quick_login: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub startup_engine: Option<oteryn_renderer::GraphicsEngine>,
     pub confirm_logout: bool,
     pub confirm_exit: bool,
 }
@@ -20,6 +22,7 @@ impl Default for MiscellaneousPreferences {
             stay_logged_in: false,
             remember_device: false,
             quick_login: false,
+            startup_engine: None,
             confirm_logout: true,
             confirm_exit: true,
         }
@@ -88,6 +91,7 @@ impl MiscellaneousPreferences {
             stay_logged_in,
             remember_device,
             quick_login,
+            startup_engine,
             confirm_logout,
             confirm_exit,
         } = *self;
@@ -102,6 +106,9 @@ impl MiscellaneousPreferences {
         }
         if before.remember_device != remember_device {
             active.remember_device = remember_device;
+        }
+        if before.startup_engine != startup_engine {
+            active.startup_engine = startup_engine;
         }
         if before.quick_login != quick_login {
             active.quick_login = quick_login;

@@ -71,6 +71,26 @@ pub(super) fn production_generation_with_source(
         .map_err(debug)
 }
 
+pub(super) fn production_generation_with_cosmetics(
+    world: WorldId,
+    content: &str,
+    source: Option<&[u8]>,
+    cosmetics: Vec<u8>,
+) -> TestResult<(
+    ContentActivationController,
+    crate::content::NativeEntryContentPin,
+)> {
+    use sha2::Digest;
+    let mut supplied = production_input_with_source(content, source)?;
+    supplied.cosmetics.sha256 = sha2::Sha256::digest(&cosmetics)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    supplied.cosmetics.bytes = cosmetics;
+    crate::content::native_gameplay::test_support::try_activate_input(world, &supplied)
+        .map_err(debug)
+}
+
 /// Keep initial and successor generations on the same fixture revision.
 pub(super) fn production_input_with_source(
     content: &str,

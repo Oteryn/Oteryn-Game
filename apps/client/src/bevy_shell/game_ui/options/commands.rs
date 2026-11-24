@@ -18,6 +18,6 @@ pub(super) fn edit(
         return false;
     };
     let mut edited = false;
-    owner.edit_preferences(|draft| edited = row.set(draft, value));
+    owner.edit_preferences(|draft| edited = row.enabled(draft) && row.set(draft, value));
     edited
 }

@@ -12,16 +12,45 @@ fn id(seed: u8) -> [u8; 16] {
 }
 
 #[test]
-fn raid_warning_and_advance_use_only_selected_existing_server_message_domain()
+fn server_message_framing_requires_the_domain_and_boss_event_capabilities()
 -> Result<(), Box<dyn std::error::Error>> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
         .block_on(async {
-            for selected in [false, true] {
+            for (capabilities, server_messages, boss_defeats, categorized) in [
+                (&[][..], false, false, false),
+                (&[CAPABILITY_ZONES_NOLOGOUT_V1][..], true, false, false),
+                (
+                    &[
+                        CAPABILITY_ZONES_NOLOGOUT_V1,
+                        CAPABILITY_SERVER_MESSAGE_CATEGORY_V1,
+                    ][..],
+                    true,
+                    false,
+                    true,
+                ),
+                (
+                    &[CAPABILITY_ZONES_NOLOGOUT_V1, CAPABILITY_BOSS_DEFEATED_V1][..],
+                    true,
+                    true,
+                    false,
+                ),
+                (
+                    &[
+                        CAPABILITY_ZONES_NOLOGOUT_V1,
+                        CAPABILITY_SERVER_MESSAGE_CATEGORY_V1,
+                        CAPABILITY_BOSS_DEFEATED_V1,
+                    ][..],
+                    true,
+                    true,
+                    true,
+                ),
+            ] {
                 for message in [
                     ServerMessage::Warning("A raid is coming!".into()),
                     ServerMessage::Advance("The army has arrived!".into()),
+                    ServerMessage::BossDefeated("oteryn:creature.ferumbras".into()),
                 ] {
                     let mut admitted = AdmittedSession {
                         game_session_id: crate::foundation::GameSessionId::decode(&id(50))?,
@@ -33,17 +62,22 @@ fn raid_warning_and_advance_use_only_selected_existing_server_message_domain()
                         continuity: SessionContinuity::FRESH,
                         item_fence: None,
                     };
-                    if selected {
-                        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                         crate::gameplay_transport::capabilities::PRODUCTION_OFFERED_CAPABILITIES,
-                        &[21, CAPABILITY_ZONES_NOLOGOUT_V1],
-                    ).ok_or("server-message capability")?;
-                    }
+                        capabilities,
+                    )
+                    .ok_or("server-message capability")?;
+                    let selected = server_messages
+                        && (boss_defeats || !matches!(message, ServerMessage::BossDefeated(_)));
                     admitted.continuity.server_message_revision = 4;
                     admitted.continuity.server_sequence = 7;
                     let mut sequence = 7;
                     let (mut server, mut client) = tokio::io::duplex(1024);
-                    emit_message(&mut server, &mut admitted, &mut sequence, &message)
+                    let notice = ServerNotification {
+                        message: message.clone(),
+                        category: ServerMessageCategory::Raid,
+                    };
+                    emit_notification(&mut server, &mut admitted, &mut sequence, &notice)
                         .await
                         .ok_or("message")?;
                     drop(server);
@@ -62,10 +96,16 @@ fn raid_warning_and_advance_use_only_selected_existing_server_message_domain()
                             (delta.domain_id, delta.base_revision, delta.new_revision),
                             (57, 4, 5)
                         );
+                        let decoded = decode_server_notification(delta.payload)
+                            .map_err(|error| format!("{error:?}"))?;
+                        assert_eq!(decoded.message, message);
                         assert_eq!(
-                            decode_server_message(delta.payload)
-                                .map_err(|error| format!("{error:?}"))?,
-                            message
+                            decoded.category,
+                            if categorized {
+                                ServerMessageCategory::Raid
+                            } else {
+                                ServerMessageCategory::Default
+                            }
                         );
                         assert_eq!(
                             (sequence, admitted.continuity.server_message_revision),

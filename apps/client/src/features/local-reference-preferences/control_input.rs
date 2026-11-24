@@ -6,6 +6,13 @@ use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, time::Duration};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MouseScheme {
+    #[default]
+    Regular,
+    Classic,
+    LeftSmart,
+}
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MousePreset {
     #[default]
     Standard,
@@ -37,10 +44,14 @@ impl RotationModifier {
 #[serde(default, deny_unknown_fields)]
 pub struct ControlPreferences {
     pub mouse: MousePreset,
+    pub scheme: MouseScheme,
+    pub preserve_facing: bool,
     pub movement: MovementKeys,
     pub rotation: RotationModifier,
     /// Minimum interval between operating-system repeat presses. Initial presses stay immediate.
     pub keyboard_delay_ms: u16,
+    pub default_delay: bool,
+    pub move_whole_stack: bool,
 }
 impl ControlPreferences {
     pub fn drag_button(&self, world_surface: bool) -> MouseButton {

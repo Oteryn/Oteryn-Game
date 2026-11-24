@@ -153,7 +153,38 @@ pub(super) fn render(
                     if rows.is_empty() {
                         text(commands, skins, body, "No forge operations yet");
                     }
-                    for (ordinal, receipt) in rows {
+                    let last = history_last_page(panel);
+                    if last > 0 {
+                        button(
+                            commands,
+                            skins,
+                            body,
+                            key,
+                            Kind::HistoryPage(key.history_page.saturating_sub(1)),
+                            "Previous page",
+                            !panel.pending && key.history_page > 0,
+                        );
+                        text(
+                            commands,
+                            skins,
+                            body,
+                            format!("Page {} of {}", key.history_page + 1, last + 1),
+                        );
+                        button(
+                            commands,
+                            skins,
+                            body,
+                            key,
+                            Kind::HistoryPage(key.history_page + 1),
+                            "Next page",
+                            !panel.pending && key.history_page < last,
+                        );
+                    }
+                    for (ordinal, receipt) in rows
+                        .iter()
+                        .skip(key.history_page * HISTORY_PAGE_SIZE)
+                        .take(HISTORY_PAGE_SIZE)
+                    {
                         text(
                             commands,
                             skins,

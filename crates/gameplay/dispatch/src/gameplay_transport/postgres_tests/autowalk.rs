@@ -306,7 +306,7 @@ fn scenario(target_move: bool) -> TestResult {
         if target_move {
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 owner.offered_capabilities(),
-                &[4, 6, 11, 13, 15, 18, 31, 64],
+                &[4, 6, 11, 13, 15, 18, 31, 64, 605],
             )
             .ok_or("target selection")?;
         }

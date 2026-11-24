@@ -1,4 +1,6 @@
 //! BOOSTED-1 bounded client query for the World server-save day's selected creature and boss.
+#[path = "daily_boost_login.rs"]
+pub mod login;
 
 pub const CAPABILITY_DAILY_BOOST_V1: u32 = 151;
 pub const COMMAND_TYPE_DAILY_BOOST_QUERY: u32 = 177;

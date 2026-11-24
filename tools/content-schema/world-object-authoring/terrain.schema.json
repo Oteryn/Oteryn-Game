@@ -509,6 +509,7 @@
                     "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
                     "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1",
                     "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+                    "OTERYN_OFFICIAL_CLIENT_ALAWAR_STATIC/v1",
                     "OTERYN_FEROXA_FIXED_SOURCE_SCENERY/v1"
                   ]
                 },
@@ -688,7 +689,175 @@
             "source_item_id": {
               "enum": [
                 9290,
-                44576
+                12746,
+                23463,
+                35072,
+                35073,
+                35074,
+                35702,
+                36021,
+                36026,
+                40196,
+                40197,
+                40200,
+                40201,
+                40202,
+                40203,
+                40230,
+                40231,
+                40233,
+                40234,
+                40235,
+                40236,
+                42980,
+                44576,
+                44578,
+                44580,
+                44581,
+                49330,
+                49333,
+                49334,
+                49335,
+                49341,
+                50100,
+                50343,
+                50344,
+                50348,
+                50349,
+                50352,
+                50356,
+                50357,
+                50358,
+                50359,
+                50360,
+                50361,
+                50362,
+                50363,
+                50364,
+                50365,
+                50367,
+                50368,
+                50371,
+                50375,
+                50376,
+                50413,
+                50445,
+                50461,
+                50464,
+                50470,
+                50626,
+                50661,
+                51322,
+                51347,
+                51902,
+                51905,
+                51907,
+                51908,
+                51909,
+                51911,
+                51912,
+                51913,
+                51915,
+                51916,
+                51917,
+                52465,
+                52631,
+                53234,
+                53239,
+                53254,
+                53257,
+                53259,
+                53260,
+                53289,
+                53687,
+                54049,
+                54052,
+                54083
+              ]
+            }
+          },
+          "not": {
+            "required": [
+              "item_pointer"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "source": {
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1"
+                }
+              }
+            },
+            "route": {
+              "properties": {
+                "owner": {
+                  "const": "Terrain"
+                },
+                "reason": {
+                  "const": "scoped_spawn_ground"
+                }
+              }
+            },
+            "source_item_id": {
+              "enum": [
+                470,
+                5404,
+                20658,
+                32688,
+                32690,
+                32981,
+                32982,
+                32983,
+                33072,
+                35400,
+                40199,
+                42764,
+                43746,
+                44783,
+                44784,
+                44785,
+                44786,
+                44787,
+                44788,
+                44810,
+                44811,
+                44812,
+                45046,
+                45198,
+                45316,
+                48227,
+                48234,
+                48374,
+                48375,
+                50815,
+                50816,
+                50817,
+                50818,
+                50819,
+                50820,
+                51325,
+                51327,
+                52067,
+                52068,
+                52069,
+                52071,
+                52072,
+                52073,
+                52074,
+                52075,
+                52076,
+                52077,
+                52078,
+                52079,
+                52080,
+                52463,
+                52464
               ]
             }
           },
@@ -1090,6 +1259,28 @@
                   "const": "official_client"
                 },
                 "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_ALAWAR_STATIC/v1"
+                }
+              }
+            },
+            "route": {
+              "properties": {
+                "owner": { "const": "Terrain" },
+                "reason": { "const": "alawar_static_appearance" }
+              }
+            },
+            "source_item_id": { "enum": [10729, 10731, 10733, 10734, 10843, 10844, 10845] }
+          },
+          "not": { "required": ["item_pointer"] }
+        },
+        {
+          "properties": {
+            "source": {
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "profile": {
                   "const": "OTERYN_FEROXA_FIXED_SOURCE_SCENERY/v1"
                 }
               }
@@ -1226,7 +1417,10 @@
                       "const": "official_client"
                     },
                     "profile": {
-                      "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                      "enum": [
+                        "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+                        "OTERYN_OFFICIAL_CLIENT_ALAWAR_STATIC/v1"
+                      ]
                     }
                   }
                 },
@@ -1288,7 +1482,10 @@
                       "const": "official_client"
                     },
                     "profile": {
-                      "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                      "enum": [
+                        "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+                        "OTERYN_OFFICIAL_CLIENT_ALAWAR_STATIC/v1"
+                      ]
                     }
                   }
                 },
@@ -1350,7 +1547,10 @@
                       "const": "official_client"
                     },
                     "profile": {
-                      "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                      "enum": [
+                        "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+                        "OTERYN_OFFICIAL_CLIENT_ALAWAR_STATIC/v1"
+                      ]
                     }
                   }
                 },

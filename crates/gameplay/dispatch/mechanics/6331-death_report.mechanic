@@ -1,0 +1,4 @@
+name=death_report
+commands=6331
+[route]
+routing::death_protection::route(authority, &session.admitted, command).await

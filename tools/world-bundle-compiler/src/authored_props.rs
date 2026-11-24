@@ -84,7 +84,7 @@ fn pinned(
     }
     Ok(bytes)
 }
-fn encode(region: &b3::Region) -> Result<Vec<u8>, Error> {
+pub(super) fn encode(region: &b3::Region) -> Result<Vec<u8>, Error> {
     let count = u16::try_from(region.sectors.len()).map_err(|_| bad("sector count"))?;
     let mut frames = Vec::new();
     for (sx, sy, tiles) in &region.sectors {

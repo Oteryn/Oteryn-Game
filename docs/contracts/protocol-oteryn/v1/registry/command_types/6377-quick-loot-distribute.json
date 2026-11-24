@@ -1,0 +1,10 @@
+{
+  "id": 6377,
+  "name": "QUICK_LOOT_DISTRIBUTE",
+  "owner_decision": "Managed containers (2026-11-22)",
+  "capability": 607,
+  "payload_schema": "quick-loot-destinations-v1.md",
+  "result_schema": "quick-loot-destinations-v1.md",
+  "max_payload_bytes": 64,
+  "max_result_payload_bytes": 32768
+}

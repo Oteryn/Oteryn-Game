@@ -16,7 +16,11 @@ pub fn validate_resolved_world(
         for quest in &bindings.source.quests {
             authored_tracks.extend(quest.tracks.iter().map(|track| &track.key));
             for stage in &quest.stages {
-                if stage.transition(&quest.quest)?.key == transition.key {
+                if stage
+                    .transitions(&quest.quest)?
+                    .iter()
+                    .any(|op| op.key == transition.key)
+                {
                     return validate_for_catalogue(catalogue, transition, world_context);
                 }
             }
@@ -78,6 +82,29 @@ pub fn validate_resolved_world(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn exact_journey_callbacks_share_published_tracks_under_world_admission() -> Result<(), String>
+    {
+        let source = super::super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = source.catalogue();
+        let callbacks = world_callbacks::load_for(catalogue)?;
+        for key in [
+            "oteryn:quest-callback/alawars-vault-cross-open-magic-wall",
+            "oteryn:quest-callback/paradox-tower/native-skulls",
+            "oteryn:quest-callback/koshei/tomb-entry",
+        ] {
+            let operation = catalogue.transition(key).ok_or(key)?;
+            validate_resolved_world(catalogue, operation, true, &callbacks)?;
+            assert!(validate_resolved_world(catalogue, operation, false, &callbacks).is_err());
+            let mut alias = operation.clone();
+            alias.key.push_str("-alias");
+            assert!(validate_resolved_world(catalogue, &alias, true, &callbacks).is_err());
+        }
+        Ok(())
+    }
+
     #[test]
     fn published_registry_does_not_exhaust_the_resolved_source_bound() -> Result<(), String> {
         let source = super::super::super::loader::load_embedded_quest_state("content-1")
@@ -88,8 +115,12 @@ mod tests {
         let callbacks = world_callbacks::load_for(catalogue)?;
         // The published registry includes all package 4 source cohorts.
         assert_eq!(base.len(), 1_094);
-        assert_eq!(bindings.world_callbacks().count(), 31);
-        assert_eq!(callbacks.len(), 1_125);
+        assert_eq!(bindings.world_callbacks().count(), 96);
+        assert_eq!(callbacks.len(), 1_190);
+        assert_eq!(
+            callbacks.len(),
+            base.len() + bindings.world_callbacks().count()
+        );
         assert!(callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS);
         let expected: BTreeSet<_> = base
             .iter()

@@ -472,3 +472,49 @@ fn speech_receipts_wait_for_the_matching_log_snapshot() -> Result<(), Box<dyn st
     );
     Ok(())
 }
+
+#[test]
+fn dismiss_screen_messages_clears_projected_speech() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::bevy_shell::owner::HostOwner;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (mut app, outbox) = bubble_app()?;
+    receive(&mut app, &outbox, vec![local("Ann", "hello", 10)], 1);
+    assert_eq!(
+        app.world()
+            .resource::<super::SpeechBubbles>()
+            .entities
+            .len(),
+        1
+    );
+    let host = app.world().non_send::<HostOwner>();
+    assert!(
+        host.play
+            .as_ref()
+            .ok_or("play")?
+            .view
+            .notification_input(&[NormalizedInputEvent::Key {
+                code: KeyCode::new(69)?,
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::one(Modifier::Control)
+                    .with(Modifier::Alt)
+                    .with(Modifier::Shift),
+                repeat: false,
+            }])
+    );
+    app.update();
+    assert!(
+        app.world()
+            .resource::<super::SpeechBubbles>()
+            .entities
+            .is_empty()
+    );
+    receive(&mut app, &outbox, vec![local("Ann", "later", 10)], 2);
+    assert_eq!(
+        app.world()
+            .resource::<super::SpeechBubbles>()
+            .entities
+            .len(),
+        1
+    );
+    Ok(())
+}

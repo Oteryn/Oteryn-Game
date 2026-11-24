@@ -191,10 +191,22 @@ fn verifier_rejections_and_conformance_vectors() -> Result<(), WireError> {
     )?;
     let mut r = base.clone();
     r.target.world_id = Some("disabled".into());
+    let op = Operation::WorldGet;
+    r.operation = op.name().into();
+    r.actor.permission = op.permission().into();
+    let mut world_policy = p.clone();
+    world_policy.operations.insert(
+        r.operation.clone(),
+        crate::policy::OperationPolicy {
+            min_risk_class: op.minimum(),
+            allowed_permissions: [op.permission().into()].into(),
+            worlds: ["w-antica".into()].into(),
+        },
+    );
     add(
         "disabled-world",
         r,
-        p.clone(),
+        world_policy,
         Evidence::default(),
         E::AdmForbidden,
         true,
@@ -403,7 +415,7 @@ fn precedence_rotation_and_policy_validation() -> Result<(), WireError> {
     let text = policy_text();
     assert!(Policy::parse(&text.replace("R0", "R1")).is_ok());
     assert!(Policy::parse(&text.replace("game.ops.read", "game.db.admin")).is_err());
-    assert!(crate::channel::execute("world.list", &p).is_err());
+    assert!(!advertised().contains(Operation::AnalyticsCatalog.name()));
     Ok(())
 }
 

@@ -117,6 +117,7 @@ pub(super) fn project(
     parents: Query<&ChildOf>,
     mut nodes: Query<&mut Node>,
     layouts: Option<ResMut<WindowLayouts>>,
+    draggable: Query<(), With<DraggableDialog>>,
 ) {
     roots.retain(|(_, root)| nodes.contains(*root));
     let mut moved = false;
@@ -144,6 +145,14 @@ pub(super) fn project(
             }
             _ => continue,
         };
+        if id == CHAT {
+            let locked = owner.settings.preferences.chat_drag_locked;
+            if locked && draggable.contains(root) {
+                commands.entity(root).remove::<DraggableDialog>();
+            } else if !locked && !draggable.contains(root) {
+                commands.entity(root).insert(DraggableDialog);
+            }
+        }
         let parent = parents.get(content).ok().map(ChildOf::parent);
         let visible = wanted
             && nodes

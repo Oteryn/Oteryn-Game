@@ -29,7 +29,7 @@ impl Default for ConsolePreferences {
             guild_channel: false,
             public_rooms: [false; 8],
             conversations: Vec::new(),
-            local_channels: [false; 3],
+            local_channels: [true, true, false],
             auto_private_tabs: true,
             join_leave: true,
             events: true,

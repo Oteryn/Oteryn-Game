@@ -222,7 +222,7 @@ pub(super) async fn claim_count(harness: &Harness) -> TestResult<i64> {
     .await?)
 }
 
-pub(super) const SERVED_CHEST: (u16, u16, i8) = (34101, 32346, -14);
+pub(in super::super) const SERVED_CHEST: (u16, u16, i8) = (34101, 32346, -14);
 
 pub(super) fn assert_production_choices(
     placements: &[crate::content::world_reward_claims::BoundPlacement],
@@ -251,7 +251,7 @@ pub(super) fn assert_production_choices(
     Ok(())
 }
 
-pub(super) fn production_chests(
+pub(in super::super) fn production_chests(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use crate::map::{boot, overlay::TilePos};
@@ -364,5 +364,52 @@ pub(super) async fn ask_for_key(
     let rows = owner.root.read_character_quest_state(owner.character, character).await.map_err(debug)?;
     assert_eq!(rows.tracks().get(ACCESS), Some(&1));
     assert_eq!(rows.tracks().get(DOOR_STAGE), Some(&3));
+    Ok(())
+}
+
+pub(in super::super) async fn claim_for_fiend(
+    h: &Harness,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    super::super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[(ACCESS.into(), 1), (DOOR_STAGE.into(), 3)],
+        168,
+    )
+    .await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    let actor = admitted.runtime_actor.ok_or("Forgemaster actor")?;
+    let (x, y, floor) = SERVED_CHEST;
+    let key = oteryn_world_bundle::bundle::placement_key(floor, x, y, 2)
+        .ok_or("Forgemaster chest placement")?;
+    let map = owner.bundle_map().ok_or("Forgemaster map")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let target = WorldObjectTarget {
+        placement,
+        expected_revision: 0,
+    };
+    assert_eq!(claim_count(h).await?, 0);
+    assert_eq!(
+        use_chest(owner, admitted, actor, 13, &target).await?,
+        UseDisposition::Committed,
+        "the native Forgemaster chest USE must write the reward flag"
+    );
+    assert_eq!(claim_count(h).await?, 1);
+    let claimed: i64 = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks
+         WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND track_key=$3",
+    )
+    .bind(id(41).as_slice())
+    .bind(QUEST)
+    .bind(CLAIMED)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(claimed, 1);
     Ok(())
 }

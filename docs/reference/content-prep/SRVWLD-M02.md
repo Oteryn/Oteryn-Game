@@ -74,7 +74,7 @@ chosen Oteryn physical placement, **not** a claim that the wiki provides its
 literal original-world coordinates. The actual base region contains the
 sandstone window1744 at `(33216,32855,9)`, base ordinal1; both north/northwest
 cells `(33216,32854,9)` and `(33215,32854,9)` contain clear floor7358.
-Native floors are `-9`. Region SHA256: `5f1c4081bc48d6e2481d0e29f37fed6b6823d6e749d1d9e75ecbfba15706d3bc`.
+Native floors are `-9`. Region SHA256: `736362926151abcf887b052b3486c50dd687fa7e929105733f3d434b744bbe5b`.
 The ordinal is an existing base slot, not a newly allocated registry number.
 
 Each selected stack is crate2471, crate2471, large amphora2904, quantity1

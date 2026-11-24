@@ -1,5 +1,4 @@
-//! Source books and Paradox caches retain their per-character RewardClaim identities.
-//! This resolves immutable source pairs, never an alias supplied by a caller.
+//! World callbacks that retain an existing per-character RewardClaim identity.
 use super::{ActorKind, Callback, Trigger};
 use crate::quest::reward_callbacks::{ItemReward, NativeClaimBinding};
 use serde_json::{Value, json};
@@ -14,6 +13,16 @@ const CLAIMS: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../../../content/interactions/reward_claims/reward-claims-00200-00230.json"
 ));
+const SERPENTINE_BINDING: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/quests/authored-bindings/serpentine_tower_journey.json"
+));
+const SERPENTINE_CLAIMS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/interactions/reward_claims/reward-claims-00100-00199.json"
+));
+pub const SERPENTINE_PEARL_CLAIM: &str =
+    "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl";
 const PAIRS: &[(&str, &str)] = &[
     (
         "l2-tome-children-1",
@@ -101,20 +110,19 @@ fn bind(callbacks: &str, claims: &str) -> Result<Vec<Binding>, String> {
     let pairs = PAIRS.iter().map(|&(callback, claim)| {
         (
             callback,
-            format!("u8_54.{claim}"),
+            format!("oteryn:reward-claim.quest.u8_54.{claim}"),
             "oteryn:item.tibia.i10217",
             1,
         )
     });
-    bind_pairs(callbacks, claims, pairs)
+    bind_pairs(&super::parse(callbacks)?, claims, pairs)
 }
 
 fn bind_pairs<'a>(
-    callbacks: &str,
+    callbacks: &[Callback],
     claims: &str,
     pairs: impl IntoIterator<Item = (&'a str, String, &'a str, u16)>,
 ) -> Result<Vec<Binding>, String> {
-    let callbacks = super::parse(callbacks)?;
     let claims: Value = serde_json::from_str(claims).map_err(|error| error.to_string())?;
     if claims["schema"] != "OTERYN_REWARD_CLAIM_SHARD/v1" || claims["family"] != "RewardClaim" {
         return Err("legacy World claim shard".into());
@@ -124,7 +132,7 @@ fn bind_pairs<'a>(
         .ok_or("legacy World claim records")?;
     let mut bindings = Vec::new();
     let mut positions = BTreeSet::new();
-    for (callback_suffix, claim_suffix, item, count) in pairs {
+    for (callback_suffix, claim_key, item, count) in pairs {
         let reward: ItemReward = serde_json::from_value(json!({
             "item": item, "count": count, "contents": [],
         }))
@@ -134,7 +142,6 @@ fn bind_pairs<'a>(
             .iter()
             .find(|callback| callback.key == key)
             .ok_or("legacy World callback missing")?;
-        let claim_key = format!("oteryn:reward-claim.quest.{claim_suffix}");
         let matching: Vec<_> = records
             .iter()
             .map(|row| &row["definition"])
@@ -247,6 +254,35 @@ fn bind_pairs<'a>(
     Ok(bindings)
 }
 
+fn load() -> Result<Vec<Binding>, String> {
+    let mut bindings = bind(CALLBACKS, CLAIMS)?;
+    let tower = crate::quest::authored_bindings::Bindings::parse(SERPENTINE_BINDING.as_bytes())?;
+    let tower_callbacks = tower.world_callbacks().cloned().collect::<Vec<_>>();
+    bindings.extend(bind_pairs(
+        &tower_callbacks,
+        SERPENTINE_CLAIMS,
+        [(
+            "authored-serpentine-tower-pearl",
+            SERPENTINE_PEARL_CLAIM.to_owned(),
+            "oteryn:item.tibia.i3026",
+            1,
+        )],
+    )?);
+    bindings.extend(bind_pairs(
+        &super::parse(PARADOX_CALLBACKS)?,
+        PARADOX_CLAIMS,
+        PARADOX_PAIRS.iter().map(|&(callback, claim, item, count)| {
+            (
+                callback,
+                format!("oteryn:reward-claim.quest.{claim}"),
+                item,
+                count,
+            )
+        }),
+    )?);
+    Ok(bindings)
+}
+
 /// Preserve an existing once claim only for its exact compiled source callback.
 /// The World writer still owns physical admission and atomic progress plus MINT.
 pub fn legacy_world_claim(
@@ -263,20 +299,7 @@ pub fn legacy_world_source_unique(callback: &Callback) -> Result<Option<u16>, St
 
 fn legacy_world_binding(callback: &Callback) -> Result<Option<&'static Binding>, String> {
     static BINDINGS: OnceLock<Result<Vec<Binding>, String>> = OnceLock::new();
-    let bindings = BINDINGS
-        .get_or_init(|| {
-            let mut bindings = bind(CALLBACKS, CLAIMS)?;
-            bindings.extend(bind_pairs(
-                PARADOX_CALLBACKS,
-                PARADOX_CLAIMS,
-                PARADOX_PAIRS.iter().map(|&(callback, claim, item, count)| {
-                    (callback, claim.to_owned(), item, count)
-                }),
-            )?);
-            Ok(bindings)
-        })
-        .as_ref()
-        .map_err(Clone::clone)?;
+    let bindings = BINDINGS.get_or_init(load).as_ref().map_err(Clone::clone)?;
     let bound =
         bindings.iter().find(|binding| {
             callback.key == binding.callback.key

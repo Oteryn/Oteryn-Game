@@ -183,7 +183,7 @@ fn baseline_speed(
 /// its spell conditions' `SPEED` deltas, and the equipment speed. On qualified source ground
 /// the equipment speed must come from the persisted-equipment owner, so an unavailable read
 /// refuses the step; elsewhere it is 0 until that owner is composed (SPEED-1 §4.1).
-fn spell_state_speed(
+pub(in crate::gameplay_transport) fn spell_state_speed(
     runtime: &ChannelRuntimeV1,
     state: &crate::spell::cast::PlayerSpellState,
     actor: ExactActorRef,
@@ -1967,6 +1967,35 @@ mod creature_field_step_tests {
         );
         assert_eq!(runtime.read_actor_position(actor).unwrap().position().x, 1);
     }
+    #[test]
+    fn creature_field_lethal_step_retains_creature_final_blow() {
+        let (mut runtime, mut states, room, actor, session) = ready();
+        let field = contact(&runtime);
+        states
+            .get_mut(&runtime, actor, session)
+            .unwrap()
+            .restore_saved_vitals(1, 0);
+        states
+            .step_with_non_player_field_contact(
+                &mut runtime,
+                room.movement_cells(),
+                actor,
+                session,
+                0,
+                CardinalStep::East,
+                &std::collections::BTreeSet::new(),
+                None,
+                None,
+                Some(field),
+            )
+            .unwrap();
+        let death = states.player_death(&runtime, actor, session).unwrap();
+        assert_eq!(
+            death.public_cause,
+            Some(crate::durability::character_death::PublicDeathCause::UnidentifiedCreature),
+        );
+    }
+
     #[test]
     fn blocked_step_leaves_initial_hp_condition_cursor_and_position_unchanged() {
         let (mut runtime, mut states, room, actor, session) = ready();

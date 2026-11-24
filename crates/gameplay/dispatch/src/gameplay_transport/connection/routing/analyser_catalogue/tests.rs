@@ -12,6 +12,11 @@ impl FreshAdmissionAuthority for Authority {
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         Err(AdmissionRefusal::Unavailable)
     }
+    async fn analyser_npc_prices_query(&self, _: AdmittedSession, ids: &[u32]) -> Option<Vec<u8>> {
+        assert_eq!(ids, &[1, 2]);
+        oteryn_protocol_oteryn::analyser_catalogue::encode_npc_prices(&[(1, Some(15)), (2, None)])
+            .ok()
+    }
     async fn analyser_catalogue_query(&self, _: AdmittedSession, ids: &[u32]) -> Option<Vec<u8>> {
         self.0.set(self.0.get() + 1);
         oteryn_protocol_oteryn::analyser_catalogue::encode_reply(
@@ -96,4 +101,57 @@ fn analyser_catalogue_route_enforces_selection_and_bounded_request()
         })?
         .join()
         .map_err(|_| "analyser catalogue test thread")?
+}
+
+#[test]
+fn analyser_valuable_prices_route_requires_capability_and_returns_definition_prices()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (runtime, actor, session) =
+        crate::gameplay_transport::actor_spell::tests::runtime_with_player(31);
+    let mut admitted = AdmittedSession {
+        game_session_id: session,
+        world_id: runtime.binding().world_id(),
+        channel_id: runtime.binding().channel_id().ok_or("channel")?,
+        runtime_actor: Some(actor),
+        first_entry: FirstEntryOutcome::Positioned,
+        controller: None,
+        continuity: SessionContinuity::FRESH,
+        item_fence: None,
+    };
+    let authority = Authority(Cell::new(0));
+    let payload = oteryn_protocol_oteryn::analyser_catalogue::encode_request(&[1, 2])?;
+    let command = oteryn_protocol_oteryn::ClientCommandView {
+        command_id: 1,
+        command_type: 6360,
+        payload: &payload,
+    };
+    let offered = [
+        OfferedCapability {
+            id: 10,
+            requires: &[],
+        },
+        OfferedCapability {
+            id: 599,
+            requires: &[10],
+        },
+    ];
+    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+    runtime.block_on(async {
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(&offered, &[10]).ok_or("legacy selection")?;
+        assert!(matches!(
+            route(&authority, &admitted, command).await,
+            Dispatch::Reply(crate::foundation::CommandStatus::Rejected, _)
+        ));
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(&offered, &[10, 599]).ok_or("price selection")?;
+        let Dispatch::Reply(crate::foundation::CommandStatus::Accepted, reply) =
+            route(&authority, &admitted, command).await
+        else {
+            return Err("price reply".into());
+        };
+        let rows = oteryn_protocol_oteryn::analyser_catalogue::decode_npc_prices(&reply)?;
+        assert_eq!(rows, vec![(1, Some(15)), (2, None)]);
+        Ok(())
+    })
 }

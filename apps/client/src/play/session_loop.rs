@@ -8,7 +8,6 @@ use crate::combat_input::PlayCommand;
 use oteryn_session::LogoutResult;
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
-
 /// How long the idle session task serves liveness probes; well inside the server's probe cadence.
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 
@@ -227,8 +226,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 match session.feature(&command).await {
                 Ok(result) => {
                     outbox.performance_command_result(started.elapsed());
-                    let mount_accepted = command.capability == 502
-                        && result.status == oteryn_session::CommandStatus::Accepted;
+                    let mount_accepted = command.capability == 502 && result.status == oteryn_session::CommandStatus::Accepted;
                     match command.capability {
                         502 if !mount_accepted => outbox.mount_result(result.status),
                         7 => outbox.console_result(&result),
@@ -252,6 +250,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                             oteryn_session::daily_reward::returner::QUERY | oteryn_session::daily_reward::returner::CLAIM =>outbox.daily_reward_returner_result(command.kind,&result),
                             _ => {}
                         },
+                        132 => outbox.trade_inspection_result(&command, &result),
                         170 => outbox.arena_result(&result),
                         195 | 448 => outbox.weapon_proficiency_result(&result),
                         148 if command.kind == 6121 => outbox.gem_presentation_result(&command, &result),
@@ -263,6 +262,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         512 => outbox.channel_switch_result(&command, &result),
                         504 => outbox.tutorial_vocation_result(&result),
                         250 => outbox.hireling_management_result(&result),
+                        272 => outbox.market_funds_result(&result),
                         276 => outbox.condition_status_result(&result),
                         384 => outbox.mechanics_status_result(&result),
                         277 => outbox.rest_status_result(&result),
@@ -382,7 +382,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Stash(command)) => match session.stash(&command).await {
+            Ok(PlayCommand::Stash(command)) => match outbox.stash_execute(&mut session, &command).await {
                 Ok(response) => {
                     outbox.stash_result(&response);
                     publish(&mut session, &outbox, &mut held);
@@ -509,9 +509,8 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Vip(request)) => match send_vip(&mut session, &request).await {
-                Ok(response) => {
-                    outbox.vip_result(&response);
+            Ok(PlayCommand::Vip(request)) => match send_vip(&mut session, &outbox, &request).await {
+                Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

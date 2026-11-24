@@ -358,7 +358,16 @@ jobs:
           if [[ "$ARCHIVE" =~ ^lib-[123]$ && -f tools/ci/shared_dispatch_archive.py ]]; then
             role="dispatch-${ARCHIVE#lib-}"
             directory="$RUNNER_TEMP/shared-dispatch-local/$role"
-            python3 tools/ci/shared_dispatch_archive.py build "$directory" "$role"
+            # A healthy local build takes 10-17 min (max seen 30 min); one stalled the runner
+            # until it was lost after 55 min. Fail it at 32 min instead.
+            status=0
+            timeout --kill-after=60s 32m \
+              python3 tools/ci/shared_dispatch_archive.py build "$directory" "$role" || status=$?
+            if [[ "$status" == 124 || "$status" == 137 ]]; then
+              echo "::error title=Dispatch archive stalled::$ARCHIVE local build exceeded 32 min (healthy: 10-17 min, max seen 30 min); rerun this job once"
+              free -m || true
+            fi
+            if [[ "$status" != 0 ]]; then exit "$status"; fi
             cp "$directory/unit-tests.tar.zst" "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.tar.zst"
             cp "$directory/inventory.json" "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.json"
             cp "$directory/shared-dispatch.json" "$RUNNER_TEMP/pg-archives/shared-dispatch-$ARCHIVE.json"
@@ -683,7 +692,7 @@ jobs:
           test "$PG_WORKSPACE" = "$BUILD_WORKSPACE"
           planner="$RUNNER_TEMP/pg-planner/plan_pg_partitions.py"
           printf '%s  %s\n' '0e3cdf32579feec5d270659382d23bbe9de29b9d10d59ce994b34bcb1d4f8188' "$planner" | sha256sum -c -
-          printf '%s  %s\n' 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a' "$RUNNER_TEMP/pg-planner/pg_archive_affinity.py" | sha256sum -c -
+          printf '%s  %s\n' '84a076b61932722644423a5fa05e3e68edeb210b1480fb8076dc9a2d39404a8c' "$RUNNER_TEMP/pg-planner/pg_archive_affinity.py" | sha256sum -c -
           python3 "$RUNNER_TEMP/pg-planner/pg_archive_affinity.py" verify "$RUNNER_TEMP" pr \
             "$EXPECTED_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$BUILD_WORKSPACE" "$planner"
           test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"

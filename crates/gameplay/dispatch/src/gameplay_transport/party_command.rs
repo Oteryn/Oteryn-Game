@@ -11,25 +11,73 @@ mod list;
 #[derive(Default)]
 pub struct SessionPartyView {
     handles: BTreeMap<u64, (u8, [u8; 16])>,
-    pub(super) hunt_prices: Vec<oteryn_protocol_oteryn::analyser_party::Price>,
+    pub(super) hunt_request: Option<oteryn_protocol_oteryn::analyser_party::HuntRequest>,
     pub(super) hunt_reply: Option<Vec<u8>>,
 }
+pub(super) fn party_notice_fence(
+    admitted: &AdmittedSession,
+    runtime: &crate::foundation::ChannelRuntimeV1,
+) -> Option<(
+    crate::durability::item_transfer::CurrentCharacterItemFence,
+    Option<crate::durability::house_scope_handoff::HouseId>,
+)> {
+    let fence = admitted.item_fence?;
+    let actor = admitted.runtime_actor?;
+    let binding = runtime.binding();
+    if fence.game_session_id != admitted.game_session_id
+        || fence.connection_generation.get() != admitted.continuity.connection_generation
+        || admitted.world_id != binding.world_id()
+        || runtime.owner_fence().is_err()
+    {
+        return None;
+    }
+    if let Ok(state) = runtime.house_actor_state(actor, admitted.game_session_id) {
+        let house =
+            crate::durability::house_scope_handoff::HouseId::new(admitted.world_id, &state.house)?;
+        return (state.scope == fence.runtime_scope
+            && house.runtime_scope().ok()? == fence.runtime_scope
+            && state.generation == fence.scope_ownership_generation
+            && state.lease.generation() == fence.character_lease_generation
+            && state.lease.character_id().as_bytes() == fence.character_id.as_bytes()
+            && runtime
+                .house_player_control_facts(actor, admitted.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none()))
+        .then_some((fence, Some(house)));
+    }
+    // A transferred activity retains the origin Channel in the admission.
+    // Match the item fence against the current tagged runtime scope.
+    (fence.runtime_scope == binding.runtime_scope()
+        && fence.scope_ownership_generation == binding.scope_generation()
+        && runtime
+            .player_control_facts(actor, admitted.game_session_id)
+            .is_ok_and(|facts| facts.control_loss.is_none()))
+    .then_some((fence, None))
+}
+
+pub(super) fn party_member_handle(admitted: AdmittedSession, id: [u8; 16]) -> Option<u64> {
+    party_handle(admitted, 1, id)
+}
+
+fn party_handle(admitted: AdmittedSession, kind: u8, id: [u8; 16]) -> Option<u64> {
+    let mut hash = Sha256::new();
+    hash.update(b"oteryn.party.handle.v1");
+    hash.update(admitted.game_session_id.as_bytes());
+    hash.update(admitted.continuity.connection_generation.to_be_bytes());
+    hash.update([kind]);
+    hash.update(id);
+    let bytes: [u8; 32] = hash.finalize().into();
+    let handle = u64::from_be_bytes(bytes[..8].try_into().ok()?);
+    (handle != 0).then_some(handle)
+}
+
 const MAX_HANDLES: usize = 4096;
 impl SessionPartyView {
     fn handle(&mut self, admitted: AdmittedSession, kind: u8, id: [u8; 16]) -> Option<u64> {
-        let mut hash = Sha256::new();
-        hash.update(b"oteryn.party.handle.v1");
-        hash.update(admitted.game_session_id.as_bytes());
-        hash.update(admitted.continuity.connection_generation.to_be_bytes());
-        hash.update([kind]);
-        hash.update(id);
-        let bytes: [u8; 32] = hash.finalize().into();
-        let handle = u64::from_be_bytes(bytes[..8].try_into().ok()?);
-        if handle == 0
-            || self
-                .handles
-                .get(&handle)
-                .is_some_and(|old| *old != (kind, id))
+        let handle = party_handle(admitted, kind, id)?;
+        if self
+            .handles
+            .get(&handle)
+            .is_some_and(|old| *old != (kind, id))
         {
             return None;
         }
@@ -151,8 +199,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        let hunt = command_type
-            == oteryn_protocol_oteryn::analyser_party::COMMAND_TYPE_ANALYSER_PARTY_QUERY;
+        use super::analyser_party::shared;
+        use oteryn_protocol_oteryn::analyser_party::HuntRequest;
+        let hunt_request = view.hunt_request.as_ref();
+        let hunt = hunt_request.is_some();
         if hunt && !admitted.continuity.selected_capabilities.contains(10) {
             return None;
         }
@@ -166,6 +216,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             return None;
         };
+        let revoke = matches!(intent, Some(PartyIntent::Revoke(_)));
+        if revoke
+            && !admitted
+                .continuity
+                .selected_capabilities
+                .contains(CAPABILITY_PARTY_REVOKE_V1)
+        {
+            return None;
+        }
         let Some(actor) = admitted.runtime_actor else {
             return bytes(PartyDisposition::Rejected);
         };
@@ -199,33 +258,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let states = self.states.spell_states.lock().await;
         let attack = self.states.attack.lock().await;
         let now = self.owner_now();
-        let invite_target = if let Some(PartyIntent::Invite(target)) = intent {
-            let visible = runtime.visible_entities();
-            let Some(target_actor) = visible
-                .players
-                .iter()
-                .find(|p| {
-                    p.actor.placement_identity() == target.identity
-                        && p.generation == target.generation
-                })
-                .map(|p| p.actor)
-            else {
-                return bytes(PartyDisposition::NotVisible);
+        let visible_target =
+            if let Some(PartyIntent::Invite(target) | PartyIntent::Revoke(target)) = intent {
+                let visible = runtime.visible_entities();
+                let Some(target_actor) = visible
+                    .players
+                    .iter()
+                    .find(|p| {
+                        p.actor.placement_identity() == target.identity
+                            && p.generation == target.generation
+                    })
+                    .map(|p| p.actor)
+                else {
+                    return bytes(PartyDisposition::NotVisible);
+                };
+                let Ok(census) = runtime.positioned_actor_census() else {
+                    return unavailable("invite_census");
+                };
+                let Some(target_session) = census
+                    .into_iter()
+                    .find(|(a, _, _)| *a == target_actor)
+                    .and_then(|(_, _, s)| s)
+                else {
+                    return bytes(PartyDisposition::NotVisible);
+                };
+                Some((target_actor, target_session))
+            } else {
+                None
             };
-            let Ok(census) = runtime.positioned_actor_census() else {
-                return unavailable("invite_census");
-            };
-            let Some(target_session) = census
-                .into_iter()
-                .find(|(a, _, _)| *a == target_actor)
-                .and_then(|(_, _, s)| s)
-            else {
-                return bytes(PartyDisposition::NotVisible);
-            };
-            Some((target_actor, target_session))
-        } else {
-            None
-        };
         let action = match intent {
             Some(PartyIntent::Accept(h)) => Some(PartyAction::Accept {
                 party: match view.resolve(2, h) {
@@ -246,7 +306,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             }),
             Some(PartyIntent::Leave) => Some(PartyAction::Leave),
-            Some(PartyIntent::Invite(_)) | None => None,
+            Some(PartyIntent::Invite(_) | PartyIntent::Revoke(_)) | None => None,
         };
         let mut binding_bytes = b"oteryn.party.wire.v1".to_vec();
         binding_bytes.extend_from_slice(&command_type.to_be_bytes());
@@ -262,6 +322,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => return unavailable("holder_acquire"),
         };
+        let hunt_index = if hunt {
+            Some(super::item_ref_admission::pinned_index(
+                &runtime,
+                self.active_generation,
+            )?)
+        } else {
+            None
+        };
+        if let Some(HuntRequest::Legacy(prices)) = hunt_request
+            && !prices
+                .iter()
+                .all(|p| hunt_index.is_some_and(|index| shared::identity(index, p.item).is_some()))
+        {
+            return None;
+        }
         let mut failed_step = "transaction_begin";
         let mut ctx = (self, &permit, &runtime, &attack, &mut failed_step);
         let outcome = pass.run_with_context(&mut ctx, move |holder, deadline, ctx| {
@@ -271,10 +346,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 **step = "item_authority";
                 let authority = item_tx::assert_spell_item_authority_in_transaction(&mut tx, permit, owner.root, owner.character, owner.holder, &fence, CommandRef::new(admitted.game_session_id, command), binding).await.map_err(|_| DurabilityError::Unavailable)?;
                 **step = "invite_target_proof";
-                let visible = if let Some((target, session)) = invite_target {
+                let visible = if let Some((target, session)) = visible_target {
                     crate::durability::admission_journal::party_target_binding::prove_visible_party_target_in_transaction(&mut tx, owner.root, &authority, runtime, actor, target, session).await?
                 } else { None };
-                let action = visible.as_ref().map(|v| PartyAction::Invite { target: v.character() }).or(action);
+                let action = visible.as_ref().map(|v| {
+                    let target = v.character();
+                    if revoke { PartyAction::Revoke { target } } else { PartyAction::Invite { target } }
+                }).or(action);
                 **step = "party_apply";
                 let receipt = if let Some(action) = action {
                     let receipt = if matches!(action, PartyAction::Leave) {
@@ -285,16 +363,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(receipt)
                 } else { None };
                 // Never turn a failed visibility proof into a successful query result.
-                let refused = invite_target.is_some() && visible.is_none();
+                let refused = visible_target.is_some() && visible.is_none();
                 **step = "party_view_read";
                 let view = world_party::ingress::read_in_transaction(&mut tx, &authority).await.map_err(|_| DurabilityError::Unavailable)?;
+                let shared_hunt = match (hunt_request, hunt_index) {
+                    (Some(request), Some(index)) if !matches!(request, HuntRequest::Legacy(_)) => {
+                        **step = "party_hunt";
+                        Some(shared::prepare(&mut tx, &authority, &view.source, shared::Context {
+                            runtime, streams: &owner.states.analyser, index, request,
+                        }).await?)
+                    }
+                    _ => None,
+                };
                 **step = "transaction_commit";
                 crate::durability::party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
-                Ok((receipt, view, refused))
+                Ok((receipt, view, refused, shared_hunt))
             })
         }).await;
         match outcome {
-            Ok((receipt, source, refused)) => {
+            Ok((receipt, source, refused, shared_hunt)) => {
+                if let Some(plan) = &shared_hunt {
+                    plan.apply(&self.states.analyser)?;
+                }
                 if runtime
                     .project_world_party(actor, admitted.game_session_id, source.source.clone())
                     .is_err()
@@ -366,18 +456,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     return unavailable("session_view_projection");
                 };
-                if hunt
-                    && let Some(index) =
-                        super::item_ref_admission::pinned_index(&runtime, self.active_generation)
-                {
-                    view.hunt_reply = super::analyser_party::project(
-                        &runtime,
-                        &self.states.analyser,
-                        &hunt_members,
-                        &projected,
-                        index,
-                        &view.hunt_prices,
-                    );
+                if let Some(index) = hunt_index {
+                    view.hunt_reply = match shared_hunt {
+                        Some(plan) => plan.finish(&projected, index),
+                        None => match &view.hunt_request {
+                            Some(HuntRequest::Legacy(prices)) => super::analyser_party::project(
+                                &runtime,
+                                &self.states.analyser,
+                                &hunt_members,
+                                &projected,
+                                index,
+                                prices,
+                            ),
+                            _ => None,
+                        },
+                    };
                 }
                 drop(attack);
                 drop(states);

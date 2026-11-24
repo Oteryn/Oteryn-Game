@@ -1,3 +1,4 @@
+// Capability 612 / command 6387 reuses the result below for completion filtering. See achievement-completion-filter-v1.md.
 // OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1 §3 (D223-D228, #162 owner decision record 5911933242):
 // typed payloads of command type 10 ACCOUNT_ACHIEVEMENTS_QUERY, the account achievements panel.
 // The client asks for one page; the server answers with the earned facts of the session's own

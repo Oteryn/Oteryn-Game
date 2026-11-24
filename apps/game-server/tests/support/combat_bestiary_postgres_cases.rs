@@ -128,6 +128,7 @@ fn input_at(xp_amount: i64, revision: u64) -> TestResult<CreatureDeathRewardInpu
 fn bestiary(race: bool) -> TestResult<CreatureDeathBestiaryInput> {
     Ok(CreatureDeathBestiaryInput {
         boss: None,
+        corpse_source: None,
         talisman: None,
         race: if race {
             Some(BestiaryRace::new(RAT, "definition-r1", vec![5, 50, 500]).map_err(debug)?)
@@ -443,6 +444,7 @@ async fn settle_kill(
         input_at(RAT_XP, revision)?,
         CreatureDeathBestiaryInput {
             boss: None,
+            corpse_source: None,
             talisman: None,
             race: Some(race),
         },

@@ -59,6 +59,7 @@ pub const MAX_NPC_TALK_INTENT_BYTES: usize = MAX_NPC_FIELD_BYTES + 3 + MAX_TALK_
 /// `NpcTradeIntentV1`: the NPC 31, the revision 1 + 10, the offer index 1 + 5, the side 1 + 1, the
 /// quantity 1 + 5 and the expected price 1 + 5.
 pub const MAX_NPC_TRADE_INTENT_BYTES: usize = MAX_NPC_FIELD_BYTES + 11 + 6 + 2 + 6 + 6;
+pub const MAX_NPC_TRADE_INTENT_OPTIONS_BYTES: usize = MAX_NPC_TRADE_INTENT_BYTES + 2;
 /// `NpcIntentResultV1`: the disposition 1 + 1.
 pub const MAX_NPC_INTENT_RESULT_BYTES: usize = 2;
 /// `NPC0-RL-02-BYTES`: one `NpcConversationV1`: the NPC 31, the state 1 + 1 and 32 line elements
@@ -310,20 +311,44 @@ fn check_trade_intent(intent: &NpcTradeIntent) -> WireResult<()> {
 
 /// Encodes an `NpcTradeIntentV1` (the client side).
 pub fn encode_npc_trade_intent(intent: &NpcTradeIntent) -> WireResult<Vec<u8>> {
+    encode_npc_trade_intent_for(intent, false)
+}
+
+pub fn encode_npc_trade_intent_for(
+    intent: &NpcTradeIntent,
+    pack_in_backpacks: bool,
+) -> WireResult<Vec<u8>> {
     check_trade_intent(intent)?;
-    let mut output = Vec::with_capacity(MAX_NPC_TRADE_INTENT_BYTES);
+    let mut output = Vec::with_capacity(MAX_NPC_TRADE_INTENT_OPTIONS_BYTES);
     encode_npc(&mut output, 1, &intent.npc_actor)?;
     push_nonzero_varint_field(&mut output, 2, intent.catalogue_revision);
     push_nonzero_varint_field(&mut output, 3, u64::from(intent.offer_index));
     push_varint_field(&mut output, 4, intent.side as u64);
     push_varint_field(&mut output, 5, u64::from(intent.quantity));
     push_nonzero_varint_field(&mut output, 6, u64::from(intent.expected_unit_price));
+    if pack_in_backpacks {
+        if intent.side != NpcTradeSide::Buy {
+            return malformed();
+        }
+        push_varint_field(&mut output, 7, 1);
+    }
     Ok(output)
 }
 
 /// Decodes an `NpcTradeIntentV1`; the server answers `REJECTED` to any error.
 pub fn decode_npc_trade_intent(payload: &[u8]) -> WireResult<NpcTradeIntent> {
-    check_size(payload, MAX_NPC_TRADE_INTENT_BYTES)?;
+    decode_npc_trade_intent_for(payload, false).map(|(intent, _)| intent)
+}
+
+pub fn decode_npc_trade_intent_for(
+    payload: &[u8],
+    options: bool,
+) -> WireResult<(NpcTradeIntent, bool)> {
+    check_size(
+        payload,
+        MAX_NPC_TRADE_INTENT_BYTES + 2 * usize::from(options),
+    )?;
+    let mut option = None;
     let (mut npc, mut revision, mut index) = (None, None, None);
     let (mut side, mut quantity, mut price) = (None, None, None);
     read_fields(payload, |number, wire, input, cursor| {
@@ -337,6 +362,10 @@ pub fn decode_npc_trade_intent(payload: &[u8]) -> WireResult<NpcTradeIntent> {
             ),
             (5, 0) => set_once(&mut quantity, read_uint32(input, cursor)?),
             (6, 0) => set_once(&mut price, read_uint32(input, cursor)?),
+            (7, 0) if options && input.get(*cursor) == Some(&1) => {
+                *cursor += 1;
+                set_once(&mut option, ())
+            }
             _ => malformed(),
         }
     })?;
@@ -349,7 +378,10 @@ pub fn decode_npc_trade_intent(payload: &[u8]) -> WireResult<NpcTradeIntent> {
         expected_unit_price: price.unwrap_or(0),
     };
     check_trade_intent(&intent)?;
-    Ok(intent)
+    if option.is_some() && (intent.side != NpcTradeSide::Buy) {
+        return malformed();
+    }
+    Ok((intent, option.is_some()))
 }
 
 /// Encodes an `NpcIntentResultV1` (the server side).

@@ -604,8 +604,8 @@ pub(crate) async fn give_world(
     else {
         return Ok(false);
     };
-    // The reward guard reconciles BURNs against the authored cost list.
-    // Reusable tools are proved by the World tool read in the same transaction.
+    // The deferred reward guard reconciles every BURN against this authored
+    // cost list. Reusable tools are checked by the World callback owner.
     let mut take = callback.effects.carried_inputs.clone();
     if let Some(input) = &callback.item_on_target
         && !input.reusable

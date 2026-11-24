@@ -77,6 +77,14 @@ fn quest_log_content_loads_real_journals_and_records_unbound_entries() {
                 "Shrine of Serenity",
                 "Shrine of Eternity",
             ]
+        } else if key == "oteryn:quest.to_blind_the_enemy_quest" {
+            // The donor has no journal mission for the independently bound Eroth route.
+            assert!(admitted.shown_in_quest_log);
+            assert_eq!(
+                admitted.missions[0].track,
+                "oteryn:quest-progress/to-blind-the-enemy/mission"
+            );
+            vec!["To Blind the Enemy"]
         } else if matches!(
             key.as_str(),
             "oteryn:quest.fury_gates_mini_world_change" | "oteryn:quest.grimvale_mini_world_change"

@@ -217,6 +217,8 @@ pub(super) fn scenario(shrine: bool, elapsed: bool, details: bool, catalogue: bo
                 ],
             )
             .await?;
+        } else if details {
+            super::item_look_fixtures::seed_main_backpack(&harness, &[(SWORD, 1), (CRYSTAL, 1)]).await?;
         } else if shrine {
             super::item_look_fixtures::seed_main_backpack(
                 &harness,
@@ -238,8 +240,8 @@ pub(super) fn scenario(shrine: bool, elapsed: bool, details: bool, catalogue: bo
             capabilities.push(CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1);
         }
         if details {
-            capabilities
-                .push(oteryn_protocol_oteryn::imbuement_details::CAPABILITY_IMBUEMENT_DETAILS_V1);
+            use oteryn_protocol_oteryn::imbuement_details::*;
+            capabilities.extend([CAPABILITY_IMBUEMENT_DETAILS_V1, CAPABILITY_IMBUEMENT_AFFORDABILITY_V1]);
         }
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &capabilities)
@@ -728,6 +730,35 @@ pub(super) async fn exchange(
     action: Option<ImbuementAction>,
     well_formed: bool,
 ) -> TestResult<(AdmittedSession, CommandStatus, Option<ImbuementReply>)> {
+    let (admitted, status, bytes) = exchange_raw(owner, sword_ref, admitted, command_id,
+        COMMAND_TYPE_IMBUEMENT, |sword| {
+            if !well_formed {
+                return Ok(vec![8, 4, 16, 1]);
+            }
+            let item = match action {
+                Some(_) => sword.ok_or("carried sword")?,
+                None => ItemHandle::new(u64::MAX).ok_or("handle")?,
+            };
+            encode_imbuement_request(&ImbuementRequest {
+                item,
+                action: action.unwrap_or(ImbuementAction::Query),
+            }).map_err(|error| format!("{error:?}").into())
+        }
+    ).await?;
+    let reply = matches!(status, CommandStatus::Accepted | CommandStatus::DuplicateReplay)
+        .then(|| decode_imbuement_reply(&bytes))
+        .transpose().map_err(debug)?;
+    Ok((admitted, status, reply))
+}
+
+pub(super) async fn exchange_raw(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    sword_ref: NonZeroU32,
+    admitted: AdmittedSession,
+    command_id: u64,
+    command_type: u32,
+    encode_payload: impl FnOnce(Option<ItemHandle>) -> TestResult<Vec<u8>>,
+) -> TestResult<(AdmittedSession, CommandStatus, Vec<u8>)> {
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_task = async {
         let mut sword = None;
@@ -754,20 +785,8 @@ pub(super) async fn exchange(
                 break;
             }
         }
-        let payload = if well_formed {
-            let item = match action {
-                Some(_) => sword.ok_or("carried sword")?,
-                None => ItemHandle::new(u64::MAX).ok_or("handle")?,
-            };
-            encode_imbuement_request(&ImbuementRequest {
-                item,
-                action: action.unwrap_or(ImbuementAction::Query),
-            })
-            .map_err(debug)?
-        } else {
-            vec![8, 4, 16, 1]
-        };
-        send(&mut client, command_id, COMMAND_TYPE_IMBUEMENT, &payload).await?;
+        let payload = encode_payload(sword)?;
+        send(&mut client, command_id, command_type, &payload).await?;
         client.shutdown().await?;
         loop {
             let raw = super::item_look_fixtures::read_frame(&mut client).await?;
@@ -775,14 +794,7 @@ pub(super) async fn exchange(
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
                 if result.command_id == command_id {
-                    let reply = matches!(
-                        result.status,
-                        CommandStatus::Accepted | CommandStatus::DuplicateReplay
-                    )
-                    .then(|| decode_imbuement_reply(result.payload))
-                    .transpose()
-                    .map_err(debug)?;
-                    return Ok::<_, Box<dyn std::error::Error>>((result.status, reply));
+                    return Ok::<_, Box<dyn std::error::Error>>((result.status, result.payload.to_vec()));
                 }
             }
         }

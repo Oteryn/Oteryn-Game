@@ -376,7 +376,15 @@ fn before(
                     && destination.is_some()
                     && play.link.item_drag_begin(item)
                 {
-                    play.link.item_drag_drop(destination);
+                    let NormalizedInputEvent::MouseButton { modifiers, .. } = event else {
+                        return false;
+                    };
+                    play.link.drop_stack(
+                        destination,
+                        owner.settings.preferences.controls.move_whole_stack
+                            ^ modifiers.contains(oteryn_input_actions::Modifier::Control),
+                        modifiers.contains(oteryn_input_actions::Modifier::Shift),
+                    );
                 } else {
                     play.link.item_drag_abort();
                 }
