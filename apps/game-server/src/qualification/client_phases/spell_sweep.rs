@@ -652,9 +652,10 @@ async fn paralyze_bruise_fixture(
         full_e2ef5::rune_quantity(peer, rune)? > 0,
         "seeded Paralyze rune absent",
     )?;
-    full_e2ef5::with_observer_liveness(target, full_row_s02::set_open_attack(peer)).await?;
     let position = tile(target.world_spatial().actor_position)?;
     full_e2ef5::with_observer_liveness(target, approach_for_paralyze(peer, world, position))
+        .await?;
+    full_e2ef5::with_observer_liveness(target, full_row_s02::set_open_attack_with_retries(peer, 4))
         .await?;
     let entity = target
         .world_entities()

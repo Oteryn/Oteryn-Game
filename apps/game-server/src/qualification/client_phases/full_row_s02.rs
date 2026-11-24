@@ -190,7 +190,14 @@ async fn place_pair(
     Ok(())
 }
 
-pub(super) async fn set_open_attack(client: &mut DevClientSession) -> TestResult {
+async fn set_open_attack(client: &mut DevClientSession) -> TestResult {
+    set_open_attack_with_retries(client, 0).await
+}
+
+pub(super) async fn set_open_attack_with_retries(
+    client: &mut DevClientSession,
+    retries: u8,
+) -> TestResult {
     use oteryn_dev_client::client_runtime::pvp_expert as pvp;
     let expected = pvp::ExpertFightModes {
         modes: pvp::attack::FightModes {
@@ -199,16 +206,21 @@ pub(super) async fn set_open_attack(client: &mut DevClientSession) -> TestResult
         },
         expert: pvp::ExpertMode::RedFist,
     };
-    let reply = client
-        .session_mut()
-        .gated_command(
+    let mut retries = retries;
+    loop {
+        let reply = client.session_mut().gated_command(
             pvp::CAPABILITY_PVP_EXPERT_V1,
             pvp::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
             &pvp::encode_expert_fight_modes(&expected),
-        )
-        .await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!("step aggression expert-mode reply={reply:?}").into());
+        ).await?;
+        if reply.status == CommandStatus::Accepted {
+            break;
+        }
+        if reply.status != CommandStatus::Rejected || retries == 0 {
+            return Err(format!("step aggression expert-mode reply={reply:?}").into());
+        }
+        retries -= 1;
+        client.service_liveness(Duration::from_millis(200)).await?;
     }
     let delta = client
         .session_mut()
