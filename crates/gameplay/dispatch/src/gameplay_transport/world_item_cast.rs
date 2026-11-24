@@ -767,9 +767,16 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         if !matches!(key, "random_item_grant" | "conjure" | "tile_item_operation") {
             return NativeCastDispatch::NotApplicable;
         }
-        let rejected = || NativeCastDispatch::Outcome(SpellCastOutcome::rejected());
+        let rejected = |_gate: &str| {
+            #[cfg(feature = "qualification-cast-evidence")]
+            eprintln!(
+                "SEAM_EVIDENCE spell_sweep_world_item_refusal spell={} command={command_id} gate={_gate}",
+                spell.key
+            );
+            NativeCastDispatch::Outcome(SpellCastOutcome::rejected())
+        };
         if !active_spell || command_id == 0 {
-            return rejected();
+            return rejected("inactive_spell_or_zero_command");
         }
         // Rune V1 supplies no exact ItemInstance/generation/slot handle. Refuse
         // rather than inventing a charge donor, corpse or Chameleon target.
@@ -780,13 +787,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             });
         }
         let Some(active) = self.active_generation else {
-            return rejected();
+            return rejected("active_generation_missing");
         };
         let Some(content) = active.native_gameplay() else {
-            return rejected();
+            return rejected("native_content_missing");
         };
         if self.rooms().gate_world_item_cast().is_none() {
-            return rejected();
+            return rejected("world_item_room_missing");
         }
         let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
             .current_session_at(session)
@@ -795,12 +802,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             return NativeCastDispatch::Pending;
         };
         if current.session_state() != GameSessionState::Active {
-            return rejected();
+            return rejected("session_not_active");
         }
         let Ok(character) =
             crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
         else {
-            return rejected();
+            return rejected("character_id_invalid");
         };
         let Ok(record) = self
             .root
@@ -819,7 +826,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             expected_character_revision: record.revision,
         };
         let Ok(command) = CommandId::new(command_id).map(|id| CommandRef::new(session, id)) else {
-            return rejected();
+            return rejected("command_id_invalid");
         };
         // Lock order (§1.2): the lane before any Channel guard.
         let mut acquired;
@@ -839,10 +846,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             || runtime.owner_fence().is_err()
             || runtime.content_pin().server_artifact_digest() != content.source_digest()
         {
-            return rejected();
+            return rejected("actor_fence_or_content_pin");
         }
         let Ok(attacker) = crate::foundation::CharacterId::decode(character.as_bytes()) else {
-            return rejected();
+            return rejected("character_id_decode");
         };
         match super::native_combat_cast::replay(
             &mut runtime,
@@ -860,7 +867,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 });
             }
             Ok(None) => {}
-            Err(_) => return rejected(),
+            Err(_) => return rejected("replay_validation"),
         }
         // The marker (§1.4) stays for the whole pass; the pass holds the attempt itself.
         let retained = match states
@@ -883,7 +890,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     return NativeCastDispatch::NotApplicable;
                 }
                 if states.pending_world_items.try_reserve(1).is_err() {
-                    return rejected();
+                    return rejected("pending_marker_capacity");
                 }
                 states.pending_world_items.push(super::PendingSpellMarker {
                     actor,
@@ -994,9 +1001,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let attempt=pending.as_ref().ok_or(DurabilityError::Unavailable)?;
             let outcome=match items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&attempt.request,verdict,&crate::gameplay_transport::world_required_field_guard::player_origin(&owner.required_capabilities)).await{
                 Ok(outcome)=>outcome,
-                Err(items::SpellItemError::Rejected(WORLD_ITEM_NEW_GRANT_REFUSED
+                Err(_reason @ (items::SpellItemError::Rejected(WORLD_ITEM_NEW_GRANT_REFUSED
                     | "no equipped main backpack" | "backpack capacity exceeded")
-                    | items::SpellItemError::FieldCapabilityRefused)=>{
+                    | items::SpellItemError::FieldCapabilityRefused))=>{
+                    #[cfg(feature = "qualification-cast-evidence")]
+                    eprintln!("SEAM_EVIDENCE spell_sweep_world_item_refusal spell={} command={command_id} gate=transaction reason={_reason:?}",spell.key);
                     // The writer holds the exact-command lock and found no historical receipt.
                     // Only a successful rollback proves this attempt cannot later COMMIT.
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
