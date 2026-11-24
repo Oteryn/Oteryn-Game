@@ -122,6 +122,7 @@ pub enum BootError {
     Readiness(&'static str),
     ClockSkew,
     Serve,
+    GameplayServe(crate::gameplay_transport::GameplayServeError),
     ContentActivation(&'static str),
     /// MAP-CUTOVER-1a: the configured world bundle failed a boot check.
     WorldBundle(crate::map::boot::BootRefusal),
@@ -166,7 +167,7 @@ impl BootError {
             Self::Bind(_) => BootErrorKind::BindFailed,
             Self::Readiness(_) => BootErrorKind::ReadinessFailed,
             Self::ClockSkew => BootErrorKind::ClockSkew,
-            Self::Serve => BootErrorKind::ServeConfigRejected,
+            Self::Serve | Self::GameplayServe(_) => BootErrorKind::ServeConfigRejected,
             Self::ContentActivation(_) => BootErrorKind::ContentActivationRefused,
             Self::WorldBundle(_) => BootErrorKind::WorldBundleRefused,
         }
@@ -190,7 +191,7 @@ impl BootError {
             Self::AssignmentWait => 15,
             Self::Bind(_) => 16,
             Self::Readiness(_) | Self::ClockSkew => 17,
-            Self::Serve => 18,
+            Self::Serve | Self::GameplayServe(_) => 18,
             Self::ContentActivation(_) => 19,
             Self::WorldBundle(_) => 20,
         }
@@ -209,6 +210,7 @@ impl std::fmt::Display for BootError {
             Self::Readiness(stage) => write!(formatter, "readiness failed at {stage}"),
             Self::ClockSkew => formatter.write_str("clock skew beyond the uncertainty bound"),
             Self::Serve => formatter.write_str("gameplay listener configuration rejected"),
+            Self::GameplayServe(error) => write!(formatter, "gameplay serving failed: {error}"),
             Self::ContentActivation(stage) => {
                 write!(
                     formatter,
