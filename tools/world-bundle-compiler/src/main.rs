@@ -109,7 +109,7 @@ fn run_compile(
     out: &Path,
     class: &str,
     regions: Option<&[(u16, u16)]>,
-    town_qualification: bool,
+    command: &str,
 ) -> Result<Value, Error> {
     let build_class = match class {
         "production" => BuildClass::Production,
@@ -124,7 +124,10 @@ fn run_compile(
         ));
     }
     let project = match regions {
-        Some(regions) if town_qualification => {
+        Some(regions) if command == "compile-item-qualification" => {
+            oteryn_world_bundle_compiler::source::project_item_qualification(root, regions)?
+        }
+        Some(regions) if command == "compile-town-qualification" => {
             oteryn_world_bundle_compiler::source::project_town_qualification(root, regions)?
         }
         Some(regions) => oteryn_world_bundle_compiler::source::project_regions(root, regions)?,
@@ -524,12 +527,12 @@ fn main() -> ExitCode {
             Path::new(out),
             class,
             None,
-            false,
+            command,
         ),
         [_, command, root, identity, out, regions]
             if matches!(
                 command.as_str(),
-                "compile-regions" | "compile-town-qualification"
+                "compile-regions" | "compile-town-qualification" | "compile-item-qualification"
             ) =>
         {
             let parsed = regions
@@ -553,7 +556,7 @@ fn main() -> ExitCode {
                     Path::new(out),
                     "non-production",
                     Some(&regions),
-                    command == "compile-town-qualification",
+                    command,
                 )
             })
         }

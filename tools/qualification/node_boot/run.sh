@@ -669,7 +669,10 @@ MAP_REVISION=map-s3b-1
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
   compile_world=compile-regions
-  if [[ "$NODE_BOOT_WORLD_PROFILE" == town ]]; then compile_world=compile-town-qualification; fi
+  if [[ "$NODE_BOOT_WORLD_PROFILE" == town ]]; then
+    compile_world=compile-town-qualification
+    if [[ "${NODE_BOOT_E2E_ONLY:-}" == item_sweep ]]; then compile_world=compile-item-qualification; fi
+  fi
   "${WORLD_COMPILER[@]}" "$compile_world" "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
   PIN="$WORK/world.json"
   python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'

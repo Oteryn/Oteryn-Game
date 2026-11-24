@@ -202,6 +202,63 @@ pub fn project_town_qualification(root: &Path, selected: &[(u16, u16)]) -> Resul
     Ok(project)
 }
 
+/// Place native map sources in the disposable opt-in item qualification bundle.
+pub fn project_item_qualification(root: &Path, selected: &[(u16, u16)]) -> Result<Project, Error> {
+    let mut project = project_town_qualification(root, selected)?;
+    let error = |what| Error::Format(format!("item sweep rack placement: {what}"));
+    let palette = project.index["palette"]
+        .as_array_mut()
+        .ok_or_else(|| error("missing palette"))?;
+    let mut palette_index = |key: &str| {
+        let index = palette
+            .iter()
+            .position(|entry| entry["key"] == key)
+            .unwrap_or_else(|| {
+                palette.push(serde_json::json!({"key": key, "provisional": false}));
+                palette.len() - 1
+            });
+        u32::try_from(index).map_err(|_| error("palette bound"))
+    };
+    let marker = palette_index("oteryn:item.tibia.i3003")?;
+    let racks = [
+        (32370, palette_index("oteryn:item.tibia.i10210")?),
+        (32368, palette_index("oteryn:item.tibia.i10211")?),
+    ];
+    // Both cells neighbor the node-boot town entry at (32369, 32238, -7).
+    let y = 32238_u16;
+    let bytes = project
+        .regions
+        .iter_mut()
+        .find(|bytes| bytes.get(5..10) == Some(&[7, 126, 0, 125, 0]))
+        .ok_or_else(|| error("missing region"))?;
+    let mut budget = bundle::BUNDLE_BUDGET;
+    let mut region = b3::decode_region(bytes, bundle::TILE_LIMITS, &mut budget)?;
+    for (x, rack) in racks {
+        let tile = region
+            .sectors
+            .iter_mut()
+            .flat_map(|(_, _, tiles)| tiles)
+            .find(|tile| (tile.x, tile.y) == (x, y))
+            .filter(|tile| tile.house == 0 && !tile.items.is_empty())
+            .ok_or_else(|| error("missing non-house fixture tile"))?;
+        // Captured contents make a fixed source visible as a handle in the map view.
+        tile.items.extend([
+            sector::Item {
+                palette: rack,
+                depth: 0,
+                attrs: sector::Attrs::default(),
+            },
+            sector::Item {
+                palette: marker,
+                depth: 1,
+                attrs: sector::Attrs::default(),
+            },
+        ]);
+    }
+    *bytes = crate::authored_props::encode(&region)?;
+    Ok(project)
+}
+
 fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Project, Error> {
     let mut index = json(
         &read(&root.join("content/world/placements/index.json"))?,

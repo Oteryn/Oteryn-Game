@@ -424,6 +424,61 @@ async fn drop_carried(client: &mut DevClientSession, reference: NonZeroU32) -> T
     Ok(())
 }
 
+// Fixture roots are compiled onto the disposable base map by
+// tools/world-bundle-compiler/src/source.rs. An ordinary join publishes their
+// handles with the initial WorldMap snapshot (world_map.rs:188–199).
+async fn rack(
+    fixtures: &Fixtures<'_>,
+    reference: NonZeroU32,
+    item: &Item,
+    rows: &mut Rows<'_>,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin};
+    let mut client = connect_character(fixtures.scopes[0], 0x71, 0).await?;
+    let opened = async {
+        let position = client.world_spatial().actor_position;
+        let (tile, handle) = observe(&mut client, |client| {
+            client
+                .session_mut()
+                .world_map_snapshot()?
+                .tiles
+                .iter()
+                .filter(|tile| {
+                    tile.position.floor == position.floor
+                        && tile.position.x.abs_diff(position.x)
+                            + tile.position.y.abs_diff(position.y)
+                            == 1
+                })
+                .find_map(|tile| {
+                    tile.items.iter().find_map(|entry| match (entry.definition, entry.origin) {
+                        (MapDefinition::Item(item), MapOrigin::Handle(handle)) if item == reference => {
+                            Some((tile.position, handle))
+                        }
+                        _ => None,
+                    })
+                })
+        })
+        .await?;
+        evidence(&format!(
+            "item_sweep rack key={} mode=seeded custody=map-base actor={position:?} tile={tile:?} command=USE handle={handle}",
+            rows.key
+        ));
+        rows.emit("seed", Ok(()));
+        rows.emit(
+            "container",
+            container(&mut client, handle, item.capacity()).await,
+        );
+        Ok(())
+    }
+    .await;
+    let released = release(&mut client).await;
+    if rows.pending.contains(&"seed") {
+        return opened.and(released);
+    }
+    rows.emit("cleanup", opened.and(released));
+    Ok(())
+}
+
 /// Seed one disposable Ground root using the Channel's current content pin. The
 /// historical-row setup follows event_containers/ground.rs:201–224. Browse and USE
 /// subsequently go through the normal wire path and the live item's custody checks.
@@ -510,7 +565,7 @@ async fn ground_container(
             Ok(entry) => {
                 rows.emit("seed", Ok(()));
                 if !item.group("container").is_null() {
-                    rows.emit("container", container(&mut client, entry, item.capacity()).await);
+                    rows.emit("container", container(&mut client, entry.handle, item.capacity()).await);
                 }
                 if item.usable() {
                     rows.emit("use", use_effect_ground(&mut client, entry).await);
@@ -567,12 +622,12 @@ async fn use_effect_ground(client: &mut DevClientSession, entry: ItemEntry) -> T
 
 async fn container(
     client: &mut DevClientSession,
-    entry: ItemEntry,
+    handle: ItemHandle,
     capacity: Option<u64>,
 ) -> TestResult {
-    let reply = client.use_item(entry.handle).await?;
+    let reply = client.use_item(handle).await?;
     if reply.status != CommandStatus::Accepted || reply.disposition != Use::Committed {
-        return Err(format!("container-USE-handle-{}-{reply:?}", entry.handle).into());
+        return Err(format!("container-USE-handle-{}-{reply:?}", handle).into());
     }
     let observed = observe(client, |client| {
         client
@@ -580,7 +635,7 @@ async fn container(
             .container_views()?
             .views
             .iter()
-            .find(|view| view.container_handle == entry.handle)
+            .find(|view| view.container_handle == handle)
             .map(|view| u64::from(view.capacity))
     })
     .await?;
@@ -1201,6 +1256,13 @@ async fn sweep_item(
             return;
         }
     };
+    if matches!(key, "oteryn:item.tibia.i10210" | "oteryn:item.tibia.i10211") {
+        if let Err(error) = rack(fixtures, reference, item, rows).await {
+            rows.emit("seed", Err(error));
+        }
+        rows.blocked("map-custody");
+        return;
+    }
     if item.ground_only {
         let result = match index.revision(key) {
             Some(revision) => {
@@ -1257,7 +1319,7 @@ async fn sweep_item(
     if !item.group("container").is_null() {
         rows.emit(
             "container",
-            container(&mut client, entry, item.capacity()).await,
+            container(&mut client, entry.handle, item.capacity()).await,
         );
     }
     if !item.patterns().is_empty() {
