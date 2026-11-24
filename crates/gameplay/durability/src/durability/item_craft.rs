@@ -193,11 +193,33 @@ impl DurabilityRoot {
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:item-craft:' || encode($1,'hex') || ':' || $2,0))")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
                 .execute(&mut **tx).await?;
-            let previous: Option<(Vec<u8>, Vec<u8>)> = sqlx::query_as("SELECT intent,uuid_send(character_id) FROM game_item_craft_records WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
-                .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
+            let previous: Option<(Vec<u8>, Vec<u8>, bool)> = sqlx::query_as(
+                "SELECT intent, uuid_send(character_id), \
+                        source_item_instance_id=encode($3,'hex')::uuid \
+                            AND (recipe LIKE 'oteryn:event-container.%' OR recipe=$4) \
+                 FROM game_item_craft_records \
+                 WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric",
+            )
+                .bind(fence.game_session_id.as_bytes().as_slice())
+                .bind(request.command.command_id().get().to_string())
+                .bind(request.source.as_slice())
+                .bind(event_containers::BLUE_PRESENT_RECIPE)
                 .fetch_optional(&mut **tx).await?;
-            if let Some((intent, character)) = previous {
-                let result = if intent == request.intent && character == fence.character_id.as_bytes() { UseDisposition::Committed } else { UseDisposition::Rejected };
+            if let Some((intent, character, event_source_matches)) = previous {
+                // The server's completion probe only retains the resolved instance after
+                // restart. An incoming wire retry still has to match its original bytes.
+                let completed_instance = probe
+                    && event_source_matches
+                    && !intent.starts_with(REWARD_BAG_INSTANCE_INTENT_TAG)
+                    && request.intent.strip_prefix(REWARD_BAG_INSTANCE_INTENT_TAG)
+                        == Some(request.source.as_slice());
+                let result = if character == fence.character_id.as_bytes()
+                    && (intent == request.intent || completed_instance)
+                {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                };
                 tx.commit(deadline).await?;
                 return Ok(Some(result));
             }
