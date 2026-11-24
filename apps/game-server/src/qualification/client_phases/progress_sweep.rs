@@ -1052,6 +1052,13 @@ async fn charm(
     if !observed.effect_active {
         return Err(format!("charm-content-effect-inactive-{effect}").into());
     }
+    if effect == "kill_area_damage" {
+        let (before, after) = carnage_probe(client, world, &metadata.spawns, species, race).await?;
+        rows.pass(&format!(
+            "untargeted-cardinal-neighbour-health-{before}-to-{after}"
+        ));
+        return Ok(());
+    }
     use oteryn_protocol_oteryn::damage_element::DamageElement;
     let element = match (effect, content["effect"]["element"].as_str()) {
         ("attack_proc_damage", Some("fire")) => DamageElement::Fire,
@@ -1086,6 +1093,107 @@ async fn charm(
         }
     }
     Err(format!("harness-charm-{element:?}-proc-unobserved-within-hunt-budget").into())
+}
+
+fn charm_creature_view(
+    client: &DevClientSession,
+    entity: &oteryn_dev_client::EntityRef,
+) -> Option<(TilePos, u8)> {
+    use oteryn_dev_client::{EntityDetail, EntityKind};
+    let row = client.world_entities()?.get(entity)?;
+    if row.kind != EntityKind::Creature {
+        return None;
+    }
+    match row.detail {
+        EntityDetail::Actor { health_percent, .. }
+        | EntityDetail::ActorWithIcons { health_percent, .. } => {
+            Some((tile(row.position).ok()?, health_percent))
+        }
+        _ => None,
+    }
+}
+
+async fn carnage_probe(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    species: &str,
+    race: NonZeroU32,
+) -> TestResult<(u8, u8)> {
+    use oteryn_dev_client::SessionEvent;
+    use oteryn_protocol_oteryn::{analyser::AnalyserFact, attack::AttackIntentDisposition};
+    let first = full_row_p05::wait_for_spawn(client, world, spawns, species)
+        .await?
+        .entity;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let mut creatures = vec![first];
+    for _ in 0..12 {
+        creatures.retain(|id| charm_creature_view(client, id).is_some());
+        let mut pair = None;
+        for spawn_attempt in 0..=3 {
+            pair = creatures.iter().find_map(|primary| {
+                let (at, _) = charm_creature_view(client, primary)?;
+                creatures.iter().find_map(|neighbour| {
+                    let (other, health) = charm_creature_view(client, neighbour)?;
+                    (at.floor == other.floor
+                        && u32::from(at.x.abs_diff(other.x)) + u32::from(at.y.abs_diff(other.y))
+                            == 1)
+                        .then_some((*primary, *neighbour, health))
+                })
+            });
+            if pair.is_some() || spawn_attempt == 3 {
+                break;
+            }
+            let spawned =
+                parse_spawned_entity(&request_spawn(session.clone(), species.into()).await?)?;
+            let until = tokio::time::Instant::now() + Duration::from_secs(4);
+            while charm_creature_view(client, &spawned).is_none() {
+                if tokio::time::Instant::now() >= until {
+                    return Err("harness-carnage-spawn-not-visible".into());
+                }
+                client
+                    .session_mut()
+                    .service_liveness_discarding_events(Duration::from_millis(100))
+                    .await?;
+            }
+            creatures.push(spawned);
+        }
+        let (primary, neighbour, health) = pair.ok_or("harness-carnage-no-cardinal-pair")?;
+        client.take_events();
+        let reply = client.session_mut().attack_target(Some(&primary)).await?;
+        if reply.disposition != AttackIntentDisposition::Ok {
+            return Err(format!("harness-carnage-attack-refused-{:?}", reply.disposition).into());
+        }
+        let until = tokio::time::Instant::now() + Duration::from_secs(12);
+        let mut kill_seen = false;
+        while tokio::time::Instant::now() < until {
+            client.service_liveness(Duration::from_millis(100)).await?;
+            for event in client.take_events() {
+                let kills_race =
+                    |fact| matches!(fact, AnalyserFact::Kill { race: Some(seen) } if seen == race);
+                kill_seen |= match event {
+                    SessionEvent::AnalyserFacts(delta) => delta.value.into_iter().any(kills_race),
+                    SessionEvent::AnalyserAttributedFacts(delta) => {
+                        delta.value.into_iter().any(|fact| kills_race(fact.fact))
+                    }
+                    _ => false,
+                };
+            }
+            if kill_seen && charm_creature_view(client, &primary).is_none() {
+                break;
+            }
+        }
+        client.session_mut().attack_target(None).await?;
+        if !kill_seen || charm_creature_view(client, &primary).is_some() {
+            return Err("harness-carnage-primary-kill-not-observed".into());
+        }
+        if let Some((_, after)) = charm_creature_view(client, &neighbour)
+            && after < health
+        {
+            return Ok((health, after));
+        }
+    }
+    Err("harness-carnage-area-damage-unobserved-within-hunt-budget".into())
 }
 
 type Quantities = BTreeMap<NonZeroU32, i64>;
