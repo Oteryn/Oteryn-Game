@@ -176,10 +176,16 @@ fn hunting_exports_measured_text_and_json_to_chosen_files() -> TestResult {
             .ok_or("destination")?;
         *field = bevy::text::EditableText::new(path.to_str().ok_or("path")?);
         click_caption(&mut app, caption)?;
-        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        // An IoTaskPool thread writes the file atomically (temp file, then persist), so
+        // it exists only once complete. Yield while waiting so that thread runs on a
+        // loaded runner; the deadline only bounds a hang.
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
         while !path.exists() {
-            assert!(std::time::Instant::now() < deadline);
+            if std::time::Instant::now() >= deadline {
+                return Err(format!("{file} was not exported within 30 s").into());
+            }
             app.update();
+            std::thread::yield_now();
         }
         app.update();
         let saved = std::fs::read_to_string(path)?;
