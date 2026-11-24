@@ -202,6 +202,7 @@ def build():
     for rule in native_taming:
         if recipe:=recipes.get(rule['item_key']):
             rule['required_items']=[f'oteryn:item.tibia.i{item}' for item in recipe['required_items']]
+            rule['success_text'] = recipe['choices'][0]['feedback']
     for outfit in outfits:
         key=outfit['key']
         for addon in range(outfit['addon_count']+1):

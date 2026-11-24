@@ -324,13 +324,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Already-owned outcomes suppress success speech, but retain the donor's
         // feedback. Only the original pending turn may deliver it, including an
         // unknown-ack retry; a historical receipt with no pending turn stays silent.
-        if original_pending
-            && receipt.disposition == UseDisposition::Committed
-            && let Some(feedback) = receipt
-                .effects
-                .get("cosmetic")
-                .and_then(|effect| effect.get("feedback"))
-                .and_then(serde_json::Value::as_str)
+        let cosmetic = receipt
+            .effects
+            .get("cosmetic")
+            .filter(|_| original_pending && receipt.disposition == UseDisposition::Committed);
+        if let Some(feedback) = cosmetic
+            .and_then(|effect| effect.get("feedback"))
+            .and_then(serde_json::Value::as_str)
         {
             self.states
                 .chat
@@ -338,6 +338,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         Ok(UseOutcome {
             disposition: receipt.disposition,
+            refresh_taming: cosmetic.is_some(),
             ..UseOutcome::rejected()
         })
     }

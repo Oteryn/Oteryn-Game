@@ -698,7 +698,7 @@
     "chance": 100,
     "break_item": false,
     "failures": [],
-    "success_text": "You have assembled the Glooth Glider.",
+    "success_text": "You successfully constructed a Glooth Glider!",
     "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:71",
     "required_items": [
       "oteryn:item.tibia.i21897",

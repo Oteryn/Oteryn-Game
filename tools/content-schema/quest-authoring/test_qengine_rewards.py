@@ -88,6 +88,7 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(others(native),others(original))
         expected=copy.deepcopy(next(r for r in original if r['item_key']=='oteryn:item.tibia.i21897'))
         expected['required_items']=[f'oteryn:item.tibia.i{item}' for item in [21897,21898,21899,21901,21902,21905,21906]]
+        expected['success_text'] = 'You successfully constructed a Glooth Glider!'
         self.assertEqual(next(r for r in native if r['item_key']=='oteryn:item.tibia.i21897'),expected)
         packet=json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
         rule=next(r for r in packet['rules'] if r['item_id']==21897)
@@ -103,6 +104,7 @@ class QuestRewards(unittest.TestCase):
             self.assertNotEqual(policy['admission']['stack_class'],'Unknown')
 
         self.assertEqual(rule['choices'][0]['grants'],['oteryn:item-grant.mount.71'])
+        self.assertEqual(rule['choices'][0]['feedback'], expected['success_text'])
         self.assertEqual(rule['choices'][0]['cues'],[{'binding':'canary.appearance:effect/magic_green','effect_id':15}])
         grant=next(r for r in packet['grants'] if r['key']=='oteryn:item-grant.mount.71')
         mappings={r['grant_key']:r for r in self.author['document']['grant_mappings']}
