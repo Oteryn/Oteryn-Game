@@ -196,9 +196,9 @@ oteryn_only_no_literal_match	black_bert	3205	SellToPlayer	1000			content/items/d
 oteryn_only_no_literal_match	black_bert	3231	SellToPlayer	5000			content/items/definitions/items-19500-19999.json:1
 oteryn_only_no_literal_match	black_bert	3232	SellToPlayer	3000			content/items/definitions/items-19500-19999.json:1
 oteryn_only_no_literal_match	black_bert	399	SellToPlayer	10000			content/items/definitions/items-24500-24999.json:1
-crystal_only_no_native_item	black_bert	40515	SellToPlayer		5000	data-global/npc/black_bert.lua:46	
-crystal_only_no_native_item	black_bert	43861	SellToPlayer		10000	data-global/npc/black_bert.lua:44	
-crystal_only_no_native_item	black_bert	43969	SellToPlayer		50000	data-global/npc/black_bert.lua:84	
+crystal_only_no_native_item	black_bert	40515	SellToPlayer		5000	data-global/npc/black_bert.lua:46	-
+crystal_only_no_native_item	black_bert	43861	SellToPlayer		10000	data-global/npc/black_bert.lua:44	-
+crystal_only_no_native_item	black_bert	43969	SellToPlayer		50000	data-global/npc/black_bert.lua:84	-
 oteryn_only_no_literal_match	black_bert	4863	SellToPlayer	40000			content/items/definitions/items-27000-27499.json:1
 oteryn_only_no_literal_match	black_bert	652	SellToPlayer	1000			content/items/definitions/items-30000-30499.json:1
 oteryn_only_no_literal_match	black_bert	7289	SellToPlayer	10000			content/items/definitions/items-31000-31499.json:1

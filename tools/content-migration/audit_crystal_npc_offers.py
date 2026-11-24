@@ -148,7 +148,7 @@ def main():
             writer.writerow((reason, merchant, item, side, ",".join(map(str, ours)),
                              ",".join(str(price) for price, _, _ in theirs),
                              ",".join(source for _, source, _ in theirs),
-                             item_shards.get(f"oteryn:item.tibia.i{item}", "")))
+                             item_shards.get(f"oteryn:item.tibia.i{item}", "-")))
     if args.normalize or (args.import_exact and (removed or counts["crystal_only_exact_native_offer"])):
         from questpc7_world_seal import refresh
         from world_project_v2_to_tree import git_blob_sha, write, write_registry, write_services
