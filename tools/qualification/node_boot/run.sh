@@ -1284,6 +1284,25 @@ assignment_report_args() { # fills the caller's report_args on the Platform life
       --node-identity "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["clients"]["runtime-status"]["san"])' "$WORK/portal-report.json")")
   fi
 }
+report_regional_assignment() {
+  # The operator reports to Platform after committing to Game. An unavailable
+  # report can be sent again from the committed assignment without reallocating it.
+  if [[ "$NODE_BOOT_WORLD_PROFILE" != transition-regions || ${#report_args[@]} == 0 ]]; then
+    ops assignment "$@" "${report_args[@]}"
+    return
+  fi
+  local output code=0
+  output="$(ops assignment "$@" "${report_args[@]}" 2>&1)" || code=$?
+  printf '%s\n' "$output"
+  if [[ "$code" == 7 ]] &&
+    [[ "$output" == *"assignment=committed ownership_generation="* ]] &&
+    [[ "$output" == *"result=unavailable attempts="* ]]; then
+    evidence "assignment_report=retry source=committed_assignment"
+    ops assignment report --world "$WORLD_ID" --channel "$CHANNEL_ID" "${report_args[@]}"
+    return
+  fi
+  return "$code"
+}
 node_deployment_grants() {
   [[ "$(echo "SELECT current_user = pg_get_userbyid(datdba) FROM pg_database WHERE datname=current_database()" | psql_admin oteryn_node_boot)" == t ]] || fail "deployment issuer is not the database owner"
   local operations=1,2,3,4
@@ -1344,7 +1363,7 @@ node_complete_assignment() {
   ops content activate --request content-1.json
   local -a report_args=()
   assignment_report_args
-  ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
+  report_regional_assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" "$NODE_READINESS_WAIT_SECONDS"
   world_ready_timings "$node_log"
@@ -1595,7 +1614,7 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   remember node_c "$node"
   local -a report_args=()
   assignment_report_args
-  ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
+  report_regional_assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
   # A new incarnation starts with no active Content and reactivates only the current issuance.
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" "$NODE_READINESS_WAIT_SECONDS"
