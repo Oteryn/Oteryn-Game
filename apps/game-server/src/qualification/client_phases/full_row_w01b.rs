@@ -147,6 +147,7 @@ async fn walk_rat_route(
     goal: TilePos,
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
     spawn: Option<TilePos>,
+    stop_on_spawn: bool,
 ) -> TestResult<Option<EntityRef>> {
     let mut blocked = BTreeSet::new();
     let mut observed = spawn.and_then(|site| visible_rat_at(client, site));
@@ -195,6 +196,9 @@ async fn walk_rat_route(
                 .or(observed);
             verdict::Harness::global().progress("walk");
             client.take_events();
+            if stop_on_spawn && observed.is_some() {
+                break 'replan;
+            }
         }
         break;
     }
@@ -358,7 +362,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     if tile(client.world_spatial().actor_position)? != retreat {
         return Err("W01b admission did not observe the seeded retreat tile".into());
     }
-    let target = walk_rat_route(&mut client, stand, landing, Some(spawn))
+    let target = walk_rat_route(&mut client, stand, landing, Some(spawn), false)
         .await?
         .ok_or("step=initial-spawn no live exact rat observed at the authored spawn")?;
     progress.pass("initial-spawn", (spawn, respawn_ms, target));
@@ -503,7 +507,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.pass("nearby-refusal", (spawn, respawn_ms));
 
     progress.begin("leave-interest");
-    walk_rat_route(&mut client, retreat, landing, None).await?;
+    walk_rat_route(&mut client, retreat, landing, None, false).await?;
     progress.pass(
         "leave-interest",
         tile(client.world_spatial().actor_position)?,
@@ -516,7 +520,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         client.service_liveness(Duration::from_millis(500)).await?;
     }
     progress.begin("return-to-spawn");
-    let observed = walk_rat_route(&mut client, stand, landing, Some(spawn)).await?;
+    let observed = walk_rat_route(&mut client, stand, landing, Some(spawn), true).await?;
     progress.begin("replacement-delta");
     let mut replacement = observed;
     wait_until(
@@ -537,6 +541,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.pass("replacement-delta", replacement);
 
     progress.begin("logout");
+    let observation_tile = tile(client.world_spatial().actor_position)?;
     let previous_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     progress.pass("logout", "Accepted");
@@ -547,7 +552,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         return Err("fresh W01b admission reused the original session".into());
     }
     progress.begin("fresh-admission-route");
-    walk_rat_route(&mut fresh, stand, landing, None).await?;
+    walk_rat_route(&mut fresh, observation_tile, landing, None, false).await?;
     progress.begin("fresh-admission-state");
     wait_until(
         &mut fresh,
