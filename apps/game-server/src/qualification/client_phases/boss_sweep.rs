@@ -140,8 +140,16 @@ fn census(root: &Path) -> TestResult<Catalogue> {
         for record in records {
             let key = required_key(&record["declaration"]["identity"]["key"])?;
             let details = &record["authoring"]["profile"]["details"];
-            let primary = details["participants"][0]["creatures"][0]["key"].as_str();
-            let matching = primary.filter(|creature| short(creature) == short(key));
+            let mut creatures = details["participants"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .flat_map(|participant| participant["creatures"].as_array().into_iter().flatten())
+                .filter_map(|creature| creature["key"].as_str());
+            let primary = creatures.clone().next();
+            // Participant order also includes supporting actors. Match the
+            // encounter's own identity anywhere in the authored roster.
+            let matching = creatures.find(|creature| short(creature) == short(key));
             let (lever, donor) = donor_lever(&levers, short(key))
                 .unwrap_or_else(|| resolve_lever(&levers, matching));
             let creature = lever
@@ -1826,6 +1834,17 @@ mod tests {
             assert!(entry.lever.is_some());
             assert!(entry.source.starts_with("Crystal201189f8:"));
         }
+        let dragon = catalogue
+            .entries
+            .iter()
+            .find(|entry| entry.key == "the_first_dragon.encounter")
+            .ok_or("missing First Dragon encounter")?;
+        assert_eq!(
+            dragon.creature.as_deref(),
+            Some("oteryn:creature.the_first_dragon")
+        );
+        let dragon_lever = dragon.lever.ok_or("First Dragon encounter has no lever")?;
+        assert_eq!(catalogue.levers[dragon_lever].path, SELECTED);
         let triggers = catalogue
             .entries
             .iter()
