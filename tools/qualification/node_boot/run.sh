@@ -172,7 +172,7 @@ esac
 NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
 case "$NODE_BOOT_WORLD_PROFILE" in
   # Real Thais/town outskirts and the default-start and seller regions.
-  town)
+  town|c09)
     WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt");125,124"
     selected_groups="${NODE_BOOT_E2E_ONLY:-}"
     case ",${selected_groups//[[:space:]]/}," in
@@ -695,10 +695,11 @@ PY_STAGE
   evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$NODE_BOOT_SPELL_MANIFEST" | cut -d ' ' -f 1) activation_wait_seconds=$NODE_ACTIVATION_WAIT_SECONDS"
 fi
 MAP_REVISION=map-s3b-1
+NODE_NPC_ARGS=()
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
   compile_world=compile-regions
-  if [[ "$NODE_BOOT_WORLD_PROFILE" == town || "$NODE_BOOT_WORLD_PROFILE" == w23 ]]; then compile_world=compile-town-qualification; fi
+  case "$NODE_BOOT_WORLD_PROFILE" in town|c09|w23) compile_world=compile-town-qualification ;; esac
   "${WORLD_COMPILER[@]}" "$compile_world" "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
   PIN="$WORK/world.json"
   python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
@@ -715,6 +716,34 @@ PY_REGION_PIN
   install_owned root:root -m 0644 "$WORK/world.otwb" "$BASE/world/world.otbundle"
   install_owned root:root -m 0644 "$PIN" "$BASE/world/world.json"
   MAP_REVISION="$WORLD_DIGEST"
+  if [[ "$NODE_BOOT_WORLD_PROFILE" == c09 || "$NODE_BOOT_WORLD_PROFILE" == w23 ]]; then
+    # Stage the current checkout's catalogue. The node checks both the project
+    # tree digest and the catalogue digest in the compiled World Bundle.
+    python3 -B - "$GAME_SOURCE" "$WORK" <<'PY_STAGE_NPCS'
+import json, sys
+from pathlib import Path
+
+repo, work = map(Path, sys.argv[1:])
+sys.path.insert(0, str(repo / "deploy/synology-game"))
+from stage_npc_data import PIN_SCHEMA, catalogue_digest, collect_catalogue, project_files, stage
+
+content = repo / "content"
+revision, project = project_files(content / "world")
+pin = work / "npc-data.pin.json"
+pin.write_text(json.dumps({
+    "schema": PIN_SCHEMA,
+    "project_revision": revision,
+    "project_sha256": catalogue_digest(project.items()),
+    "catalogue_sha256": catalogue_digest(collect_catalogue(content)),
+}))
+stage(pin, repo, work / "npc-data")
+PY_STAGE_NPCS
+    install_owned root:root -d -m 0755 "$BASE/node/npc-data"
+    "${as_operator[@]}" cp -R "$WORK/npc-data/." "$BASE/node/npc-data/"
+    "${as_operator[@]}" chmod -R a+rX "$BASE/node/npc-data"
+    NODE_NPC_ARGS=(--npc-data-project "$BASE/node/npc-data/content/world"
+      --npc-data-sha256 "$(<"$WORK/npc-data/PROJECT_SHA256")")
+  fi
 fi
 install_owned "$SERVICE_UID" -d -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
 install_owned "$SERVICE_UID" -d -m 0755 "$BASE/node/secrets"
@@ -891,7 +920,7 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2"
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2" "${NODE_NPC_ARGS[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
 }
