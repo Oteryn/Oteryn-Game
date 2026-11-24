@@ -152,19 +152,22 @@ async fn quote(
     .ok_or("step 2: no player-walk route to Messenger of Santa")?;
     walk(client, world, &path).await?;
     let position = client.world_spatial().actor_position;
-    let entities = client.world_entities().ok_or("step 2: no served world entities at the Messenger placement")?;
-    let mut candidates = entities.iter().filter(|entry| {
-        entry.kind == oteryn_dev_client::EntityKind::Npc
-            && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Messenger of Santa"))
-            && entry.position.floor == position.floor
-            && entry.position.x.abs_diff(position.x).max(entry.position.y.abs_diff(position.y))
-                <= npc::TALK_RANGE_TILES
-    });
-    let actor = candidates.next().map(|entry| entry.entity)
-        .ok_or("step 2: Messenger of Santa absent in talk range after walking to the Thais placement")?;
-    if candidates.next().is_some() {
-        return Err("step 2: ambiguous live Messenger of Santa in talk range".into());
-    }
+    let actor = {
+        let entities = client.world_entities().ok_or("step 2: no served world entities at the Messenger placement")?;
+        let mut candidates = entities.iter().filter(|entry| {
+            entry.kind == oteryn_dev_client::EntityKind::Npc
+                && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Messenger of Santa"))
+                && entry.position.floor == position.floor
+                && entry.position.x.abs_diff(position.x).max(entry.position.y.abs_diff(position.y))
+                    <= npc::TALK_RANGE_TILES
+        });
+        let actor = candidates.next().map(|entry| entry.entity)
+            .ok_or("step 2: Messenger of Santa absent in talk range after walking to the Thais placement")?;
+        if candidates.next().is_some() {
+            return Err("step 2: ambiguous live Messenger of Santa in talk range".into());
+        }
+        actor
+    };
     for text in ["hi", "trade"] {
         let reply = shop::talk(
             client.session_mut(),
