@@ -867,7 +867,9 @@ impl SweepRoutes<'_> {
                     action,
                     landing,
                 } => {
-                    walk(client, self.world, &walking).await?;
+                    if !self.walk_segment(client, &walking).await? {
+                        return Ok(false);
+                    }
                     walking.clear();
                     let revision = map_face(client, placement).map_or(0, |(_, revision)| revision);
                     use_map_action(client, self.world, placement, action, None, revision)
@@ -883,8 +885,22 @@ impl SweepRoutes<'_> {
                 }
             }
         }
-        walk(client, self.world, &walking).await?;
-        Ok(true)
+        self.walk_segment(client, &walking).await
+    }
+
+    async fn walk_segment(
+        &self,
+        client: &mut DevClientSession,
+        walking: &[StepDirection],
+    ) -> TestResult<bool> {
+        match walk(client, self.world, walking).await {
+            Ok(()) => Ok(true),
+            Err(error) if error.is::<WalkLandingRedirect>() => {
+                evidence(&format!("interaction_sweep step=redirected detail={error}"));
+                Ok(false)
+            }
+            Err(error) => Err(error),
+        }
     }
 
     async fn reach(
@@ -893,9 +909,10 @@ impl SweepRoutes<'_> {
         neighbors: impl Iterator<Item = TilePos> + Clone,
     ) -> TestResult<TilePos> {
         let mut visited = std::collections::HashSet::new();
-        // A live ladder landing can change when another actor occupies the
-        // first authored candidate (map/floor/rope.rs:229). Replan from the
-        // wire position. The action under test still checks its own landing.
+        // Live STEP may take a different floor transition, and a ladder
+        // can choose a different unoccupied candidate (map/floor/rope.rs:229).
+        // Replan from the wire position. The action under test still checks
+        // its own landing.
         for _ in 0..4 {
             let from = tile(client.world_spatial().actor_position)?;
             if !visited.insert(from) {

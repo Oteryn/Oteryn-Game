@@ -814,6 +814,17 @@ async fn walk(
     .await
 }
 
+#[derive(Debug)]
+struct WalkLandingRedirect(String);
+
+impl std::fmt::Display for WalkLandingRedirect {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for WalkLandingRedirect {}
+
 async fn walk_with_landings(
     client: &mut oteryn_dev_client::DevClientSession,
     path: &[StepDirection],
@@ -890,10 +901,9 @@ async fn walk_with_landings(
         verdict::Harness::global().progress("walk");
         let after = client.world_spatial().actor_position;
         if Some(tile(after)?) != expected {
-            return Err(format!(
+            return Err(Box::new(WalkLandingRedirect(format!(
                 "town step changed position unexpectedly: {before:?} -> {after:?}"
-            )
-            .into());
+            ))));
         }
         client.take_events();
     }
