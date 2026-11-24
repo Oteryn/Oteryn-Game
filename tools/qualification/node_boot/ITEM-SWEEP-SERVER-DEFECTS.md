@@ -294,3 +294,10 @@ The remaining observed key, 14248, returned `DefinitionNotFound`.
 The eight successful seeds were 23375, 23529, 23542, 268, 27270, 27565, 2813
 and 2814. The only failing step was the potion 268 cleanup projection
 deadline. The remaining ledger now contains 1,395 keys.
+
+| Detached replay | Seed PASS | Seed FAIL | Terminal result |
+| --- | ---: | ---: | --- |
+| Ten typed definition failures on fxi `22233be07` | 10 | 0 | `NODE_BOOT_PASS` |
+
+All ten sweep-branch refusals from the `0:10` pilot seeded and cleaned
+successfully on fxi. This evidence applies to the detached server revision.
