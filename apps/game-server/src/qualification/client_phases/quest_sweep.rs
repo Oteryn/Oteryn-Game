@@ -44,9 +44,17 @@ fn quest_batch(value: Option<&str>) -> TestResult<(usize, usize)> {
 struct Tally {
     pass: usize,
     fail: usize,
+    blocked: usize,
 }
 
 impl Tally {
+    fn blocked(&mut self, key: &str, step: &str, root: &str) {
+        self.blocked += 1;
+        evidence(&format!(
+            "quest_sweep blocked scenario=QS.{key}.{step} root=QS.{key}.{root} mode=seeded"
+        ));
+    }
+
     fn row(&mut self, key: &str, step: &str, result: Result<(), &str>, seconds: f64) {
         let (status, detail) = match result {
             Ok(()) => {
@@ -94,6 +102,7 @@ struct Stage {
 struct Trigger {
     kind: String,
     callback: Option<Value>,
+    usage: Option<Value>,
     #[serde(default)]
     alternatives: Vec<Value>,
 }
@@ -418,6 +427,52 @@ impl Journey<'_, '_> {
             .disposition)
     }
 
+    async fn use_terrain_tool(&mut self, placement: u64, tools: &[Value]) -> TestResult {
+        use oteryn_protocol_oteryn::world_object as wire;
+        let inventory = self
+            .client
+            .inventory()
+            .ok_or("missing-inventory-snapshot")?;
+        let mut handle = None;
+        for tool in tools {
+            let reference =
+                provisioning::item_reference(self.items, item_id(text(&tool["key"])?)?)?;
+            handle = inventory
+                .entries
+                .iter()
+                .chain(inventory.equipment.iter().map(|entry| &entry.item))
+                .find(|item| item.item_definition_ref == reference)
+                .map(|item| item.handle);
+            if handle.is_some() {
+                break;
+            }
+        }
+        let mut key = self.world.base().digest().to_vec();
+        key.extend_from_slice(&placement.to_be_bytes());
+        let intent = wire::UseIntent {
+            target: wire::UseTarget::Item(handle.ok_or("fixture-terrain-tool-missing")?),
+            use_with: None,
+            use_with_map_item: Some(wire::MapUseTarget::Object(wire::WorldObjectTarget {
+                placement: key,
+                expected_revision: 0,
+            })),
+            use_with_position: None,
+        };
+        let payload =
+            wire::encode_item_use_intent(&intent).map_err(|error| format!("{error:?}"))?;
+        let result = self
+            .client
+            .session_mut()
+            .world_context_use(&payload)
+            .await?;
+        let disposition =
+            wire::decode_use_result(&result.payload).map_err(|error| format!("{error:?}"))?;
+        if result.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
+            return Err(format!("terrain-tool-refused-{:?}-{disposition:?}", result.status).into());
+        }
+        Ok(())
+    }
+
     async fn npc_actor(&mut self, npc_key: &str) -> TestResult<oteryn_dev_client::EntityRef> {
         let npc = self
             .npcs
@@ -500,6 +555,27 @@ impl Journey<'_, '_> {
         Ok(())
     }
 
+    async fn outfit_receipts(&mut self, keys: &[String]) -> TestResult<BTreeMap<String, i64>> {
+        if keys.is_empty() {
+            return Ok(BTreeMap::new());
+        }
+        Ok(sqlx::query_as::<_, (String, i64)>(
+            "SELECT r.unlock_key, count(*) FROM game_account_appearance_unlock_receipts r
+             JOIN game_account_appearance_unlocks u ON u.account_id = r.account_id
+                 AND u.unlock_key = r.unlock_key
+             WHERE r.account_id = (SELECT account_id FROM game_character_roots
+                 WHERE character_id = encode($1, 'hex')::uuid)
+                 AND r.unlock_key = ANY($2) AND r.source_kind = 'quest'
+             GROUP BY r.unlock_key",
+        )
+        .bind(self.character)
+        .bind(keys)
+        .fetch_all(&mut *self.db)
+        .await?
+        .into_iter()
+        .collect())
+    }
+
     async fn stage(&mut self, quest: &str, stage: &Stage, callback: &Value) -> TestResult {
         let transition = text(&callback["key"])?;
         let definition = self
@@ -515,6 +591,11 @@ impl Journey<'_, '_> {
         }
         let before_tracks = self.tracks(quest).await?;
         let item_delta = stage_item_delta(self.items, callback);
+        let outfit_keys = outfit_grant_keys(callback)?;
+        let before_outfits = self.outfit_receipts(&outfit_keys).await?;
+        if !before_outfits.is_empty() {
+            return Err("fixture-outfit-already-granted".into());
+        }
         let before_items = inventory(self.client)?;
         let before_xp = if definition.experience.is_some() {
             Some(experience(self.client).await?)
@@ -546,6 +627,17 @@ impl Journey<'_, '_> {
                     return Err("authored-reply-mismatch".into());
                 }
                 Some(Replay::Talk(actor, keyword))
+            }
+            "terrain_use" => {
+                let placement = callback["placement_key"]
+                    .as_u64()
+                    .ok_or("missing-terrain-placement")?;
+                let (target, _) =
+                    crate::map::view::placement_of(placement).ok_or("invalid-terrain-placement")?;
+                self.approach(target, 1).await?;
+                self.use_terrain_tool(placement, array(&callback["tools"])?)
+                    .await?;
+                None
             }
             "map_use" | "step_in" => {
                 let selector = &callback["selector"];
@@ -582,8 +674,15 @@ impl Journey<'_, '_> {
         self.check_log(quest).await?;
         let item_delta = item_delta?;
         let xp_delta = definition.experience;
-        if item_delta.is_empty() && xp_delta.is_none() {
+        if item_delta.is_empty() && xp_delta.is_none() && outfit_keys.is_empty() {
             return Ok(());
+        }
+        let after_outfits = self.outfit_receipts(&outfit_keys).await?;
+        if outfit_keys
+            .iter()
+            .any(|key| after_outfits.get(key) != Some(&1))
+        {
+            return Err("exact-quest-outfit-reward-missing".into());
         }
         let after_items = wait_inventory(self.client, &before_items, &item_delta).await?;
         let after_xp = match before_xp.zip(xp_delta) {
@@ -614,6 +713,7 @@ impl Journey<'_, '_> {
         };
         self.check_log(quest).await?;
         if !refused
+            || self.outfit_receipts(&outfit_keys).await? != after_outfits
             || inventory(self.client)? != after_items
             || self.receipts(quest, transition).await? != receipts
         {
@@ -829,7 +929,11 @@ fn classic_input(npc: &str, branch: &str) -> Option<&'static [&'static str]> {
         (JEROM, "line-82") => &["mission", "yes"],
         (QUEEN, "line-63") => &["seventh seal"],
         (QUEEN, "line-94") => &["seventh seal", "yes"],
+        (QUEEN, "line-172") => &["seventh seal", "no"],
         (ROTTIN, "line-91") => &["mission"],
+        (ROTTIN, "line-149") => &["mission", "yes"],
+        (ROTTIN, "line-297") => &["mission", "no"],
+        (ROTTIN, "line-336") => &["task"],
         _ => return None,
     })
 }
@@ -866,16 +970,33 @@ fn authored_item(callback: &Value) -> Option<&Value> {
         .find(|value| !value.is_null())
 }
 
+fn outfit_grant_keys(callback: &Value) -> TestResult<Vec<String>> {
+    use oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward;
+    [&callback["outfit"], &callback["effects"]["outfit_reward"]]
+        .into_iter()
+        .filter(|reward| !reward.is_null())
+        .map(|reward| serde_json::from_value::<OutfitReward>(reward.clone()))
+        .collect::<Result<Vec<_>, _>>()
+        .map(|rewards| {
+            rewards
+                .into_iter()
+                .flat_map(|reward| {
+                    (0..=2).filter_map(move |addon| {
+                        (addon == 0 || reward.addons & (1 << (addon - 1)) != 0)
+                            .then(|| reward.grant_key(addon))
+                    })
+                })
+                .collect()
+        })
+        .map_err(Into::into)
+}
+
 fn stage_item_delta(
     items: &crate::content::item_ref::ItemDefinitionIndex,
     callback: &Value,
 ) -> TestResult<BTreeMap<u32, i64>> {
-    if !callback["outfit"].is_null()
-        || !callback["effects"]["outfit"].is_null()
-        || !callback["access"].is_null()
-        || !callback["effects"]["access"].is_null()
-    {
-        return Err("outfit-or-access-reward-oracle-unavailable".into());
+    if !callback["access"].is_null() || !callback["effects"]["access"].is_null() {
+        return Err("access-reward-oracle-unavailable".into());
     }
     let mut expected = BTreeMap::new();
     let mut record = |value: &Value, direction: i64| -> TestResult {
@@ -1028,10 +1149,19 @@ fn plan<'a>(quest: &'a Quest, claims: &'a BTreeMap<String, Vec<BoundPlacement>>)
         }
         checks.push(Check {
             name: stage.key.clone(),
-            action: stage.trigger.callback.as_ref().map_or(
-                Action::MissingStage("unsupported-wire-trigger"),
-                |callback| Action::Stage(stage, callback),
-            ),
+            action: stage
+                .trigger
+                .callback
+                .as_ref()
+                .or_else(|| {
+                    (stage.trigger.kind == "terrain_use")
+                        .then_some(stage.trigger.usage.as_ref())
+                        .flatten()
+                })
+                .map_or(
+                    Action::MissingStage("unsupported-wire-trigger"),
+                    |callback| Action::Stage(stage, callback),
+                ),
         });
         for (index, alternative) in stage.trigger.alternatives.iter().enumerate() {
             checks.push(Check {
@@ -1067,11 +1197,10 @@ fn plan<'a>(quest: &'a Quest, claims: &'a BTreeMap<String, Vec<BoundPlacement>>)
     if quest.claims.is_empty()
         && !quest.stages.iter().any(|stage| {
             stage.completes
-                && stage
-                    .trigger
-                    .callback
-                    .as_ref()
-                    .is_some_and(|callback| authored_item(callback).is_some())
+                && stage.trigger.callback.as_ref().is_some_and(|callback| {
+                    authored_item(callback).is_some()
+                        || outfit_grant_keys(callback).is_ok_and(|keys| !keys.is_empty())
+                })
         })
     {
         checks.push(Check {
@@ -1104,6 +1233,7 @@ struct StepFailure {
 }
 
 impl StepFailure {
+    #[cfg(test)]
     fn blocked(reason: &'static str) -> Self {
         Self {
             reason: reason.to_owned(),
@@ -1188,6 +1318,7 @@ pub(super) async fn run(
     evidence("quest_sweep preparation mode=seeded level=100 owner=qualification_fixture.rs:50");
     let mut session =
         Some(provisioning::provision_fixture(client, clients, CHARACTER, SEED_LEVEL).await?);
+    let mut isolate_entries = false;
     for (key, entry) in entries.iter().skip(start).take(selected) {
         verdict::Harness::global().progress("quest-sweep-entry");
         let short = row_key(key.strip_prefix("oteryn:").unwrap_or(key));
@@ -1222,9 +1353,22 @@ pub(super) async fn run(
         )
         .await;
         if journey.reconnect {
+            isolate_entries = true;
             // An abandoned exchange can leave its reply on the connection.
             // Close it before the next quest so the next admission starts at command one.
             drop(session.take());
+        } else if isolate_entries && let Some(mut client) = session.take() {
+            if !matches!(
+                logout_retrying_busy(&mut client).await,
+                Ok((
+                    Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
+                    _,
+                    _,
+                    _
+                ))
+            ) {
+                tally.row(&short, "release", Err("logout-refused"), 0.0);
+            }
         }
     }
     let released = if let Some(mut client) = session {
@@ -1244,8 +1388,8 @@ pub(super) async fn run(
         tally.row("session", "release", Err("logout-refused"), 0.0);
     }
     evidence(&format!(
-        "quest_sweep summary total={total} start={start} selected={selected} rows_pass={} rows_fail={}",
-        tally.pass, tally.fail
+        "quest_sweep summary total={total} start={start} selected={selected} rows_pass={} rows_fail={} rows_blocked={}",
+        tally.pass, tally.fail, tally.blocked
     ));
     if tally.fail > 0 {
         return Err(format!("quest sweep: {} FAIL rows (see QS.*)", tally.fail).into());
@@ -1279,13 +1423,14 @@ async fn run_entry(
             first_failure = result.err().map(|failure| failure.reason);
         }
         Entry::Quest(quest) => {
-            let mut blocked = false;
+            let mut blocked = None;
+            let mut wire_root = None;
             for check in plan(quest, claims) {
                 verdict::Harness::global().progress("quest-sweep-step");
                 let started = std::time::Instant::now();
                 let advances = matches!(&check.action, Action::Stage(..) | Action::MissingStage(_));
                 let dependency = !matches!(&check.action, Action::Missing(_));
-                let seeded_final = if blocked {
+                let seeded_final = if blocked.is_some() {
                     match &check.action {
                         Action::Stage(stage, _)
                             if stage.completes && stage.trigger.callback.is_some() =>
@@ -1300,9 +1445,15 @@ async fn run_entry(
                 } else {
                     None
                 };
-                let result = if journey.reconnect && dependency {
-                    Err(StepFailure::blocked("blocked-by-wire-recovery"))
-                } else if let (Some(index), Action::Stage(stage, callback)) =
+                if dependency
+                    && let Some(root) = wire_root
+                        .as_deref()
+                        .or(blocked.as_deref().filter(|_| seeded_final.is_none()))
+                {
+                    tally.blocked(short, &check.name, root);
+                    continue;
+                }
+                let result = if let (Some(index), Action::Stage(stage, callback)) =
                     (seeded_final, &check.action)
                 {
                     bounded(async {
@@ -1312,8 +1463,6 @@ async fn run_entry(
                         journey.stage(key, stage, callback).await
                     })
                     .await
-                } else if blocked && dependency {
-                    Err(StepFailure::blocked("blocked-by-earlier-step"))
                 } else {
                     bounded(async {
                         match check.action {
@@ -1330,10 +1479,15 @@ async fn run_entry(
                     .await
                 };
                 if let Err(failure) = &result {
-                    blocked |= advances;
-                    journey.reconnect |= failure.reconnect;
+                    if advances {
+                        blocked.get_or_insert_with(|| check.name.clone());
+                    }
+                    if failure.reconnect {
+                        wire_root.get_or_insert_with(|| check.name.clone());
+                        journey.reconnect = true;
+                    }
                 } else if seeded_final.is_some() {
-                    blocked = false;
+                    blocked = None;
                 }
                 tally.row(
                     short,
