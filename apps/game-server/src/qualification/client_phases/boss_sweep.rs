@@ -8,6 +8,7 @@ use super::*;
 use oteryn_dev_client::{
     DevClientSession, EntityDetail, EntityKind, client_runtime::boss_encounter as panel,
 };
+use oteryn_gameplay_encounters::bosses::endgame_entry::{Encounter, QuestFamily};
 use oteryn_protocol_oteryn::{
     activity_scope::ActivityScope,
     attack,
@@ -718,14 +719,13 @@ async fn walk_to(
 }
 
 fn quest_minimum(creature: &str) -> Option<u32> {
-    use oteryn_gameplay_quests::quest::{
-        rotten_blood::{REQUIRED_LEVEL, RottenBloodBoss},
-        soul_war::{MINIMUM_LEVEL, SoulWarBoss},
-    };
+    use oteryn_gameplay_quests::quest::{rotten_blood::REQUIRED_LEVEL, soul_war::MINIMUM_LEVEL};
 
-    RottenBloodBoss::from_creature_key(creature)
-        .map(|_| REQUIRED_LEVEL)
-        .or_else(|| SoulWarBoss::from_creature(creature).map(|_| MINIMUM_LEVEL))
+    match Encounter::from_boss_key(creature)?.family() {
+        QuestFamily::RottenBlood => Some(REQUIRED_LEVEL),
+        QuestFamily::SoulWar => Some(MINIMUM_LEVEL),
+        QuestFamily::PrimalOrdeal => None,
+    }
 }
 
 fn off_lever_refusal(quest_minimum: Option<u32>, level: u32) -> BossActivityRefusal {
@@ -1126,17 +1126,17 @@ const KOSHEI_ENTRY_SOURCE: &str =
 
 async fn write_quest_access(url: &str, character: &[u8; 16], entry: &Entry) -> TestResult {
     use oteryn_gameplay_quests::quest::{
-        rotten_blood::{ACCESS_TRACK, RottenBloodBoss},
-        soul_war::{ALL_MINI_BOSSES, SoulWarBoss, TAINT_DURATION_SECONDS},
+        rotten_blood::ACCESS_TRACK,
+        soul_war::{ALL_MINI_BOSSES, TAINT_DURATION_SECONDS},
     };
 
-    let creature = entry.creature.as_deref().unwrap_or_default();
-    let rotten_blood = RottenBloodBoss::from_creature_key(creature);
-    let soul_war = SoulWarBoss::from_creature(creature);
-    let rotten_final = rotten_blood == Some(RottenBloodBoss::Bakragore);
-    let soul_final = soul_war == Some(SoulWarBoss::Megalomania);
-    let rotten_access = rotten_blood.is_some();
-    let soul_access = soul_war.is_some();
+    let encounter = entry.creature.as_deref().and_then(Encounter::from_boss_key);
+    let family = encounter.map(Encounter::family);
+    let final_boss = encounter.is_some_and(Encounter::is_final);
+    let rotten_access = family == Some(QuestFamily::RottenBlood);
+    let soul_access = family == Some(QuestFamily::SoulWar);
+    let rotten_final = rotten_access && final_boss;
+    let soul_final = soul_access && final_boss;
     let koshei_access = entry.koshei_switch();
     if !rotten_access && !soul_access && !koshei_access {
         return Ok(());
@@ -1840,6 +1840,7 @@ mod tests {
         for creature in [
             "oteryn:creature.chagorz",
             "oteryn:creature.goshnar_s_malice",
+            "oteryn:creature.goshnar_s_megalomania_purple",
         ] {
             let minimum = quest_minimum(creature);
             assert_eq!(minimum, Some(250), "{creature}");
