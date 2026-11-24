@@ -1221,9 +1221,18 @@ fn palette_facts(
                         .is_some_and(|terrain| terrain.kind == TerrainKind::Wall),
             );
         facts.pickupable = definition.pickupable;
-        solid = definition
-            .solid
-            .unwrap_or_else(|| !walkable_floor_change(&entry.key) && !terrain_floor(entry));
+        solid = definition.solid.unwrap_or_else(|| {
+            // Crystal 201189f8 data/items/appearances.dat gives these
+            // Library staging bookstands unmove without unpass.
+            !walkable_floor_change(&entry.key)
+                && !terrain_floor(entry)
+                && !matches!(
+                    entry.key.as_str(),
+                    "oteryn:item.tibia.i28142"
+                        | "oteryn:item.tibia.i28144"
+                        | "oteryn:item.tibia.i28891"
+                )
+        });
         door = palette_door(&entry.key, item);
     }
     Ok(PaletteFacts {
