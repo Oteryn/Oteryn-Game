@@ -1593,7 +1593,14 @@ pub(super) async fn run(
             lap: Instant::now(),
             tally: tallies.entry(family).or_default(),
         };
-        let result = tokio::time::timeout(Duration::from_secs(90), async {
+        // A live map approach can require hundreds of paced STEP exchanges.
+        // The protocol still bounds each exchange and the entry has a finite
+        // wall deadline, while reports have no walking phase.
+        let deadline_seconds = match entry {
+            Entry::Document(_) | Entry::NestedMapDocument => 90,
+            _ => 600,
+        };
+        let result = tokio::time::timeout(Duration::from_secs(deadline_seconds), async {
             match entry {
                 Entry::Document(document) => {
                     let race = reports.get(key).copied().flatten().ok_or(
@@ -1715,7 +1722,9 @@ pub(super) async fn run(
             Ok(Err(error)) => rows.fail(&error.to_string()),
             Err(_) => {
                 client = None;
-                rows.fail("deadline: entry exceeded 90 seconds");
+                rows.fail(&format!(
+                    "deadline: entry exceeded {deadline_seconds} seconds"
+                ));
             }
         }
     }
