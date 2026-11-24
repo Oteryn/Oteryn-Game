@@ -550,6 +550,52 @@ async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
     .map_err(|_| "classed sweep recovery did not reach half health")?
 }
 
+fn lost_target_step(
+    from: TilePos,
+    last_seen: TilePos,
+    find_route: impl FnOnce(TilePos) -> Option<Vec<StepDirection>>,
+) -> Option<StepDirection> {
+    if from.floor != last_seen.floor
+        || from
+            .x
+            .abs_diff(last_seen.x)
+            .max(from.y.abs_diff(last_seen.y))
+            <= 2
+    {
+        return None;
+    }
+    find_route(last_seen)?.into_iter().next()
+}
+
+#[test]
+fn sweep_pursues_a_distant_last_seen_tile_on_the_same_floor() {
+    let from = TilePos {
+        x: 100,
+        y: 100,
+        floor: -7,
+    };
+    let target = TilePos { x: 107, ..from };
+    assert!(matches!(
+        lost_target_step(from, target, |goal| {
+            assert_eq!(goal, target);
+            Some(vec![StepDirection::East])
+        }),
+        Some(StepDirection::East)
+    ));
+    assert!(lost_target_step(target, target, |_| panic!("already there")).is_none());
+    assert!(
+        lost_target_step(
+            from,
+            TilePos {
+                floor: -8,
+                ..target
+            },
+            |_| { panic!("target is on another floor") }
+        )
+        .is_none()
+    );
+}
+
 async fn recover_in_combat(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -852,6 +898,8 @@ async fn hunt(
     }
     let combat_started = tokio::time::Instant::now();
     let kill_deadline = combat_started + Duration::from_secs(KILL_SECONDS);
+    let mut pursuit_steps = 0;
+    let mut pursuing = false;
     let gone = loop {
         client
             .service_liveness(Duration::from_millis(50))
@@ -894,11 +942,57 @@ async fn hunt(
             .world_entities()
             .and_then(|entities| entities.get(&target.entity))
         {
-            None => break true,
-            Some(now) => {
-                last_position = now.position;
+            None => {
+                let from = tile(client.world_spatial().actor_position)
+                    .map_err(|error| failure("kill", "protocol", error))?;
+                let last_seen =
+                    tile(last_position).map_err(|error| failure("kill", "protocol", error))?;
+                if pursuit_steps == 8 || now >= kill_deadline {
+                    break true;
+                }
+                let Some(step) = lost_target_step(from, last_seen, |goal| {
+                    route(world, from, |position| position == goal)
+                }) else {
+                    break true;
+                };
+                let moved = tokio::time::timeout_at(kill_deadline, walk(client, world, &[step]))
+                    .await
+                    .map_err(|_| failure("kill", "deadline", "pursuit exceeded kill deadline"))?;
+                if let Err(error) = moved {
+                    if !client.is_usable() {
+                        return Err(failure("kill", "protocol", error));
+                    }
+                    break true;
+                }
+                pursuit_steps += 1;
+                pursuing = true;
+                evidence(&format!(
+                    "creature_sweep pursuit species={} steps={pursuit_steps}",
+                    species.short
+                ));
+            }
+            Some(observed) => {
+                let observed = *observed;
+                if pursuing {
+                    let resumed = tokio::time::timeout_at(
+                        kill_deadline,
+                        client.session_mut().attack_target(Some(&target.entity)),
+                    )
+                    .await
+                    .map_err(|_| {
+                        failure("kill", "deadline", "reacquisition exceeded kill deadline")
+                    })?
+                    .map_err(|error| failure("kill", "protocol", error))?;
+                    if resumed.status != CommandStatus::Accepted
+                        || resumed.disposition != attack::AttackIntentDisposition::Ok
+                    {
+                        break true;
+                    }
+                    pursuing = false;
+                }
+                last_position = observed.position;
                 if let EntityDetail::Actor { health_percent, .. }
-                | EntityDetail::ActorWithIcons { health_percent, .. } = now.detail
+                | EntityDetail::ActorWithIcons { health_percent, .. } = observed.detail
                 {
                     damaged |= health_percent < last_health;
                     last_health = health_percent;
