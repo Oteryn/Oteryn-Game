@@ -21,8 +21,7 @@ impl ChannelRuntimeV1 {
         batch: &OwnerCombatBatch,
         caster_index: usize,
         binding: &[u8],
-        phase: u16,
-        deferred: bool,
+        key: BatchReplayKey,
         caster_state: &ActorCombatState,
     ) -> Result<StagedSpellBatch, Error> {
         // Only data is cloned. The original independently current continuity is borrowed by
@@ -46,7 +45,7 @@ impl ChannelRuntimeV1 {
             mirror: MirrorBatchDelta::default(),
             cloak_blood: Vec::new(),
         };
-        self.stage_spell_effects(batch, binding, deferred, &mut staging)?;
+        self.stage_spell_effects(batch, binding, batch.deferred.is_some(), &mut staging)?;
         let EffectStaging {
             mut next,
             mut touched,
@@ -62,35 +61,67 @@ impl ChannelRuntimeV1 {
             effects: effect_receipts,
         };
         let updated_caster = state_mut(&mut next.slots[caster_index])?;
-        updated_caster
-            .records
+        let records = updated_caster.replay_records_mut(key);
+        records
             .try_reserve(1)
             .map_err(|_| Error::AllocationFailed)?;
-        if updated_caster.records.len() >= MAX_COMMAND_RECEIPTS {
-            updated_caster.records.remove(0);
+        if records.len() >= MAX_COMMAND_RECEIPTS {
+            records.remove(0);
         }
-        updated_caster.records.push(BatchRecord {
+        records.push(BatchRecord {
             character: batch.attacker,
             lease: batch.current_lease_generation,
             command: batch.command,
-            phase,
+            key,
             original_batch: batch.clone(),
             charm_children: None,
             receipt: receipt.clone(),
         });
-        let last = batch.effects.last().map_or(0, |e| e.sub_ordinal);
-        let mark = (
-            batch.attacker,
-            batch.current_lease_generation,
-            batch.command.game_session_id(),
-            batch.command.command_id().get(),
-            last,
-        );
-        if updated_caster
-            .high_water
-            .is_none_or(|old| (mark.1, mark.3, mark.4) > (old.1, old.3, old.4))
-        {
-            updated_caster.high_water = Some(mark);
+        match key {
+            BatchReplayKey::Spell(_) => {
+                let last = batch.effects.last().map_or(0, |e| e.sub_ordinal);
+                let mark = (
+                    batch.attacker,
+                    batch.current_lease_generation,
+                    batch.command.game_session_id(),
+                    batch.command.command_id().get(),
+                    last,
+                );
+                if updated_caster
+                    .high_water
+                    .is_none_or(|old| (mark.1, mark.3, mark.4) > (old.1, old.3, old.4))
+                {
+                    updated_caster.high_water = Some(mark);
+                }
+            }
+            BatchReplayKey::PvpSwing { ordinal, target } => {
+                // Keep every target of the latest swing even after a matching receipt ages out.
+                let progress =
+                    updated_caster
+                        .pvp_swing_progress
+                        .get_or_insert_with(|| PvpSwingProgress {
+                            lease: batch.current_lease_generation,
+                            command: batch.command,
+                            ordinal,
+                            targets: Vec::new(),
+                        });
+                if (progress.lease, progress.command, progress.ordinal)
+                    != (batch.current_lease_generation, batch.command, ordinal)
+                {
+                    progress.lease = batch.current_lease_generation;
+                    progress.command = batch.command;
+                    progress.ordinal = ordinal;
+                    progress.targets.clear();
+                }
+                if progress.targets.len() >= MAX_EFFECTS {
+                    return Err(Error::TooManyEffects);
+                }
+                progress
+                    .targets
+                    .try_reserve(1)
+                    .map_err(|_| Error::AllocationFailed)?;
+                progress.targets.push(target);
+            }
         }
         if let Some(authority) = &batch.deferred {
             updated_caster.deferred_high_water = authority.admission_sequence();
@@ -126,6 +157,7 @@ impl ChannelRuntimeV1 {
         Ok(StagedSpellBatch {
             reservation: caster_state.pending_owner.clone(),
             batch: batch.clone(),
+            key,
             originals,
             replacements,
             companion_touch_indices: vec![],
@@ -624,7 +656,9 @@ impl ChannelRuntimeV1 {
             let record = state(&self.carrier.slots[caster])?
                 .records
                 .iter()
-                .find(|record| record.command == batch.command && record.phase == phase)
+                .find(|record| {
+                    record.command == batch.command && record.key == BatchReplayKey::Spell(phase)
+                })
                 .ok_or(Error::InvalidBatch)?;
             if record.charm_children.as_ref() != Some(&proof.child_binding) {
                 return Err(Error::CommandConflict);
@@ -715,11 +749,13 @@ impl ChannelRuntimeV1 {
             .iter_mut()
             .find(|record| {
                 record.command == batch.command
-                    && record.phase
-                        == batch
-                            .deferred
-                            .as_ref()
-                            .map_or(0, |authority| authority.phase_ordinal())
+                    && record.key
+                        == BatchReplayKey::Spell(
+                            batch
+                                .deferred
+                                .as_ref()
+                                .map_or(0, |authority| authority.phase_ordinal()),
+                        )
             })
             .ok_or(Error::InvalidBatch)?;
         record.charm_children = Some(proof.child_binding);

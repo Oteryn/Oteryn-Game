@@ -125,7 +125,9 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
                         "position": cell,
                         "item": item,
                         "attribute": attribute,
-                        "action": int(selector.rsplit("ID", 1)[1]) if table == "KeyDoorAction" else selector,
+                        "action": int(selector.rsplit("ID", 1)[1])
+                        if table == "KeyDoorAction"
+                        else selector,
                         "source": path,
                         "line": field["line"],
                     }

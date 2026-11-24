@@ -505,8 +505,8 @@ impl State {
                     view,
                     &entities,
                     self.items.as_mut(),
-                    sequence,
-                    self.spatial_revision,
+                    (sequence, self.spatial_revision),
+                    false,
                 )
                 .await;
             let (_, revision) = match projection {
