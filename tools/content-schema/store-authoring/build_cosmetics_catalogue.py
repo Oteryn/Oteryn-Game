@@ -17,6 +17,14 @@ DIGESTS = {
     MOUNTS: "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f",
 }
 SPELLINGS = {"Artic Unicorn": "Arctic Unicorn", "Hailtorm Fury": "Hailstorm Fury"}
+# These exact looks are marked Store in Crystal's mounts.xml. Its Store Lua
+# omits their offers, so retain the prices from the cited TibiaWiki revisions.
+WIKI_MOUNT_OFFERS = (
+    ("213", "Boisterous Bull", 242, 690, 394898),
+    ("214", "Surly Steer", 243, 690, 394899),
+    ("215", "Obstinate Ox", 244, 690, 394900),
+    ("245", "Battle Werewolf", 274, 870, 427794),
+)
 OFFER = re.compile(
     r'name = "([^"]+)",\s+price = (\d+),\s+'
     r'(?:id = (\d+),|sexId = \{ female = (\d+), male = (\d+) \},\s+addon = 3,)'
@@ -80,6 +88,27 @@ def build(existing, document, store, mount_xml):
             "unlock_key": key,
             "preview": {"kind": preview, "key": key},
             "source_line": store.count("\n", 0, match.start()) + 1,
+        })
+    for mount_id, name, xml_line, price, wiki_revision in WIKI_MOUNT_OFFERS:
+        mount = mounts[mount_id]
+        if mount["type"] != "store" or mount["name"] != name:
+            raise ValueError(f"Crystal Store mount identity drift: {name}")
+        look = int(mount["clientid"])
+        key = native_mounts[look]
+        if key in seen:
+            raise ValueError(f"duplicate cosmetic offer: {key}")
+        seen.add(key)
+        mount_looks[key] = look
+        offers.append({
+            "key": "store:mount:" + key.rsplit(".", 1)[1].replace("_", "-"),
+            "category": "cosmetics.mounts",
+            "title": name,
+            "price": price,
+            "currency": "TIBIA_COIN",
+            "unlock_key": key,
+            "preview": {"kind": 3, "key": key},
+            "mount_xml_line": xml_line,
+            "tibiawiki_revision": wiki_revision,
         })
     source = existing["source"] | {
         "crystal": {"repository": "zimbadev/crystalserver", "revision": REVISION, "sources": DIGESTS},

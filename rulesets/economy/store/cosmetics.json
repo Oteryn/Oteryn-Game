@@ -377,7 +377,11 @@
       "oteryn:content.mount.death_phoenix": 1843,
       "oteryn:content.mount.soul_phoenix": 1844,
       "oteryn:content.mount.cerberus_champion": 1209,
-      "oteryn:content.mount.jousting_eagle": 1208
+      "oteryn:content.mount.jousting_eagle": 1208,
+      "oteryn:content.mount.boisterous_bull": 1672,
+      "oteryn:content.mount.surly_steer": 1673,
+      "oteryn:content.mount.obstinate_ox": 1674,
+      "oteryn:content.mount.battle_werewolf": 1873
     },
     "crystal": {
       "repository": "zimbadev/crystalserver",
@@ -440,6 +444,20 @@
         "key": "oteryn:content.mount.battle_badger"
       },
       "source_line": 1170
+    },
+    {
+      "key": "store:mount:battle-werewolf",
+      "category": "cosmetics.mounts",
+      "title": "Battle Werewolf",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.battle_werewolf",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.battle_werewolf"
+      },
+      "mount_xml_line": 274,
+      "tibiawiki_revision": 427794
     },
     {
       "key": "store:mount:black-stag",
@@ -518,6 +536,20 @@
         "key": "oteryn:content.mount.bogwurm"
       },
       "source_line": 1210
+    },
+    {
+      "key": "store:mount:boisterous-bull",
+      "category": "cosmetics.mounts",
+      "title": "Boisterous Bull",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.boisterous_bull",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.boisterous_bull"
+      },
+      "mount_xml_line": 242,
+      "tibiawiki_revision": 394898
     },
     {
       "key": "store:mount:boreal-owl",
@@ -1729,6 +1761,20 @@
       "source_line": 1872
     },
     {
+      "key": "store:mount:obstinate-ox",
+      "category": "cosmetics.mounts",
+      "title": "Obstinate Ox",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.obstinate_ox",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.obstinate_ox"
+      },
+      "mount_xml_line": 244,
+      "tibiawiki_revision": 394900
+    },
+    {
       "key": "store:mount:pallbearer",
       "category": "cosmetics.mounts",
       "title": "Pallbearer",
@@ -2195,6 +2241,20 @@
         "key": "oteryn:content.mount.steelbeak"
       },
       "source_line": 2120
+    },
+    {
+      "key": "store:mount:surly-steer",
+      "category": "cosmetics.mounts",
+      "title": "Surly Steer",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.surly_steer",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.surly_steer"
+      },
+      "mount_xml_line": 243,
+      "tibiawiki_revision": 394899
     },
     {
       "key": "store:mount:swamp-crocovile",

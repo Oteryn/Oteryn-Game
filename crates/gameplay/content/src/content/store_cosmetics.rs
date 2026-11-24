@@ -171,7 +171,7 @@ mod tests {
                 kind => panic!("unexpected cosmetic preview kind {kind}"),
             }
         }
-        assert_eq!(keys.len(), 211);
+        assert_eq!(keys.len(), 215);
         Ok(())
     }
 }
