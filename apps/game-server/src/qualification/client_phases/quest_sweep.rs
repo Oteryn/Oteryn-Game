@@ -20,6 +20,7 @@ use serde_json::Value;
 const BATCH_VARIABLE: &str = "OTERYN_E2E_QUEST_SWEEP_BATCH";
 const BATCH_DEFAULT: (usize, usize) = (0, 3);
 const CHARACTER: usize = 1;
+const RECOVERY_CHARACTER: usize = 0;
 const SEED_LEVEL: u32 = 100;
 
 fn quest_batch(value: Option<&str>) -> TestResult<(usize, usize)> {
@@ -352,6 +353,7 @@ struct Journey<'a, 'scope> {
     offers: &'a [Offer],
     db: &'a mut sqlx::PgConnection,
     character: &'a [u8],
+    fixture_index: usize,
     log: &'a QuestLogContent,
     catalogue: &'a QuestStateCatalogue,
     items: &'a crate::content::item_ref::ItemDefinitionIndex,
@@ -640,11 +642,11 @@ impl Journey<'_, '_> {
                 return Err("classic-seed-logout-refused".into());
             }
             self.reconnect = true;
-            wait_character_released(self.clients, CHARACTER).await?;
+            wait_character_released(self.clients, self.fixture_index).await?;
             for (quest, expected) in by_quest {
                 self.write_predecessor_tracks(&quest, &expected).await?;
             }
-            *self.client = connect_character(self.clients, 0x72, CHARACTER).await?;
+            *self.client = connect_character(self.clients, 0x72, self.fixture_index).await?;
             self.reconnect = false;
             evidence(&format!(
                 "quest_sweep prerequisites mode=seeded npc={} branch={branch} seeded_tracks={}",
@@ -999,9 +1001,9 @@ impl Journey<'_, '_> {
         if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err("seed-logout-refused".into());
         }
-        wait_character_released(self.clients, CHARACTER).await?;
+        wait_character_released(self.clients, self.fixture_index).await?;
         let result = self.write_predecessor_tracks(quest, &expected).await;
-        *self.client = connect_character(self.clients, 0x72, CHARACTER).await?;
+        *self.client = connect_character(self.clients, 0x72, self.fixture_index).await?;
         result?;
         evidence(&format!(
             "quest_sweep prerequisites mode=seeded quest={} seeded_tracks={}",
@@ -1627,6 +1629,22 @@ impl StepFailure {
     }
 }
 
+// connection/serve/snapshot.rs:324 reports an unavailable join when initial appearance fails.
+fn join_unavailable(error: &(dyn std::error::Error + 'static)) -> bool {
+    let mut cause = Some(error);
+    while let Some(error) = cause {
+        if matches!(
+            error.downcast_ref::<oteryn_dev_client::SessionError>(),
+            Some(oteryn_dev_client::SessionError::ServerProtocolError { code, .. })
+                if *code == oteryn_protocol_oteryn::FoundationProtocolError::SessionJoinUnavailable.code()
+        ) {
+            return true;
+        }
+        cause = error.source();
+    }
+    false
+}
+
 async fn bounded(work: impl Future<Output = TestResult>) -> Result<(), StepFailure> {
     match tokio::time::timeout(Duration::from_secs(30), work).await {
         Ok(result) => result.map_err(|error| StepFailure::from_error(error.as_ref())),
@@ -1687,11 +1705,35 @@ pub(super) async fn run(
         Some(provisioning::provision_fixture(client, clients, CHARACTER, SEED_LEVEL).await?);
     let mut last_journal_query = None;
     let mut isolate_entries = false;
+    let mut fixture_index = CHARACTER;
     for (key, entry) in entries.iter().skip(start).take(selected) {
         verdict::Harness::global().progress("quest-sweep-entry");
         let short = row_key(key.strip_prefix("oteryn:").unwrap_or(key));
         if session.is_none() {
-            session = Some(connect_character(clients, 0x73, CHARACTER).await?);
+            let admission_started = std::time::Instant::now();
+            session = Some(
+                match connect_character(clients, 0x73, fixture_index).await {
+                    Ok(client) => client,
+                    Err(error)
+                        if fixture_index == CHARACTER && join_unavailable(error.as_ref()) =>
+                    {
+                        tally.row(
+                            "session",
+                            "fresh-admission",
+                            Err("session-join-unavailable"),
+                            admission_started.elapsed().as_secs_f64(),
+                        );
+                        fixture_index = RECOVERY_CHARACTER;
+                        evidence(&format!(
+                            "quest_sweep recovery mode=seeded entry=QS.{short} fixture={fixture_index} owner=qualification_fixture.rs:50"
+                        ));
+                        let client = connect_character(clients, 0x74, fixture_index).await?;
+                        provisioning::provision_fixture(client, clients, fixture_index, SEED_LEVEL)
+                            .await?
+                    }
+                    Err(error) => return Err(error),
+                },
+            );
             evidence("quest_sweep recovery fresh_admission=accepted");
         }
         let mut journey = Journey {
@@ -1700,7 +1742,8 @@ pub(super) async fn run(
             npcs,
             offers: &offers,
             db: &mut db,
-            character: &clients.characters[CHARACTER],
+            character: &clients.characters[fixture_index],
+            fixture_index,
             log: &log,
             catalogue: lowered.catalogue(),
             items: &items,
@@ -1751,7 +1794,9 @@ pub(super) async fn run(
             ))
         )
     } else {
-        wait_character_released(clients, CHARACTER).await.is_ok()
+        wait_character_released(clients, fixture_index)
+            .await
+            .is_ok()
     };
     if !released {
         tally.row("session", "release", Err("logout-refused"), 0.0);
@@ -2040,6 +2085,21 @@ mod tests {
         let failure = StepFailure::from_error(&error);
         assert!(failure.reconnect);
         assert!(!StepFailure::blocked("missing-content").reconnect);
+    }
+
+    #[test]
+    fn fallback_fixture_requires_a_wire_join_unavailable() {
+        let error = oteryn_dev_client::DevClientError::from(
+            oteryn_dev_client::SessionError::ServerProtocolError {
+                code: oteryn_protocol_oteryn::FoundationProtocolError::SessionJoinUnavailable
+                    .code(),
+                connection_trace: None,
+            },
+        );
+        assert!(join_unavailable(&error));
+        assert!(!join_unavailable(
+            &oteryn_dev_client::SessionError::SessionUnusable
+        ));
     }
 
     #[test]
