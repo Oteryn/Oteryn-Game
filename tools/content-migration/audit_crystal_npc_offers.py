@@ -51,9 +51,18 @@ def main():
     document = json.loads(DECLARATIONS.read_bytes())
     declarations = document["records"]
     native = collections.defaultdict(list)
+    item_shards = {}
+    for shard in sorted((ROOT / "content/items/definitions").glob("items-*.json")):
+        for row in json.loads(shard.read_bytes())["records"]:
+            item_shards[row["definition"]["identity"]["key"]] = f"{shard.relative_to(ROOT)}:1"
     items = {
         row["definition"]["identity"]["key"]: row["definition"]
         for shard in (ROOT / "content/items/definitions").glob("items-*.json")
+        for row in json.loads(shard.read_bytes())["records"]
+    }
+    npc_keys = {
+        row["declaration"]["identity"]["key"].removeprefix("oteryn:npc.")
+        for shard in (ROOT / "content/npcs/definitions").glob("npcs-*.json")
         for row in json.loads(shard.read_bytes())["records"]
     }
     services = {}
@@ -68,10 +77,23 @@ def main():
             item = re.fullmatch(r"oteryn:item.tibia.i(\d+)", key)
             item_id = int(item[1]) if item else key
             native[merchant, item_id, offer["direction"]].append(offer["unit_price"])
+    # The official source records Lily's blueberry purchase as dialogue-only.
+    # Remove the plain shop offer admitted by the earlier literal-only import.
+    lily = ("lily", 3588, "BuyFromPlayer")
+    if args.import_exact and lily in native:
+        services["lily"]["offers"] = [
+            offer for offer in services["lily"]["offers"]
+            if (offer["item"]["key"], offer["direction"])
+            != ("oteryn:item.tibia.i3588", "BuyFromPlayer")
+        ]
+        native.pop(lily)
+        removed = True
+    else:
+        removed = False
     counts = collections.Counter()
     with args.output.open("w", newline="") as output:
         writer = csv.writer(output, delimiter="\t", lineterminator="\n")
-        writer.writerow(("class", "merchant", "item", "direction", "oteryn_gold", "crystal_gold", "source"))
+        writer.writerow(("class", "merchant", "item", "direction", "oteryn_gold", "crystal_gold", "source", "native_item_definition"))
         for key in sorted(native.keys() | donor.keys(), key=str):
             merchant, item, side = key
             ours, theirs = native.get(key, []), donor.get(key, [])
@@ -79,8 +101,12 @@ def main():
                 continue
             if ours:
                 reason = "oteryn_only_no_named_donor_script" if merchant not in scripts else "oteryn_only_no_literal_match"
-            elif merchant not in services:
-                reason = "crystal_only_no_native_trade_service"
+            elif merchant == "grizzly_adams":
+                reason = "crystal_only_dedicated_quest_gated_shop"
+            elif key == lily:
+                reason = "crystal_only_official_dialogue_quantity"
+            elif merchant not in npc_keys:
+                reason = "crystal_only_no_native_npc_definition"
             elif f"oteryn:item.tibia.i{item}" not in items:
                 reason = "crystal_only_no_native_item"
             else:
@@ -91,12 +117,20 @@ def main():
                     reason = "crystal_only_item_not_materializable"
                 elif len(theirs) != 1 or not name or theirs[0][2] != name.casefold():
                     reason = "crystal_only_variant_or_name_mismatch"
-                elif not services[merchant].get("offers"):
-                    reason = "crystal_only_native_service_held"
                 else:
                     reason = "crystal_only_exact_native_offer"
                     if args.import_exact:
-                        services[merchant]["offers"].append({
+                        if merchant not in services:
+                            service = {
+                                "kind": "Service",
+                                "identity": {"key": f"oteryn:service.trade.{merchant}",
+                                             "revision": "definition-r1"},
+                                "fields": [],
+                                "offers": [],
+                            }
+                            declarations.append(service)
+                            services[merchant] = service
+                        services[merchant].setdefault("offers", []).append({
                             "item": definition["identity"],
                             "direction": side,
                             "unit_price": theirs[0][0],
@@ -104,14 +138,33 @@ def main():
             counts[reason] += 1
             writer.writerow((reason, merchant, item, side, ",".join(map(str, ours)),
                              ",".join(str(price) for price, _, _ in theirs),
-                             ",".join(source for _, source, _ in theirs)))
-    if args.import_exact and counts["crystal_only_exact_native_offer"]:
+                             ",".join(source for _, source, _ in theirs),
+                             item_shards.get(f"oteryn:item.tibia.i{item}", "")))
+    if args.import_exact and (removed or counts["crystal_only_exact_native_offer"]):
         from questpc7_world_seal import refresh
-        from world_project_v2_to_tree import git_blob_sha, write_services
+        from world_project_v2_to_tree import git_blob_sha, write_registry, write_services
 
         DECLARATIONS.write_text(json.dumps(document, ensure_ascii=False, separators=(",", ":")) + "\n")
         refresh(ROOT, ROOT / "content/world")
-        write_services(document, git_blob_sha(DECLARATIONS))
+        index_path = "content/services/trade/index.json"
+        prior = json.loads((ROOT / index_path).read_bytes())["shards"]
+        declaration_digest = git_blob_sha(DECLARATIONS)
+        service_counts, service_shards = write_services(document, declaration_digest)
+        current = service_shards["Service.Trade"]
+        obsolete = set(prior) - set(current)
+        manifest_path = "content/manifest.json"
+        manifest = json.loads((ROOT / manifest_path).read_bytes())
+        manifest["families"]["Service.Trade"]["records"] = service_counts["Service.Trade"]
+        managed = {entry["path"] for entry in manifest["managed_files"]} - obsolete
+        manifest["managed_files"] = [{"path": path} for path in sorted(managed | set(current))]
+        write_registry(manifest_path, manifest)
+        lock_path = "content/content.lock.json"
+        lock = json.loads((ROOT / lock_path).read_bytes())
+        lock["family_counts"]["Service.Trade"] = service_counts["Service.Trade"]
+        lock["legacy_blobs"]["declarations"] = declaration_digest
+        write_registry(lock_path, lock)
+        for path in obsolete:
+            (ROOT / path).unlink()
     print(json.dumps(counts, sort_keys=True))
 
 

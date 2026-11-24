@@ -36,7 +36,7 @@
     "Service.Bank": 2,
     "Service.Blessing": 10,
     "Service.Promotion": 7,
-    "Service.Trade": 324,
+    "Service.Trade": 325,
     "Service.Travel": 57,
     "StarterKit": 1,
     "item_conversion": 130
@@ -47,7 +47,7 @@
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "db9b4358933528f039c377322a67bf55bb11f222",
+    "declarations": "c46b4dbbe4d55a90f94d4c2fbb6fa82a8635e4fb",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "307cf0a3d2c62e222a27ceab4f3b19af9f8b3edf",
     "reference": "80dcd1a9a390f6fe1dd71361bad7e99347e069b5",

@@ -12,7 +12,7 @@ use std::sync::OnceLock;
 const SOURCE: &str = include_str!("../../../../../../content/quests/native-service-access.json");
 // Existing canonical evidence, not a separately authored shop or price table.
 const RETAINED: &str =
-    include_str!("../../../../../../content/services/trade/trade-00000-00323.json");
+    include_str!("../../../../../../content/services/trade/trade-00000-00324.json");
 const HELD_PREFIX: &str = "oteryn:source.npc.trade.held_tuple_";
 
 #[derive(Debug, Deserialize)]

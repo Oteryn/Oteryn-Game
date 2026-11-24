@@ -90,7 +90,7 @@ REWARD_CLAIM_COUNT += len(engclaim_native.CASES) + len(nrwicked_native.records()
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
 SERVICE_FAMILY_COUNTS = {
-    "Service.Trade": 324,
+    "Service.Trade": 325,
     "Service.Travel": 57,
     "Service.Bank": 2,
     "Service.Promotion": 7,

@@ -185,7 +185,7 @@ class SharedDetailsGeneration(unittest.TestCase):
 
     def test_no_unqualified_fluid_quotes_in_trade_projection(self):
         trade = json.loads(
-            (ROOT / "content/services/trade/trade-00000-00323.json").read_bytes()
+            (ROOT / "content/services/trade/trade-00000-00324.json").read_bytes()
         )
         ahmet = next(
             row["declaration"]
@@ -202,7 +202,7 @@ class SharedDetailsGeneration(unittest.TestCase):
 
     def test_baltim_wrap_quote_has_exact_full_charge_evidence(self):
         trade = json.loads(
-            (ROOT / "content/services/trade/trade-00000-00323.json").read_bytes()
+            (ROOT / "content/services/trade/trade-00000-00324.json").read_bytes()
         )
         baltim = next(
             row["declaration"]
