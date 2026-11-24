@@ -341,10 +341,15 @@ async fn take_vault_key(
 
     let key: Vec<u8> = sqlx::query_scalar(
         "SELECT uuid_send(k.item_instance_id)
-         FROM game_item_keys k JOIN game_item_container_entries c USING (item_instance_id)
-         JOIN game_item_instances bag ON bag.item_instance_id=c.parent_item_instance_id
-         WHERE k.key_number=4502 AND bag.definition_production_key='oteryn:item.tibia.i2853'",
+         FROM game_quest_callback_carried(encode($1,'hex')::uuid, encode($2,'hex')::uuid) c
+         JOIN game_item_keys k ON k.item_instance_id=c.item
+         JOIN game_item_instances bag
+           ON bag.item_instance_id=(c.location->>'parent_item_instance_id')::uuid
+         WHERE c.kind='nested' AND k.key_number=4502
+           AND bag.definition_production_key='oteryn:item.tibia.i2853'",
     )
+    .bind(id(41).as_slice())
+    .bind(owner.world_id.as_bytes().as_slice())
     .fetch_one(&h.pool)
     .await?;
     let fence = owner
@@ -604,7 +609,8 @@ pub(super) async fn exercise(
         .await?;
     take_vault_key(owner, admitted, h).await?;
 
-    walk(owner, admitted, position(32106, 31569, -9)).await?;
+    // The donor map puts a blocking minotaur statue west of this approach.
+    walk(owner, admitted, position(32107, 31569, -9)).await?;
     use_key(owner, admitted, VAULT_LOCK, 4502).await?;
     expected.tracks[0] = 6;
     expected.assert(owner, h, "vault lock").await?;

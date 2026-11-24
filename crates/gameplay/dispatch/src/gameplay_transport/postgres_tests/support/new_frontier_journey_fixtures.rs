@@ -38,7 +38,7 @@ const CONTACTS: [(&str, Position, Position); 8] = [
     ("humgolf", pos(32598, 31880, 9), pos(32598, 31881, 9)),
     ("wyrdin", pos(33266, 31835, 6), pos(33266, 31836, 6)),
     ("angus", pos(32670, 32730, 7), pos(32670, 32729, 7)),
-    ("telas", pos(33276, 31800, 6), pos(33276, 31801, 6)),
+    ("telas", pos(33276, 31800, 6), pos(33276, 31802, 6)),
     ("king_tibianus", pos(32311, 32172, 6), pos(32311, 32173, 6)),
 ];
 const CITY: Position = pos(33061, 31527, 12);
@@ -94,7 +94,7 @@ async fn travel_to(
         false,
         &doors,
     )
-    .map_err(debug)?;
+    .map_err(|error| format!("travel to {p:?}: {error:?}"))?;
     runtime.commit_source_step(proof).map_err(debug)?;
     Ok(())
 }
@@ -158,7 +158,8 @@ async fn use_object(
     let target = object_target(owner, tiles(p), ordinal)?;
     assert_eq!(
         use_target(owner, a, a.continuity.next_command_id, &target).await?,
-        expected
+        expected,
+        "{p:?}"
     );
     Ok(())
 }
@@ -425,7 +426,7 @@ pub(super) async fn exercise(
     for item in [7439, 7440, 7443] {
         assert_eq!(carried(h, item).await?, 1);
     }
-    use_object(owner, a, POTIONS, 1, UseRejected).await?;
+    use_object(owner, a, POTIONS, 1, UseDisposition::NothingToUse).await?;
     move_potion(owner, a, h).await?;
     for item in [7439, 7440, 7443] {
         assert_eq!(carried(h, item).await?, 1);
@@ -637,7 +638,7 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
         crop!(
             "region-z06-x129-y124.b3",
             (6, 129, 124),
-            (33276, 31800, 33277, 31802),
+            (33276, 31800, 33277, 31803),
             (33276, 31801),
             vec![]
         ),
@@ -669,17 +670,6 @@ async fn defeat_mine_leader(
         encode_attack_target_intent, encode_fight_modes_intent,
     };
     let player = a.runtime_actor.ok_or("player")?;
-    let fence = owner
-        .current_quest_fence(a.game_session_id)
-        .await
-        .map_err(debug)?
-        .ok_or("mine leader combat fence")?;
-    let build = owner
-        .root
-        .read_character_build_state(owner.character, fence.character_id)
-        .await
-        .map_err(debug)?;
-    super::annihilator_combat::prepare_supplies(owner, a, &build, false).await?;
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
@@ -769,9 +759,10 @@ async fn defeat_mine_leader(
             .refresh_source_party_presence(player, a.game_session_id)
             .await
     );
-    owner.refresh_attack_weapon(player, a.game_session_id).await;
     for _ in 0..64 {
         owner.clock_origin -= std::time::Duration::from_secs(2);
+        // The production swing rechecks its equipment snapshot against this tick.
+        owner.refresh_attack_weapon(player, a.game_session_id).await;
         owner.drain_auto_attacks().await;
         if owner
             .runtime
@@ -796,7 +787,7 @@ async fn move_potion(
     use crate::gameplay_transport::item_view::ItemKey;
     let (potion, bag): (Vec<u8>, Vec<u8>) = sqlx::query_as(
         "SELECT uuid_send(child.item_instance_id), uuid_send(parent.item_instance_id) \
-         FROM game_item_container_entries e JOIN game_item_instances child USING(item_instance_id) \
+         FROM game_item_nested_entries e JOIN game_item_instances child USING(item_instance_id) \
          JOIN game_item_instances parent ON parent.item_instance_id=e.parent_item_instance_id \
          WHERE child.definition_production_key='oteryn:item.tibia.i7439' \
            AND parent.definition_production_key='oteryn:item.tibia.i2854' AND child.lifecycle=1",
@@ -805,7 +796,7 @@ async fn move_potion(
     .await?;
     let children = || {
         sqlx::query_scalar::<_, i64>(
-        "SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
+            "SELECT count(*) FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
         .bind(&bag).fetch_one(&h.pool)
     };
     assert_eq!(

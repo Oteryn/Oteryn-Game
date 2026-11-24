@@ -847,7 +847,7 @@
                 "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_explorer_society/actions_butterfly.lua"
               ],
               "carried_item": "oteryn:item.tibia.i4863",
-              "creature_target": "oteryn:creature.butterfly",
+              "creature_target": "oteryn:creature.purple_butterfly",
               "corpse_target": {
                 "appearance": 4992,
                 "maximum_age_ms": 60000

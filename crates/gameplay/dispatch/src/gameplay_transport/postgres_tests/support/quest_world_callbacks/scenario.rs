@@ -1446,6 +1446,8 @@ fn scenario_case(
 
         let initial_level: Option<u32> = match name {
             super::super::koshei_the_deathless_journey_fixtures::NAME => Some(150),
+            // The settlement journey includes combat with a classed starter loadout.
+            new_frontier_journey_fixtures::NAME => Some(8),
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
             "questpc7-eligibility-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
@@ -1788,7 +1790,7 @@ fn scenario_case(
         let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
             .map_err(debug)?;
         owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
-        if koshei || alawars_vault {
+        if koshei || alawars_vault || (frontier && !recover_bait) {
             let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
             owner.quest_log_content = Some(
                 crate::gameplay_transport::quest_log::QuestLogLines::new(journal.content)
@@ -1927,16 +1929,21 @@ fn scenario_case(
             },
             ..crate::durability::starter_grant::StarterTemplate::main()
         };
-        h.root
-            .grant_starter_items(
-                &authority,
-                &h.node,
-                &fence.item_fence(),
-                &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
-                &template,
-            )
-            .await
-            .map_err(|e| format!("callback starter items: {e:?}"))?;
+        if name == super::super::new_frontier_journey_fixtures::NAME {
+            let build = h.root.read_character_build_state(&authority, fence.character_id).await.map_err(debug)?;
+            super::super::annihilator_combat::prepare_supplies(&owner, &admitted, &build, false).await?;
+        } else {
+            h.root
+                .grant_starter_items(
+                    &authority,
+                    &h.node,
+                    &fence.item_fence(),
+                    &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+                    &template,
+                )
+                .await
+                .map_err(|e| format!("callback starter items: {e:?}"))?;
+        }
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         if let Some(initial_level) = initial_level {

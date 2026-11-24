@@ -8,6 +8,9 @@ use super::journal_source::{Journal, track};
 use super::source_texts::SourceTexts;
 use super::{QuestLogCatalogue, QuestLogContent, QuestLogKind, QuestLogMission, QuestLogQuest};
 
+const APE_CITY: &str = "oteryn:quest.the_ape_city_quest";
+const APE_CITY_STAGE: &str = "oteryn:quest-progress/chosen/ape-city/stage";
+
 const QUESTS: &str = include_str!(
     "../../../../../../tools/content-schema/quest-authoring/samples/questlog/quests.json"
 );
@@ -94,7 +97,14 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
             "script_only" => QuestLogKind::ScriptOnly,
             _ => return Err("unknown journal quest kind".into()),
         };
-        let start = if key == super::super::grizzly_adams::QUEST {
+        let ape_city_stage = key == APE_CITY
+            && lowered
+                .catalogue()
+                .track(APE_CITY_STAGE)
+                .is_some_and(|track| track.quest == key && track.min == 0 && track.max == 15);
+        let start = if ape_city_stage {
+            Some((APE_CITY_STAGE.into(), 1))
+        } else if key == super::super::grizzly_adams::QUEST {
             // The generic source export left this quest's start unbound. Crystal
             // grizzly_adams.lua:412-416 explicitly opens QuestLogEntry at zero on join.
             Some((
@@ -121,6 +131,10 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
         }
         let mut missions = Vec::new();
         for mission in quest.missions {
+            if ape_city_stage && mission.key == "hairycles_missions" {
+                missions.push(ape_city_mission(mission.name));
+                continue;
+            }
             if key == super::super::grizzly_adams::QUEST
                 && let Some(native) = super::super::grizzly_adams::journal(
                     &mission.name,
@@ -213,6 +227,49 @@ fn blind_the_enemy_journal(lowered: &LoweredQuestState) -> Option<QuestLogQuest>
             ),
         }],
     })
+}
+
+fn ape_city_mission(name: String) -> QuestLogMission {
+    use super::{JournalText, QuestJournal};
+
+    // The playable route uses its own stage numbers and tasks. In particular,
+    // Hairycles asks for a banana and parchment where the donor journal describes
+    // alternate tasks, so these entries describe the stages that actually commit.
+    let entries = [
+        (1, "Find a banana for Hairycles."),
+        (2, "Bring the banana to Hairycles."),
+        (3, "Ask Hairycles for your next mission."),
+        (4, "Recover the old parchment for Hairycles."),
+        (5, "Bring the parchment to Hairycles."),
+        (6, "Decipher the signs for Hairycles."),
+        (7, "Recover a hair from the holy ape."),
+        (8, "Bring the holy ape hair to Hairycles."),
+        (9, "Ask Hairycles about the catacombs."),
+        (10, "Take the Snake Destroyer into Banuta."),
+        (
+            11,
+            "Use the Snake Destroyer on the amphorae and enter the deeper catacombs.",
+        ),
+        (12, "Set the six levers and open the catacombs gate."),
+        (13, "Destroy the snake statue beyond the gate."),
+        (14, "Report back to Hairycles."),
+        (
+            15,
+            "You completed Hairycles' missions and earned the shaman outfit.",
+        ),
+    ];
+    QuestLogMission {
+        name,
+        track: APE_CITY_STAGE.into(),
+        start_value: 1,
+        end_value: 15,
+        journal: QuestJournal::PerStage(
+            entries
+                .into_iter()
+                .map(|(stage, text)| (stage, JournalText::Text(text.into())))
+                .collect(),
+        ),
+    }
 }
 
 #[cfg(test)]

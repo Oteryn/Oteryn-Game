@@ -35,6 +35,8 @@ const PLATINUM: u16 = 3035;
 const AMULET: u16 = 3082;
 const TOOLS: [u16; 3] = [3003, 3457, 3148];
 const START: Position = at(32664, 31682, 6);
+const MOAT_HOLE: Position = at(32579, 31679, 7);
+const MOAT_TUNNEL: Position = at(32579, 31679, 8);
 const TOWER: Position = at(32593, 31644, 2);
 const BALL: Position = at(32592, 31645, 2);
 
@@ -447,8 +449,18 @@ async fn journey(
     );
     checkpoint(pool, character, 1, &bag).await?;
 
-    // The ladder is a native USE target. The other floor changes resolve
-    // through ordinary paced STEP on the compiled source region.
+    // Cross under the moat through the donor's shovel hole and rope spot.
+    walk(owner, member, at(32580, 31679, 7)).await?;
+    assert_eq!(
+        tool_use(owner, member, TOOLS[1], target(owner, MOAT_HOLE, 0)?).await?,
+        UseDisposition::Committed,
+        "open the Elvenbane moat entrance"
+    );
+    super::desert_earned_route_fixtures::step(owner, member, StepDirection::West).await?;
+    assert_eq!(
+        position(owner, member).await?,
+        super::quest_world_callbacks_fixtures::local(MOAT_TUNNEL)
+    );
     walk(owner, member, at(32593, 31644, 5)).await?;
     assert_eq!(
         use_target(owner, member, &target(owner, at(32593, 31643, 5), 1)?).await?,
@@ -521,6 +533,18 @@ async fn journey(
         }
         checkpoint(pool, character, 3, &bag).await?;
     }
+    walk(owner, member, MOAT_TUNNEL).await?;
+    assert_eq!(
+        tool_use(owner, member, TOOLS[0], target(owner, MOAT_TUNNEL, 0)?).await?,
+        UseDisposition::Committed,
+        "rope out of the moat tunnel"
+    );
+    walk(owner, member, at(32656, 31675, 7)).await?;
+    assert_eq!(
+        use_target(owner, member, &target(owner, at(32656, 31674, 7), 1)?).await?,
+        UseDisposition::Committed,
+        "climb back to Eroth's floor"
+    );
     walk(owner, member, START).await?;
     let (outcome, _, command) =
         wire_conversation(owner, member, npc, report, false, vec!["hi", "mission"]).await?;
@@ -528,9 +552,8 @@ async fn journey(
     bag.insert(PLATINUM, 10);
     bag.insert(AMULET, 1);
     checkpoint(pool, character, 4, &bag).await?;
-    journal(owner, member, quest_index, true, "received Eroth's reward").await?;
 
-    // Each wire helper starts a new duplex connection with retained continuity.
+    // Replay on a new connection before the quest-log query advances the command window.
     let payload = oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(&NpcTalkIntent {
         npc_actor: npc,
         text: "mission".into(),
@@ -542,6 +565,7 @@ async fn journey(
         Spoken
     );
     checkpoint(pool, character, 4, &bag).await?;
+    journal(owner, member, quest_index, true, "received Eroth's reward").await?;
     assert_eq!(
         wire_conversation(owner, member, npc, report, false, vec!["hi", "mission"])
             .await?
@@ -576,7 +600,7 @@ fn target(
 }
 
 async fn tool_use(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     member: &mut AdmittedSession,
     item: u16,
     target: WorldObjectTarget,
@@ -589,6 +613,10 @@ async fn tool_use(
     let definition = index
         .definition_ref("Item", &item_key(item), "definition-r1")
         .ok_or("selected tool")?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
     member.item_fence = Some(
         owner
             .current_quest_fence(member.game_session_id)
@@ -695,13 +723,7 @@ async fn walk(
 ) -> TestResult {
     use crate::content::{CollisionClass, LogicalCell};
     use crate::map::floor::{Ground, resolve_landing};
-    let at = owner
-        .runtime
-        .lock()
-        .await
-        .read_actor_position(member.runtime_actor.ok_or("actor")?)
-        .map_err(debug)?
-        .position();
+    let at = position(owner, member).await?;
     let start = (at.x, at.y, i32::from(at.floor));
     let end = (i32::from(goal.x), i32::from(goal.y), -i32::from(goal.floor));
     let map = owner.bundle_map().ok_or("source map")?;
@@ -755,4 +777,17 @@ async fn walk(
         super::desert_earned_route_fixtures::step(owner, member, direction).await?;
     }
     Ok(())
+}
+
+async fn position(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    member: &AdmittedSession,
+) -> TestResult<crate::foundation::MovementLocalPosition> {
+    Ok(owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(member.runtime_actor.ok_or("actor")?)
+        .map_err(debug)?
+        .position())
 }

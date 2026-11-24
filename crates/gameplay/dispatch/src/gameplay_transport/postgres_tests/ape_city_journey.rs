@@ -665,7 +665,8 @@ impl Journey<'_, '_, '_, '_> {
             NpcIntentDisposition::Ok
         );
         self.terminal().await?;
-        self.use_object(PARCHMENT, Rejected).await?;
+        // A fresh use of the spent source chest has no remaining action.
+        self.use_object(PARCHMENT, UseDisposition::NothingToUse).await?;
         self.terminal().await?;
         self.enter(ENTRY, tile(32749, 32536, -10)).await?;
         self.terminal().await?;
