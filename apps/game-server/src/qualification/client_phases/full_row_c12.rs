@@ -553,6 +553,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_C12_MONK_ACCOUNT").await?;
     let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
     let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+    if !requires_platform_grant(&clients.accounts[1]) {
+        return Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into());
+    }
     let mut client = PREPARATION.connect(clients, 0xc2, 1).await?;
     match carried_count(&client, definition) {
         0 if !equipped_right(&client, definition) => {

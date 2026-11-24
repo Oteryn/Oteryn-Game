@@ -28,7 +28,6 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = result.unwrap_or_else(|_| {
         Err("step=journey observed=timeout-240s need=all-native-replies-and-deltas".into())
     });
-    let result: TestResult = result.and(Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into()));
     if let Err(error) = &result {
         evidence(&format!("C06_GAP {error}"));
     }
@@ -45,6 +44,15 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let caster = character_prep::dedicated_character(clients, "NODE_BOOT_C06_CASTER_ACCOUNT").await?;
+    let (accounts, characters) = caster.replace_slot(clients, 1)?;
+    let scope = SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+    let peer = character_prep::dedicated_character(&scope, "NODE_BOOT_C06_PEER_ACCOUNT").await?;
+    let (accounts, characters) = peer.replace_slot(&scope, 0)?;
+    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..scope };
+    if clients.accounts.iter().any(|account| !requires_platform_grant(account)) {
+        return Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into());
+    }
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;

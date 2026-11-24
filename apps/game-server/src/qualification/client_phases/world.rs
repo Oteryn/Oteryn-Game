@@ -3443,27 +3443,56 @@ fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
     Ok((nonce, attempt))
 }
 
+pub(super) fn requires_platform_grant(account: &str) -> bool {
+    std::env::var("NODE_BOOT_PLATFORM_GRANT_ACCOUNTS").is_ok_and(|accounts| {
+        accounts.split(',').any(|required| required == account)
+    })
+}
+
+async fn platform_row_grant(clients: &SeamClients<'_>, index: usize) -> TestResult<String> {
+    let work = required("NODE_BOOT_PLATFORM_GRANT_DIR")?;
+    let account = clients.accounts[index].clone();
+    let character = uuid_text(&clients.characters[index]);
+    let world = uuid_text(&clients.world);
+    let channel = uuid_text(&clients.channel);
+    let address = clients.address.to_string();
+    let output = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("python3")
+            .arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tools/qualification/node_boot/platform_grant.py"))
+            .args([work, account, character, world, channel, address])
+            .output()
+    }).await??;
+    if !output.status.success() {
+        return Err("Platform-issued row grant unavailable".into());
+    }
+    Ok(String::from_utf8(output.stdout)?)
+}
+
 pub(super) async fn connect_character(
     clients: &SeamClients<'_>,
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     wait_character_released(clients, index).await?;
-    let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
-    let (nonce, attempt) = fresh_grant_material(tag)?;
-    let grant = Grant {
-        signing: clients.signing,
-        key_id: clients.key_id,
-        account_id: &clients.accounts[index],
-        character_id: clients.characters[index],
-        world_id: clients.world,
-        channel_id: clients.channel,
-        security_generation: generation,
-        scope_generation: clients.scope_generation,
-        nonce,
-        attempt,
+    let token = if requires_platform_grant(&clients.accounts[index]) {
+        platform_row_grant(clients, index).await?
+    } else {
+        let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
+        let (nonce, attempt) = fresh_grant_material(tag)?;
+        let grant = Grant {
+            signing: clients.signing,
+            key_id: clients.key_id,
+            account_id: &clients.accounts[index],
+            character_id: clients.characters[index],
+            world_id: clients.world,
+            channel_id: clients.channel,
+            security_generation: generation,
+            scope_generation: clients.scope_generation,
+            nonce,
+            attempt,
+        };
+        sign_grant(&grant, now_seconds()?)
     };
-    let token = sign_grant(&grant, now_seconds()?);
     let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
         address: clients.address,
         server_name: "localhost",
