@@ -20,7 +20,8 @@ summarize() {
 
   rows=$(awk '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ && $4 ~ /^status=(PASS|FAIL|OUT_OF_SCOPE)$/ {
+      ($3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ && $4 ~ /^status=(PASS|FAIL)$/ ||
+       $3 ~ /^scenario=[[:alnum:]_.-]+$/ && $4 == "status=OUT_OF_SCOPE") {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)

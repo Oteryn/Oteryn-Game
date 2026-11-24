@@ -9,7 +9,7 @@ import re
 
 RESULT = re.compile(
     r"^SEAM_EVIDENCE e2e_all scenario=([A-Z]\d\d[a-z]?\.[a-z0-9-]+) "
-    r"status=(PASS|FAIL|SKIPPED|MISSING-SERVER|MISSING-CLIENT) seconds=([0-9]+(?:\.[0-9]+)?)"
+    r"status=(PASS|FAIL|SKIPPED|MISSING-SERVER|MISSING-CLIENT|OUT_OF_SCOPE) seconds=([0-9]+(?:\.[0-9]+)?)"
     r"(?: evidence=(\S+))?"
     # A failing scenario names its own cause and the first failing row/check.
     r"(?: cause=([a-z][a-z-]*) root=(\S+))?$"
@@ -150,7 +150,7 @@ def results(text):
             raise ValueError(f"duplicate scenario result: {scenario}")
         # A skip needs an exact missing content id; absence of implementation
         # needs a source citation. Legacy skipped= strings satisfy neither.
-        if status in {"SKIPPED", "MISSING-SERVER", "MISSING-CLIENT"} and not evidence:
+        if status in {"SKIPPED", "MISSING-SERVER", "MISSING-CLIENT", "OUT_OF_SCOPE"} and not evidence:
             raise ValueError(f"missing source/content evidence: {scenario}")
         if status == "SKIPPED" and not re.fullmatch(r"content:[A-Za-z0-9:_./-]+", evidence):
             raise ValueError(f"missing exact content id: {scenario}")

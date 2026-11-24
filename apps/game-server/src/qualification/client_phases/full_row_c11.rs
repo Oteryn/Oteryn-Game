@@ -67,7 +67,7 @@ impl Row {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    evidence("e2e_all scenario=C11.dawnport.full status=OUT_OF_SCOPE seconds=0 evidence=owner-excluded-Dawnport-Manop-shrine-actions-7101-7104");
+    evidence("e2e_all scenario=C11.dawnport status=OUT_OF_SCOPE seconds=0 evidence=owner-excluded-Dawnport-Manop-shrine-actions-7101-7104");
     character_prep::declare_seeded("C11", "platform-ledger-premium-knight,wheel-fee-gold", "Knight promotion and Wheel mechanics");
     let mut row = Row::new();
     let terminal = match verdict::indexed_timeout(

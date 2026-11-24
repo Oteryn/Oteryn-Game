@@ -223,7 +223,10 @@ fn e2e_result_line(line: &str) -> String {
     };
     let verdict = match status {
         Some("CAPTURED") => return format!("e2e_capture {rest}"),
-        Some(value @ ("PASS" | "FAIL" | "SKIPPED" | "MISSING-SERVER" | "MISSING-CLIENT")) => value,
+        Some(
+            value @ ("PASS" | "FAIL" | "SKIPPED" | "MISSING-SERVER" | "MISSING-CLIENT"
+            | "OUT_OF_SCOPE"),
+        ) => value,
         Some(other) => {
             detail.insert(0, other.to_owned());
             "FAIL"
@@ -305,6 +308,8 @@ mod e2e_result_line_tests {
             e2e_result_line("e2e_all scenario=C02.client capture=a.bin error=disk"),
             "e2e_all scenario=C02.client status=FAIL seconds=0.000 evidence=no-verdict;capture=a.bin;error=disk"
         );
+        let excluded = "e2e_all scenario=C11.dawnport status=OUT_OF_SCOPE seconds=0 evidence=owner-excluded-Dawnport";
+        assert_eq!(e2e_result_line(excluded), excluded);
         assert_eq!(
             e2e_result_line("world_loader state=booted"),
             "world_loader state=booted"
