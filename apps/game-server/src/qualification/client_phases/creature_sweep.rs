@@ -668,10 +668,6 @@ fn corpse_at(
         && !existing.contains(&entry.entity)
 }
 
-fn confirmed_kill(death_distance: u32, has_death_receipt: bool) -> bool {
-    death_distance <= 2 && has_death_receipt
-}
-
 async fn sweep_reward_selection<S, T>(
     session: &mut Option<S>,
     query: impl AsyncFnOnce(&mut S) -> TestResult<T>,
@@ -904,15 +900,8 @@ async fn hunt(
             ),
         ));
     }
-    if death_distance > 2 {
-        return Err(failure(
-            "kill",
-            "vanished",
-            format!(
-                "target left view far from the player;damage_observed={damaged};distance={death_distance};last_position={last_position:?}"
-            ),
-        ));
-    }
+    // Visibility is an observation, not death authority. A matching durable
+    // receipt can arrive after the creature has left the client's window.
     let receipt = committed_hunt_death(
         client,
         clients,
@@ -922,28 +911,26 @@ async fn hunt(
         tokio::time::Instant::now() + Duration::from_secs(20),
     )
     .await;
-    if !confirmed_kill(death_distance, receipt.is_ok()) {
-        return Err(failure(
-            "kill",
-            "unconfirmed_death",
-            format!(
-                "target {:?} disappeared without a matching death: {:?}",
-                target.entity,
-                receipt.err()
-            ),
-        ));
-    }
     let HuntDeath {
         actor: dead,
         stamina: death_stamina,
         reward_occurrence,
         ..
-    } = receipt.map_err(|error| failure("kill", "unconfirmed_death", error))?;
+    } = receipt.map_err(|error| {
+        failure(
+            "kill",
+            "unconfirmed_death",
+            format!(
+                "target {:?} left view without a matching death;distance={death_distance};last_position={last_position:?};damage_observed={damaged};error={error}",
+                target.entity,
+            ),
+        )
+    })?;
     let corpse_identity = dead.corpse_identity();
     rows.pass(
         "kill",
         &format!(
-            "seconds:{:.1};death_receipt:matched;damage_observed:{damaged};death_tile:{last_position:?}",
+            "seconds:{:.1};death_receipt:matched;distance:{death_distance};damage_observed:{damaged};death_tile:{last_position:?}",
             combat_started.elapsed().as_secs_f64()
         ),
     );
@@ -1805,10 +1792,18 @@ mod evidence_tests {
     }
 
     #[test]
-    fn review_near_disappearance_requires_committed_death() {
-        assert!(!confirmed_kill(1, false));
-        assert!(confirmed_kill(1, true));
-        assert!(!confirmed_kill(3, true));
+    fn review_disappearance_requires_the_exact_committed_death_at_any_distance() -> TestResult {
+        let (_, hunt) = include_str!("creature_sweep.rs")
+            .split_once("async fn hunt(")
+            .ok_or("missing hunt")?;
+        let (verification, _) = hunt
+            .split_once("let corpse_identity = dead.corpse_identity();")
+            .ok_or("missing corpse identity")?;
+        assert!(verification.contains("committed_hunt_death("));
+        assert!(verification.contains("target.entity,"));
+        assert!(verification.contains("receipt.map_err"));
+        assert!(!verification.contains("if death_distance"));
+        Ok(())
     }
 
     #[test]
