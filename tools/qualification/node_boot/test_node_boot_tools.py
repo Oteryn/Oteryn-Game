@@ -219,6 +219,7 @@ class WorldFixtureTests(unittest.TestCase):
 fail() { echo "$*"; return 1; }
 evidence() { echo "$*"; }
 psql_admin() { cat > epoch.sql; printf 't\nf\n'; }
+christmas_fixture=0
 NODE_BOOT_WORLD=0
 NODE_BOOT_SPELLS=1
 WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
