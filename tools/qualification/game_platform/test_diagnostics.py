@@ -134,12 +134,13 @@ class Diagnostics(unittest.TestCase):
 
     def test_rotation_failure_reports_driver_diagnostics(self):
         lifecycle = Path(__file__).with_name("lifecycle.sh")
+        reason = "form_handler_missing_or_refused:oauth_authorize:expected_200:observed_503"
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)
             diagnostics = work / "diagnostics"
             diagnostics.mkdir(mode=0o700)
             (work / "native_device_rotation_replay.log").write_text(
-                'Error: "portal_readiness_timeout"\nAuthorization: Bearer private-value\n'
+                f'Error: "{reason}"\nAuthorization: Bearer private-value\n'
             )
             completed = subprocess.run(
                 ["bash", "-c", 'source "$1"; game_platform_fail native_device_rotation_replay journey_assertion_failed 101',
@@ -153,7 +154,7 @@ class Diagnostics(unittest.TestCase):
             self.assertEqual(
                 completed.stdout,
                 "GAME_PLATFORM_EVIDENCE flow=native_device_rotation_replay expected_exit=0 observed_exit=101\n"
-                "GAME_PLATFORM_EVIDENCE flow=native_device_rotation_replay driver_reason=portal_readiness_timeout\n",
+                f"GAME_PLATFORM_EVIDENCE flow=native_device_rotation_replay driver_reason={reason}\n",
             )
             self.assertEqual(
                 (work / "result").read_text(),
