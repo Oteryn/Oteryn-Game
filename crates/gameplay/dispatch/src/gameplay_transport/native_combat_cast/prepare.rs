@@ -457,8 +457,12 @@ async fn prepare_spatial(
             position
         },
         roster,
-        &mut candidates,
     )?;
+    cast_plans::extend_native_target_tiles(
+        &mut candidates,
+        targets.iter().map(|target| target.position),
+        parameters.get("chain").is_some(),
+    );
     let caster_id = u64::from(actor.actor_local_id());
     if saved.is_none() && !bindings.iter().any(|b| b.actor == actor) {
         return reject();
@@ -523,17 +527,16 @@ async fn prepare_spatial(
         }
     }
     for target in &mut targets {
-        let t = tiles
-            .get(&target.position)
-            .ok_or(SpellCastDisposition::Rejected)?;
-        target.legal = cast_plans::target_legal(
-            t,
-            caster_tile,
-            target.health,
-            spell.aggressive,
-            target.kind == TargetKind::MasterlessMonster,
-            attackable.contains(&target.id),
-        );
+        target.legal = tiles.get(&target.position).is_some_and(|tile| {
+            cast_plans::target_legal(
+                tile,
+                caster_tile,
+                target.health,
+                spell.aggressive,
+                target.kind == TargetKind::MasterlessMonster,
+                attackable.contains(&target.id),
+            )
+        });
     }
     let target_position = match intent.target {
         _ if aimed.is_some() => None,
@@ -653,7 +656,6 @@ fn collect_targets(
         MovementPositionSnapshot,
         Option<GameSessionId>,
     )],
-    candidates: &mut BTreeSet<TilePosition>,
 ) -> Result<TargetPhase, SpellCastDisposition> {
     let mut bindings = Vec::new();
     let mut attackable = BTreeSet::new();
@@ -725,7 +727,6 @@ fn collect_targets(
             maximum_health,
             legal: false,
         });
-        candidates.insert(p);
     }
     Ok(TargetPhase {
         bindings,

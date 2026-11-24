@@ -141,6 +141,36 @@ mod chain_search_tests {
     }
 }
 
+/// Add native target positions that can be reached outside the authored area.
+pub fn extend_native_target_tiles<T: Ord>(
+    tiles: &mut BTreeSet<T>,
+    target_positions: impl IntoIterator<Item = T>,
+    has_chain: bool,
+) {
+    if has_chain {
+        tiles.extend(target_positions);
+    }
+}
+
+#[cfg(test)]
+mod native_target_tile_tests {
+    use super::*;
+
+    #[test]
+    fn native_area_casts_do_not_read_unrelated_occupied_tiles() {
+        let caster = (32369, 32230, 7);
+        let area_tile = (32368, 32230, 7);
+        let spectator = (32356, 32196, 7);
+        let mut tiles = BTreeSet::from([caster, area_tile]);
+
+        extend_native_target_tiles(&mut tiles, [spectator], false);
+        assert_eq!(tiles, BTreeSet::from([caster, area_tile]));
+
+        extend_native_target_tiles(&mut tiles, [spectator], true);
+        assert!(tiles.contains(&spectator));
+    }
+}
+
 pub fn geometry(
     a: &AbilityProfile,
     origin: TilePosition,
