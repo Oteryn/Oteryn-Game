@@ -55,7 +55,9 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "s13-party" => Some(("sorcerer", 32)),
         "w20b-light" => Some(("sorcerer", 26)),
         "c05-exiva" => Some(("sorcerer", 8)),
-        "c11-unassigned" => Some((crate::durability::character_build::NO_VOCATION, 8)),
+        "c11-dawnport" | "c11-unassigned" => {
+            Some((crate::durability::character_build::NO_VOCATION, 8))
+        }
         "c11-knight" => Some(("knight", 625)),
         "c12-monk" => Some(("monk", 20)),
         "f5-c17a" => Some(("sorcerer", 20)),
@@ -123,6 +125,7 @@ pub(super) async fn prepare(
     #[cfg(feature = "qualification-spawn")] premium: Option<
         &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
     >,
+    #[cfg(feature = "qualification-spawn")] spawn: Option<SpawnOwners<'_>>,
     bytes: &[u8],
 ) -> &'static str {
     let (native, session, profile) =
@@ -143,6 +146,8 @@ pub(super) async fn prepare(
         profile,
         #[cfg(feature = "qualification-spawn")]
         premium,
+        #[cfg(feature = "qualification-spawn")]
+        spawn,
     ))
     .await
     {
@@ -718,6 +723,7 @@ async fn prepare_build(
     #[cfg(feature = "qualification-spawn")] premium: Option<
         &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
     >,
+    #[cfg(feature = "qualification-spawn")] spawn: Option<SpawnOwners<'_>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let session = crate::foundation::GameSessionId::decode(&session)?;
@@ -760,6 +766,7 @@ async fn prepare_build(
     if matches!(
         profile,
         "premium"
+            | "c11-dawnport"
             | "c11-unassigned"
             | "c11-knight"
             | "c12-monk"
@@ -797,7 +804,7 @@ async fn prepare_build(
                 }
                 return grant_premium(root, premium, *record.account_id.as_bytes(), deadline).await;
             }
-            ("c11-unassigned", UNASSIGNED_ACCOUNT)
+            ("c11-dawnport" | "c11-unassigned", UNASSIGNED_ACCOUNT)
             | ("c11-knight", KNIGHT_ACCOUNT)
             | ("c12-monk", MONK_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
@@ -854,6 +861,10 @@ async fn prepare_build(
     )
     .await?;
     #[cfg(feature = "qualification-spawn")]
+    if profile == "c11-dawnport" {
+        return seed_dawnport_start(spawn, &current).await;
+    }
+    #[cfg(feature = "qualification-spawn")]
     if spell_build(profile).is_some() {
         return Ok(());
     }
@@ -868,6 +879,55 @@ async fn prepare_build(
         None,
     )
     .await
+}
+
+#[cfg(feature = "qualification-spawn")]
+async fn seed_dawnport_start(
+    owners: Option<SpawnOwners<'_>>,
+    current: &crate::foundation::GameSessionAuthoritySnapshot<
+        crate::foundation::AuthenticatedTransportRefV1,
+    >,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+    use crate::foundation::MovementLocalPosition;
+    use crate::map::boot::BundleCollisionIndexExt;
+    use crate::map::floor::{BundleDoors, prepare_quest_callback_teleport};
+
+    let owners = owners.ok_or("Dawnport preparation requires a loaded World")?;
+    let cells = owners.room.movement_cells();
+    let NativeMovementCollisionIndex::Bundle(map) = cells.index() else {
+        return Err("Dawnport preparation requires a World bundle".into());
+    };
+    let session = current.current_game_session_id();
+    let mut runtime = owners.runtime.lock().await;
+    let (actor, expected) = runtime
+        .positioned_player_for_session(session)
+        .map_err(qualification_build::debug)?
+        .ok_or("Dawnport preparation requires a live actor")?;
+    if runtime
+        .bound_attacker_lease(actor, session)
+        .map_err(qualification_build::debug)?
+        != current.current_character_lease()
+    {
+        return Err("Dawnport preparation lost the admitted lease".into());
+    }
+    // Dawnport Centre's authored hometown temple, in the movement owner's floor basis.
+    let temple = MovementLocalPosition {
+        x: 32064,
+        y: 31894,
+        floor: 6,
+    };
+    if expected.position() != temple {
+        let closed = BundleDoors(&map.map().facts);
+        let movement = prepare_quest_callback_teleport(
+            &runtime, cells, actor, session, expected, temple, false, &closed,
+        )
+        .map_err(qualification_build::debug)?;
+        runtime
+            .commit_source_step(movement)
+            .map_err(qualification_build::debug)?;
+    }
+    Ok(())
 }
 
 #[cfg(feature = "qualification-spawn")]

@@ -849,6 +849,12 @@ fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler
 
 ops() { "${as_operator[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
+npc_catalogue_args=()
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  # Canonical WorldProject tree pin validated by the node's NPC importer.
+  npc_catalogue_args=(--npc-data-project "$GAME_SOURCE/content/world"
+    --npc-data-sha256 40947c716ba37cae03c6057ab4fa99a6b6a1313e2cd9bbaff9edf952797f94d5)
+fi
 launch_node() { # PID variable, config, log
   # Detached from the stage's output pipe, so the stage ends while it serves.
   (
@@ -860,7 +866,7 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2"
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2" "${npc_catalogue_args[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
 }
@@ -1557,7 +1563,7 @@ restart_without_supersession() { # fails at S2 custody, never ready
   ops authorization issue --file launch-b.json --binding node-boot-b
   write_node_config launch-b.json
   local code=0
-  "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" 2> "$WORK/restart.log" || code=$?
+  "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" "${npc_catalogue_args[@]}" 2> "$WORK/restart.log" || code=$?
   cat "$WORK/restart.log"
   [[ $code == 13 ]] || fail "restart without supersession exit=$code"
   local line node revision

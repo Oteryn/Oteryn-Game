@@ -16,13 +16,13 @@
 //!    the Monk-only builder again; require its reply, mana delta, Harmony delta, and Serene state.
 
 use super::full_row_c01::admission_error;
-use super::full_row_p20::{approach_npc, talk};
+use super::full_row_p20::talk;
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use std::collections::BTreeSet;
 
 const ORESSA_PREPARATION: character_prep::Seeded = character_prep::Seeded {
-    profile: "c11-unassigned",
+    profile: "c11-dawnport",
     reason: "C11 tests Oressa’s vocation choice and Harmony after reaching level 8.",
 };
 const KNIGHT_PREPARATION: character_prep::Seeded = character_prep::Seeded {
@@ -94,7 +94,7 @@ impl Row {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("C11", "unassigned-level-8,premium-knight,wheel-fee-gold", "Oressa choice and Wheel mechanics");
+    character_prep::declare_seeded("C11", "dawnport-temple,unassigned-level-8,premium-knight,wheel-fee-gold", "Oressa choice and Wheel mechanics");
     let mut row = Row::new();
     let terminal = match verdict::indexed_timeout(
         Duration::from_secs(300), verdict::observe(async {
@@ -140,7 +140,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if monk_path(vocation, level) != Some(false) || level != 8 {
         return Err(format!("Oressa candidate must first admit unassigned at level 8; observed vocation={vocation} level={level}").into());
     }
-    let town = tile(client.world_spatial().actor_position)?;
+    let temple = TilePos { x: 32064, y: 31894, floor: -6 };
+    let admitted_at = tile(client.world_spatial().actor_position)?;
+    if admitted_at != temple {
+        return Err(format!("C11 candidate admitted at {admitted_at:?}; expected Dawnport temple {temple:?}").into());
+    }
     choose_monk(&mut client, world, &metadata.npcs)
         .await
         .map_err(|error| {
@@ -151,7 +155,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("Oressa confirmation did not persist the level-8 Monk build; observed vocation={chosen} level={chosen_level}").into());
     }
     row.pass("player-monk-choice", "Oressa-confirmed");
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == town)
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == temple)
         .ok_or("no player walk route from Oressa back to the initial admission tile")?;
     walk(&mut client, world, &path).await?;
 
@@ -373,12 +377,26 @@ async fn knight_journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult 
         return Err("Knight preparation reused its original session".into());
     }
     open_castle_entrance(&mut client, world).await?;
-    let king = approach_npc(&mut client, world, &metadata.npcs, "oteryn:npc.king_tibianus").await?;
-    if talk(&mut client, king, "hi").await?.is_empty()
-        || talk(&mut client, king, "promotion").await? != ["Do you want to be promoted for 20000 gold coins?"]
-        || talk(&mut client, king, "yes").await? != ["You are now promoted."]
-    {
-        return Err("Knight’s real promotion dialogue did not confirm purchase".into());
+    let king = metadata.npcs.npcs.iter()
+        .find(|npc| npc.key == "oteryn:npc.king_tibianus")
+        .and_then(|npc| npc.placements.first())
+        .ok_or("King Tibianus is absent from the served NPC placements")?;
+    let king = walk_to_npc(
+        &mut client,
+        world,
+        TilePos { x: king.x, y: king.y, floor: king.floor },
+        "King Tibianus",
+    ).await?;
+    if talk(&mut client, king, "hi").await?.is_empty() {
+        return Err("King Tibianus returned an empty promotion greeting".into());
+    }
+    let offer = talk(&mut client, king, "promotion").await?;
+    if offer != ["Do you want to be promoted for 20000 gold coins?"] {
+        return Err(format!("King Tibianus promotion offer: {offer:?}").into());
+    }
+    let confirmation = talk(&mut client, king, "yes").await?;
+    if confirmation != ["You are now promoted."] {
+        return Err(format!("King Tibianus promotion confirmation: {confirmation:?}").into());
     }
 
     let (vocation, level) = admitted_build(&mut client).await?;
@@ -451,12 +469,39 @@ async fn open_castle_entrance(client: &mut DevClientSession, world: &BundleWorld
         .ok_or_else(|| format!("no player walk route from {start:?} to castle door {entrance:?}"))?;
     walk(client, world, &path).await?;
 
-    let mut placement = world.base().digest().to_vec();
-    placement.extend_from_slice(&key.to_be_bytes());
-    let opened = client.use_object(&placement, doors.revision(key)).await?;
-    if opened.status != CommandStatus::Accepted || opened.disposition != UseDisposition::Committed {
-        return Err(format!("castle door USE did not commit: {opened:?}").into());
+    use oteryn_protocol_oteryn::world_map::MapOrigin;
+    let (_, ordinal) = crate::map::view::placement_of(key).ok_or("invalid castle door placement")?;
+    let closed = world.base().tile(entrance.x, entrance.y, entrance.floor)
+        .and_then(|tile| tile.appearance(ordinal))
+        .ok_or("castle door lacks an authored appearance")?;
+    let open = crate::map::door::open_of(u32::from(closed)).ok_or("castle door lacks an open form")?;
+    let basis = spatial_basis::current(client)?;
+    let map = client.session_mut().world_map_snapshot().ok_or("castle door requires a served map view")?;
+    let item = map.tiles.iter()
+        .find(|tile| tile.position == basis.position(entrance))
+        .and_then(|tile| tile.items.iter().find(|item| {
+            matches!(item.origin, MapOrigin::BaseOrdinal { ordinal: seen, .. } if seen == ordinal)
+        }))
+        .ok_or("castle door missing from served tile at its authored stack ordinal")?;
+    let MapOrigin::BaseOrdinal { object_revision, .. } = item.origin else {
+        return Err("castle door map origin changed".into());
+    };
+    if item.appearance_id == closed {
+        let mut placement = map.header.bundle_digest.to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let outcome = client.use_object(&placement, object_revision).await?;
+        if outcome.status != CommandStatus::Accepted || outcome.disposition != UseDisposition::Committed {
+            return Err(format!(
+                "castle door USE refused at {entrance:?} ordinal={ordinal} appearance={closed} revision={object_revision}: {outcome:?}"
+            ).into());
+        }
+    } else if u32::from(item.appearance_id) != open {
+        return Err(format!("unexpected castle door appearance at {entrance:?}: {item:?}").into());
     }
+    evidence(&format!(
+        "C11_CASTLE_DOOR position={entrance:?} ordinal={ordinal} observed_appearance={} revision={object_revision}",
+        item.appearance_id
+    ));
     // The immutable route model still has the authored closed pose. Check this
     // single step against the door cell before resuming normal floor routing.
     walk_with_landings(client, &[StepDirection::North], |at, direction| {
@@ -484,6 +529,35 @@ async fn wheel_command(client: &mut DevClientSession, request: &oteryn_protocol_
     wheel::decode_wheel_reply(&reply.payload).map_err(|error| format!("Wheel reply: {error:?}").into())
 }
 
+async fn walk_to_npc(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    placement: TilePos,
+    name: &str,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let start = tile(client.world_spatial().actor_position)?;
+    // Both NPCs can wander two tiles. Stay within two tiles of their placement
+    // before resolving the live actor, and require an actual movement step.
+    let path = route(world, start, |at| {
+        at != start && at.floor == placement.floor
+            && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 2
+    })
+    .ok_or_else(|| format!("no player walk route from {start:?} to {name} at {placement:?}"))?;
+    walk(client, world, &path).await?;
+    let basis = spatial_basis::current(client)?;
+    let origin = basis.position(placement);
+    client.world_entities().and_then(|entities| {
+        entities.iter().find(|npc| {
+            npc.kind == oteryn_dev_client::EntityKind::Npc
+                && npc.position.floor == origin.floor
+                && npc.position.x.abs_diff(origin.x).max(npc.position.y.abs_diff(origin.y)) <= 2
+                && npc.display_name.is_some_and(|display| {
+                    display.as_str().is_ok_and(|observed| observed.eq_ignore_ascii_case(name))
+                })
+        })
+    }).map(|npc| npc.entity).ok_or_else(|| format!("{name} not visible near {placement:?}").into())
+}
+
 async fn choose_monk(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -506,23 +580,8 @@ async fn choose_monk(
     }) {
         return Err("Oressa absent from the served NPC table at 32064,31892,6".into());
     }
-    let start = tile(client.world_spatial().actor_position)?;
-    let path = route(world, start, |at| {
-        at.floor == ORESSA.floor && at.x.abs_diff(ORESSA.x).max(at.y.abs_diff(ORESSA.y)) <= 3
-    })
-    .ok_or_else(|| format!("no player walk route from {start:?} to Oressa at {ORESSA:?}"))?;
-    walk(client, world, &path).await?;
-    let basis = spatial_basis::current(client)?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|e| {
-                e.kind == oteryn_dev_client::EntityKind::Npc
-                    && e.position == basis.position(ORESSA)
-            })
-        })
-        .map(|e| e.entity)
-        .ok_or("Oressa not visible")?;
+    let actor = walk_to_npc(client, world, ORESSA, "Oressa").await?;
+    let mut offer = Vec::new();
     for text in ["hi", "monk", "yes"] {
         client.take_events();
         let disposition = npc_shop::talk(
@@ -549,7 +608,10 @@ async fn choose_monk(
                     .iter()
                     .any(|line| line == "Your vocation is now monk."))
         {
-            return Err(format!("player command={text} disposition={disposition:?} replies={lines:?}; need=unassigned-level-8-character-and-confirmed-Oressa-Monk-offer").into());
+            return Err(format!("player command={text} disposition={disposition:?} replies={lines:?} offer={offer:?}; need=unassigned-level-8-character-and-confirmed-Oressa-Monk-offer").into());
+        }
+        if text == "monk" {
+            offer = lines;
         }
     }
     Ok(())
