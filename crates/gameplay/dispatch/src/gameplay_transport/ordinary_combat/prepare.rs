@@ -531,6 +531,7 @@ async fn prepare_spatial(
     }
     let mut bindings = Vec::new();
     let mut chain_creatures = Vec::new();
+    let mut chain_tiles = BTreeSet::new();
     for (a, p, _) in roster {
         let p = tile(p.position());
         if p.floor != caster_position.floor
@@ -557,15 +558,10 @@ async fn prepare_spatial(
             actor: atom,
             position: p,
         });
-        candidates.insert(p);
-        if spell.chain.is_some() {
-            for dx in -9..=9 {
-                for dy in -9..=9 {
-                    candidates.insert(offset(p, dx, dy)?);
-                }
-            }
-        }
+        plans::add_chain_search_tiles(&mut chain_tiles, plan_position(p), spell.chain.is_some())
+            .map_err(|_| SpellCastDisposition::Rejected)?;
     }
+    candidates.extend(chain_tiles.into_iter().map(cast_position));
     if bindings.len() > crate::spell::combat_batch::MAX_EFFECTS {
         return reject();
     }

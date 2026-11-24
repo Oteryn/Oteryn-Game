@@ -82,6 +82,43 @@ pub fn attack_target_origin(
         Ok((target, None))
     }
 }
+/// Add the tiles required around a possible chain target.
+pub fn add_chain_search_tiles(
+    tiles: &mut BTreeSet<TilePosition>,
+    actor_position: TilePosition,
+    chaining: bool,
+) -> Result<(), PlanRejected> {
+    if chaining {
+        for dx in -9..=9 {
+            for dy in -9..=9 {
+                tiles.insert(offset(actor_position, dx, dy)?);
+            }
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod chain_search_tests {
+    use super::*;
+
+    #[test]
+    fn a_non_chain_cast_does_not_require_spectator_tiles() -> Result<(), PlanRejected> {
+        let caster = (32357, 32196, 7);
+        let target = (32357, 32197, 7);
+        let unrelated = (32356, 32196, 7);
+        let mut cast_tiles = BTreeSet::from([caster, target]);
+
+        add_chain_search_tiles(&mut cast_tiles, unrelated, false)?;
+        assert_eq!(cast_tiles, BTreeSet::from([caster, target]));
+
+        add_chain_search_tiles(&mut cast_tiles, unrelated, true)?;
+        assert!(cast_tiles.contains(&unrelated));
+        assert!(cast_tiles.contains(&(unrelated.0 + 9, unrelated.1, unrelated.2)));
+        Ok(())
+    }
+}
+
 pub fn geometry(
     a: &AbilityProfile,
     origin: TilePosition,
