@@ -43,9 +43,17 @@ max-threads = 2
 filter = '''
 test(/monk_save::postgres_tests::(m25_ahau_exit|m25_forced_equipment_read|qc_lizard_sanctuary|srx3_claustrophobic|srx3_omrafir_beam|srx3_poor_soul_world_corpse|srx3_rotten_area_think|srx3_soul_war_world_entrance|srx3_soul_war_world_fixture)::/) |
 test(/monk_save::postgres_tests::qc_chests::qc_sanctuary_pinned_legion_helmet/) |
+test(=gameplay_transport::monk_save::postgres_tests::qcx_rotten_blood::passive_rotten_charge_advances_after_twenty_seconds) |
+test(=gameplay_transport::monk_save::postgres_tests::qcx_rotten_blood::torkada_expedition_dialogue_grants_the_temple_blessing) |
 test(/monk_save::postgres_tests::srx3_rotten_callbacks::srx3_murcion_published_whole_world/) |
 test(/monk_save::postgres_tests::srx3_spite_global::srx3_spite_registered_(global_qualifies_actual_published_world|world_owner_emits_one_selected_field)/) |
 test(/monk_save::postgres_tests::quest_catalogue_chests(::quest_catalogue_chests_(every_supported_source_placement|phase_a)|_qchk[0-9]+::)/)
 '''
 test-group = "dispatch-world-postgres"
 threads-required = 2
+
+# These pinned World callers already take the full runner in the CI planner.
+[[profile.default.overrides]]
+filter = 'test(/monk_save::postgres_tests::m09_treasure_rewards::/)'
+test-group = "dispatch-world-postgres"
+threads-required = "num-test-threads"
