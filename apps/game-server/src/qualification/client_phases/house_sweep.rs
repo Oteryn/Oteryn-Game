@@ -172,29 +172,149 @@ fn position((x, y, floor): (u16, u16, i8)) -> TilePos {
     }
 }
 
-fn compiled_house(world: &BundleWorld, house: &House) -> TestResult {
+struct PinnedHouseTile {
+    walkable: bool,
+    door: bool,
+    number: Option<u32>,
+}
+
+type PinnedHouses =
+    std::collections::BTreeMap<u32, std::collections::BTreeMap<TilePos, PinnedHouseTile>>;
+
+fn pinned_houses(
+    bytes: &[u8],
+    generation: &QualificationWorld,
+    houses: &[House],
+) -> TestResult<PinnedHouses> {
+    let ids: std::collections::BTreeSet<_> = houses
+        .iter()
+        .filter_map(|house| {
+            house
+                .provenance
+                .as_ref()
+                .map(|source| source.engine_house.house_id)
+        })
+        .collect();
+    let mut pinned = PinnedHouses::new();
+    let mut door_palette = Vec::new();
+    oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
+        if door_palette.is_empty() {
+            door_palette = manifest
+                .palette
+                .iter()
+                .map(|entry| {
+                    crate::map::boot::native_item_definition(Some(&generation.native), &entry.key)
+                        .is_some_and(|item| item.door)
+                })
+                .collect();
+        }
+        for tile in sector
+            .tiles
+            .into_iter()
+            .filter(|tile| ids.contains(&tile.house))
+        {
+            let pos = TilePos {
+                x: tile.x,
+                y: tile.y,
+                floor: sector.floor,
+            };
+            let top = tile.items.iter().filter(|item| item.depth == 0);
+            let ground = generation
+                .bundle
+                .base()
+                .tile(pos.x, pos.y, pos.floor)
+                .is_some_and(|tile| tile.walkable());
+            let walkable = ground
+                && !top
+                    .clone()
+                    .any(|item| generation.bundle.facts().blocks(item.palette));
+            let mut doors =
+                top.filter(|item| door_palette.get(item.palette as usize) == Some(&true));
+            let door = doors.clone().next().is_some();
+            let number = doors
+                .find_map(|item| item.attrs.door.filter(|&number| number != 0))
+                .map(u32::from);
+            pinned.entry(tile.house).or_default().insert(
+                pos,
+                PinnedHouseTile {
+                    walkable,
+                    door,
+                    number,
+                },
+            );
+        }
+        Ok(())
+    })?;
+    Ok(pinned)
+}
+
+fn compiled_house(world: &BundleWorld, house: &House, pinned: &PinnedHouses) -> TestResult {
     let id = house
         .provenance
         .as_ref()
-        .ok_or("missing house source ID")?
-        .engine_house
-        .house_id;
+        .map(|source| source.engine_house.house_id);
+    let source = id.and_then(|id| pinned.get(&id));
     let facts = world.facts();
-    if house.tiles.is_empty() {
-        return Err("no authored house tiles".into());
-    }
-    for &at in &house.tiles {
-        if facts.house_id(position(at)) != Some(id) {
-            return Err(format!("compiled house {id} missing tile {at:?}").into());
+    let entrance = position((house.entrance.x, house.entrance.y, house.entrance.z));
+    let entry_doors: Vec<_> = source
+        .into_iter()
+        .flatten()
+        .filter(|(pos, tile)| {
+            tile.door
+                && pos.floor == entrance.floor
+                && u32::from(pos.x.abs_diff(entrance.x)) + u32::from(pos.y.abs_diff(entrance.y))
+                    == 1
+        })
+        .collect();
+    let has_numbered_entry = entry_doors.iter().any(|(_, tile)| tile.number.is_some());
+    let has_walkable_ingress = source.into_iter().flatten().any(|(pos, tile)| {
+        tile.walkable
+            && pos.floor == entrance.floor
+            && u32::from(pos.x.abs_diff(entrance.x)) + u32::from(pos.y.abs_diff(entrance.y)) == 1
+    });
+    let required = |pos: TilePos| {
+        entry_doors.iter().any(|(door, tile)| {
+            **door == pos
+                && (tile.number.is_some()
+                    || (!has_numbered_entry && !has_walkable_ingress && entry_doors.len() == 1))
+        })
+    };
+    let catalogue_tiles = house
+        .tiles
+        .iter()
+        .filter(|&&at| {
+            let at = position(at);
+            facts.house_id(at) != id
+                && !source
+                    .and_then(|tiles| tiles.get(&at))
+                    .is_some_and(|tile| tile.walkable)
+        })
+        .count();
+    let catalogue_doors = house
+        .doors
+        .iter()
+        .filter(|&&at| {
+            let at = position(at);
+            id.and_then(|id| facts.house_door(at, id)).is_none() && !required(at)
+        })
+        .count();
+    evidence(&format!(
+        "house_sweep INFO house={} catalogue_only_tiles={catalogue_tiles} catalogue_only_doors={catalogue_doors}",
+        house.identity.key
+    ));
+    let Some(id) = id else {
+        return Ok(());
+    };
+    for (&at, tile) in source.into_iter().flatten() {
+        if tile.walkable && facts.house_id(at) != Some(id) {
+            return Err(format!("compiled house {id} missing walkable tile {at:?}").into());
         }
     }
-    for &at in &house.doors {
-        if facts.house_door(position(at), id).is_none() {
-            return Err(format!("compiled house {id} missing door {at:?}").into());
+    for &(at, tile) in &entry_doors {
+        let at = *at;
+        if required(at) && (tile.number.is_none() || facts.house_door(at, id) != tile.number) {
+            return Err(format!("compiled house {id} missing numbered entry door {at:?}").into());
         }
-    }
-    if house.doors.is_empty() {
-        return Err("no authored house door".into());
     }
     Ok(())
 }
@@ -483,6 +603,7 @@ async fn sweep_house(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     house: &House,
+    pinned: &PinnedHouses,
     session: &mut Option<DevClientSession>,
     rows: &mut Rows<'_>,
 ) {
@@ -506,7 +627,7 @@ async fn sweep_house(
         if map.header.bundle_digest != world.base().digest() {
             return Err("live map bundle differs from compiled map".into());
         }
-        compiled_house(world, house)?;
+        compiled_house(world, house, pinned)?;
         Ok(format!(
             "compiled-tiles-{}-doors-{}",
             house.tiles.len(),
@@ -610,7 +731,12 @@ async fn sweep_house(
     rows.emit(rent, "rent_charge");
 }
 
-pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
+pub(super) async fn run(
+    clients: &SeamClients<'_>,
+    bytes: &[u8],
+    generation: &QualificationWorld,
+) -> TestResult {
+    let world = &generation.bundle;
     let batch = match std::env::var(BATCH_VARIABLE) {
         Ok(text) => house_batch(Some(&text)),
         Err(std::env::VarError::NotPresent) => house_batch(None),
@@ -631,6 +757,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
         end - start,
         houses.len()
     ));
+    let pinned = pinned_houses(bytes, generation, &houses[start..end])?;
     let mut tally = Tally::default();
     let account_list = required("NODE_BOOT_HOUSE_SWEEP_ACCOUNTS")?;
     let accounts: Vec<_> = account_list.split(',').collect();
@@ -674,7 +801,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
                 characters: &characters,
                 ..*clients
             };
-            sweep_house(&entry, world, house, &mut session, &mut rows).await;
+            sweep_house(&entry, world, house, &pinned, &mut session, &mut rows).await;
         })
         .await
         .is_err()

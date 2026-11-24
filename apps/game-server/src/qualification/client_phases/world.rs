@@ -350,6 +350,7 @@ struct QualificationWorld {
     world_id: WorldId,
     channel_id: ChannelId,
     bundle: BundleWorld,
+    native: crate::content::native_gameplay::NativeGameplayState,
     rewards: std::sync::Arc<crate::content::creature_reward::CreatureRewardTable>,
 }
 
@@ -448,6 +449,7 @@ fn boot_world(
         world_id: world,
         channel_id: channel,
         bundle,
+        native: native.clone(),
         rewards: native.reward_table().clone(),
     })
 }
@@ -3206,7 +3208,7 @@ pub(super) async fn journeys(
             creature_sweep::run(&sweep.clients(clients), world, &generation.rewards).await?;
         }
         if house_selected {
-            house_sweep::run(&sweep.clients(clients), world).await?;
+            house_sweep::run(&sweep.clients(clients), &bytes, generation).await?;
         }
         if mp_selected {
             mp::run(

@@ -196,7 +196,14 @@ PY_HOUSE_REGIONS
   HOUSE_SWEEP_ACCOUNTS=("${house_sweep_lines[@]:1}")
   NODE_BOOT_WORLD_PROFILE=house_sweep
 fi
-readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
+# World bundle materialization runs after content_activated and grows with the
+# selected map. A seven-region retained node log spent 40s in this step alone.
+NODE_READY_WAIT_SECONDS=60
+if [[ "$NODE_BOOT_WORLD_PROFILE" == house_sweep ]]; then
+  IFS=';' read -r -a house_sweep_regions <<< "$WORLD_REGIONS"
+  NODE_READY_WAIT_SECONDS=$((60 + 12 * ${#house_sweep_regions[@]}))
+fi
+readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS NODE_READY_WAIT_SECONDS
 # A kept or reused stack is one topology, so it never runs the separate basic pass.
 # The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
@@ -712,7 +719,7 @@ PY_STAGE
 fi
 MAP_REVISION=map-s3b-1
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
-  evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
+  evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS readiness_wait_seconds=$NODE_READY_WAIT_SECONDS"
   compile_world=compile-regions
   if [[ "$NODE_BOOT_WORLD_PROFILE" == town ]]; then compile_world=compile-town-qualification; fi
   "${WORLD_COMPILER[@]}" "$compile_world" "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
@@ -887,6 +894,17 @@ launch_node() { # PID variable, config, log
   printf -v "$1" '%s' "$!"
 }
 start_node() { launch_node NODE_PID "$BASE/node/node.toml" "$node_log"; }
+report_node_startup_timing() {
+  awk '
+    / event=content_activated / { activation = substr($2, 4) }
+    / event=world_bundle .*state=booted/ { bundle = substr($2, 4) }
+    / event=readiness .*ready=true/ { ready = substr($2, 4) }
+    END {
+      printf "NODE_BOOT_EVIDENCE startup_timing node=%s content_activated_ms=%s bundle_booted_ms=%s ready_ms=%s\n",
+        node, activation, bundle, ready
+    }
+  ' node="$1" "$2"
+}
 await_log() { # pattern seconds
   for _ in $(seq 1 "$2"); do grep -q "$1" "$node_log" && return 0; sleep 1; done
   fail "missing node event: $1"
@@ -1350,7 +1368,15 @@ node_complete_assignment() {
   assignment_report_args
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
-  await_log "event=readiness .*ready=true" 60
+  if [[ "$NODE_BOOT_WORLD_PROFILE" == house_sweep ]]; then
+    if ! await_log "event=readiness .*ready=true" "$NODE_READY_WAIT_SECONDS"; then
+      report_node_startup_timing world "$node_log"
+      return 1
+    fi
+    report_node_startup_timing world "$node_log"
+  else
+    await_log "event=readiness .*ready=true" "$NODE_READY_WAIT_SECONDS"
+  fi
   # The canonical manifest makes each validation substantial. Prove the same
   # stale-predecessor rejection against the now-active sequence 1, without
   # spending the unassigned node's unchanged wait on this independent negative.
@@ -1595,7 +1621,7 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   # A new incarnation starts with no active Content and reactivates only the current issuance.
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
-  await_log "event=readiness .*ready=true" 60
+  await_log "event=readiness .*ready=true" "$NODE_READY_WAIT_SECONDS"
   node_signal -TERM "$NODE_PID"
   for _ in $(seq 1 30); do node_signal -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "replacement did not shut down cleanly"
@@ -1690,7 +1716,7 @@ SQL
   pvp_ops content activate --request content-1.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --sequence 1 --previous empty
   pvp_ops assignment assign --request assign-pvp.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --node-id "$node" --revision "$revision"
   pvp_await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
-  pvp_await_log "event=readiness .*ready=true" 60
+  pvp_await_log "event=readiness .*ready=true" "$NODE_READY_WAIT_SECONDS"
   local bound_address
   bound_address="$(sed -nE 's/.* event=listener_bound (trace=[^ ]+ )?detail="address=([^"]+)"$/\2/p' "$WORK/pvp-node.log" | tail -n 1)"
   if [[ ! "$bound_address" =~ ^127\.0\.0\.1:([1-9][0-9]{3,4})$ ]] || (( BASH_REMATCH[1] > 65535 )); then
