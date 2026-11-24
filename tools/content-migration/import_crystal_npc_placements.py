@@ -29,6 +29,7 @@ SOURCES = {
     WINTERLIGHT: "2335f7e2097ff12ede5e10d14efc9bbd34ade9be7d4178b2e13362e85b308565",
 }
 ALIASES = {
+    "...": "ellipsis",
     "Death": "death_npc",
     "Skullfrost": "skullfrost_npc",
     "Wyrdin's Apprentice": "wyrdins_apprentice",
@@ -87,6 +88,14 @@ def audit(checkout, rejected):
                 row = record["declaration"]
                 base[row["npc"]].add(tuple(row["cell"][axis] for axis in ("x", "y", "floor")))
     occupied = set().union(*base.values())
+    prior = json.loads(placements.SCOPE.read_text()).get("crystal_global_map", {}).get("npcs", {})
+    retained = {
+        (npc, placements.cell_of(row["position"])): {field: row[field] for field in
+                                                     ("adjustment", "spawn_relocation") if field in row}
+        for npc, rows in prior.items() for row in rows
+    }
+    occupied.update(placements.cell_of(choice["target"]) for facts in retained.values()
+                    for choice in facts.values())
     admitted = placements.admitted_keys()
     facts = json.loads(FACTS.read_text())
     pages = {p["pageid"]: p for p in facts["pages"]}
@@ -135,8 +144,9 @@ def audit(checkout, rejected):
             placement = {field: row[field] for field in
                          ("name", "position", "direction", "spawn_radius", "spawn_interval_s")}
             placement["wiki_comparison"] = comparison
+            placement.update(retained.get((key, cell), {}))
             point = comparison.get("cell")
-            if (cell in rejected and point and tuple(point) != cell and point[2] == z
+            if (not retained.get((key, cell)) and cell in rejected and point and tuple(point) != cell and point[2] == z
                     and max(abs(point[0] - x), abs(point[1] - y)) <= row["spawn_radius"]):
                 target = dict(zip(("x", "y", "z"), point))
                 adjustment = {"source": row["position"], "target": target,

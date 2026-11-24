@@ -1119,6 +1119,7 @@ def main() -> int:
         ]
     )
     materialize_world()
+    run(["python3", "tools/content-migration/crystal_global_npc_definitions.py"])
     import questpc7_thaian_authoring
 
     # install completes authoring through the native writer; no pins name staged Python bytes.

@@ -18,17 +18,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         418,
-        "4eebfe63b6786c887605d441c069aea84387865ef42e55d35fb5cbaffd63ca84",
+        "d5cc864ca56b9e6466f605284cb748ea1a86e51b27789cbf76b53f116ff68f84",
     ),
     (
         "definitions/declarations.json",
-        27_899_374,
-        "2bab458c3b1a8ad1eb85d8159bef642848892e66377c4fd646b629c6b7081a8e",
+        27_915_972,
+        "4d4d88272a26339f55d0e1baa1e2ec88c2040c4f0998cf074449681ce48c4efe",
     ),
     (
         "definitions/reference.json",
-        27_390_893,
-        "a375a7c94187351a674a9e5b6eeca22ffd2a40a420167f0757f8a92b8b7dd83a",
+        27_393_667,
+        "16daf844340bf8f86ec75d2382462462c1f27a77f19e88199235617efb0b0b90",
     ),
     (
         "editor/author.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1957,
-        "413abdd9b76002ba9bb0bb276fc3a0bfccb974bbdc70e75aa8bee35b23ce03b1",
+        "b68e76a343f684d554ed5fb371456c13fd4a079b7d794b50c07ff57b366937e5",
     ),
     (
         "presentations/bindings.json",
@@ -48,7 +48,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         408,
-        "0bfcb1a5128a88329023509c5c53f25bbee25e48f611b92db1219b01416757da",
+        "bc21471e19a5b3c1c78edc1e840faba649fb7c61143843b488352fc6ee2e62c1",
     ),
     (
         "provenance/imports.json",
@@ -143,7 +143,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "40947c716ba37cae03c6057ab4fa99a6b6a1313e2cd9bbaff9edf952797f94d5";
+const TREE_SHA256: &str = "da1c61a09380ae5a3d7a799ccd72847202fdd824c374fb48a398d013e87e75c9";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -157,12 +157,12 @@ const CREATURES: usize = 1_865;
 const CREATURE_RECORDS: usize = 26_211;
 const CREATURE_PROFILES: usize = 25_068;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 1282;
-const NPC_RECORDS: usize = 2_564;
+const NPCS: usize = 1291;
+const NPC_RECORDS: usize = 2_582;
 // Includes BANK-3's Henricus blessing Service.
 // S10 adds one bank, three promotion and six blessing Service declarations.
 // N3 adds Buddel’s travel Service.
-const NPC_DECLARATIONS: usize = 2518;
+const NPC_DECLARATIONS: usize = 2527;
 const NPC_DIALOGUES: usize = 836;
 const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).

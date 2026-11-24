@@ -1,0 +1,496 @@
+{
+  "brom": {
+    "name": "Brom",
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/69",
+      "light_level": 0
+    },
+    "motion": {
+      "movement": {
+        "can_walk": true,
+        "pass_through": false,
+        "pushable": false,
+        "push_items": false,
+        "push_creatures": false,
+        "walks_on_energy": false,
+        "walks_on_fire": false,
+        "walks_on_poison": false,
+        "wander": {
+          "interval_ms": 2000,
+          "radius_tiles": 2
+        }
+      },
+      "targeting": {
+        "hostile": false,
+        "can_target": false,
+        "sense_invisible": false,
+        "target_distance_tiles": 0,
+        "static_attack_chance_ppm": 0,
+        "flee_health": 0
+      }
+    },
+    "evidence": {
+      "evidence": "OtsHypothesisOnly",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/brom.lua",
+      "sha256": "f3fa08318f891a2f3431d347bede4eaafdda2299747c13e0ee32d234ed5122e3"
+    }
+  },
+  "brutus": {
+    "name": "Brutus",
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/143",
+      "light_level": 0,
+      "palette_bindings": [
+        {
+          "slot": "Head",
+          "asset_binding": "canary.appearance:palette/97"
+        },
+        {
+          "slot": "Body",
+          "asset_binding": "canary.appearance:palette/77"
+        },
+        {
+          "slot": "Legs",
+          "asset_binding": "canary.appearance:palette/78"
+        },
+        {
+          "slot": "Feet",
+          "asset_binding": "canary.appearance:palette/116"
+        }
+      ],
+      "attachment_bindings": [
+        {
+          "slot": "Addon",
+          "asset_binding": "canary.appearance:outfit/143/addon-1"
+        },
+        {
+          "slot": "Addon",
+          "asset_binding": "canary.appearance:outfit/143/addon-2"
+        }
+      ]
+    },
+    "motion": {
+      "movement": {
+        "can_walk": true,
+        "pass_through": false,
+        "pushable": false,
+        "push_items": false,
+        "push_creatures": false,
+        "walks_on_energy": false,
+        "walks_on_fire": false,
+        "walks_on_poison": false,
+        "wander": {
+          "interval_ms": 2000,
+          "radius_tiles": 2
+        }
+      },
+      "targeting": {
+        "hostile": false,
+        "can_target": false,
+        "sense_invisible": false,
+        "target_distance_tiles": 0,
+        "static_attack_chance_ppm": 0,
+        "flee_health": 0
+      }
+    },
+    "evidence": {
+      "evidence": "OtsHypothesisOnly",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/brutus.lua",
+      "sha256": "a4dd011a5812877dc822968a95d414305ae5b7ffb4795cf70cf3b3894f76ae93"
+    }
+  },
+  "doctor_marrow": {
+    "name": "Doctor Marrow",
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/1611",
+      "light_level": 0,
+      "palette_bindings": [
+        {
+          "slot": "Head",
+          "asset_binding": "canary.appearance:palette/57"
+        },
+        {
+          "slot": "Feet",
+          "asset_binding": "canary.appearance:palette/95"
+        }
+      ]
+    },
+    "motion": {
+      "movement": {
+        "can_walk": false,
+        "pass_through": false,
+        "pushable": false,
+        "push_items": false,
+        "push_creatures": false,
+        "walks_on_energy": false,
+        "walks_on_fire": false,
+        "walks_on_poison": false
+      },
+      "targeting": {
+        "hostile": false,
+        "can_target": false,
+        "sense_invisible": false,
+        "target_distance_tiles": 0,
+        "static_attack_chance_ppm": 0,
+        "flee_health": 0
+      }
+    },
+    "evidence": {
+      "evidence": "OtsHypothesisOnly",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/doctor_marrow.lua",
+      "sha256": "af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135"
+    }
+  },
+  "ellipsis": {
+    "name": "...",
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/294",
+      "light_level": 0
+    },
+    "motion": {
+      "movement": {
+        "can_walk": true,
+        "pass_through": false,
+        "pushable": false,
+        "push_items": false,
+        "push_creatures": false,
+        "walks_on_energy": false,
+        "walks_on_fire": false,
+        "walks_on_poison": false,
+        "wander": {
+          "interval_ms": 1500,
+          "radius_tiles": 2
+        }
+      },
+      "targeting": {
+        "hostile": false,
+        "can_target": false,
+        "sense_invisible": false,
+        "target_distance_tiles": 0,
+        "static_attack_chance_ppm": 0,
+        "flee_health": 0
+      }
+    },
+    "evidence": {
+      "evidence": "OtsHypothesisOnly",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/....lua",
+      "sha256": "6a167beaed12476682af973eeb1d72a480753aa56d63d688244c49ebb75a130a"
+    }
+  },
+  "eustacios_spy_rat": {
+    "name": "Eustacios Spy Rat",
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/1346",
+      "light_level": 0,
+      "palette_bindings": [
+        {
+          "slot": "Head",
+          "asset_binding": "canary.appearance:palette/114"
+        },
+        {
+          "slot": "Body",
+          "asset_binding": "canary.appearance:palette/95"
+        },
+        {
+          "slot": "Legs",
+          "asset_binding": "canary.appearance:palette/114"
+        },
+        {
+          "slot": "Feet",
+          "asset_binding": "canary.appearance:palette/117"
+        }
+      ],
+      "attachment_bindings": [
+        {
+          "slot": "Addon",
+          "asset_binding": "canary.appearance:outfit/1346/addon-1"
+        },
+        {
+          "slot": "Addon",
+          "asset_binding": "canary.appearance:outfit/1346/addon-2"
+        }
+      ]
+    },
+    "motion": {
+      "movement": {
+        "can_walk": true,
+        "pass_through": false,
+        "pushable": false,
+        "push_items": false,
+        "push_creatures": false,
+        "walks_on_energy": false,
+        "walks_on_fire": false,
+        "walks_on_poison": false,
+        "wander": {
+          "interval_ms": 2000,
+          "radius_tiles": 1
+        }
+      },
+      "targeting": {
+        "hostile": false,
+        "can_target": false,
+        "sense_invisible": false,
+        "target_distance_tiles": 0,
+        "static_attack_chance_ppm": 0,
+        "flee_health": 0
+      }
+    },
+    "evidence": {
+      "evidence": "OtsHypothesisOnly",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/eustacios_spy_rat.lua",
+      "sha256": "8ab58c88432b7c4b76947fa1c95233dcb43940c711cc904d25aba9864129d1f7"
+    }
+  },
+  "harlow": {
+    "name": "Harlow",
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/151",
+      "light_level": 0,
+      "palette_bindings": [
+        {
+          "slot": "Head",
+          "asset_binding": "canary.appearance:palette/116"
+        },
+        {
+          "slot": "Body",
+          "asset_binding": "canary.appearance:palette/77"
+        },
+        {
+          "slot": "Legs",
+          "asset_binding": "canary.appearance:palette/113"
+        }
+      ]
+    },
+    "motion": {
+      "movement": {
+        "can_walk": true,
+        "pass_through": false,
+        "pushable": false,
+        "push_items": false,
+        "push_creatures": false,
+        "walks_on_energy": false,
+        "walks_on_fire": false,
+        "walks_on_poison": false,
+        "wander": {
+          "interval_ms": 2000,
+          "radius_tiles": 2
+        }
+      },
+      "targeting": {
+        "hostile": false,
+        "can_target": false,
+        "sense_invisible": false,
+        "target_distance_tiles": 0,
+        "static_attack_chance_ppm": 0,
+        "flee_health": 0
+      }
+    },
+    "evidence": {
+      "evidence": "OtsHypothesisOnly",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/harlow.lua",
+      "sha256": "a7b39edd4830c79d07e02ca715260a48577184cea2463002506b62796f6109e3"
+    }
+  },
+  "roughington": {
+    "name": "Roughington",
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/132",
+      "light_level": 0,
+      "palette_bindings": [
+        {
+          "slot": "Head",
+          "asset_binding": "canary.appearance:palette/21"
+        },
+        {
+          "slot": "Body",
+          "asset_binding": "canary.appearance:palette/57"
+        },
+        {
+          "slot": "Legs",
+          "asset_binding": "canary.appearance:palette/99"
+        },
+        {
+          "slot": "Feet",
+          "asset_binding": "canary.appearance:palette/57"
+        }
+      ],
+      "attachment_bindings": [
+        {
+          "slot": "Addon",
+          "asset_binding": "canary.appearance:outfit/132/addon-1"
+        }
+      ]
+    },
+    "motion": {
+      "movement": {
+        "can_walk": true,
+        "pass_through": false,
+        "pushable": false,
+        "push_items": false,
+        "push_creatures": false,
+        "walks_on_energy": false,
+        "walks_on_fire": false,
+        "walks_on_poison": false,
+        "wander": {
+          "interval_ms": 2000,
+          "radius_tiles": 2
+        }
+      },
+      "targeting": {
+        "hostile": false,
+        "can_target": false,
+        "sense_invisible": false,
+        "target_distance_tiles": 0,
+        "static_attack_chance_ppm": 0,
+        "flee_health": 0
+      }
+    },
+    "evidence": {
+      "evidence": "OtsHypothesisOnly",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/roughington.lua",
+      "sha256": "7354649a4e88dd4344a6fc74a4a94539a003c50d6c9d30b9b0a934bfaec40f7f"
+    }
+  },
+  "shadowpunch": {
+    "name": "Shadowpunch",
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/152",
+      "light_level": 0,
+      "palette_bindings": [
+        {
+          "slot": "Head",
+          "asset_binding": "canary.appearance:palette/91"
+        },
+        {
+          "slot": "Body",
+          "asset_binding": "canary.appearance:palette/91"
+        },
+        {
+          "slot": "Legs",
+          "asset_binding": "canary.appearance:palette/93"
+        },
+        {
+          "slot": "Feet",
+          "asset_binding": "canary.appearance:palette/91"
+        }
+      ],
+      "attachment_bindings": [
+        {
+          "slot": "Addon",
+          "asset_binding": "canary.appearance:outfit/152/addon-1"
+        }
+      ]
+    },
+    "motion": {
+      "movement": {
+        "can_walk": true,
+        "pass_through": false,
+        "pushable": false,
+        "push_items": false,
+        "push_creatures": false,
+        "walks_on_energy": false,
+        "walks_on_fire": false,
+        "walks_on_poison": false,
+        "wander": {
+          "interval_ms": 2000,
+          "radius_tiles": 2
+        }
+      },
+      "targeting": {
+        "hostile": false,
+        "can_target": false,
+        "sense_invisible": false,
+        "target_distance_tiles": 0,
+        "static_attack_chance_ppm": 0,
+        "flee_health": 0
+      }
+    },
+    "evidence": {
+      "evidence": "OtsHypothesisOnly",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/shadowpunch.lua",
+      "sha256": "ed0cf26d620cc9228b1afea41ddc6e4859fdb1b42da2da443885187a71ccfcb9"
+    }
+  },
+  "victor": {
+    "name": "Victor",
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/134",
+      "light_level": 0,
+      "palette_bindings": [
+        {
+          "slot": "Head",
+          "asset_binding": "canary.appearance:palette/21"
+        },
+        {
+          "slot": "Body",
+          "asset_binding": "canary.appearance:palette/78"
+        },
+        {
+          "slot": "Legs",
+          "asset_binding": "canary.appearance:palette/38"
+        },
+        {
+          "slot": "Feet",
+          "asset_binding": "canary.appearance:palette/95"
+        }
+      ],
+      "attachment_bindings": [
+        {
+          "slot": "Addon",
+          "asset_binding": "canary.appearance:outfit/134/addon-1"
+        },
+        {
+          "slot": "Addon",
+          "asset_binding": "canary.appearance:outfit/134/addon-2"
+        }
+      ]
+    },
+    "motion": {
+      "movement": {
+        "can_walk": true,
+        "pass_through": false,
+        "pushable": false,
+        "push_items": false,
+        "push_creatures": false,
+        "walks_on_energy": false,
+        "walks_on_fire": false,
+        "walks_on_poison": false,
+        "wander": {
+          "interval_ms": 2000,
+          "radius_tiles": 2
+        }
+      },
+      "targeting": {
+        "hostile": false,
+        "can_target": false,
+        "sense_invisible": false,
+        "target_distance_tiles": 0,
+        "static_attack_chance_ppm": 0,
+        "flee_health": 0
+      }
+    },
+    "evidence": {
+      "evidence": "OtsHypothesisOnly",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/victor.lua",
+      "sha256": "f3f20421193d046e6034d8e021ae6b8b26f199e244ffd9db4fd219d4b1303a0a"
+    }
+  }
+}

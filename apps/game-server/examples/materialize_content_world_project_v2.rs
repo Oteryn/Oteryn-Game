@@ -1033,10 +1033,8 @@ fn canonicalize_existing_world(
     source: &Path,
     output: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let filesystem = ProjectFilesystemLimits {
-        project: reconciled_limits(),
-        ..npc_catalogue_preproduction_limits()
-    };
+    let mut filesystem = npc_catalogue_preproduction_limits();
+    filesystem.project.max_decoded_fields = reconciled_limits().max_decoded_fields;
     let captured = capture_world_project(
         source.parent().ok_or("canonical source parent missing")?,
         source

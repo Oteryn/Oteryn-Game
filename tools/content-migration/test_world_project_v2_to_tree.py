@@ -460,7 +460,7 @@ def test_package_tree_contract():
         "Encounter.Raid": json.loads(
             (ROOT / "content/encounters/raids/index.json").read_text()
         )["record_count"],
-        "NPC": 1282,
+        "NPC": 1291,
         "Dialogue": 836,
         "Service.Trade": 324,
         "Service.Travel": 57,
@@ -508,7 +508,7 @@ def test_package_tree_contract():
     assert all(not path.startswith("content/world/") for path in paths)
 
     assert manifest["families"]["NPC"] == {
-        "records": 1282,
+        "records": 1291,
         "index": "content/npcs/definitions/index.json",
     }
     assert manifest["families"]["Dialogue"] == {
