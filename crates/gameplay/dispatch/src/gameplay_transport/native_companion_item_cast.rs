@@ -337,9 +337,10 @@ pub(super) async fn prepare_direct(
         &restrictions,
         &excluded,
     )
-    .map_err(|reason| {
-        if cfg!(feature = "qualification-cast-evidence") {
-            eprintln!("SEAM_EVIDENCE companion_cast_refused spell={} command={} gate=acquisition_reservation reason={reason:?}", spell.key, command.command_id().get());
+    .map_err(|_reason| {
+        #[cfg(feature = "qualification-cast-evidence")]
+                {
+            eprintln!("SEAM_EVIDENCE companion_cast_refused spell={} command={} gate=acquisition_reservation reason={_reason:?}", spell.key, command.command_id().get());
         }
         SpellCastDisposition::TargetIllegal
     })?;

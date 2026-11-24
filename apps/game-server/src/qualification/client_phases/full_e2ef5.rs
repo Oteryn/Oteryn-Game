@@ -27,10 +27,10 @@ impl Row {
             "C17c" => Some(("sorcerer-level-23", "illusion appearance and expiry")),
             "C17d" => Some(("knight-build,level-20,premium", "Challenge aggro")),
             "C18a" => Some(("sorcerer-level-1", "directional cast")),
-            "C16a" => Some(("purchase-gold,rune-3180-if-unreachable,rune-3156-if-unreachable", "barrier blocking and expiry")),
-            "C16b" => Some(("purchase-gold,rune-3165-if-unreachable", "Paralyze speed and persistence")),
-            "C16c" => Some(("purchase-gold,runes-3177-and-3203-if-unreachable", "companion rune effects")),
-            "C16d" => Some(("purchase-gold,runes-3178-and-3197-if-unreachable", "tile rune effects")),
+            "C16a" => Some(("runes-3180-and-3156", "barrier blocking and expiry")),
+            "C16b" => Some(("rune-3165", "Paralyze speed and persistence")),
+            "C16c" => Some(("runes-3177-and-3203", "companion rune effects")),
+            "C16d" => Some(("runes-3178-and-3197,movable-target-2854", "tile rune effects")),
             _ => None,
         };
         if let Some((items, reason)) = prerequisites {
@@ -99,24 +99,6 @@ async fn spell_row_slots(
     character_prep::dedicated_character(clients, &env)
         .await?
         .replace_slot(clients, index)
-}
-
-async fn seed_rune_funds(
-    client: &mut DevClientSession,
-    clients: &SeamClients<'_>,
-    id: &str,
-) -> TestResult {
-    // Two units per authored offer, rounded up to whole platinum coins.
-    let (platinum, reason) = match id {
-        "C16a" => (6, "Seeded: barrier casts test tile blocking and expiry"),
-        "C16b" => (14, "Seeded: Paralyze tests speed and persistence"),
-        "C16c" => (10, "Seeded: companion runes test acquisition of ownership"),
-        "C16d" => (6, "Seeded: tile runes test disguise and item removal"),
-        _ => return Err("unknown funded rune row".into()),
-    };
-    evidence(&format!("E2EF5 preparation row={id} platinum={platinum} {reason}"));
-    character_prep::grant_item(client, 3035, platinum).await?;
-    character_prep::reload(client, clients).await
 }
 
 const HASTE_ACTIONS: &[&str] = &[
@@ -262,29 +244,22 @@ pub(super) async fn prepare_spell_access(
     let level = level_from_stats(&payload, general_stats::selected(client))?;
     let xp = u64::from_le_bytes(payload[1..9].try_into()?);
     require_spell_level(spell, level, xp)?;
-    require_premium_spell_access(client, spell).await?;
+    require_premium_spell_access(client, spell)?;
     Ok(level)
 }
 
-async fn require_premium_spell_access(
+fn require_premium_spell_access(
     client: &mut DevClientSession,
     spell: &crate::spell::SpellDefinition,
 ) -> TestResult {
     if spell.premium {
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-        loop {
-            let available = client.session_mut().spell_catalog()?.is_some_and(|catalog| {
-                catalog.entries.iter().any(|entry| {
-                    matches!(&spell.carrier, crate::spell::Carrier::Instant { words, .. } if words == &entry.words) && entry.available
-                })
-            });
-            if available {
-                break;
-            }
-            if tokio::time::Instant::now() >= deadline {
-                return Err(format!("spell {} requires Premium and an available native catalog entry", spell.key).into());
-            }
-            client.service_liveness(Duration::from_millis(50)).await?;
+        let available = client.session_mut().spell_catalog()?.is_some_and(|catalog| {
+            catalog.entries.iter().any(|entry| {
+                matches!(&spell.carrier, crate::spell::Carrier::Instant { words, .. } if words == &entry.words) && entry.available
+            })
+        });
+        if !available {
+            return Err(format!("spell {} requires Premium and an available native catalog entry; source:crates/protocol-oteryn/src/actor_spell_catalog.rs:24", spell.key).into());
         }
     }
     Ok(())
@@ -1112,7 +1087,7 @@ mod tests {
 }
 
 const PARALYZE_ACTIONS: &[&str] = &[
-    "acquire-paralyze",
+    "seed-paralyze",
     "illegal-floor-no-cost",
     "target-baseline",
     "paralyze-cast-and-debit",
@@ -1121,13 +1096,13 @@ const PARALYZE_ACTIONS: &[&str] = &[
     "fresh-admission-rune-custody",
 ];
 const BARRIER_ACTIONS: &[&str] = &[
-    "acquire-magic-wall",
+    "seed-magic-wall",
     "wall-illegal-floor-no-cost",
     "wall-cast-and-debit",
     "wall-map-item",
     "wall-blocked-traversal",
     "wall-expiry-and-traversal",
-    "acquire-wild-growth",
+    "seed-wild-growth",
     "growth-illegal-floor-no-cost",
     "growth-cast-and-debit",
     "growth-map-item",
@@ -1146,7 +1121,6 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         let result: TestResult = async {
             let _row = watch.enter();
             let mut client = admit_row(clients, tag, 1).await?;
-            seed_rune_funds(&mut client, clients, id).await?;
             let mut peer_cancelled = false;
             let mut completed = false;
             let deadline = format!("{id} 240s journey deadline; remaining actions unproven");
@@ -1184,7 +1158,12 @@ pub(super) async fn rune_cleanup(client: &mut DevClientSession, world: &BundleWo
     if tile(client.world_spatial().actor_position)? != TOWN {
         return Err("rune cleanup did not reach TOWN".into());
     }
-    player_logout(client).await
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    let (result, detail, attempts, busy_timed_out) = logout_retrying_busy(client).await?;
+    if result != Some(LogoutResult::Accepted) {
+        return Err(format!("cleanup logout refused: {detail}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    }
+    Ok(())
 }
 
 // An independently admitted observer must answer native liveness while the
@@ -1275,42 +1254,23 @@ pub(super) async fn acquire_rune(
     acquire_rune_from(client, world, id, &rune_sellers(id)?).await
 }
 
-async fn seeded_rune(
+async fn seed_item_pair(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
-    world: &BundleWorld,
     id: u32,
 ) -> TestResult<(std::num::NonZeroU32, u64)> {
-    let sellers = rune_sellers(id)?;
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let placements: BTreeSet<_> = metadata.npcs.npcs.iter()
-        .filter(|npc| sellers.contains(&npc.key))
-        .flat_map(|npc| &npc.placements)
-        .flat_map(|p| {
-            (p.x.saturating_sub(3)..=p.x.saturating_add(3)).flat_map(move |x| {
-                (p.y.saturating_sub(3)..=p.y.saturating_add(3))
-                    .map(move |y| (p.floor, x, y))
-            })
-        })
-        .collect();
-    if route(world, here, |at| placements.contains(&(at.floor, at.x, at.y))).is_some() {
-        return acquire_rune_from(client, world, id, &sellers).await;
-    }
-
     let reference = provisioning::item_reference(&provisioning::item_index()?, id)?;
-    let expected = rune_quantity(client, reference)?.checked_add(2).ok_or("rune quantity overflow")?;
+    let expected = rune_quantity(client, reference)?.checked_add(2).ok_or("seeded item quantity overflow")?;
     character_prep::grant_item(client, id, 2).await?;
     character_prep::reload(client, clients).await?;
     // Admission returns a complete authoritative inventory snapshot. A seed
     // written before logout creates no inventory delta in the new session.
     let observed = rune_quantity(client, reference)?;
     if observed != expected {
-        return Err(format!("seeded rune inventory snapshot mismatch: definition={reference} expected={expected} observed={observed}").into());
+        return Err(format!("seeded item inventory snapshot mismatch: definition={reference} expected={expected} observed={observed}").into());
     }
     let sequence = client.last_server_sequence();
-    evidence(&format!("E2EF5 rune={id} source=seeded reason=no-reachable-authored-seller-placement-in-served-bundle sellers={sellers:?}"));
+    evidence(&format!("E2EF5 item={id} source=seeded count=2"));
     Ok((reference, sequence))
 }
 
@@ -1747,8 +1707,8 @@ async fn paralyze(
     let spell = book
         .rune(3165)
         .ok_or("C16b Paralyze rune not in pinned spell book")?;
-    let (reference, sequence) = seeded_rune(client, clients, world, 3165).await?;
-    row.pass("acquire-paralyze", sequence);
+    let (reference, sequence) = seed_item_pair(client, clients, 3165).await?;
+    row.pass("seed-paralyze", sequence);
     row.pass(
         "illegal-floor-no-cost",
         illegal_floor(client, reference).await?,
@@ -1903,7 +1863,7 @@ async fn barriers(
     for (id, acquire, refusal, cast, map, block, expiry) in [
         (
             3180,
-            "acquire-magic-wall",
+            "seed-magic-wall",
             "wall-illegal-floor-no-cost",
             "wall-cast-and-debit",
             "wall-map-item",
@@ -1912,7 +1872,7 @@ async fn barriers(
         ),
         (
             3156,
-            "acquire-wild-growth",
+            "seed-wild-growth",
             "growth-illegal-floor-no-cost",
             "growth-cast-and-debit",
             "growth-map-item",
@@ -1928,7 +1888,7 @@ async fn barriers(
             provisioning::item_reference(&index, ids[0])?,
             provisioning::item_reference(&index, ids[1])?,
         ];
-        let (reference, sequence) = seeded_rune(client, clients, world, id).await?;
+        let (reference, sequence) = seed_item_pair(client, clients, id).await?;
         row.pass(acquire, sequence);
         row.pass(refusal, illegal_floor(client, reference).await?);
         let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
@@ -3076,8 +3036,8 @@ const SUMMON_ACTIONS: &[&str] = &[
     "death-fresh-admission",
 ];
 const ACQUIRE_ACTIONS: &[&str] = &[
-    "acquire-convince",
-    "acquire-animate",
+    "seed-convince",
+    "seed-animate",
     "convince-floor-refusal",
     "animate-floor-refusal",
     "convince-payment-master",
@@ -3111,9 +3071,7 @@ async fn companion_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
             let mut client = if let Some(preparation) = spell_preparation(id) {
                 preparation.connect(clients, tag, 1).await?
             } else {
-                let mut client = admit_row(clients, tag, 1).await?;
-                seed_rune_funds(&mut client, clients, id).await?;
-                client
+                admit_row(clients, tag, 1).await?
             };
             let mut completed = false;
             let deadline =
@@ -4148,10 +4106,10 @@ async fn acquired_companions(
     let convince = book.rune(3177).ok_or("Convince Creature rune absent")?;
     let animate = book.rune(3203).ok_or("Animate Dead rune absent")?;
     let mana = companion_mana(input, "Rat")?;
-    let (convince_ref, sequence) = seeded_rune(client, clients, world, 3177).await?;
-    row.pass("acquire-convince", sequence);
-    let (animate_ref, sequence) = seeded_rune(client, clients, world, 3203).await?;
-    row.pass("acquire-animate", sequence);
+    let (convince_ref, sequence) = seed_item_pair(client, clients, 3177).await?;
+    row.pass("seed-convince", sequence);
+    let (animate_ref, sequence) = seed_item_pair(client, clients, 3203).await?;
+    row.pass("seed-animate", sequence);
     non_pz(client, world).await?;
     row.pass(
         "convince-floor-refusal",
@@ -4384,9 +4342,9 @@ mod companion_death_tests {
 }
 
 const TILE_ITEM_ACTIONS: &[&str] = &[
-    "acquire-chameleon",
-    "acquire-disintegrate",
-    "buy-movable-target",
+    "seed-chameleon",
+    "seed-disintegrate",
+    "seed-movable-target",
     "player-drop-target",
     "chameleon-floor-refusal",
     "chameleon-creature-refusal",
@@ -4406,14 +4364,13 @@ async fn tile_item_row(clients: &SeamClients<'_>, world: &BundleWorld) {
     let result: TestResult = async {
         let _row = watch.enter();
         let mut client = admit_row(clients, 0xe0, 1).await?;
-        seed_rune_funds(&mut client, clients, "C16d").await?;
         let mut completed = false;
         let result = watch
             .bound(
                 Duration::from_secs(400),
                 "C16d 400s journey deadline; required actions unproven",
                 async {
-                    let result = tile_items(&mut row, &mut client, clients, world).await;
+                    let result = tile_items(&mut row, &mut client, clients).await;
                     completed = true;
                     result
                 },
@@ -4561,7 +4518,6 @@ async fn tile_items(
     row: &mut Row,
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
-    world: &BundleWorld,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_map::MapDefinition;
     let book = native_spell_book()?;
@@ -4569,22 +4525,19 @@ async fn tile_items(
     let disintegrate = book.rune(3197).ok_or("C16d Disintegrate rune absent")?;
     let duration = tile_item_duration(chameleon)?;
     let baseline = own_binding(client)?.look;
-    let (chameleon_ref, sequence) = seeded_rune(client, clients, world, 3178).await?;
-    row.pass("acquire-chameleon", sequence);
-    let (disintegrate_ref, sequence) = seeded_rune(client, clients, world, 3197).await?;
-    row.pass("acquire-disintegrate", sequence);
-    // Ordinary shop purchase, never a provisioned object or a pre-existing map
-    // item whose disappearance could be decay. Backpacks have no decay clock.
-    let (target_ref, sequence) = acquire_rune(client, world, 2854).await?;
-    row.pass("buy-movable-target", sequence);
-    // Shop travel changes the live viewport; obtain a current join map before
-    // choosing a tile. Session::world_map_snapshot exposes only that join map.
-    let purchased = [
+    let (chameleon_ref, sequence) = seed_item_pair(client, clients, 3178).await?;
+    row.pass("seed-chameleon", sequence);
+    let (disintegrate_ref, sequence) = seed_item_pair(client, clients, 3197).await?;
+    row.pass("seed-disintegrate", sequence);
+    // Use a carried, player-dropped target so natural map-item decay cannot explain removal.
+    let (target_ref, sequence) = seed_item_pair(client, clients, 2854).await?;
+    row.pass("seed-movable-target", sequence);
+    let prepared = [
         (chameleon_ref, rune_quantity(client, chameleon_ref)?),
         (disintegrate_ref, rune_quantity(client, disintegrate_ref)?),
         (target_ref, rune_quantity(client, target_ref)?),
     ];
-    tile_item_rejoin(client, clients, 0xe4, &purchased).await?;
+    tile_item_rejoin(client, clients, 0xe4, &prepared).await?;
     let here = client.world_spatial().actor_position;
     let map = client
         .session_mut()
@@ -4618,7 +4571,7 @@ async fn tile_items(
                 .find(|entry| entry.item_definition_ref == target_ref && entry.count.get() == 1)
         })
         .map(|entry| entry.handle)
-        .ok_or("C16d purchased single backpack handle absent")?;
+        .ok_or("C16d seeded single backpack handle absent")?;
     client.take_events();
     let after = client.last_server_sequence();
     let moved = client
@@ -4772,7 +4725,7 @@ mod tile_item_tests {
     }
     #[test]
     fn tile_item_verdict_rejects_invalid_receipts() {
-        for (action, sequence) in [("acquire-chameleon", 0), ("unknown", 1), ("acquire-chameleon", 1)] {
+        for (action, sequence) in [("seed-chameleon", 0), ("unknown", 1), ("seed-chameleon", 1)] {
             let mut row = Row::new("C16d", TILE_ITEM_ACTIONS);
             for required in TILE_ITEM_ACTIONS {
                 row.pass(required, 1);

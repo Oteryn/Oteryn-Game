@@ -2764,7 +2764,7 @@ fn readiness_publication_retryable(error: &AssignmentError) -> bool {
 }
 
 /// The closed control-socket result (D2).
-#[allow(clippy::too_many_arguments)] // Existing authenticated inputs plus the disposable-mode gate.
+#[cfg_attr(feature = "qualification-spawn", allow(clippy::too_many_arguments))]
 async fn bootstrap_one(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -2773,7 +2773,7 @@ async fn bootstrap_one(
     intents: &ProducerDescriptor,
     capacity: &TransientCapacity,
     operation_id: [u8; 16],
-    fixture: bool,
+    #[cfg(feature = "qualification-spawn")] fixture: bool,
 ) -> &'static str {
     let budget = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
     // A committed result is answered without any external read.
@@ -2817,8 +2817,6 @@ async fn bootstrap_one(
     } else {
         intent
     };
-    #[cfg(not(feature = "qualification-spawn"))]
-    let _ = fixture;
     // Current account security is fetched into S2 through the D4 lane; an
     // authenticated denial is accepted there and then rejects the bootstrap.
     // The refresh failure renders as fixed step/cause tokens only.
@@ -2988,7 +2986,9 @@ async fn control_loop(
     config: &NodeConfig,
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
     spawn: Option<qualification_fixture::SpawnOwners<'_>>,
-    premium: Option<&crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator>,
+    #[cfg(feature = "qualification-spawn")] premium: Option<
+        &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    >,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -3022,10 +3022,8 @@ async fn control_loop(
                         proof,
                         config,
                         native,
-                        qualification_fixture::PreparationOwners {
-                            premium,
-                            world: spawn,
-                        },
+                        #[cfg(feature = "qualification-spawn")]
+                        premium,
                         &request,
                     ))
                     .await
@@ -3061,6 +3059,7 @@ async fn control_loop(
                             intents,
                             &capacity,
                             operation,
+                            #[cfg(feature = "qualification-spawn")]
                             config.qualification_fixture,
                         )
                         .await

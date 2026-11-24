@@ -6,6 +6,7 @@ use crate::qualification_spell_character as qualification_build;
 #[cfg(any(test, feature = "qualification-spawn"))]
 use crate::qualification_wild_spawn as wild_spawn;
 
+#[cfg(feature = "qualification-spawn")]
 fn named_item(profile: &str) -> Option<(u32, u32)> {
     let (id, count) = profile.strip_prefix("item-")?.split_once('-')?;
     if id.starts_with('0')
@@ -28,13 +29,6 @@ const KNIGHT_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000015";
 #[cfg(feature = "qualification-spawn")]
 const MONK_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000016";
 
-#[derive(Clone, Copy)]
-pub(super) struct PreparationOwners<'a> {
-    pub(super) premium:
-        Option<&'a crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator>,
-    pub(super) world: Option<SpawnOwners<'a>>,
-}
-
 #[cfg(feature = "qualification-spawn")]
 const PVP_KNIGHT_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000005";
 
@@ -53,6 +47,7 @@ const CHALLENGE_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000013";
 #[cfg(feature = "qualification-spawn")]
 const PARTY_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000017";
 
+#[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "s08-knight" => Some(("knight", 8)),
@@ -76,14 +71,16 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
     let (session, profile) = text.strip_prefix("qualify ")?.split_once(' ')?;
     let session = parse_operation_id(session.as_bytes())?;
-    (matches!(
+    let allowed = matches!(
         profile,
         "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
-    ) || (cfg!(any(test, feature = "qualification-spawn"))
-        && (spell_build(profile).is_some()
-            || named_item(profile).is_some()
-            || matches!(profile, "premium" | "c11-oressa-entry" | "c11-town-return"))))
-    .then_some((session, profile))
+    );
+    #[cfg(feature = "qualification-spawn")]
+    let allowed = allowed
+        || spell_build(profile).is_some()
+        || named_item(profile).is_some()
+        || profile == "premium";
+    allowed.then_some((session, profile))
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -123,7 +120,9 @@ pub(super) async fn prepare(
     proof: &NodeIncarnationProof,
     config: &NodeConfig,
     native: Option<&NativeGameplayState>,
-    owners: PreparationOwners<'_>,
+    #[cfg(feature = "qualification-spawn")] premium: Option<
+        &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    >,
     bytes: &[u8],
 ) -> &'static str {
     let (native, session, profile) =
@@ -135,7 +134,15 @@ pub(super) async fn prepare(
             }
         };
     match Box::pin(prepare_build(
-        root, authority, proof, config, native, session, profile, owners,
+        root,
+        authority,
+        proof,
+        config,
+        native,
+        session,
+        profile,
+        #[cfg(feature = "qualification-spawn")]
+        premium,
     ))
     .await
     {
@@ -708,7 +715,9 @@ async fn prepare_build(
     native: &NativeGameplayState,
     session: [u8; 16],
     profile: &str,
-    owners: PreparationOwners<'_>,
+    #[cfg(feature = "qualification-spawn")] premium: Option<
+        &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    >,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let session = crate::foundation::GameSessionId::decode(&session)?;
@@ -730,6 +739,7 @@ async fn prepare_build(
     {
         return Err("qualification scope mismatch".into());
     }
+    #[cfg(feature = "qualification-spawn")]
     if let Some(item) = named_item(profile) {
         return prepare_items(
             root,
@@ -750,8 +760,6 @@ async fn prepare_build(
     if matches!(
         profile,
         "premium"
-            | "c11-oressa-entry"
-            | "c11-town-return"
             | "c11-unassigned"
             | "c11-knight"
             | "c12-monk"
@@ -787,16 +795,7 @@ async fn prepare_build(
                 {
                     return Err("qualification Premium activation absent".into());
                 }
-                return grant_premium(
-                    root,
-                    owners.premium,
-                    *record.account_id.as_bytes(),
-                    deadline,
-                )
-                .await;
-            }
-            ("c11-oressa-entry" | "c11-town-return", UNASSIGNED_ACCOUNT) => {
-                return c11_position(owners.world, &current, profile == "c11-oressa-entry").await;
+                return grant_premium(root, premium, *record.account_id.as_bytes(), deadline).await;
             }
             ("c11-unassigned", UNASSIGNED_ACCOUNT)
             | ("c11-knight", KNIGHT_ACCOUNT)
@@ -808,8 +807,6 @@ async fn prepare_build(
             _ => return Err("preparation profile does not match dedicated account".into()),
         }
     }
-    #[cfg(not(feature = "qualification-spawn"))]
-    let _ = (owners.premium, owners.world);
     let interpretation = qualification_build::retry_holder(
         Some(root),
         deadline,
@@ -828,12 +825,13 @@ async fn prepare_build(
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
-    let spell = spell_build(profile);
-    let (vocation, level) = spell.unwrap_or(match profile {
+    let (vocation, level) = match profile {
         "knight-underlevel" => ("knight", 66),
         "explorer" => ("knight", 100),
         _ => (profile, 100),
-    });
+    };
+    #[cfg(feature = "qualification-spawn")]
+    let (vocation, level) = spell_build(profile).unwrap_or((vocation, level));
     let occurrence_profile = if level == 100 { vocation } else { profile };
     qualification_build::prepare_character_with_policy_until(
         root,
@@ -855,74 +853,21 @@ async fn prepare_build(
         deadline,
     )
     .await?;
-    if spell.is_some() {
+    #[cfg(feature = "qualification-spawn")]
+    if spell_build(profile).is_some() {
         return Ok(());
     }
-    prepare_items(root, authority, proof, &current, native, deadline, None).await
-}
-
-#[cfg(feature = "qualification-spawn")]
-async fn c11_position(
-    owners: Option<SpawnOwners<'_>>,
-    current: &crate::foundation::GameSessionAuthoritySnapshot<
-        crate::foundation::AuthenticatedTransportRefV1,
-    >,
-    oressa: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
-    use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
-    use crate::foundation::MovementLocalPosition;
-    use crate::map::boot::BundleCollisionIndexExt;
-    use crate::map::floor::{BundleDoors, prepare_quest_callback_teleport};
-
-    let owners = owners.ok_or("C11 positioning requires a loaded World")?;
-    let cells = owners.room.movement_cells();
-    let NativeMovementCollisionIndex::Bundle(map) = cells.index() else {
-        return Err("C11 positioning requires a loaded World bundle".into());
-    };
-    let closed = BundleDoors(&map.map().facts);
-    let session = current.current_game_session_id();
-    let mut runtime = owners.runtime.lock().await;
-    let (actor, expected) = runtime
-        .positioned_player_for_session(session)
-        .map_err(qualification_build::debug)?
-        .ok_or("C11 positioning requires a live actor")?;
-    if runtime
-        .bound_attacker_lease(actor, session)
-        .map_err(qualification_build::debug)?
-        != current.current_character_lease()
-    {
-        return Err("C11 positioning lost the admitted lease".into());
-    }
-    let entry = owners.room.entry_start();
-    let (x, y, floor) = if oressa {
-        (32064, 31892, 6)
-    } else {
-        (entry.x, entry.y, entry.floor)
-    };
-    let offsets = if oressa {
-        &[(0, -1), (1, 0), (0, 1), (-1, 0)][..]
-    } else {
-        &[(0, 0)]
-    };
-    for &(dx, dy) in offsets {
-        let landing = MovementLocalPosition {
-            x: x + dx,
-            y: y + dy,
-            floor,
-        };
-        if expected.position() == landing {
-            return Ok(());
-        }
-        if let Ok(proof) = prepare_quest_callback_teleport(
-            &runtime, cells, actor, session, expected, landing, false, &closed,
-        ) {
-            runtime
-                .commit_source_step(proof)
-                .map_err(qualification_build::debug)?;
-            return Ok(());
-        }
-    }
-    Err("C11 positioning found no permitted landing in the served bundle".into())
+    prepare_items(
+        root,
+        authority,
+        proof,
+        &current,
+        native,
+        deadline,
+        #[cfg(feature = "qualification-spawn")]
+        None,
+    )
+    .await
 }
 
 #[cfg(feature = "qualification-spawn")]
@@ -1019,12 +964,15 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
-    named: Option<(u32, u32)>,
+    #[cfg(feature = "qualification-spawn")] named: Option<(u32, u32)>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(feature = "qualification-spawn")]
     use crate::domain::item_definition::ItemStackClass;
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
-    use crate::durability::reward_claim_mint::{RewardClaimMintContent, RewardClaimMintRequest};
+    #[cfg(feature = "qualification-spawn")]
+    use crate::durability::reward_claim_mint::RewardClaimMintContent;
+    use crate::durability::reward_claim_mint::RewardClaimMintRequest;
     use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
 
     let fence = CurrentCharacterItemFence {
@@ -1055,6 +1003,8 @@ async fn prepare_items(
         .await
         .map_err(|error| format!("qualification inventory: {error:?}"))
     };
+    #[cfg(not(feature = "qualification-spawn"))]
+    let named: Option<(u32, u32)> = None;
     let mut inventory = read_inventory().await?;
     if inventory.backpack.is_none() && named.is_none() {
         use crate::durability::starter_grant::{StarterGrantOutcome, StarterTemplate};
@@ -1121,29 +1071,37 @@ async fn prepare_items(
         }
         let item = generation_item_facts(native, &definition)
             .map_err(|error| format!("qualification Item {key}: {error:?}"))?;
-        let maximum = match item.stack {
-            ItemStackClass::NonStackable => 1,
-            ItemStackClass::Stackable { proven_maximum } => proven_maximum.unwrap_or(100),
-            ItemStackClass::Unknown => return Err("qualification Item stack class unknown".into()),
+        #[cfg(feature = "qualification-spawn")]
+        let (quantity, additional_items) = {
+            let maximum = match item.stack {
+                ItemStackClass::NonStackable => 1,
+                ItemStackClass::Stackable { proven_maximum } => proven_maximum.unwrap_or(100),
+                ItemStackClass::Unknown => {
+                    return Err("qualification Item stack class unknown".into());
+                }
+            };
+            if maximum == 0 {
+                return Err("qualification Item stack maximum is zero".into());
+            }
+            let quantity = count.min(maximum);
+            let mut additional_items = Vec::new();
+            let mut remaining = count - quantity;
+            while remaining != 0 {
+                let quantity = remaining.min(maximum);
+                additional_items.push(RewardClaimMintContent {
+                    item: item.clone(),
+                    quantity,
+                    key_number: None,
+                    text: None,
+                    fluid_subtype: None,
+                    charges_remaining: None,
+                });
+                remaining -= quantity;
+            }
+            (quantity, additional_items)
         };
-        if maximum == 0 {
-            return Err("qualification Item stack maximum is zero".into());
-        }
-        let quantity = count.min(maximum);
-        let mut additional_items = Vec::new();
-        let mut remaining = count - quantity;
-        while remaining != 0 {
-            let quantity = remaining.min(maximum);
-            additional_items.push(RewardClaimMintContent {
-                item: item.clone(),
-                quantity,
-                key_number: None,
-                text: None,
-                fluid_subtype: None,
-                charges_remaining: None,
-            });
-            remaining -= quantity;
-        }
+        #[cfg(not(feature = "qualification-spawn"))]
+        let (quantity, additional_items) = (count, Vec::new());
         let offset = named.map_or(ordinal as u64, |(id, count)| {
             (u64::from(id) << 5) | u64::from(count)
         });
@@ -1258,7 +1216,7 @@ fn fixture_item_committed(
     };
     if receipt.quantity != quantity {
         return Err(format!(
-            "qualification Item receipt has quantity {}, expected {quantity}",
+            "qualification Item receipt has quantity {}",
             receipt.quantity
         )
         .into());
@@ -1865,17 +1823,24 @@ mod tests {
                                     format!("qualify {} {profile}\n", uuid_text(&session))
                                         .as_bytes()
                                 );
-                                let (_, actual_session, actual_profile) =
-                                    prepare_request(true, Some(()), &bytes)
+                                let allowed = cfg!(feature = "qualification-spawn")
+                                    || !matches!(profile, "c05-exiva" | "item-6506-2");
+                                let request = prepare_request(true, Some(()), &bytes);
+                                if allowed {
+                                    let (_, actual_session, actual_profile) = request
                                         .map_err(|_| "Python request refused by node parser")?;
-                                assert_eq!(actual_session, session);
-                                assert_eq!(actual_profile, profile);
-                                stream.write_all(b"qualified\n").await?;
+                                    assert_eq!(actual_session, session);
+                                    assert_eq!(actual_profile, profile);
+                                    stream.write_all(b"qualified\n").await?;
+                                } else {
+                                    assert_eq!(request, Err(EarlyRefusal::MalformedRequest));
+                                    stream.write_all(b"rejected\n").await?;
+                                }
                                 stream.shutdown().await?;
                                 let output = child.await??;
-                                if !output.status.success() {
+                                if output.status.success() != allowed {
                                     return Err(format!(
-                                        "Python client rejected the parsed exchange: {:?}",
+                                        "Python client disagreed with node parser: {:?}",
                                         output.status
                                     )
                                     .into());
@@ -2029,13 +1994,10 @@ mod tests {
     #[test]
     fn qualification_request_accepts_only_named_profiles_and_v7_sessions() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
+        for profile in ["explorer", "knight", "paladin", "sorcerer", "druid", "monk"] {
+            assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
+        }
         for profile in [
-            "explorer",
-            "knight",
-            "paladin",
-            "sorcerer",
-            "druid",
-            "monk",
             "c05-exiva",
             "f5-c17a",
             "f5-c17c",
@@ -2045,16 +2007,19 @@ mod tests {
             "c11-unassigned",
             "c11-knight",
             "c12-monk",
-            "c11-oressa-entry",
-            "c11-town-return",
             "premium",
             "item-43895-1",
             "item-6506-2",
         ] {
-            assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
+            assert_eq!(
+                request(format!("qualify {id} {profile}\n").as_bytes()).is_some(),
+                cfg!(feature = "qualification-spawn")
+            );
         }
         for text in [
             format!("qualify {id} master_sorcerer"),
+            format!("qualify {id} c11-oressa-entry"),
+            format!("qualify {id} c11-town-return"),
             format!("qualify {id} item-0-1"),
             format!("qualify {id} item-43895-0"),
             format!("qualify {id} item-43895-21"),

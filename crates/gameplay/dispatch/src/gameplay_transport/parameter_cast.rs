@@ -477,9 +477,10 @@ async fn prepare_parameter(
                 intent.parameter.as_deref().unwrap_or(""),
             )
             .await
-            .map_err(|reason| {
-                if cfg!(feature = "qualification-cast-evidence") {
-                    eprintln!("SEAM_EVIDENCE parameter_cast_refused spell={} command={} gate=locate_owner reason={reason:?}", spell.key, command.command_id().get());
+            .map_err(|_reason| {
+                #[cfg(feature = "qualification-cast-evidence")]
+                {
+                    eprintln!("SEAM_EVIDENCE parameter_cast_refused spell={} command={} gate=locate_owner reason={_reason:?}", spell.key, command.command_id().get());
                 }
                 SpellCastDisposition::NotAvailable
             })?;

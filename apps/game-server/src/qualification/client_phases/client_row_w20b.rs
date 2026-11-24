@@ -34,7 +34,19 @@ pub(super) async fn connect_player_caster(
     clients: &SeamClients<'_>,
     required_level: u32,
     premium_required: bool,
-    _hunt_budget: Duration,
+    preparation_budget: Duration,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    let deadline = tokio::time::Instant::now() + preparation_budget;
+    verdict::Harness::global().bounded_wait(deadline, "personal-light-preparation");
+    tokio::time::timeout_at(deadline, prepare_player_caster(clients, required_level, premium_required))
+        .await
+        .map_err(|_| format!("personal-light preparation exceeded {preparation_budget:?}"))?
+}
+
+async fn prepare_player_caster(
+    clients: &SeamClients<'_>,
+    required_level: u32,
+    premium_required: bool,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     const PREPARATION: character_prep::Seeded = character_prep::Seeded {
         profile: "w20b-light",
@@ -134,6 +146,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    character_prep::declare_seeded("W20b.client", "sorcerer-level-26,premium-if-required", "native Light packet capture");
     match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!("e2e_all scenario=W20b.client status=CAPTURED evidence={observed}")),
         Ok(Err(error)) => evidence(&format!(

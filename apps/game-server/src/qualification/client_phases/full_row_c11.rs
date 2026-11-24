@@ -133,10 +133,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let (vocation, level) = admitted_vocation(&mut client).await?;
     match monk_path(vocation, level) {
         Some(false) => {
-            let town = client.world_spatial().actor_position;
-            relocate(&mut client, clients, "c11-oressa-entry", |at| {
-                at.x.abs_diff(32064).max(at.y.abs_diff(31892)) <= 1
-            }).await?;
+            let town = tile(client.world_spatial().actor_position)?;
             choose_monk(&mut client, world, &bytes).await
                 .map_err(|error| verdict::context(format!("step=player-monk-choice observed={error}"), error))?;
             let (chosen, chosen_level) = admitted_vocation(&mut client).await?;
@@ -144,7 +141,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 return Err(format!("Oressa confirmation did not persist Monk; observed vocation={chosen}").into());
             }
             row.pass("player-monk-choice", "Oressa-confirmed");
-            relocate(&mut client, clients, "c11-town-return", |at| at == town).await?;
+            let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == town)
+                .ok_or("no player walk route from Oressa back to the initial admission tile")?;
+            walk(&mut client, world, &path).await?;
         }
         Some(true) => row.fail("player-monk-choice", "already-Monk; need=first-vocation-transition; continuing Monk gameplay"),
         None => {
@@ -226,31 +225,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("fresh-admission-monk", error) },
     }
     logout(&mut fresh, world).await
-}
-
-async fn relocate(
-    client: &mut DevClientSession,
-    clients: &SeamClients<'_>,
-    profile: &str,
-    arrived: impl Fn(ActorPosition) -> bool,
-) -> TestResult {
-    request_fixture_control(
-        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
-        "--profile",
-        profile.into(),
-    ).await?;
-    let prior = client.join_snapshot().game_session_id;
-    let (logout, detail, _, _) = logout_retrying_busy(client).await?;
-    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("C11 position profile {profile} could not save on logout: {detail}").into());
-    }
-    *client = connect_character(clients, 0xcb, 0).await?;
-    if prior == client.join_snapshot().game_session_id
-        || !arrived(client.world_spatial().actor_position)
-    {
-        return Err(format!("C11 position profile {profile} did not survive fresh admission").into());
-    }
-    Ok(())
 }
 
 fn spell_book() -> TestResult<crate::spell::SpellBook> {

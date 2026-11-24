@@ -32,6 +32,7 @@ const MAX_REVISION_BYTES: usize = 128;
 /// Binding format tag: contract version 4 operator variant of the Platform
 /// Character authority for the Game Character audience. The constant fields are
 /// implied by the tag. Tags 2 and 3 are historical bindings without vocation.
+#[cfg(feature = "qualification-spawn")]
 const BINDING_TAG_V3_UNASSIGNED: u8 = 3;
 const BINDING_TAG_V4_OPERATOR: u8 = 4;
 
@@ -149,7 +150,7 @@ impl CharacterBootstrapIntentV1 {
 
     /// Produce the historical unassigned birth shape from an authenticated
     /// decision. The disposable node's operator gate chooses the fixture account.
-    #[cfg(feature = "test-support")]
+    #[cfg(feature = "qualification-spawn")]
     pub fn into_qualification_unassigned(mut self) -> Self {
         self.requested_vocation.clear();
         self
@@ -160,6 +161,9 @@ impl CharacterBootstrapIntentV1 {
     #[must_use]
     pub fn binding(&self) -> Vec<u8> {
         let mut value = Vec::with_capacity(1 + 16 * 4 + 8 * 3 + 5 * (2 + MAX_REVISION_BYTES));
+        #[cfg(not(feature = "qualification-spawn"))]
+        value.push(BINDING_TAG_V4_OPERATOR);
+        #[cfg(feature = "qualification-spawn")]
         value.push(if self.requested_vocation.is_empty() {
             BINDING_TAG_V3_UNASSIGNED
         } else {
@@ -185,10 +189,12 @@ impl CharacterBootstrapIntentV1 {
             Sex::Female => 1,
             Sex::Male => 2,
         });
-        if !self.requested_vocation.is_empty() {
-            value.push(self.requested_vocation.len() as u8);
-            value.extend_from_slice(self.requested_vocation.as_bytes());
+        #[cfg(feature = "qualification-spawn")]
+        if self.requested_vocation.is_empty() {
+            return value;
         }
+        value.push(self.requested_vocation.len() as u8);
+        value.extend_from_slice(self.requested_vocation.as_bytes());
         value
     }
 }

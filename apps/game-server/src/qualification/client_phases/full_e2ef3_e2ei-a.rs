@@ -61,7 +61,6 @@ pub(super) async fn relogin_starter(
             && at.x.abs_diff(TOWN.x).max(at.y.abs_diff(TOWN.y)) <= 3
             && safe(at)
     })
-    .or_else(|| route(world, from, safe))
     .ok_or_else(|| {
         format!("E2EF3 no reachable unoccupied non-entry PZ relog cell from {from:?}")
     })?;

@@ -2,8 +2,7 @@
 //! matrix row, and `reward_bag_use`'s generation-fenced consume/mint owner.
 //!
 //! Player scenario:
-//! 1. Admit the player. The Messenger purchase journey is deferred because its
-//!    donor tile coincides with Santa Claus.
+//! 1. Admit the player. Record a purchase GAP because the donor Messenger is unplaced.
 //! 2. Seed two red Christmas bundles and verify their exact backpack quantity.
 //! 3. Send USE-WITH-POSITION for one bundle; expect Accepted/NothingToUse and no
 //!    inventory change (the refusal must not consume or mint anything).
@@ -289,7 +288,7 @@ pub(super) async fn acquire_bundles(client: &mut DevClientSession, clients: &Sea
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     character_prep::declare_seeded("W19a", "two-red-christmas-bundles", "random bundle conversion");
-    evidence("W19a messenger_purchase=deferred reason=donor-tile-coincides-with-santa-claus");
+
     let mut client = connect_world(clients, 0xa9).await?;
     let reference = bag_reference()?;
     let before = quantities(&client)?.get(&reference.get()).copied().unwrap_or(0);
@@ -395,10 +394,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    const PURCHASE_GAP: &str = "step=messenger-purchase observed=unplaced-donor-npc";
+    evidence(&format!("W19A_GAP {PURCHASE_GAP}"));
     let started = std::time::Instant::now();
     let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
-        Ok(Ok(())) => ("PASS", String::new()),
+        Ok(Ok(())) => ("FAIL", format!("{PURCHASE_GAP};seeded-conversion=verified")),
         Ok(Err(error)) => ("FAIL", error.to_string()),
         Err(_) => ("FAIL", "step=journey observed=timeout-after-180s".to_owned()),
     };

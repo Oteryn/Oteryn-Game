@@ -202,10 +202,10 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     policy: FiniteProgressionPolicy<String, N>,
     deadline: tokio::time::Instant,
 ) -> TestResult {
-    if !(PLAYABLE_VOCATIONS.contains(&spec.vocation)
-        || (spec.vocation == NO_VOCATION && spec.level == 8))
-        || !(1..=1000).contains(&spec.level)
-    {
+    let playable = PLAYABLE_VOCATIONS.contains(&spec.vocation);
+    #[cfg(feature = "qualification-spawn")]
+    let playable = playable || (spec.vocation == NO_VOCATION && spec.level == 8);
+    if !playable || !(1..=1000).contains(&spec.level) {
         return Err("qualification requires a base vocation and source level 1..1000".into());
     }
     let xp_occurrence =
@@ -240,6 +240,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .find(|threshold| threshold.level == level)
         .ok_or("qualification level absent from the served progression policy")?
         .minimum_experience;
+    #[cfg(feature = "qualification-spawn")]
     if vocation == NO_VOCATION && before.vocation() != NO_VOCATION {
         return Err("unassigned preparation requires an unassigned birth".into());
     }
@@ -429,6 +430,9 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         &context.content,
     )
     .map_err(debug)?;
+    #[cfg(not(feature = "qualification-spawn"))]
+    let after = convert_vocation(&formula, &before, vocation).map_err(debug)?;
+    #[cfg(feature = "qualification-spawn")]
     let after = if vocation == NO_VOCATION {
         before.clone()
     } else {

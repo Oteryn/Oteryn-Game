@@ -128,21 +128,18 @@ fn read_json(relative: &str) -> TestResult<serde_json::Value> {
     Ok(serde_json::from_slice(&std::fs::read(root().join(relative))?)?)
 }
 
-async fn spell(client: &mut DevClientSession) -> TestResult<NonZeroU32> {
-    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
-    loop {
-        if let Some(catalog) = client.session_mut().spell_catalog()?
-            && let Some(entry) = catalog.entries.iter()
-                .find(|entry| entry.words == SPELL_WORDS && entry.rune_item.is_none() && entry.available)
-        {
-            return NonZeroU32::new(entry.cast_index).ok_or_else(|| "Greater Tiger Clash has zero served index".into());
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("Greater Tiger Clash did not become available in the served Premium Monk catalogue".into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
+fn spell(client: &mut DevClientSession) -> TestResult<NonZeroU32> {
+    let catalog = client.session_mut().spell_catalog()?.ok_or("served spell catalogue absent")?;
+    let entry = catalog.entries.iter()
+        .find(|entry| entry.words == SPELL_WORDS && entry.rune_item.is_none())
+        .ok_or("need=platform-created-premium-monk-or-exalted-monk;spell=exori-nia;cast-min-level=18;item-50271-min-level=20;observed=absent-from-served-spell-catalogue")?;
+    if !entry.available {
+        return Err(format!(
+            "need=premium-monk-or-exalted-monk;spell={SPELL_WORDS};cast-min-level={};item-50271-min-level=20;learned={}",
+            entry.level, entry.learned
+        ).into());
     }
+    NonZeroU32::new(entry.cast_index).ok_or_else(|| "Greater Tiger Clash has zero served index".into())
 }
 
 /// The base-damage augment (hundredths of a percent) that content binds to this spell on the item.
@@ -564,7 +561,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         count => return Err(format!("unexpected initial backpack count for item {ITEM_ID}: {count}").into()),
     }
     character_prep::grant_premium(&client).await?;
-    let spell_index = spell(&mut client).await?;
+    let spell_index = spell(&mut client)?;
     let augment = content_augment()?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -628,7 +625,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == old_session || !equipped_right(&fresh, definition) {
         return Err("fresh admission lost the right-hand item".into());
     }
-    let fresh_spell_index = spell(&mut fresh).await?;
+    let fresh_spell_index = spell(&mut fresh)?;
     let replay = samples(&hunt, &mut fresh, fresh_spell_index, augment).await?;
     row.record_cast("fresh-admission", &replay, weapon(&fresh)?);
     logout(&mut fresh).await?;

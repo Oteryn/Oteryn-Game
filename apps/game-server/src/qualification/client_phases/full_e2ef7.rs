@@ -1562,7 +1562,7 @@ impl JourneyRow {
             "S08" => Some(("knight-and-sorcerer-builds,pvp-eligible-levels", "combat and protection")),
             "S13a" | "S13b" => Some(("level-32-premium-caster,clean-peer", "party spell gates and cost")),
             "W20b" => Some(("sorcerer-level-26,premium", "light casts, relog and expiry")),
-            "P21" => Some(("protective-charms,strike-capable-target,fee-gold-if-needed", "Basic Strike application and persistence")),
+            "P21" => Some(("protective-charms,strike-capable-target-if-missing,fee-gold-if-needed", "Basic Strike application and persistence")),
             _ => None,
         };
         if let Some((prerequisites, reason)) = seeded {
@@ -4874,21 +4874,19 @@ async fn imbuement_journey(
             .bytes,
     )?;
     use crate::content::ReferenceItemField::Known;
-    let candidate = profiles.records.iter()
-        .filter(|r| r.admission.materializable
-            && matches!(&r.semantics.imbuement, Known(i) if matches!(i.slot_count, Known(1..=3))
-                && matches!(&i.allowed_family_tiers, Known(fs) if fs.iter().any(|f| f.family.wire() == 1))))
-        .filter_map(|r| {
-            let id = character_prep::item_id(&r.production_definition.production_key).ok()?;
-            let reference = provisioning::item_reference(&definitions, id).ok()?;
-            (units(client, reference) == 0).then_some((id, reference))
-        })
-        .min_by_key(|(id, _)| (*id != 3264, *id))
-        .ok_or("no unused materializable strike-capable item in pinned native policy")?;
-    const PREPARATION: &str = "Seeded: Basic Strike inspects application, effects, fees and persistence";
-    evidence(&format!("P21 preparation={PREPARATION}"));
-    let (id, target) = candidate;
-    character_prep::grant_item(client, id, 1).await.map_err(|error| format!("P21 target item {id}: {error}"))?;
+    let candidate=profiles.records.iter().filter(|r|r.admission.materializable && matches!(&r.semantics.imbuement,Known(i) if matches!(i.slot_count,Known(1..=3)) && matches!(&i.allowed_family_tiers,Known(fs) if fs.iter().any(|f|f.family.wire()==1))))
+        .min_by_key(|r| {
+            let key=&r.production_definition.production_key;
+            let present=definitions.revision(key).and_then(|rev|definitions.definition_ref("Item",key,rev)).is_some_and(|d|carried(client,d).is_ok());
+            (!present,key!="oteryn:item.tibia.i3264",key.clone())
+        }).ok_or("no materializable strike-capable item in pinned native policy")?;
+    let key = &candidate.production_definition.production_key;
+    let id = character_prep::item_id(key)?;
+    let revision = definitions.revision(key).ok_or("P21 target revision absent")?;
+    let target = definitions.definition_ref("Item", key, revision).ok_or("P21 target definition absent")?;
+    if carried(client, target).is_err() {
+        character_prep::grant_item(client, id, 1).await.map_err(|error| format!("P21 target item {id}: {error}"))?;
+    }
     let basic = oteryn_gameplay_items::imbuement::imbuement_recipe(1, 1)
         .ok_or("basic Strike recipe absent")?;
     for &(key, count) in basic.materials {
