@@ -92,6 +92,9 @@ pub(super) async fn run(
     spawns: &oteryn_world_bundle::spawn::Table,
     rat_xp: i64,
 ) {
+    let mut previous_session = client
+        .as_ref()
+        .map(|active| active.join_snapshot().game_session_id);
     // Each row reports even when another row has missing content or a refused command.
     // Socket waits are bounded; a timed-out session is not evidence of server absence.
     macro_rules! row {
@@ -101,7 +104,11 @@ pub(super) async fn run(
         (travel $to:ident, $id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
             let mut row = Row::new("E2EF4", $id, $actions).evidence(EVIDENCE, EVIDENCE).gap_lines();
             let watch = row.watch();
-            let result = if let Some(active) = client.as_mut() {
+            let result = if let Err(error) =
+                recover_primary(client, clients, &mut previous_session, $id).await
+            {
+                Err(error)
+            } else if let Some(active) = client.as_mut() {
                 let mut arrived = false;
                 let walked = watch
                     .travel(
@@ -123,7 +130,7 @@ pub(super) async fn run(
                     row!(@journey client, row, watch, active, $journey $(, $arg)*)
                 }
             } else {
-                Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into())
+                Err("F4 primary session missing".into())
             };
             finish_row(client, row, result).await;
         }};
@@ -149,24 +156,14 @@ pub(super) async fn run(
         ($id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
             let mut row = Row::new("E2EF4", $id, $actions).evidence(EVIDENCE, EVIDENCE).gap_lines();
             let watch = row.watch();
-            let result = if let Some(active) = client.as_mut() {
-                let mut completed = false;
-                let result = watch.bound(
-                    Duration::from_secs(240),
-                    "native-journey-deadline;remaining-assertions-unproven",
-                    async {
-                        let result = $journey(&mut row, active $(, $arg)*).await;
-                        completed = true;
-                        result
-                    },
-                ).await;
-                if !completed {
-                    // An interrupted command or frame cannot be resumed by another row.
-                    *client = None;
-                }
-                result
+            let result = if let Err(error) =
+                recover_primary(client, clients, &mut previous_session, $id).await
+            {
+                Err(error)
+            } else if let Some(active) = client.as_mut() {
+                row!(@journey client, row, watch, active, $journey $(, $arg)*)
             } else {
-                Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into())
+                Err("F4 primary session missing".into())
             };
             finish_row(client, row, result).await;
         }};
@@ -183,7 +180,7 @@ pub(super) async fn run(
             }
             result
         } else {
-            Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into())
+            Err("F4 primary session missing".into())
         };
         finish_row(client, row, result).await;
     }
@@ -195,6 +192,10 @@ pub(super) async fn run(
     row!("S03", S03, guild);
     row!("S09", S09, logout, clients, world, spawns);
     row!("S18", S18, speech, clients, world);
+    if let Err(error) = recover_primary(client, clients, &mut previous_session, "lifecycle").await {
+        evidence(&format!("E2EF4_GAP lifecycle recovery admission: {error}"));
+        return;
+    }
     let Some(client) = client.as_mut() else {
         return;
     };
@@ -210,6 +211,54 @@ pub(super) async fn run(
     if let Err(error) = restore {
         evidence(&format!("E2EF4_GAP return {error}"));
     }
+}
+
+// Use the ordinary reference verifier admission, including its terminal-release gate.
+// This allows the next row to run but does not qualify Platform-issued admission.
+async fn recover_primary(
+    client: &mut Option<DevClientSession>,
+    clients: &SeamClients<'_>,
+    previous: &mut Option<oteryn_protocol_oteryn::GameSessionId>,
+    row: &str,
+) -> TestResult {
+    if client.is_none() {
+        let predecessor = previous.ok_or("F4 recovery has no predecessor session")?;
+        let fresh = connect_world(clients, 0x89).await?;
+        let session = fresh.join_snapshot().game_session_id;
+        let replaced = tokio::time::timeout(Duration::from_secs(2), async {
+            let mut db = sqlx::PgConnection::connect(clients.url).await?;
+            sqlx::query_scalar::<_, bool>(
+                "SELECT EXISTS (
+                     SELECT 1 FROM game_durability_reconnect_sessions old
+                     JOIN game_durability_reconnect_sessions new USING (world_id, account_id, character_id)
+                     WHERE old.game_session_id = encode($1,'hex')::uuid
+                       AND new.game_session_id = encode($2,'hex')::uuid
+                       AND new.character_id = encode($3,'hex')::uuid
+                       AND new.world_id = encode($4,'hex')::uuid
+                       AND old.session_state = 3 AND new.session_state <> 3
+                       AND new.character_lease_generation > old.character_lease_generation
+                 )",
+            )
+            .bind(predecessor.as_bytes().as_slice())
+            .bind(session.as_bytes().as_slice())
+            .bind(clients.characters[1].as_slice())
+            .bind(clients.world.as_slice())
+            .fetch_one(&mut db)
+            .await
+        })
+        .await??;
+        if !replaced {
+            return Err("F4 recovery did not advance the interrupted character's lease generation".into());
+        }
+        evidence(&format!(
+            "E2EF4_OBSERVATION {row} recovery=fresh-reference-admission lease_generation=advanced"
+        ));
+        *client = Some(fresh);
+    }
+    *previous = client
+        .as_ref()
+        .map(|active| active.join_snapshot().game_session_id);
+    Ok(())
 }
 
 fn own(client: &DevClientSession) -> TestResult<EntityRef> {
@@ -416,7 +465,18 @@ async fn approach_sam(
         .collect();
     match (near.as_slice(), named.as_slice()) {
         ([sam], _) | (_, [sam]) => Ok(sam.entity),
-        ([], _) => Err("Sam actor not visible within his authored wander radius".into()),
+        ([], _) => {
+            let visible_npcs: Vec<_> = entities
+                .iter()
+                .filter(|entry| entry.kind == oteryn_dev_client::EntityKind::Npc)
+                .map(|entry| (&entry.display_name, entry.position))
+                .collect();
+            Err(format!(
+                "Sam actor not visible within his authored wander radius; player={:?} placements={:?} visible_npcs={visible_npcs:?}",
+                client.world_spatial().actor_position,
+                npc.placements,
+            ).into())
+        },
         _ => Err(format!(
             "{} NPC actors within Sam's wander radius and none uniquely named Sam",
             near.len()
@@ -631,17 +691,26 @@ async fn coins(
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
     use super::client_row_e02::{backpack_coins, coin_refs, wait_coins};
+    let started = std::time::Instant::now();
     let refs = coin_refs()?;
-    if backpack_coins(client, refs)?[0] < 100 {
+    let gold = backpack_coins(client, refs)?[0];
+    e03_timing(started, "inventory", client, gold);
+    if gold < 100 {
         let hunt: TestResult = async {
+            e03_timing(started, "route-to-rat-start", client, gold);
             travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
+            e03_timing(started, "hunt-start", client, gold);
             client_hunt::hunt(client).await
         }
         .await;
+        let gold = backpack_coins(client, refs)?[0];
+        e03_timing(started, "hunt-end", client, gold);
         if let Err(error) = hunt {
             evidence(&format!("E2EF4_GAP E03 gold-acquisition: {error}"));
         }
+        e03_timing(started, "return-start", client, gold);
         town(client, world).await?;
+        e03_timing(started, "return-end", client, gold);
     }
     let mut before = backpack_coins(client, refs)?;
     let sources = [refs[0], refs[1], refs[1], refs[2]];
@@ -651,6 +720,7 @@ async fn coins(
         .zip(sources)
         .zip([100, 1, 100, 1])
     {
+        e03_timing(started, step, client, before[0]);
         let item = client.inventory().and_then(|inventory| {
             inventory.entries.iter().find(|item| {
                 item.item_definition_ref == source
@@ -674,6 +744,14 @@ async fn coins(
         before = expected;
     }
     Err("converter-charge/converter-retirement/magic-toggle/magic-tick/relog-coins-charges: need legitimately acquired gold and magic gold converters plus eligible coin stacks; source:crates/gameplay/dispatch/src/gameplay_transport/coin_use.rs:24".into())
+}
+
+fn e03_timing(started: std::time::Instant, step: &str, client: &DevClientSession, gold: u64) {
+    evidence(&format!(
+        "E2EF4_OBSERVATION E03 step={step} elapsed_ms={} position={:?} gold={gold}",
+        started.elapsed().as_millis(),
+        client.world_spatial().actor_position,
+    ));
 }
 
 async fn inventory_after_trade(
