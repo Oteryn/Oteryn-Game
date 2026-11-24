@@ -1348,9 +1348,15 @@ async fn seed_item_and_readmit(
     clients: &SeamClients<'_>,
     profile: String,
 ) -> TestResult {
-    progress_fixture(client, profile)
+    progress_fixture(client, profile.clone())
         .await?
-        .map_err(|reason| format!("harness-item-fixture-refused-{reason}"))?;
+        .map_err(|reason| {
+            if reason == "active_item_definition_not_found" {
+                format!("server-content-fxi-class-5-{profile}-{reason}")
+            } else {
+                format!("harness-item-fixture-refused-{reason}")
+            }
+        })?;
     let (result, ..) = logout_retrying_busy(client).await?;
     if result != Some(LogoutResult::Accepted) {
         return Err("harness-item-fixture-logout-refused".into());

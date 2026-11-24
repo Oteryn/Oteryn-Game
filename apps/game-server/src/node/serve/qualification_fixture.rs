@@ -168,10 +168,12 @@ pub(super) async fn prepare(
         Ok(()) => "qualified",
         Err(error) => {
             emit(PROCESS, &refusal_warning(&session, profile, error.as_ref()));
-            if error.to_string() == "mastery_target_unavailable" {
-                "rejected reason=mastery_target_unavailable"
-            } else {
-                "rejected"
+            match error.to_string().as_str() {
+                "mastery_target_unavailable" => "rejected reason=mastery_target_unavailable",
+                "active_item_definition_not_found" => {
+                    "rejected reason=active_item_definition_not_found"
+                }
+                _ => "rejected",
             }
         }
     }
@@ -1202,8 +1204,12 @@ async fn prepare_items(
         {
             continue;
         }
-        let item = generation_item_facts(native, &definition)
-            .map_err(|error| format!("qualification Item {key}: {error:?}"))?;
+        let item = generation_item_facts(native, &definition).map_err(|error| match error {
+            oteryn_gameplay_items::pickup::PickupContentError::DefinitionNotFound => {
+                "active_item_definition_not_found".to_owned()
+            }
+            other => format!("qualification Item {key}: {other:?}"),
+        })?;
         let request = RewardClaimMintRequest {
             backpack_outputs: false,
             additional_items: Vec::new(),
