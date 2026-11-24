@@ -269,9 +269,6 @@ SHARDS = {
 }
 REGISTRY = "content/world/source-static-definitions.json"
 NOTE = " Additionally SRX-3 pinned activity static geometry: 61 Terrain and 177 WorldObject records; no Item aliases."
-REGIONAL_NPC_GROUND_NOTE = (
-    " Additionally two appearance-only floors for Doubleday and Javala."
-)
 
 
 def encode(value):
@@ -349,23 +346,15 @@ def compose_placement_palette(placement, activity_registry, soulpit_rows, root=R
 
 
 def compose_terrain_notes(notes):
-    """Keep the qualified terrain notes in their published order."""
+    """Both source publishers use the same two exact, idempotent suffixes."""
     import soulpit_static
 
-    regional_note = (
-        REGIONAL_NPC_GROUND_NOTE if REGIONAL_NPC_GROUND_NOTE in notes else ""
-    )
     notes = re.sub(
         r" Additionally SRX-3 pinned activity static geometry: [0-9]+ Terrain and [0-9]+ WorldObject records; no Item aliases\.",
         "",
         notes,
     )
-    return (
-        notes.replace(soulpit_static.NOTE, "").replace(REGIONAL_NPC_GROUND_NOTE, "")
-        + NOTE
-        + soulpit_static.NOTE
-        + regional_note
-    )
+    return notes.replace(soulpit_static.NOTE, "") + NOTE + soulpit_static.NOTE
 
 
 def preserved_restore_item_pointer(root=ROOT):

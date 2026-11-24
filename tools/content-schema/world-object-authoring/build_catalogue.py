@@ -483,12 +483,6 @@ def outputs(
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += engnpc2_ram_world.NOTE
-        import regional_npc_ground
-
-        files[regional_npc_ground.SHARD] = regional_npc_ground.outputs()[
-            regional_npc_ground.SHARD
-        ].encode()
-        index["notes"] += regional_npc_ground.NOTE
         index["notes"] = activity_static.compose_terrain_notes(index["notes"])
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
@@ -559,7 +553,6 @@ def qualified_shards():
     import activity_static
     import alawar_static
     import feroxa_static
-    import regional_npc_ground
     import spawn_ground
     import spawn_map_ground
     from scoped_spawn_ground import SHARD as SCOPED_SPAWN_GROUND_SHARD
@@ -579,7 +572,6 @@ def qualified_shards():
             *activity_static.SHARDS.values(),
             alawar_static.SHARD,
             feroxa_static.SHARD,
-            regional_npc_ground.SHARD,
             spawn_ground.SHARD,
             SCOPED_SPAWN_GROUND_SHARD,
             spawn_map_ground.SHARD,

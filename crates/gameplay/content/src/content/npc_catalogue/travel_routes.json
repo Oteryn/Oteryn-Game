@@ -538,7 +538,6 @@
     "x": 33902,
     "y": 31462,
     "floor": 6,
-    "world_arrival": [33902, 31464, 6],
     "postman": true,
     "held": false,
     "carpet": false
@@ -2267,7 +2266,6 @@
     "x": 33902,
     "y": 31462,
     "floor": 6,
-    "world_arrival": [33902, 31464, 6],
     "postman": true,
     "held": true,
     "carpet": false

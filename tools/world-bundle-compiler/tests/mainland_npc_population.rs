@@ -37,7 +37,6 @@ const PACKAGE_CONTACTS: &[(&str, (u16, u16, i8), Direction)] = &[
     ("oteryn:npc.dregor", (33539, 31950, -14), Direction::North),
     ("oteryn:npc.eathar", (33536, 31948, -13), Direction::North),
     ("oteryn:npc.eranth", (32121, 32953, -7), Direction::North),
-    ("oteryn:npc.gewen", (32587, 31942, 0), Direction::North),
     (
         "oteryn:npc.gnomfurry",
         (33529, 32902, -14),
@@ -89,6 +88,7 @@ fn mainland_and_island_npcs_compile_at_qualified_cells() -> Result<(), Box<dyn s
     for (key, cell, direction) in [
         ("a_beggar", (33597, 31953, -7), Direction::North),
         ("fadil", (33219, 32396, -7), Direction::North),
+        ("gewen", (32588, 31942, 0), Direction::North),
         ("gnominus", (32804, 31758, -10), Direction::North),
         ("iptar_sin", (33924, 31476, -5), Direction::North),
         ("maeryn", (33332, 31686, -6), Direction::North),

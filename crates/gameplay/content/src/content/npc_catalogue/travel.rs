@@ -58,8 +58,6 @@ struct Correction {
     x: i32,
     y: i32,
     floor: i16,
-    // Keep the captured source position separate from its qualified bundle arrival.
-    world_arrival: Option<(i32, i32, i16)>,
     premium_override: Option<bool>,
     #[serde(default)]
     use_authored_fare_and_premium: bool,
@@ -132,10 +130,7 @@ pub fn resolve(
             if template.is_none() && !correction.native_addition {
                 return None;
             }
-            let (x, y, floor) =
-                correction
-                    .world_arrival
-                    .unwrap_or((correction.x, correction.y, correction.floor));
+            let (x, y, floor) = (correction.x, correction.y, correction.floor);
             let (price, premium) = template
                 .filter(|_| correction.use_authored_fare_and_premium)
                 .map_or((correction.price, correction.premium), |route| {

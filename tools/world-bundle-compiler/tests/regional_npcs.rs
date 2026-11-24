@@ -118,7 +118,7 @@ const CONTACTS: &[(&str, u16, u16, u8)] = &[
     ("oteryn:npc.galuna", 32343, 32245, 6),
     ("oteryn:npc.gamel", 32336, 32208, 8),
     ("oteryn:npc.george_the_boyscout", 33031, 32010, 7),
-    ("oteryn:npc.gewen", 32587, 31942, 0),
+    ("oteryn:npc.gewen", 32588, 31942, 0),
     ("oteryn:npc.gnomewart", 32759, 31807, 10),
     ("oteryn:npc.gorn", 32377, 32200, 7),
     ("oteryn:npc.gregor", 32406, 32201, 6),
@@ -279,7 +279,6 @@ const CONTACTS: &[(&str, u16, u16, u8)] = &[
 // Additional contacts for the same NPCs from the other NPC content lanes.
 const PACKAGE_CONTACTS: &[(&str, u16, u16, u8)] = &[
     ("oteryn:npc.brodrosch", 32659, 31958, 15),
-    ("oteryn:npc.gewen", 32589, 31942, 0),
     ("oteryn:npc.xodet", 32251, 32207, 11),
 ];
 

@@ -137,7 +137,7 @@ const EXPECTED: &[(&str, (u16, u16, i8))] = &[
     ("alyxo", (33941, 31465, -7)),
     ("ambassador_of_rathleton", (33872, 31487, -3)),
     ("atur", (33948, 31506, -7)),
-    ("captain_harava", (33902, 31461, -6)),
+    ("captain_harava", (33902, 31463, -6)),
     ("eliyas", (33915, 31519, -7)),
     ("eshaya", (33913, 31497, -6)),
     ("faloriel", (33910, 31514, -7)),

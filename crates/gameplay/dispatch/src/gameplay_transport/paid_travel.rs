@@ -250,9 +250,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return ordinary;
                     };
                     prompts.insert(session, prompt);
-                    return npc_command::NpcConversations::bank_reply(
+                    return npc_command::NpcConversations::reply_with_state(
                         intent,
                         "A tropical storm may wreck the ship. Do you still want to sail?".into(),
+                        NpcConversationState::Confirming,
                     );
                 };
                 // The pending travel request seals the selected arrival for reconciliation.

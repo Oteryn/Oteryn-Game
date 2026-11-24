@@ -81,13 +81,20 @@ def complete_world_project(
 
     repo_root = repo_root.resolve(strict=True)
     input_root = input_root.absolute()
-    if canonicalizer_manifest is None and materializer is None:
+    if canonicalizer_manifest is None:
         manifest = os.environ.get("OTERYN_WORLD_CANONICALIZER_MANIFEST")
         if manifest is not None:
             canonicalizer_manifest = Path(manifest)
-    if materializer is not None:
+    use_materializer = canonicalizer_manifest is None and materializer is not None
+    if canonicalizer_manifest is not None:
+        # An explicitly supplied artifact must qualify; never hide a stale or
+        # corrupted producer behind a new, unreported fallback build.
+        command = [
+            str(prebuilt_executable("canonicalizer", canonicalizer_manifest, repo_root))
+        ]
+    elif use_materializer:
         command = [str(materializer)]
-    elif canonicalizer_manifest is None:
+    else:
         command = [
             "cargo",
             "run",
@@ -97,12 +104,6 @@ def complete_world_project(
             "--bin",
             "oteryn-world-project-canonicalize",
             "--",
-        ]
-    else:
-        # An explicitly supplied artifact must qualify; never hide a stale or
-        # corrupted producer behind a new, unreported fallback build.
-        command = [
-            str(prebuilt_executable("canonicalizer", canonicalizer_manifest, repo_root))
         ]
     original = read_documents(input_root)
     # Stage this caller's package, never substitute the repository's generated World.
@@ -135,7 +136,7 @@ def complete_world_project(
         authored_extent = source_cohort_extent(staging_root)
         # Native capture enforces the existing bounded source limits before serialization.
         output_args = ["--output-root", str(output_root)]
-        if materializer is not None:
+        if use_materializer:
             writer_args = [*output_args, "--canonicalize-root", str(staging_root)]
         else:
             writer_args = ["--input-root", str(staging_root), *output_args]

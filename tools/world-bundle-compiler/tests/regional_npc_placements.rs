@@ -558,7 +558,7 @@ const CONTACTS: &[Contact] = &[
     ("oteryn:npc.halvar", 32231, 31097, 7, Direction::North),
     ("oteryn:npc.hawkyr", 32255, 31080, 6, Direction::North),
     ("oteryn:npc.iskan", 32302, 31082, 7, Direction::North),
-    ("oteryn:npc.iyad", 32250, 31097, 4, Direction::North),
+    ("oteryn:npc.iyad", 32251, 31097, 4, Direction::North),
     ("oteryn:npc.janz", 32279, 31131, 7, Direction::North),
     ("oteryn:npc.jessica", 32299, 31136, 7, Direction::North),
     ("oteryn:npc.kjesse", 32211, 31132, 7, Direction::North),

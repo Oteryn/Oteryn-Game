@@ -1046,19 +1046,6 @@
       },
       "reason": "Crystal XML anchor compiles as BlockSolid; move to clear native ground at the same contact."
     },
-    "oteryn:npc.gewen": {
-      "source": {
-        "x": 32588,
-        "y": 31942,
-        "z": 0
-      },
-      "target": {
-        "x": 32587,
-        "y": 31942,
-        "z": 0
-      },
-      "reason": "Use the adjacent identical carpet tile to keep Uzon's Crystal Kazordoon arrival clear."
-    },
     "oteryn:npc.humphrey": {
       "source": {
         "x": 32358,
@@ -1081,19 +1068,6 @@
       "target": {
         "x": 32412,
         "y": 32831,
-        "z": 4
-      },
-      "reason": "Nearest clear ground at the source contact in the retained Oteryn map."
-    },
-    "oteryn:npc.iyad": {
-      "source": {
-        "x": 32251,
-        "y": 31097,
-        "z": 4
-      },
-      "target": {
-        "x": 32250,
-        "y": 31097,
         "z": 4
       },
       "reason": "Nearest clear ground at the source contact in the retained Oteryn map."

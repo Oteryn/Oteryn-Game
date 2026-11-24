@@ -1030,9 +1030,13 @@ def main(*, items_only: bool = False) -> int:
         },
     )
 
-    dialogue_declarations = [row for row in declarations["records"] if row.get("kind") == "Dialogue"]
+    dialogue_declarations = [
+        row for row in declarations["records"] if row.get("kind") == "Dialogue"
+    ]
     if len(dialogue_declarations) != 852:
-        raise RuntimeError(f"DIALOGUE_SOURCE_COUNT_MISMATCH:{len(dialogue_declarations)}")
+        raise RuntimeError(
+            f"DIALOGUE_SOURCE_COUNT_MISMATCH:{len(dialogue_declarations)}"
+        )
 
     # No source bindings exist for Dialogue declarations (WorldProject/v2 NPC admission wave A).
     dialogue_rows = [

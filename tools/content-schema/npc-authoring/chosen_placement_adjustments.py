@@ -66,12 +66,12 @@ def choose_cell(root, actual_source, choice, occupied, *, compiler_qualified=Fal
     raw = (root / path).read_bytes()
     tiles = {t[:2]: t for _, sector in codec.decode_region(raw)[3] for t in sector}
     source_tile = tiles.get(before[:2])
-    protected_source = source_tile is not None and source_tile[2] == FLAG_PROTECTION_ZONE
+    allowed_flags = source_tile[2] & FLAG_PROTECTION_ZONE if source_tile is not None else 0
 
     def clear(cell, walkable=False):
         tile = tiles.get(cell)
         return (tile is not None
-                and (not tile[2] or (protected_source and tile[2] == FLAG_PROTECTION_ZONE))
+                and not (tile[2] & ~allowed_flags)
                 and not tile[3] and len(tile[5]) == 1
                 and (not walkable or ground_item(root, tile[5][0][0], (*cell, z))))
     distance = sum(abs(a-b) for a, b in zip(before[:2], after[:2]))

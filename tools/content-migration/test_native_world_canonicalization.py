@@ -457,16 +457,23 @@ class NativeWorldCompletion(unittest.TestCase):
         (manifest.parent / prebuilt.TARGETS["canonicalizer"]["name"]).write_bytes(
             b"changed"
         )
-        with (
-            patch.object(prebuilt, "identity", return_value=binding),
-            patch.object(canonical.subprocess, "run") as native,
-            self.assertRaisesRegex(ValueError, "checksum"),
+        for writer, environment in (
+            ({"canonicalizer_manifest": manifest}, {}),
+            (
+                {"materializer": self.repo / "materializer"},
+                {"OTERYN_WORLD_CANONICALIZER_MANIFEST": str(manifest)},
+            ),
         ):
-            canonical.complete_world_project(
-                self.repo, self.world, canonicalizer_manifest=manifest
-            )
-        native.assert_not_called()
-        self.assertEqual(canonical.read_documents(self.world), self.original)
+            with (
+                self.subTest(writer=writer),
+                patch.object(prebuilt, "identity", return_value=binding),
+                patch.object(canonical.subprocess, "run") as native,
+                patch.dict(canonical.os.environ, environment),
+                self.assertRaisesRegex(ValueError, "checksum"),
+            ):
+                canonical.complete_world_project(self.repo, self.world, **writer)
+            native.assert_not_called()
+            self.assertEqual(canonical.read_documents(self.world), self.original)
 
 
 if __name__ == "__main__":

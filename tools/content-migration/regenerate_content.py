@@ -145,7 +145,6 @@ AUTHORING_TOOLS = (
 
 CHECKS = (
     ["python3", "tools/content-migration/regional_npc_prices.py", "--check"],
-    ["python3", "tools/content-schema/world-object-authoring/regional_npc_ground.py", "--check"],
     [
         "python3",
         "tools/content-schema/world-object-authoring/spawn_ground.py",
@@ -1262,7 +1261,6 @@ def main() -> int:
     )
     run(["python3", "tools/content-schema/world-object-authoring/alawar_static.py"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
-    run(["python3", "tools/content-schema/world-object-authoring/regional_npc_ground.py"])
     run(["python3", "tools/content-schema/world-authoring/quest_startup_bindings.py", "--apply"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])

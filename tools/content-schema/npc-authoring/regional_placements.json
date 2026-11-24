@@ -166,7 +166,7 @@
     {"npc": "gabel", "cell": [33101, 32520, 1], "xml_line": 40},
     {"npc": "gate_guardian", "cell": [33129, 31198, 7], "xml_line": 1226},
     {"npc": "gerimor", "cell": [33450, 32246, 7], "xml_line": 1994},
-    {"npc": "gewen", "cell": [32588, 31942, 0], "xml_line": 13, "adjacent": {"cell": [32589, 31942, 0], "reason": "One tile inside Crystal's spawn radius keeps Uzon's Kazordoon landing open."}},
+    {"npc": "gewen", "cell": [32588, 31942, 0], "xml_line": 13},
     {"npc": "ghorza", "cell": [33627, 31655, 7], "xml_line": 1463},
     {"npc": "ghost_of_a_priest", "cell": [32732, 32564, 12], "xml_line": 3072},
     {"npc": "ghost_of_a_priest", "cell": [32784, 32528, 13], "xml_line": 3114},
