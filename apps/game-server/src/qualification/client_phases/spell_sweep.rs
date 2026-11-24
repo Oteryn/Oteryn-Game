@@ -240,13 +240,31 @@ async fn sweep(
             return;
         }
     };
-    let result = positive(&mut client, spell, index, rune, rows).await;
+    let mut paralysis_source = None;
+    let result = positive(
+        &mut client,
+        spell,
+        index,
+        rune,
+        rows,
+        (clients, world),
+        &mut paralysis_source,
+    )
+    .await;
     if let Err(error) = result {
         rows.record("cast_cost", Err(error));
         rows.record("effect", Err("blocked-by-cast_cost".into()));
         rows.record("cooldown", Err("blocked-by-cast_cost".into()));
     }
-    rows.record("release", release_fixture(&mut client, world).await);
+    let source_release = match paralysis_source {
+        Some(mut source) => {
+            full_e2ef5::with_observer_liveness(&mut client, release_fixture(&mut source, world))
+                .await
+        }
+        None => Ok(()),
+    };
+    let release = release_fixture(&mut client, world).await;
+    rows.record("release", combine(source_release, release));
 }
 
 async fn reach_ground(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
@@ -363,19 +381,6 @@ async fn prepare(
             Ok(()) => Err(error),
             Err(release) => Err(format!("{error}; release: {release}").into()),
         },
-    }
-}
-
-async fn acquire(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    spell: &SpellDefinition,
-) -> TestResult<Option<NonZeroU32>> {
-    match spell.carrier {
-        Carrier::Instant { .. } => Ok(None),
-        Carrier::Rune { item, .. } => {
-            Ok(Some(full_e2ef5::acquire_rune(client, world, item).await?.0))
-        }
     }
 }
 
@@ -526,6 +531,21 @@ async fn ineligible(
     spell: &SpellDefinition,
 ) -> TestResult {
     let mut client = connect_character(clients, 0x81, 1).await?;
+    let rune = if let Carrier::Rune { item, .. } = spell.carrier {
+        let reference = provisioning::item_reference(&provisioning::item_index()?, item)?;
+        let seeded = request_fixture_control(
+            uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+            "--profile",
+            format!("spell-sweep-rune:{index}"),
+        )
+        .await;
+        let released = release_fixture(&mut client, world).await;
+        combine(seeded.map(|_| ()).map_err(Into::into), released)?;
+        client = connect_character(clients, 0x81, 1).await?;
+        Some(reference)
+    } else {
+        None
+    };
     let result = async {
         let (_, level, vocation) = creature_sweep::read_stats(&mut client).await?;
         let wrong_vocation = vocation.is_some_and(|id| {
@@ -539,7 +559,10 @@ async fn ineligible(
             level < spell.level || wrong_vocation,
             format!("negative fixture mismatch unproven: level={level}, required={}, vocation_id={vocation:?}, allowed={:?}", spell.level, spell.vocations),
         )?;
-        let rune = acquire(&mut client, world, spell).await?;
+        if let Some(reference) = rune {
+            require(full_e2ef5::rune_quantity(&client, reference)? > 0,
+                format!("seeded negative rune {reference} missing after reload"))?;
+        }
         if spell.aggressive || spell.needs_target {
             reach_ground(&mut client, world).await?;
         }
@@ -573,12 +596,64 @@ fn eligibility_refusal(reply: &Reply, underlevel: bool) -> bool {
     }
 }
 
+// C16b uses the same real item-use command and exact visible player entity.
+async fn paralyze_bruise_fixture(
+    target: &mut DevClientSession,
+    clients: &[SeamClients<'_>; 3],
+    world: &BundleWorld,
+    source: &mut Option<DevClientSession>,
+) -> TestResult {
+    let book = native_spell_book()?;
+    let (index, spell) = (1..=u32::try_from(book.source_len())?)
+        .filter_map(NonZeroU32::new)
+        .filter_map(|index| book.indexed(index).map(|spell| (index, spell)))
+        .find(|(_, spell)| matches!(spell.carrier, Carrier::Rune { item: 3165, .. }))
+        .ok_or("Paralyze rune missing from active spell book")?;
+    let (peer, rune) =
+        full_e2ef5::with_observer_liveness(target, prepare(clients, world, index, spell)).await?;
+    let peer = source.insert(peer);
+    let rune = rune.ok_or("seeded Paralyze rune absent")?;
+    let position = tile(target.world_spatial().actor_position)?;
+    let from = tile(peer.world_spatial().actor_position)?;
+    let path = route(world, from, |at| {
+        at != position
+            && at.floor == position.floor
+            && at.x.abs_diff(position.x).max(at.y.abs_diff(position.y)) <= 2
+            && world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+    })
+    .ok_or("no reachable Paralyze casting tile")?;
+    full_e2ef5::with_observer_liveness(target, walk(peer, world, &path)).await?;
+    let entity = target
+        .world_entities()
+        .and_then(|entities| {
+            entities
+                .iter()
+                .find(|entry| &entry.entity.identity == entities.own_identity())
+        })
+        .map(|entry| entry.entity)
+        .ok_or("Bruise Bane caster's exact entity is absent")?;
+    let (reply, _) = full_e2ef5::with_observer_liveness(
+        target,
+        full_e2ef5::rune_use(peer, rune, Some(entity), None),
+    )
+    .await?;
+    require(
+        reply == UseDisposition::Committed,
+        format!("Paralyze rune refused: {reply:?}"),
+    )
+}
+
 async fn positive(
     client: &mut DevClientSession,
     spell: &SpellDefinition,
     index: NonZeroU32,
     rune: Option<NonZeroU32>,
     rows: &mut Rows<'_>,
+    (clients, world): (&[SeamClients<'_>; 3], &BundleWorld),
+    paralysis_source: &mut Option<DevClientSession>,
 ) -> TestResult {
     let health_effect = pure_effect(spell);
     let targets_self = spell.self_target || !spell.needs_target || rune_targets_own_tile(spell);
@@ -589,14 +664,15 @@ async fn positive(
         _ => false,
     };
     let controlled_cooldown = dispel && rune.is_none();
-    if dispel {
+    let bruise_bane = spell.key == "candidate:spell/bruise_bane";
+    if dispel && !bruise_bane {
         spawn_target(client, "rot_elemental").await?;
     }
     let target = match health_effect {
         Some(HealthEffect::Damage) => Some(spawn_target(client, "deer").await?),
         Some(HealthEffect::Heal) if targets_self => {
             if vitals(client)?.health == vitals(client)?.max_health {
-                if !dispel {
+                if !dispel || bruise_bane {
                     spawn_target(client, "bear").await?;
                 }
                 let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
@@ -615,7 +691,12 @@ async fn positive(
         _ => None,
     };
     select_attack_target(client, rune, target, spell.needs_target).await?;
-    let dispel_before = if dispel {
+    let paralysis_result = if bruise_bane {
+        paralyze_bruise_fixture(client, clients, world, paralysis_source).await
+    } else {
+        Ok(())
+    };
+    let dispel_before = if dispel && paralysis_result.is_ok() {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(25);
         loop {
             let sent = std::time::Instant::now();
@@ -745,6 +826,7 @@ async fn positive(
     let effect = if let Some(observation) = dispel_after {
         async {
             let (removed, observed) = observation?;
+            paralysis_result?;
             let (sampled, remaining_ms) = dispel_before.ok_or("fixture paralysis was never observed")?;
             let elapsed = observed.duration_since(sampled);
             require(

@@ -16,9 +16,15 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     )
     .then_some((session, profile))
     .or_else(|| {
-        (profile == "spell-sweep-premium" || sweep_vocation(profile).is_some())
-            .then_some((session, profile))
+        (profile == "spell-sweep-premium"
+            || sweep_vocation(profile).is_some()
+            || sweep_rune_index(profile).is_some())
+        .then_some((session, profile))
     })
+}
+
+fn sweep_rune_index(profile: &str) -> Option<std::num::NonZeroU32> {
+    profile.strip_prefix("spell-sweep-rune:")?.parse().ok()
 }
 
 fn sweep_vocation(profile: &str) -> Option<&str> {
@@ -736,6 +742,21 @@ async fn prepare_build(
     if profile == "spell-sweep-premium" {
         return Err("spell sweep Premium requires the qualification fixture build".into());
     }
+    if let Some(index) = sweep_rune_index(profile) {
+        if current.session_state() != crate::foundation::GameSessionState::Active
+            || current.current_transport().is_none()
+        {
+            return Err("spell sweep rune seeding requires an active admission".into());
+        }
+        let spell = native
+            .spell_book()
+            .indexed(index)
+            .ok_or("unknown spell sweep index")?;
+        let crate::spell::Carrier::Rune { item, .. } = spell.carrier else {
+            return Err("spell sweep supply is not a rune".into());
+        };
+        return prepare_items(root, authority, proof, &current, native, deadline, &[item]).await;
+    }
     let interpretation = qualification_build::retry_holder(
         Some(root),
         deadline,
@@ -805,7 +826,8 @@ async fn prepare_build(
     } else {
         None
     };
-    prepare_items(root, authority, proof, &current, native, deadline, supply).await
+    let items: Vec<_> = [3276, 3003, 3457].into_iter().chain(supply).collect();
+    prepare_items(root, authority, proof, &current, native, deadline, &items).await
 }
 
 // Same bounded snapshot ingestion as the e2efx1 qualification fixture.
@@ -904,7 +926,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
-    supply: Option<u32>,
+    items: &[u32],
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -977,9 +999,7 @@ async fn prepare_items(
     let index = native
         .item_index()
         .ok_or("qualification Item index missing")?;
-    // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
-    // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().chain(supply).enumerate() {
+    for (ordinal, &id) in items.iter().enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
