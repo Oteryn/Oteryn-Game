@@ -669,6 +669,36 @@ impl Journey<'_, '_> {
                 }
                 Some(Replay::Talk(actor, keyword))
             }
+            "task_board_use" => {
+                use oteryn_dev_client::client_runtime::task_board::task_board as wire;
+                if callback["programme"].as_str() != Some("weekly") {
+                    return Err("unsupported-task-board-programme".into());
+                }
+                let payload = wire::full::encode_request(&wire::full::Request {
+                    action: 5,
+                    selection: 0,
+                    race: String::new(),
+                })
+                .map_err(|error| format!("task-board-request-{error:?}"))?;
+                let result = self
+                    .client
+                    .session_mut()
+                    .gated_command(
+                        wire::CAPABILITY_TASK_BOARD_V1,
+                        wire::COMMAND_TYPE_TASK_BOARD,
+                        &payload,
+                    )
+                    .await?;
+                if result.status != CommandStatus::Accepted {
+                    return Err(format!("task-board-command-refused-{:?}", result.status).into());
+                }
+                let reply = wire::full::decode_reply(&result.payload)
+                    .map_err(|error| format!("task-board-reply-{error:?}"))?;
+                if reply.refusal != 0 || !reply.weekly.started {
+                    return Err(format!("task-board-weekly-refused-{}", reply.refusal).into());
+                }
+                None
+            }
             "terrain_use" => {
                 let placement = callback["placement_key"]
                     .as_u64()
@@ -1221,9 +1251,12 @@ fn plan<'a>(quest: &'a Quest, claims: &'a BTreeMap<String, Vec<BoundPlacement>>)
                 .callback
                 .as_ref()
                 .or_else(|| {
-                    (stage.trigger.kind == "terrain_use")
-                        .then_some(stage.trigger.usage.as_ref())
-                        .flatten()
+                    matches!(
+                        stage.trigger.kind.as_str(),
+                        "terrain_use" | "task_board_use"
+                    )
+                    .then_some(stage.trigger.usage.as_ref())
+                    .flatten()
                 })
                 .map_or(
                     Action::MissingStage("unsupported-wire-trigger"),
