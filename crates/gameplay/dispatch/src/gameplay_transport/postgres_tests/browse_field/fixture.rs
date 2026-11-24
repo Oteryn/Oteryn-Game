@@ -1,6 +1,6 @@
 use super::super::fixture::{Harness, debug, id, run};
 use super::super::{Dependencies, item_look_fixtures, prepare_current_session};
-use super::{BAG, COIN, Case, TestResult, wire};
+use super::{BAG, COIN, Case, MAP_RACKS, TestResult, wire};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
@@ -28,16 +28,33 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let native = generation.native_gameplay().ok_or("native gameplay")?;
         let index = native.item_index().ok_or("item index")?;
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
-        let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
-            (BAG, reference(BAG).ok_or("bag ref")?.get() - 1),
-            (COIN, reference(COIN).ok_or("coin ref")?.get() - 1),
-        );
+        let palette = |key| reference(key).map(|r| (key, r.get() - 1)).ok_or("palette reference");
+        let (bytes, mut pins) = if case == Case::MapRackUse {
+            crate::map::boot::tests::bundle_with_item_states(
+                palette(BAG)?, palette(MAP_RACKS[0])?, &[palette(MAP_RACKS[1])?, palette(COIN)?],
+            )
+        } else {
+            crate::map::boot::tests::bundle_with_item_ids(palette(BAG)?, palette(COIN)?)
+        };
         let mut bundle = oteryn_world_bundle::bundle::read(&bytes).map_err(debug)?;
         let sector = bundle.sectors.first_mut().ok_or("sector")?;
         let tile = sector.tiles.iter_mut().find(|tile| tile.x == 7).ok_or("field")?;
         let coin = tile.items.get(1).ok_or("coin template")?.clone();
         tile.items.truncate(1);
-        if case == Case::Paging {
+        if case == Case::MapRackUse {
+            let palette_for = |key: &str| -> TestResult<u32> {
+                let index = bundle.manifest.palette.iter()
+                    .position(|entry| entry.key == key)
+                    .ok_or("map rack palette key")?;
+                Ok(u32::try_from(index)?)
+            };
+            let mut second = coin.clone();
+            second.palette = palette_for(MAP_RACKS[1])?;
+            let mut child = second.clone();
+            child.palette = palette_for(COIN)?;
+            child.depth = 1;
+            tile.items.extend([coin, child.clone(), second, child]);
+        } else if case == Case::Paging {
             // Crystal Container::createBrowseField has a thirty-entry page.
             // Thirty-one authored entries also exceed domain 17's ten-entry cut.
             tile.items.extend(std::iter::repeat_n(coin, 31));
@@ -140,6 +157,40 @@ pub(super) fn scenario(case: Case) -> TestResult {
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             owner.offered_capabilities(), &[4, 6, 12, 14, 18, CAPABILITY_BROWSE_FIELD_V1],
         ).ok_or("browse capability selectable")?;
+        if case == Case::MapRackUse {
+            use std::{future::Future, task::Poll};
+            use crate::gameplay_transport::container_view::ContainerObservation;
+            use crate::gameplay_transport::item_view::ItemKey;
+
+            for ordinal in [1, 2] {
+                let target = ItemKey::MapBase {
+                    bundle_digest: base.digest(),
+                    placement_key: crate::map::view::placement_key(
+                        TilePos { x: 7, y: 0, floor: -7 }, ordinal,
+                    ).ok_or("native rack placement")?,
+                    reset_epoch: owner.reset_epoch,
+                };
+                let held = harness.root.try_issue_background_semantic_pass()?;
+                let sessions = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+                    harness.root.clone(),
+                );
+                let first_read = crate::durability::DurabilityRoot::with_holder_owner(
+                    sessions.current_session_at(fence.game_session_id),
+                ).await;
+                assert!(matches!(
+                    first_read,
+                    Err(crate::durability::DurabilityError::RootUnavailable)
+                ));
+                let read = crate::durability::DurabilityRoot::with_holder_owner(
+                    owner.observe_container(deps.actor, Some(fence), target),
+                );
+                let mut read = std::pin::pin!(read);
+                let first = std::future::poll_fn(|context| Poll::Ready(read.as_mut().poll(context))).await;
+                held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                assert!(first.is_pending(), "busy native map custody read {first:?}");
+                assert!(matches!(read.await, Some(ContainerObservation::Container { capacity: 20, .. })));
+            }
+        }
         if case == Case::CarriedUse {
             use std::{future::Future, task::Poll};
             use crate::gameplay_transport::container_view::ContainerObservation;

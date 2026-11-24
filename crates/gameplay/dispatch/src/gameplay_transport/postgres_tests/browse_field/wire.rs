@@ -42,6 +42,11 @@ pub(super) async fn exercise(
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = serve_admitted(&mut server, admitted, owner, LIVENESS);
     let client_task = async move {
+        if case == Case::MapRackUse {
+            exercise_map_racks(&mut client).await?;
+            client.shutdown().await?;
+            return Ok(None);
+        }
         let inventory = snapshot(&mut client).await?;
         let replay = match case {
             Case::Backpack | Case::Nested => {
@@ -77,6 +82,7 @@ pub(super) async fn exercise(
                 }
                 None
             }
+            Case::MapRackUse => unreachable!(),
         };
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(replay)
@@ -86,6 +92,45 @@ pub(super) async fn exercise(
     ).await?;
     assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)), "{end:?}");
     result
+}
+
+async fn exercise_map_racks(client: &mut DuplexStream) -> TestResult {
+    use protocol::world_map::{
+        MapOrigin, STATE_DOMAIN_WORLD_MAP_VIEW, decode_world_map_snapshot,
+    };
+    use protocol::world_object::{
+        COMMAND_TYPE_USE_INTENT, UseDisposition, decode_use_result, encode_use_item_intent,
+    };
+
+    let mut handles = Vec::new();
+    loop {
+        let bytes = read_frame(client).await?;
+        let message = protocol::decode_wire_envelope(&bytes).map_err(debug)?;
+        if message.message_type() == MessageType::SnapshotChunk {
+            for domain in protocol::decode_snapshot_chunk(message.payload()).map_err(debug)?.1 {
+                if domain.domain_id == STATE_DOMAIN_WORLD_MAP_VIEW {
+                    let map = decode_world_map_snapshot(domain.payload).map_err(debug)?;
+                    for tile in map.tiles.into_iter().filter(|tile| tile.position.x == 7) {
+                        handles.extend(tile.items.into_iter().filter_map(|entry| match entry.origin {
+                            MapOrigin::Handle(handle) => Some(handle),
+                            _ => None,
+                        }));
+                    }
+                }
+            }
+        } else if message.message_type() == MessageType::SnapshotCommit {
+            break;
+        }
+    }
+    assert_eq!(handles.len(), 2, "both racks have fresh map handles");
+    for (index, handle) in handles.into_iter().enumerate() {
+        let command = u64::try_from(index)? + 1;
+        send(client, command, COMMAND_TYPE_USE_INTENT, &encode_use_item_intent(handle)).await?;
+        assert_eq!(decode_use_result(&result(client, command).await?).map_err(debug)?, UseDisposition::Committed);
+        let open = views(client).await?;
+        assert!(open.views.iter().any(|view| view.container_handle == handle && view.capacity == 20));
+    }
+    Ok(())
 }
 
 async fn transfers(

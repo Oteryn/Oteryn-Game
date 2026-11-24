@@ -10,8 +10,11 @@ pub(super) async fn observe(
     let fence = fence?;
     let _permit = admission.spell_lane_permit().await?;
     let sessions = super::super::FreshAdmissionStore::from_root(admission.root.clone());
-    let current = sessions
-        .current_session_at(fence.game_session_id)
+    // Use one foreground budget for both fenced reads. A temporarily busy
+    // holder cannot establish that an immutable map handle has gone stale.
+    let budget = super::super::AdmissionRetryBudget::for_command(admission.root);
+    let current = budget
+        .retry_command_guard(async || sessions.current_session_at(fence.game_session_id).await)
         .await
         .ok()?
         .0;
@@ -117,8 +120,8 @@ pub(super) async fn observe(
             })
         })
         .collect::<Option<Vec<_>>>()?;
-    let current = sessions
-        .current_session_at(fence.game_session_id)
+    let current = budget
+        .retry_command_guard(async || sessions.current_session_at(fence.game_session_id).await)
         .await
         .ok()?
         .0;

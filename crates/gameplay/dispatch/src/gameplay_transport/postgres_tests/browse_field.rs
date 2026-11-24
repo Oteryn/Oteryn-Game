@@ -9,6 +9,7 @@ use super::TestResult;
 
 const BAG: &str = "oteryn:item.tibia.i2854";
 const COIN: &str = "oteryn:item.tibia.i3031";
+const MAP_RACKS: [&str; 2] = ["oteryn:item.tibia.i10210", "oteryn:item.tibia.i10211"];
 const FIELD: oteryn_protocol_oteryn::item_view::WorldTilePosition =
     oteryn_protocol_oteryn::item_view::WorldTilePosition {
         x: 7,
@@ -24,6 +25,12 @@ enum Case {
     Paging,
     Autowalk,
     CarriedUse,
+    MapRackUse,
+}
+
+#[test]
+fn native_map_handles_open_both_racks_when_the_holder_is_busy() -> TestResult {
+    run_case(Case::MapRackUse)
 }
 
 #[test]
