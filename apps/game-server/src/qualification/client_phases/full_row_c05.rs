@@ -16,7 +16,7 @@
 use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, ChatSpeechMode, DevClientSession, SessionEvent};
-use oteryn_protocol_oteryn::exiva;
+use oteryn_protocol_oteryn::{cyclopedia_character as character, exiva};
 
 const PREPARATION: character_prep::Seeded = character_prep::Seeded {
     profile: "c05-exiva",
@@ -26,7 +26,11 @@ const PREPARATION: character_prep::Seeded = character_prep::Seeded {
 const ACTIONS: &[&str] = &["allow", "locate", "deny", "refusal", "fresh-admission"];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("C05", "level-8-exiva-build", "learn and cast Exiva");
+    character_prep::declare_seeded(
+        "C05",
+        "level-8-sorcerer",
+        "cast Exiva through the served catalogue",
+    );
     let started = std::time::Instant::now();
     let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let result = match result {
@@ -89,14 +93,40 @@ async fn cast(client: &mut DevClientSession, target: &str) -> TestResult<(oteryn
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_EXIVA_ACCOUNT_ID").await?;
+    let identity = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_EXIVA_ACCOUNT_ID",
+        Some("Locate Caster"),
+    )
+    .await?;
     let caster_clients = identity.clients(clients);
-    let target_identity = character_prep::dedicated_character(clients, "NODE_BOOT_C05_TARGET_ACCOUNT").await?;
+    let target_identity = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_C05_TARGET_ACCOUNT",
+        Some("Locate Target"),
+    )
+    .await?;
     let target_clients = target_identity.clients(clients);
-    let mut caster = PREPARATION.connect(&caster_clients, 0xc5, 0).await
+    let mut caster = PREPARATION
+        .connect(&caster_clients, 0xc5, 0)
+        .await
         .map_err(|error| admission_error("caster-preparation", error))?;
-    if full_e2ef7::player_level(&mut caster).await? != 8 {
-        return Err("Exiva caster did not admit at level 8".into());
+    let stats = caster
+        .session_mut()
+        .gated_command(
+            character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            character::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[character::CharacterTab::GeneralStats as u8, 0, 0, 50],
+        )
+        .await?;
+    if stats.status != CommandStatus::Accepted {
+        return Err(format!("Exiva caster GeneralStats refused: {stats:?}").into());
+    }
+    let vocation = general_stats::validate(&stats.payload, general_stats::selected(&caster))?
+        .ok_or("Exiva caster GeneralStats missing vocation")?;
+    let level = u32::from_le_bytes(stats.payload[9..13].try_into()?);
+    if Some(vocation) != character::vocation_id("sorcerer") || level != 8 {
+        return Err(format!("Exiva caster must admit as a level-8 sorcerer; observed vocation={vocation} level={level}").into());
     }
     let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
         "sorcerer",
