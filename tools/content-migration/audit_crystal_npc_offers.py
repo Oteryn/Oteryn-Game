@@ -68,12 +68,16 @@ def main():
         for row in json.loads(shard.read_bytes())["records"]
     }
     services = {}
+    gated_services = set()
     for row in declarations:
         service = row["identity"]["key"]
         if not service.startswith("oteryn:service.trade."):
             continue
         merchant = service.removeprefix("oteryn:service.trade.")
         services[merchant] = row
+        if any(field["field_path"].startswith("oteryn:source.npc.trade.held_tuple_")
+               for field in row.get("fields", [])):
+            gated_services.add(merchant)
         for offer in row.get("offers", []):
             key = offer["item"]["key"]
             item = re.fullmatch(r"oteryn:item.tibia.i(\d+)", key)
@@ -103,7 +107,7 @@ def main():
                 continue
             if ours:
                 reason = "oteryn_only_no_named_donor_script" if merchant not in scripts else "oteryn_only_no_literal_match"
-            elif merchant == "grizzly_adams":
+            elif merchant == "grizzly_adams" or merchant in gated_services:
                 reason = "crystal_only_dedicated_quest_gated_shop"
             elif key == lily:
                 reason = "crystal_only_official_dialogue_quantity"
@@ -132,6 +136,9 @@ def main():
                             }
                             declarations.append(service)
                             services[merchant] = service
+                            npc = next(record for record in declarations
+                                       if record["identity"]["key"] == f"oteryn:npc.{merchant}")
+                            npc["services"].append({"family": "Service", **service["identity"]})
                         services[merchant].setdefault("offers", []).append({
                             "item": definition["identity"],
                             "direction": side,
@@ -144,7 +151,7 @@ def main():
                              item_shards.get(f"oteryn:item.tibia.i{item}", "")))
     if args.normalize or (args.import_exact and (removed or counts["crystal_only_exact_native_offer"])):
         from questpc7_world_seal import refresh
-        from world_project_v2_to_tree import git_blob_sha, write_registry, write_services
+        from world_project_v2_to_tree import git_blob_sha, write, write_registry, write_services
 
         kind_order = {kind: index for index, kind in enumerate(
             dict.fromkeys(record["kind"] for record in declarations)
@@ -160,6 +167,25 @@ def main():
             ))
         DECLARATIONS.write_text(json.dumps(document, ensure_ascii=False, separators=(",", ":")) + "\n")
         refresh(ROOT, ROOT / "content/world")
+        native_npcs = {r["identity"]["key"]: r for r in declarations if r["kind"] == "NPC"}
+        for shard in sorted((ROOT / "content/npcs/definitions").glob("npcs-*.json")):
+            payload = json.loads(shard.read_bytes())
+            changed = False
+            for row in payload["records"]:
+                npc = row["declaration"]
+                source = native_npcs.get(npc["identity"]["key"])
+                if not source:
+                    continue
+                existing = npc.get("services", [])
+                missing_trade = [
+                    ref for ref in source.get("services", [])
+                    if ref["key"].startswith("oteryn:service.trade.") and ref not in existing
+                ]
+                if missing_trade:
+                    npc["services"] = sorted(existing + missing_trade, key=lambda ref: ref["key"])
+                    changed = True
+            if changed:
+                write(shard.relative_to(ROOT).as_posix(), payload)
         index_path = "content/services/trade/index.json"
         prior = json.loads((ROOT / index_path).read_bytes())["shards"]
         declaration_digest = git_blob_sha(DECLARATIONS)

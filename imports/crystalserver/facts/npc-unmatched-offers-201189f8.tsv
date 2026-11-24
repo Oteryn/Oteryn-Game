@@ -1,8 +1,8 @@
 class	merchant	item	direction	oteryn_gold	crystal_gold	source	native_item_definition
 oteryn_only_no_literal_match	ahmet	2834	SellToPlayer	12			content/items/definitions/items-16000-16499.json:1
 oteryn_only_no_literal_match	ahmet	2835	SellToPlayer	8			content/items/definitions/items-16000-16499.json:1
-crystal_only_variant_or_name_mismatch	ahmet	2874	SellToPlayer		20,40	data-global/npc/ahmet.lua:53,data-global/npc/ahmet.lua:54	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	ahmet	2901	SellToPlayer		40	data-global/npc/ahmet.lua:56	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	ahmet	2874	SellToPlayer		20,40	data-global/npc/ahmet.lua:53,data-global/npc/ahmet.lua:54	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	ahmet	2901	SellToPlayer		40	data-global/npc/ahmet.lua:56	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	ahmet	2911	SellToPlayer	8			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	ahmet	2922	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	ahmet	2924	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
@@ -27,16 +27,35 @@ crystal_only_item_not_materializable	alaistar	21801	BuyFromPlayer		260	data-glob
 crystal_only_variant_or_name_mismatch	alaistar	238	SellToPlayer		158	data-global/npc/alaistar.lua:32	content/items/definitions/items-12500-12999.json:1
 oteryn_only_no_literal_match	albinius	51442	SellToPlayer	25000			content/items/definitions/items-28000-28499.json:1
 oteryn_only_no_literal_match	albinius	51443	SellToPlayer	30000			content/items/definitions/items-28000-28499.json:1
-crystal_only_item_not_materializable	alesar	3371	BuyFromPlayer		5000	data-global/npc/alesar.lua:36	content/items/definitions/items-20500-20999.json:1
-crystal_only_item_not_materializable	alesar	3429	BuyFromPlayer		800	data-global/npc/alesar.lua:25	content/items/definitions/items-21000-21499.json:1
-crystal_only_item_not_materializable	alesar	3432	BuyFromPlayer		900	data-global/npc/alesar.lua:24	content/items/definitions/items-21000-21499.json:1
-crystal_only_item_not_materializable	alesar	3432	SellToPlayer		5000	data-global/npc/alesar.lua:24	content/items/definitions/items-21000-21499.json:1
-crystal_only_item_not_materializable	alesar	7407	BuyFromPlayer		8000	data-global/npc/alesar.lua:32	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	alesar	7411	BuyFromPlayer		20000	data-global/npc/alesar.lua:39	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	alesar	7413	BuyFromPlayer		4000	data-global/npc/alesar.lua:45	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	alesar	7419	BuyFromPlayer		15000	data-global/npc/alesar.lua:30	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	alesar	7421	BuyFromPlayer		22000	data-global/npc/alesar.lua:38	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	alesar	7428	BuyFromPlayer		10000	data-global/npc/alesar.lua:26	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3281	BuyFromPlayer		17000	data-global/npc/alesar.lua:31	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3284	SellToPlayer		5000	data-global/npc/alesar.lua:33	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3297	BuyFromPlayer		900	data-global/npc/alesar.lua:42	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3297	SellToPlayer		6000	data-global/npc/alesar.lua:42	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3299	BuyFromPlayer		50	data-global/npc/alesar.lua:40	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3307	BuyFromPlayer		150	data-global/npc/alesar.lua:41	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3318	BuyFromPlayer		2000	data-global/npc/alesar.lua:35	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3322	BuyFromPlayer		2000	data-global/npc/alesar.lua:29	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3324	BuyFromPlayer		6000	data-global/npc/alesar.lua:43	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3369	BuyFromPlayer		5000	data-global/npc/alesar.lua:48	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3370	BuyFromPlayer		5000	data-global/npc/alesar.lua:34	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3371	BuyFromPlayer		5000	data-global/npc/alesar.lua:36	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3373	BuyFromPlayer		500	data-global/npc/alesar.lua:44	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3383	BuyFromPlayer		400	data-global/npc/alesar.lua:27	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3383	SellToPlayer		1500	data-global/npc/alesar.lua:27	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3384	BuyFromPlayer		250	data-global/npc/alesar.lua:28	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3384	SellToPlayer		1000	data-global/npc/alesar.lua:28	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3428	BuyFromPlayer		8000	data-global/npc/alesar.lua:46	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3429	BuyFromPlayer		800	data-global/npc/alesar.lua:25	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3432	BuyFromPlayer		900	data-global/npc/alesar.lua:24	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3432	SellToPlayer		5000	data-global/npc/alesar.lua:24	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3434	BuyFromPlayer		15000	data-global/npc/alesar.lua:47	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	3574	BuyFromPlayer		150	data-global/npc/alesar.lua:37	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	7407	BuyFromPlayer		8000	data-global/npc/alesar.lua:32	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	7411	BuyFromPlayer		20000	data-global/npc/alesar.lua:39	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	7413	BuyFromPlayer		4000	data-global/npc/alesar.lua:45	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	7419	BuyFromPlayer		15000	data-global/npc/alesar.lua:30	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	7421	BuyFromPlayer		22000	data-global/npc/alesar.lua:38	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	alesar	7428	BuyFromPlayer		10000	data-global/npc/alesar.lua:26	content/items/definitions/items-31000-31499.json:1
 oteryn_only_no_literal_match	alexander	21348	SellToPlayer	250			content/items/definitions/items-10500-10999.json:1
 oteryn_only_no_literal_match	alexander	21350	SellToPlayer	250			content/items/definitions/items-10500-10999.json:1
 oteryn_only_no_literal_match	alexander	3066	SellToPlayer	500			content/items/definitions/items-17500-17999.json:1
@@ -53,7 +72,7 @@ oteryn_only_no_literal_match	angus	5956	BuyFromPlayer	500			content/items/defini
 oteryn_only_no_literal_match	angus	6108	SellToPlayer	150			content/items/definitions/items-29500-29999.json:1
 crystal_only_no_native_npc_definition	archery_rook	7378	SellToPlayer		100	data-global/npc/archery_rook.lua:70	content/items/definitions/items-31000-31499.json:1
 oteryn_only_no_literal_match	ariella	11459	SellToPlayer	12			content/items/definitions/items-01000-01499.json:1
-crystal_only_item_not_materializable	arito	2880	SellToPlayer		2,2,1,3	data-global/npc/arito.lua:133,data-global/npc/arito.lua:134,data-global/npc/arito.lua:135,data-global/npc/arito.lua:136	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	arito	2880	SellToPlayer		2,2,1,3	data-global/npc/arito.lua:133,data-global/npc/arito.lua:134,data-global/npc/arito.lua:135,data-global/npc/arito.lua:136	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	arkulius	51259	BuyFromPlayer	5000			content/items/definitions/items-28000-28499.json:1
 oteryn_only_no_literal_match	arkulius	51276	BuyFromPlayer	2000			content/items/definitions/items-28000-28499.json:1
 crystal_only_item_not_materializable	armenius	2880	SellToPlayer		3,10,4	data-global/npc/armenius.lua:123,data-global/npc/armenius.lua:124,data-global/npc/armenius.lua:125	content/items/definitions/items-16500-16999.json:1
@@ -145,8 +164,8 @@ oteryn_only_no_literal_match	baltim	3426	BuyFromPlayer	16			content/items/defini
 oteryn_only_no_literal_match	baltim	3431	BuyFromPlayer	85			content/items/definitions/items-21000-21499.json:1
 oteryn_only_no_literal_match	bashira	2834	SellToPlayer	12			content/items/definitions/items-16000-16499.json:1
 oteryn_only_no_literal_match	bashira	2835	SellToPlayer	8			content/items/definitions/items-16000-16499.json:1
-crystal_only_variant_or_name_mismatch	bashira	2874	SellToPlayer		20,10	data-global/npc/bashira.lua:96,data-global/npc/bashira.lua:101	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	bashira	2901	SellToPlayer		10	data-global/npc/bashira.lua:98	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	bashira	2874	SellToPlayer		20,10	data-global/npc/bashira.lua:96,data-global/npc/bashira.lua:101	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	bashira	2901	SellToPlayer		10	data-global/npc/bashira.lua:98	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	bashira	2922	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	bashira	2924	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	beatrice	2922	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
@@ -162,8 +181,8 @@ oteryn_only_no_literal_match	bertha	2922	SellToPlayer	2			content/items/definiti
 oteryn_only_no_literal_match	bertha	2924	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	bezil	2834	SellToPlayer	12			content/items/definitions/items-16000-16499.json:1
 oteryn_only_no_literal_match	bezil	2835	SellToPlayer	8			content/items/definitions/items-16000-16499.json:1
-crystal_only_variant_or_name_mismatch	bezil	2874	SellToPlayer		20,10	data-global/npc/bezil.lua:79,data-global/npc/bezil.lua:84	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	bezil	2901	SellToPlayer		40	data-global/npc/bezil.lua:81	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	bezil	2874	SellToPlayer		20,10	data-global/npc/bezil.lua:79,data-global/npc/bezil.lua:84	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	bezil	2901	SellToPlayer		40	data-global/npc/bezil.lua:81	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	bezil	2911	SellToPlayer	8			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	bezil	2922	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	bezil	2924	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
@@ -197,12 +216,12 @@ oteryn_only_no_literal_match	bonifacius	6542	SellToPlayer	2			content/items/defi
 oteryn_only_no_literal_match	bonifacius	6543	SellToPlayer	2			content/items/definitions/items-30000-30499.json:1
 oteryn_only_no_literal_match	bonifacius	6544	SellToPlayer	2			content/items/definitions/items-30000-30499.json:1
 oteryn_only_no_literal_match	bonifacius	6545	SellToPlayer	2			content/items/definitions/items-30000-30499.json:1
-crystal_only_item_not_materializable	boozer	2880	SellToPlayer		2,2,2,3	data-global/npc/boozer.lua:97,data-global/npc/boozer.lua:98,data-global/npc/boozer.lua:99,data-global/npc/boozer.lua:100	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	boozer	2880	SellToPlayer		2,2,2,3	data-global/npc/boozer.lua:97,data-global/npc/boozer.lua:98,data-global/npc/boozer.lua:99,data-global/npc/boozer.lua:100	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	borkas	2480	SellToPlayer	10			content/items/definitions/items-13500-13999.json:1
 oteryn_only_no_literal_match	borkas	2481	SellToPlayer	10			content/items/definitions/items-13500-13999.json:1
 oteryn_only_no_literal_match	borkas	2482	SellToPlayer	10			content/items/definitions/items-13500-13999.json:1
-crystal_only_variant_or_name_mismatch	brasith	2874	SellToPlayer		15	data-global/npc/brasith.lua:80	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	brasith	2875	SellToPlayer		15	data-global/npc/brasith.lua:67	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	brasith	2874	SellToPlayer		15	data-global/npc/brasith.lua:80	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	brasith	2875	SellToPlayer		15	data-global/npc/brasith.lua:67	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	brengus	17824	BuyFromPlayer	40			content/items/definitions/items-07000-07499.json:1
 oteryn_only_no_literal_match	brengus	3264	BuyFromPlayer	25			content/items/definitions/items-19500-19999.json:1
 oteryn_only_no_literal_match	brengus	3265	BuyFromPlayer	450			content/items/definitions/items-19500-19999.json:1
@@ -316,7 +335,7 @@ oteryn_only_no_literal_match	cledwyn	50277	SellToPlayer	100			content/items/defi
 oteryn_only_no_literal_match	cledwyn	50278	SellToPlayer	100			content/items/definitions/items-27500-27999.json:1
 oteryn_only_no_literal_match	cledwyn	50279	SellToPlayer	100			content/items/definitions/items-27500-27999.json:1
 oteryn_only_no_literal_match	cledwyn	50280	SellToPlayer	100			content/items/definitions/items-27500-27999.json:1
-crystal_only_item_not_materializable	clyde	2880	SellToPlayer		2,2,2,3	data-global/npc/clyde.lua:62,data-global/npc/clyde.lua:63,data-global/npc/clyde.lua:64,data-global/npc/clyde.lua:65	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	clyde	2880	SellToPlayer		2,2,2,3	data-global/npc/clyde.lua:62,data-global/npc/clyde.lua:63,data-global/npc/clyde.lua:64,data-global/npc/clyde.lua:65	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	coltrayne	21470	SellToPlayer	2			content/items/definitions/items-10500-10999.json:1
 oteryn_only_no_literal_match	dal_the_huntress	10274	BuyFromPlayer	50			content/items/definitions/items-00000-00499.json:1
 oteryn_only_no_literal_match	dal_the_huntress	10279	BuyFromPlayer	15			content/items/definitions/items-00000-00499.json:1
@@ -350,9 +369,9 @@ oteryn_only_no_literal_match	dal_the_huntress	9689	BuyFromPlayer	30			content/it
 oteryn_only_no_literal_match	dal_the_huntress	9690	BuyFromPlayer	90			content/items/definitions/items-33500-33999.json:1
 oteryn_only_no_literal_match	dal_the_huntress	9691	BuyFromPlayer	60			content/items/definitions/items-33500-33999.json:1
 oteryn_only_no_literal_match	dal_the_huntress	9694	BuyFromPlayer	400			content/items/definitions/items-33500-33999.json:1
-crystal_only_item_not_materializable	dane	2875	SellToPlayer		12,4,2	data-global/npc/dane.lua:67,data-global/npc/dane.lua:68,data-global/npc/dane.lua:69	content/items/definitions/items-16500-16999.json:1
-crystal_only_variant_or_name_mismatch	dankwart	2874	SellToPlayer		5	data-global/npc/dankwart.lua:62	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	dankwart	2880	SellToPlayer		5,3	data-global/npc/dankwart.lua:60,data-global/npc/dankwart.lua:61	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	dane	2875	SellToPlayer		12,4,2	data-global/npc/dane.lua:67,data-global/npc/dane.lua:68,data-global/npc/dane.lua:69	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	dankwart	2874	SellToPlayer		5	data-global/npc/dankwart.lua:62	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	dankwart	2880	SellToPlayer		5,3	data-global/npc/dankwart.lua:60,data-global/npc/dankwart.lua:61	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	dario	14251	SellToPlayer	6			content/items/definitions/items-04000-04499.json:1
 oteryn_only_no_literal_match	dario	14252	SellToPlayer	6			content/items/definitions/items-04000-04499.json:1
 oteryn_only_no_literal_match	dario	15793	SellToPlayer	20			content/items/definitions/items-05000-05499.json:1
@@ -572,7 +591,7 @@ oteryn_only_no_literal_match	gnomegica	21400	SellToPlayer	75			content/items/def
 oteryn_only_no_literal_match	gnomegica	53162	SellToPlayer	254			content/items/definitions/items-28500-28999.json:1
 oteryn_only_no_literal_match	gnomerrow	3277	BuyFromPlayer	3			content/items/definitions/items-19500-19999.json:1
 oteryn_only_no_literal_match	gnomerrow	51760	SellToPlayer	600			content/items/definitions/items-28000-28499.json:1
-crystal_only_item_not_materializable	gnomfurry	2880	SellToPlayer		2,2,2,3	data-global/npc/gnomfurry.lua:62,data-global/npc/gnomfurry.lua:63,data-global/npc/gnomfurry.lua:64,data-global/npc/gnomfurry.lua:65	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	gnomfurry	2880	SellToPlayer		2,2,2,3	data-global/npc/gnomfurry.lua:62,data-global/npc/gnomfurry.lua:63,data-global/npc/gnomfurry.lua:64,data-global/npc/gnomfurry.lua:65	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	gnomission	14222	BuyFromPlayer	3000			content/items/definitions/items-04000-04499.json:1
 oteryn_only_no_literal_match	gnomission	14223	BuyFromPlayer	2000			content/items/definitions/items-04000-04499.json:1
 oteryn_only_no_literal_match	gnomission	14224	BuyFromPlayer	4000			content/items/definitions/items-04000-04499.json:1
@@ -598,8 +617,8 @@ oteryn_only_no_literal_match	gorn	2924	SellToPlayer	2			content/items/definition
 oteryn_only_no_literal_match	gorn	53167	BuyFromPlayer	25			content/items/definitions/items-28500-28999.json:1
 oteryn_only_no_literal_match	gree_dee	2834	SellToPlayer	12			content/items/definitions/items-16000-16499.json:1
 oteryn_only_no_literal_match	gree_dee	2835	SellToPlayer	8			content/items/definitions/items-16000-16499.json:1
-crystal_only_variant_or_name_mismatch	gree_dee	2874	SellToPlayer		20,10	data-global/npc/gree_dee.lua:87,data-global/npc/gree_dee.lua:92	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	gree_dee	2901	SellToPlayer		40	data-global/npc/gree_dee.lua:89	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	gree_dee	2874	SellToPlayer		20,10	data-global/npc/gree_dee.lua:87,data-global/npc/gree_dee.lua:92	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	gree_dee	2901	SellToPlayer		40	data-global/npc/gree_dee.lua:89	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	gree_dee	2911	SellToPlayer	8			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	gree_dee	2922	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	gree_dee	2924	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
@@ -682,8 +701,8 @@ oteryn_only_no_literal_match	hairycles	5087	SellToPlayer	65			content/items/defi
 oteryn_only_no_literal_match	hairycles	5088	SellToPlayer	65			content/items/definitions/items-28000-28499.json:1
 oteryn_only_no_literal_match	halif	2834	SellToPlayer	12			content/items/definitions/items-16000-16499.json:1
 oteryn_only_no_literal_match	halif	2835	SellToPlayer	8			content/items/definitions/items-16000-16499.json:1
-crystal_only_variant_or_name_mismatch	halif	2874	SellToPlayer		20,40	data-global/npc/halif.lua:79,data-global/npc/halif.lua:80	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	halif	2901	SellToPlayer		40	data-global/npc/halif.lua:82	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	halif	2874	SellToPlayer		20,40	data-global/npc/halif.lua:79,data-global/npc/halif.lua:80	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	halif	2901	SellToPlayer		40	data-global/npc/halif.lua:82	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	halif	2911	SellToPlayer	8			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	halif	2922	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	halif	2924	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
@@ -711,19 +730,39 @@ oteryn_only_no_literal_match	hardek	3376	BuyFromPlayer	20			content/items/defini
 oteryn_only_no_literal_match	hardek	3412	BuyFromPlayer	5			content/items/definitions/items-20500-20999.json:1
 oteryn_only_no_literal_match	hardek	3426	BuyFromPlayer	16			content/items/definitions/items-21000-21499.json:1
 oteryn_only_no_literal_match	hardek	3431	BuyFromPlayer	85			content/items/definitions/items-21000-21499.json:1
-crystal_only_item_not_materializable	haroun	16096	BuyFromPlayer		6500	data-global/npc/haroun.lua:167	content/items/definitions/items-05500-05999.json:1
-crystal_only_item_not_materializable	haroun	16115	BuyFromPlayer		6000	data-global/npc/haroun.lua:170	content/items/definitions/items-05500-05999.json:1
-crystal_only_variant_or_name_mismatch	haroun	3056	BuyFromPlayer		50	data-global/npc/haroun.lua:153	content/items/definitions/items-17500-17999.json:1
-crystal_only_variant_or_name_mismatch	haroun	3056	SellToPlayer		100	data-global/npc/haroun.lua:153	content/items/definitions/items-17500-17999.json:1
-crystal_only_item_not_materializable	haroun	3074	BuyFromPlayer		100	data-global/npc/haroun.lua:174	content/items/definitions/items-18000-18499.json:1
-crystal_only_item_not_materializable	haroun	3075	BuyFromPlayer		200	data-global/npc/haroun.lua:169	content/items/definitions/items-18000-18499.json:1
-crystal_only_variant_or_name_mismatch	haroun	3081	BuyFromPlayer		500	data-global/npc/haroun.lua:163	content/items/definitions/items-18000-18499.json:1
-crystal_only_variant_or_name_mismatch	haroun	3081	SellToPlayer		25000	data-global/npc/haroun.lua:163	content/items/definitions/items-18000-18499.json:1
-crystal_only_variant_or_name_mismatch	haroun	3082	BuyFromPlayer		100	data-global/npc/haroun.lua:155	content/items/definitions/items-18000-18499.json:1
-crystal_only_variant_or_name_mismatch	haroun	3082	SellToPlayer		500	data-global/npc/haroun.lua:155	content/items/definitions/items-18000-18499.json:1
-crystal_only_item_not_materializable	haroun	8092	BuyFromPlayer		3600	data-global/npc/haroun.lua:172	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	haroun	8093	BuyFromPlayer		1500	data-global/npc/haroun.lua:168	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	haroun	8094	BuyFromPlayer		4400	data-global/npc/haroun.lua:173	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	16096	BuyFromPlayer		6500	data-global/npc/haroun.lua:167	content/items/definitions/items-05500-05999.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	16115	BuyFromPlayer		6000	data-global/npc/haroun.lua:170	content/items/definitions/items-05500-05999.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3046	BuyFromPlayer		35	data-global/npc/haroun.lua:158	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3046	SellToPlayer		120	data-global/npc/haroun.lua:158	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3049	BuyFromPlayer		200	data-global/npc/haroun.lua:162	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3049	SellToPlayer		5000	data-global/npc/haroun.lua:162	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3050	BuyFromPlayer		50	data-global/npc/haroun.lua:161	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3050	SellToPlayer		100	data-global/npc/haroun.lua:161	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3056	BuyFromPlayer		50	data-global/npc/haroun.lua:153	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3056	SellToPlayer		100	data-global/npc/haroun.lua:153	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3060	BuyFromPlayer		750	data-global/npc/haroun.lua:160	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3061	BuyFromPlayer		50	data-global/npc/haroun.lua:157	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3062	BuyFromPlayer		100	data-global/npc/haroun.lua:159	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3071	BuyFromPlayer		3000	data-global/npc/haroun.lua:171	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3072	BuyFromPlayer		1000	data-global/npc/haroun.lua:166	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3073	BuyFromPlayer		2000	data-global/npc/haroun.lua:165	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3074	BuyFromPlayer		100	data-global/npc/haroun.lua:174	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3075	BuyFromPlayer		200	data-global/npc/haroun.lua:169	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3081	BuyFromPlayer		500	data-global/npc/haroun.lua:163	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3081	SellToPlayer		25000	data-global/npc/haroun.lua:163	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3082	BuyFromPlayer		100	data-global/npc/haroun.lua:155	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3082	SellToPlayer		500	data-global/npc/haroun.lua:155	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3083	BuyFromPlayer		50	data-global/npc/haroun.lua:156	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3083	SellToPlayer		100	data-global/npc/haroun.lua:156	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3091	BuyFromPlayer		100	data-global/npc/haroun.lua:164	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3091	SellToPlayer		500	data-global/npc/haroun.lua:164	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3092	BuyFromPlayer		100	data-global/npc/haroun.lua:152	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3092	SellToPlayer		500	data-global/npc/haroun.lua:152	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3093	BuyFromPlayer		100	data-global/npc/haroun.lua:154	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	3093	SellToPlayer		500	data-global/npc/haroun.lua:154	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	8092	BuyFromPlayer		3600	data-global/npc/haroun.lua:172	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	8093	BuyFromPlayer		1500	data-global/npc/haroun.lua:168	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	haroun	8094	BuyFromPlayer		4400	data-global/npc/haroun.lua:173	content/items/definitions/items-32000-32499.json:1
 oteryn_only_no_literal_match	hector_the_mentor	285	BuyFromPlayer	5			content/items/definitions/items-16000-16499.json:1
 oteryn_only_no_literal_match	hector_the_mentor	2922	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	hector_the_mentor	2924	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
@@ -2259,7 +2298,7 @@ oteryn_only_no_literal_match	inkaef	2635	SellToPlayer	40			content/items/definit
 oteryn_only_no_literal_match	inkaef	2659	SellToPlayer	25			content/items/definitions/items-15000-15499.json:1
 oteryn_only_no_literal_match	inkaef	2876	SellToPlayer	3			content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	inkaef	2893	SellToPlayer	4			content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	innkeeper_alphonse	2880	SellToPlayer		2,2,1,3	data-global/npc/innkeeper_alphonse.lua:67,data-global/npc/innkeeper_alphonse.lua:68,data-global/npc/innkeeper_alphonse.lua:69,data-global/npc/innkeeper_alphonse.lua:70	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	innkeeper_alphonse	2880	SellToPlayer		2,2,1,3	data-global/npc/innkeeper_alphonse.lua:67,data-global/npc/innkeeper_alphonse.lua:68,data-global/npc/innkeeper_alphonse.lua:69,data-global/npc/innkeeper_alphonse.lua:70	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	irea	3277	BuyFromPlayer	3			content/items/definitions/items-19500-19999.json:1
 oteryn_only_no_literal_match	irea	51760	SellToPlayer	600			content/items/definitions/items-28000-28499.json:1
 oteryn_only_no_literal_match	irmana	14010	BuyFromPlayer	230			content/items/definitions/items-04000-04499.json:1
@@ -2347,8 +2386,8 @@ oteryn_only_no_literal_match	john	42085	SellToPlayer	10000			content/items/defin
 oteryn_only_no_literal_match	john	52589	SellToPlayer	10000			content/items/definitions/items-28500-28999.json:1
 oteryn_only_no_literal_match	john	6091	SellToPlayer	500			content/items/definitions/items-29500-29999.json:1
 oteryn_only_no_literal_match	julian	2952	SellToPlayer	140			content/items/definitions/items-17000-17499.json:1
-crystal_only_variant_or_name_mismatch	karl	2874	SellToPlayer		20	data-global/npc/karl.lua:127	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	karl	2880	SellToPlayer		20	data-global/npc/karl.lua:126	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	karl	2874	SellToPlayer		20	data-global/npc/karl.lua:127	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	karl	2880	SellToPlayer		20	data-global/npc/karl.lua:126	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	khanna	21348	SellToPlayer	250			content/items/definitions/items-10500-10999.json:1
 oteryn_only_no_literal_match	khanna	21350	SellToPlayer	250			content/items/definitions/items-10500-10999.json:1
 oteryn_only_no_literal_match	khanna	3052	SellToPlayer	1000			content/items/definitions/items-17500-17999.json:1
@@ -3719,14 +3758,14 @@ crystal_only_no_native_npc_definition	loot_buyer	9691	BuyFromPlayer		60	data-glo
 crystal_only_no_native_npc_definition	loot_buyer	9692	BuyFromPlayer		10	data-global/npc/loot_buyer.lua:970	content/items/definitions/items-33500-33999.json:1
 crystal_only_no_native_npc_definition	loot_buyer	9693	BuyFromPlayer		10	data-global/npc/loot_buyer.lua:1050	content/items/definitions/items-33500-33999.json:1
 crystal_only_no_native_npc_definition	loot_buyer	9694	BuyFromPlayer		400	data-global/npc/loot_buyer.lua:1142	content/items/definitions/items-33500-33999.json:1
-crystal_only_item_not_materializable	lubo	2901	SellToPlayer		10	data-global/npc/lubo.lua:184	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	lubo	2901	SellToPlayer		10	data-global/npc/lubo.lua:184	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	lubo	2920	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	lubo	2922	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	lubo	2924	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	lucius	9615	BuyFromPlayer	1000			content/items/definitions/items-33500-33999.json:1
 crystal_only_item_not_materializable	lyonel	5552	SellToPlayer		150	data-global/npc/lyonel.lua:58	content/items/definitions/items-29000-29499.json:1
 oteryn_only_no_literal_match	malunga	14077	BuyFromPlayer	420			content/items/definitions/items-04000-04499.json:1
-crystal_only_item_not_materializable	maria	2880	SellToPlayer		2,2,1,3	data-global/npc/maria.lua:62,data-global/npc/maria.lua:63,data-global/npc/maria.lua:64,data-global/npc/maria.lua:65	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	maria	2880	SellToPlayer		2,2,1,3	data-global/npc/maria.lua:62,data-global/npc/maria.lua:63,data-global/npc/maria.lua:64,data-global/npc/maria.lua:65	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	maria	6541	SellToPlayer	2			content/items/definitions/items-30000-30499.json:1
 oteryn_only_no_literal_match	maria	6542	SellToPlayer	2			content/items/definitions/items-30000-30499.json:1
 oteryn_only_no_literal_match	maria	6543	SellToPlayer	2			content/items/definitions/items-30000-30499.json:1
@@ -3764,9 +3803,9 @@ oteryn_only_no_literal_match	memech	3431	BuyFromPlayer	85			content/items/defini
 oteryn_only_no_literal_match	messenger_of_santa	2812	SellToPlayer	50			content/items/definitions/items-16000-16499.json:1
 oteryn_only_no_literal_match	messenger_of_santa	6489	SellToPlayer	40			content/items/definitions/items-30000-30499.json:1
 oteryn_only_no_literal_match	messenger_of_santa	6510	SellToPlayer	20			content/items/definitions/items-30000-30499.json:1
-crystal_only_item_not_materializable	mirabell	2880	SellToPlayer		2,2,1,3	data-global/npc/mirabell.lua:133,data-global/npc/mirabell.lua:134,data-global/npc/mirabell.lua:135,data-global/npc/mirabell.lua:136	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	mirabell	2880	SellToPlayer		2,2,1,3	data-global/npc/mirabell.lua:133,data-global/npc/mirabell.lua:134,data-global/npc/mirabell.lua:135,data-global/npc/mirabell.lua:136	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	miraia	169	SellToPlayer	100			content/items/definitions/items-06000-06499.json:1
-crystal_only_item_not_materializable	miraia	2880	SellToPlayer		3,5,2	data-global/npc/miraia.lua:199,data-global/npc/miraia.lua:200,data-global/npc/miraia.lua:201	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	miraia	2880	SellToPlayer		3,5,2	data-global/npc/miraia.lua:199,data-global/npc/miraia.lua:200,data-global/npc/miraia.lua:201	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	mordecai	21348	SellToPlayer	250			content/items/definitions/items-10500-10999.json:1
 oteryn_only_no_literal_match	mordecai	21350	SellToPlayer	250			content/items/definitions/items-10500-10999.json:1
 oteryn_only_no_literal_match	mordecai	3195	SellToPlayer	46			content/items/definitions/items-19000-19499.json:1
@@ -3798,16 +3837,38 @@ oteryn_only_no_literal_match	mugruu	53169	SellToPlayer	75			content/items/defini
 oteryn_only_no_literal_match	mugruu	53170	SellToPlayer	75			content/items/definitions/items-28500-28999.json:1
 oteryn_only_no_literal_match	mugruu	53171	SellToPlayer	75			content/items/definitions/items-28500-28999.json:1
 oteryn_only_no_literal_match	mugruu	53172	SellToPlayer	75			content/items/definitions/items-28500-28999.json:1
-crystal_only_item_not_materializable	nah_bob	3382	BuyFromPlayer		12000	data-global/npc/nah_bob.lua:155	content/items/definitions/items-20500-20999.json:1
-crystal_only_item_not_materializable	nah_bob	3418	BuyFromPlayer		1200	data-global/npc/nah_bob.lua:149	content/items/definitions/items-20500-20999.json:1
-crystal_only_item_not_materializable	nah_bob	3418	SellToPlayer		7000	data-global/npc/nah_bob.lua:149	content/items/definitions/items-20500-20999.json:1
-crystal_only_item_not_materializable	nah_bob	3439	BuyFromPlayer		16000	data-global/npc/nah_bob.lua:167	content/items/definitions/items-21000-21499.json:1
-crystal_only_item_not_materializable	nah_bob	7391	BuyFromPlayer		16000	data-global/npc/nah_bob.lua:172	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	nah_bob	7410	BuyFromPlayer		20000	data-global/npc/nah_bob.lua:168	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	nah_bob	7412	BuyFromPlayer		18000	data-global/npc/nah_bob.lua:152	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	nah_bob	7436	BuyFromPlayer		5000	data-global/npc/nah_bob.lua:147	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	nah_bob	7451	BuyFromPlayer		10000	data-global/npc/nah_bob.lua:170	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	nah_bob	7454	BuyFromPlayer		3000	data-global/npc/nah_bob.lua:162	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3079	BuyFromPlayer		30000	data-global/npc/nah_bob.lua:150	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3271	BuyFromPlayer		1000	data-global/npc/nah_bob.lua:171	content/items/definitions/items-19500-19999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3271	SellToPlayer		8000	data-global/npc/nah_bob.lua:171	content/items/definitions/items-19500-19999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3279	BuyFromPlayer		1200	data-global/npc/nah_bob.lua:173	content/items/definitions/items-19500-19999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3279	SellToPlayer		10000	data-global/npc/nah_bob.lua:173	content/items/definitions/items-19500-19999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3280	BuyFromPlayer		4000	data-global/npc/nah_bob.lua:161	content/items/definitions/items-19500-19999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3284	BuyFromPlayer		1000	data-global/npc/nah_bob.lua:164	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3301	BuyFromPlayer		500	data-global/npc/nah_bob.lua:151	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3302	BuyFromPlayer		9000	data-global/npc/nah_bob.lua:158	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3313	BuyFromPlayer		500	data-global/npc/nah_bob.lua:166	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3313	SellToPlayer		3000	data-global/npc/nah_bob.lua:166	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3320	BuyFromPlayer		8000	data-global/npc/nah_bob.lua:160	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3380	BuyFromPlayer		900	data-global/npc/nah_bob.lua:165	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3380	SellToPlayer		8000	data-global/npc/nah_bob.lua:165	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3381	BuyFromPlayer		12000	data-global/npc/nah_bob.lua:153	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3382	BuyFromPlayer		12000	data-global/npc/nah_bob.lua:155	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3385	BuyFromPlayer		2500	data-global/npc/nah_bob.lua:154	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3391	BuyFromPlayer		6000	data-global/npc/nah_bob.lua:157	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3392	BuyFromPlayer		30000	data-global/npc/nah_bob.lua:169	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3415	BuyFromPlayer		2000	data-global/npc/nah_bob.lua:163	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3416	BuyFromPlayer		4000	data-global/npc/nah_bob.lua:159	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3418	BuyFromPlayer		1200	data-global/npc/nah_bob.lua:149	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3418	SellToPlayer		7000	data-global/npc/nah_bob.lua:149	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3419	BuyFromPlayer		8000	data-global/npc/nah_bob.lua:156	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3439	BuyFromPlayer		16000	data-global/npc/nah_bob.lua:167	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	3567	BuyFromPlayer		10000	data-global/npc/nah_bob.lua:148	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	7391	BuyFromPlayer		16000	data-global/npc/nah_bob.lua:172	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	7410	BuyFromPlayer		20000	data-global/npc/nah_bob.lua:168	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	7412	BuyFromPlayer		18000	data-global/npc/nah_bob.lua:152	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	7436	BuyFromPlayer		5000	data-global/npc/nah_bob.lua:147	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	7451	BuyFromPlayer		10000	data-global/npc/nah_bob.lua:170	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	nah_bob	7454	BuyFromPlayer		3000	data-global/npc/nah_bob.lua:162	content/items/definitions/items-31000-31499.json:1
 oteryn_only_no_literal_match	nelliem	3454	SellToPlayer	12			content/items/definitions/items-21000-21499.json:1
 oteryn_only_no_literal_match	nelly	21348	SellToPlayer	250			content/items/definitions/items-10500-10999.json:1
 oteryn_only_no_literal_match	nelly	21350	SellToPlayer	250			content/items/definitions/items-10500-10999.json:1
@@ -3817,8 +3878,8 @@ oteryn_only_no_literal_match	nelly	53163	SellToPlayer	381			content/items/defini
 oteryn_only_no_literal_match	nelly	53164	SellToPlayer	732			content/items/definitions/items-28500-28999.json:1
 oteryn_only_no_literal_match	nezil	2834	SellToPlayer	12			content/items/definitions/items-16000-16499.json:1
 oteryn_only_no_literal_match	nezil	2835	SellToPlayer	8			content/items/definitions/items-16000-16499.json:1
-crystal_only_variant_or_name_mismatch	nezil	2874	SellToPlayer		20,10	data-global/npc/nezil.lua:79,data-global/npc/nezil.lua:84	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	nezil	2901	SellToPlayer		40	data-global/npc/nezil.lua:81	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	nezil	2874	SellToPlayer		20,10	data-global/npc/nezil.lua:79,data-global/npc/nezil.lua:84	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	nezil	2901	SellToPlayer		40	data-global/npc/nezil.lua:81	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	nezil	2911	SellToPlayer	8			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	nezil	2922	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	nezil	2924	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
@@ -3986,128 +4047,165 @@ oteryn_only_no_literal_match	raffael	7991	SellToPlayer	450			content/items/defin
 oteryn_only_no_literal_match	raffael	7992	SellToPlayer	150			content/items/definitions/items-31500-31999.json:1
 oteryn_only_no_literal_match	rafzan	2922	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	rafzan	2924	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
-crystal_only_variant_or_name_mismatch	ramina	2874	SellToPlayer		10	data-global/npc/ramina.lua:67	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	ramina	2880	SellToPlayer		15	data-global/npc/ramina.lua:64	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	rashid	10457	BuyFromPlayer		1500	data-global/npc/rashid.lua:284	content/items/definitions/items-00500-00999.json:1
-crystal_only_item_not_materializable	rashid	11674	BuyFromPlayer		50000	data-global/npc/rashid.lua:295	content/items/definitions/items-01500-01999.json:1
-crystal_only_item_not_materializable	rashid	12482	BuyFromPlayer		500	data-global/npc/rashid.lua:349	content/items/definitions/items-02500-02999.json:1
-crystal_only_item_not_materializable	rashid	12483	BuyFromPlayer		1000	data-global/npc/rashid.lua:389	content/items/definitions/items-02500-02999.json:1
-crystal_only_item_not_materializable	rashid	12683	BuyFromPlayer		2000	data-global/npc/rashid.lua:345	content/items/definitions/items-02500-02999.json:1
-crystal_only_item_not_materializable	rashid	16163	BuyFromPlayer		35000	data-global/npc/rashid.lua:300	content/items/definitions/items-05500-05999.json:1
-crystal_only_item_not_materializable	rashid	16164	BuyFromPlayer		35000	data-global/npc/rashid.lua:377	content/items/definitions/items-05500-05999.json:1
-crystal_only_item_not_materializable	rashid	17828	BuyFromPlayer		4000	data-global/npc/rashid.lua:386	content/items/definitions/items-07000-07499.json:1
-crystal_only_item_not_materializable	rashid	17829	BuyFromPlayer		7000	data-global/npc/rashid.lua:291	content/items/definitions/items-07000-07499.json:1
-crystal_only_item_not_materializable	rashid	17852	BuyFromPlayer		2000	data-global/npc/rashid.lua:346	content/items/definitions/items-07000-07499.json:1
-crystal_only_item_not_materializable	rashid	19358	BuyFromPlayer		1500	data-global/npc/rashid.lua:278	content/items/definitions/items-08500-08999.json:1
-crystal_only_item_not_materializable	rashid	19359	BuyFromPlayer		300	data-global/npc/rashid.lua:350	content/items/definitions/items-08500-08999.json:1
-crystal_only_item_not_materializable	rashid	19372	BuyFromPlayer		4000	data-global/npc/rashid.lua:338	content/items/definitions/items-08500-08999.json:1
-crystal_only_item_not_materializable	rashid	21981	BuyFromPlayer		15000	data-global/npc/rashid.lua:385	content/items/definitions/items-11000-11499.json:1
-crystal_only_item_not_materializable	rashid	22195	BuyFromPlayer		3500	data-global/npc/rashid.lua:383	content/items/definitions/items-11000-11499.json:1
-crystal_only_item_not_materializable	rashid	22726	BuyFromPlayer		50000	data-global/npc/rashid.lua:402	content/items/definitions/items-11500-11999.json:1
-crystal_only_item_not_materializable	rashid	22727	BuyFromPlayer		30000	data-global/npc/rashid.lua:401	content/items/definitions/items-11500-11999.json:1
-crystal_only_item_not_materializable	rashid	22866	BuyFromPlayer		45000	data-global/npc/rashid.lua:399	content/items/definitions/items-11500-11999.json:1
-crystal_only_item_not_materializable	rashid	22867	BuyFromPlayer		45000	data-global/npc/rashid.lua:400	content/items/definitions/items-11500-11999.json:1
-crystal_only_item_not_materializable	rashid	2958	BuyFromPlayer		8000	data-global/npc/rashid.lua:431	content/items/definitions/items-17000-17499.json:1
-crystal_only_item_not_materializable	rashid	2991	BuyFromPlayer		200	data-global/npc/rashid.lua:317	content/items/definitions/items-17000-17499.json:1
-crystal_only_item_not_materializable	rashid	2994	BuyFromPlayer		1000	data-global/npc/rashid.lua:376	content/items/definitions/items-17000-17499.json:1
-crystal_only_item_not_materializable	rashid	3002	BuyFromPlayer		400	data-global/npc/rashid.lua:429	content/items/definitions/items-17000-17499.json:1
-crystal_only_item_not_materializable	rashid	3006	BuyFromPlayer		30000	data-global/npc/rashid.lua:403	content/items/definitions/items-17500-17999.json:1
-crystal_only_item_not_materializable	rashid	3010	BuyFromPlayer		800	data-global/npc/rashid.lua:324	content/items/definitions/items-17500-17999.json:1
-crystal_only_item_not_materializable	rashid	3016	BuyFromPlayer		2000	data-global/npc/rashid.lua:405	content/items/definitions/items-17500-17999.json:1
-crystal_only_item_not_materializable	rashid	3018	BuyFromPlayer		200	data-global/npc/rashid.lua:409	content/items/definitions/items-17500-17999.json:1
-crystal_only_item_not_materializable	rashid	3019	BuyFromPlayer		32000	data-global/npc/rashid.lua:311	content/items/definitions/items-17500-17999.json:1
-crystal_only_item_not_materializable	rashid	3025	BuyFromPlayer		200	data-global/npc/rashid.lua:280	content/items/definitions/items-17500-17999.json:1
-crystal_only_item_not_materializable	rashid	3290	BuyFromPlayer		500	data-global/npc/rashid.lua:413	content/items/definitions/items-20000-20499.json:1
-crystal_only_item_not_materializable	rashid	3326	BuyFromPlayer		8000	data-global/npc/rashid.lua:325	content/items/definitions/items-20000-20499.json:1
-crystal_only_item_not_materializable	rashid	3327	BuyFromPlayer		110	data-global/npc/rashid.lua:306	content/items/definitions/items-20000-20499.json:1
-crystal_only_item_not_materializable	rashid	3328	BuyFromPlayer		1000	data-global/npc/rashid.lua:307	content/items/definitions/items-20000-20499.json:1
-crystal_only_item_not_materializable	rashid	3330	BuyFromPlayer		90	data-global/npc/rashid.lua:344	content/items/definitions/items-20000-20499.json:1
-crystal_only_item_not_materializable	rashid	3332	BuyFromPlayer		30000	data-global/npc/rashid.lua:341	content/items/definitions/items-20000-20499.json:1
-crystal_only_item_not_materializable	rashid	3333	BuyFromPlayer		12000	data-global/npc/rashid.lua:301	content/items/definitions/items-20000-20499.json:1
-crystal_only_item_not_materializable	rashid	3334	BuyFromPlayer		23000	data-global/npc/rashid.lua:390	content/items/definitions/items-20000-20499.json:1
-crystal_only_item_not_materializable	rashid	3339	BuyFromPlayer		15000	data-global/npc/rashid.lua:316	content/items/definitions/items-20000-20499.json:1
-crystal_only_item_not_materializable	rashid	3340	BuyFromPlayer		50000	data-global/npc/rashid.lua:343	content/items/definitions/items-20000-20499.json:1
-crystal_only_item_not_materializable	rashid	3342	BuyFromPlayer		12000	data-global/npc/rashid.lua:430	content/items/definitions/items-20000-20499.json:1
-crystal_only_item_not_materializable	rashid	3344	BuyFromPlayer		1500	data-global/npc/rashid.lua:283	content/items/definitions/items-20000-20499.json:1
-crystal_only_item_not_materializable	rashid	3397	BuyFromPlayer		30000	data-global/npc/rashid.lua:322	content/items/definitions/items-20500-20999.json:1
-crystal_only_item_not_materializable	rashid	3404	BuyFromPlayer		1000	data-global/npc/rashid.lua:355	content/items/definitions/items-20500-20999.json:1
-crystal_only_item_not_materializable	rashid	3408	BuyFromPlayer		7500	data-global/npc/rashid.lua:289	content/items/definitions/items-20500-20999.json:1
-crystal_only_item_not_materializable	rashid	3435	BuyFromPlayer		5000	data-global/npc/rashid.lua:292	content/items/definitions/items-21000-21499.json:1
-crystal_only_item_not_materializable	rashid	3440	BuyFromPlayer		2000	data-global/npc/rashid.lua:410	content/items/definitions/items-21000-21499.json:1
-crystal_only_item_not_materializable	rashid	3441	BuyFromPlayer		80	data-global/npc/rashid.lua:288	content/items/definitions/items-21000-21499.json:1
-crystal_only_item_not_materializable	rashid	3442	BuyFromPlayer		35000	data-global/npc/rashid.lua:420	content/items/definitions/items-21000-21499.json:1
-crystal_only_item_not_materializable	rashid	3550	BuyFromPlayer		2000	data-global/npc/rashid.lua:388	content/items/definitions/items-21000-21499.json:1
-crystal_only_item_not_materializable	rashid	3556	BuyFromPlayer		1000	data-global/npc/rashid.lua:299	content/items/definitions/items-21000-21499.json:1
-crystal_only_item_not_materializable	rashid	5461	BuyFromPlayer		3000	data-global/npc/rashid.lua:391	content/items/definitions/items-29000-29499.json:1
-crystal_only_item_not_materializable	rashid	5710	BuyFromPlayer		300	data-global/npc/rashid.lua:357	content/items/definitions/items-29000-29499.json:1
-crystal_only_item_not_materializable	rashid	5741	BuyFromPlayer		40000	data-global/npc/rashid.lua:414	content/items/definitions/items-29000-29499.json:1
-crystal_only_item_not_materializable	rashid	5810	BuyFromPlayer		500	data-global/npc/rashid.lua:395	content/items/definitions/items-29500-29999.json:1
-crystal_only_item_not_materializable	rashid	5917	BuyFromPlayer		150	data-global/npc/rashid.lua:282	content/items/definitions/items-29500-29999.json:1
-crystal_only_item_not_materializable	rashid	5918	BuyFromPlayer		200	data-global/npc/rashid.lua:393	content/items/definitions/items-29500-29999.json:1
-crystal_only_item_not_materializable	rashid	6095	BuyFromPlayer		500	data-global/npc/rashid.lua:394	content/items/definitions/items-29500-29999.json:1
-crystal_only_item_not_materializable	rashid	6131	BuyFromPlayer		150	data-global/npc/rashid.lua:427	content/items/definitions/items-29500-29999.json:1
-crystal_only_item_not_materializable	rashid	6553	BuyFromPlayer		45000	data-global/npc/rashid.lua:406	content/items/definitions/items-30000-30499.json:1
-crystal_only_item_not_materializable	rashid	7379	BuyFromPlayer		1500	data-global/npc/rashid.lua:290	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7381	BuyFromPlayer		300	data-global/npc/rashid.lua:372	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7383	BuyFromPlayer		25000	data-global/npc/rashid.lua:398	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7386	BuyFromPlayer		12000	data-global/npc/rashid.lua:375	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7387	BuyFromPlayer		3000	data-global/npc/rashid.lua:314	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7388	BuyFromPlayer		30000	data-global/npc/rashid.lua:428	content/items/definitions/items-31000-31499.json:1
-crystal_only_variant_or_name_mismatch	rashid	7390	BuyFromPlayer		40000	data-global/npc/rashid.lua:426	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7403	BuyFromPlayer		40000	data-global/npc/rashid.lua:285	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7408	BuyFromPlayer		1500	data-global/npc/rashid.lua:433	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7414	BuyFromPlayer		20000	data-global/npc/rashid.lua:277	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7418	BuyFromPlayer		35000	data-global/npc/rashid.lua:380	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7419	BuyFromPlayer		10000	data-global/npc/rashid.lua:321	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7422	BuyFromPlayer		25000	data-global/npc/rashid.lua:351	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7424	BuyFromPlayer		5000	data-global/npc/rashid.lua:363	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7426	BuyFromPlayer		8000	data-global/npc/rashid.lua:279	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7427	BuyFromPlayer		9000	data-global/npc/rashid.lua:294	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7432	BuyFromPlayer		1000	data-global/npc/rashid.lua:329	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7437	BuyFromPlayer		7000	data-global/npc/rashid.lua:408	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7438	BuyFromPlayer		2000	data-global/npc/rashid.lua:323	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7449	BuyFromPlayer		600	data-global/npc/rashid.lua:304	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7452	BuyFromPlayer		5000	data-global/npc/rashid.lua:416	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7456	BuyFromPlayer		10000	data-global/npc/rashid.lua:381	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7457	BuyFromPlayer		2000	data-global/npc/rashid.lua:328	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7460	BuyFromPlayer		1500	data-global/npc/rashid.lua:382	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7461	BuyFromPlayer		200	data-global/npc/rashid.lua:352	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7462	BuyFromPlayer		400	data-global/npc/rashid.lua:397	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7463	BuyFromPlayer		6000	data-global/npc/rashid.lua:370	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	7464	BuyFromPlayer		850	data-global/npc/rashid.lua:371	content/items/definitions/items-31000-31499.json:1
-crystal_only_item_not_materializable	rashid	8022	BuyFromPlayer		40000	data-global/npc/rashid.lua:293	content/items/definitions/items-31500-31999.json:1
-crystal_only_item_not_materializable	rashid	8027	BuyFromPlayer		25000	data-global/npc/rashid.lua:297	content/items/definitions/items-31500-31999.json:1
-crystal_only_item_not_materializable	rashid	8045	BuyFromPlayer		3000	data-global/npc/rashid.lua:348	content/items/definitions/items-31500-31999.json:1
-crystal_only_item_not_materializable	rashid	8049	BuyFromPlayer		16000	data-global/npc/rashid.lua:353	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	8050	BuyFromPlayer		16000	data-global/npc/rashid.lua:305	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	8052	BuyFromPlayer		16000	data-global/npc/rashid.lua:418	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	8057	BuyFromPlayer		55000	data-global/npc/rashid.lua:315	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	8061	BuyFromPlayer		18000	data-global/npc/rashid.lua:415	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	8063	BuyFromPlayer		15000	data-global/npc/rashid.lua:387	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	811	BuyFromPlayer		11000	data-global/npc/rashid.lua:425	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	813	BuyFromPlayer		2500	data-global/npc/rashid.lua:422	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	814	BuyFromPlayer		1500	data-global/npc/rashid.lua:421	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	815	BuyFromPlayer		1500	data-global/npc/rashid.lua:330	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	816	BuyFromPlayer		1500	data-global/npc/rashid.lua:361	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	817	BuyFromPlayer		1500	data-global/npc/rashid.lua:365	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	818	BuyFromPlayer		2500	data-global/npc/rashid.lua:366	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	819	BuyFromPlayer		2500	data-global/npc/rashid.lua:334	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	820	BuyFromPlayer		2500	data-global/npc/rashid.lua:358	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	821	BuyFromPlayer		11000	data-global/npc/rashid.lua:368	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	822	BuyFromPlayer		11000	data-global/npc/rashid.lua:360	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	823	BuyFromPlayer		11000	data-global/npc/rashid.lua:331	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	825	BuyFromPlayer		11000	data-global/npc/rashid.lua:362	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	826	BuyFromPlayer		11000	data-global/npc/rashid.lua:367	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	828	BuyFromPlayer		2500	data-global/npc/rashid.lua:359	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	829	BuyFromPlayer		2500	data-global/npc/rashid.lua:332	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	830	BuyFromPlayer		2500	data-global/npc/rashid.lua:423	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	rashid	9013	BuyFromPlayer		500	data-global/npc/rashid.lua:327	content/items/definitions/items-33000-33499.json:1
-crystal_only_item_not_materializable	rashid	9014	BuyFromPlayer		500	data-global/npc/rashid.lua:354	content/items/definitions/items-33000-33499.json:1
-crystal_only_item_not_materializable	rashid	9015	BuyFromPlayer		1000	data-global/npc/rashid.lua:326	content/items/definitions/items-33000-33499.json:1
-crystal_only_item_not_materializable	rashid	9017	BuyFromPlayer		500	data-global/npc/rashid.lua:296	content/items/definitions/items-33000-33499.json:1
-crystal_only_item_not_materializable	rashid	9303	BuyFromPlayer		3000	data-global/npc/rashid.lua:356	content/items/definitions/items-33000-33499.json:1
-crystal_only_item_not_materializable	rashid	9304	BuyFromPlayer		3000	data-global/npc/rashid.lua:411	content/items/definitions/items-33000-33499.json:1
-crystal_only_item_not_materializable	rashid	9653	BuyFromPlayer		5000	data-global/npc/rashid.lua:432	content/items/definitions/items-33500-33999.json:1
+crystal_only_dedicated_quest_gated_shop	ramina	2874	SellToPlayer		10	data-global/npc/ramina.lua:67	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	ramina	2880	SellToPlayer		15	data-global/npc/ramina.lua:64	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	10457	BuyFromPlayer		1500	data-global/npc/rashid.lua:284	content/items/definitions/items-00500-00999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	11674	BuyFromPlayer		50000	data-global/npc/rashid.lua:295	content/items/definitions/items-01500-01999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	12482	BuyFromPlayer		500	data-global/npc/rashid.lua:349	content/items/definitions/items-02500-02999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	12483	BuyFromPlayer		1000	data-global/npc/rashid.lua:389	content/items/definitions/items-02500-02999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	12683	BuyFromPlayer		2000	data-global/npc/rashid.lua:345	content/items/definitions/items-02500-02999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	16163	BuyFromPlayer		35000	data-global/npc/rashid.lua:300	content/items/definitions/items-05500-05999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	16164	BuyFromPlayer		35000	data-global/npc/rashid.lua:377	content/items/definitions/items-05500-05999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	17828	BuyFromPlayer		4000	data-global/npc/rashid.lua:386	content/items/definitions/items-07000-07499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	17829	BuyFromPlayer		7000	data-global/npc/rashid.lua:291	content/items/definitions/items-07000-07499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	17852	BuyFromPlayer		2000	data-global/npc/rashid.lua:346	content/items/definitions/items-07000-07499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	19358	BuyFromPlayer		1500	data-global/npc/rashid.lua:278	content/items/definitions/items-08500-08999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	19359	BuyFromPlayer		300	data-global/npc/rashid.lua:350	content/items/definitions/items-08500-08999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	19372	BuyFromPlayer		4000	data-global/npc/rashid.lua:338	content/items/definitions/items-08500-08999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	21981	BuyFromPlayer		15000	data-global/npc/rashid.lua:385	content/items/definitions/items-11000-11499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	22195	BuyFromPlayer		3500	data-global/npc/rashid.lua:383	content/items/definitions/items-11000-11499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	22726	BuyFromPlayer		50000	data-global/npc/rashid.lua:402	content/items/definitions/items-11500-11999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	22727	BuyFromPlayer		30000	data-global/npc/rashid.lua:401	content/items/definitions/items-11500-11999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	22866	BuyFromPlayer		45000	data-global/npc/rashid.lua:399	content/items/definitions/items-11500-11999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	22867	BuyFromPlayer		45000	data-global/npc/rashid.lua:400	content/items/definitions/items-11500-11999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	2958	BuyFromPlayer		8000	data-global/npc/rashid.lua:431	content/items/definitions/items-17000-17499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	2991	BuyFromPlayer		200	data-global/npc/rashid.lua:317	content/items/definitions/items-17000-17499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	2994	BuyFromPlayer		1000	data-global/npc/rashid.lua:376	content/items/definitions/items-17000-17499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3002	BuyFromPlayer		400	data-global/npc/rashid.lua:429	content/items/definitions/items-17000-17499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3006	BuyFromPlayer		30000	data-global/npc/rashid.lua:403	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3007	BuyFromPlayer		250	data-global/npc/rashid.lua:303	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3008	BuyFromPlayer		400	data-global/npc/rashid.lua:302	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3010	BuyFromPlayer		800	data-global/npc/rashid.lua:324	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3016	BuyFromPlayer		2000	data-global/npc/rashid.lua:405	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3017	BuyFromPlayer		150	data-global/npc/rashid.lua:412	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3018	BuyFromPlayer		200	data-global/npc/rashid.lua:409	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3019	BuyFromPlayer		32000	data-global/npc/rashid.lua:311	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3025	BuyFromPlayer		200	data-global/npc/rashid.lua:280	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3055	BuyFromPlayer		2500	data-global/npc/rashid.lua:396	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3063	BuyFromPlayer		8000	data-global/npc/rashid.lua:335	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3290	BuyFromPlayer		500	data-global/npc/rashid.lua:413	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3314	BuyFromPlayer		2000	data-global/npc/rashid.lua:379	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3315	BuyFromPlayer		11000	data-global/npc/rashid.lua:340	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3326	BuyFromPlayer		8000	data-global/npc/rashid.lua:325	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3327	BuyFromPlayer		110	data-global/npc/rashid.lua:306	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3328	BuyFromPlayer		1000	data-global/npc/rashid.lua:307	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3330	BuyFromPlayer		90	data-global/npc/rashid.lua:344	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3332	BuyFromPlayer		30000	data-global/npc/rashid.lua:341	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3333	BuyFromPlayer		12000	data-global/npc/rashid.lua:301	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3334	BuyFromPlayer		23000	data-global/npc/rashid.lua:390	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3339	BuyFromPlayer		15000	data-global/npc/rashid.lua:316	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3340	BuyFromPlayer		50000	data-global/npc/rashid.lua:343	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3342	BuyFromPlayer		12000	data-global/npc/rashid.lua:430	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3344	BuyFromPlayer		1500	data-global/npc/rashid.lua:283	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3356	BuyFromPlayer		1000	data-global/npc/rashid.lua:313	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3360	BuyFromPlayer		20000	data-global/npc/rashid.lua:336	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3364	BuyFromPlayer		30000	data-global/npc/rashid.lua:337	content/items/definitions/items-20000-20499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3366	BuyFromPlayer		90000	data-global/npc/rashid.lua:364	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3386	BuyFromPlayer		40000	data-global/npc/rashid.lua:318	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3397	BuyFromPlayer		30000	data-global/npc/rashid.lua:322	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3404	BuyFromPlayer		1000	data-global/npc/rashid.lua:355	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3408	BuyFromPlayer		7500	data-global/npc/rashid.lua:289	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3414	BuyFromPlayer		50000	data-global/npc/rashid.lua:373	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3420	BuyFromPlayer		30000	data-global/npc/rashid.lua:310	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3421	BuyFromPlayer		400	data-global/npc/rashid.lua:308	content/items/definitions/items-20500-20999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3433	BuyFromPlayer		3000	data-global/npc/rashid.lua:339	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3435	BuyFromPlayer		5000	data-global/npc/rashid.lua:292	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3436	BuyFromPlayer		9000	data-global/npc/rashid.lua:374	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3440	BuyFromPlayer		2000	data-global/npc/rashid.lua:410	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3441	BuyFromPlayer		80	data-global/npc/rashid.lua:288	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3442	BuyFromPlayer		35000	data-global/npc/rashid.lua:420	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3550	BuyFromPlayer		2000	data-global/npc/rashid.lua:388	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3554	BuyFromPlayer		30000	data-global/npc/rashid.lua:417	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	3556	BuyFromPlayer		1000	data-global/npc/rashid.lua:299	content/items/definitions/items-21000-21499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	5461	BuyFromPlayer		3000	data-global/npc/rashid.lua:391	content/items/definitions/items-29000-29499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	5710	BuyFromPlayer		300	data-global/npc/rashid.lua:357	content/items/definitions/items-29000-29499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	5741	BuyFromPlayer		40000	data-global/npc/rashid.lua:414	content/items/definitions/items-29000-29499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	5810	BuyFromPlayer		500	data-global/npc/rashid.lua:395	content/items/definitions/items-29500-29999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	5917	BuyFromPlayer		150	data-global/npc/rashid.lua:282	content/items/definitions/items-29500-29999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	5918	BuyFromPlayer		200	data-global/npc/rashid.lua:393	content/items/definitions/items-29500-29999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	6095	BuyFromPlayer		500	data-global/npc/rashid.lua:394	content/items/definitions/items-29500-29999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	6096	BuyFromPlayer		1000	data-global/npc/rashid.lua:392	content/items/definitions/items-29500-29999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	6131	BuyFromPlayer		150	data-global/npc/rashid.lua:427	content/items/definitions/items-29500-29999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	6299	BuyFromPlayer		1000	data-global/npc/rashid.lua:309	content/items/definitions/items-30000-30499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	6553	BuyFromPlayer		45000	data-global/npc/rashid.lua:406	content/items/definitions/items-30000-30499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7379	BuyFromPlayer		1500	data-global/npc/rashid.lua:290	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7380	BuyFromPlayer		6000	data-global/npc/rashid.lua:342	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7381	BuyFromPlayer		300	data-global/npc/rashid.lua:372	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7382	BuyFromPlayer		36000	data-global/npc/rashid.lua:312	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7383	BuyFromPlayer		25000	data-global/npc/rashid.lua:398	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7384	BuyFromPlayer		30000	data-global/npc/rashid.lua:378	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7386	BuyFromPlayer		12000	data-global/npc/rashid.lua:375	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7387	BuyFromPlayer		3000	data-global/npc/rashid.lua:314	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7388	BuyFromPlayer		30000	data-global/npc/rashid.lua:428	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7389	BuyFromPlayer		30000	data-global/npc/rashid.lua:347	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7390	BuyFromPlayer		40000	data-global/npc/rashid.lua:426	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7392	BuyFromPlayer		6000	data-global/npc/rashid.lua:384	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7402	BuyFromPlayer		15000	data-global/npc/rashid.lua:319	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7403	BuyFromPlayer		40000	data-global/npc/rashid.lua:285	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7404	BuyFromPlayer		20000	data-global/npc/rashid.lua:281	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7406	BuyFromPlayer		6000	data-global/npc/rashid.lua:286	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7408	BuyFromPlayer		1500	data-global/npc/rashid.lua:433	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7414	BuyFromPlayer		20000	data-global/npc/rashid.lua:277	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7415	BuyFromPlayer		30000	data-global/npc/rashid.lua:298	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7418	BuyFromPlayer		35000	data-global/npc/rashid.lua:380	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7419	BuyFromPlayer		10000	data-global/npc/rashid.lua:321	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7422	BuyFromPlayer		25000	data-global/npc/rashid.lua:351	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7424	BuyFromPlayer		5000	data-global/npc/rashid.lua:363	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7425	BuyFromPlayer		500	data-global/npc/rashid.lua:419	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7426	BuyFromPlayer		8000	data-global/npc/rashid.lua:279	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7427	BuyFromPlayer		9000	data-global/npc/rashid.lua:294	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7429	BuyFromPlayer		40000	data-global/npc/rashid.lua:287	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7430	BuyFromPlayer		3000	data-global/npc/rashid.lua:320	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7432	BuyFromPlayer		1000	data-global/npc/rashid.lua:329	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7434	BuyFromPlayer		40000	data-global/npc/rashid.lua:404	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7437	BuyFromPlayer		7000	data-global/npc/rashid.lua:408	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7438	BuyFromPlayer		2000	data-global/npc/rashid.lua:323	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7449	BuyFromPlayer		600	data-global/npc/rashid.lua:304	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7452	BuyFromPlayer		5000	data-global/npc/rashid.lua:416	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7456	BuyFromPlayer		10000	data-global/npc/rashid.lua:381	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7457	BuyFromPlayer		2000	data-global/npc/rashid.lua:328	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7460	BuyFromPlayer		1500	data-global/npc/rashid.lua:382	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7461	BuyFromPlayer		200	data-global/npc/rashid.lua:352	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7462	BuyFromPlayer		400	data-global/npc/rashid.lua:397	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7463	BuyFromPlayer		6000	data-global/npc/rashid.lua:370	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	7464	BuyFromPlayer		850	data-global/npc/rashid.lua:371	content/items/definitions/items-31000-31499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	8022	BuyFromPlayer		40000	data-global/npc/rashid.lua:293	content/items/definitions/items-31500-31999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	8027	BuyFromPlayer		25000	data-global/npc/rashid.lua:297	content/items/definitions/items-31500-31999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	8045	BuyFromPlayer		3000	data-global/npc/rashid.lua:348	content/items/definitions/items-31500-31999.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	8049	BuyFromPlayer		16000	data-global/npc/rashid.lua:353	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	8050	BuyFromPlayer		16000	data-global/npc/rashid.lua:305	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	8052	BuyFromPlayer		16000	data-global/npc/rashid.lua:418	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	8057	BuyFromPlayer		55000	data-global/npc/rashid.lua:315	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	8061	BuyFromPlayer		18000	data-global/npc/rashid.lua:415	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	8063	BuyFromPlayer		15000	data-global/npc/rashid.lua:387	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	811	BuyFromPlayer		11000	data-global/npc/rashid.lua:425	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	812	BuyFromPlayer		11000	data-global/npc/rashid.lua:424	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	813	BuyFromPlayer		2500	data-global/npc/rashid.lua:422	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	814	BuyFromPlayer		1500	data-global/npc/rashid.lua:421	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	815	BuyFromPlayer		1500	data-global/npc/rashid.lua:330	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	816	BuyFromPlayer		1500	data-global/npc/rashid.lua:361	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	817	BuyFromPlayer		1500	data-global/npc/rashid.lua:365	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	818	BuyFromPlayer		2500	data-global/npc/rashid.lua:366	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	819	BuyFromPlayer		2500	data-global/npc/rashid.lua:334	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	820	BuyFromPlayer		2500	data-global/npc/rashid.lua:358	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	821	BuyFromPlayer		11000	data-global/npc/rashid.lua:368	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	822	BuyFromPlayer		11000	data-global/npc/rashid.lua:360	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	823	BuyFromPlayer		11000	data-global/npc/rashid.lua:331	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	824	BuyFromPlayer		11000	data-global/npc/rashid.lua:333	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	825	BuyFromPlayer		11000	data-global/npc/rashid.lua:362	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	826	BuyFromPlayer		11000	data-global/npc/rashid.lua:367	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	827	BuyFromPlayer		2500	data-global/npc/rashid.lua:369	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	828	BuyFromPlayer		2500	data-global/npc/rashid.lua:359	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	829	BuyFromPlayer		2500	data-global/npc/rashid.lua:332	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	830	BuyFromPlayer		2500	data-global/npc/rashid.lua:423	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	9013	BuyFromPlayer		500	data-global/npc/rashid.lua:327	content/items/definitions/items-33000-33499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	9014	BuyFromPlayer		500	data-global/npc/rashid.lua:354	content/items/definitions/items-33000-33499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	9015	BuyFromPlayer		1000	data-global/npc/rashid.lua:326	content/items/definitions/items-33000-33499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	9017	BuyFromPlayer		500	data-global/npc/rashid.lua:296	content/items/definitions/items-33000-33499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	9302	BuyFromPlayer		3000	data-global/npc/rashid.lua:407	content/items/definitions/items-33000-33499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	9303	BuyFromPlayer		3000	data-global/npc/rashid.lua:356	content/items/definitions/items-33000-33499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	9304	BuyFromPlayer		3000	data-global/npc/rashid.lua:411	content/items/definitions/items-33000-33499.json:1
+crystal_only_dedicated_quest_gated_shop	rashid	9653	BuyFromPlayer		5000	data-global/npc/rashid.lua:432	content/items/definitions/items-33500-33999.json:1
 crystal_only_no_native_npc_definition	rashid_custom	10457	BuyFromPlayer		1500	data-global/npc/rashid_custom.lua:287	content/items/definitions/items-00500-00999.json:1
 crystal_only_no_native_npc_definition	rashid_custom	11674	BuyFromPlayer		50000	data-global/npc/rashid_custom.lua:298	content/items/definitions/items-01500-01999.json:1
 crystal_only_no_native_npc_definition	rashid_custom	12482	BuyFromPlayer		500	data-global/npc/rashid_custom.lua:352	content/items/definitions/items-02500-02999.json:1
@@ -4424,8 +4522,8 @@ oteryn_only_no_named_donor_script	rashid_of_island	9304	BuyFromPlayer	3000			con
 oteryn_only_no_named_donor_script	rashid_of_island	9653	BuyFromPlayer	5000			content/items/definitions/items-33500-33999.json:1
 oteryn_only_no_literal_match	red_lilly	2834	SellToPlayer	12			content/items/definitions/items-16000-16499.json:1
 oteryn_only_no_literal_match	red_lilly	2835	SellToPlayer	8			content/items/definitions/items-16000-16499.json:1
-crystal_only_variant_or_name_mismatch	red_lilly	2874	SellToPlayer		20,20	data-global/npc/red_lilly.lua:88,data-global/npc/red_lilly.lua:89	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	red_lilly	2901	SellToPlayer		10	data-global/npc/red_lilly.lua:91	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	red_lilly	2874	SellToPlayer		20,20	data-global/npc/red_lilly.lua:88,data-global/npc/red_lilly.lua:89	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	red_lilly	2901	SellToPlayer		10	data-global/npc/red_lilly.lua:91	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	red_lilly	2911	SellToPlayer	8			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	red_lilly	2922	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	red_lilly	2924	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
@@ -4518,7 +4616,7 @@ oteryn_only_no_literal_match	rowenna	3298	BuyFromPlayer	2			content/items/defini
 oteryn_only_no_literal_match	rowenna	3336	BuyFromPlayer	10			content/items/definitions/items-20000-20499.json:1
 oteryn_only_no_literal_match	rowenna	3462	BuyFromPlayer	5			content/items/definitions/items-21000-21499.json:1
 oteryn_only_no_literal_match	sam	17824	BuyFromPlayer	40			content/items/definitions/items-07000-07499.json:1
-crystal_only_variant_or_name_mismatch	sandra	2874	SellToPlayer		15,20,12,10,8	data-global/npc/sandra.lua:166,data-global/npc/sandra.lua:167,data-global/npc/sandra.lua:168,data-global/npc/sandra.lua:169,data-global/npc/sandra.lua:170	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	sandra	2874	SellToPlayer		15,20,12,10,8	data-global/npc/sandra.lua:166,data-global/npc/sandra.lua:167,data-global/npc/sandra.lua:168,data-global/npc/sandra.lua:169,data-global/npc/sandra.lua:170	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	sandra	53162	SellToPlayer	254			content/items/definitions/items-28500-28999.json:1
 oteryn_only_no_literal_match	sandra	53163	SellToPlayer	381			content/items/definitions/items-28500-28999.json:1
 oteryn_only_no_literal_match	sandra	53164	SellToPlayer	732			content/items/definitions/items-28500-28999.json:1
@@ -4528,9 +4626,9 @@ crystal_only_variant_or_name_mismatch	sarina	2874	SellToPlayer		20	data-global/n
 oteryn_only_no_literal_match	sarina	2922	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	sarina	2924	SellToPlayer	2			content/items/definitions/items-17000-17499.json:1
 oteryn_only_no_literal_match	sarina	3218	SellToPlayer	10			content/items/definitions/items-19000-19499.json:1
-crystal_only_variant_or_name_mismatch	satsu	2874	SellToPlayer		52,52,52,52,52	data-global/npc/satsu.lua:66,data-global/npc/satsu.lua:67,data-global/npc/satsu.lua:68,data-global/npc/satsu.lua:69,data-global/npc/satsu.lua:70	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	satsu	9232	SellToPlayer		52,52,52,52,52,52,52,52,52	data-global/npc/satsu.lua:57,data-global/npc/satsu.lua:58,data-global/npc/satsu.lua:59,data-global/npc/satsu.lua:60,data-global/npc/satsu.lua:61,data-global/npc/satsu.lua:62,data-global/npc/satsu.lua:63,data-global/npc/satsu.lua:64,data-global/npc/satsu.lua:65	content/items/definitions/items-33000-33499.json:1
-crystal_only_variant_or_name_mismatch	sessek	2874	SellToPlayer		6,6,6,6,6	data-global/npc/sessek.lua:58,data-global/npc/sessek.lua:59,data-global/npc/sessek.lua:60,data-global/npc/sessek.lua:61,data-global/npc/sessek.lua:62	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	satsu	2874	SellToPlayer		52,52,52,52,52	data-global/npc/satsu.lua:66,data-global/npc/satsu.lua:67,data-global/npc/satsu.lua:68,data-global/npc/satsu.lua:69,data-global/npc/satsu.lua:70	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	satsu	9232	SellToPlayer		52,52,52,52,52,52,52,52,52	data-global/npc/satsu.lua:57,data-global/npc/satsu.lua:58,data-global/npc/satsu.lua:59,data-global/npc/satsu.lua:60,data-global/npc/satsu.lua:61,data-global/npc/satsu.lua:62,data-global/npc/satsu.lua:63,data-global/npc/satsu.lua:64,data-global/npc/satsu.lua:65	content/items/definitions/items-33000-33499.json:1
+crystal_only_dedicated_quest_gated_shop	sessek	2874	SellToPlayer		6,6,6,6,6	data-global/npc/sessek.lua:58,data-global/npc/sessek.lua:59,data-global/npc/sessek.lua:60,data-global/npc/sessek.lua:61,data-global/npc/sessek.lua:62	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	sessek	2881	SellToPlayer	3			content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	sessek	2885	SellToPlayer	6			content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	sessek	5865	SellToPlayer	100			content/items/definitions/items-29500-29999.json:1
@@ -4663,8 +4761,8 @@ oteryn_only_no_literal_match	silas	762	SellToPlayer	5			content/items/definition
 oteryn_only_no_literal_match	silas	763	SellToPlayer	5			content/items/definitions/items-31500-31999.json:1
 oteryn_only_no_literal_match	silas	774	SellToPlayer	5			content/items/definitions/items-31500-31999.json:1
 oteryn_only_no_literal_match	simon_the_beggar	3457	SellToPlayer	50			content/items/definitions/items-21000-21499.json:1
-crystal_only_variant_or_name_mismatch	snake_eye	2874	SellToPlayer		5,6	data-global/npc/snake_eye.lua:85,data-global/npc/snake_eye.lua:86	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	snake_eye	2880	SellToPlayer		5,6	data-global/npc/snake_eye.lua:83,data-global/npc/snake_eye.lua:84	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	snake_eye	2874	SellToPlayer		5,6	data-global/npc/snake_eye.lua:85,data-global/npc/snake_eye.lua:86	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	snake_eye	2880	SellToPlayer		5,6	data-global/npc/snake_eye.lua:83,data-global/npc/snake_eye.lua:84	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	stan	653	SellToPlayer	500			content/items/definitions/items-30000-30499.json:1
 oteryn_only_no_literal_match	stan	655	SellToPlayer	1500			content/items/definitions/items-30000-30499.json:1
 oteryn_only_no_literal_match	sundara	21348	SellToPlayer	250			content/items/definitions/items-10500-10999.json:1
@@ -4673,7 +4771,7 @@ oteryn_only_no_literal_match	sundara	3195	SellToPlayer	46			content/items/defini
 oteryn_only_no_literal_match	sundara	53162	SellToPlayer	254			content/items/definitions/items-28500-28999.json:1
 oteryn_only_no_literal_match	sundara	53163	SellToPlayer	381			content/items/definitions/items-28500-28999.json:1
 oteryn_only_no_literal_match	sundara	53164	SellToPlayer	732			content/items/definitions/items-28500-28999.json:1
-crystal_only_item_not_materializable	swolt	2880	SellToPlayer		2,1	data-global/npc/swolt.lua:86,data-global/npc/swolt.lua:87	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	swolt	2880	SellToPlayer		2,1	data-global/npc/swolt.lua:86,data-global/npc/swolt.lua:87	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	taegen	51760	SellToPlayer	600			content/items/definitions/items-28000-28499.json:1
 oteryn_only_no_literal_match	taegen	53168	SellToPlayer	45			content/items/definitions/items-28500-28999.json:1
 oteryn_only_no_literal_match	taegen	53169	SellToPlayer	75			content/items/definitions/items-28500-28999.json:1
@@ -4696,8 +4794,8 @@ oteryn_only_no_literal_match	talila	53163	SellToPlayer	381			content/items/defin
 oteryn_only_no_literal_match	talila	53164	SellToPlayer	732			content/items/definitions/items-28500-28999.json:1
 oteryn_only_no_literal_match	talila	8012	SellToPlayer	2			content/items/definitions/items-31500-31999.json:1
 oteryn_only_no_literal_match	talila	8013	SellToPlayer	5			content/items/definitions/items-31500-31999.json:1
-crystal_only_item_not_materializable	tanaro	2875	SellToPlayer		2	data-global/npc/tanaro.lua:56	content/items/definitions/items-16500-16999.json:1
-crystal_only_item_not_materializable	tanaro	2877	SellToPlayer		3	data-global/npc/tanaro.lua:63	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	tanaro	2875	SellToPlayer		2	data-global/npc/tanaro.lua:56	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	tanaro	2877	SellToPlayer		3	data-global/npc/tanaro.lua:63	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	tandros	21348	SellToPlayer	250			content/items/definitions/items-10500-10999.json:1
 oteryn_only_no_literal_match	tandros	21350	SellToPlayer	250			content/items/definitions/items-10500-10999.json:1
 oteryn_only_no_literal_match	tandros	21400	SellToPlayer	75			content/items/definitions/items-10500-10999.json:1
@@ -5007,7 +5105,7 @@ oteryn_only_no_literal_match	ulrik	3376	BuyFromPlayer	20			content/items/definit
 oteryn_only_no_literal_match	ulrik	3412	BuyFromPlayer	5			content/items/definitions/items-20500-20999.json:1
 oteryn_only_no_literal_match	ulrik	3426	BuyFromPlayer	16			content/items/definitions/items-21000-21499.json:1
 oteryn_only_no_literal_match	ulrik	3431	BuyFromPlayer	85			content/items/definitions/items-21000-21499.json:1
-crystal_only_item_not_materializable	urkalio	2880	SellToPlayer		2,2,1,3	data-global/npc/urkalio.lua:61,data-global/npc/urkalio.lua:62,data-global/npc/urkalio.lua:63,data-global/npc/urkalio.lua:64	content/items/definitions/items-16500-16999.json:1
+crystal_only_dedicated_quest_gated_shop	urkalio	2880	SellToPlayer		2,2,1,3	data-global/npc/urkalio.lua:61,data-global/npc/urkalio.lua:62,data-global/npc/urkalio.lua:63,data-global/npc/urkalio.lua:64	content/items/definitions/items-16500-16999.json:1
 oteryn_only_no_literal_match	uzgod	17824	BuyFromPlayer	40			content/items/definitions/items-07000-07499.json:1
 oteryn_only_no_literal_match	uzgod	3264	BuyFromPlayer	25			content/items/definitions/items-19500-19999.json:1
 oteryn_only_no_literal_match	uzgod	3265	BuyFromPlayer	450			content/items/definitions/items-19500-19999.json:1
@@ -5079,25 +5177,38 @@ oteryn_only_no_literal_match	xodet	21348	SellToPlayer	250			content/items/defini
 oteryn_only_no_literal_match	xodet	21350	SellToPlayer	250			content/items/definitions/items-10500-10999.json:1
 oteryn_only_no_literal_match	xodet	21400	SellToPlayer	75			content/items/definitions/items-10500-10999.json:1
 oteryn_only_no_literal_match	xodet	53162	SellToPlayer	254			content/items/definitions/items-28500-28999.json:1
-crystal_only_item_not_materializable	yaman	16117	BuyFromPlayer		6000	data-global/npc/yaman.lua:187	content/items/definitions/items-05500-05999.json:1
-crystal_only_item_not_materializable	yaman	16118	BuyFromPlayer		6500	data-global/npc/yaman.lua:182	content/items/definitions/items-05500-05999.json:1
-crystal_only_item_not_materializable	yaman	3045	BuyFromPlayer		30	data-global/npc/yaman.lua:196	content/items/definitions/items-17500-17999.json:1
-crystal_only_item_not_materializable	yaman	3045	SellToPlayer		100	data-global/npc/yaman.lua:196	content/items/definitions/items-17500-17999.json:1
-crystal_only_variant_or_name_mismatch	yaman	3048	BuyFromPlayer		250	data-global/npc/yaman.lua:185	content/items/definitions/items-17500-17999.json:1
-crystal_only_variant_or_name_mismatch	yaman	3048	SellToPlayer		25000	data-global/npc/yaman.lua:185	content/items/definitions/items-17500-17999.json:1
-crystal_only_variant_or_name_mismatch	yaman	3054	BuyFromPlayer		50	data-global/npc/yaman.lua:193	content/items/definitions/items-17500-17999.json:1
-crystal_only_variant_or_name_mismatch	yaman	3054	SellToPlayer		100	data-global/npc/yaman.lua:193	content/items/definitions/items-17500-17999.json:1
-crystal_only_item_not_materializable	yaman	3065	BuyFromPlayer		2000	data-global/npc/yaman.lua:197	content/items/definitions/items-17500-17999.json:1
-crystal_only_item_not_materializable	yaman	3067	BuyFromPlayer		3000	data-global/npc/yaman.lua:183	content/items/definitions/items-17500-17999.json:1
-crystal_only_item_not_materializable	yaman	3069	BuyFromPlayer		1000	data-global/npc/yaman.lua:189	content/items/definitions/items-18000-18499.json:1
-crystal_only_item_not_materializable	yaman	3070	BuyFromPlayer		200	data-global/npc/yaman.lua:186	content/items/definitions/items-18000-18499.json:1
-crystal_only_variant_or_name_mismatch	yaman	3084	BuyFromPlayer		100	data-global/npc/yaman.lua:191	content/items/definitions/items-18000-18499.json:1
-crystal_only_variant_or_name_mismatch	yaman	3084	SellToPlayer		700	data-global/npc/yaman.lua:191	content/items/definitions/items-18000-18499.json:1
-crystal_only_variant_or_name_mismatch	yaman	3085	BuyFromPlayer		100	data-global/npc/yaman.lua:179	content/items/definitions/items-18000-18499.json:1
-crystal_only_variant_or_name_mismatch	yaman	3085	SellToPlayer		1000	data-global/npc/yaman.lua:179	content/items/definitions/items-18000-18499.json:1
-crystal_only_item_not_materializable	yaman	8082	BuyFromPlayer		4400	data-global/npc/yaman.lua:199	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	yaman	8083	BuyFromPlayer		1500	data-global/npc/yaman.lua:190	content/items/definitions/items-32000-32499.json:1
-crystal_only_item_not_materializable	yaman	8084	BuyFromPlayer		3600	data-global/npc/yaman.lua:195	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	16117	BuyFromPlayer		6000	data-global/npc/yaman.lua:187	content/items/definitions/items-05500-05999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	16118	BuyFromPlayer		6500	data-global/npc/yaman.lua:182	content/items/definitions/items-05500-05999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3045	BuyFromPlayer		30	data-global/npc/yaman.lua:196	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3045	SellToPlayer		100	data-global/npc/yaman.lua:196	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3048	BuyFromPlayer		250	data-global/npc/yaman.lua:185	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3048	SellToPlayer		25000	data-global/npc/yaman.lua:185	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3051	BuyFromPlayer		100	data-global/npc/yaman.lua:181	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3051	SellToPlayer		2000	data-global/npc/yaman.lua:181	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3052	BuyFromPlayer		50	data-global/npc/yaman.lua:184	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3052	SellToPlayer		900	data-global/npc/yaman.lua:184	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3053	BuyFromPlayer		100	data-global/npc/yaman.lua:198	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3053	SellToPlayer		2000	data-global/npc/yaman.lua:198	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3054	BuyFromPlayer		50	data-global/npc/yaman.lua:193	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3054	SellToPlayer		100	data-global/npc/yaman.lua:193	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3065	BuyFromPlayer		2000	data-global/npc/yaman.lua:197	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3066	BuyFromPlayer		100	data-global/npc/yaman.lua:194	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3067	BuyFromPlayer		3000	data-global/npc/yaman.lua:183	content/items/definitions/items-17500-17999.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3069	BuyFromPlayer		1000	data-global/npc/yaman.lua:189	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3070	BuyFromPlayer		200	data-global/npc/yaman.lua:186	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3077	BuyFromPlayer		100	data-global/npc/yaman.lua:178	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3078	BuyFromPlayer		50	data-global/npc/yaman.lua:188	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3084	BuyFromPlayer		100	data-global/npc/yaman.lua:191	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3084	SellToPlayer		700	data-global/npc/yaman.lua:191	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3085	BuyFromPlayer		100	data-global/npc/yaman.lua:179	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3085	SellToPlayer		1000	data-global/npc/yaman.lua:179	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3097	BuyFromPlayer		100	data-global/npc/yaman.lua:180	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3097	SellToPlayer		2000	data-global/npc/yaman.lua:180	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3098	BuyFromPlayer		100	data-global/npc/yaman.lua:192	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	3098	SellToPlayer		2000	data-global/npc/yaman.lua:192	content/items/definitions/items-18000-18499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	8082	BuyFromPlayer		4400	data-global/npc/yaman.lua:199	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	8083	BuyFromPlayer		1500	data-global/npc/yaman.lua:190	content/items/definitions/items-32000-32499.json:1
+crystal_only_dedicated_quest_gated_shop	yaman	8084	BuyFromPlayer		3600	data-global/npc/yaman.lua:195	content/items/definitions/items-32000-32499.json:1
 oteryn_only_no_literal_match	yana	50168	SellToPlayer	50			content/items/definitions/items-27500-27999.json:1
 oteryn_only_no_literal_match	yasir	10299	BuyFromPlayer	15			content/items/definitions/items-00000-00499.json:1
 oteryn_only_no_literal_match	yasir	25693	BuyFromPlayer	150			content/items/definitions/items-14000-14499.json:1
