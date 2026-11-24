@@ -20,7 +20,6 @@ INDEX = "content/world/placements/index.json"
 SHARD = "content/world/terrain/terrain-08794-08845.json"
 MARKER = "content/world/terrain/index.json"
 NOTE = " Additionally 52 source-qualified spawn grounds bound at the slice 2 cells."
-NPC_CONTACT_NOTE = " Additionally source ground 470 at the Sleeping Dragon and 50343 at Skullfrost."
 NPC_SCOPE = "tools/content-schema/npc-authoring/npc_placement_scope.json"
 SLEEPING_DRAGON_CELL = (33242, 31213, 10)
 
@@ -34,7 +33,11 @@ def captured_grounds(root=ROOT):
         if "source_ground" in dragon:
             (placement,) = dragon["placements"]
             cell = tuple(placement["position"][axis] for axis in ("x", "y", "z"))
-            if cell in grounds or cell != SLEEPING_DRAGON_CELL or dragon["source_ground"] != 470:
+            if (
+                cell in grounds
+                or cell != SLEEPING_DRAGON_CELL
+                or dragon["source_ground"] != 470
+            ):
                 raise ValueError(f"invalid Sleeping Dragon ground at {cell}")
             grounds[cell] = dragon["source_ground"]
     return grounds
@@ -90,8 +93,6 @@ def catalogue_outputs(marker_raw, root=ROOT):
     marker = json.loads(marker_raw)
     if NOTE not in marker["notes"]:
         marker["notes"] += NOTE
-    if SLEEPING_DRAGON_CELL in captured_grounds(root) and NPC_CONTACT_NOTE not in marker["notes"]:
-        marker["notes"] += NPC_CONTACT_NOTE
     marker["notes"] = compose_terrain_notes(marker["notes"])
     return {
         SHARD: canonical(

@@ -63,7 +63,7 @@ RELOCATIONS = {
         "ce986ca83b92f5ea2b7aeaa5bdc75b591cb28d63ab1a93dce0077215ce90979f",
     ): (
         "content/world/terrain/index.json",
-        "8ddcf3d647da761b5b3e349fa69e6e7cb8ef8b885716c3119088207d73dfc9eb",
+        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
@@ -88,7 +88,7 @@ RELOCATIONS = {
         "704991a60238795986358b6d2bcb7ac25f2172a04723b541e3f959a50eb9d768",
     ): (
         "content/world/terrain/index.json",
-        "8ddcf3d647da761b5b3e349fa69e6e7cb8ef8b885716c3119088207d73dfc9eb",
+        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
     ),
     (
         "content/world/terrain/terrain-05500-05999.json",
@@ -133,14 +133,14 @@ RELOCATIONS = {
         "82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "2c2e4b78f374977358d56da3ec2875a245c9178206484fc0368857df929e6a14",
+        "5ef32cfa01e7a319e4ef056592df1aa66e7fbff30b6d86604f5354316436aa3d",
     ),
     (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
         "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "2c2e4b78f374977358d56da3ec2875a245c9178206484fc0368857df929e6a14",
+        "5ef32cfa01e7a319e4ef056592df1aa66e7fbff30b6d86604f5354316436aa3d",
     ),
     # Numeric17 reuses the Mantra/Bond compiler's source readers. Their behavior
     # is unchanged by the exact Global overlay check on live Mantra/Bond rows.
@@ -224,42 +224,42 @@ RELOCATIONS = {
         "0549b3567749436b9e6f91f79751d32d9ea4431fe6b1be7505566d50b797e27d",
     ): (
         "content/world/terrain/index.json",
-        "8ddcf3d647da761b5b3e349fa69e6e7cb8ef8b885716c3119088207d73dfc9eb",
+        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
     ),
     (
         "content/world/terrain/index.json",
         "22cb600cca441ac68526501c8e3576ec9c1dd07f77b276db470c70b996028fec",
     ): (
         "content/world/terrain/index.json",
-        "8ddcf3d647da761b5b3e349fa69e6e7cb8ef8b885716c3119088207d73dfc9eb",
+        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
     ),
     (
         "content/world/terrain/index.json",
         "360e65beb939450179cb6c99b5c19a0e2842051fd9c3beaf21e6366b9c9245a4",
     ): (
         "content/world/terrain/index.json",
-        "8ddcf3d647da761b5b3e349fa69e6e7cb8ef8b885716c3119088207d73dfc9eb",
+        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
     ),
     (
         "content/world/terrain/index.json",
         "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44",
     ): (
         "content/world/terrain/index.json",
-        "8ddcf3d647da761b5b3e349fa69e6e7cb8ef8b885716c3119088207d73dfc9eb",
+        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
     ),
     (
         "content/world/terrain/index.json",
         "abffe2dd83dfec1ce1afd657bd0fcaae3760a10a509f8e1034e35834a714ba79",
     ): (
         "content/world/terrain/index.json",
-        "8ddcf3d647da761b5b3e349fa69e6e7cb8ef8b885716c3119088207d73dfc9eb",
+        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
     ),
     (
         "content/world/terrain/index.json",
         "baf9f79b334c9478895ae824c67aad32e06eb4e7b09435570389dd64ad455836",
     ): (
         "content/world/terrain/index.json",
-        "8ddcf3d647da761b5b3e349fa69e6e7cb8ef8b885716c3119088207d73dfc9eb",
+        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
     ),
     (
         "content/world/terrain/terrain-08614-08668.json",
