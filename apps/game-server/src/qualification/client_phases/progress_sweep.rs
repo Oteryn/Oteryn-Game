@@ -840,6 +840,7 @@ async fn charm(
     };
     use oteryn_protocol_oteryn::charm_progression::{
         CharmProgressionAction as Action, CharmProgressionOutcome as Outcome,
+        CharmRemoveDisposition,
     };
 
     let content = &rows.entry.content;
@@ -920,7 +921,7 @@ async fn charm(
     if balance < cost {
         return Err(format!("charm-currency-prerequisite-needed-{cost}-observed-{balance}").into());
     }
-    let unlocked = charm_command(
+    let mut unlocked = charm_command(
         client,
         Action::Unlock {
             charm: id,
@@ -936,6 +937,34 @@ async fn charm(
     }
     rows.pass(&format!("stage-one-debit-{cost}"));
 
+    // Free the prior probe's race and slot over the same command path a player uses.
+    if let Some(prior) = unlocked
+        .charms
+        .charms
+        .iter()
+        .find(|state| state.assigned_race.is_some())
+    {
+        let prior = prior.charm;
+        let removed = charm_command(client, Action::Remove { charm: prior }).await?;
+        unlocked = if removed.outcome == Outcome::Remove(CharmRemoveDisposition::NotEnoughGold) {
+            charm_fixture(client, "progress-charm-fee".into())
+                .await?
+                .map_err(|reason| format!("harness-charm-fee-fixture-refused-{reason}"))?;
+            charm_command(client, Action::Remove { charm: prior }).await?
+        } else {
+            removed
+        };
+        if unlocked.outcome != Outcome::Remove(CharmRemoveDisposition::Removed)
+            || unlocked.fee_gold == 0
+            || charm_state(&unlocked, prior)?.assigned_race.is_some()
+        {
+            return Err(format!(
+                "harness-charm-cleanup-mismatch-{prior}-{:?}",
+                unlocked.outcome
+            )
+            .into());
+        }
+    }
     let here = tile(client.world_spatial().actor_position)?;
     let mut candidates = Vec::new();
     for (ordinal, (definition, _)) in races.iter().enumerate() {

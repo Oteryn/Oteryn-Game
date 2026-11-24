@@ -17,8 +17,10 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     .then_some((session, profile))
     .or_else(|| {
         (cfg!(any(test, feature = "qualification-spawn"))
-            && (matches!(profile, "progress-baking" | "progress-charms")
-                || mastery_species(profile).is_some()))
+            && (matches!(
+                profile,
+                "progress-baking" | "progress-charms" | "progress-charm-fee"
+            ) || mastery_species(profile).is_some()))
         .then_some((session, profile))
     })
 }
@@ -680,10 +682,31 @@ async fn prepare_build(
         return Err("qualification scope mismatch".into());
     }
     if profile == "progress-baking" {
-        return prepare_items(root, authority, proof, &current, native, deadline, &[3604]).await;
+        return prepare_items(
+            root,
+            authority,
+            proof,
+            &current,
+            native,
+            deadline,
+            &[(3604, 1)],
+        )
+        .await;
     }
     if profile == "progress-charms" {
         return prepare_charm_points(root, authority, proof, &current, native, deadline).await;
+    }
+    if profile == "progress-charm-fee" {
+        return prepare_items(
+            root,
+            authority,
+            proof,
+            &current,
+            native,
+            deadline,
+            &[(3043, 3)],
+        )
+        .await;
     }
     if let Some(species) = mastery_species(profile) {
         let row = native
@@ -748,7 +771,7 @@ async fn prepare_build(
         &current,
         native,
         deadline,
-        &[3276, 3003, 3457],
+        &[(3276, 1), (3003, 1), (3457, 1)],
     )
     .await
 }
@@ -966,7 +989,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
-    item_ids: &[u32],
+    item_ids: &[(u32, u32)],
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -1039,7 +1062,7 @@ async fn prepare_items(
     let index = native
         .item_index()
         .ok_or("qualification Item index missing")?;
-    for (ordinal, &id) in item_ids.iter().enumerate() {
+    for (ordinal, &(id, quantity)) in item_ids.iter().enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
@@ -1053,7 +1076,7 @@ async fn prepare_items(
             .equipment
             .iter()
             .chain(bag.entries.iter().map(|entry| &entry.item))
-            .any(|existing| existing.definition == definition && existing.quantity == 1)
+            .any(|existing| existing.definition == definition && existing.quantity >= quantity)
         {
             continue;
         }
@@ -1077,7 +1100,7 @@ async fn prepare_items(
             },
             source_placement: "oteryn:qualification.node-boot".into(),
             item,
-            quantity: 1,
+            quantity,
             contents: Vec::new(),
             root_text: None,
             root_fluid_subtype: None,
