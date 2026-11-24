@@ -84,6 +84,10 @@ enum Entry {
         category: crate::domain::charm::CharmCategory,
         stage_costs: [u32; 3],
     },
+    House {
+        town: String,
+        name: String,
+    },
     Item {
         revision: String,
         name: String,
@@ -172,6 +176,25 @@ fn census(root: &Path) -> TestResult<Content> {
         entries.insert(format!("character.{tab:?}"), Entry::Character(tab));
     }
     entries.insert("character.Items".into(), Entry::CharacterItems);
+    for file in ["houses-00000-00499.json", "houses-00500-00994.json"] {
+        let data: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(root.join("content/houses").join(file))?)?;
+        for row in data["houses"]
+            .as_array()
+            .ok_or("House catalogue missing houses")?
+        {
+            let key = row["identity"]["key"].as_str().ok_or("House missing key")?;
+            let town = row["town"]["key"].as_str().ok_or("House missing town")?;
+            let name = row["name"].as_str().ok_or("House missing name")?;
+            entries.insert(
+                format!("houses.{key}"),
+                Entry::House {
+                    town: town.into(),
+                    name: name.into(),
+                },
+            );
+        }
+    }
     for row in creature_sweep::read_shards(&root.join("content/items/definitions"), "items-")? {
         let definition = &row["definition"];
         if definition["client_projection"] != "ClientSafe" {
@@ -314,6 +337,7 @@ impl Entry {
             Self::MapAtlas(_) => &["query", "visit", "progress"],
             Self::Weather(_) => &["visit", "state"],
             Self::Item { .. }
+            | Self::House { .. }
             | Self::Character(_)
             | Self::CharacterItems
             | Self::Charm { .. }
@@ -833,7 +857,7 @@ async fn check_entry(sweep: &mut Sweep<'_, '_>, key: &str, entry: &Entry, rows: 
                 Entry::Weather(area) => check_weather(sweep, area, rows).await,
                 _ => {
                     rows.emit(
-                        read_page(client, key, entry, &mut sweep.items).await,
+                        read_page(client, key, entry, sweep.clients.world, &mut sweep.items).await,
                         "catalogue",
                     );
                 }
@@ -949,6 +973,7 @@ async fn read_page(
     client: &mut DevClientSession,
     key: &str,
     entry: &Entry,
+    world_id: [u8; 16],
     items: &mut Option<crate::content::item_ref::ItemDefinitionIndex>,
 ) -> TestResult<String> {
     let cap = character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1;
@@ -1017,6 +1042,31 @@ async fn read_page(
                 .into());
             }
             Ok(format!("bonus:{actual}"))
+        }
+        Entry::House { town, name } => {
+            use oteryn_dev_client::client_runtime::house;
+            let house_key = key.strip_prefix("houses.").ok_or("missing house key")?;
+            let mut cursor = None;
+            let mut seen = std::collections::BTreeSet::new();
+            loop {
+                let request = house::query(world_id, town, cursor.as_deref()).map_err(debug)?;
+                let body =
+                    command(client, request.capability, request.kind, &request.payload).await?;
+                let page = house::page(&body).map_err(debug)?;
+                if let Some(row) = page.rows.iter().find(|row| row.house == house_key) {
+                    if row.name != *name {
+                        return Err(format!("expected house {name}; observed {}", row.name).into());
+                    }
+                    return Ok(format!("name:{name},town:{town}"));
+                }
+                let Some(next) = page.cursor else {
+                    return Err(format!("house {house_key} missing from {town} catalogue").into());
+                };
+                if !seen.insert(next.clone()) {
+                    return Err(format!("house catalogue cursor repeated for {town}").into());
+                }
+                cursor = Some(next);
+            }
         }
         Entry::Item { revision, name } => {
             let key = key.strip_prefix("items.").ok_or("missing item key")?;
@@ -1616,6 +1666,7 @@ mod tests {
             "bosstiary.",
             "character.",
             "charms.",
+            "houses.",
             "items.",
             "map.",
             "weather.",
