@@ -189,9 +189,11 @@ readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
 NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "$NODE_BOOT_WORLD" "$NODE_BOOT_SPELLS")"
 # The full World composes collision, spawn and NPC owners after content activation.
-# Keep the regional readiness budget and give this opt-in profile its own bound.
+# The sweep can load dozens of regions. Keep the standard town and quests deadline.
 NODE_READINESS_WAIT_SECONDS=60
-if [[ "$NODE_BOOT_WORLD_PROFILE" == full ]]; then NODE_READINESS_WAIT_SECONDS=300; fi
+if [[ "$NODE_BOOT_WORLD_PROFILE" == full || "$NODE_BOOT_WORLD_PROFILE" == transition-regions ]]; then
+  NODE_READINESS_WAIT_SECONDS=300
+fi
 NODE_GAMEPLAY_ENV=()
 if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   # Default: the canonical imported book. The r21 reference artifact stays selectable explicitly.
