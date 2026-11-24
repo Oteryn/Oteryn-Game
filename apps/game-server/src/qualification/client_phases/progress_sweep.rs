@@ -202,6 +202,11 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
         end - start
     ));
 
+    // Keep the selected slice intact. Exercise major stage-one rows before
+    // minor setup, so a prerequisite purchase can't pre-unlock a tested row.
+    entries[start..end].sort_by_key(|entry| {
+        entry.family == Family::Charm && entry.content["cost_currency"] == "minor_charm_echoes"
+    });
     let mut pass = 0;
     let mut fail = 0;
     let mut session = None;
@@ -702,6 +707,92 @@ fn charm_unlock_balances_match(
         && other_after == Some(u64::from(charm_balance(after, !minor)))
 }
 
+async fn fund_major_points(
+    client: &mut DevClientSession,
+    view: &mut oteryn_protocol_oteryn::charm_progression::CharmProgressionReply,
+    cost: u32,
+) -> TestResult {
+    use oteryn_protocol_oteryn::charm_progression::CharmProgressionAction as Action;
+    for _ in 0..3 {
+        let balance = charm_balance(&view.charms, false);
+        if balance >= cost {
+            break;
+        }
+        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+        let setup = request_fixture_control(session, "--profile", "progress-charms".into()).await;
+        *view = charm_command(client, Action::Query).await?;
+        if charm_balance(&view.charms, false) <= balance {
+            return Err(format!("harness-charm-funding-no-currency-gain-{setup:?}").into());
+        }
+    }
+    Ok(())
+}
+
+async fn fund_minor_echoes(
+    client: &mut DevClientSession,
+    catalogue: &crate::domain::charm::CharmCatalogue,
+    view: &mut oteryn_protocol_oteryn::charm_progression::CharmProgressionReply,
+    cost: u32,
+) -> TestResult {
+    use crate::domain::charm::{CharmCategory, MAJOR_STAGE_ECHOES};
+    use oteryn_protocol_oteryn::charm::CharmUnlockDisposition;
+    use oteryn_protocol_oteryn::charm_progression::{
+        CharmProgressionAction as Action, CharmProgressionOutcome as Outcome,
+    };
+    for _ in 0..MAJOR_STAGE_ECHOES.len() {
+        let echoes = charm_balance(&view.charms, true);
+        if echoes >= cost {
+            break;
+        }
+        let mut candidates = Vec::new();
+        for (ordinal, definition) in catalogue.definitions().enumerate() {
+            if definition.category != CharmCategory::Major {
+                continue;
+            }
+            let id = NonZeroU32::new(u32::try_from(ordinal + 1)?).ok_or("zero-charm-id")?;
+            let state = charm_state(view, id)?;
+            let stage = usize::from(state.unlocked_stage);
+            if let Some(&price) = definition.stage_costs.get(stage) {
+                if state.next_stage_cost != price {
+                    return Err(format!("charm-echo-prerequisite-price-mismatch-{id}").into());
+                }
+                candidates.push((stage == 0, price, id, state.unlocked_stage));
+            }
+        }
+        let (_, price, id, stage) = candidates
+            .into_iter()
+            .min()
+            .ok_or("harness-charm-no-major-echo-prerequisite")?;
+        fund_major_points(client, view, price).await?;
+        let expected_points = charm_balance(&view.charms, false)
+            .checked_sub(price)
+            .ok_or("harness-charm-echo-prerequisite-major-funds-insufficient")?;
+        let expected_echoes =
+            u64::from(charm_balance(&view.charms, true)) + MAJOR_STAGE_ECHOES[usize::from(stage)];
+        let unlocked = charm_command(
+            client,
+            Action::Unlock {
+                charm: id,
+                expected_stage: stage,
+            },
+        )
+        .await?;
+        if unlocked.outcome != Outcome::Unlock(CharmUnlockDisposition::Unlocked)
+            || charm_state(&unlocked, id)?.unlocked_stage != stage + 1
+            || charm_balance(&unlocked.charms, false) != expected_points
+            || u64::from(charm_balance(&unlocked.charms, true)) != expected_echoes
+        {
+            return Err(format!(
+                "charm-echo-prerequisite-unlock-mismatch-{id}-{:?}",
+                unlocked.outcome
+            )
+            .into());
+        }
+        *view = unlocked;
+    }
+    Ok(())
+}
+
 fn charm_state(
     reply: &oteryn_protocol_oteryn::charm_progression::CharmProgressionReply,
     id: NonZeroU32,
@@ -801,17 +892,10 @@ async fn charm(
             before = charm_command(client, Action::Query).await?;
         }
     }
-    for _ in 0..3 {
-        let balance = charm_balance(&before.charms, minor);
-        if minor || balance >= cost {
-            break;
-        }
-        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-        let setup = request_fixture_control(session, "--profile", "progress-charms".into()).await;
-        before = charm_command(client, Action::Query).await?;
-        if charm_balance(&before.charms, false) <= balance {
-            return Err(format!("harness-charm-funding-no-currency-gain-{setup:?}").into());
-        }
+    if minor {
+        fund_minor_echoes(client, catalogue.catalogue(), &mut before, cost).await?;
+    } else {
+        fund_major_points(client, &mut before, cost).await?;
     }
     let balance = charm_balance(&before.charms, minor);
     if balance < cost {
