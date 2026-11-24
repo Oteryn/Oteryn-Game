@@ -28,3 +28,32 @@ Hand defence expectations use the definition's base and extra defence
 the item's inspection projection, as in Crystal's displayed description
 (`src/items/item.cpp:3257–3262`). This check covers the element label. A
 runtime spell or combat effect oracle would require a separate supported action.
+
+## Explicit-destination and Ground replay
+
+The World replay at `c5518aa02` sent the self Offence and Defence tab payloads
+`08 00 00 14` and `09 00 00 14` respectively (command 388). The three
+earlier hotkey failures repeated with command 9 and explicit Head, Legs and
+Necklace destinations. The refusal detail was NotPossible. The wrong-vocation
+Head move for 10385 also repeated SlotMismatch/NotPossible. The durable owner
+can refuse before testing vocation (`character_equipment.rs:1549–1564`), while
+the explicit vocation rejection maps separately (`:1492–1504`).
+
+The same replay exposed a request-path difference for weapon items 10391,
+10392 and 10406. Their earlier definition hotkeys equipped them. Explicit
+command 9 with RightHand, the protocol's WEAPON slot
+(`crates/protocol-oteryn/src/item_view.rs:260`), returned SlotMismatch.
+The sweep retains this refusal as an equip failure even when the hotkey can
+establish custody for later checks.
+
+Browse Field returned both Ground rack handles (16 in each rebuilt session).
+Command 2 then sent field 2 containing handle 16 (`12 02 08 10`) and received
+Accepted/StaleState on both rows. Crystal opens the reachable container
+(`src/game/game.cpp:4178–4227`, `src/lua/creature/actions.cpp:461–467,525–535`).
+The local Ground custody and capacity checks are
+`gameplay_transport/loop_move.rs:1570–1648`. A refusal on a SQL-seeded row
+still needs reproduction with normal map custody to establish a server defect.
+
+For 10346 the carried USE again returned Accepted/NothingToUse. The 10326
+session instead closed after its carried USE, before a typed reply arrived
+(`gameplay_transport/connection/serve/mod.rs:527–532`).

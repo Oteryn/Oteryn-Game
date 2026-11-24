@@ -814,13 +814,41 @@ async fn equipment(
     } else {
         speed_trial(client, world, build, 0).await
     };
-    move_item(
-        client,
-        entry.handle,
-        Destination::Equipment(slot),
-        Move::Moved,
-    )
-    .await?;
+    let before = client.inventory().ok_or("equip-inventory-missing")?.clone();
+    let destination = Destination::Equipment(slot);
+    let reply = client
+        .session_mut()
+        .move_item_counted(oteryn_dev_client::client_runtime::inventory::MoveRequest {
+            source: entry.handle,
+            destination,
+            count: None,
+        })
+        .await?;
+    if reply.outcome != Move::Moved {
+        let refusal = format!(
+            "ITEM_MOVE-source-{}-destination-{destination:?}-expected-Moved-observed-{reply:?}",
+            entry.handle
+        );
+        if reply.outcome != Move::SlotMismatch || client.inventory() != Some(&before) {
+            return Err(refusal.into());
+        }
+        // Crystal has both slot moves and definition hotkeys (game.cpp:3703).
+        // Preserve the explicit refusal even if the alternate route establishes custody.
+        let hotkey = client
+            .session_mut()
+            .equip_item_definition(entry.item_definition_ref)
+            .await;
+        if !hotkey.as_ref().is_ok_and(|reply| {
+            reply.status == CommandStatus::Accepted && reply.outcome == Move::Moved
+        }) {
+            return Err(format!(
+                "{refusal}; HOTKEY_EQUIP-definition-{}-observed-{hotkey:?}",
+                entry.item_definition_ref
+            )
+            .into());
+        }
+        rows.emit("equip", Err(refusal.into()));
+    }
     let worn = observe(client, |client| {
         client
             .inventory()?
@@ -830,13 +858,15 @@ async fn equipment(
             .map(|worn| worn.item)
     })
     .await?;
-    rows.emit("equip", Ok(()));
+    if rows.pending.contains(&"equip") {
+        rows.emit("equip", Ok(()));
+    }
     let attributes = async {
+        elemental_bond(client, worn, active).await?;
         let baseline = baseline
             .as_ref()
             .map_err(|error| format!("baseline-{error}"))?;
         check_stats(&checks, baseline, &stats(client, &checks).await?)?;
-        elemental_bond(client, worn, active).await?;
         baseline_speed?;
         if speed != 0 {
             speed_trial(client, world, build, speed).await?;
