@@ -736,40 +736,40 @@ async fn charm(
     let bytes = world_bytes()?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let races = full_row_p05::canonical_races()?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let mut plan = Vec::new();
-    for (ordinal, (definition, points)) in races.iter().enumerate() {
-        let race = NonZeroU32::new(u32::try_from(ordinal + 1)?).ok_or("zero-race-id")?;
-        let kills = before
-            .bestiary
-            .iter()
-            .find(|row| row.race == race)
-            .map_or(0, |row| row.kill_count);
-        let remaining = definition.final_kill_threshold().saturating_sub(kills);
-        if remaining != 0
-            && *points != 0
-            && full_row_p05::has_reachable_spawn(world, here, &metadata.spawns, definition.key())
-        {
-            plan.push((remaining, race, definition.key()));
-        }
-    }
-    plan.sort_unstable();
     let mut hunt_budget = 24;
-    for (remaining, race, key) in plan {
-        if charm_balance(&before.charms, minor) >= cost {
-            break;
-        }
-        if remaining > hunt_budget {
-            continue;
-        }
-        for _ in 0..remaining {
-            let kill = full_row_p05::hunt_for_race(client, world, &metadata.spawns, key).await?;
-            if kill.race != race {
-                return Err("charm-funding-kill-credited-to-wrong-race".into());
+    if charm_balance(&before.charms, minor) < cost {
+        let mut plan = Vec::new();
+        for (ordinal, (definition, points)) in races.iter().enumerate() {
+            let race = NonZeroU32::new(u32::try_from(ordinal + 1)?).ok_or("zero-race-id")?;
+            let kills = before
+                .bestiary
+                .iter()
+                .find(|row| row.race == race)
+                .map_or(0, |row| row.kill_count);
+            let remaining = definition.final_kill_threshold().saturating_sub(kills);
+            if remaining != 0 && remaining <= hunt_budget && *points != 0 {
+                plan.push((remaining, race, definition.key()));
             }
-            hunt_budget -= 1;
         }
-        before = charm_command(client, Action::Query).await?;
+        plan.sort_unstable();
+        for (remaining, race, key) in plan {
+            if charm_balance(&before.charms, minor) >= cost || remaining > hunt_budget {
+                break;
+            }
+            let here = tile(client.world_spatial().actor_position)?;
+            if !full_row_p05::has_reachable_spawn(world, here, &metadata.spawns, key) {
+                continue;
+            }
+            for _ in 0..remaining {
+                let kill =
+                    full_row_p05::hunt_for_race(client, world, &metadata.spawns, key).await?;
+                if kill.race != race {
+                    return Err("charm-funding-kill-credited-to-wrong-race".into());
+                }
+                hunt_budget -= 1;
+            }
+            before = charm_command(client, Action::Query).await?;
+        }
     }
     let balance = charm_balance(&before.charms, minor);
     if balance < cost {
