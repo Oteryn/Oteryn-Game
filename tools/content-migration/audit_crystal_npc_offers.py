@@ -46,6 +46,8 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--import-exact", action="store_true",
                         help="admit uniquely named materializable offers to existing merchants")
+    parser.add_argument("--normalize", action="store_true",
+                        help="rewrite canonical service ordering without importing offers")
     args = parser.parse_args()
     donor, scripts = source_offers(args.crystal)
     document = json.loads(DECLARATIONS.read_bytes())
@@ -140,10 +142,22 @@ def main():
                              ",".join(str(price) for price, _, _ in theirs),
                              ",".join(source for _, source, _ in theirs),
                              item_shards.get(f"oteryn:item.tibia.i{item}", "")))
-    if args.import_exact and (removed or counts["crystal_only_exact_native_offer"]):
+    if args.normalize or (args.import_exact and (removed or counts["crystal_only_exact_native_offer"])):
         from questpc7_world_seal import refresh
         from world_project_v2_to_tree import git_blob_sha, write_registry, write_services
 
+        kind_order = {kind: index for index, kind in enumerate(
+            dict.fromkeys(record["kind"] for record in declarations)
+        )}
+        declarations.sort(key=lambda record: (
+            kind_order[record["kind"]], record["identity"]["key"], record["identity"]["revision"]
+        ))
+        for service in services.values():
+            if "offers" in service and "fields" in service:
+                service["fields"] = service.pop("fields")
+            service.get("offers", []).sort(key=lambda offer: (
+                offer["item"]["key"], offer["item"]["revision"], offer["direction"]
+            ))
         DECLARATIONS.write_text(json.dumps(document, ensure_ascii=False, separators=(",", ":")) + "\n")
         refresh(ROOT, ROOT / "content/world")
         index_path = "content/services/trade/index.json"

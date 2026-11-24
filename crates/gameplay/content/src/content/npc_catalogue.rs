@@ -73,7 +73,8 @@ pub fn npc_catalogue_preproduction_limits() -> ProjectFilesystemLimits {
         // CRAFT-CONTENT-1 adds content/craft/: +1 (measured, 232).
         // QMINT3 moves the generated activity registry under content/world/ so
         // Rust and Python agree on World inputs: one sibling per11 lookups.
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1 + 11,
+        // The pinned Crystal collision table adds one package-root entry per lookup.
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1 + 11 + 11,
     }
 }
 
