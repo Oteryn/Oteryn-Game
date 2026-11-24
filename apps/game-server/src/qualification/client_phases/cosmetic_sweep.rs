@@ -877,30 +877,12 @@ async fn obtain_npc(
         talk_for_reward(client, npc, steps, target, state).await?;
         return return_to(client, world, home).await;
     }
-    let (landing, path) = npc
-        .placements
-        .iter()
-        .find_map(|npc| {
-            [(0, -4), (4, 0), (0, 4), (-4, 0)]
-                .into_iter()
-                .find_map(|(dx, dy)| {
-                    let at = TilePos {
-                        x: npc.x.checked_add_signed(dx)?,
-                        y: npc.y.checked_add_signed(dy)?,
-                        floor: npc.floor,
-                    };
-                    if world.base().tile(at.x, at.y, at.floor).is_none() || !world.enterable(at) {
-                        return None;
-                    }
-                    route(world, at, greeting_range).map(|path| (at, path))
-                })
-        })
-        .ok_or_else(|| {
-            format!(
-                "harness-obtain-path: NPC {} has no walkable approach from a fixture landing",
-                first.npc
-            )
-        })?;
+    let (landing, path) = nearby_npc_approach(world, npc, greeting_range).ok_or_else(|| {
+        format!(
+            "content-npc-map: {} has no enterable tile in greeting range in this map bundle",
+            npc.key
+        )
+    })?;
     logout(client).await?;
     evidence(&format!(
         "cosmetic_sweep prerequisite mode=seeded source=saved-position npc={}",
@@ -929,6 +911,51 @@ async fn obtain_npc(
     }
     .await;
     result.and(restored)
+}
+
+fn nearby_npc_approach(
+    world: &BundleWorld,
+    npc: &oteryn_world_bundle::npc::Npc,
+    greeting_range: impl Fn(TilePos) -> bool,
+) -> Option<(TilePos, Vec<StepDirection>)> {
+    let mut greeting_tile = None;
+    for placement in &npc.placements {
+        let distance = |at: TilePos| at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y));
+        for radius in [3i16, 4, 5, 6, 7, 8, 2, 1] {
+            for (dx, dy) in
+                (-radius..=radius).flat_map(|dx| (-radius..=radius).map(move |dy| (dx, dy)))
+            {
+                if dx.abs().max(dy.abs()) != radius {
+                    continue;
+                }
+                let (Some(x), Some(y)) = (
+                    placement.x.checked_add_signed(dx),
+                    placement.y.checked_add_signed(dy),
+                ) else {
+                    continue;
+                };
+                let landing = TilePos {
+                    x,
+                    y,
+                    floor: placement.floor,
+                };
+                if world.base().tile(x, y, landing.floor).is_none() || !world.enterable(landing) {
+                    continue;
+                }
+                if let Ok(path) = find_route(landing, &greeting_range, |at, direction| {
+                    let next = destination_with_teleports(world, at, direction, false)?;
+                    (next.floor == placement.floor && distance(next) <= 8).then_some(next)
+                }) {
+                    if !path.is_empty() {
+                        return Some((landing, path));
+                    }
+                    // A small enclosed room can have only an in-range landing.
+                    greeting_tile.get_or_insert(landing);
+                }
+            }
+        }
+    }
+    greeting_tile.map(|landing| (landing, Vec::new()))
 }
 
 async fn talk_for_reward(
