@@ -25,6 +25,12 @@ pub(super) struct CatalogueChest {
     pub fluids: Vec<(String, i32)>,
 }
 
+impl CatalogueChest {
+    pub(super) fn uses_pinned_world(&self) -> bool {
+        super::qc_pinned_world::COMPLETION_CHEST_UIDS.contains(&self.unique)
+    }
+}
+
 pub(super) fn string(value: &Value) -> TestResult<String> {
     Ok(value.as_str().ok_or("catalogue string")?.into())
 }
@@ -766,12 +772,20 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
             let quests = super::quest_container_chests_fixtures::embedded_catalogue()
                 .map_err(|error| error.to_string())?;
             slice_phase("quest_catalogue");
-            // Boot the full pinned World once. Each chest gets independent
-            // mutable map facts as well as its own database and session.
-            let pinned_world = cases
+            // Boot the pinned source neighborhoods once. Each chest still gets
+            // independent map facts, database and session.
+            let pinned_claims: BTreeSet<_> = cases
                 .iter()
-                .any(|case| super::qc_pinned_world::COMPLETION_CHEST_UIDS.contains(&case.unique))
-                .then(|| super::qc_pinned_world::world(native))
+                .filter(|case| case.uses_pinned_world())
+                .map(|case| case.claim.as_str())
+                .collect();
+            let pinned_positions: Vec<_> = cases
+                .iter()
+                .filter(|case| pinned_claims.contains(case.claim.as_str()))
+                .map(|case| (case.position.0, case.position.1))
+                .collect();
+            let pinned_world = (!pinned_positions.is_empty())
+                .then(|| super::qc_pinned_world::world_near(native, &pinned_positions))
                 .transpose()
                 .map_err(|error| error.to_string())?;
             slice_phase("pinned_world");
