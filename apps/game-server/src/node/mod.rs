@@ -19,6 +19,15 @@ use secure_file::{FileClass, FileError};
 pub const MAX_PASSWORD_BYTES: usize = 1024;
 pub const MAX_ROOT_CA_BYTES: usize = 64 * 1024;
 
+/// Use one OS identity for operator and service in explicitly opted-in qualification builds.
+pub fn qualification_operator_uid() -> Option<u32> {
+    #[cfg(feature = "qualification-spawn")]
+    if std::env::var("NODE_BOOT_UNPRIVILEGED").as_deref() == Ok("1") {
+        return Some(secure_file::effective_uid());
+    }
+    None
+}
+
 /// A startup input failure. `key` names the configuration key whose value or
 /// file failed; neither value nor content is ever carried.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

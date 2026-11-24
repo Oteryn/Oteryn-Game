@@ -882,16 +882,17 @@ fn reporter(
     let node_config =
         node_config.ok_or(Failure::Usage("--report-config requires --node-config"))?;
     let invalid = |key: &str| Failure::Input(format!("--report-config {key}"));
+    let operator_uid = oteryn_game_server::node::qualification_operator_uid().unwrap_or(0);
     let document = read_file(
         "--report-config",
         std::path::Path::new(&path),
         FileClass::Trusted,
-        0,
+        operator_uid,
         scope_assignment::CONFIG_BYTES,
     )?;
     let config = ReportConfig::parse(&document).map_err(|_| invalid("document"))?;
     let pem = |key: &'static str, path: &std::path::Path, class| {
-        read_file(key, path, class, 0, MAX_PEM_BYTES)
+        read_file(key, path, class, operator_uid, MAX_PEM_BYTES)
     };
     let roots = certificates(&pem(
         "trust_roots_file",
@@ -1660,9 +1661,9 @@ fn resync_outcome(result: Result<u64, oteryn_game_server::node::serve::ResyncErr
 async fn run(raw: Vec<String>) -> Outcome {
     let mut arguments = Arguments::parse(raw)?;
     let config_path = PathBuf::from(arguments.take("config")?);
-    // The one supported operator identity is root, never the service user.
     let invoking = secure_file::effective_uid();
-    if invoking != 0 {
+    let qualification_uid = oteryn_game_server::node::qualification_operator_uid();
+    if invoking != qualification_uid.unwrap_or(0) {
         return Err(Failure::Identity("oteryn-game-ops runs only as root"));
     }
     let document = read_file(
@@ -1673,7 +1674,13 @@ async fn run(raw: Vec<String>) -> Outcome {
         oteryn_game_server::node::config::MAX_CONFIG_BYTES,
     )?;
     let config = OpsConfig::parse(&document).map_err(|error| Failure::Input(error.to_string()))?;
-    if config.operator.service_uid == invoking {
+    if let Some(uid) = qualification_uid {
+        if config.operator.service_uid != uid {
+            return Err(Failure::Identity(
+                "unprivileged qualification requires operator and service to share a UID",
+            ));
+        }
+    } else if config.operator.service_uid == invoking {
         return Err(Failure::Identity(
             "oteryn-game-ops refuses to run as the service user",
         ));

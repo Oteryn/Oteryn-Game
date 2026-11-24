@@ -2981,6 +2981,7 @@ async fn control_loop(
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
+    let operator_uid = super::qualification_operator_uid().unwrap_or(0);
     while let Some(accepted) = first(listener.accept(), stop.cancelled()).await {
         let Ok((mut stream, _)) = accepted else {
             tokio::time::sleep(Duration::from_millis(100)).await;
@@ -2989,7 +2990,7 @@ async fn control_loop(
         // The peer is checked before any byte is read.
         if !stream
             .peer_cred()
-            .is_ok_and(|credentials| credentials.uid() == 0)
+            .is_ok_and(|credentials| credentials.uid() == operator_uid)
         {
             continue;
         }

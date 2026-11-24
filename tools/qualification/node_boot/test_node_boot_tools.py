@@ -8,6 +8,7 @@ import re
 import socket
 import stat
 import subprocess
+import sys
 import tempfile
 import textwrap
 import time
@@ -49,6 +50,34 @@ KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
 class KnobTests(unittest.TestCase):
+    def test_runner_preflight_without_sudo_requires_explicit_opt_in(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            bin_dir = Path(temporary, 'bin')
+            bin_dir.mkdir()
+            for program in ('docker', 'python3', 'node', 'openssl', 'cargo', 'psql', 'setsid', 'timeout'):
+                (bin_dir / program).symlink_to('/bin/true')
+            for program in ('bash', 'realpath'):
+                (bin_dir / program).symlink_to(f'/bin/{program}')
+            git = bin_dir / 'git'
+            git.write_text(f'#!/bin/sh\n[ "$1" = rev-parse ] || exit 1\nprintf "%s\\n" {str(HERE.parents[2])!r}\n')
+            git.chmod(0o755)
+            env = {'PATH': str(bin_dir), 'NODE_BOOT_WORLD': '0',
+                   'PLATFORM_SOURCE': str(Path(temporary, 'missing-platform'))}
+            for opt_in, expected in (
+                ({}, 'NODE_BOOT_RESULT=BLOCKED reason=missing_binary_sudo'),
+                ({'NODE_BOOT_UNPRIVILEGED': '0'}, 'NODE_BOOT_RESULT=BLOCKED reason=missing_binary_sudo'),
+                ({'NODE_BOOT_UNPRIVILEGED': '1'},
+                 'NODE_BOOT_RESULT=BLOCKED reason=exact_platform_checkout_missing mode=unprivileged'),
+                ({'NODE_BOOT_UNPRIVILEGED': '1', 'NODE_BOOT_LIFECYCLE': 'game_platform'},
+                 'NODE_BOOT_RESULT=BLOCKED reason=unprivileged_requires_qualification_spawn mode=unprivileged'),
+                ({'NODE_BOOT_UNPRIVILEGED': '1', 'NODE_BOOT_KEEP_STACK': '1'},
+                 'NODE_BOOT_RESULT=BLOCKED reason=unprivileged_requires_disposable_stack mode=unprivileged'),
+            ):
+                with self.subTest(opt_in=opt_in):
+                    result = bash(f'exec /bin/bash "{RUN_SH}"', env | opt_in, HERE.parents[2])
+                    self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                    self.assertEqual(result.stdout.strip(), expected)
+
     def knobs(self, **env):
         script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s|%s|%s|%s" "$SERVICE_USER" "$BASE" "$NODE_BOOT_KEEP_STACK" "$NODE_BOOT_REUSE_STACK"\n'
         return bash(script, env)
@@ -324,6 +353,26 @@ class StageDumpTests(unittest.TestCase):
         self.assertNotIn('--verbose', passed)
         failed = self.run_stage('false')
         self.assertRegex(failed, r'PG_OBSERVE dump --stage sample --dir \S+ --activity \S+activity.log --verbose')
+
+
+class NodeSignalTests(unittest.TestCase):
+    def test_signal_requires_matching_process_birth_time(self):
+        signal_node = load('signal_node').signal_node
+        with tempfile.TemporaryDirectory() as work:
+            child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])
+            try:
+                record = Path(work, str(child.pid))
+                fields = Path(f'/proc/{child.pid}/stat').read_text().rsplit(') ', 1)[1].split()
+                record.write_text(str(int(fields[19]) + 1))
+                self.assertEqual(signal_node(record, 15), 1)
+                self.assertIsNone(child.poll())
+                record.write_text(fields[19])
+                self.assertEqual(signal_node(record, 15), 0)
+                self.assertEqual(child.wait(timeout=5), -15)
+                self.assertEqual(signal_node(record, 0), 1)
+            finally:
+                child.kill()
+                child.wait()
 
 
 class PgSamplerLifecycleTests(unittest.TestCase):
