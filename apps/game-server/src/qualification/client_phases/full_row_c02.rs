@@ -193,6 +193,44 @@ pub(super) async fn earn_gold(
     Ok(())
 }
 
+async fn hunt_with_damage_receipt(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    required_total: u64,
+) -> TestResult {
+    use oteryn_protocol_oteryn::presentation::PresentationValueKind;
+
+    let attacker = own(client)?;
+    client.take_events();
+    client.begin_presentation_recording();
+    let result = full_e2ef7::earn_gold(client, world, required_total).await;
+    let presentations = client.finish_presentation_recording();
+    let damage: Vec<_> = presentations
+        .into_iter()
+        .filter_map(|event| match event.kind {
+            PresentationEventKind::ValueText {
+                kind: PresentationValueKind::DamageDealt,
+                target,
+                attacker: Some(source),
+                primary,
+                secondary,
+                ..
+            } if source == attacker && primary.value > 0 => {
+                Some((target, primary.value, secondary.map(|value| value.value)))
+            }
+            _ => None,
+        })
+        .collect();
+    evidence(&format!(
+        "C02_HUNT_DAMAGE attacker={attacker:?} hits={damage:?}"
+    ));
+    result?;
+    if damage.is_empty() {
+        return Err("funding hunt had no attributed damage presentation".into());
+    }
+    Ok(())
+}
+
 async fn fund_ranged_purchase(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -225,7 +263,7 @@ async fn fund_ranged_purchase(
                 .checked_add(balances.carried_gold.max(carried))
                 .and_then(|total| total.checked_add(1))
                 .ok_or("funding-balance-overflow")?;
-            full_e2ef7::earn_gold(client, world, required_total).await
+            hunt_with_damage_receipt(client, world, required_total).await
         })
         .await;
         let after = carried_gold(client, &gold)?;
@@ -632,6 +670,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    character_prep::declare_seeded(
+        "C02.full",
+        "dedicated level-15 Sorcerer and Druid with 929 and 499 carried gold",
+        "Practise both purchases after earning the remaining gold through Rat combat and loot",
+    );
     let ranged =
         character_prep::dedicated_character(clients, "NODE_BOOT_C02_RANGED_ACCOUNT").await?;
     let ranged_clients = ranged.clients(clients);
@@ -640,7 +683,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if ranged_clients.characters == druid_clients.characters {
         return Err("C02 ranged and Druid legs require distinct dedicated characters".into());
     }
-    let mut client = connect_character(&ranged_clients, 0xc2, 0).await?;
+    let mut client = character_prep::Seeded {
+        profile: "c02-ranged",
+        reason: "dedicated ranged build and purchase float",
+    }
+    .connect(&ranged_clients, 0xc2, 0)
+    .await?;
     fund_ranged_purchase(&mut client, world, 930)
         .await
         .map_err(|error| format!("fund-ranged-kit: {error}"))?;
@@ -735,7 +783,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     drop(fresh);
 
     // The rod leg uses a distinct Character and its own earned purchase and XP.
-    let mut client = connect_character(&druid_clients, 0xc4, 0).await?;
+    let mut client = character_prep::Seeded {
+        profile: "c02-druid",
+        reason: "dedicated rod-eligible build and purchase float",
+    }
+    .connect(&druid_clients, 0xc4, 0)
+    .await?;
     require_eligible_druid(&mut client).await?;
     fund_ranged_purchase(&mut client, world, 500)
         .await

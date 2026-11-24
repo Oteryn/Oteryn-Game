@@ -18,6 +18,7 @@
 //! by `workspace-boundaries.toml`.
 
 use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellTarget};
+use oteryn_protocol_oteryn::presentation::PresentationEvent;
 use oteryn_protocol_oteryn::world_object::{self, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObservation};
 use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError};
@@ -261,7 +262,11 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
         let last_frame = join_last_frame(&error);
         contextualize_session(error, "join_snapshot", started, last_frame)
     })?;
-    Ok(DevClientSession { session, started })
+    Ok(DevClientSession {
+        session,
+        started,
+        presentation_recording: None,
+    })
 }
 
 /// Connect a fresh TLS transport and recover the same server session with its retained selection.
@@ -277,7 +282,11 @@ pub async fn resume_session(
     let session = Session::resume(stream, previous, recovery)
         .await
         .map_err(|error| contextualize_session(error, "resume", started, "unknown"))?;
-    Ok(DevClientSession { session, started })
+    Ok(DevClientSession {
+        session,
+        started,
+        presentation_recording: None,
+    })
 }
 
 pub use oteryn_session::{Recovery, RecoveryState};
@@ -289,6 +298,7 @@ pub use oteryn_session_tcp::TcpConnect as RecoveryTransport;
 pub struct DevClientSession {
     session: Session<TcpTlsStream>,
     started: Instant,
+    presentation_recording: Option<Vec<PresentationEvent>>,
 }
 
 impl DevClientSession {
@@ -389,7 +399,25 @@ impl DevClientSession {
     /// Returns (and clears) the pushed deltas applied since the last call. See
     /// `Session::take_events`.
     pub fn take_events(&mut self) -> Vec<SessionEvent> {
-        self.session.take_events()
+        let events = self.session.take_events();
+        if let Some(recording) = &mut self.presentation_recording {
+            for event in &events {
+                if let SessionEvent::Presentation(delta) = event {
+                    recording.extend_from_slice(&delta.value);
+                }
+            }
+        }
+        events
+    }
+
+    /// Record presentation events drained by a qualification helper until stopped.
+    pub fn begin_presentation_recording(&mut self) {
+        self.presentation_recording = Some(Vec::new());
+    }
+
+    /// Stop recording and return the events consumed by the helper.
+    pub fn finish_presentation_recording(&mut self) -> Vec<PresentationEvent> {
+        self.presentation_recording.take().unwrap_or_default()
     }
 
     /// See `Session::service_liveness`.

@@ -61,6 +61,8 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "c11-unassigned" => Some((crate::durability::character_build::NO_VOCATION, 8)),
         "c11-knight" => Some(("knight", 625)),
         "c12-monk" => Some(("monk", 20)),
+        "c02-ranged" => Some(("sorcerer", 15)),
+        "c02-druid" => Some(("druid", 15)),
         "c06-sorcerer" => Some(("sorcerer", 15)),
         "f5-c17a" => Some(("sorcerer", 20)),
         "f5-c17c" => Some(("sorcerer", 23)),
@@ -767,6 +769,8 @@ async fn prepare_build(
             | "c11-unassigned"
             | "c11-knight"
             | "c12-monk"
+            | "c02-ranged"
+            | "c02-druid"
             | "c06-sorcerer"
             | "s13-party"
             | "w20b-light"
@@ -805,6 +809,8 @@ async fn prepare_build(
             ("c11-unassigned", UNASSIGNED_ACCOUNT)
             | ("c11-knight", KNIGHT_ACCOUNT)
             | ("c12-monk", MONK_ACCOUNT)
+            | ("c02-ranged", "01934f10-7c00-7000-8000-000000000020")
+            | ("c02-druid", "01934f10-7c00-7000-8000-000000000021")
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
             | ("w20b-light", LIGHT_ACCOUNT)
@@ -859,6 +865,25 @@ async fn prepare_build(
         deadline,
     )
     .await?;
+    #[cfg(feature = "qualification-spawn")]
+    if let Some((platinum, gold)) = match profile {
+        "c02-ranged" => Some((9, 29)),
+        "c02-druid" => Some((4, 99)),
+        _ => None,
+    } {
+        for item in [(3035, platinum), (3031, gold)] {
+            prepare_items(
+                root,
+                authority,
+                proof,
+                &current,
+                native,
+                deadline,
+                Some(item),
+            )
+            .await?;
+        }
+    }
     #[cfg(feature = "qualification-spawn")]
     if spell_build(profile).is_some() {
         return Ok(());
