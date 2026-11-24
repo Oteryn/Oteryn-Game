@@ -185,6 +185,7 @@ game_platform_identity() {
     [[ "$target" != native_device_rotation_replay ]] || budget=120
     GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
       GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" LOCALAPPDATA="$WORK/native-client" \
+      XDG_CONFIG_HOME="$WORK/native-client" \
       timeout --kill-after=1s "${budget}s" cargo test --locked -p oteryn-security-auth-tests --test "$target" \
         "$target" -- --exact --nocapture > "$WORK/$target.log" 2>&1 \
       || game_platform_fail "$target" journey_assertion_failed "$?"
