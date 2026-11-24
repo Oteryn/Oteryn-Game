@@ -12,6 +12,7 @@ import sys
 import tempfile
 import textwrap
 import time
+import tomllib
 import unittest
 
 HERE = Path(__file__).resolve().parent
@@ -210,6 +211,29 @@ class KnobTests(unittest.TestCase):
 
 
 class WorldFixtureTests(unittest.TestCase):
+    def test_all_groups_disable_the_unprovisioned_world_event_exporter(self):
+        with tempfile.TemporaryDirectory() as work:
+            pin = Path(work, 'pin.json')
+            pin.write_text(json.dumps(dict.fromkeys(
+                ('digest', 'project_format_version', 'world_schema_version', 'content_revision'),
+                'fixture',
+            )))
+            setup = '''
+install_owned() { :; }
+game_platform_config() { :; }
+PG_PORT=15433
+WP5_PORT=18463
+DESCRIPTOR_INSTALLED_AT=1
+NODE_REQUIRED_CAPABILITIES=[]
+'''
+            result = bash(setup + function('write_node_config')
+                          + '\nwrite_node_config launch.json\n',
+                          {'WORK': work, 'BASE': work, 'PIN': str(pin),
+                           'NODE_BOOT_WORLD': '1', 'NODE_BOOT_LIFECYCLE': 'native_reference'})
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            config = tomllib.loads(Path(work, 'node.toml').read_text())
+            self.assertIs(config['platform']['world_event_outcomes']['enabled'], False)
+
     def test_spell_manifest_initializes_world_epoch_without_a_bundle(self):
         assignment = function('node_complete_assignment')
         epoch_setup = assignment.split('|| fail "content activation rows"\n', 1)[1].split(
