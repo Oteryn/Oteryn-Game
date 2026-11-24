@@ -175,6 +175,7 @@ fn carried_gold(client: &DevClientSession, gold: &[(NonZeroU32, u64); 3]) -> Tes
 pub(super) async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
     needed: u64,
 ) -> TestResult {
     let gold = coin_references()?;
@@ -383,7 +384,6 @@ async fn hunt_with_damage_receipt(
 async fn fund_ranged_purchase(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
     needed: u64,
 ) -> TestResult {
     use oteryn_protocol_oteryn::atelier::resources as money;
