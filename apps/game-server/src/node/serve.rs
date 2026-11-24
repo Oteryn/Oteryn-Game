@@ -2845,26 +2845,32 @@ async fn bootstrap_one(
 /// that background passes also take, so a busy holder fails the step at once, before any SQL
 /// runs; the bootstrap commit is idempotent by its operation id. Any other outcome is final.
 ///
-/// With a `root`, a retry starts as soon as the busy holder is returned, not before
-/// [`HOLDER_RETRY_FLOOR`] and not after the backoff (NODEBOOT-1): a step sleeping its
-/// backoff lost the holder to the background passes that poll it on their own cadence.
+/// With a `root`, prefer this foreground step over scheduled passes and keep its
+/// place in the holder queue from its first refused checkout through the retries.
+/// Other transient failures retry within the ordinary backoff and deadline.
 async fn retry_busy<T, E>(
     root: Option<&DurabilityRoot>,
     budget: tokio::time::Instant,
     busy: impl Fn(&E) -> bool,
     mut step: impl AsyncFnMut() -> Result<T, E>,
 ) -> Result<T, E> {
+    let _foreground = root.and_then(|root| root.foreground_demand().ok());
+    let mut waiter = None;
     let mut attempt = 0;
     loop {
         let outcome = step().await;
         match &outcome {
             Err(error) if busy(error) && tokio::time::Instant::now() < budget => match root {
                 Some(root) => {
+                    let _ = waiter.get_or_insert_with(|| root.holder_waiter());
                     let now = tokio::time::Instant::now();
                     let delay = retry_delay(attempt, Some(budget.saturating_duration_since(now)));
                     attempt = attempt.saturating_add(1);
-                    root.wait_holder_retry(now + HOLDER_RETRY_FLOOR, now + delay)
-                        .await;
+                    let earliest = now + HOLDER_RETRY_FLOOR;
+                    let latest = now + delay;
+                    if !root.wait_holder_turn(earliest, latest).await {
+                        root.wait_holder_retry(earliest, latest).await;
+                    }
                 }
                 None => backoff_within(&mut attempt, Some(budget)).await,
             },
@@ -4637,6 +4643,52 @@ source_authority = "OTERYN_GAME_JOURNAL"
             assert!(holder_busy(&result.expect_err("busy past the window")));
             assert!(tokio::time::Instant::now() < budget + Duration::from_millis(100));
         });
+    }
+
+    #[test]
+    fn bootstrap_durability_step_has_foreground_holder_preference()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness as fixture;
+
+        let Some(admin) = fixture::configured_admin() else {
+            return Ok(());
+        };
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || -> Result<(), String> {
+                fixture::runtime()
+                    .map_err(|error| error.to_string())?
+                    .block_on(async {
+                        let harness =
+                            fixture::Harness::create(admin, "bootstrap_holder", false).await?;
+                        let root = &harness.root;
+                        root.await_ready().await?;
+                        assert!(root.background_holder_ready());
+
+                        let budget =
+                            tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
+                        let result = retry_busy(Some(root), budget, holder_busy, async || {
+                            let background = DurabilityRoot::with_background_holder(async {
+                                root.try_issue_semantic_pass().map(drop)
+                            })
+                            .await;
+                            Ok((background, root.is_ready()))
+                        })
+                        .await
+                        .map_err(fixture::debug);
+                        let background_resumed = root.background_holder_ready();
+                        harness.cleanup().await?;
+                        let (background, foreground) = result?;
+                        assert!(matches!(background, Err(DurabilityError::RootUnavailable)));
+                        assert!(foreground);
+                        assert!(background_resumed);
+                        Ok::<(), Box<dyn std::error::Error>>(())
+                    })
+                    .map_err(|error| error.to_string())
+            })?
+            .join()
+            .map_err(|_| "bootstrap holder preference test thread failed")??;
+        Ok(())
     }
 
     #[test]
