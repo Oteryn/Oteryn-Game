@@ -1785,7 +1785,7 @@ if [[ "$NODE_BOOT_D150_LEGACY" == 1 ]]; then
   stage "$seam_stage_name" legacy_d150_register_starter -- seam_stages
 else
   stage character_bootstrap node_assigned_ready -- character_bootstrap
-  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  if [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_E2E_ONLY:-}" != npc_sweep ]]; then
     # MP01's PvP rows report this World's absence themselves, so the seam stage does not need it.
     stage pvp_world_ready node_assigned_ready -- pvp_world_ready
     stage pvp_character_bootstrap pvp_world_ready -- pvp_character_bootstrap
@@ -1794,7 +1794,7 @@ else
 fi
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
-if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 && "${NODE_BOOT_E2E_ONLY:-}" != npc_sweep ]]; then
   stage pvp_world_shutdown pvp_world_ready -- pvp_world_shutdown
 fi
 stage graceful_shutdown node_assigned_ready -- graceful_shutdown
