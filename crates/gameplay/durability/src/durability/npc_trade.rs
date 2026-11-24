@@ -1498,6 +1498,7 @@ async fn apply_trade(
     let gold = |value: u64| i64::try_from(value).map_err(|_| DurabilityError::InvalidStoredState);
     let cause = &request.cause;
     let item = &request.item.definition;
+    // Group related values to stay within the durability connection's 32-parameter limit.
     sqlx::query(
         "INSERT INTO game_npc_trades(transaction_id, event_id, occurrence_id, game_session_id, \
            command_id, character_id, request_binding, world_id, channel_id, \
@@ -1510,10 +1511,12 @@ async fn apply_trade(
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, $5::text::numeric(20,0), encode($6,'hex')::uuid, $7, \
            encode($8,'hex')::uuid, encode($9,'hex')::uuid, $10::text::numeric(20,0), $11, \
-           $12::text::numeric(20,0), $13, $14, $15, $16, $17, $18, $19, $20, \
-           encode($21,'hex')::uuid, $22, encode($23,'hex')::uuid, $24, $25, $26, $27, \
-           sha256($28), floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $29, \
-           $30, $31, ($32::integer[])[1]::smallint, ($32::integer[])[2], encode($33,'hex')::uuid, $34, $35::text::numeric)",
+           $12::text::numeric(20,0), $13, $14, $15, $16, $17, \
+           ($18::text[])[1], ($18::text[])[2], ($18::text[])[3], \
+           encode($19,'hex')::uuid, $20, encode($21,'hex')::uuid, $22, $23, $24, $25, \
+           sha256($26), floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $27, \
+           ($28::boolean[])[1], $29, ($30::integer[])[1]::smallint, ($30::integer[])[2], \
+           encode($31,'hex')::uuid, ($28::boolean[])[2], $32::text::numeric)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -1532,9 +1535,11 @@ async fn apply_trade(
     .bind(i64::from(quantity))
     .bind(gold(request.unit_price)?)
     .bind(gold(total)?)
-    .bind(&item.family)
-    .bind(&item.production_key)
-    .bind(&item.revision_ref)
+    .bind([
+        item.family.as_str(),
+        item.production_key.as_str(),
+        item.revision_ref.as_str(),
+    ])
     .bind(plan.item_instance_id.as_slice())
     .bind(i64::from(units))
     .bind(backpack.as_slice())
@@ -1544,14 +1549,13 @@ async fn apply_trade(
     .bind(request.occurred_at_unix_ms)
     .bind(envelope)
     .bind(gold(plan.bank_debit_gold_units)?)
-    .bind(sell_all)
+    .bind([sell_all, request.include_equipped])
     .bind(house_key)
     .bind(vec![
         request.fluid_subtype.map(i32::from),
         request.full_charges.map(i32::from),
     ])
     .bind(shop.bag_id.as_ref().map(|id| id.as_slice()))
-    .bind(request.include_equipped)
     .bind(shop.equipment_revision.as_deref())
     .execute(&mut **tx)
     .await?;
