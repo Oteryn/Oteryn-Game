@@ -660,6 +660,32 @@ pub fn table_activation_spawns(
 }
 
 impl BundleWorld {
+    /// Give another test case its own Channel map state on the same qualified bundle.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn fresh_channel_for_test(&self) -> Result<Self, BootRefusal> {
+        let map = BundleMap {
+            entry_start: self.map.entry_start,
+            overlay: ChannelOverlay::for_scope(
+                Arc::clone(&self.base),
+                self.map.overlay.runtime_scope(),
+            ),
+            facts: self.map.facts.fresh_for_test(),
+            floors: self.map.floors.clone(),
+            spell_tiles: Arc::new(self.map.spell_tiles.fork_without_phases()),
+        }
+        .bind_phase_owner()?;
+        Ok(Self {
+            source_bases: Arc::clone(&self.source_bases),
+            daily: self.daily.clone(),
+            base: Arc::clone(&self.base),
+            map: Arc::new(map),
+            map_revision: self.map_revision.clone(),
+            start: self.start,
+            blocked: Arc::clone(&self.blocked),
+            spawns: Arc::clone(&self.spawns),
+        })
+    }
+
     /// SPAWN-1b (CREATURE-AI-0 §6.1): the bundle's spawn family as activation spawn sources; see
     /// [`table_activation_spawns`].
     pub fn activation_spawns(

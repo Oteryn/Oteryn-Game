@@ -18,7 +18,7 @@ import reward_claim_variant_migration as migration
 PROFILE = 'authored_variant_v1'
 SCHEMA = 'OTERYN_REWARD_CLAIM_VARIANT_SHARD/v1'
 # Refreshed only by tools/content-migration/refresh_reward_stack_weight_proof.py.
-STACK_NORMALIZATION_PROOF_SHA256 = 'b549b8f620d1146744ae9ced2e2615f8c94b369012c7db479031fe22ecdd481e'
+STACK_NORMALIZATION_PROOF_SHA256 = '913a53658ce1bd288d1d24b295b2e8ef6ef3c983ff04f349a823233504cd0954'
 
 
 def canonical_schema(root):

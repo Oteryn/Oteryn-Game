@@ -21,8 +21,8 @@ mod view;
 pub use crate::chat_public_channels::apply_result;
 pub use input::{default_channel_key, open_key, temporary_mode_key};
 pub use protocol::{
-    channel_request, close_current, console_request, open_conversation, open_entry, open_help,
-    private_result, request,
+    channel_request, close_current, close_room, console_request, open_conversation, open_entry,
+    open_help, private_result, request,
 };
 pub use state::{
     ChannelTab, ChatPanel, CommunicationList, CommunicationLists, ComposerMode, Console,

@@ -12,6 +12,9 @@ use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::monster_profile_cycle::with_native_ai_seed;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+// The base actor's first due defense draw selects time_guardian, not time_guardiann.
+const DEFENSE_SEED: [u8; 32] = [3; 32];
+
 const ARENA: MovementLocalPosition = MovementLocalPosition {
     x: 32977,
     y: 31662,
@@ -109,17 +112,12 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
             };
             let mut selected = false;
             let mut now = owner.owner_now().get();
-            // Replay the passing native defense schedule from main aa16e94d3.
-            const AI_SEED: [u8; 32] = [
-                0xea, 0xb2, 0xa4, 0xd3, 0xe2, 0xca, 0x2b, 0x22, 0xbe, 0x8e, 0x32, 0x41, 0x34,
-                0xa1, 0xd2, 0x67, 0xaa, 0xf4, 0x72, 0x12, 0xa2, 0x6c, 0x08, 0x40, 0x72, 0xdd,
-                0x94, 0x2b, 0xf8, 0x38, 0x56, 0x71,
-            ];
             // Keep the source scenario's two-second budget per pass while
             // honoring every native deadline within it.
             let time_limit =
                 now + 128 * 2 * crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000;
             while now < time_limit {
+                // Replay native defense draws independently of unrelated Item profile updates.
                 let turn = settle_monster_melee_at_until(&owner, now, async || {
                     assert!(
                         owner.runtime.lock().await.contains_live_creature(base),
@@ -139,7 +137,7 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
                             })
                         })
                 });
-                selected = with_native_ai_seed(AI_SEED, turn).await?;
+                selected = with_native_ai_seed(DEFENSE_SEED, turn).await?;
                 if selected {
                     break;
                 }
@@ -147,7 +145,15 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
             }
             assert!(
                 selected,
-                "actual native defense schedule selects source time guardian"
+                "actual native defense schedule selects source time guardian, last think: {:?}",
+                owner
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .monster_melee
+                    .creature_ai
+                    .last_report_for_test(base)
             );
             {
                 let runtime = owner.runtime.lock().await;

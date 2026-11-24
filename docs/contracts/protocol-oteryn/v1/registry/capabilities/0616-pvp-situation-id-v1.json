@@ -1,0 +1,13 @@
+{
+  "id": 616,
+  "name": "PVP_SITUATION_ID_V1",
+  "owner_decision": "2026-11-23 server/protocol client lane allocation",
+  "owner": "World party and PvP owners",
+  "requires": [
+    134
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Selected with 134. Adds situation_id to own PvP observations on command 155."
+}

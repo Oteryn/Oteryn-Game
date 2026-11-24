@@ -254,6 +254,7 @@ mod vocation_choice;
 pub mod weapon_proficiency;
 mod wire_position;
 mod world_event;
+mod world_login_info;
 mod world_map;
 /// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).
 pub mod world_required_capabilities;
@@ -1567,6 +1568,13 @@ impl<'r> AdmissionRetryBudget<'r> {
         self
     }
 
+    fn check_deadline(&self) -> Result<(), crate::durability::DurabilityError> {
+        if tokio::time::Instant::now() >= self.deadline {
+            return Err(crate::durability::DurabilityError::RootPassDeadlineExceeded);
+        }
+        Ok(())
+    }
+
     /// Whether a step that ended on `refusal` is retried. Only an unavailable outcome (such
     /// as a busy durability holder) is transient: it waits at most one backoff, unless the
     /// retry would start past the window, which fails closed at once. With a root, the attempt
@@ -1674,6 +1682,24 @@ impl<'r> AdmissionRetryBudget<'r> {
         self.stale_rounds += 1;
         tokio::time::sleep(self.backoff).await;
         true
+    }
+}
+
+fn post_entry_checkout_refusal(error: crate::durability::DurabilityError) -> AdmissionRefusal {
+    match error {
+        crate::durability::DurabilityError::RootUnavailable => AdmissionRefusal::Unavailable,
+        _ => AdmissionRefusal::Rejected,
+    }
+}
+
+fn post_entry_progression_refusal(
+    error: crate::durability::character_progression::CharacterProgressionError,
+) -> AdmissionRefusal {
+    match error {
+        crate::durability::character_progression::CharacterProgressionError::Unavailable(error) => {
+            post_entry_checkout_refusal(error)
+        }
+        _ => AdmissionRefusal::Rejected,
     }
 }
 

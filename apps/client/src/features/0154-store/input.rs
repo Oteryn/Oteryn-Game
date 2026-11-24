@@ -25,14 +25,42 @@ impl PlayLink {
     }
 
     pub fn store_open_xp_boost(&self) {
-        {
-            let mut mailbox = lock(&self.mailbox);
-            mailbox.store.open = true;
-            if mailbox.store.confirmed_purchase.is_some() || mailbox.store.pending {
-                return;
-            }
+        self.store_open_products();
+    }
+
+    pub fn store_open_products(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.store.open = true;
+        if let Err(message) = self.open_product_offers(&mut mailbox.store, "") {
+            mailbox.store.feedback = Some(message.into());
         }
-        self.store_browse("featured", "XP Boost", 0, 0);
+    }
+
+    pub(in crate::play) fn open_product_offers(
+        &self,
+        store: &mut oteryn_client_ui::store::StorePanel,
+        search: &str,
+    ) -> Result<(), &'static str> {
+        if !store.selected {
+            return Err(tr!("Store unavailable in this session"));
+        }
+        if store.pending || store.confirmed_purchase.is_some() {
+            return Err(tr!("Waiting for the server"));
+        }
+        let command = oteryn_client_ui::store::browse(store, "featured", search, 0, 0)
+            .ok_or(tr!("Store unavailable in this session"))?;
+        if self
+            .commands
+            .send(PlayCommand::ServerMechanic(command))
+            .is_err()
+        {
+            store.pending = false;
+            return Err(tr!("The session has ended"));
+        }
+        store.open = true;
+        store.page = oteryn_client_ui::store::StorePage::Catalogue;
+        store.product_navigation = store.product_navigation.wrapping_add(1);
+        Ok(())
     }
 
     #[cfg(bevy_shell)]

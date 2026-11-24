@@ -12,7 +12,8 @@
 //! - Uses: experience `data/libs/functions/player.lua:428-429`; loot chance
 //!   `data/libs/functions/functions.lua:68-70`; respawn interval `* 100 / rate`, kept within
 //!   1 s..1 day (`src/creatures/monsters/spawns/spawn_monster.cpp:443-458`); skill and magic
-//!   tries `data/events/scripts/player.lua:658`.
+//!   tries `data/events/scripts/player.lua:658`. Personal boss loot has its own rate
+//!   (`events_scheduler.cpp:381-384`, `data/libs/functions/monstertype.lua:12-15`).
 //!
 //! Crystal reads the host's local clock once at startup. Oteryn reads UTC at each use, as the
 //! Rashid rotation fixes its calendar to UTC (`rashid_schedule.rs`).
@@ -27,11 +28,12 @@ pub const NEUTRAL_RATE: u32 = 100;
 const MIN_RESPAWN_MICROS: u64 = 1_000_000;
 const MAX_RESPAWN_MICROS: u64 = 86_400_000_000;
 
-/// The four admitted multipliers, whole percentages.
+/// The admitted multipliers, whole percentages.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct EventRates {
     pub experience: u32,
     pub loot: u32,
+    pub boss_loot: u32,
     pub spawn: u32,
     pub skill: u32,
 }
@@ -41,6 +43,7 @@ impl Default for EventRates {
         Self {
             experience: NEUTRAL_RATE,
             loot: NEUTRAL_RATE,
+            boss_loot: NEUTRAL_RATE,
             spawn: NEUTRAL_RATE,
             skill: NEUTRAL_RATE,
         }
@@ -112,6 +115,7 @@ struct SourceEvent {
 struct SourceRates {
     exprate: Option<u32>,
     lootrate: Option<u32>,
+    bosslootrate: Option<u32>,
     spawnrate: Option<u32>,
     skillrate: Option<u32>,
 }
@@ -175,6 +179,7 @@ impl Schedule {
                 rates: EventRates {
                     experience: rate(event.ingame.exprate),
                     loot: rate(event.ingame.lootrate),
+                    boss_loot: rate(event.ingame.bosslootrate),
                     spawn: rate(event.ingame.spawnrate),
                     skill: rate(event.ingame.skillrate),
                 },
@@ -245,6 +250,7 @@ impl Schedule {
             .fold(EventRates::default(), |active, event| EventRates {
                 experience: compound(active.experience, event.rates.experience),
                 loot: compound(active.loot, event.rates.loot),
+                boss_loot: compound(active.boss_loot, event.rates.boss_loot),
                 spawn: compound(active.spawn, event.rates.spawn),
                 skill: compound(active.skill, event.rates.skill),
             })
@@ -258,10 +264,19 @@ pub fn content_schedule() -> &'static Schedule {
     SCHEDULE_CELL.get_or_init(|| Schedule::parse(SCHEDULE).unwrap_or_default())
 }
 
+/// The rates at a captured UTC second, for settlement against the original event window.
+pub fn rates_at(unix_seconds: i64) -> EventRates {
+    #[cfg(any(test, feature = "test-support"))]
+    if let Some(rates) = test_clock::rates(Some(unix_seconds)) {
+        return rates;
+    }
+    content_schedule().rates_at(unix_seconds)
+}
+
 /// The rates in force now: the content schedule at the current UTC second.
 pub fn current_rates() -> EventRates {
     #[cfg(any(test, feature = "test-support"))]
-    if let Some(rates) = test_clock::rates() {
+    if let Some(rates) = test_clock::rates(None) {
         return rates;
     }
     let now = std::time::SystemTime::now()
@@ -337,8 +352,7 @@ fn utc_instant(date: &str, time: &str) -> Option<i64> {
     Some(days * 86_400 + hour * 3_600 + minute * 60 + second)
 }
 
-/// A per-thread schedule and clock for tests that drive the real XP, loot, respawn and skill
-/// paths across an event window.
+/// A per-thread schedule and clock for tests that drive real gameplay paths across an event window.
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_clock {
     use super::{EventRates, Schedule};
@@ -363,12 +377,12 @@ pub mod test_clock {
         Guard(CLOCK.with(|clock| clock.borrow_mut().replace((schedule, unix_seconds))))
     }
 
-    pub(super) fn rates() -> Option<EventRates> {
+    pub(super) fn rates(unix_seconds: Option<i64>) -> Option<EventRates> {
         CLOCK.with(|clock| {
             clock
                 .borrow()
                 .as_ref()
-                .map(|(schedule, now)| schedule.rates_at(*now))
+                .map(|(schedule, now)| schedule.rates_at(unix_seconds.unwrap_or(*now)))
         })
     }
 }
@@ -415,7 +429,7 @@ mod tests {
     fn double_weekend() -> Schedule {
         Schedule::parse(
             r#"{"events":[{"name":"double","startdate":"01/01/2030","enddate":"01/02/2030",
-                "ingame":{"exprate":200,"lootrate":150,"spawnrate":200,"skillrate":300}}]}"#,
+                "ingame":{"exprate":200,"lootrate":150,"bosslootrate":250,"spawnrate":200,"skillrate":300}}]}"#,
         )
         .expect("schedule")
     }
@@ -426,6 +440,7 @@ mod tests {
         let active = EventRates {
             experience: 200,
             loot: 150,
+            boss_loot: 250,
             spawn: 200,
             skill: 300,
         };
@@ -440,9 +455,9 @@ mod tests {
         let schedule = Schedule::parse(
             r#"{"events":[
                 {"name":"a","startdate":"03/01/2030","enddate":"03/01/2030","starthour":"10:30",
-                 "endhour":"12:00","ingame":{"exprate":150}},
+                 "endhour":"12:00","ingame":{"exprate":150,"bosslootrate":150}},
                 {"name":"b","startdate":"03/01/2030","enddate":"03/01/2030","hour":"11:00",
-                 "ingame":{"exprate":200,"lootrate":50}}]}"#,
+                 "ingame":{"exprate":200,"lootrate":50,"bosslootrate":200}}]}"#,
         )
         .expect("schedule");
         // 2030-03-01T00:00:00Z.
@@ -459,7 +474,7 @@ mod tests {
         );
         // `hour` makes event b a single instant; both events compound there.
         let both = schedule.rates_at(day + 11 * 3_600);
-        assert_eq!((both.experience, both.loot), (300, 50));
+        assert_eq!((both.experience, both.loot, both.boss_loot), (300, 50, 300));
         assert_eq!(schedule.rates_at(day + 11 * 3_600 + 1).experience, 150);
         assert_eq!(schedule.rates_at(day + 12 * 3_600 + 1).experience, 100);
         assert_eq!(

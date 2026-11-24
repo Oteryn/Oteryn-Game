@@ -1,0 +1,4 @@
+name=house_auction_list
+commands=6390
+[route]
+routing::house::auction_list(authority, session.actor, &session.admitted, command).await

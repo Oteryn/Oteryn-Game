@@ -61,7 +61,7 @@ pub fn set_item_price(panel: &mut super::Panel, item: &str, price: &str) -> bool
     let prices = if panel.tool == super::Tool::Supply {
         &mut panel.supply_prices
     } else {
-        &mut panel.loot_prices
+        std::sync::Arc::make_mut(&mut panel.loot_prices)
     };
     if !prices.contains_key(&item) && prices.len() >= super::state::items::MAX_ITEM_DETAILS {
         panel.feedback = Some(tr!("The item price list is full"));

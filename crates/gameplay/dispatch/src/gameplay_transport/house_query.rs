@@ -128,12 +128,16 @@ pub(super) async fn dispatch(
     command: UseCommand,
     body: &[u8],
     include_kind: bool,
+    auction_order: bool,
 ) -> Option<Vec<u8>> {
     let Ok(query) = wire::decode_house_query(body) else {
         return Some(wire::encode_house_result(D::Rejected, 0));
     };
+    if auction_order && query.acl.is_some() {
+        return Some(wire::encode_house_result(D::Rejected, 0));
+    }
     authority
-        .house_query(actor, command, query, include_kind)
+        .house_query(actor, command, query, include_kind, auction_order)
         .await
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -143,6 +147,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         query: wire::HouseQuery,
         include_kind: bool,
+        auction_order: bool,
     ) -> Option<Vec<u8>> {
         let refuse = || Some(wire::encode_house_result(D::Rejected, 0));
         let Some(fence) = command.item_fence else {
@@ -189,8 +194,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.character,
                 self.holder,
                 fence,
-                houses,
-                query.cursor,
+                crate::durability::house_management::HouseManagementPage {
+                    houses,
+                    cursor: query.cursor,
+                    auction_order,
+                },
                 content_digest,
             )
             .await
@@ -198,7 +206,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(mut rows) => {
                 let more = rows.len() > wire::PAGE_SIZE;
                 rows.truncate(wire::PAGE_SIZE);
-                let next = more.then(|| rows.last().map(|r| r.house.clone())).flatten();
+                let next = more
+                    .then(|| {
+                        rows.last().map(|row| {
+                            if auction_order {
+                                format!("{}/{}", row.auction_sort_end, row.house)
+                            } else {
+                                row.house.clone()
+                            }
+                        })
+                    })
+                    .flatten();
                 let rows: Vec<_> = rows
                     .into_iter()
                     .map(|r| {
@@ -277,6 +295,7 @@ mod tests {
                         _: UseCommand,
                         query: wire::HouseQuery,
                         _: bool,
+                        _: bool,
                     ) -> Option<Vec<u8>> {
                         self.0.set(query.details);
                         let record = catalogue()?.iter().find(|h| h.town.key == query.town)?;
@@ -322,19 +341,19 @@ mod tests {
                     query.extend([18, town.len() as u8]);
                     query.extend(town);
                     let authority = Authority(std::cell::Cell::new(false));
-                    let legacy = dispatch(&authority, actor, command, &query, false)
+                    let legacy = dispatch(&authority, actor, command, &query, false, false)
                         .await
                         .ok_or("missing legacy reply")?;
                     assert!(!authority.0.get());
                     query.extend([32, 1]);
-                    let detailed = dispatch(&authority, actor, command, &query, false)
+                    let detailed = dispatch(&authority, actor, command, &query, false, false)
                         .await
                         .ok_or("missing detailed reply")?;
                     assert!(authority.0.get());
                     assert!(detailed.len() > legacy.len());
                     query.extend([32, 1]);
                     assert_eq!(
-                        dispatch(&authority, actor, command, &query, false).await,
+                        dispatch(&authority, actor, command, &query, false, false).await,
                         Some(wire::encode_house_result(D::Rejected, 0))
                     );
                     Ok(())

@@ -1,0 +1,211 @@
+name: Nightly heavy report
+
+'on':
+  schedule:
+    - cron: '43 8 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: nightly-heavy-report-main
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Nightly heavy report / informational
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Compare exact-head qualification evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+          from tempfile import TemporaryDirectory
+
+          sha = os.environ["GITHUB_SHA"]
+          repo = os.environ["GITHUB_REPOSITORY"]
+          current_run = int(os.environ["GITHUB_RUN_ID"])
+          report_name = "nightly-heavy-report"
+          failures = {}
+          passes = set()
+          notes = []
+          known = {
+              line.split()[0]
+              for line in Path("tools/qualification/node_boot/known_fail_rows.txt").read_text().splitlines()
+              if line.strip() and not line.lstrip().startswith("#")
+          }
+
+          def gh(*args, timeout=45):
+              return subprocess.check_output(
+                  ["gh", *args], text=True, stderr=subprocess.PIPE, timeout=timeout,
+              )
+
+          def runs(workflow, event, head=None):
+              query = f"branch=main&event={event}&status=completed&per_page=20"
+              if head:
+                  query += f"&head_sha={head}"
+              result = json.loads(gh("api", f"repos/{repo}/actions/workflows/{workflow}.yml/runs?{query}"))
+              return [run for run in result["workflow_runs"] if not head or run["head_sha"] == head]
+
+          def download(run, selector, destination):
+              gh("run", "download", str(run), "--repo", repo, *selector, "--dir", str(destination))
+
+          def node_boot(directory):
+              # This workflow has its own full schedule. Only borrow exact-head evidence.
+              candidates = runs("node-boot-qualification", "schedule", sha)
+              if not candidates:
+                  return "No completed scheduled run on this SHA."
+              run = candidates[0]
+              download(run["id"], ["--pattern", f"node-boot-{run['id']}-*"], directory)
+              count = 0
+              for path in sorted(directory.glob("*/result.json")):
+                  count += 1
+                  result = json.loads(path.read_text())
+                  log = path.with_name("qualification-client.log").read_text(errors="replace")
+                  causes = dict(re.findall(
+                      r"scenario=([\w.-]+) status=[\w-]+ seconds=[\d.]+[^\n]*? "
+                      r"cause=([\w-]+ root=[\w./-]+)", log, re.ASCII,
+                  ))
+                  for item in result["scenarios"]:
+                      row, status = item["id"], item["status"]
+                      key = f"Node boot / {row}"
+                      if status == "PASS":
+                          passes.add(key)
+                      else:
+                          cause = causes.get(row, "cause unavailable")
+                          failures[key] = f"{status} ({cause})" + (" [KNOWN]" if row in known else "")
+                  expected = "PASS" if result["entry"] == "game_platform" else "NODE_BOOT_PASS"
+                  if result["exit_code"] or result["result"] != expected or result["incomplete"]:
+                      failures[f"Node boot shard / {result['shard']}"] = (
+                          f"{result['result']}, exit {result['exit_code']}, incomplete={result['incomplete']}"
+                      )
+                  else:
+                      passes.add(f"Node boot shard / {result['shard']}")
+              planner = json.loads(subprocess.check_output(
+                  ["python3", "tools/qualification/node_boot/matrix.py", "plan", "--set", "full"],
+                  text=True,
+              ))
+              missing = {item["name"] for item in planner} - {
+                  path.parent.name.removeprefix(f"node-boot-{run['id']}-")
+                  for path in directory.glob("*/result.json")
+              }
+              if missing:
+                  notes.append("Node boot shards missing evidence — " + ", ".join(sorted(missing)))
+              return f"Run {run['id']} ({run['conclusion']}). Read {count}/{len(planner)} shard result files."
+
+          def postgres():
+              candidates = runs("merge-group-gate", "push", sha)
+              if not candidates:
+                  return "No completed push gate on this SHA."
+              run = candidates[0]
+              pages = json.loads(gh(
+                  "api", "--paginate", "--slurp",
+                  f"repos/{repo}/actions/runs/{run['id']}/attempts/{run['run_attempt']}/jobs?per_page=100",
+              ))
+              prefix = "Merge Queue / Durability PostgreSQL harness ("
+              jobs = []
+              for page in pages:
+                  for job in page["jobs"]:
+                      if job["name"].startswith(prefix):
+                          jobs.append(job)
+                      elif (job["name"].startswith("Merge Queue / Durability PostgreSQL harness build (")
+                            and job["conclusion"] not in {"success", "skipped"}):
+                          failures[job["name"]] = job["conclusion"]
+              passed = sum(job["conclusion"] == "success" for job in jobs)
+              for job in jobs:
+                  key = job["name"]
+                  if job["conclusion"] == "success":
+                      passes.add(key)
+                  elif job["conclusion"] != "skipped":
+                      failed_step = next((step["name"] for step in job["steps"]
+                                          if step["conclusion"] == "failure"), "cause unavailable")
+                      failures[key] = f"{job['conclusion']} ({failed_step})"
+                      try:
+                          log = gh("api", f"repos/{repo}/actions/jobs/{job['id']}/logs", timeout=8)
+                      except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                          notes.append(f"PostgreSQL job {job['id']} log unavailable.")
+                          continue
+                      log = re.sub(r"\x1b\[[0-9;]*m", "", log)
+                      for verdict, binary, test in re.findall(
+                          r"\b(FAIL|TIMEOUT|SIGSEGV|SIGABRT|SIGKILL|ABORT|LEAK-FAIL)\s+"
+                          r"\[[\s.0-9]+s\]\s+([\w:.-]+)\s+([\w:.-]+)\s*$",
+                          log, re.MULTILINE | re.ASCII,
+                      ):
+                          failures[f"PostgreSQL / {binary} {test}"] = verdict
+              if passed == 55 and len(jobs) == 55:
+                  passes.add("PostgreSQL / all partitions")
+              return f"Run {run['id']} ({run['conclusion']}). {passed}/55 partitions passed."
+
+          def read_evidence(label, collect):
+              try:
+                  notes.append(f"{label} — {collect()}")
+              except (OSError, ValueError, KeyError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                  notes.append(f"{label} — evidence could not be read in full.")
+
+          with TemporaryDirectory() as scratch:
+              directory = Path(scratch)
+              read_evidence("Node boot", lambda: node_boot(directory / "node"))
+              read_evidence("PostgreSQL", postgres)
+              previous = None
+              try:
+                  prior = next((run for run in runs(report_name, "schedule") if run["id"] < current_run), None)
+                  if prior:
+                      download(prior["id"], ["--name", report_name], directory / "previous")
+                      previous = json.loads((directory / "previous" / "failures.json").read_text())
+                      notes.append(f"Baseline — scheduled report {prior['id']}.")
+              except (OSError, ValueError, KeyError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                  notes.append("The previous scheduled report artifact is unavailable.")
+
+          lines = [
+              f"# Nightly heavy report for `{sha}`", "",
+              "This draft reports existing exact-head runs. Node boot needs a reusable trigger.",
+              "The callable PostgreSQL worker needs non-PR revision and base inputs.", "",
+              *notes, "", "## Failures and changes", "",
+          ]
+          if previous is None:
+              lines.append("No previous scheduled artifact for comparison.")
+          for key, cause in sorted(failures.items()):
+              if previous is None:
+                  delta = "No baseline"
+              elif key not in previous:
+                  delta = "Newly observed"
+              else:
+                  delta = "Unchanged" if cause == previous[key] else f"Changed from {previous[key]}"
+              lines.append(f"- `{key}` — {cause}. {delta}.")
+          for key in sorted((previous or {}).keys() - failures.keys()):
+              passed = key in passes or (key.startswith("PostgreSQL / ") and "PostgreSQL / all partitions" in passes)
+              delta = "Passed" if passed else "No current verdict"
+              lines.append(f"- `{key}` — {delta}.")
+          if not failures:
+              lines.append("No failures observed in the available evidence.")
+          output = Path(os.environ["RUNNER_TEMP"]) / report_name
+          output.mkdir(exist_ok=True)
+          markdown = "\n".join(lines) + "\n"
+          (output / "report.md").write_text(markdown)
+          (output / "failures.json").write_text(json.dumps(failures, sort_keys=True) + "\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write(markdown)
+          PY
+      - name: Upload nightly report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nightly-heavy-report
+          path: ${{ runner.temp }}/nightly-heavy-report
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7

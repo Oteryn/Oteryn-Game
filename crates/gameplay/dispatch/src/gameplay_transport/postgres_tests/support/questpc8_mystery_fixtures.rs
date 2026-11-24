@@ -22,27 +22,49 @@ pub(super) async fn exercise_intro(
     talk(owner, admitted, lai, 5100, "hi").await?;
     talk(owner, admitted, lai, 5101, "statue").await?;
     assert_eq!(progress(h).await?, -1);
-    // These are prior-quest fixture events through their existing durable transitions;
-    // no Mystery progress or quest item is seeded.
+    // These are the Ice Islands prerequisites, through their durable transitions.
     for (command, key) in [
         (
             5110,
             "oteryn:quest-transition/quest/u8_0/the_ice_islands/mission06/npc_1",
         ),
         (
-            5111,
-            "oteryn:quest-transition/quest/u8_54/the_new_frontier/mission07/hidden_note/action_1",
-        ),
-        (
-            5112,
-            "oteryn:quest-transition/quest/u8_54/the_new_frontier/questline/action_2",
-        ),
-        (
             5113,
             "oteryn:quest-transition/quest/u8_0/the_ice_islands/mission06/npc_8",
         ),
     ] {
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "fence")?
+            .ok_or("fence")?;
         if command == 5113 {
+            // The New Frontier's physical quest owner now guards the prison
+            // route. Import its donor snapshot for this Lai-only scenario.
+            let mut seed = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *seed)
+                .await?;
+            let seeded = sqlx::query(
+                "INSERT INTO game_character_quest_tracks
+                    (character_id, track_key, quest_key, value, committed_character_revision)
+                 SELECT character_id, prereq.track, 'oteryn:quest.the_new_frontier_quest',
+                        prereq.value, character_revision
+                 FROM game_character_roots
+                 CROSS JOIN (VALUES
+                    ('oteryn:quest-progress/quest/u8_54/the_new_frontier/mission07/hidden_note', 1),
+                    ('oteryn:quest-progress/quest/u8_54/the_new_frontier/questline', 23)
+                 ) AS prereq(track, value)
+                 WHERE character_id = encode($1,'hex')::uuid",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .execute(&mut *seed)
+            .await?;
+            assert_eq!(seeded.rows_affected(), 2);
+            seed.commit().await?;
+            owner
+                .refresh_quest_session(admitted.game_session_id, false)
+                .await;
             owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
             talk(owner, admitted, lai, 5107, "statue").await?;
             assert_eq!(
@@ -51,11 +73,6 @@ pub(super) async fn exercise_intro(
                 "accepting the cure task does not unlock the sled"
             );
         }
-        let fence = owner
-            .current_quest_fence(admitted.game_session_id)
-            .await
-            .map_err(|()| "fence")?
-            .ok_or("fence")?;
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let outcome = slot
             .commit_quest_transition(

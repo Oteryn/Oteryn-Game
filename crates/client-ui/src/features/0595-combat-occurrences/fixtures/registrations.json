@@ -1,0 +1,21 @@
+[
+  {
+    "mechanic": "0595-combat-occurrences",
+    "kind": "handlers",
+    "id": "0595-combat-occurrences-query",
+    "status": "unsupported",
+    "commands": [
+      6352,
+      6354
+    ],
+    "direction": "client_to_server",
+    "reason": "The capability is reserved for the client lane implementing the negotiated occurrence and inscription extensions.",
+    "not_applicable": {
+      "state": "Fenced death and player-credit receipts supplies the server-owned fields.",
+      "protocol": "The server gates the request on its negotiated capability.",
+      "view": "Client presentation is owned by the client lane.",
+      "input": "The server owns the facts behind this read-only query.",
+      "settings": "The query has no client setting."
+    }
+  }
+]

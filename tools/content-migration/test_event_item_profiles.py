@@ -118,8 +118,7 @@ class EventItemProfilePrecedence(unittest.TestCase):
         self.assertTrue(set(novelty['map_action_item_ids']) <= records)
         self.assertTrue({row[field] for row in novelty['house_transforms']
                          for field in ('item_id', 'target')} <= records)
-        expected_map = expected | set(novelty['map_item_ids']) | set(events['seasonal_map_item_ids']) | {
-            row[state] for row in source['world_door_families'] for state in ('locked', 'closed', 'open')}
+        expected_map = event_item_profiles.world_map_item_ids(ROOT)
         physical = source['world_map_physical']
         self.assertEqual([row['server_item_id'] for row in physical], sorted(expected_map - gaps.keys()))
         for row in physical:

@@ -32,6 +32,34 @@ RELOCATIONS = {
         "content/world/terrain/index.json",
         "f4b9c418ca93577b7b6340c48e6947bb05283ce00fddbd6b75a6eede200e837b",
     ),
+    (
+        "tools/content-schema/item-authoring/historical_world_owner_context.py",
+        "96b24f0cbedb168d73aeca26644536693d97b7fe2d2f49ecbd150bdfd4f3037b",
+    ): (
+        "tools/content-schema/item-authoring/historical_world_owner_context.py",
+        "06415dbbfc1361c2213bf9bd9ef2515b8364663e6615cefb2027378918bf1404",
+    ),
+    (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "17f828cc66dfe6629e8d11663673a6eda7d72fbb1adc08e956f2c53e818d5049",
+    ): (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "44babcccaffc0fb5b8642a6039d227d48cb0be7a4867725301ede99969082bd2",
+    ),
+    (
+        "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
+        "5524d0a35c47e77092490798a17c938ab3e8c392d485805ae0ab48559f04b260",
+    ): (
+        "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
+        "697d2d4f37d255f737d22332e3072dc0de0a27fb91e325fb08ba170032672351",
+    ),
+    (
+        "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
+        "b933eaae211fdbdda5e52b78fa7193cd00d4766587da2932e31012dc95915d8c",
+    ): (
+        "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
+        "c5ea5d46f2b75860fed6873eebd5ea0f4563ebc616bdba6314c3cd1accb65ff9",
+    ),
     # The source-qualified Anomaly ground retains its pre-existing Item route;
     # the complete terrain row otherwise remains byte-identical.
     (
@@ -85,12 +113,31 @@ RELOCATIONS = {
         "tools/content-schema/item-authoring/test_stack_default_historical_context.py",
         "b7dc47b1f179fd919950be1cb0beadece76db594e0968f41bb53356172325210",
     ),
+    # ITEMGLOB3 supersedes only the Wiki modifier rows for i47376 and i49872.
+    # Neither Item belongs to the closed stack or elemental-magic cohorts.
+    # The merged World refresh changes only the packet's map-owner digests.
     (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
         "82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "b93290e5f6c38f9569ce608aa6e63f4cbb428d0b6aec4473ea89a96f2a63582b",
+        "44babcccaffc0fb5b8642a6039d227d48cb0be7a4867725301ede99969082bd2",
+    ),
+    (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
+    ): (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "44babcccaffc0fb5b8642a6039d227d48cb0be7a4867725301ede99969082bd2",
+    ),
+    # Numeric17 reuses the Mantra/Bond compiler's source readers. Their behavior
+    # is unchanged by the exact Global overlay check on live Mantra/Bond rows.
+    (
+        "tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py",
+        "70b2a00b1fd6512a7ec02b6f0b6ecc4548a29d06bd093a93df607626df05cbea",
+    ): (
+        "tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py",
+        "b56128eee9602582a3020db96e9dd003f733773921b532b2af89be3d3889a30e",
     ),
     # The closed139 name packet changes only terrain fingerprints. Its Rust
     # consumer changes only that packet's digest; qualification and rows are exact.
@@ -99,21 +146,21 @@ RELOCATIONS = {
         "a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9",
     ): (
         "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-        "fe38febdfa75d7cb836ee4fc5d8abd40e53a5b884e425619dbe12980ad97f193",
+        "697d2d4f37d255f737d22332e3072dc0de0a27fb91e325fb08ba170032672351",
     ),
     (
         "crates/gameplay/content/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "4833001c0572d9d4767b1e5d1c58fbd9f7d92554338840f7d26d8b61e66ee49a",
+        "c5ea5d46f2b75860fed6873eebd5ea0f4563ebc616bdba6314c3cd1accb65ff9",
     ),
     (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "4833001c0572d9d4767b1e5d1c58fbd9f7d92554338840f7d26d8b61e66ee49a",
+        "c5ea5d46f2b75860fed6873eebd5ea0f4563ebc616bdba6314c3cd1accb65ff9",
     ),
     # QMINT3's tree-first reference view changes only the Forge289 compiler and
     # mapper fingerprints. All454 binding rows and289 literal promotions are

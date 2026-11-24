@@ -32,6 +32,9 @@ impl SettingsState {
                 .cloned()
             {
                 restored.miscellaneous = self.preferences.miscellaneous;
+                if let Some(engine) = self.preferences.miscellaneous.startup_engine {
+                    restored.graphics.engine = engine;
+                }
                 completion.replaced = true;
                 self.accept_replaced(restored);
             }

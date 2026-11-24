@@ -15,7 +15,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if (intent.get('schema') != 'OTERYN_AUTHORED_NPC_ITEM_CUSTODY/v1'
             or not 1 <= len(intent.get('inputs', [])) <= 32):
         raise ValueError('AUTHORED_NPC_CUSTODY_INTENT')
-    keys = set()
+    # Crystal 201189f8 npc_functions.cpp:648 uses the Shopping Bag for packed BUY.
+    # Qualify its already indexed definition against the exact pinned binding.
+    keys = {'oteryn:item.tibia.i21411'}
     for entry in intent['inputs']:
         path = root / entry['path']
         if not path.resolve().is_relative_to(root.resolve()):

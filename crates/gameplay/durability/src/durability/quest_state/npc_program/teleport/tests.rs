@@ -508,24 +508,41 @@ fn m37_riddler_postgres_progress_and_arrival_commit_together() -> f::TestResult 
 
 async fn exercise_riddler(h: &f::Harness) -> f::TestResult {
     use crate::durability::npc_travel::{PendingArrival, TravelOccurrence};
-    use crate::durability::quest_state::{QuestCause, QuestTransitionRequest, QuestTransitionOutcome};
+    use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
     use crate::durability::quest_state::npc_program::{NpcProgramRequest, teleport::{self, NpcTeleportAdmission}};
     use crate::durability::spell_owner_commit::SpellLanePermit;
     use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition, npc_rules::{NpcRuleCatalog, NpcRuleTrigger}};
     use std::sync::Arc;
     let program = NpcRuleCatalog::runtime().map_err(f::debug)?.programs().iter()
         .find(|p|p.document.quest == "oteryn:quest.the_paradox_tower_quest").ok_or("Riddler runtime programme")?;
-    let tracks: Vec<_> = program.document.tracks.iter().map(|t|QuestTrack {
+    let mut tracks: Vec<_> = program.document.tracks.iter().map(|t|QuestTrack {
         key:t.key.clone(),quest:t.quest.clone(),initial:t.initial,min:t.min,max:t.max,
     }).collect();
     let prefix = "oteryn:quest-progress/quest/u7_24/the_paradox_tower";
     let changed = [format!("{prefix}/mathemagics"),format!("{prefix}/favorite_colour")];
     let digest = program.digest.iter().map(|b|format!("{b:02x}")).collect::<String>();
     let setup = "oteryn:quest-test/riddler/setup";
+    let fixture_track = "oteryn:quest-progress/quest-test/riddler/prepared";
+    tracks.push(QuestTrack {
+        key: fixture_track.into(),
+        quest: program.document.quest.clone(),
+        initial: 0,
+        min: 0,
+        max: 1,
+    });
     let transitions = vec![
-        QuestTransition { key:setup.into(),quest:program.document.quest.clone(),effects:changed.iter().map(|track|QuestEffect {
-            track:track.clone(),from:QuestComparison::Any,effect:QuestEffectKind::Set(1),
-        }).collect(),completes:false,experience:None,world_change:None },
+        QuestTransition {
+            key: setup.into(),
+            quest: program.document.quest.clone(),
+            effects: vec![QuestEffect {
+                track: fixture_track.into(),
+                from: QuestComparison::Eq(0),
+                effect: QuestEffectKind::Set(1),
+            }],
+            completes: false,
+            experience: None,
+            world_change: None,
+        },
         QuestTransition { key:format!("oteryn:quest-npc-pin/{digest}"),quest:program.document.quest.clone(),effects:vec![QuestEffect {
             track:changed[0].clone(),from:QuestComparison::Any,effect:QuestEffectKind::Computed,
         }],completes:false,experience:None,world_change:None },
@@ -533,18 +550,39 @@ async fn exercise_riddler(h: &f::Harness) -> f::TestResult {
     let catalogue = Arc::new(QuestStateCatalogue::new("content-1",tracks,transitions).map_err(f::debug)?);
     let seal = h.recovery.seal_current().map_err(f::debug)?;
     let authority = h.root.open_character_authority(&seal).await.map_err(f::debug)?;
-    let seed = h.root.commit_character_quest_transition(&authority,&h.node,f::fence(1)?,QuestTransitionRequest {
+    let setup_outcome = h.root.commit_character_quest_transition(&authority,&h.node,f::fence(1)?,QuestTransitionRequest {
         transition_key:setup.into(),cause:QuestCause::Command(command(9800)?),
     },catalogue.clone()).await.map_err(f::debug)?;
-    assert!(matches!(seed,QuestTransitionOutcome::Committed(_)));
+    assert!(matches!(setup_outcome,QuestTransitionOutcome::Committed(_)));
+    let fence = f::fence(2)?;
+    // Seed the prior dialogue snapshot. Live progression owns these tracks and
+    // the generic writer cannot impersonate the donor's preceding dialogue.
+    let mut seed = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *seed)
+        .await?;
+    let seeded = sqlx::query(
+        "INSERT INTO game_character_quest_tracks
+            (character_id, track_key, quest_key, value, committed_character_revision)
+         SELECT character_id, key, $3, 1, character_revision
+         FROM game_character_roots CROSS JOIN unnest($2::text[]) AS tracks(key)
+         WHERE character_id = encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(changed.as_slice())
+    .bind(&program.document.quest)
+    .execute(&mut *seed)
+    .await?;
+    assert_eq!(seeded.rows_affected(), 2);
+    seed.commit().await?;
     assert_eq!(h.root_revision().await?,"2");
-    let state = h.root.read_character_quest_state(&authority,f::fence(2)?.character_id).await.map_err(f::debug)?;
+    let state = h.root.read_character_quest_state(&authority,fence.character_id).await.map_err(f::debug)?;
+    for key in &changed { assert_eq!(state.tracks().get(key),Some(&1)); }
     let mut request = NpcProgramRequest {command:command(9801)?,npc:"oteryn:npc.riddler".into(),trigger:NpcRuleTrigger::Say,
         message:"1".into(),topic:13,transition_key:"oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-135-15-1-1".into()};
     let preview = teleport::preview_teleport(&request,state.tracks(),&catalogue,1_700_000_000,&Default::default()).map_err(f::debug)?.ok_or("Riddler preview")?;
     request.transition_key = preview.source.selected_rule_keys.first().ok_or("Riddler selected branch")?.clone();
     assert_eq!(preview.source.track_changes.len(),2);
-    let fence = f::fence(2)?;
     let arrival = PendingArrival { occurrence:TravelOccurrence::from_bytes(f::id(99)).map_err(f::debug)?,world_id:fence.runtime_scope.world_id(),
         destination:NpcTeleportAdmission::runtime_destination(preview.destination).ok_or("Riddler runtime coordinates")? };
     let permit = SpellLanePermit::of_fresh_scope(fence.runtime_scope).await.map_err(f::debug)?;

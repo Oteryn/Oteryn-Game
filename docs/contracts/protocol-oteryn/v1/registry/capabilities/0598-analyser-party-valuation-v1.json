@@ -1,0 +1,15 @@
+{
+  "id": 598,
+  "name": "ANALYSER_PARTY_VALUATION_V1",
+  "owner_decision": "Server analyser client gaps",
+  "owner": "Party accounting",
+  "requires": [
+    597
+  ],
+  "command_types": [
+    6359
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES with the pinned item index."
+}

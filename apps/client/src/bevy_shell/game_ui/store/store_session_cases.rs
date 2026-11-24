@@ -111,7 +111,7 @@ fn store_shortcut_rejects_extra_modifiers() -> ResultTest {
 #[test]
 fn purchase_history_shortcut_opens_visible_history_page() -> ResultTest {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
-    let (mut app, _rx, _) = fixture(250)?;
+    let (mut app, mut rx, outbox) = fixture(250)?;
     app.world()
         .non_send::<HostOwner>()
         .play
@@ -150,6 +150,22 @@ fn purchase_history_shortcut_opens_visible_history_page() -> ResultTest {
             .iter(app.world())
             .any(|node| node.display != Display::None)
     );
+    let browse = command(&mut rx)?;
+    assert_eq!(browse.command_type, browse::COMMAND_TYPE);
+    reply(
+        &outbox,
+        page(250).encode().map_err(|e| format!("{e:?}"))?,
+        CommandStatus::Accepted,
+    );
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    assert!(link.open_reward_store_offers("Premium"));
+    app.update();
+    assert!(matches!(
+        app.world().resource::<State>().page,
+        Page::Products
+    ));
+    assert_eq!(app.world().resource::<State>().fields[3], "Premium");
     Ok(())
 }
 
@@ -375,12 +391,20 @@ fn store_exposes_coin_checkout_with_an_admitted_account() -> ResultTest {
         "OTERYN_OAUTH_CLIENT_ID" => Some("test-client".into()),
         "OTERYN_DEV_ROOT" => Some("/tmp/unused-store-checkout-root".into()),
         _ => None,
-    })?.ok_or("config")?;
-    app.world().non_send::<HostOwner>().play.as_ref().ok_or("play")?
-        .link.configure_coin_shop(Some(config), "hero");
+    })?
+    .ok_or("config")?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .configure_coin_shop(Some(config), "hero");
     app.update();
     let world = app.world_mut();
-    let button = world.query::<(Entity, &Text, &ChildOf)>().iter(world)
+    let button = world
+        .query::<(Entity, &Text, &ChildOf)>()
+        .iter(world)
         .find_map(|(_, text, parent)| (text.0 == "Get Oteryn coins").then_some(parent.parent()))
         .ok_or("coin checkout button")?;
     assert!(world.get::<InteractionDisabled>(button).is_none());
@@ -464,7 +488,10 @@ fn native_admission_wires_store_checkout_to_the_selected_character() -> ResultTe
         let (mut app, _, _) = fixture_in(app, 250)?;
         let mut config = stack.config();
         config.platform_url.clone_from(&mock.base);
-        app.world().non_send::<HostOwner>().services.configure(&mut config);
+        app.world()
+            .non_send::<HostOwner>()
+            .services
+            .configure(&mut config);
 
         let client = crate::ClientBootstrap::new()?.with_native_login(config);
         let admitted = client.request_gameplay_entry()?;
@@ -472,14 +499,19 @@ fn native_admission_wires_store_checkout_to_the_selected_character() -> ResultTe
         let (view, link) = client.start_play(admitted)?;
         assert!(Snapshot::read(&link).coin_checkout);
         assert!(link.open_coin_checkout());
-        app.world_mut().non_send_mut::<HostOwner>().play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+        app.world_mut().non_send_mut::<HostOwner>().play =
+            Some(crate::bevy_shell::owner::ActivePlay { view, link });
 
         let deadline = Instant::now() + Duration::from_secs(5);
         let package = format!("coin.package.{PACKAGE}");
         loop {
             app.update();
             let world = app.world_mut();
-            if world.query::<&Name>().iter(world).any(|name| name.as_str() == package) {
+            if world
+                .query::<&Name>()
+                .iter(world)
+                .any(|name| name.as_str() == package)
+            {
                 break;
             }
             if Instant::now() >= deadline {
@@ -487,8 +519,17 @@ fn native_admission_wires_store_checkout_to_the_selected_character() -> ResultTe
             }
             std::thread::yield_now();
         }
-        let request = format!("GET /api/v1/native-account/coin-purchases/catalogue?character_id={CHARACTER} ");
-        assert!(mock.authority.lock().map_err(|_| "authority")?.requests.iter().any(|line| line.starts_with(&request)));
+        let request = format!(
+            "GET /api/v1/native-account/coin-purchases/catalogue?character_id={CHARACTER} "
+        );
+        assert!(
+            mock.authority
+                .lock()
+                .map_err(|_| "authority")?
+                .requests
+                .iter()
+                .any(|line| line.starts_with(&request))
+        );
         drop(app);
         client.shutdown();
         stack.finish();

@@ -139,25 +139,13 @@ pub(in crate::play) fn carried_items(mailbox: &Mailbox) -> Vec<oteryn_session::I
     items
 }
 
-pub(in crate::play) fn visible_items(
-    mailbox: &Mailbox,
-) -> impl Iterator<Item = oteryn_session::ItemEntry> + '_ {
-    mailbox.inventory.rows().into_iter().chain(
-        mailbox
-            .containers
-            .views
-            .iter()
-            .flat_map(|views| &views.views)
-            .flat_map(|view| view.entries.iter())
-            .copied(),
-    )
-}
 pub(in crate::play) fn item_source(
     mailbox: &Mailbox,
     definition: NonZeroU32,
     sub_type: Option<u32>,
 ) -> Option<oteryn_session::ItemEntry> {
-    visible_items(mailbox)
+    carried_items(mailbox)
+        .into_iter()
         .filter(|item| {
             item.item_definition_ref == definition
                 && sub_type.is_none_or(|value| item.sub_type == value)
@@ -191,6 +179,7 @@ pub(in crate::play) fn editor_items(
     mailbox: &Mailbox,
 ) -> impl Iterator<Item = oteryn_session::ItemEntry> + '_ {
     let mut seen = std::collections::BTreeSet::new();
-    visible_items(mailbox)
+    carried_items(mailbox)
+        .into_iter()
         .filter(move |item| seen.insert((item.item_definition_ref, item.sub_type)))
 }

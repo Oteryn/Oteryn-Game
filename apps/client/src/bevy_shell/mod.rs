@@ -16,6 +16,8 @@ mod live_assets;
 mod login;
 pub(crate) mod maintenance;
 mod owner;
+#[cfg(test)]
+pub(crate) use owner::offline_training_logout_status;
 mod render_settings;
 mod scene;
 mod screenshots;
@@ -29,7 +31,7 @@ mod window_drag;
 
 use bevy::{asset::AssetPlugin, image::ImagePlugin, prelude::*, window::PrimaryWindow};
 use owner::HostOwner;
-use render_settings::apply_window;
+use render_settings::project_window;
 use std::{ffi::OsString, path::PathBuf};
 
 pub struct Options {
@@ -249,37 +251,6 @@ fn poll_owner(
         if owner.phase == owner::Phase::Closed {
             exit.write(AppExit::Success);
         }
-    }
-}
-fn project_window(
-    owner: NonSend<HostOwner>,
-    mut window: Query<&mut Window, With<PrimaryWindow>>,
-    mut scale: ResMut<UiScale>,
-    mut sampling: Query<&mut Msaa, With<Camera2d>>,
-    mut previous_display: Local<Option<(bool, u16)>>,
-) {
-    let samples = Msaa::from_samples(owner.settings.preferences.graphics.antialiasing.samples());
-    for mut msaa in &mut sampling {
-        msaa.set_if_neq(samples);
-    }
-    if let Ok(mut window) = window.single_mut() {
-        let graphics = owner.settings.preferences.graphics;
-        let display = (graphics.fullscreen, graphics.monitor);
-        if *previous_display != Some(display) {
-            if !graphics.fullscreen
-                && let Some(index) = graphics.monitor.checked_sub(1)
-            {
-                window.position = bevy::window::WindowPosition::Centered(
-                    bevy::window::MonitorSelection::Index(usize::from(index)),
-                );
-            }
-            *previous_display = Some(display);
-        }
-        apply_window(&owner.settings.preferences, &mut window);
-    }
-    let next = owner.settings.preferences.interface_scale as f32 / 100.;
-    if scale.0 != next {
-        scale.0 = next;
     }
 }
 #[cfg(test)]

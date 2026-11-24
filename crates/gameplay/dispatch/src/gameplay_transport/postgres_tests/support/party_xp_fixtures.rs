@@ -1081,13 +1081,12 @@ async fn scenario(
             continue;
         }
         let runtime = owner.runtime.lock().await;
-        if case.forge() || matches!(case, Case::Inactive | Case::Foreign) {
-            // Foreign's final attacker must land before the leader's activity expires;
+        if case.forge() || matches!(case, Case::Concurrent | Case::Inactive | Case::Foreign) {
+            // The staged contributor's activity must still be current at the lethal hit.
             // Balanced content draws can take 66 three-second passes even at one HP.
-            // These level-one fist attackers qualify reward settlement, not fight-mode
-            // balance. Content-pinned draws can leave the 72-HP Fiendish rat alive
-            // after 256 Balanced passes. Use real Offensive mode for the foreign-share
-            // finisher and every Forge case, including solo, range and foreign contributors.
+            // Content-pinned draws can also leave the 72-HP Fiendish rat alive after
+            // 256 Balanced passes. Real Offensive swings exercise reward settlement
+            // while keeping the authored HP, damage rolls and activity rules.
             assert!(owner.states.attack.lock().await.set_modes(
                 &runtime,
                 actor,

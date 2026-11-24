@@ -302,17 +302,38 @@ impl<S: SessionStream> Session<S> {
     /// across repeated short calls. Any other frame, a failed validation, a closed connection
     /// or an I/O error fails closed and makes the session unusable. Runs on the caller's task only.
     pub async fn service_liveness(&mut self, duration: Duration) -> Result<(), SessionError> {
+        self.service_idle(duration, false).await
+    }
+
+    /// Keeps an idle session alive and applies state without retaining event notifications.
+    /// Use this when the caller observes the updated domain stores directly.
+    pub async fn service_liveness_discarding_events(
+        &mut self,
+        duration: Duration,
+    ) -> Result<(), SessionError> {
+        self.service_idle(duration, true).await
+    }
+
+    async fn service_idle(
+        &mut self,
+        duration: Duration,
+        discard_events: bool,
+    ) -> Result<(), SessionError> {
         self.ensure_usable()?;
         let until = tokio::time::Instant::now() + duration;
-        let outcome = self.serve_liveness_until(until).await;
+        let outcome = self.serve_liveness_until(until, discard_events).await;
         self.poison_on_error(outcome)
     }
 
-    pub(super) async fn serve_liveness_until(
+    async fn serve_liveness_until(
         &mut self,
         until: tokio::time::Instant,
+        discard_events: bool,
     ) -> Result<(), SessionError> {
         loop {
+            if discard_events {
+                self.events.clear();
+            }
             let silence_until = self.last_received + SERVER_SILENCE_DEADLINE;
             if tokio::time::Instant::now() >= silence_until {
                 return Err(SessionError::Timeout("server silence"));

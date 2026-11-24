@@ -492,6 +492,9 @@ def outputs(
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+        import alawar_static
+
+        files[alawar_static.SHARD] = alawar_static.output()
     return files, world_objects.census_document_bytes(result)
 
 
@@ -539,6 +542,7 @@ def official_shards():
 
 def qualified_shards():
     import activity_static
+    import alawar_static
     import feroxa_static
 
     return {
@@ -554,6 +558,7 @@ def qualified_shards():
             "content/world/terrain/terrain-08750-08750.json",
             "content/world/objects/objects-12917-12931.json",
             *activity_static.SHARDS.values(),
+            alawar_static.SHARD,
             *activity_static.TRAVERSAL_SHARDS.values(),
             feroxa_static.SHARD,
         )

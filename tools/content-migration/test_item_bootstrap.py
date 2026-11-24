@@ -6,7 +6,8 @@ import shutil
 import sys
 import tempfile
 import unittest
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, contextmanager, redirect_stderr
+from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -19,12 +20,7 @@ import ranged_item_profiles as ranged
 TOOL = Path(__file__).with_name("world_project_v2_to_tree.py")
 spec = importlib.util.spec_from_file_location("item_bootstrap_converter", TOOL)
 converter = importlib.util.module_from_spec(spec)
-# Taxonomy belongs to the later, non-Item portion of the full converter.
-with patch.dict(
-    sys.modules,
-    {"item_taxonomy": SimpleNamespace(build_taxonomy=None, taxonomy_inputs=None)},
-):
-    spec.loader.exec_module(converter)
+spec.loader.exec_module(converter)
 
 
 def write(root, relative, value):
@@ -146,6 +142,7 @@ def input_helpers(root, *, real_conditional=False):
         ("quest_reward_item_semantics", "apply_admissions"),
         ("amber_item_semantics", "apply_container_fact"),
         ("enchanting_item_profiles", "apply_admissions"),
+        ("boss_conditional_item_reference", "extend_records"),
         ("boss_movement_item_profiles", "extend_records"),
         ("boss_corpse_terminal_reference", "extend_records"),
         ("qready1_cradle_item_profiles", "extend_records"),
@@ -157,19 +154,13 @@ def input_helpers(root, *, real_conditional=False):
         ("engclaim_item_profiles", "apply_admissions"),
     ):
         modules[name] = SimpleNamespace(**{function: admission(name)})
+    if real_conditional:
+        modules["boss_conditional_item_reference"] = conditional
     modules["primal_reference_overlay"] = SimpleNamespace(
         apply_reference=lambda *_: None
     )
     with ExitStack() as stack:
         stack.enter_context(patch.dict(sys.modules, modules))
-        if not real_conditional:
-            stack.enter_context(
-                patch.object(
-                    conditional,
-                    "extend_records",
-                    side_effect=admission("boss_conditional_item_reference"),
-                )
-            )
         stack.enter_context(
             patch.multiple(
                 converter,
@@ -194,6 +185,8 @@ def input_helpers(root, *, real_conditional=False):
         stack.enter_context(
             patch.object(converter, "item_alias_targets", return_value={})
         )
+        stack.enter_context(patch.object(converter, "taxonomy_inputs", return_value=()))
+        stack.enter_context(patch.object(converter, "build_taxonomy", return_value=[]))
         stack.enter_context(
             patch.object(
                 ranged,
@@ -227,9 +220,9 @@ class ItemBootstrapTests(unittest.TestCase):
     def test_dangling_index_repaired_with_exact_attachments_and_no_foreign_writes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            _, declarations, editor, sources = fixture(root)
+            _reference, declarations, editor, sources = fixture(root)
             before = files(root)
-            with input_helpers(root) as (_, ranged_call):
+            with input_helpers(root) as (_calls, ranged_call):
                 self.assertEqual(converter.cli(["--items-only"]), 0)
                 ranged_call.assert_called_once_with(root)
             index = json.loads((root / "content/items/index.json").read_bytes())
@@ -302,13 +295,24 @@ class ItemBootstrapTests(unittest.TestCase):
             after = files(root)
             removed = "content/items/definitions/items-00002-00004.json"
             self.assertEqual(set(before) - set(after), {removed})
-            allowed = {
-                "content/items/index.json",
-                ranged.RANGED_PROFILES,
-                *expected_shards,
-            }
+            taxonomy = "content/items/taxonomy/items.json"
+            relations = "content/items/relations/items.json"
+            lock = "content/content.lock.json"
+            added = {taxonomy, relations, ranged.RANGED_PROFILES, *expected_shards}
+            allowed = added | {"content/items/index.json", lock}
+            self.assertEqual(set(after) - set(before), added)
+            self.assertEqual(json.loads(after[taxonomy])["records"], [])
+            self.assertEqual(json.loads(after[relations])["records"], [])
             self.assertEqual(
-                set(after) - set(before), allowed - {"content/items/index.json"}
+                json.loads(after[lock]),
+                {
+                    **json.loads(before[lock]),
+                    "item_authoring_counts": {
+                        "authoring": 1,
+                        "taxonomy": 0,
+                        "relation_sources": 0,
+                    },
+                },
             )
             for path in before.keys() & after.keys() - allowed:
                 self.assertEqual(after[path], before[path], path)
@@ -381,9 +385,13 @@ class ItemBootstrapTests(unittest.TestCase):
             patch.object(converter, "main") as full,
             patch.object(converter, "refresh_bestiary_inventory") as bestiary,
         ):
-            with self.assertRaises(SystemExit) as error:
+            diagnostic = StringIO()
+            with redirect_stderr(diagnostic), self.assertRaises(SystemExit) as error:
                 converter.cli(["--items-only", "--refresh-bestiary-inventory"])
             self.assertEqual(error.exception.code, 2)
+            self.assertIn(
+                "not allowed with argument --items-only", diagnostic.getvalue()
+            )
             full.assert_not_called()
             bestiary.assert_not_called()
 

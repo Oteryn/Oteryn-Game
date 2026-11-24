@@ -156,7 +156,7 @@ fn fullscreen_monitor_selection_reaches_the_window() -> TestResult {
     let apply = app.world_mut().spawn(Control::Apply).observe(activate).id();
     app.world_mut().trigger(Activate { entity: apply });
     let mut window = Window::default();
-    crate::bevy_shell::apply_window(
+    crate::bevy_shell::render_settings::apply_window(
         &app.world().non_send::<HostOwner>().settings.preferences,
         &mut window,
     );

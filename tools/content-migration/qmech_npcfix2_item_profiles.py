@@ -12,6 +12,7 @@ KEY = 'oteryn:item.tibia.i22008'
 
 def capture(root=shared.ROOT):
     packet = shared.capture(root, {22008})
+    packet.pop('custody_promotions', None)
     packet.update(schema=SCHEMA, producer='tools/content-migration/qmech_npcfix2_item_profiles.py',
                   scope='M22: physical custody for one non-stackable antler talisman per captured transformed antler stack.')
     (record,) = packet['records']

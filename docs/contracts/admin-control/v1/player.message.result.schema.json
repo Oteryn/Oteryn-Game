@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MessageResult",
+  "type": "object",
+  "properties": {
+    "delivered": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "delivered"
+  ]
+}

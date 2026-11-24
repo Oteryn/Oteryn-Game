@@ -269,7 +269,7 @@ SHARDS = {
     "WorldObject": "content/world/objects/objects-12932-13108.json",
 }
 TRAVERSAL_SHARDS = {
-    "Terrain": "content/world/terrain/terrain-08751-08755.json",
+    "Terrain": "content/world/terrain/terrain-08758-08762.json",
     "WorldObject": "content/world/objects/objects-13109-13114.json",
 }
 TRAVERSAL_NOTES = {
