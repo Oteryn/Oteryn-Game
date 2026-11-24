@@ -40,6 +40,7 @@ readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
+readonly C09_ROW_ACCOUNT=01934f10-7c00-7000-8000-000000000020
 readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-700e-805b-3b112233440e 01934f10-7c04-700f-805b-3b112233440f 01934f10-7c04-7010-805b-3b1122334410 01934f10-7c04-7011-805b-3b1122334411 01934f10-7c04-7012-805b-3b1122334412 01934f10-7c04-7013-805b-3b1122334413 01934f10-7c04-7014-805b-3b1122334414 01934f10-7c04-7015-805b-3b1122334415 01934f10-7c04-7016-805b-3b1122334416 01934f10-7c04-7017-805b-3b1122334417 01934f10-7c04-7019-805b-3b1122334419 01934f10-7c04-701a-805b-3b112233441a 01934f10-7c04-701b-805b-3b112233441b 01934f10-7c04-701c-805b-3b112233441c 01934f10-7c04-701d-805b-3b112233441d 01934f10-7c04-701e-805b-3b112233441e 01934f10-7c04-701f-805b-3b112233441f)
 # The v4 bootstrap intent explicitly binds name, sex and vocation.
 readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Locate Caster" "Haste Caster" "Illusion Caster" "Summon Caster" "Aim Caster" "Challenge Knight" "Oressa Candidate" "Wheel Knight" "Augment Monk" "Party Caster" "Seasonal Bundle Buyer" "Locate Target" "Party Spell Peer" "Rune Caster" "Rune Refusal Target" "House Transfer Player" "Armored Rat Hunter")
@@ -371,7 +372,9 @@ fi
 # Seed only this run's extra synthetic accounts through the same portal binary
 # and disposable environment as the upstream harness and composition.py.
 seed_mp_accounts() {
-  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" <<'PY_MP_SEED'
+  local -a row_accounts=()
+  [[ "$NODE_BOOT_WORLD_PROFILE" != c09 ]] || row_accounts+=("$C09_ROW_ACCOUNT")
+  python3 - "$WORK" "$PVP_WORLD_ID" "${row_accounts[@]}" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" <<'PY_MP_SEED'
 import json
 from pathlib import Path
 import secrets
@@ -395,7 +398,7 @@ row_accounts = {}
 for account in accounts:
     credentials = {"email": f"nb-{account}@example.invalid", "password": secrets.token_urlsafe(48)}
     seed("account", {"accountId": account, **credentials})
-    if account.endswith(("000000000016", "00000000001c", "00000000001d")):
+    if account.endswith(("000000000016", "00000000001c", "00000000001d", "000000000020")):
         row_accounts[account] = credentials
 (work / "row-accounts.json").write_text(json.dumps(row_accounts))
 PY_MP_SEED
@@ -1448,6 +1451,15 @@ PY
 character_bootstrap() { # §4.5 Characters from real Platform intents
   local index=0 account operation name requested_vocation failed=0 vocation="${NODE_BOOT_PROFILE^}"
   [[ "$NODE_BOOT_PROFILE" != explorer ]] || vocation=Knight
+  local dedicated_count=0
+  if [[ "$NODE_BOOT_WORLD_PROFILE" == c09 && "$NODE_BOOT_WORLD" == 1 ]]; then
+    local c09_operation=01934f10-7c04-7020-805b-3b1122334420
+    python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
+      "$WORK" "$C09_ROW_ACCOUNT" "$WORLD_ID" "$c09_operation" "${INTERPRETATION[@]}" "Tavern Food Buyer" Sorcerer
+    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$c09_operation"
+    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$c09_operation"
+    dedicated_count=1
+  fi
   for account in "${BOOTSTRAP_ACCOUNTS[@]}"; do
     operation="${INTENT_OPERATIONS[$index]}"
     name="${INTENT_NAMES[$index]}"
@@ -1478,7 +1490,7 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$s16_operation"
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$s16_operation"
   fi
-  evidence "characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent"
+  evidence "characters=$((${#BOOTSTRAP_ACCOUNTS[@]} + dedicated_count)) source=platform_intents path=control_socket retry=idempotent"
 }
 
 legacy_d150_seed() {

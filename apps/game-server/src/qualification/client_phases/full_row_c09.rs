@@ -658,13 +658,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let meat = provisioning::item_reference(&provisioning::item_index()?, 3577)?;
     character_prep::declare_seeded("C09", "character", "dedicated Platform bootstrap");
-    let identity = character_prep::bootstrap_row_character(
-        clients,
-        "01934f10-7c00-7000-8000-000000000020",
-        "01934f10-7c04-7020-805b-3b1122334420",
-        "Tavern Food Buyer",
-    )
-    .await?;
+    let identity =
+        character_prep::lookup_row_character(clients, "01934f10-7c00-7000-8000-000000000020")
+            .await?;
     let clients = &identity.clients(clients);
     let mut client = character_prep::connect_row_character(clients).await?;
     // Seven meats can fill the 20-minute stomach. Keep an additional unit

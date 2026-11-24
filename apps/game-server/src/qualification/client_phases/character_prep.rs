@@ -304,6 +304,14 @@ except (OSError, KeyError, ValueError, subprocess.SubprocessError):
         )
         .into());
     }
+    lookup_row_character(scope, account).await
+}
+
+/// Resolve exactly one character prebootstrapped by the named row profile.
+pub(super) async fn lookup_row_character(
+    scope: &SeamClients<'_>,
+    account: &str,
+) -> TestResult<DedicatedCharacter> {
     let mut database = sqlx::PgConnection::connect(scope.url).await?;
     let rows: Vec<Vec<u8>> = sqlx::query_scalar(
         "SELECT uuid_send(character_id) FROM game_character_roots
