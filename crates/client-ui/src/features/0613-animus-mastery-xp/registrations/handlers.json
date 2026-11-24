@@ -1,0 +1,19 @@
+{
+  "mechanic": "0613-animus-mastery-xp",
+  "kind": "handlers",
+  "id": "0613-animus-mastery-xp-query",
+  "status": "unsupported",
+  "commands": [
+    6388,
+    6389
+  ],
+  "direction": "client_to_server",
+  "reason": "Animus Mastery bonus queries are available on the server. The native client lane owns their integration.",
+  "not_applicable": {
+    "state": "Masteries belong to the current Character.",
+    "protocol": "The client does not negotiate this capability yet.",
+    "view": "The existing panel uses the original query.",
+    "input": "The existing panel sends the original command.",
+    "settings": "There is no independent client setting for this query."
+  }
+}

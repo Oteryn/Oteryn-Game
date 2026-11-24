@@ -5,11 +5,14 @@ use crate::world_spatial_entities::EntityRef;
 type Result<T> = std::result::Result<T, PartyWireError>;
 pub const CAPABILITY_PARTY_V1: u32 = 42;
 pub const CAPABILITY_PARTY_LIST_V1: u32 = 461;
+pub const CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1: u32 = 576;
+pub const DELTA_TYPE_PARTY_MEMBERSHIP_NOTICE_V1: u32 = 2;
 #[path = "party_list.rs"]
 mod list;
 pub use list::PartyListEntity;
 /// Negotiates member effect durations on the existing party query.
 pub const CAPABILITY_PARTY_MEMBER_EFFECTS_V1: u32 = 383;
+pub const CAPABILITY_PARTY_REVOKE_V1: u32 = 592;
 pub const COMMAND_TYPE_PARTY_INTENT: u32 = 45;
 pub const COMMAND_TYPE_PARTY_QUERY: u32 = 46;
 pub const MAX_PARTY_INTENT_BYTES: usize = 48;
@@ -26,6 +29,7 @@ pub enum PartyIntent {
     Leave,
     Kick(u64),
     PassLeadership(u64),
+    Revoke(EntityRef),
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PartyDisposition {
@@ -72,6 +76,52 @@ impl PartyResult {
         }
     }
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PartyMembershipChange {
+    Joined = 1,
+    Left = 2,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PartyMembershipNotice {
+    pub member_handle: u64,
+    pub change: PartyMembershipChange,
+}
+
+pub fn encode_party_membership_notice(notice: PartyMembershipNotice) -> Result<Vec<u8>> {
+    if notice.member_handle == 0 {
+        return bad();
+    }
+    let mut payload = Vec::new();
+    push_varint_field(&mut payload, 1, notice.member_handle);
+    push_varint_field(&mut payload, 2, notice.change as u64);
+    Ok(payload)
+}
+
+pub fn decode_party_membership_notice(payload: &[u8]) -> Result<PartyMembershipNotice> {
+    bounded(payload, 13)?;
+    let mut cursor = 0;
+    if read_varint(payload, &mut cursor)? != 0x08 {
+        return bad();
+    }
+    let member_handle = read_varint(payload, &mut cursor)?;
+    if member_handle == 0 || read_varint(payload, &mut cursor)? != 0x10 {
+        return bad();
+    }
+    let change = match read_varint(payload, &mut cursor)? {
+        1 => PartyMembershipChange::Joined,
+        2 => PartyMembershipChange::Left,
+        _ => return bad(),
+    };
+    if cursor != payload.len() {
+        return bad();
+    }
+    Ok(PartyMembershipNotice {
+        member_handle,
+        change,
+    })
+}
+
 fn bad<T>() -> Result<T> {
     Err(PartyWireError::Malformed)
 }
@@ -85,13 +135,20 @@ fn bounded(input: &[u8], limit: usize) -> Result<()> {
 pub fn encode_party_intent(intent: PartyIntent) -> Result<Vec<u8>> {
     let mut out = Vec::new();
     let (kind, handle) = match intent {
-        PartyIntent::Invite(entity) => {
+        PartyIntent::Invite(entity) | PartyIntent::Revoke(entity) => {
             if entity.generation == 0 {
                 return bad();
             }
             push_message_field(&mut out, 2, &entity.identity);
             push_varint_field(&mut out, 3, entity.generation);
-            (1, None)
+            (
+                if matches!(intent, PartyIntent::Revoke(_)) {
+                    6
+                } else {
+                    1
+                },
+                None,
+            )
         }
         PartyIntent::Accept(h) => (2, Some(h)),
         PartyIntent::Leave => (3, None),
@@ -128,6 +185,12 @@ pub fn decode_party_intent(input: &[u8]) -> Result<PartyIntent> {
     match (kind, identity, generation, handle) {
         (Some(1), Some(identity), Some(generation), None) if generation != 0 => {
             Ok(PartyIntent::Invite(EntityRef {
+                identity,
+                generation,
+            }))
+        }
+        (Some(6), Some(identity), Some(generation), None) if generation != 0 => {
+            Ok(PartyIntent::Revoke(EntityRef {
                 identity,
                 generation,
             }))

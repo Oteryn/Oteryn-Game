@@ -114,7 +114,7 @@ pub(super) fn encode(
                 .is_some_and(|id| id.instance_id() == instance_id) => {}
         _ => return Err(DurabilityError::InvalidStoredState),
     }
-    let stow = matches!(request.intent.action, StashAction::Stow(_));
+    let stow = request.intent.action.stow_handle().is_some();
     let items = plan
         .lines
         .iter()

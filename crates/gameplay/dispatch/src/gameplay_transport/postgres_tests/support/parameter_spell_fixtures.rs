@@ -1,7 +1,7 @@
 #![allow(clippy::expect_used)]
 
-use tokio::io::AsyncWriteExt;
 use super::appearance_change_postgres_fixtures::observer_visibility_tests as observer;
+use tokio::io::AsyncWriteExt;
 
 use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
 
@@ -64,7 +64,9 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         false,
     )
     .await?;
-    eprintln!("PARAM-CAST-WIRE-1 PostgreSQL harness created, case={case}, world_type={world_type:?}");
+    eprintln!(
+        "PARAM-CAST-WIRE-1 PostgreSQL harness created, case={case}, world_type={world_type:?}"
+    );
     prepare_current_session(&h).await?;
     h.seed_pvp_target().await?;
     if !matches!(case, 1 | 5 | 6) {
@@ -265,8 +267,8 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .await
             .map_err(debug)?;
     }
-    if case == 0 || case == 3 {
-        allow_location(&owner, target_session, native.source_digest(), case == 0).await?;
+    if matches!(case, 0 | 3 | 255) {
+        allow_location(&owner, target_session, native.source_digest(), case != 3).await?;
     }
     let current =
         crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
@@ -292,6 +294,63 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
+    if case == 255 {
+        use oteryn_protocol_oteryn::actor_spell_v2 as wire;
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 608])
+                .ok_or("parameter cast capability")?;
+        assert!(admitted.continuity.selected_capabilities.contains(608));
+        let spell = (1..=deps.spells.source_len())
+            .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
+            .find(|i| {
+                deps.spells
+                    .indexed(*i)
+                    .is_some_and(|s| s.name == "Find Person")
+            })
+            .ok_or("find person index")?;
+        let payload = wire::encode_parameter_spell_cast_intent(&wire::ParameterSpellCastIntent {
+            intent: actor_spell::SpellCastIntent {
+                spell,
+                target: actor_spell::SpellTarget::None,
+                aim_at_target: false,
+            },
+            parameter: Some("Fixture Watcher".into()),
+        })
+        .map_err(debug)?;
+        let before = owner
+            .observe_vitals(actor, session)
+            .await
+            .ok_or("before vitals")?
+            .1
+            .mana;
+        let requests = [(6380, payload.clone()), (6380, payload)];
+        let (results, unsolicited) =
+            exchange(&owner, &mut admitted, &requests, true, false).await?;
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].1, results[1].1);
+        assert_eq!(results[0].0, CommandStatus::Accepted);
+        assert_eq!(results[1].0, CommandStatus::DuplicateReplay);
+        let result = wire::decode_parameter_spell_cast_result(&results[0].1).map_err(debug)?;
+        assert_eq!(result.disposition, actor_spell::SpellCastDisposition::Cast);
+        assert_eq!(
+            result.feedback.ok_or("private feedback")?.text,
+            "Fixture Watcher is standing next to you."
+        );
+        assert!(unsolicited.is_empty());
+        assert_eq!(
+            owner
+                .observe_vitals(actor, session)
+                .await
+                .ok_or("after vitals")?
+                .1
+                .mana,
+            before - 20
+        );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
     if case >= 7 {
         return exiva_settings::exercise(
             &h,
@@ -376,7 +435,10 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         let hp = runtime
             .creature_combat_facts(target, owner.owner_now().get() / 1000)
             .map_err(debug)?;
-        assert!(hp.health > 0, "equipment projection fixture must be nonlethal");
+        assert!(
+            hp.health > 0,
+            "equipment projection fixture must be nonlethal"
+        );
         let real = hp.maximum_health - hp.health;
         assert!(real > 0);
         assert_eq!(

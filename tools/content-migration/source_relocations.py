@@ -20,10 +20,10 @@ from pathlib import Path
 QUEST_PLAN_PLACEMENT_RELOCATIONS = {
     (
         "content/world/placements/index.json",
-        "42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+        "86d294671104ff928bc6070e4fab19b68c2f1598fbddbf9e0496ee37eee33197",
     ): (
         "content/world/placements/index.json",
-        "239c85419e3ed9386fd7ad55dbe1e7ce3518a6143679bb46cffd952eff0536f3",
+        "c5eabc5644d58fdd404fd5f12eed7d51757edcd2ed39345e20c6cecbf196ff18",
     ),
     (
         "content/world/placements/region-z07-x130-y127.b3",
@@ -34,10 +34,10 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
     ),
     (
         "content/world/placements/region-z08-x128-y128.b3",
-        "7a978007d1735d8cf8143f9ade1f641f96d50c78549175f4fc29f84bec6107dc",
+        "bd808a71a6bdd1284444209c02b3991b5e315ff2cccb2cc72f434c1061f3c004",
     ): (
         "content/world/placements/region-z08-x128-y128.b3",
-        "c316ad12e8e55faddc6a8051633564a346b01ddf07da8e58c054b8cf680ac039",
+        "87a420f93d73e369d11fb1af422923fabda2339e4b19e8f001abee6f30568100",
     ),
     (
         "content/world/placements/region-z09-x130-y125.b3",
@@ -48,16 +48,30 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
     ),
     (
         "content/world/placements/region-z11-x129-y126.b3",
-        "1481abb99b49aa0df46fed1c06c739a30eba7587355f90c6f13aee902c8d1591",
+        "25000632406f556ca125613aa69a3ed52a6ddca472e4874c2c4b6f1761dd5f94",
     ): (
         "content/world/placements/region-z11-x129-y126.b3",
-        "9be7e5ff0eb3b7cb2ade55a3754b44483032e6276a8258f24485c170aea67332",
+        "10e4b1ca595b43df3499715a7910e01718eef5dbf99e9b95e0d0f28e82095af4",
     ),
 }
 
 # (pinned path, pinned sha256) -> (current path, current sha256)
 RELOCATIONS = {
     **QUEST_PLAN_PLACEMENT_RELOCATIONS,
+    (
+        "content/world/terrain/index.json",
+        "ce986ca83b92f5ea2b7aeaa5bdc75b591cb28d63ab1a93dce0077215ce90979f",
+    ): (
+        "content/world/terrain/index.json",
+        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+    ),
+    (
+        "tools/content-schema/item-authoring/historical_world_owner_context.py",
+        "96b24f0cbedb168d73aeca26644536693d97b7fe2d2f49ecbd150bdfd4f3037b",
+    ): (
+        "tools/content-schema/item-authoring/historical_world_owner_context.py",
+        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+    ),
     # The source-qualified Anomaly ground retains its pre-existing Item route;
     # the complete terrain row otherwise remains byte-identical.
     (
@@ -111,12 +125,31 @@ RELOCATIONS = {
         "tools/content-schema/item-authoring/test_stack_default_historical_context.py",
         "b7dc47b1f179fd919950be1cb0beadece76db594e0968f41bb53356172325210",
     ),
+    # ITEMGLOB3 supersedes only the Wiki modifier rows for i47376 and i49872.
+    # Neither Item belongs to the closed stack or elemental-magic cohorts.
+    # The merged World refresh changes only the packet's map-owner digests.
     (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
         "82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "a69950e44a76b887b63e6569c526cef99eef532963f5057721f7784f875f7278",
+        "5ef32cfa01e7a319e4ef056592df1aa66e7fbff30b6d86604f5354316436aa3d",
+    ),
+    (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
+    ): (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "5ef32cfa01e7a319e4ef056592df1aa66e7fbff30b6d86604f5354316436aa3d",
+    ),
+    # Numeric17 reuses the Mantra/Bond compiler's source readers. Their behavior
+    # is unchanged by the exact Global overlay check on live Mantra/Bond rows.
+    (
+        "tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py",
+        "70b2a00b1fd6512a7ec02b6f0b6ecc4548a29d06bd093a93df607626df05cbea",
+    ): (
+        "tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py",
+        "b56128eee9602582a3020db96e9dd003f733773921b532b2af89be3d3889a30e",
     ),
     # The closed139 name packet changes only terrain fingerprints. Its Rust
     # consumer changes only that packet's digest; qualification and rows are exact.
@@ -125,21 +158,21 @@ RELOCATIONS = {
         "a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9",
     ): (
         "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-        "719a14a4971b16fd877e3e868e9e1cb7b9603dcd3ce8a514df69666e80d9174a",
+        "2442cec4dabda2c89593259138ed41e41a6e5edf59ab8bd9abdc2340fb6e7539",
     ),
     (
         "crates/gameplay/content/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "e00b981f0398ee448c3bbe71063788576c94f2e57503d1c7391fb2ce8d3d5ab0",
+        "29c05a9d6a5dbee23213ed047510efc41cbdb2723e38a787da64b8d0c9856502",
     ),
     (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "e00b981f0398ee448c3bbe71063788576c94f2e57503d1c7391fb2ce8d3d5ab0",
+        "29c05a9d6a5dbee23213ed047510efc41cbdb2723e38a787da64b8d0c9856502",
     ),
     # QMINT3's tree-first reference view changes only the Forge289 compiler and
     # mapper fingerprints. All454 binding rows and289 literal promotions are

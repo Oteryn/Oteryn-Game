@@ -33,6 +33,12 @@ impl PlayLink {
         destination: &ContainerView,
         include: impl Fn(&oteryn_session::ItemEntry) -> bool,
     ) -> bool {
+        let included: std::collections::BTreeSet<_> = source
+            .entries
+            .iter()
+            .filter(|entry| include(entry))
+            .map(|entry| entry.handle)
+            .collect();
         let mut mailbox = lock(&self.mailbox);
         if mailbox.world_input_blocked() || mailbox.server_modal.is_active() {
             return false;
@@ -50,7 +56,7 @@ impl PlayLink {
             &self.commands,
             source.view_id,
             destination.view_id,
-            include,
+            |entry| included.contains(&entry.handle),
         )
     }
 }

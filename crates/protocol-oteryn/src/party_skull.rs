@@ -117,4 +117,4 @@ mod tests {
 
 #[path = "party_skull/status.rs"]
 mod status;
-pub use status::{PvpSituation, PvpStatus};
+pub use status::{CAPABILITY_PVP_SITUATION_ID_V1, PvpSituation, PvpStatus};

@@ -544,8 +544,15 @@ def validate_record(record):
                         if record == records()[identifier]
                         else ["spawn ground differs from its qualified source"]
                     )
+        import alawar_static
         import feroxa_static
 
+        if record["provenance"]["source"].get("profile") == alawar_static.PROFILE:
+            return (
+                []
+                if record in alawar_static.records()
+                else ["Alawar scenery differs from its qualified official source"]
+            )
         if (
             record["provenance"]["source"].get("profile") == feroxa_static.PROFILE
             or record["provenance"]["source_item_id"] == feroxa_static.IDENTIFIER

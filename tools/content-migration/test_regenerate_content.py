@@ -57,7 +57,9 @@ def world_pin(side: str, x: int = 1) -> dict:
     return {"digest": side, "entry_start": {"x": x, "y": 2, "floor": 7}}
 
 
-def stopped_merge(root: Path, conflicting: list[str], *, moved_entry: bool = False) -> None:
+def stopped_merge(
+    root: Path, conflicting: list[str], *, moved_entry: bool = False
+) -> None:
     """Base, then `ours` and `theirs` each change every path in `conflicting`, then merge."""
     git(root, "init", "-q", "-b", "main")
     manifest = {"managed_files": [{"path": SOURCES}, {"path": DERIVED}]}
@@ -82,7 +84,11 @@ def stopped_merge(root: Path, conflicting: list[str], *, moved_entry: bool = Fal
             elif path == INTERACTIONS:
                 write(root, path, {"contract": f"{side}-contract", "notes": side})
             elif path == WORLD_PIN:
-                write(root, path, world_pin(side, 3 if moved_entry and side == "ours" else 1))
+                write(
+                    root,
+                    path,
+                    world_pin(side, 3 if moved_entry and side == "ours" else 1),
+                )
             else:
                 write(root, path, {"items": ["base", side]})
         git(root, "commit", "-q", "-am", side)
@@ -150,18 +156,29 @@ def test_derived_only_conflict_is_resolved() -> None:
         }
 
 
-def test_terminal_quest_packet_conflicts_resolve_but_unmanaged_siblings_do_not() -> None:
+def test_terminal_quest_packet_conflicts_resolve_but_unmanaged_siblings_do_not() -> (
+    None
+):
     directory = "tools/content-schema/quest-authoring/samples/"
-    paths = [directory + name for name in (
-        "binding_packets/index.json", "binding_packets/npc/authored68-npc-links.json",
-        "binding_packets/npc/quest-npc-dialogue-links.json", "binding_packets/recipes/supplementary-index.json",
-        "binding_packets/rewards/chosen-reward-item-candidates.json",
-        "binding_packets/rewards/perquest-352.json", "binding_packets/rewards/requirement-choices.json",
-        "binding_packets/rewards/reward-holds.json", "binding_packets/rewards/reward-only-105.json",
-        "binding_packets/source/crosswalk.json", "rollout/quest-rollout.json",
-        "server-completion/collect-claim-candidates.json",
-        "server-completion/reward-only-completion/candidates.json", "server-completion/use-trigger-candidates.json",
-    )]
+    paths = [
+        directory + name
+        for name in (
+            "binding_packets/index.json",
+            "binding_packets/npc/authored68-npc-links.json",
+            "binding_packets/npc/quest-npc-dialogue-links.json",
+            "binding_packets/recipes/supplementary-index.json",
+            "binding_packets/rewards/chosen-reward-item-candidates.json",
+            "binding_packets/rewards/perquest-352.json",
+            "binding_packets/rewards/requirement-choices.json",
+            "binding_packets/rewards/reward-holds.json",
+            "binding_packets/rewards/reward-only-105.json",
+            "binding_packets/source/crosswalk.json",
+            "rollout/quest-rollout.json",
+            "server-completion/collect-claim-candidates.json",
+            "server-completion/reward-only-completion/candidates.json",
+            "server-completion/use-trigger-candidates.json",
+        )
+    ]
     sibling = "tools/content-schema/quest-authoring/samples/server-completion/authored-fixture.json"
     for with_unmanaged in (False, True):
         conflicts = paths + ([sibling] if with_unmanaged else [])
@@ -169,17 +186,25 @@ def test_terminal_quest_packet_conflicts_resolve_but_unmanaged_siblings_do_not()
             root = Path(temp)
             stopped_merge(root, conflicts)
             before = {path: (root / path).read_bytes() for path in conflicts}
-            with patch.object(rc, "ROOT", root), patch.object(rc, "PIN_TEST", root / rc.PIN_PATH), \
-                    patch.object(rc, "WORLD", root / "content/world"):
+            with (
+                patch.object(rc, "ROOT", root),
+                patch.object(rc, "PIN_TEST", root / rc.PIN_PATH),
+                patch.object(rc, "WORLD", root / "content/world"),
+            ):
                 code, resolved = resolve_in(root)
             if with_unmanaged:
                 assert code == 2 and resolved == [], (code, resolved)
                 assert unmerged(root) == sorted(conflicts), unmerged(root)
-                assert {path: (root / path).read_bytes() for path in conflicts} == before
+                assert {
+                    path: (root / path).read_bytes() for path in conflicts
+                } == before
             else:
                 assert code == 0 and resolved == paths, (code, resolved)
-                assert all(json.loads((root / path).read_bytes()) == {"items": ["base", "theirs"]}
-                           for path in paths)
+                assert all(
+                    json.loads((root / path).read_bytes())
+                    == {"items": ["base", "theirs"]}
+                    for path in paths
+                )
 
 
 def test_world_pin_conflict_is_derived() -> None:
@@ -189,7 +214,9 @@ def test_world_pin_conflict_is_derived() -> None:
         code, resolved = resolve_in(root)
         # Either side parses; `pin-refresh` then rewrites its digests from the staged merge.
         assert code == 0 and resolved == [WORLD_PIN], (code, resolved)
-        assert json.loads((root / WORLD_PIN).read_text(encoding="utf-8")) == world_pin("theirs")
+        assert json.loads((root / WORLD_PIN).read_text(encoding="utf-8")) == world_pin(
+            "theirs"
+        )
 
 
 def test_world_pin_conflict_on_a_moved_entry_start_fails_closed() -> None:
@@ -249,7 +276,9 @@ def sha(root: Path, path: str) -> str:
 def spells_merge(root: Path, ours: dict, theirs: dict) -> None:
     """Base, then each side rewrites the spells manifest and the profile files it names."""
     git(root, "init", "-q", "-b", "main")
-    write(root, "content/manifest.json", {"managed_files": [{"path": rc.SPELLS_MANIFEST}]})
+    write(
+        root, "content/manifest.json", {"managed_files": [{"path": rc.SPELLS_MANIFEST}]}
+    )
     write(root, rc.PIN_PATH, PIN_TEST)
     base = {"schema": "v5", "catalog": {"path": "abilities/catalog.json", "sha256": ""}}
     write(root, "content/abilities/catalog.json", {"spells": ["base"]})
@@ -295,7 +324,9 @@ def test_spells_manifest_conflict_merges_keys_and_rehashes_pins() -> None:
         assert text == canonical(manifest), text
         assert sorted(manifest) == ["catalog", "creatures", "items", "schema"], manifest
         for key in ("catalog", "creatures", "items"):
-            assert manifest[key]["sha256"] == sha(root, f"content/{manifest[key]['path']}"), key
+            assert manifest[key]["sha256"] == sha(
+                root, f"content/{manifest[key]['path']}"
+            ), key
 
 
 def test_spells_manifest_conflict_on_one_key_fails_closed() -> None:
@@ -317,7 +348,10 @@ def test_no_stage_checks_binary_conflicts_without_decoding() -> None:
         text = root / "quest.json"
         text.write_text('{"records": []}\n')
         paths = "dialogue.json.gz\nquest.json\n"
-        with patch.object(rc, "ROOT", root), patch.object(rc, "git", return_value=paths):
+        with (
+            patch.object(rc, "ROOT", root),
+            patch.object(rc, "git", return_value=paths),
+        ):
             assert rc.unresolved_worktree_paths() == []
             text.write_text("<<<<<<< ours\n{}\n=======\n{}\n>>>>>>> incoming\n")
             assert rc.unresolved_worktree_paths() == ["quest.json"]
@@ -330,24 +364,43 @@ def test_callback_proof_refresh_preserves_reviewed_snapshots() -> None:
         root = Path(temp)
         directory = "tools/content-schema/quest-authoring/samples/completion242/"
         callback = "content/quests/world-callbacks.json"
-        proof = [{"path": callback, "sha256": "old"}, {"path": "other", "sha256": "kept"}]
+        proof = [
+            {"path": callback, "sha256": "old"},
+            {"path": "other", "sha256": "kept"},
+        ]
         compiler = "tools/compiler.py"
         compiler_inputs = [{"path": compiler, "sha256": "old"}]
-        approval = {"compiler_inputs": compiler_inputs, "proof_inputs": proof,
-                    "approved_core_digests": ["core"], "approved_graphs": ["graph"]}
-        receipt = {"compiler_inputs": compiler_inputs, "proof_inputs": proof, "changes": ["reviewed"],
-                   "approval": {"path": directory + "source-fix-approval.json", "sha256": "old"}}
+        approval = {
+            "compiler_inputs": compiler_inputs,
+            "proof_inputs": proof,
+            "approved_core_digests": ["core"],
+            "approved_graphs": ["graph"],
+        }
+        receipt = {
+            "compiler_inputs": compiler_inputs,
+            "proof_inputs": proof,
+            "changes": ["reviewed"],
+            "approval": {
+                "path": directory + "source-fix-approval.json",
+                "sha256": "old",
+            },
+        }
         write(root, compiler, "# merged compiler\n")
         write(root, callback, {"schema": 1, "callbacks": []})
         write(root, directory + "source-fix-approval.json", approval)
         write(root, directory + "source-fix-receipt.json", receipt)
         with patch.object(rc, "ROOT", root):
             rc.refresh_quest_callback_proof()
-            paths = [root / (directory + name) for name in ("source-fix-approval.json", "source-fix-receipt.json")]
+            paths = [
+                root / (directory + name)
+                for name in ("source-fix-approval.json", "source-fix-receipt.json")
+            ]
             first = [path.read_bytes() for path in paths]
             rc.refresh_quest_callback_proof()
             assert first == [path.read_bytes() for path in paths]
-        approval["proof_inputs"][0]["sha256"] = hashlib.sha256((root / callback).read_bytes()).hexdigest()
+        approval["proof_inputs"][0]["sha256"] = hashlib.sha256(
+            (root / callback).read_bytes()
+        ).hexdigest()
         compiler_inputs[0]["sha256"] = sha(root, compiler)
         assert approval["proof_inputs"] == proof
         assert receipt["proof_inputs"] == proof
@@ -360,8 +413,13 @@ def test_unstaged_binary_conflict_does_not_require_text_decoding() -> None:
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
         (root / "packet.json.gz").write_bytes(b"\x1f\x8b\xff\x00")
-        (root / "conflicted.json").write_bytes(b"<<<<<<< HEAD\n{}\n=======\n[]\n>>>>>>> main\n")
-        with patch.object(rc, "ROOT", root), patch.object(rc, "git", return_value="packet.json.gz\nconflicted.json\n"):
+        (root / "conflicted.json").write_bytes(
+            b"<<<<<<< HEAD\n{}\n=======\n[]\n>>>>>>> main\n"
+        )
+        with (
+            patch.object(rc, "ROOT", root),
+            patch.object(rc, "git", return_value="packet.json.gz\nconflicted.json\n"),
+        ):
             assert rc.unresolved_worktree_paths() == ["conflicted.json"]
 
 
@@ -369,12 +427,18 @@ def test_worker_conflict_scan_accepts_binary_and_rejects_unresolved_paths() -> N
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
         (root / "resolved.json.gz").write_bytes(b"\x1f\x8b\xff\x00")
-        (root / "conflict.json").write_bytes(b"<<<<<<< ours\n{}\n=======\n{}\n>>>>>>> theirs\n")
-        with patch.object(rc, "ROOT", root), patch.object(
-            rc, "git", return_value="resolved.json.gz\nconflict.json\nmissing.json\n"
+        (root / "conflict.json").write_bytes(
+            b"<<<<<<< ours\n{}\n=======\n{}\n>>>>>>> theirs\n"
+        )
+        with (
+            patch.object(rc, "ROOT", root),
+            patch.object(
+                rc,
+                "git",
+                return_value="resolved.json.gz\nconflict.json\nmissing.json\n",
+            ),
         ):
             assert rc.unresolved_worktree_paths() == ["conflict.json", "missing.json"]
-
 
 
 def test_source_cohort_extent_separates_npc_profiles_and_tracks_successors() -> None:
@@ -384,21 +448,46 @@ def test_source_cohort_extent_separates_npc_profiles_and_tracks_successors() -> 
         head = identity("Presentation", "oteryn:presentation.npc.one")
         behavior = identity("Behavior", "oteryn:behavior.npc.one")
         creature = identity("Creature", "oteryn:creature.one")
-        records = [{"kind": "Generic", "identity": head}, {"kind": "Generic", "identity": behavior}, {"kind": "Creature", "identity": creature}, {"kind": "Item", "identity": identity("Item", "oteryn:item.one")}]
-        document = {"records": [{"kind": "NPC", "presentation": head, "behavior": behavior}], "authoring_profiles": [{"target": row} for row in [head, behavior, creature]]}
+        records = [
+            {"kind": "Generic", "identity": head},
+            {"kind": "Generic", "identity": behavior},
+            {"kind": "Creature", "identity": creature},
+            {"kind": "Item", "identity": identity("Item", "oteryn:item.one")},
+        ]
+        document = {
+            "records": [{"kind": "NPC", "presentation": head, "behavior": behavior}],
+            "authoring_profiles": [
+                {"target": row} for row in [head, behavior, creature]
+            ],
+        }
         write(root, "definitions/reference.json", {"records": records})
         write(root, "definitions/declarations.json", document)
         write(root, "provenance/sources.json", {"sources": [{"key": "one"}]})
         write(root, "provenance/imports.json", {"batches": [{"batch_id": "one"}]})
         write(root, "project.json", {"project_revision": "one"})
-        assert rc.source_cohort_extent(root) == {"references": 4, "sources": 1, "imports": 1, "creatures": 1, "creature_records": 1, "creature_profiles": 1, "npc_records": 2, "project_revision": "one"}
+        assert rc.source_cohort_extent(root) == {
+            "references": 4,
+            "sources": 1,
+            "imports": 1,
+            "creatures": 1,
+            "creature_records": 1,
+            "creature_profiles": 1,
+            "npc_records": 2,
+            "project_revision": "one",
+        }
         successor = identity("Creature", "oteryn:creature.two")
         records.append({"kind": "Creature", "identity": successor})
         document["authoring_profiles"].append({"target": successor})
         write(root, "definitions/reference.json", {"records": records})
         write(root, "definitions/declarations.json", document)
         extent = rc.source_cohort_extent(root)
-        assert (extent["references"], extent["creatures"], extent["creature_records"], extent["creature_profiles"], extent["npc_records"]) == (5, 2, 2, 2, 2)
+        assert (
+            extent["references"],
+            extent["creatures"],
+            extent["creature_records"],
+            extent["creature_profiles"],
+            extent["npc_records"],
+        ) == (5, 2, 2, 2, 2)
         # Missing source profiles and duplicate identities cannot silently become
         # a larger accepted count merely because the file remains valid JSON.
         document["authoring_profiles"] = document["authoring_profiles"][1:]
@@ -409,7 +498,9 @@ def test_source_cohort_extent_separates_npc_profiles_and_tracks_successors() -> 
             assert "missing NPC profiles" in str(error)
         else:
             raise AssertionError("missing NPC profile admitted as a count")
-        document["authoring_profiles"] = [{"target": row} for row in [head, behavior, creature, successor]]
+        document["authoring_profiles"] = [
+            {"target": row} for row in [head, behavior, creature, successor]
+        ]
         write(root, "definitions/declarations.json", document)
         records.append(records[0])
         write(root, "definitions/reference.json", {"records": records})
@@ -425,23 +516,66 @@ def test_normal_repin_updates_raw_extent_without_rewriting_history_checks() -> N
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
         world = root / "content/world"
-        write(root, rc.PIN_PATH, PIN_TEST + f'const TREE_SHA256: &str = "{"0" * 64}";\n')
+        write(
+            root, rc.PIN_PATH, PIN_TEST + f'const TREE_SHA256: &str = "{"0" * 64}";\n'
+        )
         write(root, "content/world/definitions/reference.json", {})
-        write(root, "content/world/placements/index.json", {"palette": [], "regions": []})
+        write(
+            root, "content/world/placements/index.json", {"palette": [], "regions": []}
+        )
         client = root / "crates/client-assets/src/world.rs"
-        write(root, str(client.relative_to(root)), f'pub const PLACEMENT_INDEX_SHA256: &str = "{"0" * 64}";\n')
-        write(root, "content/world/provenance/imports.json", {"batches": [{"batch_id": key} for key in ["legacy-a", "legacy-b", "g4-item-fx-audio295-raw-evidence-r1", "seasonal-cake-creature-crystal-201189f-r1"]]})
-        write(root, "apps/game-server/tests/content_npc_catalogue.rs", f'assert_eq!(catalogue.source_tree_digest(), "{"0" * 64}");\n')
-        path = root / "apps/game-server/tests/integration_rest/content_item_fx_audio_raw.rs"
-        write(root, str(path.relative_to(root)), 'assert_eq!(batches.len(), 2);\nassert_eq!(historical.len(), 2);\nassert_eq!(&batches[..prior.len()], prior.as_slice());\n')
-        with patch.object(rc, "ROOT", root), patch.object(rc, "WORLD", world), patch.object(rc, "PIN_TEST", root / rc.PIN_PATH):
+        write(
+            root,
+            str(client.relative_to(root)),
+            f'pub const PLACEMENT_INDEX_SHA256: &str = "{"0" * 64}";\n',
+        )
+        write(
+            root,
+            "content/world/provenance/imports.json",
+            {
+                "batches": [
+                    {"batch_id": key}
+                    for key in [
+                        "legacy-a",
+                        "legacy-b",
+                        "g4-item-fx-audio295-raw-evidence-r1",
+                        "seasonal-cake-creature-crystal-201189f-r1",
+                    ]
+                ]
+            },
+        )
+        write(
+            root,
+            "apps/game-server/tests/content_npc_catalogue.rs",
+            f'assert_eq!(catalogue.source_tree_digest(), "{"0" * 64}");\n',
+        )
+        path = (
+            root
+            / "apps/game-server/tests/integration_rest/content_item_fx_audio_raw.rs"
+        )
+        write(
+            root,
+            str(path.relative_to(root)),
+            "assert_eq!(batches.len(), 2);\nassert_eq!(historical.len(), 2);\nassert_eq!(&batches[..prior.len()], prior.as_slice());\n",
+        )
+        with (
+            patch.object(rc, "ROOT", root),
+            patch.object(rc, "WORLD", world),
+            patch.object(rc, "PIN_TEST", root / rc.PIN_PATH),
+        ):
             rc.repin_rust_inventory()
         text = path.read_text()
-        assert 'assert_eq!(batches.len(), 3);' in text
-        assert 'assert_eq!(historical.len(), 2);' in text
-        assert 'assert_eq!(&batches[..prior.len()], prior.as_slice());' in text
-        placement_sha = hashlib.sha256((world / "placements/index.json").read_bytes()).hexdigest()
-        assert f'pub const PLACEMENT_INDEX_SHA256: &str = "{placement_sha}";' in client.read_text()
+        assert "assert_eq!(batches.len(), 3);" in text
+        assert "assert_eq!(historical.len(), 2);" in text
+        assert "assert_eq!(&batches[..prior.len()], prior.as_slice());" in text
+        placement_sha = hashlib.sha256(
+            (world / "placements/index.json").read_bytes()
+        ).hexdigest()
+        assert (
+            f'pub const PLACEMENT_INDEX_SHA256: &str = "{placement_sha}";'
+            in client.read_text()
+        )
+
 
 def test_source_cohort_includes_installed_successors() -> None:
     installed = []
@@ -465,6 +599,7 @@ def test_source_cohort_includes_installed_successors() -> None:
             "buddel_travel.install_buddel",
             side_effect=lambda _, world: installed.append(world),
         ),
+        patch("travel_route_corrections.project_routes"),
         patch.object(rc, "canonicalize_world"),
         patch.object(rc, "refresh_source_cohort_extent", side_effect=measure),
     ):
@@ -482,7 +617,10 @@ def test_normal_generation_orders_native_callback_producers() -> None:
     native = "tools/content-schema/native-gameplay/"
     tree = ("python3", "tools/content-migration/world_project_v2_to_tree.py")
     pairs = [
-        (("python3", native + producer), ("python3", native + consumer, "--refresh-native-pin"))
+        (
+            ("python3", native + producer),
+            ("python3", native + consumer, "--refresh-native-pin"),
+        )
         for producer, consumer in (
             ("build_native_callback_witness.py", "build_native_death_event_witness.py"),
             ("build_srx3_soul_war_witness.py", "build_srx3_soul_war_death_events.py"),
@@ -490,14 +628,23 @@ def test_normal_generation_orders_native_callback_producers() -> None:
         )
     ]
     required = [tree, *(command for pair in pairs for command in pair)]
-    nonunique = {command[1]: commands.count(command) for command in required if commands.count(command) != 1}
+    nonunique = {
+        command[1]: commands.count(command)
+        for command in required
+        if commands.count(command) != 1
+    }
     assert not nonunique, nonunique
     for producer, consumer in pairs:
-        assert commands.index(tree) < commands.index(producer) < commands.index(consumer), (producer, consumer)
+        assert (
+            commands.index(tree) < commands.index(producer) < commands.index(consumer)
+        ), (producer, consumer)
 
 
-def full_generation_trace(events, inspect_command, *, prepare=None, checks=False) -> int:
+def full_generation_trace(
+    events, inspect_command, *, prepare=None, checks=False
+) -> int:
     """Exercise the actual dispatcher without running any producer or Git write."""
+
     def record(command):
         command = tuple(command)
         events.append(command)
@@ -520,9 +667,20 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
             target.write_bytes((rc.ROOT / path).read_bytes())
         feedback = "tools/content-schema/quest-authoring/samples/donor-source/refinements/conditions.json"
         write(root, feedback, {"source_fixture": True})
-        write(root, "content/quests/definitions/index.json", {"authoring_sources": [{
-            "path": feedback, "sha256": hashlib.sha256((root / feedback).read_bytes()).hexdigest(),
-        }]})
+        write(
+            root,
+            "content/quests/definitions/index.json",
+            {
+                "authoring_sources": [
+                    {
+                        "path": feedback,
+                        "sha256": hashlib.sha256(
+                            (root / feedback).read_bytes()
+                        ).hexdigest(),
+                    }
+                ]
+            },
+        )
         check = ("python3", "fixture/final_check.py", "--check")
         write(root, check[1], "")
         if prepare is not None:
@@ -530,21 +688,55 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
         argv = ["regenerate_content.py", "--no-stage"]
         if not checks:
             argv.append("--skip-checks")
-        with patch.object(rc, "ROOT", root), \
-                patch.object(sys, "argv", argv), \
-                patch.object(rc, "CHECKS", [check]), \
-                patch.dict(os.environ, {"OTERYN_SPELL_SOURCE_ROOT": ""}), \
-                patch.object(rc, "run", side_effect=record), \
-                patch.object(rc, "unresolved_worktree_paths", return_value=[]) as unresolved, \
-                patch.object(rc, "refresh_quest_callback_proof"), \
-                patch.object(rc, "materialize_world", side_effect=lambda: events.append(("materialize-world",))), \
-                patch("questpc7_thaian_authoring.install", side_effect=lambda _: record(("install-thaian",))), \
-                patch("buddel_travel.install_buddel", side_effect=lambda *_: record(("install-buddel",))), \
-                patch.object(rc, "canonicalize_world", side_effect=lambda: record(("canonicalize-world",))), \
-                patch.object(rc, "refresh_source_cohort_extent", side_effect=lambda: record(("source-cohort",))), \
-                patch.object(rc, "repin_rust_inventory", side_effect=lambda: record(("repin-world",))), \
-                patch.object(rc, "refresh_world_metadata", side_effect=lambda: events.append(("world-metadata",))), \
-                patch.object(subprocess, "run", side_effect=AssertionError("unexpected subprocess")):
+        with (
+            patch.object(rc, "ROOT", root),
+            patch.object(sys, "argv", argv),
+            patch.object(rc, "CHECKS", [check]),
+            patch.dict(os.environ, {"OTERYN_SPELL_SOURCE_ROOT": ""}),
+            patch.object(rc, "run", side_effect=record),
+            patch.object(
+                rc, "unresolved_worktree_paths", return_value=[]
+            ) as unresolved,
+            patch.object(rc, "refresh_quest_callback_proof"),
+            patch.object(
+                rc,
+                "materialize_world",
+                side_effect=lambda: events.append(("materialize-world",)),
+            ),
+            patch(
+                "questpc7_thaian_authoring.install",
+                side_effect=lambda _: record(("install-thaian",)),
+            ),
+            patch(
+                "buddel_travel.install_buddel",
+                side_effect=lambda *_: record(("install-buddel",)),
+            ),
+            patch(
+                "travel_route_corrections.project_routes",
+                side_effect=lambda *_: record(("project-travel-routes",)),
+            ),
+            patch.object(
+                rc,
+                "canonicalize_world",
+                side_effect=lambda: record(("canonicalize-world",)),
+            ),
+            patch.object(
+                rc,
+                "refresh_source_cohort_extent",
+                side_effect=lambda: record(("source-cohort",)),
+            ),
+            patch.object(
+                rc, "repin_rust_inventory", side_effect=lambda: record(("repin-world",))
+            ),
+            patch.object(
+                rc,
+                "refresh_world_metadata",
+                side_effect=lambda: events.append(("world-metadata",)),
+            ),
+            patch.object(
+                subprocess, "run", side_effect=AssertionError("unexpected subprocess")
+            ),
+        ):
             result = rc.main()
             unresolved.assert_called_once_with()
         digest = hashlib.sha256((root / nomads_map).read_bytes()).hexdigest()
@@ -560,10 +752,17 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
         return result
 
 
-def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them() -> None:
+def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them() -> (
+    None
+):
     ordered = [
-        ("materialize-world",), ("install-thaian",), ("install-buddel",),
-        ("canonicalize-world",), ("source-cohort",), ("repin-world",),
+        ("materialize-world",),
+        ("install-thaian",),
+        ("install-buddel",),
+        ("project-travel-routes",),
+        ("canonicalize-world",),
+        ("source-cohort",),
+        ("repin-world",),
         ("python3", "tools/content-migration/world_project_v2_to_tree.py"),
     ]
     events = []
@@ -583,23 +782,36 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
         assert error.cmd == ["canonicalize-world"]
     else:
         raise AssertionError("canonical rewrite refusal must stop generation")
-    assert not any(command in refused for command in ordered[4:]), refused
+    assert not any(command in refused for command in ordered[5:]), refused
 
 
 def test_world_canonicalizer_copies_only_a_complete_document_inventory() -> None:
-    documents = {"project.json": b"canonical project\n", "definitions/reference.json": b"canonical reference\n"}
+    documents = {
+        "project.json": b"canonical project\n",
+        "definitions/reference.json": b"canonical reference\n",
+    }
     for scenario in ("complete", "missing", "unexpected", "refused"):
         with tempfile.TemporaryDirectory() as temp:
             world = Path(temp) / "world"
             for locator in documents:
                 write(world, locator, "original " + locator)
             write(world, "terrain/index.json", "successor remains unchanged")
-            before = {p.relative_to(world).as_posix(): p.read_bytes() for p in world.rglob("*") if p.is_file()}
+            before = {
+                p.relative_to(world).as_posix(): p.read_bytes()
+                for p in world.rglob("*")
+                if p.is_file()
+            }
 
             def generate(command):
                 assert command[:8] == [
-                    "cargo", "run", "--locked", "-p", "oteryn-game-server", "--example",
-                    "materialize_content_world_project_v2", "--",
+                    "cargo",
+                    "run",
+                    "--locked",
+                    "-p",
+                    "oteryn-game-server",
+                    "--example",
+                    "materialize_content_world_project_v2",
+                    "--",
                 ]
                 assert command[8] == "--output-root"
                 assert command[10:] == ["--canonicalize-root", str(world)]
@@ -617,22 +829,35 @@ def test_world_canonicalizer_copies_only_a_complete_document_inventory() -> None
                     target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_bytes(data)
 
-            with patch.object(rc, "WORLD", world), \
-                    patch.object(rc, "document_locators", return_value=list(documents)), \
-                    patch.object(rc, "run", side_effect=generate):
+            with (
+                patch.object(rc, "WORLD", world),
+                patch.object(rc, "document_locators", return_value=list(documents)),
+                patch.object(rc, "run", side_effect=generate),
+            ):
                 try:
                     rc.canonicalize_world()
                 except (SystemExit, subprocess.CalledProcessError):
                     assert scenario != "complete"
                 else:
                     assert scenario == "complete", scenario
-            after = {p.relative_to(world).as_posix(): p.read_bytes() for p in world.rglob("*") if p.is_file()}
-            assert after == ({**before, **documents} if scenario == "complete" else before), scenario
+            after = {
+                p.relative_to(world).as_posix(): p.read_bytes()
+                for p in world.rglob("*")
+                if p.is_file()
+            }
+            assert after == (
+                {**before, **documents} if scenario == "complete" else before
+            ), scenario
 
 
-def test_npc_service_counts_follow_final_producers_even_when_checks_are_skipped() -> None:
+def test_npc_service_counts_follow_final_producers_even_when_checks_are_skipped() -> (
+    None
+):
     refresh = ("python3", "tools/contracts/refresh_npc_service_counts.py")
-    donor = ("python3", "tools/content-schema/quest-authoring/quest_donor_source_authoring.py")
+    donor = (
+        "python3",
+        "tools/content-schema/quest-authoring/quest_donor_source_authoring.py",
+    )
     check = ("python3", "fixture/final_check.py", "--check")
     for checks in (False, True):
         events = []
@@ -640,7 +865,7 @@ def test_npc_service_counts_follow_final_producers_even_when_checks_are_skipped(
         assert events.count(refresh) == 1, events
         assert events.index(donor) < events.index(refresh)
         expected_tail = [refresh, check] if checks else [refresh]
-        assert events[-len(expected_tail):] == expected_tail
+        assert events[-len(expected_tail) :] == expected_tail
 
     def refuse(command, _events):
         if command == refresh:
@@ -656,13 +881,21 @@ def test_npc_service_counts_follow_final_producers_even_when_checks_are_skipped(
     assert check not in refused
 
 
-def test_imbuement_candidate_precedes_content_consumers_and_refusal_stops_them() -> None:
-    candidate = ("python3", "tools/content-schema/imbuement-authoring/imbuement_authoring.py", "build")
+def test_imbuement_candidate_precedes_content_consumers_and_refusal_stops_them() -> (
+    None
+):
+    candidate = (
+        "python3",
+        "tools/content-schema/imbuement-authoring/imbuement_authoring.py",
+        "build",
+    )
     tree = ("python3", "tools/content-migration/world_project_v2_to_tree.py")
 
     def require_candidate(command, events):
         if command == tree:
-            assert candidate in events[:-1], "content consumer requires the fresh candidate"
+            assert candidate in events[:-1], (
+                "content consumer requires the fresh candidate"
+            )
 
     events = []
     assert full_generation_trace(events, require_candidate) == 0
@@ -683,74 +916,128 @@ def test_imbuement_candidate_precedes_content_consumers_and_refusal_stops_them()
 
 
 def test_reward_variant_packet_follows_final_claim_item_and_metadata_inputs() -> None:
-    variant = ("python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py")
+    variant = (
+        "python3",
+        "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py",
+    )
     inputs = (
         ("python3", "tools/content-migration/world_project_v2_to_tree.py"),
-        ("python3", "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py", "content"),
+        (
+            "python3",
+            "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+            "content",
+        ),
         ("python3", "tools/content-migration/register_spell_families.py"),
         ("world-metadata",),
     )
 
     def require_final_inputs(command, events):
         if command == variant:
-            assert all(source in events[:-1] for source in inputs), "variant packet requires final inputs"
+            assert all(source in events[:-1] for source in inputs), (
+                "variant packet requires final inputs"
+            )
 
     events = []
     assert full_generation_trace(events, require_final_inputs) == 0
     assert events.count(variant) == 1, "the variant packet must actually be regenerated"
     variant_index = events.index(variant)
     for source in inputs:
-        assert max(index for index, command in enumerate(events) if command == source) < variant_index
+        assert (
+            max(index for index, command in enumerate(events) if command == source)
+            < variant_index
+        )
 
 
 def downstream_quest_commands():
     prefix = "tools/content-schema/quest-authoring/"
-    return tuple(("python3", prefix + name + ".py") for name in (
-        "qengine_access", "qmech_m24_kill_bindings", "quest_rollout_authoring",
-        "quest_binding_authoring", "collect_claim_candidates", "use_trigger_candidates",
-        "quest_explore_area_candidates",
-        "quest_talk_npc_candidates", "quest_reward_only_binding_candidates",
-        "quest_donor_source_authoring",
-    ))
+    return tuple(
+        ("python3", prefix + name + ".py")
+        for name in (
+            "qengine_access",
+            "qmech_m24_kill_bindings",
+            "quest_rollout_authoring",
+            "quest_binding_authoring",
+            "collect_claim_candidates",
+            "use_trigger_candidates",
+            "quest_explore_area_candidates",
+            "quest_talk_npc_candidates",
+            "quest_reward_only_binding_candidates",
+            "quest_donor_source_authoring",
+        )
+    )
 
 
 def test_callback_and_w01_witnesses_follow_final_provider_in_dependency_order() -> None:
     native = ("python3", "tools/content-migration/register_spell_families.py")
-    callback = ("python3", "tools/content-schema/native-gameplay/build_native_callback_witness.py")
-    death = ("python3", "tools/content-schema/native-gameplay/build_native_death_event_witness.py", "--refresh-native-pin")
+    callback = (
+        "python3",
+        "tools/content-schema/native-gameplay/build_native_callback_witness.py",
+    )
+    death = (
+        "python3",
+        "tools/content-schema/native-gameplay/build_native_death_event_witness.py",
+        "--refresh-native-pin",
+    )
     rooms = ("python3", "tools/content-schema/quest-authoring/grizzly_rooms.py")
     check = ("python3", "fixture/final_check.py", "--check")
 
     def require_current_callback(command, events):
         if command == callback:
-            assert events[-2] == native, "callback witness requires the final native provider"
+            assert events[-2] == native, (
+                "callback witness requires the final native provider"
+            )
         if command == death:
-            assert events[-2] == callback, "W01 refresh requires the canonical callback witness"
+            assert events[-2] == callback, (
+                "W01 refresh requires the canonical callback witness"
+            )
         if command == rooms:
-            assert callback in events[:-1] and death in events[:-1], "consumers need both current witnesses"
+            assert callback in events[:-1] and death in events[:-1], (
+                "consumers need both current witnesses"
+            )
 
     for checks in (False, True):
         events = []
-        assert full_generation_trace(events, require_current_callback, checks=checks) == 0
+        assert (
+            full_generation_trace(events, require_current_callback, checks=checks) == 0
+        )
         assert events.count(callback) == events.count(death) == 1
         final_native = max(i for i, command in enumerate(events) if command == native)
-        assert final_native < events.index(callback) < events.index(death) < events.index(rooms)
-        assert not any("--source-cache" in command or "--canary-tree" in command for command in events)
+        assert (
+            final_native
+            < events.index(callback)
+            < events.index(death)
+            < events.index(rooms)
+        )
+        assert not any(
+            "--source-cache" in command or "--canary-tree" in command
+            for command in events
+        )
         if checks:
             assert events.index(death) < events.index(check)
 
 
 def test_callback_or_w01_witness_refusal_stops_later_generation() -> None:
-    callback = ("python3", "tools/content-schema/native-gameplay/build_native_callback_witness.py")
-    death = ("python3", "tools/content-schema/native-gameplay/build_native_death_event_witness.py", "--refresh-native-pin")
+    callback = (
+        "python3",
+        "tools/content-schema/native-gameplay/build_native_callback_witness.py",
+    )
+    death = (
+        "python3",
+        "tools/content-schema/native-gameplay/build_native_death_event_witness.py",
+        "--refresh-native-pin",
+    )
     later = (
-        ("python3", "tools/content-schema/native-gameplay/build_srx3_rotten_blood_witness.py"),
+        (
+            "python3",
+            "tools/content-schema/native-gameplay/build_srx3_rotten_blood_witness.py",
+        ),
         ("python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"),
         ("world-metadata",),
         ("python3", "fixture/final_check.py", "--check"),
     )
     for checks in (False, True):
         for refused in (callback, death):
+
             def refuse(command, _events):
                 if command == refused:
                     raise subprocess.CalledProcessError(23, list(command))
@@ -761,7 +1048,9 @@ def test_callback_or_w01_witness_refusal_stops_later_generation() -> None:
             except subprocess.CalledProcessError as error:
                 assert error.returncode == 23 and error.cmd == list(refused)
             else:
-                raise AssertionError("a refused canonical witness must stop regeneration")
+                raise AssertionError(
+                    "a refused canonical witness must stop regeneration"
+                )
             assert events.count(refused) == 1
             assert not any(command in events for command in later)
             if refused == callback:
@@ -770,26 +1059,46 @@ def test_callback_or_w01_witness_refusal_stops_later_generation() -> None:
 
 def test_rotten_death_witnesses_follow_final_native_provider_before_consumers() -> None:
     native = ("python3", "tools/content-migration/register_spell_families.py")
-    witness = ("python3", "tools/content-schema/native-gameplay/build_srx3_rotten_blood_witness.py")
-    death = ("python3", "tools/content-schema/native-gameplay/build_srx3_rotten_death_events.py", "--refresh-native-pin")
+    witness = (
+        "python3",
+        "tools/content-schema/native-gameplay/build_srx3_rotten_blood_witness.py",
+    )
+    death = (
+        "python3",
+        "tools/content-schema/native-gameplay/build_srx3_rotten_death_events.py",
+        "--refresh-native-pin",
+    )
     rooms = ("python3", "tools/content-schema/quest-authoring/grizzly_rooms.py")
     check = ("python3", "fixture/final_check.py", "--check")
 
     def require_final_native(command, events):
         if command == witness:
-            assert native in events[:-1], "Rotten witness requires the final native provider"
+            assert native in events[:-1], (
+                "Rotten witness requires the final native provider"
+            )
         if command == death:
-            assert events[-2] == witness, "death pin requires the strict Rotten witness first"
+            assert events[-2] == witness, (
+                "death pin requires the strict Rotten witness first"
+            )
         if command == rooms:
-            assert witness in events[:-1] and death in events[:-1], "consumers need both fresh Rotten pins"
+            assert witness in events[:-1] and death in events[:-1], (
+                "consumers need both fresh Rotten pins"
+            )
 
     for checks in (False, True):
         events = []
         assert full_generation_trace(events, require_final_native, checks=checks) == 0
         assert events.count(witness) == events.count(death) == 1
         final_native = max(i for i, command in enumerate(events) if command == native)
-        assert final_native < events.index(witness) < events.index(death) < events.index(rooms)
-        assert not any("--source-root" in command or "--tree" in command for command in events)
+        assert (
+            final_native
+            < events.index(witness)
+            < events.index(death)
+            < events.index(rooms)
+        )
+        assert not any(
+            "--source-root" in command or "--tree" in command for command in events
+        )
         if checks:
             assert events.index(death) < events.index(check)
 
@@ -797,13 +1106,21 @@ def test_rotten_death_witnesses_follow_final_native_provider_before_consumers() 
 def test_rotten_death_witness_refusal_stops_every_later_consumer() -> None:
     chain = (
         ("python3", "tools/content-migration/register_spell_families.py"),
-        ("python3", "tools/content-schema/native-gameplay/build_srx3_rotten_blood_witness.py"),
-        ("python3", "tools/content-schema/native-gameplay/build_srx3_rotten_death_events.py", "--refresh-native-pin"),
+        (
+            "python3",
+            "tools/content-schema/native-gameplay/build_srx3_rotten_blood_witness.py",
+        ),
+        (
+            "python3",
+            "tools/content-schema/native-gameplay/build_srx3_rotten_death_events.py",
+            "--refresh-native-pin",
+        ),
         ("python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"),
     )
     check = ("python3", "fixture/final_check.py", "--check")
     for checks in (False, True):
         for index, refused in enumerate(chain[:3]):
+
             def refuse(command, _events):
                 if command == refused:
                     raise subprocess.CalledProcessError(1, list(command))
@@ -816,7 +1133,7 @@ def test_rotten_death_witness_refusal_stops_every_later_consumer() -> None:
             else:
                 raise AssertionError("a refused native witness must stop regeneration")
             assert events.count(refused) == 1
-            assert not any(command in events for command in chain[index + 1:])
+            assert not any(command in events for command in chain[index + 1 :])
             assert ("world-metadata",) not in events
             assert check not in events
 
@@ -824,32 +1141,67 @@ def test_rotten_death_witness_refusal_stops_every_later_consumer() -> None:
 def test_downstream_quest_producers_follow_inputs_and_precede_consumers() -> None:
     commands = downstream_quest_commands()
     native = ("python3", "tools/content-migration/register_spell_families.py")
-    variant = ("python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py")
+    variant = (
+        "python3",
+        "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py",
+    )
     check = ("python3", "fixture/final_check.py", "--check")
 
     def consume(command, events):
         if command == native:
-            assert all(producer in events[:-1] for producer in commands[:2]), "native consumer needs final Quest bindings"
+            assert all(producer in events[:-1] for producer in commands[:2]), (
+                "native consumer needs final Quest bindings"
+            )
         if command == commands[-1]:
             # Replaying unpinned capture metadata is allowed; pinned semantic
             # feedback must remain exactly the evidence already in the Quest tree.
-            write(rc.ROOT, "tools/content-schema/quest-authoring/samples/donor-source/npc-index.json", {"fresh": True})
+            write(
+                rc.ROOT,
+                "tools/content-schema/quest-authoring/samples/donor-source/npc-index.json",
+                {"fresh": True},
+            )
 
     events = []
     assert full_generation_trace(events, consume, checks=True) == 0
     assert all(events.count(command) == 1 for command in commands)
     authored = [("python3", tool, "content") for tool in rc.AUTHORING_TOOLS]
     last_authored = max(i for i, command in enumerate(events) if command in authored)
-    assert last_authored < events.index(commands[0]) < events.index(commands[1]) < events.index(native)
-    final_inputs = max(events.index(native), events.index(("world-metadata",)), events.index(variant))
+    assert (
+        last_authored
+        < events.index(commands[0])
+        < events.index(commands[1])
+        < events.index(native)
+    )
+    quest_prefix = "tools/content-schema/quest-authoring/"
+    tree = next(
+        index for index, command in enumerate(events)
+        if command[:2] == ("python3", quest_prefix + "quest_tree_authoring.py")
+    )
+    callbacks = ("python3", quest_prefix + "qengine_rewards.py")
+    completion = ("python3", quest_prefix + "quest_completion_import.py")
+    matrix = ("python3", quest_prefix + "quest_completion_matrix.py")
+    callback_runs = [index for index, command in enumerate(events) if command == callbacks]
+    rooms = ("python3", quest_prefix + "grizzly_rooms.py")
+    assert any(tree < index < events.index(native) for index in callback_runs)
+    assert events.index(("world-metadata",)) < callback_runs[-1] < events.index(rooms)
+    assert events.count(completion) == 1
+    assert tree < events.index(completion) < min(events.index(commands[1]), events.index(matrix))
+    final_inputs = max(
+        events.index(native), events.index(("world-metadata",)), events.index(variant)
+    )
     indices = [events.index(command) for command in commands[2:]]
     assert indices == sorted(indices) and final_inputs < indices[0]
-    assert indices[-1] < events.index(check), "freshness checks must see all real producers"
+    assert indices[-1] < events.index(check), (
+        "freshness checks must see all real producers"
+    )
 
 
 def test_terminal_quest_packets_refresh_after_inputs_when_checks_are_skipped() -> None:
     commands = downstream_quest_commands()
-    variant = ("python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py")
+    variant = (
+        "python3",
+        "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py",
+    )
     events = []
     assert full_generation_trace(events, lambda *_: None, checks=False) == 0
     assert all(events.count(command) == 1 for command in commands)
@@ -864,6 +1216,7 @@ def test_downstream_quest_producer_refusal_stops_later_work() -> None:
     commands = downstream_quest_commands()
     check = ("python3", "fixture/final_check.py", "--check")
     for index, refused in enumerate(commands):
+
         def refuse(command, _events):
             if command == refused:
                 raise subprocess.CalledProcessError(1, list(command))
@@ -876,14 +1229,17 @@ def test_downstream_quest_producer_refusal_stops_later_work() -> None:
         else:
             raise AssertionError("a failed Quest producer must stop regeneration")
         assert events.count(refused) == 1
-        assert not any(command in events for command in commands[index + 1:])
+        assert not any(command in events for command in commands[index + 1 :])
         assert check not in events
 
 
-def test_donor_feedback_guard_rejects_empty_duplicate_or_stale_inputs_before_capture() -> None:
+def test_donor_feedback_guard_rejects_empty_duplicate_or_stale_inputs_before_capture() -> (
+    None
+):
     donor = downstream_quest_commands()[-1]
     index_path = "content/quests/definitions/index.json"
     for invalid in ("empty", "duplicate", "stale", "escape"):
+
         def prepare(root):
             index = json.loads((root / index_path).read_bytes())
             descriptor = index["authoring_sources"][0]
@@ -894,7 +1250,9 @@ def test_donor_feedback_guard_rejects_empty_duplicate_or_stale_inputs_before_cap
             elif invalid == "stale":
                 write(root, descriptor["path"], {"unexpected_source_change": True})
             else:
-                descriptor["path"] = "tools/content-schema/quest-authoring/samples/donor-source/../outside.json"
+                descriptor["path"] = (
+                    "tools/content-schema/quest-authoring/samples/donor-source/../outside.json"
+                )
             write(root, index_path, index)
 
         events = []
@@ -907,12 +1265,15 @@ def test_donor_feedback_guard_rejects_empty_duplicate_or_stale_inputs_before_cap
         assert donor not in events
 
 
-def test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_checks() -> None:
+def test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_checks() -> (
+    None
+):
     donor = downstream_quest_commands()[-1]
     index_path = "content/quests/definitions/index.json"
     check = ("python3", "fixture/final_check.py", "--check")
     for checks in (False, True):
         for repin in (False, True):
+
             def change_feedback(command, _events):
                 if command != donor:
                     return
@@ -920,7 +1281,9 @@ def test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_ch
                 descriptor = index["authoring_sources"][0]
                 write(rc.ROOT, descriptor["path"], {"unexpected_source_change": True})
                 if repin:
-                    descriptor["sha256"] = hashlib.sha256((rc.ROOT / descriptor["path"]).read_bytes()).hexdigest()
+                    descriptor["sha256"] = hashlib.sha256(
+                        (rc.ROOT / descriptor["path"]).read_bytes()
+                    ).hexdigest()
                     write(rc.ROOT, index_path, index)
 
             events = []
@@ -935,17 +1298,32 @@ def test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_ch
 
 
 def test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work() -> None:
-    store = ("python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers")
-    imbuement = ("python3", "tools/content-schema/imbuement-authoring/imbuement_authoring.py", "build")
-    bootstrap = ("python3", "tools/content-migration/world_project_v2_to_tree.py", "--items-only")
+    store = (
+        "python3",
+        "tools/content-schema/store-authoring/build_runtime_catalogue.py",
+        "--refresh-owner-offers",
+    )
+    imbuement = (
+        "python3",
+        "tools/content-schema/imbuement-authoring/imbuement_authoring.py",
+        "build",
+    )
+    bootstrap = (
+        "python3",
+        "tools/content-migration/world_project_v2_to_tree.py",
+        "--items-only",
+    )
     materializer = ("materialize-world",)
     tree = ("python3", "tools/content-migration/world_project_v2_to_tree.py")
     ordered = (store, imbuement, bootstrap, materializer, tree)
     events = []
     assert full_generation_trace(events, lambda *_: None) == 0
     assert all(events.count(step) == 1 for step in ordered)
-    assert [events.index(step) for step in ordered] == sorted(events.index(step) for step in ordered)
+    assert [events.index(step) for step in ordered] == sorted(
+        events.index(step) for step in ordered
+    )
     for refused in ordered[:3]:
+
         def refuse(command, _events):
             if command == refused:
                 raise subprocess.CalledProcessError(1, list(command))
@@ -956,7 +1334,9 @@ def test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work() -> 
         except subprocess.CalledProcessError as error:
             assert error.cmd == list(refused)
         else:
-            raise AssertionError("a failed Item prerequisite must stop before materializing World")
+            raise AssertionError(
+                "a failed Item prerequisite must stop before materializing World"
+            )
         assert events.count(refused) == 1
         assert materializer not in events and tree not in events
         assert not any(command in events for command in downstream_quest_commands())
@@ -968,23 +1348,54 @@ def item_index_fixture(root: Path) -> tuple[dict, list[str]]:
         end = start + count - 1
         path = f"content/items/definitions/items-{start:05d}-{end:05d}.json"
         shards.append(path)
-        write(root, path, {
-            "schema": "OTERYN_ITEM_AUTHORING_SHARD/v1", "family": "Item",
-            "source_legacy_role": "content/world/definitions/reference.json",
-            "shard": {"index": start // 500, "start": start, "end": end, "count": count},
-            "records": [{"definition": {"kind": "Item", "identity": {
-                "family": "Item", "key": f"oteryn:item.fixture.i{ordinal}", "revision": "r1",
-            }}, "authoring": {"preserved_fixture_fact": ordinal}}
-                for ordinal in range(start, end + 1)],
-        })
+        write(
+            root,
+            path,
+            {
+                "schema": "OTERYN_ITEM_AUTHORING_SHARD/v1",
+                "family": "Item",
+                "source_legacy_role": "content/world/definitions/reference.json",
+                "shard": {
+                    "index": start // 500,
+                    "start": start,
+                    "end": end,
+                    "count": count,
+                },
+                "records": [
+                    {
+                        "definition": {
+                            "kind": "Item",
+                            "identity": {
+                                "family": "Item",
+                                "key": f"oteryn:item.fixture.i{ordinal}",
+                                "revision": "r1",
+                            },
+                        },
+                        "authoring": {"preserved_fixture_fact": ordinal},
+                    }
+                    for ordinal in range(start, end + 1)
+                ],
+            },
+        )
     index = {
-        "schema": "OTERYN_FAMILY_INDEX/v1", "family": "Item",
-        "record_count": 501, "shard_size": 500,
+        "schema": "OTERYN_FAMILY_INDEX/v1",
+        "family": "Item",
+        "record_count": 501,
+        "shard_size": 500,
         "shards": [shards[0], "content/items/definitions/items-00500-00500.json"],
-        "legacy_source": {"path": "content/world/definitions/reference.json", "git_blob_sha": "pinned-source"},
-        "attached_authoring_entries": 7, "attached_editor_entries": 3,
+        "legacy_source": {
+            "path": "content/world/definitions/reference.json",
+            "git_blob_sha": "pinned-source",
+        },
+        "attached_authoring_entries": 7,
+        "attached_editor_entries": 3,
         "attached_source_bindings": 5,
-        "spell_imports": [{"path": "content/items/definitions/spell-native-profiles.json", "sha256": "pinned-overlay"}],
+        "spell_imports": [
+            {
+                "path": "content/items/definitions/spell-native-profiles.json",
+                "sha256": "pinned-overlay",
+            }
+        ],
     }
     write(root, "content/items/index.json", index)
     return index, shards
@@ -1002,18 +1413,30 @@ def test_materializer_bootstraps_complete_item_index_before_running() -> None:
 
         def materialize(command):
             calls.append(command)
-            assert json.loads((root / "content/items/index.json").read_bytes()) == expected, \
-                "materializer must receive the complete actual Item inventory"
+            assert (
+                json.loads((root / "content/items/index.json").read_bytes()) == expected
+            ), "materializer must receive the complete actual Item inventory"
             assert all((root / path).is_file() for path in expected["shards"])
-            assert command[:7] == ["cargo", "run", "--locked", "-p", "oteryn-game-server", "--example", "materialize_content_world_project_v2"]
+            assert command[:7] == [
+                "cargo",
+                "run",
+                "--locked",
+                "-p",
+                "oteryn-game-server",
+                "--example",
+                "materialize_content_world_project_v2",
+            ]
             output = Path(command[command.index("--output-root") + 1])
             output.mkdir()
             (output / "project.json").write_bytes(b"{}\n")
 
-        with patch.object(rc, "ROOT", root), patch.object(rc, "WORLD", world), \
-                patch.object(rc, "export_predecessor") as export, \
-                patch.object(rc, "document_locators", return_value=["project.json"]), \
-                patch.object(rc, "run", side_effect=materialize):
+        with (
+            patch.object(rc, "ROOT", root),
+            patch.object(rc, "WORLD", world),
+            patch.object(rc, "export_predecessor") as export,
+            patch.object(rc, "document_locators", return_value=["project.json"]),
+            patch.object(rc, "run", side_effect=materialize),
+        ):
             rc.materialize_world()
         assert len(calls) == 1
         export.assert_called_once()
@@ -1028,8 +1451,20 @@ def test_materializer_bootstraps_complete_item_index_before_running() -> None:
         }
 
 
-def test_item_inventory_rejects_incomplete_or_ambiguous_shards_before_materialization() -> None:
-    for invalid in ("gap", "overlap", "duplicate", "count", "bool", "name", "schema", "family", "empty"):
+def test_item_inventory_rejects_incomplete_or_ambiguous_shards_before_materialization() -> (
+    None
+):
+    for invalid in (
+        "gap",
+        "overlap",
+        "duplicate",
+        "count",
+        "bool",
+        "name",
+        "schema",
+        "family",
+        "empty",
+    ):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             _index, shards = item_index_fixture(root)
@@ -1046,7 +1481,9 @@ def test_item_inventory_rejects_incomplete_or_ambiguous_shards_before_materializ
             elif invalid == "bool":
                 tail["shard"]["index"] = True
             elif invalid == "name":
-                (root / shards[-1]).rename(root / "content/items/definitions/items-tail.json")
+                (root / shards[-1]).rename(
+                    root / "content/items/definitions/items-tail.json"
+                )
             elif invalid == "schema":
                 tail["schema"] = "unqualified"
             elif invalid == "family":
@@ -1057,21 +1494,27 @@ def test_item_inventory_rejects_incomplete_or_ambiguous_shards_before_materializ
             if invalid in {"duplicate", "count", "bool", "schema", "family"}:
                 write(root, shards[-1], tail)
             before = {path: path.read_bytes() for path in root.rglob("*.json")}
-            with patch.object(rc, "ROOT", root), \
-                    patch.object(rc, "export_predecessor") as export, \
-                    patch.object(rc, "run") as run:
+            with (
+                patch.object(rc, "ROOT", root),
+                patch.object(rc, "export_predecessor") as export,
+                patch.object(rc, "run") as run,
+            ):
                 try:
                     rc.materialize_world()
                 except ValueError as error:
                     assert "ITEM_INDEX_" in str(error), str(error)
                 else:
-                    raise AssertionError("invalid Item inventory reached materialization: " + invalid)
+                    raise AssertionError(
+                        "invalid Item inventory reached materialization: " + invalid
+                    )
             export.assert_not_called()
             run.assert_not_called()
             assert {path: path.read_bytes() for path in root.rglob("*.json")} == before
 
 
-def test_item_inventory_emitter_matches_converter_format_and_explicit_output_set() -> None:
+def test_item_inventory_emitter_matches_converter_format_and_explicit_output_set() -> (
+    None
+):
     from item_tree_index import item_index_fields
     from world_project_v2_to_tree import canonical_bytes
 
@@ -1081,7 +1524,9 @@ def test_item_inventory_emitter_matches_converter_format_and_explicit_output_set
         expected = {"record_count": 502, "shard_size": 500, "shards": shards}
         assert item_index_fields(root) == expected
         assert item_index_fields(root, shards) == expected
-        assert canonical_bytes({**index, **item_index_fields(root)}) == canonical_bytes({**index, **expected})
+        assert canonical_bytes({**index, **item_index_fields(root)}) == canonical_bytes(
+            {**index, **expected}
+        )
         # The converter's explicit freshly written output list must exclude a
         # superseded tail even while that old file is still present;
         # bootstrap has no such list and must reject overlapping actual shards.
@@ -1119,21 +1564,28 @@ def test_native_generation_refreshes_custody_census_before_first_pin() -> None:
                 state["census"] = set(state["provider"])
             elif command[1] == pin:
                 if state["provider"] != state["census"]:
-                    raise ValueError("fixture declared cohorts differ from generated union")
+                    raise ValueError(
+                        "fixture declared cohorts differ from generated union"
+                    )
                 pinned.append(set(state["provider"]))
 
         arguments = ["regenerate_content.py", "--native-only"]
         if skip_checks:
             arguments.append("--skip-checks")
-        with patch.object(sys, "argv", arguments), patch.object(rc, "run", side_effect=owner), \
-                patch.object(rc, "refresh_quest_callback_proof"):
+        with (
+            patch.object(sys, "argv", arguments),
+            patch.object(rc, "run", side_effect=owner),
+            patch.object(rc, "refresh_quest_callback_proof"),
+        ):
             if refuse_census:
                 try:
                     rc.main()
                 except ValueError as error:
                     assert str(error) == "fixture census source refusal", str(error)
                 else:
-                    raise AssertionError("census refusal reached downstream native generation")
+                    raise AssertionError(
+                        "census refusal reached downstream native generation"
+                    )
                 assert pinned == []
                 assert calls[-1][1] == census
             else:
@@ -1142,8 +1594,11 @@ def test_native_generation_refreshes_custody_census_before_first_pin() -> None:
                 # final all-family census and native check remain in the path.
                 assert pinned == [fresh, fresh]
                 assert sum(command[1] == census for command in calls) == 2
-                checked = [command for command in calls
-                           if command[1] == register and "--check" in command]
+                checked = [
+                    command
+                    for command in calls
+                    if command[1] == register and "--check" in command
+                ]
                 assert bool(checked) == (not skip_checks)
 
 

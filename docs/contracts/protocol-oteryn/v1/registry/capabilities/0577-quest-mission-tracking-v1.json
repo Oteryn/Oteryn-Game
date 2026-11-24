@@ -1,0 +1,15 @@
+{
+  "id": 577,
+  "name": "QUEST_MISSION_TRACKING_V1",
+  "owner_decision": "2026-11-22 server and protocol parity task",
+  "owner": "Existing Quest Log session projection",
+  "requires": [
+    16
+  ],
+  "command_types": [
+    6318
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; requires the composed Quest Log content and session copy."
+}

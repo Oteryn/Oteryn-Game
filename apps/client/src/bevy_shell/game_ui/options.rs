@@ -47,6 +47,7 @@ struct OptionsState {
     /// Bumped by a page section's edit so the page is rebuilt from the edited draft.
     revision: u64,
     /// The key binding selected on the General Hotkeys page.
+    search: String,
     binding: Option<&'static str>,
     /// The help topic shown on the Misc page.
     help_topic: Option<crate::play::help::Topic>,
@@ -91,12 +92,14 @@ enum Control {
 pub(super) fn install(app: &mut App) {
     app.insert_resource(Installed)
         .init_resource::<OptionsState>()
+        .init_resource::<screenshots::FolderLaunch>()
         .add_systems(Startup, widgets::setup.after(super::super::ui::setup))
         .add_systems(
             Update,
             (
                 keyboard,
                 projection::project,
+                keys::filter,
                 audio_device::finish,
                 screenshots::project,
             )

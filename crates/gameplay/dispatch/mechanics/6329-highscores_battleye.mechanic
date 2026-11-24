@@ -1,0 +1,4 @@
+name=highscores_battleye
+commands=6329
+[route]
+routing::highscores::route(authority, &session.admitted, command).await

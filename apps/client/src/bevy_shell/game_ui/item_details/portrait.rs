@@ -1,6 +1,6 @@
 //! Resolve the inspected incarnation against the current visible appearance dictionary.
 use super::*;
-use oteryn_client_ui::appearance::Preview;
+use oteryn_client_ui::inspection::OutfitPortrait;
 #[derive(Component)]
 pub(super) struct Portrait(oteryn_session::EntityRef);
 #[derive(Component)]
@@ -41,18 +41,21 @@ type RenderTask = bevy_tasks::Task<(Option<Artwork>, Option<Image>)>;
 #[derive(Resource, Default)]
 pub(super) struct Cache {
     pub(super) artwork: Option<Artwork>,
-    requested: Option<(Entity, Preview)>,
+    requested: Option<(Entity, OutfitPortrait)>,
     task: Option<RenderTask>,
 }
 
-fn render(mut artwork: Option<Artwork>, look: Preview) -> (Option<Artwork>, Option<Image>) {
+fn render(mut artwork: Option<Artwork>, look: OutfitPortrait) -> (Option<Artwork>, Option<Image>) {
     if artwork.is_none() {
         artwork = std::env::var_os(crate::map::ASSET_DIR_ENV)
             .and_then(|root| Artwork::load(std::path::Path::new(&root)).ok());
     }
     let image = artwork
         .as_mut()
-        .and_then(|art| art.draw(&look).ok())
+        .and_then(|art| {
+            art.draw_portrait(look.look_type, look.addons, look.colours)
+                .ok()
+        })
         .map(|mut pixels| {
             for pixel in pixels.as_chunks_mut::<4>().0 {
                 pixel[3] = 255;

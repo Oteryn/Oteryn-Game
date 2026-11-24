@@ -3,12 +3,13 @@ use super::{CustomAction, PreferenceBinding, PreferenceError, ReferencePreferenc
 use oteryn_client_runtime::spell::ACTION_BAR_SLOTS;
 
 pub(super) fn extra_slot(id: &str) -> Option<u32> {
-    id.strip_prefix("local-spell-action-bar-spell-")?
-        .parse::<u32>()
-        .ok()
-        .filter(|slot| {
-            usize::try_from(*slot).is_ok_and(|slot| (5..=ACTION_BAR_SLOTS).contains(&slot))
-        })
+    let suffix = id.strip_prefix("local-spell-action-bar-spell-")?;
+    if suffix.starts_with(['0', '+']) {
+        return None;
+    }
+    suffix.parse::<u32>().ok().filter(|slot| {
+        usize::try_from(*slot).is_ok_and(|slot| (5..=ACTION_BAR_SLOTS).contains(&slot))
+    })
 }
 pub(super) fn extra_bindings() -> Vec<PreferenceBinding> {
     static IDS: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
@@ -26,7 +27,7 @@ pub(super) fn extra_bindings() -> Vec<PreferenceBinding> {
     .collect()
 }
 impl PreferenceBinding {
-    /// Action-bar slots 5 and above keep one key in the action-bar storage, with no secondary.
+    /// Slots after the four registered spell keys store primary chords in the action bar.
     pub fn is_extra_action_bar_slot(&self) -> bool {
         extra_slot(self.id).is_some()
     }
@@ -128,5 +129,13 @@ pub(super) fn routed_action(
                 .find(|(_, key)| matches(key))
                 .and_then(|(slot, _)| u32::try_from(slot + 1).ok())
                 .map(|slot| CustomAction::ActionBar { slot })
+        })
+        .or_else(|| {
+            let (_, secondary) = preferences.binding_maps(chat_on).ok()?;
+            secondary.iter().find_map(|(id, chord)| {
+                extra_slot(id)
+                    .filter(|_| matches(chord))
+                    .map(|slot| CustomAction::ActionBar { slot })
+            })
         })
 }

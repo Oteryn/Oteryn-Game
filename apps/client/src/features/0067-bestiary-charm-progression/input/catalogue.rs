@@ -10,6 +10,74 @@ use oteryn_client_ui::charm_progression::Panel;
 use tokio::sync::mpsc::UnboundedSender;
 
 impl PlayLink {
+    pub fn bestiary_search(&self, name: &str, targets: bool) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.properties.charm_progression;
+        if panel.pending || !panel.selected || name.len() > 96 {
+            return;
+        }
+        let eligible = if targets {
+            let Some(reply) = &panel.reply else { return };
+            let Some(charm) = reply
+                .charms
+                .charms
+                .iter()
+                .find(|c| c.charm.to_string() == panel.fields[0])
+            else {
+                return;
+            };
+            let stage = match charm.kind {
+                oteryn_client_runtime::charm_progression::charm::CharmKind::Major => {
+                    oteryn_client_ui::bestiary_charms::MAJOR_CHARM_RACE_STAGE
+                }
+                oteryn_client_runtime::charm_progression::charm::CharmKind::Minor => {
+                    oteryn_client_ui::bestiary_charms::MINOR_CHARM_RACE_STAGE
+                }
+            };
+            let assigned = reply
+                .charms
+                .charms
+                .iter()
+                .filter(|c| c.assigned_race.is_some())
+                .count();
+            let free = charm.unlocked_stage > 0
+                && charm.assigned_race.is_none()
+                && reply
+                    .charms
+                    .assignment_slot_limit
+                    .is_none_or(|limit| assigned < limit.get() as usize);
+            Some(
+                reply
+                    .bestiary
+                    .iter()
+                    .filter(|race| {
+                        free && race.unlocked_stage() >= stage
+                            && !reply.charms.charms.iter().any(|other| {
+                                other.kind == charm.kind && other.assigned_race == Some(race.race)
+                            })
+                    })
+                    .filter_map(|race| u16::try_from(race.race.get()).ok())
+                    .collect(),
+            )
+        } else {
+            None
+        };
+        let previous_race = panel
+            .catalogue
+            .search
+            .take()
+            .map_or_else(|| panel.fields[1].clone(), |s| s.previous_race);
+        let search = panel.catalogue.search.insert(Default::default());
+        search.name = name.trim().to_lowercase();
+        search.previous_race = previous_race;
+        search.eligible = eligible;
+        panel.fields[1].clear();
+        search.next = Some(0);
+        panel.catalogue.detail.clear();
+        panel.catalogue.detail_card = None;
+        panel.catalogue.next_loot = None;
+        submit(&mut mailbox, &self.commands, 10);
+    }
     pub fn bestiary_catalogue_request(&self, action: usize) {
         submit(&mut lock(&self.mailbox), &self.commands, action);
     }
@@ -28,6 +96,11 @@ pub(in crate::play) fn submit(
         race: 0,
         category: panel.catalogue.category,
     };
+    if matches!(action, 0 | 1 | 4 | 5 | 8)
+        && let Some(search) = panel.catalogue.search.take()
+    {
+        panel.fields[1] = search.previous_race;
+    }
     match action {
         0 => {}
         1 => {
@@ -64,6 +137,39 @@ pub(in crate::play) fn submit(
             } else {
                 (index + 1) % count
             }) as u8;
+        }
+        10 => {
+            let Some(after) = panel
+                .catalogue
+                .search
+                .as_mut()
+                .and_then(|search| search.next.take())
+            else {
+                return;
+            };
+            request.after = after;
+            request.category = 0;
+        }
+        11 => {
+            if let Some(search) = panel.catalogue.search.take() {
+                panel.fields[1] = search.previous_race;
+            }
+            panel.catalogue.detail_card = None;
+            panel.catalogue.detail.clear();
+            panel.catalogue.next_loot = None;
+            return;
+        }
+        8 => {
+            let Some(&previous) = panel.catalogue.previous.last() else {
+                return;
+            };
+            request.after = previous;
+        }
+        9 => {
+            panel.catalogue.detail_card = None;
+            panel.catalogue.detail.clear();
+            panel.catalogue.next_loot = None;
+            return;
         }
         6 | 7 => {
             let cards = &panel.catalogue.page.cards;
@@ -159,6 +265,26 @@ pub(in crate::play) fn apply(
             panel.feedback = "Invalid creature catalogue order".into();
             return true;
         }
+        if let Some(search) = &mut panel.catalogue.search {
+            search.next = page.next;
+            search.cards.extend(page.cards.into_iter().filter(|card| {
+                card.name.to_lowercase().contains(&search.name)
+                    && search
+                        .eligible
+                        .as_ref()
+                        .is_none_or(|ids| ids.contains(&card.race))
+            }));
+            panel.catalogue.names.extend(confirmed_names);
+            return true;
+        }
+        if request.category != panel.catalogue.category || request.after == 0 {
+            panel.catalogue.previous.clear();
+        } else if panel.catalogue.previous.last() == Some(&request.after) {
+            panel.catalogue.previous.pop();
+        } else if request.after > panel.catalogue.cursor {
+            panel.catalogue.previous.push(panel.catalogue.cursor);
+        }
+        panel.catalogue.cursor = request.after;
         panel.catalogue.category = request.category;
         panel.catalogue.detail.clear();
         panel.catalogue.detail_card = None;

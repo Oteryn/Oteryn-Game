@@ -1,7 +1,7 @@
 use super::super::ComposedFreshAdmission;
 use super::*;
 use crate::domain::guild::GuildId;
-use oteryn_protocol_oteryn::chat::ChatLine;
+use oteryn_protocol_oteryn::chat::{CAPABILITY_CHAT_SYSTEM_MESSAGE_V1, ChatLine};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in super::super) async fn guild_chat_next(
@@ -51,7 +51,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             }
             let ChatLine::Guild(line) = &candidate else {
-                return self.states.chat.next(admitted.game_session_id);
+                return self.states.chat.next_line(
+                    admitted.game_session_id,
+                    admitted
+                        .continuity
+                        .selected_capabilities
+                        .contains(CAPABILITY_CHAT_SYSTEM_MESSAGE_V1),
+                );
             };
             if !self.states.chat.guild.matches(&admitted) {
                 return None;

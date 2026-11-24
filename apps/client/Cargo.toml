@@ -58,7 +58,7 @@ fs2 = "=0.4.3"
 tempfile = "=3.27.0"
 url = "=2.5.9"
 winit = { workspace = true, optional = true }
-zip = { version = "=9.5.1", default-features = false, features = ["deflate"] }
+zip = { version = "=9.8.0", default-features = false, features = ["deflate"] }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { workspace = true, features = ["process"] }

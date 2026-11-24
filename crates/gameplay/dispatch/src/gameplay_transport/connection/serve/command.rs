@@ -1,6 +1,7 @@
 //! Decode, reserve and execute one command before producing its ordered output.
 
 use super::*;
+use crate::gameplay_transport::hotkey_equip::RejectionStage;
 use oteryn_protocol_oteryn::chat::{COMMAND_TYPE_CHAT_INTENT, ChatDisposition};
 
 pub(super) struct CommandOutcome {
@@ -103,9 +104,17 @@ where
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Execute) => {}
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
+    let selected_hotkey = command.command_type
+        == oteryn_protocol_oteryn::hotkey_equip::COMMAND_TYPE_HOTKEY_EQUIP
+        && session
+            .selected_capabilities
+            .command_selected(command.command_type);
     // A retained unknown Bank operation must reconcile its original outcome. Rejecting it
     // here could hide committed money work. A replay above always keeps its retained result.
     if limited && !session.reconcile_original_bank {
+        if selected_hotkey {
+            RejectionStage::Throttled.log(command.command_id);
+        }
         let mut dispatch = integrity::refusal(session, command.command_type);
         session.sequence = session
             .sequence
@@ -214,8 +223,17 @@ where
         drop(input_permit.take());
     }
     let npc_relocation = None;
+    use oteryn_protocol_oteryn::loop_training::{
+        COMMAND_TYPE_OFFLINE_TRAINING_CHOOSE, decode_offline_training_skill,
+    };
+    let training_action = command.command_type != COMMAND_TYPE_OFFLINE_TRAINING_CHOOSE
+        || (session
+            .selected_capabilities
+            .command_selected(command.command_type)
+            && decode_offline_training_skill(command.payload).is_ok());
     if input_permit.is_some()
         && !guard_deferred
+        && training_action
         && !authority
             .training_activity(session.admitted, command.command_type)
             .await
@@ -234,7 +252,11 @@ where
         } else {
             None
         };
-    if command.command_type != oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_INTENT {
+    if !matches!(
+        command.command_type,
+        oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_INTENT
+            | oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_ROW_ACTION
+    ) {
         session.stash_rows = None;
     }
     let walk_target = autowalk::target(session, command);
@@ -270,8 +292,12 @@ where
             .selected_capabilities
             .command_selected(command.command_type)
     {
+        if selected_hotkey {
+            RejectionStage::InputUnavailable.log(command.command_id);
+        }
         Dispatch::Unregistered
     } else if replaced {
+        RejectionStage::Superseded.log(command.command_id);
         Dispatch::ItemMove(
             oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected,
             Vec::new(),

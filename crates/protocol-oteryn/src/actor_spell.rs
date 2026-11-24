@@ -28,6 +28,9 @@ pub const SNAPSHOT_TYPE_ACTOR_VITALS_V1: u32 = 1;
 /// Without it, field 5 fails closed as any unknown field does.
 pub const CAPABILITY_SPELL_AIM_MODE_V1: u32 = 480;
 
+pub const CAPABILITY_ACTOR_LIVE_STATE_V1: u32 = 605;
+pub const COMMAND_TYPE_MANA_SHIELD_REMAINING: u32 = 6372;
+
 /// SPELL-D7 bound. The canonical worst case is 26 bytes: `spell` (1 tag + 5-byte uint32 varint = 6),
 /// `target` (1 + 1 = 2), `target_position` (1 tag + 1 length + x 6 + y 6 + Global floor 2 = 16) and
 /// `aim_at_target` (1 + 1 = 2). WU26-14 `aim_mode` (1 + 1 = 2) excludes `aim_at_target`, so with

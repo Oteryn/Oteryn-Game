@@ -148,6 +148,10 @@ pub(super) struct ConnectionInputs {
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) capture_attackers: std::collections::BTreeSet<Option<oteryn_session::EntityRef>>,
+    pub(super) capture_boss_tracker:
+        Option<oteryn_client_runtime::cyclopedia_tracker::TrackerSnapshot>,
+    pub(super) combat_capture: crate::screenshots::CombatCaptureFacts,
     pub(super) connection: ConnectionInputs,
     #[cfg(bevy_shell)]
     pub(super) screen_loot: super::feature_local_text_messages::view::LootMessage,
@@ -319,6 +323,9 @@ pub(super) struct Mailbox {
     pub(super) imbue_shutdown: bool,
     pub(super) player_trade: oteryn_client_ui::player_trade::PlayerTradePanel,
     pub(super) vip: oteryn_client_ui::vip::VipPanel,
+    pub(super) party_summons: std::sync::Arc<
+        std::collections::BTreeMap<oteryn_session::EntityRef, oteryn_session::EntityRef>,
+    >,
     pub(super) party: oteryn_client_ui::party::PartyPanel,
     pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
     pub(super) hireling_shutdown: bool,

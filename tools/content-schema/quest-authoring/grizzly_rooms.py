@@ -22,7 +22,8 @@ sys.path.insert(0, str(ROOT / "tools/content-schema/world-authoring"))
 from scoped_spawn_ground import CAPTURE, ground_cells
 from world_region_codec import decode_region, region_name
 
-OUTPUT = ROOT / "content/quests/grizzly-boss-rooms.json"
+OUTPUT = ROOT / 'content/quests/grizzly-boss-rooms.json'
+DEBRIS_PROFILES = 'tools/content-schema/native-gameplay/grizzly-debris-item-profiles.json'
 
 
 def generate(root: Path = ROOT) -> dict:
@@ -49,13 +50,17 @@ def generate(root: Path = ROOT) -> dict:
                     records[item] = row
     scoped_cells = ground_cells(read(CAPTURE)) if scoped_terrain else {}
     profiles = {}
-    for row in json.loads(read("content/items/definitions/spell-native-profiles.json"))[
-        "records"
-    ]:
-        profiles.setdefault(
-            row["production_definition"]["production_key"],
-            row["attributes"].get("blocks_movement"),
-        )
+    for row in json.loads(read('content/items/definitions/spell-native-profiles.json'))['records']:
+        profiles.setdefault(row['production_definition']['production_key'], row['attributes'].get('blocks_movement'))
+    # Grizzly room qualification owns a closed set of walkable debris. A route
+    # profile for Folda or Outlaw Camp does not extend that admission set.
+    debris = {row['production_definition']['production_key']
+              for row in json.loads(read(DEBRIS_PROFILES))['records']
+              if row['attributes']['blocks_movement'] is False}
+
+    def native_walkable(item, key):
+        return profiles.get(key) is False and (item not in range(6475, 6488) or key in debris)
+
     cache: dict[tuple, dict] = {}
 
     def tile(z, x, y):
@@ -92,10 +97,8 @@ def generate(root: Path = ROOT) -> dict:
                 elif row["kind"].get("value") == "border":
                     if row["walkable"].get("value") is not True:
                         return False
-                elif (
-                    row["kind"].get("value") == "wall"
-                    or profiles.get(palette[pi]["key"]) is not False
-                ):
+                elif (row['kind'].get('value') == 'wall'
+                      or not native_walkable(item, palette[pi]['key'])):
                     return False
             elif item in objects:
                 if (
@@ -103,7 +106,7 @@ def generate(root: Path = ROOT) -> dict:
                     is not False
                 ):
                     return False
-            elif profiles.get(palette[pi]["key"]) is not False:
+            elif not native_walkable(item, palette[pi]['key']):
                 return False
         return ground
 

@@ -55,4 +55,9 @@ message PvpStatusV1 {
 message PvpSituationV1 {
   bool incoming = 1;
   uint64 remaining_ms = 2; // 1..900000
+  // Capability 616 (requires 134). Present and positive on every selected reply
+  // entry, absent without selection. Stable across observations of one committed
+  // edge; replacement and renewal issue a new value even if the timer looks equal.
+  // Treat as opaque equality evidence; gaps and ordering carry no client meaning.
+  optional uint64 situation_id = 3;
 }

@@ -12,10 +12,13 @@ import shutil
 import tempfile
 
 
-# Calibrated from the hosted 36-worker PostgreSQL runs. Single-archive workers
-# keep their four nextest threads, so each lane needs enough parallel workers
-# even when the duration table underestimates its short cases.
-SLOTS = {"lib-1": 15, "lib-2": 7, "lib-3": 7, "e2e": 5, "lib": 2}
+# Calibrated from the hosted 36-worker PostgreSQL runs (run 45369833403: lane totals
+# lib-1 142, lib-2 101, lib-3 76, e2e 42 and lib 22 job-minutes) and spread over 55
+# workers in proportion to each lane's test time, so a worker takes about eight
+# minutes. Single-archive workers keep their four nextest threads, so each lane
+# needs enough parallel workers even when the duration table underestimates its
+# short cases.
+SLOTS = {"lib-1": 20, "lib-2": 15, "lib-3": 11, "e2e": 6, "lib": 3}
 TOTAL = sum(SLOTS.values())
 
 

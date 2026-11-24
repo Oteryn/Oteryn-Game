@@ -186,6 +186,56 @@ fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result
     assert!(receiver.try_recv().is_err(), "every charm page is loaded");
     assert!(labels(&mut app).contains("Toad [Amphibic]"));
     assert!(labels(&mut app).contains("Progress not reported"));
+    let mut editor = app
+        .world_mut()
+        .query_filtered::<&mut bevy::text::EditableText, With<CreatureSearch>>();
+    *editor.single_mut(app.world_mut())? = bevy::text::EditableText::new("FRO");
+    click(&mut app, Kind::Search(false))?;
+    let scan = command(&mut receiver)?;
+    let mut search_page = page.clone();
+    search_page.next = None;
+    publish(&scan, &search_page)?;
+    app.update();
+    assert!(enabled(&mut app, Kind::Select(9))?);
+    assert!(enabled(&mut app, Kind::Select(7)).is_err());
+    click(&mut app, Kind::Select(9))?;
+    let result_detail = command(&mut receiver)?;
+    let mut one = search_page.clone();
+    one.cards.retain(|card| card.race == 9);
+    publish(&result_detail, &one)?;
+    app.update();
+    click(&mut app, Kind::EndSearch)?;
+    app.update();
+    assert!(enabled(&mut app, Kind::Select(7))?);
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .charm_progression_panel()
+            .fields[1],
+        "7"
+    );
+    click(&mut app, Kind::Catalogue(1))?;
+    let next = command(&mut receiver)?;
+    let mut last = page.clone();
+    last.next = None;
+    last.cards.truncate(1);
+    last.cards[0].race = 10;
+    publish(&next, &last)?;
+    app.update();
+    click(&mut app, Kind::Catalogue(8))?;
+    let previous = command(&mut receiver)?;
+    assert_eq!(
+        wire::decode_request(&previous.payload)
+            .map_err(|e| format!("{e:?}"))?
+            .after,
+        0
+    );
+    publish(&previous, &page)?;
+    app.update();
     click(&mut app, Kind::Select(9))?;
     let detail = command(&mut receiver).map_err(|error| format!("detail: {error}"))?;
     assert_eq!(
@@ -239,6 +289,10 @@ fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result
     page.next = None;
     publish(&loot, &page)?;
     app.update();
+    click(&mut app, Kind::Catalogue(9))?;
+    app.update();
+    assert!(labels(&mut app).contains("Toad [Amphibic]"));
+    assert!(!labels(&mut app).contains("Gold coin"));
     click(&mut app, Kind::Catalogue(5))?;
     let category = command(&mut receiver).map_err(|error| format!("category: {error}"))?;
     assert_eq!(
@@ -418,6 +472,10 @@ fn bestiary_charms_unlock_assign_remove_and_reset_through_the_progression_owner(
     assert!(labels(&mut app).contains("Dodge — Major"));
     assert!(labels(&mut app).contains("Avoid a qualifying creature attack."));
     click(&mut app, Kind::CharmAction(Intent::Unlock))?;
+    assert!(receiver.try_recv().is_err());
+    app.update();
+    assert!(labels(&mut app).contains("Unlock Dodge for 100 charm points?"));
+    click(&mut app, Kind::Confirm(Intent::Unlock))?;
     let unlock = command(&mut receiver).map_err(|error| format!("unlock: {error}"))?;
     assert_eq!((unlock.capability, unlock.kind), (67, 84));
     assert_eq!(
@@ -447,7 +505,46 @@ fn bestiary_charms_unlock_assign_remove_and_reset_through_the_progression_owner(
         wire::encode_page(&page).map_err(|e| format!("{e:?}"))?,
     );
     app.update();
+    let mut editor = app
+        .world_mut()
+        .query_filtered::<&mut bevy::text::EditableText, With<CreatureSearch>>();
+    *editor.single_mut(app.world_mut())? = bevy::text::EditableText::new("fro");
+    click(&mut app, Kind::Search(true))?;
+    let scan = command(&mut receiver)?;
+    publish(
+        &scan,
+        wire::encode_page(&page).map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    assert!(enabled(&mut app, Kind::Select(9))?);
+    click(&mut app, Kind::Select(9))?;
+    let target = command(&mut receiver)?;
+    publish(
+        &target,
+        wire::encode_page(&page).map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
     click(&mut app, Kind::CharmAction(Intent::Assign))?;
+    assert!(receiver.try_recv().is_err());
+    app.update();
+    assert!(labels(&mut app).contains("Assign Dodge to Frog?"));
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .refresh_capture_bestiary();
+    let periodic = command(&mut receiver)?;
+    app.update();
+    assert!(labels(&mut app).contains("Assign Dodge to Frog?"));
+    publish(
+        &periodic,
+        charm_reply(Outcome::Query, 0, (1, None, 200), Some(7))?,
+    );
+    app.update();
+    assert!(labels(&mut app).contains("Assign Dodge to Frog?"));
+    click(&mut app, Kind::Confirm(Intent::Assign))?;
     let assign = command(&mut receiver).map_err(|error| format!("assign: {error}"))?;
     assert_eq!(
         progression::decode_charm_progression_request(&assign.payload)
@@ -702,5 +799,65 @@ fn untracked_bestiary_stage_is_captured_after_credited_kill() -> Result {
         commands.try_recv().is_ok(),
         "refresh bestiary progress without a kill feed"
     );
+    Ok(())
+}
+
+#[test]
+fn refused_capture_query_after_a_credited_kill_retries_without_losing_the_baseline() -> Result {
+    use crate::play::{SettingsState, screenshot::CaptureAction};
+    let now = std::time::Instant::now();
+    let (link, mut commands, outbox) = play_channel();
+    outbox.bevy_bestiary_initialize();
+    outbox.bevy_analyser_initialize();
+    let mut settings = SettingsState::new(None);
+    settings.preferences.screenshots.on_bestiary_unlock = true;
+    for (step, count) in [(0, 9), (3, 10), (6, 10)] {
+        let time = now + std::time::Duration::from_secs(step);
+        if step == 3 {
+            outbox.push(vec![oteryn_session::SessionEvent::AnalyserFacts(
+                oteryn_session::AppliedDelta {
+                    server_sequence: 2,
+                    base_revision: 1,
+                    new_revision: 2,
+                    value: vec![oteryn_session::analyser_transport::AnalyserFact::Kill {
+                        race: std::num::NonZeroU32::new(9),
+                    }],
+                },
+            )]);
+        }
+        settings.prepare_screenshots(time, Some(&link));
+        let query = command(&mut commands)?;
+        let result = progression::CharmProgressionReply {
+            outcome: progression::CharmProgressionOutcome::Query,
+            fee_gold: 0,
+            bestiary: vec![progression::bestiary::BestiaryRaceProgress {
+                race: std::num::NonZeroU32::new(9).ok_or("race")?,
+                kill_count: count,
+                kill_thresholds: [10, 20, 30],
+            }],
+            charms: default(),
+        };
+        outbox.bevy_bestiary_result(
+            &query,
+            &GatedCommandResult {
+                command_id: step + 1,
+                server_sequence: step + 2,
+                status: if step == 3 {
+                    oteryn_session::CommandStatus::Rejected
+                } else {
+                    oteryn_session::CommandStatus::Accepted
+                },
+                payload: progression::encode_charm_progression_reply(&result)
+                    .map_err(|err| format!("{err:?}"))?,
+            },
+        );
+        assert_eq!(
+            matches!(
+                settings.prepare_screenshots(time, Some(&link)),
+                CaptureAction::Save
+            ),
+            step == 6
+        );
+    }
     Ok(())
 }

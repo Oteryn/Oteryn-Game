@@ -66,7 +66,9 @@ impl PlayView {
         }
         let direction = self.pending_step();
         self.in_flight = direction.is_some();
-        if let Some(facing) = direction {
+        if let Some(facing) = direction
+            && !self.preferences().controls.preserve_facing
+        {
             self.facing = facing;
         }
         direction

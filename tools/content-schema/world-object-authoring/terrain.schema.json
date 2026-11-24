@@ -509,6 +509,7 @@
                     "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
                     "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1",
                     "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+                    "OTERYN_OFFICIAL_CLIENT_ALAWAR_STATIC/v1",
                     "OTERYN_FEROXA_FIXED_SOURCE_SCENERY/v1"
                   ]
                 },
@@ -1258,6 +1259,28 @@
                   "const": "official_client"
                 },
                 "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_ALAWAR_STATIC/v1"
+                }
+              }
+            },
+            "route": {
+              "properties": {
+                "owner": { "const": "Terrain" },
+                "reason": { "const": "alawar_static_appearance" }
+              }
+            },
+            "source_item_id": { "enum": [10729, 10731, 10733, 10734, 10843, 10844, 10845] }
+          },
+          "not": { "required": ["item_pointer"] }
+        },
+        {
+          "properties": {
+            "source": {
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "profile": {
                   "const": "OTERYN_FEROXA_FIXED_SOURCE_SCENERY/v1"
                 }
               }
@@ -1394,7 +1417,10 @@
                       "const": "official_client"
                     },
                     "profile": {
-                      "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                      "enum": [
+                        "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+                        "OTERYN_OFFICIAL_CLIENT_ALAWAR_STATIC/v1"
+                      ]
                     }
                   }
                 },
@@ -1456,7 +1482,10 @@
                       "const": "official_client"
                     },
                     "profile": {
-                      "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                      "enum": [
+                        "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+                        "OTERYN_OFFICIAL_CLIENT_ALAWAR_STATIC/v1"
+                      ]
                     }
                   }
                 },
@@ -1518,7 +1547,10 @@
                       "const": "official_client"
                     },
                     "profile": {
-                      "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                      "enum": [
+                        "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+                        "OTERYN_OFFICIAL_CLIENT_ALAWAR_STATIC/v1"
+                      ]
                     }
                   }
                 },

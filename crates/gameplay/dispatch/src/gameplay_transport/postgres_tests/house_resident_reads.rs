@@ -1,6 +1,6 @@
+use super::TestResult;
 use super::house_balloon_fixtures::{Case, run_case};
 use super::house_resident_reads_fixtures::ClockCase;
-use super::TestResult;
 
 #[test]
 fn house_resident_tick_postgres() -> TestResult {
@@ -13,7 +13,10 @@ fn house_resident_tick_with_due_furniture_postgres() -> TestResult {
 }
 
 #[test]
-fn house_resident_letter_6246_postgres() -> TestResult {
+fn house_resident_inscription_legacy_and_attribution_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     run_case(Case::ResidentLetter)
 }
 

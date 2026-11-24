@@ -67,6 +67,10 @@ PHARAOHS = {
     "oteryn:creature.vashresamun": (33121, 32655, 15),
 }
 
+# Crystal 201189f8 world-monster.xml:190614–190616. This mine leader is a
+# public respawn with death credit, not an encounter-owned actor.
+FRONTIER_MINE_LEADER = "oteryn:creature.shard_of_corruption"
+
 
 def encounter_bosses() -> set[str]:
     """Keep quest-owned creatures and explicit encounter/room actors out of world clocks."""
@@ -201,6 +205,7 @@ def convert(xml: bytes) -> dict[str, str]:
             if key in corrections:
                 raise ValueError(f"duplicate scoped spawn reconciliation: {key}")
             corrections[key] = tuple(row["destination"])
+    mine_leader = None
     for ordinal, element in enumerate(ET.fromstring(xml)):
         cx, cy, cz = (int(element.get(k)) for k in ("centerx", "centery", "centerz"))
         base = f"oteryn:spawn.x{cx}_y{cy}_z{cz}"
@@ -251,16 +256,23 @@ def convert(xml: bytes) -> dict[str, str]:
                     key: value for key, value in point.items() if key != "respawn_ms"
                 }
                 scheduled["boss_policy"] = {"respawn": {"min_s": 90, "max_s": 90}}
-                pharaohs[creature] = {
-                    "declaration": {
-                        "centre": {"floor": cz, "x": cx, "y": cy},
-                        "identity": {
-                            "key": f"{key}.pharaoh",
-                            "revision": "definition-r1",
-                        },
-                        "points": [scheduled],
-                    }
-                }
+                pharaohs[creature] = {"declaration": {
+                    "centre": {"floor": cz, "x": cx, "y": cy},
+                    "identity": {"key": f"{key}.pharaoh", "revision": "definition-r1"},
+                    "points": [scheduled],
+                }}
+            elif point["creature"] == FRONTIER_MINE_LEADER:
+                if (mine_leader is not None or key != "oteryn:spawn.x33071_y31433_z15"
+                        or point["cell"] != {"floor": 15, "x": 33072, "y": 31434}
+                        or point["respawn_ms"] != 90_000):
+                    sys.exit("Farmine mine leader placement differs from its source")
+                scheduled = {k: v for k, v in point.items() if k != "respawn_ms"}
+                scheduled["boss_policy"] = {"respawn": {"min_s": 90, "max_s": 90}}
+                mine_leader = {"declaration": {
+                    "centre": {"floor": cz, "x": cx, "y": cy},
+                    "identity": {"key": f"{key}.mine_leader", "revision": "definition-r1"},
+                    "points": [scheduled],
+                }}
             elif point["creature"] in boss_keys:
                 if point["creature"] in encounter_bound:
                     held_bosses.append(
@@ -321,6 +333,9 @@ def convert(xml: bytes) -> dict[str, str]:
     reconciliation_bytes = FIRST_RECONCILIATION.read_bytes()
     reconciliation = json.loads(reconciliation_bytes)
     reconcile_cells(records, reconciliation)
+    if mine_leader is None:
+        sys.exit("Farmine mine leader placement is missing")
+    records.append(mine_leader)
     files, shards = {}, []
     for start in range(0, len(records), SHARD_SIZE):
         part = records[start : start + SHARD_SIZE]

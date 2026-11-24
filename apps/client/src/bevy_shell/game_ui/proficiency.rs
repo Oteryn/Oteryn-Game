@@ -70,6 +70,7 @@ pub(super) fn install(app: &mut App) {
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
+    time: Res<Time<Real>>,
     skins: Res<Skins>,
     mut state: ResMut<State>,
     fields: Query<&bevy::text::EditableText, With<Search>>,
@@ -95,7 +96,7 @@ fn project(
         state.dirty = true;
     }
     if let (Some(panel), Some(play)) = (&panel, &owner.play)
-        && state.filters.update(&play.link, panel)
+        && state.filters.update(&play.link, panel, time.elapsed())
     {
         state.dirty = true;
     }
@@ -117,12 +118,13 @@ fn project(
     if let Some(panel) = &panel {
         let mut projected = draft::projection(panel, &state.draft);
         projected.search.clone_from(&state.search);
-        let filters = state.filters.clone();
+        let state = &mut *state;
+        let filters = &state.filters;
         let draft_controls = state.draft.controls();
         let widgets = state
             .root
             .get_or_insert_with(|| widgets::build(&mut commands, &skins));
-        widgets::render(&mut commands, &skins, widgets, key, &projected, &filters);
+        widgets::render(&mut commands, &skins, widgets, key, &projected, filters);
         draft::render(&mut commands, &skins, widgets, key, draft_controls);
     }
     state.snapshot = panel;

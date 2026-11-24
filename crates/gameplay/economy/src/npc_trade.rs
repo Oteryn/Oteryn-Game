@@ -225,6 +225,26 @@ pub fn plan_buy(
     entries: &[Entry],
     bank_allowed: bool,
 ) -> Result<Plan, PlanError> {
+    plan_buy_with_packaging(
+        request,
+        total,
+        units,
+        capacity,
+        entries,
+        bank_allowed,
+        false,
+    )
+}
+
+pub fn plan_buy_with_packaging(
+    request: &PlanInput<'_>,
+    total: u64,
+    units: u32,
+    capacity: usize,
+    entries: &[Entry],
+    bank_allowed: bool,
+    packed: bool,
+) -> Result<Plan, PlanError> {
     use oteryn_gameplay_domain::domain::item_definition::ItemStackClass;
     let maximum = match request.item.stack {
         ItemStackClass::NonStackable => 1,
@@ -236,6 +256,10 @@ pub fn plan_buy(
     }
     let item_stacks =
         usize::try_from(units.div_ceil(maximum)).map_err(|_| PlanError::InvalidInput)?;
+    if packed && item_stacks > BACKPACK_ENTRIES_MAX {
+        return Err(PlanError::DoesNotFit);
+    }
+    let purchase_slots = if packed { 1 } else { item_stacks };
     let mut inputs = Vec::new();
     // §5.3: a price of 0 pays from no coin, so no coin stack is an input or refused.
     for entry in entries.iter().filter(|entry| entry.live && total != 0) {
@@ -308,7 +332,7 @@ pub fn plan_buy(
     let whole = lines.iter().filter(|line| line.quantity_after == 0).count();
     let change_coins = buy_change_coins(change);
     // §5.3: the change and the item each take a new entry after the burn.
-    if entries.len() - whole + change_coins.len() + item_stacks > capacity {
+    if entries.len() - whole + change_coins.len() + purchase_slots > capacity {
         return Err(PlanError::DoesNotFit);
     }
     let [platinum, gold, item] = request.output_item_instance_ids;
