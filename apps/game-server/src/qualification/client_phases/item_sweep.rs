@@ -1808,10 +1808,12 @@ async fn sweep_item(
         rows.blocked("house-custody");
         return;
     }
-    if let Some(creature) = corpse_sources
-        .get(key)
-        .filter(|_| item.capacity().is_some())
-    {
+    // The full container probe needs a native death receipt and corpse handle.
+    // A seed replay can verify a Ground-only definition in disposable map
+    // custody without carrying combat from one seed into the next.
+    if let Some(creature) = corpse_sources.get(key).filter(|_| {
+        item.capacity().is_some() && (!item.ground_only || rows.pending.contains(&"container"))
+    }) {
         if let Err(error) = corpse(fixtures, world, index, creature, reference, item, rows).await {
             rows.emit("seed", Err(error));
         }
