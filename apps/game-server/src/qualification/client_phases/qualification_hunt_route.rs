@@ -1,6 +1,6 @@
 // Route over the loaded qualification crop. A route may need to leave the
 // normal local town window to get around a wall or use a return staircase.
-async fn qualification_hunt_route(
+pub(super) async fn qualification_hunt_route(
     client: &mut DevClientSession,
     world: &BundleWorld,
     target: Option<TilePos>,
@@ -125,7 +125,7 @@ async fn qualification_hunt_route(
     dead_code,
     reason = "A single trip or return needs only the route function."
 )]
-async fn qualification_acquire(
+pub(super) async fn qualification_acquire(
     client: &mut DevClientSession,
     world: &BundleWorld,
     deadline: tokio::time::Instant,
@@ -150,7 +150,7 @@ async fn qualification_acquire(
     dead_code,
     reason = "The Open PvP row uses the arena accounts prepared by node boot."
 )]
-async fn qualification_character(
+pub(super) async fn qualification_character(
     clients: &SeamClients<'_>,
     index: usize,
     tag: u8,

@@ -552,7 +552,11 @@ async fn resting_bonuses(
         }
         rest::RestStatus::decode(&reply.payload).ok_or_else(|| "P10 rest status malformed".into())
     }
-    include!("qualification_hunt_route.rs");
+    mod hunt_route {
+        use super::*;
+        include!("qualification_hunt_route.rs");
+    }
+    use hunt_route::*;
 
     character_prep::declare_seeded(
         "P10",
@@ -963,7 +967,11 @@ async fn temple_respawn(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
-    include!("qualification_hunt_route.rs");
+    mod hunt_route {
+        use super::*;
+        include!("qualification_hunt_route.rs");
+    }
+    use hunt_route::*;
 
     character_prep::declare_seeded(
         "C20d",
@@ -2087,7 +2095,11 @@ async fn item_loss(
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
-    include!("qualification_hunt_route.rs");
+    mod hunt_route {
+        use super::*;
+        include!("qualification_hunt_route.rs");
+    }
+    use hunt_route::*;
 
     character_prep::declare_seeded(
         "C20b",
@@ -2756,7 +2768,11 @@ async fn blessing_death(
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
-    include!("qualification_hunt_route.rs");
+    mod hunt_route {
+        use super::*;
+        include!("qualification_hunt_route.rs");
+    }
+    use hunt_route::*;
 
     character_prep::declare_seeded(
         "C20c",
