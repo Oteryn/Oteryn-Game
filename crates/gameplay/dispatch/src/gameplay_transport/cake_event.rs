@@ -451,6 +451,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let map = self.bundle_map()?;
+        // An authored door can never have a cake bite receipt for this exact placement.
+        // Leave its USE to the door owner even when the cake receipt store is unavailable.
+        if target
+            .placement
+            .strip_prefix(map.overlay.base().digest().as_slice())
+            .and_then(|key| <[u8; 8]>::try_from(key).ok())
+            .is_some_and(|key| map.facts.doors().contains(u64::from_be_bytes(key)))
+        {
+            return None;
+        }
         let native = self.active_generation?.native_gameplay()?;
         let candidate = self.immutable_cake_candidate(target);
         let permit = self.spell_lane_permit().await?;

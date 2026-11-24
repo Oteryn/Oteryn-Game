@@ -134,7 +134,22 @@ pub(super) async fn exercise_open_pvp(
         .bind(id(42).as_slice()).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'pvp-live-fixture')")
         .bind(id(42).as_slice()).execute(&h.pool).await?;
-    super::super::item_forge_fixtures::support::seed_items(h, &[(90, axe, 1, 0)]).await?;
+    let shield = "oteryn:item.tibia.i3425";
+    let shield_ref = native
+        .item_index()
+        .and_then(|index| index.definition_ref("Item", shield, "definition-r1"))
+        .ok_or("starter shield definition")?;
+    super::super::item_forge_fixtures::support::seed_items(h, &[(90, axe, 1, 0), (91, shield, 1, 0)])
+        .await?;
+    // Model the already-worn starter shield. Its occupancy is known even though
+    // the native profile does not qualify it for a fresh equip.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("WITH shield AS (DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid RETURNING character_id,world_id,item_instance_id,placed_transaction_id) INSERT INTO game_character_equipment_slots(character_id,world_id,item_instance_id,placed_transaction_id,slot) SELECT character_id,world_id,item_instance_id,placed_transaction_id,6 FROM shield")
+        .bind(id(91).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
 
     let payload = wire::TieredRequest {
         request: wire::Request { definition },
@@ -186,6 +201,10 @@ pub(super) async fn exercise_open_pvp(
                         .equipment
                         .iter()
                         .any(|entry| entry.item.item_definition_ref == definition)
+                        && inventory
+                            .equipment
+                            .iter()
+                            .any(|entry| entry.item.item_definition_ref == shield_ref)
                         && inventory
                             .entries
                             .iter()
