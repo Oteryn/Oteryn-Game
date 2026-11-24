@@ -629,6 +629,17 @@ async fn wait_target(
     }
 }
 
+async fn return_to(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    home: TilePos,
+) -> TestResult {
+    let here = tile(client.world_spatial().actor_position)?;
+    let path =
+        route(world, here, |at| at == home).ok_or("harness-obtain-path: return route absent")?;
+    walk(client, world, &path).await
+}
+
 async fn obtain_npc(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -698,10 +709,7 @@ async fn obtain_npc(
         }
     }
     wait_target(client, state, target).await?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let path = route(world, here, |at| at == home)
-        .ok_or("harness-obtain-path: NPC return route absent")?;
-    walk(client, world, &path).await
+    return_to(client, world, home).await
 }
 
 async fn prepare<'a>(
@@ -1046,10 +1054,7 @@ async fn obtain_taming(
                     .is_some_and(|view| view.get(&entity).is_none())
             });
             if success && removed && state.catalogue.mounts.contains(&binding.mount_key) {
-                let here = tile(client.world_spatial().actor_position)?;
-                let path = route(world, here, |at| at == home)
-                    .ok_or("harness-taming-return: no route home")?;
-                walk(client, world, &path).await?;
+                return_to(client, world, home).await?;
                 return Ok(());
             }
             if feedback && !success {
@@ -1102,6 +1107,7 @@ async fn journey(
     };
     let (mode, actions) = prepare(clients, content, outfit, addon, mount, obtain, items).await?;
     let mut client = connect_character(clients, 0xc9, 0).await?;
+    let home = tile(client.world_spatial().actor_position)?;
     let mut observer = None;
     let result = async {
         let mut state = snapshot(&mut client)?;
@@ -1162,13 +1168,18 @@ async fn journey(
         .await
     }
     .await;
-    let observer_release = if let Some(mut observer) = observer {
-        logout(&mut observer).await
+    // Acquisition can fail after a walk. Return even on failure so the next
+    // entry starts beside its observer rather than outside the temple.
+    let actor_return = return_to(&mut client, world, home).await;
+    let observer_release = if let Some((mut observer, home)) = observer {
+        let back = return_to(&mut observer, world, home).await;
+        back.and(logout(&mut observer).await)
     } else {
         Ok(())
     };
     let release = logout(&mut client).await;
     result?;
+    actor_return?;
     observer_release?;
     release
 }
@@ -1193,7 +1204,7 @@ fn has_unlock(
 async fn exercise(
     rows: &mut Rows<'_>,
     client: &mut DevClientSession,
-    observer: &mut Option<DevClientSession>,
+    observer: &mut Option<(DevClientSession, TilePos)>,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     content: &Content,
@@ -1206,8 +1217,24 @@ async fn exercise(
     let mount_key = mount.map(|(mount, _)| mount.key.as_str());
     let addons = addon_mask(addon);
     rows.pass(mode);
-    *observer = Some(connect_character(clients, 0xca, 1).await?);
-    let observer = observer.as_mut().ok_or("observer fixture missing")?;
+    let peer = connect_character(clients, 0xca, 1).await?;
+    let peer_home = tile(peer.world_spatial().actor_position)?;
+    *observer = Some((peer, peer_home));
+    let (observer, _) = observer.as_mut().ok_or("observer fixture missing")?;
+    let actor_position = tile(client.world_spatial().actor_position)?;
+    let near = |at: TilePos| {
+        at.floor == actor_position.floor
+            && at
+                .x
+                .abs_diff(actor_position.x)
+                .max(at.y.abs_diff(actor_position.y))
+                <= 3
+    };
+    if !near(peer_home) {
+        let path = route(world, peer_home, near)
+            .ok_or("harness-observer-route: no route into actor sight range")?;
+        walk(observer, world, &path).await?;
+    }
     let mut observer_state = snapshot(observer)?;
     let previous_colours = state
         .catalogue
