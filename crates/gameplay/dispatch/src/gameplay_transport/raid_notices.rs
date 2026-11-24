@@ -11,7 +11,8 @@ use crate::foundation::GameSessionId;
 use crate::map::boot::BundleCollisionIndexExt;
 use oteryn_gameplay_encounter_rules::raid::{MAX_ANNOUNCEMENTS, MAX_CANDIDATES};
 use oteryn_protocol_oteryn::zones_nologout::{
-    CAPABILITY_ZONES_NOLOGOUT_V1, ServerMessage, encode_server_message,
+    CAPABILITY_ZONES_NOLOGOUT_V1, ServerMessage, ServerMessageCategory, ServerNotification,
+    encode_server_message,
 };
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
@@ -26,15 +27,17 @@ type ConnectionRoot = (GameSessionId, u64);
 struct Recipient {
     connection_generation: u64,
     connection_root: ConnectionRoot,
+    boss_defeats: bool,
+    categorized: bool,
     soulpit_completion: Option<[u8; 16]>,
-    queue: VecDeque<Arc<ServerMessage>>,
+    queue: VecDeque<Arc<ServerNotification>>,
 }
 
 #[derive(Default)]
 struct NoticeState {
     recipients: HashMap<GameSessionId, Recipient>,
-    published: BTreeMap<NoticeKey, Arc<ServerMessage>>,
-    staff_published: HashMap<String, (Option<GameSessionId>, Arc<ServerMessage>)>,
+    published: BTreeMap<NoticeKey, Arc<ServerNotification>>,
+    staff_published: HashMap<String, (Option<GameSessionId>, Arc<ServerNotification>)>,
 }
 
 #[derive(Default)]
@@ -54,7 +57,18 @@ impl ServerMessageHub {
         (recipient.connection_generation == generation).then_some(recipient.connection_root)
     }
 
+    #[cfg(test)]
     pub(super) fn join(&self, session: GameSessionId, connection_generation: u64) -> bool {
+        self.join_selected(session, connection_generation, false, false)
+    }
+
+    pub(super) fn join_selected(
+        &self,
+        session: GameSessionId,
+        connection_generation: u64,
+        boss_defeats: bool,
+        categorized: bool,
+    ) -> bool {
         if connection_generation == 0 {
             return false;
         }
@@ -85,6 +99,8 @@ impl ServerMessageHub {
             Recipient {
                 connection_generation,
                 connection_root,
+                boss_defeats,
+                categorized,
                 soulpit_completion: None,
                 queue: VecDeque::new(),
             },
@@ -117,14 +133,43 @@ impl ServerMessageHub {
         let Some(recipient) = state.recipients.get_mut(&session) else {
             return false;
         };
-        if recipient.queue.len() >= MAX_ANNOUNCEMENTS {
+        if recipient.queue.len() >= MAX_ANNOUNCEMENTS
+            || (matches!(message, ServerMessage::BossDefeated(_)) && !recipient.boss_defeats)
+        {
             return false;
         }
-        recipient.queue.push_back(Arc::new(message));
+        recipient.queue.push_back(Arc::new(message.into()));
         drop(state);
         self.changed.notify_waiters();
         true
     }
+    /// A selected peer uses the categorized surface even if its bounded queue is full.
+    pub(super) fn send_team_finder(
+        &self,
+        session: GameSessionId,
+        generation: u64,
+        text: &str,
+    ) -> bool {
+        let Ok(mut state) = self.state.lock() else {
+            return false;
+        };
+        let Some(recipient) = state.recipients.get_mut(&session) else {
+            return false;
+        };
+        if recipient.connection_generation != generation || !recipient.categorized {
+            return false;
+        }
+        if recipient.queue.len() < MAX_ANNOUNCEMENTS {
+            recipient.queue.push_back(Arc::new(ServerNotification {
+                message: ServerMessage::StatusText(text.into()),
+                category: ServerMessageCategory::TeamFinder,
+            }));
+            drop(state);
+            self.changed.notify_waiters();
+        }
+        true
+    }
+
     /// An Instance session can complete only one Soulpit. Keep its occurrence
     /// after dequeue so replays cannot send it again on this connection.
     pub(super) fn send_soulpit_completion(
@@ -150,7 +195,7 @@ impl ServerMessageHub {
             return;
         }
         recipient.soulpit_completion = Some(occurrence);
-        recipient.queue.push_back(Arc::new(message.clone()));
+        recipient.queue.push_back(Arc::new(message.clone().into()));
         drop(state);
         self.changed.notify_waiters();
     }
@@ -210,6 +255,10 @@ impl ServerMessageHub {
     fn publish(&self, identity: RaidStepIdentity, message: ServerMessage) -> Result<(), ()> {
         // Validate before retaining either the publication or any recipient.
         encode_server_message(&message).map_err(|_| ())?;
+        let message = ServerNotification {
+            message,
+            category: ServerMessageCategory::Raid,
+        };
         let key = (
             identity.firing_id,
             identity.generation.get(),
@@ -280,6 +329,12 @@ impl ServerMessageHub {
             ServerMessage::Warning(text.into())
         };
         encode_server_message(&message).map_err(|_| ())?;
+        let category = if target.is_none() {
+            ServerMessageCategory::Global
+        } else {
+            ServerMessageCategory::Default
+        };
+        let message = ServerNotification { message, category };
         let mut state = self.state.lock().map_err(|_| ())?;
         if let Some((old_target, previous)) = state.staff_published.get(operation) {
             return if *old_target == target && previous.as_ref() == &message {
@@ -316,11 +371,17 @@ impl ServerMessageHub {
         }
     }
 
-    pub(super) fn take(
+    #[cfg(test)]
+    pub(super) fn take(&self, session: GameSessionId, generation: u64) -> Option<ServerMessage> {
+        self.take_notification(session, generation)
+            .map(|notice| notice.message)
+    }
+
+    pub(super) fn take_notification(
         &self,
         session: GameSessionId,
         connection_generation: u64,
-    ) -> Option<ServerMessage> {
+    ) -> Option<ServerNotification> {
         let mut state = self.state.lock().ok()?;
         let recipient = state.recipients.get_mut(&session)?;
         if recipient.connection_generation != connection_generation {

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SaveReceipt",
+  "type": "object",
+  "properties": {
+    "save_receipt_id": {
+      "type": "string"
+    },
+    "saved_at": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "save_receipt_id",
+    "saved_at"
+  ]
+}

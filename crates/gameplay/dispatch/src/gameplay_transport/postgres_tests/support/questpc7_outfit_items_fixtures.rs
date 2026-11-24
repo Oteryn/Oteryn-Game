@@ -101,12 +101,12 @@ pub(super) async fn exercise(
         .iter()
         .find(|c| c.key == format!("oteryn:quest-reward/questpc7-{slug}-commission"))
         .ok_or("intro")?;
-    let parent = &intro
-        .requirements
-        .as_ref()
-        .ok_or("requirements")?
-        .completed_quests[0];
-    let [npc] = super::classic_quests_fixtures::install(owner, admitted, [intro.npc.as_str()]).await?;
+    let fiend = slug == "fiend";
+    let [npc] = if fiend {
+        super::classic_quests_fixtures::install_above(owner, admitted, [intro.npc.as_str()]).await?
+    } else {
+        super::classic_quests_fixtures::install(owner, admitted, [intro.npc.as_str()]).await?
+    };
     let mut npc_sequence = 2000_u64;
     let mut selected = admitted
         .continuity
@@ -137,13 +137,27 @@ pub(super) async fn exercise(
         )
         .await?,
         NpcIntentDisposition::Rejected,
-        "the prerequisite completion is authoritative"
+        "commission requires its prerequisite"
     );
-    eprintln!("QUESTPC7_OUTFIT_ITEMS parent refusal complete");
-    // Only this prerequisite is a fenced fixture; the subject programme and all
-    // inventory/appearance milestones start fresh and run through their real owners.
-    super::questpc7_eligibility_fixtures::complete_parent_key(owner, admitted, parent).await?;
-    let parent_revision:String=sqlx::query_scalar("SELECT completed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(parent).fetch_one(&h.pool).await?;
+    eprintln!("QUESTPC7_OUTFIT_ITEMS prerequisite refusal complete");
+    let parent_revision = if fiend {
+        super::quest_container_chests_fixtures::forgemaster::claim_for_fiend(h, owner, admitted)
+            .await?;
+        None
+    } else {
+        let parent = intro
+            .requirements
+            .as_ref()
+            .ok_or("requirements")?
+            .completed_quests
+            .first()
+            .ok_or("parent completion requirement")?;
+        super::questpc7_eligibility_fixtures::complete_parent_key(owner, admitted, parent).await?;
+        let revision = completion_revision(h, parent)
+            .await?
+            .ok_or("parent completion")?;
+        Some((parent, revision))
+    };
     assert_eq!(
         talk(owner, admitted, npc, &mut npc_sequence, "hi").await?,
         NpcIntentDisposition::Ok
@@ -210,8 +224,19 @@ pub(super) async fn exercise(
     );
     let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(&intro.quest).fetch_one(&h.pool).await?;
     assert!(completed);
-    let after:String=sqlx::query_scalar("SELECT completed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(parent).fetch_one(&h.pool).await?;
-    assert_eq!(after, parent_revision, "prerequisite remains read-only");
+    if let Some((parent, revision)) = parent_revision {
+        assert_eq!(
+            completion_revision(h, parent).await?.as_deref(),
+            Some(revision.as_str()),
+            "prerequisite remains read-only"
+        );
+    } else {
+        assert_eq!(
+            completion_revision(h, "oteryn:quest.no_rest_for_the_wicked_quest").await?,
+            None,
+            "the native chest and Fiend programme never complete the parent quest"
+        );
+    }
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let observed = owner
         .appearance_observation(actor, admitted.game_session_id, vec![])
@@ -269,4 +294,16 @@ pub(super) async fn exercise(
         oteryn_protocol_oteryn::appearance::ChangeResult::Committed(_)
     ));
     Ok(())
+}
+
+async fn completion_revision(h: &Harness, quest: &str) -> TestResult<Option<String>> {
+    Ok(sqlx::query_scalar(
+        "SELECT completed_character_revision::text FROM game_character_quest_states
+         WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
+    )
+    .bind(id(41).as_slice())
+    .bind(quest)
+    .fetch_optional(&h.pool)
+    .await?
+    .flatten())
 }

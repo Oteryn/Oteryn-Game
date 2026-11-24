@@ -52,8 +52,8 @@ fn update_clock(
         let label = deadline
             .and_then(|deadline| deadline.checked_duration_since(now))
             .map(|duration| {
-                let seconds = duration.as_millis().div_ceil(1000);
-                format!("Reward resets in {}:{:02}", seconds / 60, seconds % 60)
+                let minutes = duration.as_millis().div_ceil(60_000);
+                format!("Reward resets in about {minutes} min")
             })
             .unwrap_or_default();
         if clock.0 != label {

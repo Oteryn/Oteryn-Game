@@ -66,7 +66,7 @@ fn rope_spots(bytes: &[u8]) -> TestResult<Vec<TilePos>> {
     let mut spots = Vec::new();
     oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
         for tile in sector.tiles {
-            let rope = tile.items.iter().any(|item| {
+            let rope = tile.items.iter().filter(|item| item.depth == 0).any(|item| {
                 crate::map::palette_appearance(&manifest.palette[item.palette as usize].key)
                     .is_some_and(|id| {
                         let id = u32::from(id);
@@ -102,6 +102,23 @@ async fn settle(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn has_static_landing(rope: TilePos, walkable: impl Fn(TilePos) -> bool) -> bool {
+    let Some(floor) = rope.floor.checked_add(1).filter(|floor| *floor <= 0) else {
+        return false;
+    };
+    (-1..=1).any(|dx| {
+        (-1..=1).any(|dy| {
+            if (dx, dy) == (0, 0) {
+                return false;
+            }
+            let (Some(x), Some(y)) = (rope.x.checked_add_signed(dx), rope.y.checked_add_signed(dy)) else {
+                return false;
+            };
+            walkable(TilePos { x, y, floor })
+        })
+    })
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -114,8 +131,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let spots = rope_spots(&bytes)?;
     let mut client = connect_character(clients, 0xb1, 1).await?;
     let start = tile(client.world_spatial().actor_position)?;
-    let path = route(world, start, |at| spots.binary_search(&at).is_ok())
-        .ok_or("step-1:no reachable compiled-world rope spot within player route budget")?;
+    let path = route(world, start, |at| {
+        spots.binary_search(&at).is_ok()
+            && has_static_landing(at, |landing| {
+                world.base().tile(landing.x, landing.y, landing.floor)
+                    .is_some_and(|tile| tile.walkable() && world.enterable(landing))
+            })
+    }).ok_or("step=rope-route missing=reachable-rope-spot-with-walkable-upstairs-neighbour owner=crates/gameplay/spell/src/spell/world_execution.rs:482")?;
     walk(&mut client, world, &path).await?;
     let rope = tile(client.world_spatial().actor_position)?;
     if spots.binary_search(&rope).is_err() {
@@ -198,6 +220,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn rope_planner_requires_an_upstairs_neighbour() {
+        let rope = TilePos { x: 5, y: 6, floor: -8 };
+        assert!(!has_static_landing(rope, |at| at == TilePos { floor: -7, ..rope }));
+        assert!(has_static_landing(rope, |at| at == TilePos { x: 6, y: 7, floor: -7 }));
+        assert!(!has_static_landing(TilePos { floor: 0, ..rope }, |_| true));
+    }
+
     #[test]
     fn rope_catalogue_ids_are_disjoint() {
         assert!(ROPE_GROUNDS.iter().all(|id| !ROPE_TOPS.contains(id)));

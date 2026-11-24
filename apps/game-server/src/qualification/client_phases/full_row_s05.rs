@@ -69,7 +69,7 @@ impl Row {
     fn fail(&mut self, step: &str, observed: impl std::fmt::Display) {
         verdict::record_assertion(step);
         let detail = format!("step={step}:observed={observed}");
-        evidence(&format!("S05_CHECK status=FAIL {detail}"));
+        evidence(&format!("S05_GAP status=FAIL {detail}"));
         self.failures.push(detail);
     }
 
@@ -165,6 +165,10 @@ async fn mutate(
     let (disposition, revision) = house::result(&reply.payload)
         .map_err(|error| format!("House result decode: {error}; {description}"))?;
     Ok((disposition, revision, description))
+}
+
+fn guildhall_refused(disposition: u64) -> bool {
+    disposition == oteryn_protocol_oteryn::house::HouseDisposition::NotGuildLeader as u64
 }
 
 fn select(rows: &[house::Row], kind: u64) -> Option<house::Row> {
@@ -272,7 +276,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         row.pass("auction-bid", (bid_d, bid_state));
     } else {
-        row.fail("auction-bid", format!("{bid_reply},disposition={bid_d},row={bid_state:?}"));
+        row.fail("auction-bid", format!("{bid_reply},disposition={bid_d},row={bid_state:?}; need=eligible-level-20-premium-bidder-and-earned-bank-escrow"));
     }
 
     if let Some(guildhall) = select(&initial, 3) {
@@ -290,7 +294,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             .iter()
             .find(|candidate| candidate.house == guildhall.house)
             .is_some_and(|candidate| candidate.owned == before_owned);
-        if (4..=10).contains(&d) && unchanged {
+        if guildhall_refused(d) && unchanged {
             row.pass("guildhall-refusal", d);
         } else {
             row.fail("guildhall-refusal", format!("{reply},disposition={d},unchanged={unchanged}"));
@@ -420,6 +424,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn guildhall_refusal_proves_leadership_gate() {
+        use oteryn_protocol_oteryn::house::HouseDisposition;
+        assert!(guildhall_refused(HouseDisposition::NotGuildLeader as u64));
+        assert!(!guildhall_refused(
+            HouseDisposition::InsufficientFunds as u64
+        ));
+    }
 
     #[test]
     fn evidence_token_is_bounded_and_has_no_whitespace() {

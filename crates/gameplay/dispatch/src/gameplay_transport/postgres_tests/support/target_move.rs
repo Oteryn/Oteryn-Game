@@ -52,7 +52,36 @@ async fn result(client: &mut DuplexStream, id: u64, expected: u8) -> TestResult 
     }
 }
 
-async fn follow_check_barrier(client: &mut DuplexStream, id: u64, payload: &[u8]) -> TestResult {
+async fn follow_state(
+    client: &mut DuplexStream,
+    id: u64,
+    expected: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
+) -> TestResult {
+    send(client, id, 6371, &[]).await?;
+    loop {
+        let frame = read(client).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload())?;
+            assert_eq!(result.command_id, id);
+            assert_eq!(result.status, CommandStatus::Accepted);
+            assert_eq!(
+                oteryn_protocol_oteryn::attack::decode_attack_target_intent(result.payload)
+                    .map_err(debug)?,
+                expected
+            );
+            return Ok(());
+        }
+    }
+}
+
+async fn follow_check_barrier(
+    client: &mut DuplexStream,
+    id: u64,
+    kind: u32,
+    payload: &[u8],
+    accepted_payload: &[u8],
+) -> TestResult {
     // Replays observe the connection loop without replacing FOLLOW. The first ACK
     // finishes any earlier owner work. After the wait, a due FOLLOW check must finish
     // before the second remaining ACK, even when one ready frame wins the first turn.
@@ -60,7 +89,7 @@ async fn follow_check_barrier(client: &mut DuplexStream, id: u64, payload: &[u8]
         if replay == 1 {
             tokio::time::sleep(Duration::from_millis(350)).await;
         }
-        send(client, id, 81, payload).await?;
+        send(client, id, kind, payload).await?;
         loop {
             let frame = read(client).await?;
             let envelope = decode_wire_envelope(&frame)?;
@@ -68,7 +97,7 @@ async fn follow_check_barrier(client: &mut DuplexStream, id: u64, payload: &[u8]
                 let result = decode_command_result(envelope.payload())?;
                 assert_eq!(result.command_id, id);
                 assert_eq!(result.status, CommandStatus::DuplicateReplay);
-                assert_eq!(result.payload, [8, 1]);
+                assert_eq!(result.payload, accepted_payload);
                 break;
             }
         }
@@ -236,9 +265,9 @@ pub(super) async fn client_scenario(
         .await
         .remove_terminal_session(target_session, target)
         .map_err(debug)?;
-    follow_check_barrier(client, 5, &follow).await?;
+    follow_check_barrier(client, 5, 81, &follow, &[8, 1]).await?;
     let lost = position(owner, actor).await?;
-    follow_check_barrier(client, 5, &follow).await?;
+    follow_check_barrier(client, 5, 81, &follow, &[8, 1]).await?;
     assert_eq!(position(owner, actor).await?, lost);
     send(client, 6, 81, &follow).await?;
     result(client, 6, 3).await?;
@@ -299,6 +328,7 @@ pub(super) async fn client_scenario(
     rat_follow.extend_from_slice(&encoded);
     send(client, 11, 81, &rat_follow).await?;
     result(client, 11, 1).await?;
+    follow_state(client, 12, Some(rat_ref)).await?;
     loop {
         let current = next_step(client).await?;
         if crate::movement::path_search::chebyshev(current, at(7, 5)) == 1 {
@@ -325,7 +355,8 @@ pub(super) async fn client_scenario(
             .map_err(debug)?;
         old.position()
     };
-    follow_check_barrier(client, 11, &rat_follow).await?;
+    follow_check_barrier(client, 12, 6371, &[], &encoded).await?;
+    follow_state(client, 13, None).await?;
     let floor_stopped = position(owner, actor).await?;
     {
         let mut runtime = owner.runtime.lock().await;
@@ -338,10 +369,10 @@ pub(super) async fn client_scenario(
             .commit_creature_relocation(rat, now, at(old.x, 1))
             .map_err(debug)?;
     }
-    follow_check_barrier(client, 11, &rat_follow).await?;
+    follow_check_barrier(client, 13, 6371, &[], &[]).await?;
     assert_eq!(position(owner, actor).await?, floor_stopped);
-    send(client, 12, 81, &rat_follow).await?;
-    result(client, 12, 1).await?;
+    send(client, 14, 81, &rat_follow).await?;
+    result(client, 14, 1).await?;
     loop {
         let current = next_step(client).await?;
         if current != floor_stopped {
@@ -361,14 +392,14 @@ pub(super) async fn client_scenario(
             cell: death_cell,
         },
     ));
-    follow_check_barrier(client, 12, &rat_follow).await?;
+    follow_check_barrier(client, 14, 81, &rat_follow, &[8, 1]).await?;
     assert_eq!(
         position(owner, actor).await?,
         death_cell,
         "death stops the next follow step"
     );
-    send(client, 13, 81, &[26, 2, 8, 2]).await?;
-    result(client, 13, 3).await?;
+    send(client, 15, 81, &[26, 2, 8, 2]).await?;
+    result(client, 15, 3).await?;
     Ok(())
 }
 
@@ -394,19 +425,19 @@ pub(super) async fn without_capability(client: &mut DuplexStream, corpse: [u8; 1
         }
     }
     assert!(saw_corpse);
-    send(client, 14, 81, &[26, 2, 8, 2]).await?;
-    loop {
-        let frame = read(client).await?;
-        let envelope = decode_wire_envelope(&frame)?;
-        if envelope.message_type() == MessageType::CommandResult {
-            let result = decode_command_result(envelope.payload())?;
-            assert_eq!(result.command_id, 14);
-            assert_eq!(
-                result.status,
-                oteryn_protocol_oteryn::CommandStatus::Rejected
-            );
-            assert!(result.payload.is_empty());
-            return Ok(());
+    for (id, kind, payload) in [(16, 81, &[26, 2, 8, 2][..]), (17, 6371, &[][..])] {
+        send(client, id, kind, payload).await?;
+        loop {
+            let frame = read(client).await?;
+            let envelope = decode_wire_envelope(&frame)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = decode_command_result(envelope.payload())?;
+                assert_eq!(result.command_id, id);
+                assert_eq!(result.status, CommandStatus::Rejected);
+                assert!(result.payload.is_empty());
+                break;
+            }
         }
     }
+    Ok(())
 }

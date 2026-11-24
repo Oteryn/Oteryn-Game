@@ -141,15 +141,20 @@ mod tests {
     fn arbaziloth_four_distinct_shields_qualify_timed_departure() {
         let mut sequence = ShieldSequence::default();
         for health in [100, 80, 60, 40] {
-            assert_eq!(sequence.limit_damage(health, 100, 100), 20);
-            assert_eq!(sequence.limit_damage(health - 20, 100, 100), 0);
+            assert_eq!(sequence.limit_damage(health, 100, 100, Some(10)), Ok(20));
+            assert_eq!(
+                sequence.limit_damage(health - 20, 100, 100, Some(20)),
+                Ok(0)
+            );
+            assert_eq!(sequence.fire_due_ms(), Some(1_510));
             assert!(!sequence.use_rod(51, 100));
             assert!(sequence.step_on_fire());
+            assert_eq!(sequence.fire_due_ms(), None);
             assert!(!sequence.step_on_fire());
             assert!(!sequence.use_rod(50, 100));
             assert!(sequence.use_rod(51, 100));
         }
-        assert_eq!(sequence.limit_damage(20, 100, 20), 20);
+        assert_eq!(sequence.limit_damage(20, 100, 20, Some(110)), Ok(20));
         assert!(!sequence.forgemaster_departure_due(3_099));
         assert!(sequence.forgemaster_departure_due(3_100));
     }

@@ -1,5 +1,7 @@
 //! Bounded projections of the immutable durable command result.
-use crate::durability::task_board::{TaskBoardCommit, TaskBoardRefusal};
+use std::collections::BTreeMap;
+
+use crate::durability::task_board::{TaskBoardCommit, TaskBoardItem, TaskBoardRefusal};
 use oteryn_gameplay_quests::quest::task_board::{self, full as rules};
 use oteryn_protocol_oteryn::task_board::{self as wire, full as full_wire};
 
@@ -67,7 +69,11 @@ fn offer(task: &rules::BountyTask, extended: bool) -> full_wire::BountyOffer {
     }
 }
 
-pub(super) fn full(commit: &TaskBoardCommit, include_results: bool) -> Option<full_wire::Reply> {
+pub(super) fn full(
+    commit: &TaskBoardCommit,
+    include_results: bool,
+    canonical_items: Option<&BTreeMap<u16, TaskBoardItem>>,
+) -> Option<full_wire::Reply> {
     let view = &commit.view;
     let data = &view.data;
     let balances = &view.balances;
@@ -117,20 +123,27 @@ pub(super) fn full(commit: &TaskBoardCommit, include_results: bool) -> Option<fu
             deliveries: board
                 .deliveries
                 .iter()
-                .map(|task| full_wire::DeliveryTask {
-                    item: task.item_id,
-                    required: task.required,
-                    current: if task.delivered {
-                        task.required
-                    } else {
-                        view.delivery_available
-                            .get(&task.item_id)
-                            .copied()
-                            .unwrap_or(0)
-                    },
-                    delivered: task.delivered,
+                .map(|task| {
+                    let item = match canonical_items {
+                        Some(items) => view.delivery_definition_refs.get(&task.item_id).copied()
+                            .or_else(|| items.get(&task.item_id).map(|item| item.definition_ref.get()))?,
+                        None => u32::from(task.item_id),
+                    };
+                    Some(full_wire::DeliveryTask {
+                        item,
+                        required: task.required,
+                        current: if task.delivered {
+                            task.required
+                        } else {
+                            view.delivery_available
+                                .get(&task.item_id)
+                                .copied()
+                                .unwrap_or(0)
+                        },
+                        delivered: task.delivered,
+                    })
                 })
-                .collect(),
+                .collect::<Option<_>>()?,
         }
     } else {
         full_wire::Weekly {
@@ -206,8 +219,11 @@ pub(super) fn full(commit: &TaskBoardCommit, include_results: bool) -> Option<fu
             selected: active.map_or(Some(0), |task| task.slot.checked_add(1))?,
             current: active.map_or(0, |task| task.current),
             rerolls: view.reroll_tokens,
-            // Retained wire field; bounty offers always consume a Reroll Token.
-            daily_reroll_at: 0,
+            daily_reroll_at: if canonical_items.is_some() {
+                view.daily_reroll_at
+            } else {
+                0
+            },
             offers: bounty
                 .offers
                 .iter()

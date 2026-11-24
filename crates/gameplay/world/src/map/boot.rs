@@ -660,6 +660,32 @@ pub fn table_activation_spawns(
 }
 
 impl BundleWorld {
+    /// Give another test case its own Channel map state on the same qualified bundle.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn fresh_channel_for_test(&self) -> Result<Self, BootRefusal> {
+        let map = BundleMap {
+            entry_start: self.map.entry_start,
+            overlay: ChannelOverlay::for_scope(
+                Arc::clone(&self.base),
+                self.map.overlay.runtime_scope(),
+            ),
+            facts: self.map.facts.fresh_for_test(),
+            floors: self.map.floors.clone(),
+            spell_tiles: Arc::new(self.map.spell_tiles.fork_without_phases()),
+        }
+        .bind_phase_owner()?;
+        Ok(Self {
+            source_bases: Arc::clone(&self.source_bases),
+            daily: self.daily.clone(),
+            base: Arc::clone(&self.base),
+            map: Arc::new(map),
+            map_revision: self.map_revision.clone(),
+            start: self.start,
+            blocked: Arc::clone(&self.blocked),
+            spawns: Arc::clone(&self.spawns),
+        })
+    }
+
     /// SPAWN-1b (CREATURE-AI-0 §6.1): the bundle's spawn family as activation spawn sources; see
     /// [`table_activation_spawns`].
     pub fn activation_spawns(
@@ -2851,6 +2877,63 @@ pub mod tests {
             assert_eq!((doors.len(), doors.sealed()), (0, 1), "{solid:?} {shoots}");
             assert!(!world.enterable(DOOR_AT));
         }
+        Ok(())
+    }
+
+    #[test]
+    fn map_door_plain_gate_preserves_authored_collision() -> Result<(), Box<dyn Error>> {
+        use crate::map::door::{AuthoredClosedDoor, DoorUse};
+        use crate::map::view::MapFacts;
+
+        let (bytes, load) = bundle_with_items("oteryn:item.tibia.i2179", "oteryn:item.tibia.i1000");
+        let world = boot(
+            &bytes,
+            &pins(load, 2),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            |key| match key {
+                "oteryn:item.tibia.i2179" | "oteryn:item.tibia.i2180" => {
+                    let closed = key.ends_with("2179");
+                    Some(ItemDefinition {
+                        reference: std::num::NonZeroU32::new(if closed { 1 } else { 2180 })?,
+                        solid: Some(closed),
+                        blocks_projectile: false,
+                        pickupable: false,
+                        door: true,
+                    })
+                }
+                _ => door_items(key),
+            },
+        )?;
+        let doors = world.facts().doors();
+        let key = door_key();
+        assert_eq!(doors.authored_closed(key), Some(AuthoredClosedDoor::Plain));
+        let closed = world
+            .facts()
+            .base_entry(DOOR_AT, 1, 0)
+            .ok_or("closed gate")?;
+        assert!(!closed.blocks_projectile && !world.enterable(DOOR_AT));
+
+        assert_eq!(
+            doors.toggle(key, 0, false, 1, false),
+            Some(DoorUse::Toggled {
+                revision: 1,
+                open: true
+            })
+        );
+        assert_eq!(
+            doors.toggle(key, 1, true, 1, false),
+            Some(DoorUse::Occupied)
+        );
+        assert!(world.enterable(DOOR_AT));
+        assert_eq!(
+            doors.toggle(key, 1, false, 1, false),
+            Some(DoorUse::Toggled {
+                revision: 2,
+                open: false
+            })
+        );
+        assert!(!world.enterable(DOOR_AT));
         Ok(())
     }
 

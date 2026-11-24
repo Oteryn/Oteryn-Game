@@ -1,5 +1,5 @@
 name=player_report
-commands=93
+commands=93,6333,6334
 transport=player_report
 composed=player_report
 authority=player_report

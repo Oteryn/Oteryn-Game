@@ -519,6 +519,9 @@ fn gemx_native_output_closure_includes_stacks_elements_and_charges() -> TestResu
     let donor: serde_json::Value = serde_json::from_slice(include_bytes!(
         "../../../../../../tools/content-schema/native-gameplay/enchanting-item-profiles.json"
     ))?;
+    let global: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../../../../tools/content-schema/native-gameplay/enchanting-global-weapon-facts.json"
+    ))?;
     let weapons = [
         3271, 7383, 7384, 7406, 7402, 3317, 3318, 7389, 7380, 3342, 3311, 3333, 7415, 7392, 3279,
         3447, 8077,
@@ -542,9 +545,14 @@ fn gemx_native_output_closure_includes_stacks_elements_and_charges() -> TestResu
                         == Some(&output.production_key)
                 })
                 .ok_or("donor output")?;
+            let expected_weapon = global
+                .get(&output.production_key)
+                .unwrap_or(&expected["semantics"]["weapon"]);
             assert_eq!(
-                serde_json::to_value(&record.semantics.weapon)?,
-                expected["semantics"]["weapon"]
+                &serde_json::to_value(&record.semantics.weapon)?,
+                expected_weapon,
+                "{}",
+                output.production_key
             );
             if rule.charges.is_some() {
                 assert!(

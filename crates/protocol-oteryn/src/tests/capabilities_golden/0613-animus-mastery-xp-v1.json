@@ -1,0 +1,20 @@
+{
+  "id": 613,
+  "name": "ANIMUS_MASTERY_XP_V1",
+  "constant": "animus_mastery::CAPABILITY_ANIMUS_MASTERY_XP_V1",
+  "requires": [
+    168
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    6388,
+    6389
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

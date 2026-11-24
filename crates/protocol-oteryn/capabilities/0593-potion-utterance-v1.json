@@ -1,0 +1,17 @@
+{
+  "id": 593,
+  "name": "POTION_UTTERANCE_V1",
+  "constant": "world_object::CAPABILITY_POTION_UTTERANCE_V1",
+  "requires": [
+    15
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

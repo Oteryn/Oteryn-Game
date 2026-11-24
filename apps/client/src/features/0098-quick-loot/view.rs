@@ -72,10 +72,10 @@ impl PlayLink {
                 }
                 panel.open = false;
                 drop(mailbox);
-                if control == QuickLootControl::Catalogue {
-                    self.item_catalogue_open();
+                if control == QuickLootControl::Store {
+                    self.store_open_products();
                 } else {
-                    self.store_set_open(true);
+                    self.item_catalogue_open();
                 }
                 return true;
             }
@@ -110,7 +110,6 @@ impl PlayLink {
         true
     }
 }
-
 
 #[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {

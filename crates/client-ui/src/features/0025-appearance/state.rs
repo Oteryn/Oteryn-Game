@@ -10,6 +10,8 @@ pub struct Panel {
     pub preview_open: bool,
     pub pending: bool,
     pub pending_kind: u32,
+    pub riding_after_apply: Option<bool>,
+    pub committed_riding: Option<bool>,
     pub fields: [String; 5],
     pub feedback: String,
     pub summary: String,
@@ -26,12 +28,14 @@ impl Panel {
             self.feedback = tr!("Waiting for the server").into();
             return false;
         }
+        self.riding_after_apply = None;
         self.pending = true;
         self.pending_kind = kind;
         self.feedback.clear();
         true
     }
     pub fn failed(&mut self, message: &str) {
+        self.riding_after_apply = None;
         self.pending = false;
         self.feedback = message.into();
     }

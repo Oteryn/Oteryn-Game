@@ -216,6 +216,24 @@ mod tests {
     }
 
     #[test]
+    fn itemglob3_resolved_launcher_combat_values() {
+        let all = items();
+        for (id, expected_range, expected_hit) in
+            [(7438, 6, 3), (22866, 6, 3), (22867, 5, 3), (29417, 6, 5)]
+        {
+            let profile = &all[&format!("oteryn:item.tibia.i{id}")].ranged;
+            assert!(
+                matches!(
+                    profile,
+                    Some(ProjectV2RangedWeapon::Distance { range_cells, hit_chance, .. })
+                        if (*range_cells, *hit_chance) == (expected_range, expected_hit)
+                ),
+                "launcher {id}: {profile:?}"
+            );
+        }
+    }
+
+    #[test]
     fn ranged_spear_arrow_bolt_and_elemental_arrow_load_source_values() {
         let all = items();
         assert_eq!(

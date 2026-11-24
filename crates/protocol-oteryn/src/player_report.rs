@@ -7,6 +7,74 @@ use crate::charm_wire::{
 
 pub const CAPABILITY_PLAYER_REPORT_V1: u32 = 76;
 pub const COMMAND_TYPE_PLAYER_REPORT: u32 = 93;
+pub const CAPABILITY_RULE_VIOLATION_V1: u32 = 585;
+pub const COMMAND_TYPE_NAMED_RULE_VIOLATION: u32 = 6333;
+pub const COMMAND_TYPE_RULE_VIOLATION_CONVERSATION: u32 = 6334;
+pub const CONVERSATION_UNAVAILABLE: &str = "Sorry, not possible.";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum SanctionSuggestion {
+    None = 0,
+    AccountBan = 1,
+    Namelock = 2,
+}
+
+pub fn encode_named_rule_violation(
+    request: &PlayerReportRequest,
+    suggestion: SanctionSuggestion,
+) -> Result<Vec<u8>, Error> {
+    if request.kind != KIND_RULE_VIOLATION
+        || request.target.contains('\0')
+        || request.comment.contains('\0')
+    {
+        return Err(Error::Malformed);
+    }
+    let mut bytes = vec![suggestion as u8];
+    bytes.extend(encode_player_report_request(request)?);
+    Ok(bytes)
+}
+
+pub fn decode_named_rule_violation(
+    bytes: &[u8],
+) -> Result<(PlayerReportRequest, SanctionSuggestion), Error> {
+    let Some((&choice, report)) = bytes.split_first() else {
+        return Err(Error::Malformed);
+    };
+    let suggestion = match choice {
+        0 => SanctionSuggestion::None,
+        1 => SanctionSuggestion::AccountBan,
+        2 => SanctionSuggestion::Namelock,
+        _ => return Err(Error::Malformed),
+    };
+    let request = decode_player_report_request(report)?;
+    if request.kind != KIND_RULE_VIOLATION
+        || request.target.contains('\0')
+        || request.comment.contains('\0')
+    {
+        return Err(Error::Malformed);
+    }
+    Ok((request, suggestion))
+}
+
+/// Crystal provides no conversation handler. Validate the legacy intent before refusing it.
+pub fn validate_report_conversation(bytes: &[u8]) -> Result<(), Error> {
+    let Some((&operation, message)) = bytes.split_first() else {
+        return Err(Error::Malformed);
+    };
+    match operation {
+        1 if !message.is_empty() && message.len() <= MAX_COMMENT_BYTES => {
+            let message = std::str::from_utf8(message).map_err(|_| Error::Malformed)?;
+            if message.contains('\0') {
+                return Err(Error::Malformed);
+            }
+            Ok(())
+        }
+        2 if message.is_empty() => Ok(()),
+        _ => Err(Error::Malformed),
+    }
+}
+
 /// REPORT1-RL-01: UTF-8 comment bytes.
 pub const MAX_COMMENT_BYTES: usize = 1024;
 /// REPORT1-RL-02: reported character name bytes, the character-name bound.

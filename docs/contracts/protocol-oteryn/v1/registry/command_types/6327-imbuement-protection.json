@@ -1,0 +1,10 @@
+{
+  "id": 6327,
+  "name": "IMBUEMENT_PROTECTION",
+  "owner_decision": "Server protocol gap closure",
+  "capability": 582,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/imbuement-details-v1.md#protection-purchase",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/imbuement-details-v1.md#protection-purchase",
+  "max_payload_bytes": 32,
+  "max_result_payload_bytes": 20
+}

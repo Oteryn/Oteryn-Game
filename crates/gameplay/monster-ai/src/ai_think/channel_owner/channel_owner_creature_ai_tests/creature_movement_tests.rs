@@ -29,6 +29,7 @@ fn retained_movement_cutoff_keeps_the_original_timer_and_uses_current_cadence() 
         &source,
         &EngineeringGroundSpeed,
         &channel.root,
+        &[],
         due.checked_sub(1).expect("earlier retained cutoff"),
         execution_now,
     );
@@ -55,6 +56,7 @@ fn retained_movement_cutoff_keeps_the_original_timer_and_uses_current_cadence() 
         &source,
         &EngineeringGroundSpeed,
         &channel.root,
+        &[],
         due,
         execution_now,
     );
@@ -218,6 +220,7 @@ fn a_changed_bundle_revision_drops_paths_and_deadlines_before_a_step() {
             &source,
             &EngineeringGroundSpeed,
             &channel.root,
+            &[],
             1,
             &mut channel.path_budget,
             false

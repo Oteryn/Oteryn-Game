@@ -2,9 +2,13 @@
 //! Legacy status-text bytes are unchanged; raid warnings and advances retain
 //! their source kind without changing the separate tutorial notice codec.
 pub use crate::charm_wire::CyclopediaWireError as ServerMessageError;
-use crate::charm_wire::{WireResult, push_message_field, read_bytes, read_varint};
+use crate::charm_wire::{
+    WireResult, push_message_field, push_varint_field, read_bytes, read_varint,
+};
 
 pub const CAPABILITY_ZONES_NOLOGOUT_V1: u32 = 92;
+pub const CAPABILITY_SERVER_MESSAGE_CATEGORY_V1: u32 = 575;
+pub const CAPABILITY_BOSS_DEFEATED_V1: u32 = 615;
 pub const STATE_DOMAIN_SERVER_MESSAGES: u32 = 57;
 pub const MAX_SERVER_MOTD_BYTES: usize = 255;
 pub const SERVER_MESSAGES_EMPTY_SNAPSHOT: &[u8] = &[8, 1];
@@ -16,6 +20,40 @@ pub enum ServerMessage {
     StatusText(String),
     Warning(String),
     Advance(String),
+    BossDefeated(String),
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum ServerMessageCategory {
+    #[default]
+    Default = 0,
+    Global = 1,
+    Raid = 2,
+    System = 3,
+    TeamFinder = 4,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ServerNotification {
+    pub message: ServerMessage,
+    pub category: ServerMessageCategory,
+}
+
+impl From<ServerMessage> for ServerNotification {
+    fn from(message: ServerMessage) -> Self {
+        Self {
+            message,
+            category: ServerMessageCategory::Default,
+        }
+    }
+}
+
+pub fn encode_server_notification(notice: &ServerNotification) -> WireResult<Vec<u8>> {
+    let mut payload = encode_server_message(&notice.message)?;
+    if notice.category != ServerMessageCategory::Default {
+        push_varint_field(&mut payload, 6, notice.category as u64);
+    }
+    Ok(payload)
 }
 
 pub fn encode_server_message(message: &ServerMessage) -> WireResult<Vec<u8>> {
@@ -23,6 +61,7 @@ pub fn encode_server_message(message: &ServerMessage) -> WireResult<Vec<u8>> {
         ServerMessage::StatusText(text) => (2, text),
         ServerMessage::Warning(text) => (3, text),
         ServerMessage::Advance(text) => (4, text),
+        ServerMessage::BossDefeated(key) => (5, key),
     };
     if text.is_empty() || text.len() > MAX_SERVER_MOTD_BYTES {
         return Err(ServerMessageError::Malformed);
@@ -33,29 +72,100 @@ pub fn encode_server_message(message: &ServerMessage) -> WireResult<Vec<u8>> {
 }
 
 pub fn decode_server_message(bytes: &[u8]) -> WireResult<ServerMessage> {
+    Ok(decode_server_notification(bytes)?.message)
+}
+
+pub fn decode_server_notification(bytes: &[u8]) -> WireResult<ServerNotification> {
     if bytes.len() > 260 {
         return Err(ServerMessageError::LimitExceeded);
     }
     let mut cursor = 0;
     let tag = read_varint(bytes, &mut cursor)?;
-    if !matches!(tag, 0x12 | 0x1a | 0x22) {
+    if !matches!(tag, 0x12 | 0x1a | 0x22 | 0x2a) {
         return Err(ServerMessageError::Malformed);
     }
     let text = read_bytes(bytes, &mut cursor)?;
-    if text.is_empty() || text.len() > MAX_SERVER_MOTD_BYTES || cursor != bytes.len() {
+    if text.is_empty() || text.len() > MAX_SERVER_MOTD_BYTES {
         return Err(ServerMessageError::Malformed);
     }
     let text = std::str::from_utf8(text)
         .map_err(|_| ServerMessageError::Malformed)?
         .to_owned();
-    Ok(match tag {
+    let message = match tag {
         0x12 => ServerMessage::StatusText(text),
         0x1a => ServerMessage::Warning(text),
         0x22 => ServerMessage::Advance(text),
+        0x2a => ServerMessage::BossDefeated(text),
         _ => return Err(ServerMessageError::Malformed),
-    })
+    };
+    let category = if cursor == bytes.len() {
+        ServerMessageCategory::Default
+    } else {
+        // Field 5 varint was emitted by the staging version of capability 575.
+        if !matches!(read_varint(bytes, &mut cursor)?, 0x30 | 0x28) {
+            return Err(ServerMessageError::Malformed);
+        }
+        match read_varint(bytes, &mut cursor)? {
+            1 => ServerMessageCategory::Global,
+            2 => ServerMessageCategory::Raid,
+            3 => ServerMessageCategory::System,
+            4 => ServerMessageCategory::TeamFinder,
+            _ => return Err(ServerMessageError::Malformed),
+        }
+    };
+    if cursor != bytes.len() {
+        return Err(ServerMessageError::Malformed);
+    }
+    Ok(ServerNotification { message, category })
 }
 
 #[cfg(test)]
 #[path = "zones_nologout_tests.rs"]
 mod tests;
+
+pub const CAPABILITY_PLAYER_STATUS_V1: u32 = 600;
+pub const COMMAND_TYPE_PLAYER_STATUS_QUERY: u32 = 6363;
+
+pub fn decode_player_status_query(
+    bytes: &[u8],
+) -> Option<crate::world_spatial_entities::EntityRef> {
+    let (&identity, generation) = bytes.split_first_chunk::<16>()?;
+    let generation = u64::from_be_bytes(generation.try_into().ok()?);
+    (identity != [0; 16] && generation != 0).then_some(crate::world_spatial_entities::EntityRef {
+        identity,
+        generation,
+    })
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum PlayerPresence {
+    Online = 1,
+    Away = 2,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PlayerStatus {
+    pub presence: PlayerPresence,
+    pub no_logout: bool,
+}
+
+impl PlayerStatus {
+    pub fn encode(self) -> [u8; 2] {
+        [self.presence as u8, u8::from(self.no_logout)]
+    }
+
+    pub fn decode(bytes: &[u8]) -> Option<Self> {
+        let [presence, no_logout @ 0..=1] = *bytes else {
+            return None;
+        };
+        Some(Self {
+            presence: match presence {
+                1 => PlayerPresence::Online,
+                2 => PlayerPresence::Away,
+                _ => return None,
+            },
+            no_logout: no_logout == 1,
+        })
+    }
+}

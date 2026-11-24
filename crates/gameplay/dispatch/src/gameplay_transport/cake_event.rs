@@ -75,12 +75,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use std::time::{Duration, Instant};
         const REFRESH_INTERVAL: Duration = Duration::from_secs(5);
         let checked_at = Instant::now();
-        if self.states.cake_bonus.0.lock().is_ok_and(|cache| {
-            cache
-                .as_ref()
-                .is_some_and(|sample| sample.checked_at.elapsed() < REFRESH_INTERVAL)
-        }) {
-            return Ok(());
+        if let Ok(mut cache) = self.states.cake_bonus.0.lock() {
+            if cache.as_ref().is_some_and(|sample| {
+                checked_at.saturating_duration_since(sample.checked_at) < REFRESH_INTERVAL
+            }) {
+                return Ok(());
+            }
+            let expires_at = cache.as_ref().and_then(|sample| sample.expires_at);
+            *cache = Some(BonusSample {
+                checked_at,
+                expires_at,
+            });
         }
         let bonus = self.root.cake_world_bonus(self.world_id).await?;
         self.states.cake_bonus.publish(checked_at, bonus);
@@ -446,6 +451,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let map = self.bundle_map()?;
+        // An authored door can never have a cake bite receipt for this exact placement.
+        // Leave its USE to the door owner even when the cake receipt store is unavailable.
+        if target
+            .placement
+            .strip_prefix(map.overlay.base().digest().as_slice())
+            .and_then(|key| <[u8; 8]>::try_from(key).ok())
+            .is_some_and(|key| map.facts.doors().contains(u64::from_be_bytes(key)))
+        {
+            return None;
+        }
         let native = self.active_generation?.native_gameplay()?;
         let candidate = self.immutable_cake_candidate(target);
         let permit = self.spell_lane_permit().await?;

@@ -82,11 +82,15 @@ impl WindowLayouts {
     /// The window menu's Reset window layout: Global position, size and zoom, saved at once.
     pub(in crate::bevy_shell) fn reset(&mut self, path: Option<&Path>) -> io::Result<()> {
         *self = Self::default();
-        path.map_or(Ok(()), |path| self.save(path))
+        // Frame callers defer a contended reset through SavedBaseline::reset_pending.
+        path.map_or(Ok(()), |path| Self::locked(path, || self.publish(path)))
     }
     /// Writes beside the target and renames, so a crash never leaves half a file.
+    #[cfg(test)]
     pub(in crate::bevy_shell) fn save(&self, path: &Path) -> io::Result<()> {
-        Self::locked(path, || self.publish(path))
+        let lock = crate::atomic_file::open_lock(path)?;
+        lock.lock()?;
+        self.publish(path)
     }
 
     fn locked(path: &Path, write: impl FnOnce() -> io::Result<()>) -> io::Result<()> {

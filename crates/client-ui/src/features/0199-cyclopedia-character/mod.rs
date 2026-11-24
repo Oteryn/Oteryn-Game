@@ -1,4 +1,5 @@
 //! Native cyclopedia character panel and admitted command mapping.
+pub use crate::cyclopedia_character_vocation::vocation_title;
 #[path = "protocol/achievements.rs"]
 mod achievements;
 #[path = "state/gallery.rs"]

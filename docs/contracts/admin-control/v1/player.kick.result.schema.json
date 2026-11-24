@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KickResult",
+  "type": "object",
+  "properties": {
+    "fenced_session_generation": {
+      "$ref": "#/$defs/SessionGeneration"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "fenced_session_generation"
+  ],
+  "$defs": {
+    "SessionGeneration": {
+      "description": "A positive session generation, represented as a string to cover the full u64 range.",
+      "type": "string",
+      "maxLength": 20,
+      "pattern": "^[1-9][0-9]*$"
+    }
+  }
+}

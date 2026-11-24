@@ -1,0 +1,14 @@
+{
+  "id": 576,
+  "name": "PARTY_MEMBERSHIP_NOTICES_V1",
+  "owner_decision": "2026-11-22 notification packet",
+  "owner": "Game party transport",
+  "requires": [
+    42,
+    92
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Adds type 2 deltas to domain 57."
+}

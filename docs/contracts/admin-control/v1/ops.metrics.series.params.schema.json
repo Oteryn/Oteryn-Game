@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MetricsParams",
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string"
+    },
+    "metric": {
+      "$ref": "#/$defs/Metric"
+    },
+    "step_seconds": {
+      "$ref": "#/$defs/CountdownSeconds"
+    },
+    "to": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "metric",
+    "from",
+    "to",
+    "step_seconds"
+  ],
+  "$defs": {
+    "CountdownSeconds": {
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 3600,
+      "minimum": 1
+    },
+    "Metric": {
+      "type": "string",
+      "enum": [
+        "tick_time_ms",
+        "players_online",
+        "cpu_percent",
+        "memory_bytes",
+        "disk_used_bytes",
+        "pg_pool_wait_ms",
+        "queue_depth",
+        "error_rate_per_second"
+      ]
+    }
+  }
+}

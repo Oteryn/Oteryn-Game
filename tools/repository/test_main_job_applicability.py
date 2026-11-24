@@ -10,6 +10,11 @@ from validate_repository_policy_core import indented_yaml_mapping_block
 
 ROOT = Path(__file__).resolve().parents[2]
 MAIN_GUARD = "github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref"
+# The game-gate also qualifies pull requests into the `staging` integration branch.
+GATE_GUARD = (
+    "github.event.pull_request.base.ref == 'main' || "
+    "github.event.pull_request.base.ref == 'staging' || !github.event.pull_request.base.ref"
+)
 ARCHITECTURE_GUARD = (
     "github.event.pull_request.base.ref == 'main' && "
     "(github.event.action != 'edited' || github.event.changes.base != null) "
@@ -40,7 +45,8 @@ def workflow(name):
 def evaluate_guard(expression, base, *, action="opened", base_change=None):
     # Execute the actual workflow boolean expression with string/null operands.
     # The supported operators have the same semantics in JS and Actions here.
-    allowed = (MAIN_GUARD, f"always() && ({MAIN_GUARD})", ARCHITECTURE_GUARD)
+    allowed = (MAIN_GUARD, f"always() && ({MAIN_GUARD})", ARCHITECTURE_GUARD,
+               GATE_GUARD, f"always() && ({GATE_GUARD})")
     if expression not in allowed:
         raise AssertionError(f"Unexpected applicability expression: {expression!r}")
     script = (
@@ -173,6 +179,7 @@ class MainJobApplicabilityTests(unittest.TestCase):
             expression = jobs[key]["if"]
             with self.subTest(job=key):
                 self.assertTrue(evaluate_guard(expression, "main"))
+                self.assertTrue(evaluate_guard(expression, "staging"))
                 self.assertFalse(evaluate_guard(expression, "codex/prepared-parent"))
                 self.assertTrue(evaluate_guard(expression, None))
         self.assertTrue(jobs["validate"]["if"].startswith("always() &&"))

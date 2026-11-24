@@ -226,7 +226,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(Into::into)
     }
 
-    async fn current_overlord_fence(
+    async fn current_boss_objective_fence(
         &self,
         character: crate::domain::CharacterId,
         session: crate::foundation::GameSessionId,
@@ -300,7 +300,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         for member in &plan.members {
             recipients.insert(member.character, (member.session, None));
         }
-        for (character, session, lease) in super::quest_kill_objectives::overlord_recipients(entry)
+        for (character, session, lease) in
+            super::quest_kill_objectives::boss_objective_recipients(entry)
         {
             // The current XP member keeps its own fence. Only an exact match
             // against the frozen quest recipient can earn BossStorage later.
@@ -314,7 +315,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut slot = self.revision_sequencer.acquire(character).await;
             let mut fence = if let Some(lease) = lease {
                 let Some(fence) = self
-                    .current_overlord_fence(character, session, lease)
+                    .current_boss_objective_fence(character, session, lease)
                     .await?
                 else {
                     continue;
@@ -800,6 +801,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         entry: &PendingKillSettlement,
     ) -> Result<(), CharacterProgressionError> {
         if entry.boss_reward.is_none()
+            && !super::quest_kill_objectives::has_grave_boss_credit(entry)
             && oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_none()
         {
             return Ok(());
@@ -810,7 +812,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ));
         }
         let mut recipients = std::collections::BTreeMap::new();
-        for (character, session, lease) in super::quest_kill_objectives::overlord_recipients(entry)
+        for (character, session, lease) in
+            super::quest_kill_objectives::boss_objective_recipients(entry)
         {
             recipients.insert(character, (session, lease));
         }
@@ -819,7 +822,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         for (character, (session, lease)) in recipients {
             let mut slot = self.revision_sequencer.acquire(character).await;
             let Some(mut fence) = self
-                .current_overlord_fence(character, session, lease)
+                .current_boss_objective_fence(character, session, lease)
                 .await?
             else {
                 continue;
@@ -878,6 +881,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let objectives =
                         if oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature)
                             .is_some()
+                            || super::quest_kill_objectives::has_grave_boss_credit(entry)
                         {
                             super::quest_kill_objectives::apply_in_transaction(
                                 &mut tx,

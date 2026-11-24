@@ -14,6 +14,9 @@ const BANSHEE: &str = "oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshee
 pub const TROLL: &str = "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline";
 pub const ROTTIN_STATE: &str =
     "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/";
+const LUCKY_LOOP_COOLDOWN: &str = "oteryn:quest-progress/crystalserver/kv/lucky-loop-task";
+const HANDYMAN_COOLDOWN: &str = "oteryn:quest-progress/crystalserver/kv/handyman-task";
+const REPEAT_TASK_COOLDOWN_SECONDS: i64 = 20 * 60 * 60;
 pub const ROTTIN_WALLCOUNT: &str = "oteryn:quest-progress/crystalserver/kv/rottinwood-wallcount";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -505,15 +508,29 @@ fn rottin(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> O
     }
     if topic == Some(Topic::Rottin(8)) {
         let stage = value(tracks, ROTTIN_STATE, "questline");
+        let cooling_down = |track| {
+            tracks.get(track).is_some_and(|&last_payout| {
+                let now = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .ok()
+                    .and_then(|elapsed| i64::try_from(elapsed.as_secs()).ok())
+                    .unwrap_or(0);
+                last_payout > 0 && now.saturating_sub(last_payout) <= REPEAT_TASK_COOLDOWN_SECONDS
+            })
+        };
         if stage >= 2 && contains(text, "lucky charms") {
-            return Some(if value(tracks, ROTTIN_STATE, "task01") == 1 {
+            return Some(if cooling_down(LUCKY_LOOP_COOLDOWN) {
+                deferred(None)
+            } else if value(tracks, ROTTIN_STATE, "task01") == 1 {
                 choice(Some(Topic::Rottin(10)), "line-345", None)
             } else {
                 choice(Some(Topic::Rottin(9)), "line-348", None)
             });
         }
         if stage >= 4 && contains(text, "repairs") {
-            return Some(if value(tracks, ROTTIN_STATE, "task02") == 1 {
+            return Some(if cooling_down(HANDYMAN_COOLDOWN) {
+                deferred(None)
+            } else if value(tracks, ROTTIN_STATE, "task02") == 1 {
                 choice(Some(Topic::Rottin(12)), "line-357", None)
             } else {
                 choice(Some(Topic::Rottin(11)), "line-360", None)
@@ -526,6 +543,25 @@ fn rottin(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> O
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rottin_repeat_offers_respect_the_persisted_cooldowns() -> Result<(), String> {
+        for (keyword, cooldown, offer) in [
+            ("lucky charms", LUCKY_LOOP_COOLDOWN, 9),
+            ("repairs", HANDYMAN_COOLDOWN, 11),
+        ] {
+            let mut tracks = BTreeMap::from([(format!("{ROTTIN_STATE}questline"), 4)]);
+            let topic = Some(Topic::Rottin(8));
+            tracks.insert(cooldown.into(), i64::MAX);
+            let refused = choose(ROTTIN, keyword, topic, &tracks).ok_or("missing refusal")?;
+            assert!(refused.deferred);
+            assert_eq!(refused.topic, None);
+            tracks.insert(cooldown.into(), 1);
+            let offered = choose(ROTTIN, keyword, topic, &tracks).ok_or("missing offer")?;
+            assert_eq!(offered.topic, Some(Topic::Rottin(offer)));
+        }
+        Ok(())
+    }
 
     #[test]
     fn source_static_keywords_preempt_classic_quest_transitions_and_topics() {

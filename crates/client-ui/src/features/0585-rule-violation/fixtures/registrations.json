@@ -1,0 +1,21 @@
+[
+  {
+    "mechanic": "0585-rule-violation",
+    "kind": "handlers",
+    "id": "0585-rule-violation-request",
+    "status": "unsupported",
+    "commands": [
+      6333,
+      6334
+    ],
+    "direction": "client_to_server",
+    "reason": "Named reports and the conversation refusal await native client wiring.",
+    "not_applicable": {
+      "state": "This capability defines no state domain.",
+      "protocol": "Named reports and the conversation refusal use solicited command results.",
+      "view": "The native client has no view for this extension.",
+      "input": "The native client does not send these commands.",
+      "settings": "The extension defines no client settings."
+    }
+  }
+]

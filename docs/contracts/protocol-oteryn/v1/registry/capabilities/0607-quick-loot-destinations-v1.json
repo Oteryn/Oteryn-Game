@@ -1,0 +1,16 @@
+{
+  "id": 607,
+  "name": "QUICK_LOOT_DESTINATIONS_V1",
+  "owner_decision": "Managed containers (2026-11-22)",
+  "owner": "Character quick-loot settings and item loop",
+  "requires": [
+    4,
+    98
+  ],
+  "command_types": [
+    6376,
+    6377
+  ],
+  "state_domains": [],
+  "offered": true
+}

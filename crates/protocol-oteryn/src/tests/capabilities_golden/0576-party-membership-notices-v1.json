@@ -1,0 +1,18 @@
+{
+  "id": 576,
+  "name": "PARTY_MEMBERSHIP_NOTICES_V1",
+  "constant": "party::CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1",
+  "requires": [
+    42,
+    92
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

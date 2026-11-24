@@ -14,27 +14,45 @@ use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
 #[test]
 fn creature_field_bundle_pickupable_stack_keeps_current_zone_and_residual_ticks_postgres()
 -> TestResult {
+    scenario(false)
+}
+
+#[test]
+fn creature_field_bundle_installs_fresh_ground_field_condition_postgres() -> TestResult {
+    scenario(true)
+}
+
+fn scenario(live_field: bool) -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(move || routed_scenario(live_field).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "creature bundle field scenario panicked")?
         .map_err(Into::into)
 }
 
-fn scenario() -> TestResult {
+fn routed_scenario(live_field: bool) -> TestResult {
+    let started = std::time::Instant::now();
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "creature_bundle_field", false, false)
                 .await?;
-        let result = exercise(&harness).await;
+        let result = exercise(&harness, live_field).await;
         let cleanup = harness.cleanup().await;
         result?;
-        cleanup
+        cleanup?;
+        eprintln!(
+            "POSTGRES_CASE_COMPLETED creature_bundle_field live_field={live_field} elapsed={:?}",
+            started.elapsed()
+        );
+        Ok(())
     })
 }
 
-async fn exercise(harness: &Harness) -> TestResult {
+async fn exercise(harness: &Harness, live_field: bool) -> TestResult {
     prepare_current_session(harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
@@ -61,7 +79,46 @@ async fn exercise(harness: &Harness) -> TestResult {
     let states = owner.states.spell_states.lock().await;
     // TEST_PARAMETERS: an existing residual Drown condition distinguishes PZ suppression
     // from ordinary damage. Its native store and due cursor remain the production owners.
-    for (ordinal, actor) in actors.iter().enumerate() {
+    if live_field {
+        let target =
+            crate::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
+                &deps.room,
+                &runtime,
+                at(2),
+            )
+            .map_err(debug)?;
+        let field = "oteryn:item.tibia.i2118";
+        let revision = native
+            .item_index()
+            .and_then(|index| index.revision(field))
+            .ok_or("fire field definition")?;
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$4,$5,1,1,encode($3,'hex')::uuid)")
+            .bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(181).as_slice()).bind(field).bind(revision).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,$4,$5,$6,$7,$8,nextval('game_item_ground_stack_ordinal_seq'))")
+            .bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice()).bind(&target.spatial_position).bind(id(182).as_slice()).bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context).execute(&mut *tx).await?;
+        // Seed the field's spell custody evidence so the live tile reader can
+        // qualify its collision facts. The fixture has no live caster lineage.
+        let cost = serde_json::to_vec(&serde_json::json!({
+            "version": 1, "before_revision": 0, "after_revision": 1,
+            "caster_before": vec![1; 32], "caster_after": vec![2; 32],
+            "mana_before": 100, "mana_after": 50, "soul_before": 5, "soul_after": 4,
+            "cooldowns_before": [], "cooldowns_after": [["spell:fixture", 1_000_000]],
+        }))?;
+        sqlx::query("INSERT INTO game_spell_item_receipts(transaction_id,event_id,game_session_id,command_id,character_id,world_id,channel_id,ownership_generation,spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,cost,cost_binding,operation_count,occurred_at_unix_ms) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,999,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,1,'Spell','fixture:bundle_fire_field','r1',$7,sha256($8),$8,$9,sha256($9),1,1)")
+            .bind(id(181).as_slice()).bind(id(183).as_slice()).bind(id(50).as_slice())
+            .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice())
+            .bind(native.source_digest().as_slice()).bind(b"bundle-fire-field".as_slice()).bind(&cost)
+            .execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_spell_item_lines(transaction_id,ordinal,operation_kind,item_instance_id,definition_family,definition_production_key,definition_revision,quantity_before,quantity_after,state_revision_before,world_id,channel_id,spatial_position,map_revision,content_revision,placement_context,content_generation_digest,blocks_movement,blocks_projectile,immovable_block_solid) SELECT i.minted_transaction_id,1,1,i.item_instance_id,i.definition_family,i.definition_production_key,i.definition_revision_ref,0,1,0,g.world_id,g.channel_id,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context,$2,false,false,false FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid")
+            .bind(id(180).as_slice()).bind(native.source_digest().as_slice())
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
+    for (ordinal, actor) in actors.iter().enumerate().filter(|_| !live_field) {
         let field = CreatureFieldEntry {
             definition: ConditionDefinition::new(
                 "test.bundle.creature.residual",
@@ -166,6 +223,44 @@ async fn exercise(harness: &Harness) -> TestResult {
                 .map_err(|_| DurabilityError::Unavailable)?;
             let mut map =
                 CurrentMonsterMap::new(&mut tx, &authority, runtime, room, objects, native);
+            if live_field {
+                let actor = actors[0];
+                assert!(
+                    runtime
+                        .companion_snapshot(actor)
+                        .map_err(|_| DurabilityError::Unavailable)?
+                        .state
+                        .conditions
+                        .instances()
+                        .is_empty()
+                );
+                owner
+                    .tick_creature_fields(
+                        &mut map,
+                        runtime,
+                        states,
+                        native,
+                        1_000_000,
+                        native_health_names,
+                    )
+                    .await?;
+                let after = runtime
+                    .companion_snapshot(actor)
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                assert!(
+                    after
+                        .state
+                        .conditions
+                        .instances()
+                        .iter()
+                        .any(|condition| condition.definition().key() == "native.field.2118"),
+                    "live Ground fire must produce a fresh field entry"
+                );
+                assert!(map.validate_transaction(runtime).await);
+                drop(map);
+                tx.rollback().await?;
+                return Ok(());
+            }
             for (x, pz) in [(2, false), (3, true)] {
                 assert_eq!(
                     room.movement_cells().spell_tiles().lookup(

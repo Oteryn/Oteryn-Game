@@ -1,0 +1,380 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.an_interest_in_botany_quest",
+      "recipe_sha256": "3016fb7827c1d4d62d743472f36c0a8aa8a96bcc952e30252aad738082700181",
+      "admission": {
+        "minimum_level": 0,
+        "premium": true,
+        "prerequisites": []
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rabaz.lua:144-183",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:251-258",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2806-2813",
+        "https://tibia.fandom.com/wiki/An_Interest_In_Botany_Quest/Spoiler",
+        "content/quests/definitions/quests-00000-00099.json#/records/2/definition/oteryn_recipe",
+        "tools/content-schema/world-authoring/samples/quest-door-bindings.json:3093-3103"
+      ],
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/an-interest-in-botany/stage",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 5
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/chest_door",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/an-interest-in-botany/s1",
+              "quest": "oteryn:quest.an_interest_in_botany_quest",
+              "npc": "oteryn:npc.rabaz",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 1,
+              "next_topic": 0,
+              "requires_premium": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/an-interest-in-botany/stage",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/chest_door",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 0
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The Almanach is in my storage room. Bring a sharp knife for the samples."
+              ],
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rabaz.lua:144-183",
+                "https://tibia.fandom.com/wiki/An_Interest_In_Botany_Quest/Spoiler"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s2",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/an-interest-in-botany/s2",
+              "quest": "oteryn:quest.an_interest_in_botany_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33132,
+                  "y": 31396,
+                  "floor": -8
+                },
+                "appearance": 10735,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 33132,
+                    "y": 31396,
+                    "floor": -8
+                  },
+                  "appearance": 10735,
+                  "ordinal": 1
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/an-interest-in-botany/stage",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "offerings": [],
+              "present": [
+                {
+                  "item": "oteryn:item.tibia.i11699",
+                  "count": 1
+                }
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i5908",
+                "count": 1,
+                "reusable": true,
+                "selected_instance": true
+              },
+              "return_on_failure": true,
+              "failure_message": "Sorry, not possible.",
+              "success_message": "You press a Dreadcoil sample into the Almanach.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:251-258",
+                "https://tibia.fandom.com/wiki/An_Interest_In_Botany_Quest/Spoiler",
+                "content/world/placements/region-z08-x129-y122.b3:33132,31396,8/ordinal1"
+              ],
+              "effects": {}
+            }
+          }
+        },
+        {
+          "key": "s3-web",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/an-interest-in-botany/s3-web",
+              "quest": "oteryn:quest.an_interest_in_botany_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33209,
+                  "y": 31376,
+                  "floor": -8
+                },
+                "appearance": 182,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 33209,
+                    "y": 31376,
+                    "floor": -8
+                  },
+                  "appearance": 182,
+                  "ordinal": 4
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/an-interest-in-botany/stage",
+                  "minimum": 2,
+                  "maximum": 3,
+                  "set": 3
+                }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "offerings": [],
+              "present": [
+                {
+                  "item": "oteryn:item.tibia.i11699",
+                  "count": 1
+                }
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i5467",
+                "count": 1,
+                "reusable": true,
+                "selected_instance": true
+              },
+              "return_on_failure": true,
+              "failure_message": "Sorry, not possible.",
+              "success_message": "The spider web burns away.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_fire_bug.lua:123-134",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:302-309",
+                "https://tibia.fandom.com/wiki/An_Interest_In_Botany_Quest/Spoiler",
+                "content/world/placements/region-z08-x129-y122.b3:33209,31376,8/ordinal4"
+              ],
+              "effects": {
+                "transform": 188,
+                "reset_after_ms": 60000
+              }
+            }
+          }
+        },
+        {
+          "key": "s3",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/an-interest-in-botany/s3",
+              "quest": "oteryn:quest.an_interest_in_botany_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33257,
+                  "y": 31325,
+                  "floor": -8
+                },
+                "appearance": 10697,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 33257,
+                    "y": 31325,
+                    "floor": -8
+                  },
+                  "appearance": 10697,
+                  "ordinal": 1
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/an-interest-in-botany/stage",
+                  "minimum": 2,
+                  "maximum": 3,
+                  "set": 4
+                }
+              ],
+              "premium_required": true,
+              "requires_world_admission": true,
+              "offerings": [],
+              "present": [
+                {
+                  "item": "oteryn:item.tibia.i11699",
+                  "count": 1
+                }
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i5908",
+                "count": 1,
+                "reusable": true,
+                "selected_instance": true
+              },
+              "return_on_failure": true,
+              "failure_message": "Sorry, not possible.",
+              "success_message": "You press a Verminous sample into the Almanach.",
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:251-258",
+                "https://tibia.fandom.com/wiki/An_Interest_In_Botany_Quest/Spoiler",
+                "content/world/placements/region-z08-x129-y122.b3:33257,31325,8/ordinal1"
+              ],
+              "effects": {}
+            }
+          }
+        },
+        {
+          "key": "s4",
+          "completes": true,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/an-interest-in-botany/s4",
+              "quest": "oteryn:quest.an_interest_in_botany_quest",
+              "npc": "oteryn:npc.rabaz",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 2,
+              "next_topic": 0,
+              "requires_premium": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/an-interest-in-botany/stage",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i11699",
+                  "count": 1
+                }
+              ],
+              "give": {
+                "item": "oteryn:item.tibia.i11700",
+                "count": 1,
+                "additional": [
+                  {
+                    "item": "oteryn:item.tibia.i3031",
+                    "count": 100
+                  },
+                  {
+                    "item": "oteryn:item.tibia.i3031",
+                    "count": 100
+                  },
+                  {
+                    "item": "oteryn:item.tibia.i3031",
+                    "count": 100
+                  },
+                  {
+                    "item": "oteryn:item.tibia.i3031",
+                    "count": 100
+                  },
+                  {
+                    "item": "oteryn:item.tibia.i3031",
+                    "count": 100
+                  },
+                  {
+                    "item": "oteryn:item.tibia.i3031",
+                    "count": 100
+                  },
+                  {
+                    "item": "oteryn:item.tibia.i3031",
+                    "count": 100
+                  },
+                  {
+                    "item": "oteryn:item.tibia.i3031",
+                    "count": 100
+                  },
+                  {
+                    "item": "oteryn:item.tibia.i3031",
+                    "count": 100
+                  },
+                  {
+                    "item": "oteryn:item.tibia.i3031",
+                    "count": 100
+                  }
+                ]
+              },
+              "outfit": null,
+              "achievement": null,
+              "experience": 3000,
+              "reply": [
+                "Thank you for bringing both samples. Here is your reward."
+              ],
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rabaz.lua:144-183",
+                "https://tibia.fandom.com/wiki/An_Interest_In_Botany_Quest/Spoiler"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

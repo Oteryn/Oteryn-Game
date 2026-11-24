@@ -19,7 +19,8 @@ pub(super) async fn dispatch(
     include_guild_acl: bool,
 ) -> Option<Vec<u8>> {
     if query {
-        return super::house_query::dispatch(authority, actor, command, body, include_kind).await;
+        return super::house_query::dispatch(authority, actor, command, body, include_kind, false)
+            .await;
     }
     let Ok(intent) = wire::decode_house_intent_selected(body, include_guild_acl) else {
         return Some(wire::encode_house_result(D::Rejected, 0));
@@ -286,6 +287,7 @@ macro_rules! authority_methods {
             _command: UseCommand,
             _query: oteryn_protocol_oteryn::house::HouseQuery,
             _include_kind: bool,
+            _auction_order: bool,
         ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
             async {
                 Some(oteryn_protocol_oteryn::house::encode_house_result(
@@ -316,8 +318,10 @@ macro_rules! composed_methods {
             command: connection::UseCommand,
             query: oteryn_protocol_oteryn::house::HouseQuery,
             include_kind: bool,
+            auction_order: bool,
         ) -> Option<Vec<u8>> {
-            self.query_houses(actor, command, query, include_kind).await
+            self.query_houses(actor, command, query, include_kind, auction_order)
+                .await
         }
     };
 }

@@ -1,0 +1,15 @@
+{
+  "id": 596,
+  "name": "ITEM_INSCRIPTION_ATTRIBUTION_V1",
+  "owner_decision": "Client occurrence and inscription protocol gap packet",
+  "owner": "Game item text durable owner",
+  "requires": [
+    511
+  ],
+  "command_types": [
+    6356
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; uses the existing fenced carried-item text owner."
+}

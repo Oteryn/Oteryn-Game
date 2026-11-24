@@ -1,6 +1,6 @@
 //! Native death descendants join the existing XP transaction and shared Quest persistence.
 use super::*;
-use oteryn_gameplay_quests::quest::kill_objectives::KillObjective;
+use oteryn_gameplay_quests::quest::{death_objectives::{self, DeathObjective}, kill_objectives::KillObjective};
 
 /// Captured from a committed native death and a sealed objective or damage witness.
 /// No wire command can construct the sealed death identity.
@@ -12,7 +12,13 @@ pub struct NativeObjectiveDeath {
     observed_revision: u64,
     phase: i64,
     spawn_origin: Option<(i32, i32, i16)>,
-    overlord: bool,
+    damage_witness: Option<DamageWitness>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum DamageWitness {
+    Overlord,
+    GraveBoss,
 }
 
 impl NativeObjectiveDeath {
@@ -34,7 +40,7 @@ impl NativeObjectiveDeath {
             observed_revision,
             phase,
             spawn_origin: None,
-            overlord: false,
+            damage_witness: None,
         })
     }
 
@@ -45,17 +51,37 @@ impl NativeObjectiveDeath {
         actor: crate::foundation::ExactActorRef,
         session: crate::foundation::GameSessionId,
     ) -> Option<Self> {
+        Self::capture_damage(runtime, target, actor, session, 0, DamageWitness::Overlord)
+    }
+
+    pub fn capture_grave_boss(
+        runtime: &mut crate::foundation::ChannelRuntimeV1,
+        target: crate::foundation::ExactActorRef,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        observed_revision: u64,
+    ) -> Option<Self> {
+        if observed_revision == 0 {
+            return None;
+        }
+        Self::capture_damage(runtime, target, actor, session, observed_revision, DamageWitness::GraveBoss)
+    }
+
+    fn capture_damage(
+        runtime: &mut crate::foundation::ChannelRuntimeV1,
+        target: crate::foundation::ExactActorRef,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        observed_revision: u64,
+        witness: DamageWitness,
+    ) -> Option<Self> {
         let lease = runtime.bound_attacker_lease(actor, session).ok()?;
         let character = CharacterId::from_bytes(*lease.character_id().as_bytes()).ok()?;
         if !runtime
             .all_source_player_damage_shares(target)
             .ok()?
             .iter()
-            .any(|share| {
-                share.actor == actor
-                    && share.character.as_bytes() == character.as_bytes()
-                    && share.total > 0
-            })
+            .any(|share| share.actor == actor && share.character.as_bytes() == character.as_bytes() && share.total > 0)
         {
             return None;
         }
@@ -64,10 +90,10 @@ impl NativeObjectiveDeath {
             death: super::super::party_kill_xp::encode_death_key(death),
             character,
             position: (at.x, at.y, at.floor),
-            observed_revision: 0,
+            observed_revision,
             phase: 0,
             spawn_origin: None,
-            overlord: true,
+            damage_witness: Some(witness),
         })
     }
 
@@ -120,10 +146,14 @@ impl NativeObjectiveDeath {
                 .finalize();
             binding[1..].copy_from_slice(&hash);
         }
-        if self.overlord {
+        if let Some(witness) = self.damage_witness {
+            let domain: &[u8] = match witness {
+                DamageWitness::Overlord => b"oteryn:overlord-damager:v1",
+                DamageWitness::GraveBoss => b"oteryn:grave-boss-damager:v1",
+            };
             let hash = Sha256::new()
                 .chain_update(*binding)
-                .chain_update(b"oteryn:overlord-damager:v1")
+                .chain_update(domain)
                 .finalize();
             binding[1..].copy_from_slice(&hash);
         }
@@ -133,6 +163,7 @@ impl NativeObjectiveDeath {
 
 enum Binding {
     Overlord(&'static oteryn_gameplay_quests::quest::source_deaths::Rule),
+    GraveBoss(&'static DeathObjective),
     Objective(KillObjective),
     Goal(&'static oteryn_gameplay_quests::quest::native_kill_goals::Goal),
 }
@@ -143,6 +174,14 @@ impl Binding {
             && oteryn_gameplay_quests::quest::source_deaths::overlord(&rule.creature).is_some()
         {
             return Ok(Self::Overlord(rule));
+        }
+        if death_objectives::is_grave_boss(key) {
+            return death_objectives::load()
+                .map_err(|_| CharacterProgressionError::InvalidInput)?
+                .iter()
+                .find(|rule| rule.key == key)
+                .map(Self::GraveBoss)
+                .ok_or(CharacterProgressionError::InvalidInput);
         }
         if let Some(rule) = oteryn_gameplay_quests::quest::kill_objectives::binding(key) {
             return Ok(Self::Objective(rule));
@@ -158,6 +197,7 @@ impl Binding {
     fn quest(&self) -> &str {
         match self {
             Self::Overlord(rule) => &rule.quest,
+            Self::GraveBoss(rule) => &rule.quest,
             Self::Objective(rule) => rule.quest,
             Self::Goal(goal) => &goal.quest,
         }
@@ -166,14 +206,28 @@ impl Binding {
     fn phase_track(&self) -> &str {
         match self {
             Self::Overlord(rule) => &rule.effects[0].track,
+            Self::GraveBoss(rule) => &rule.stage,
             Self::Objective(rule) => rule.phase_track,
             Self::Goal(goal) => &goal.phase,
         }
     }
 
+    fn damage_witness(&self) -> Option<DamageWitness> {
+        match self {
+            Self::Overlord(_) => Some(DamageWitness::Overlord),
+            Self::GraveBoss(_) => Some(DamageWitness::GraveBoss),
+            Self::Objective(_) | Self::Goal(_) => None,
+        }
+    }
+
     fn creatures(&self, source: &NativeObjectiveDeath) -> Vec<&str> {
         match self {
-            Self::Overlord(rule) if source.overlord => vec![rule.creature.as_str()],
+            Self::Overlord(rule) => vec![rule.creature.as_str()],
+            Self::GraveBoss(rule)
+                if rule.matches(&rule.creature, source.position.0, source.position.1, source.position.2) =>
+            {
+                vec![rule.creature.as_str()]
+            }
             Self::Objective(rule)
                 if source.phase == rule.phase_before
                     && rule.contains(source.position.0, source.position.1, source.position.2) =>
@@ -242,7 +296,7 @@ pub async fn apply_batch_in_transaction(
         let transition = catalogue
             .transition(key)
             .ok_or(CharacterProgressionError::InvalidInput)?;
-        if matches!(component, Binding::Overlord(_)) != proof.overlord
+        if component.damage_witness() != proof.damage_witness
             || component.quest() != rule.quest()
             || transition.quest != rule.quest()
             || transition.experience.is_some()
@@ -309,6 +363,9 @@ pub async fn apply_batch_in_transaction(
     let root = assert_gameplay_fence(tx, &current, node).await??;
     for ((_, proof), component) in components.iter().zip(&rules) {
         if !authorize(tx, &current, &request, component, proof).await? {
+            if matches!(component, Binding::GraveBoss(_)) {
+                return Ok(None);
+            }
             return Err(CharacterProgressionError::AuthorityRejected);
         }
     }
@@ -333,15 +390,18 @@ pub async fn apply_batch_in_transaction(
             .try_into()
             .map_err(|_| DurabilityError::InvalidStoredState)?;
         if catalogue.definition_hash(rule.quest()) != Some(hash)
-            && (matches!(rule, Binding::Overlord(_))
+            && (matches!(rule, Binding::Overlord(_) | Binding::GraveBoss(_))
                 || !state
                     .try_get::<bool, _>("completed")
                     .map_err(DurabilityError::from)?)
         {
-            if !matches!(rule, Binding::Overlord(_)) {
+            if matches!(rule, Binding::GraveBoss(_)) {
+                if oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(catalogue, rule.quest(), &hash).is_none() {
+                    return Ok(None);
+                }
+            } else if !matches!(rule, Binding::Overlord(_)) {
                 return Err(CharacterProgressionError::ProgressionContextMismatch);
-            }
-            if oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+            } else if oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
                 catalogue,
                 rule.quest(),
                 &hash,
@@ -487,7 +547,8 @@ async fn authorize(
     rule: &Binding,
     source: &NativeObjectiveDeath,
 ) -> StoredResult<bool> {
-    if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+    if (!matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+        && !matches!(rule, Binding::GraveBoss(_)))
         || source.character != fence.character_id
         || rule.creatures(source).is_empty()
         || !super::super::party_kill_xp::death_matches_fence(&source.death, fence)
@@ -495,6 +556,30 @@ async fn authorize(
             if source.occurrence().is_ok_and(|expected| id == expected))
     {
         return Ok(false);
+    }
+    if let Binding::GraveBoss(objective) = rule {
+        let death = boss_death_id(source, fence)?;
+        // The canonical receipt must belong to this transaction. When the
+        // private table is admitted, the chest constraint also checks the
+        // successful, nonempty recipient census against the rows at commit.
+        return sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_boss_death_settlements d
+             JOIN game_character_quest_states q ON q.character_id=encode($4,'hex')::uuid
+                AND q.quest_key=$5 AND q.started_character_revision <= $6::text::numeric
+             WHERE d.world_id=encode($1,'hex')::uuid AND d.death_id=encode($2,'hex')::uuid
+               AND d.boss_key=$3 AND d.created_xact_id=pg_current_xact_id()
+               AND (NOT d.personal_rewards OR EXISTS(
+                 SELECT 1 FROM game_boss_reward_deaths r
+                  WHERE (r.world_id,r.death_id)=(d.world_id,d.death_id)
+                    AND r.settlement_outcome=1 AND r.eligible_count>0)))"
+        )
+        .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+        .bind(death.as_slice())
+        .bind(&objective.creature)
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(&objective.quest)
+        .bind(source.observed_revision.to_string())
+        .fetch_one(&mut **tx).await.map_err(DurabilityError::from);
     }
     if matches!(rule, Binding::Overlord(_)) {
         let death = boss_death_id(source, fence)?;

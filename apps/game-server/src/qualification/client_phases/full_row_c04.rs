@@ -1,7 +1,7 @@
 //! C04 full-row journey, derived from the matrix, re-audit, and the cast gate owner.
 //!
 //! 1. Admit the provisioned Character in the temple PZ; send an aggressive indexed CAST and
-//!    require an accepted command carrying a rejected cast disposition, no vitals delta, and no
+//!    require a rejected command and cast disposition, no vitals delta, and no
 //!    mana change.
 //! 2. Walk out of the PZ using native STEP commands; send the same CAST and require `Cast`, an
 //!    authoritative vitals delta, and the exact mana debit.
@@ -15,6 +15,7 @@
 //!    remain paid, fear to be absent, and a post-cooldown cast to work. Cooldowns and conditions
 //!    are temporal rather than durable; the durable re-check is the committed mana state.
 
+use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
@@ -44,11 +45,16 @@ impl Row {
 
     fn finish(mut self, result: TestResult) {
         if let Err(error) = result {
-            self.failure = Some(format!("step={} observed={error}", self.completed + 1));
+            let detail = error.to_string();
+            self.failure = Some(if detail.starts_with("step=") {
+                detail
+            } else {
+                format!("step={} observed={detail}", self.completed + 1)
+            });
         }
         if let Some(failure) = &self.failure {
             evidence(&format!(
-                "C04_CHECK FAIL {failure}; need=reachable authored fear-applying player combat path and native reply/delta frames"
+                "C04_GAP {failure}"
             ));
         }
         evidence(&format!(
@@ -67,7 +73,7 @@ impl Row {
     }
 }
 
-fn evidence_token(value: &str) -> String {
+pub(super) fn evidence_token(value: &str) -> String {
     value
         .chars()
         .map(|c| {
@@ -78,6 +84,19 @@ fn evidence_token(value: &str) -> String {
             }
         })
         .collect()
+}
+
+fn refused_without_cost(
+    status: CommandStatus,
+    disposition: SpellCastDisposition,
+    has_vitals_delta: bool,
+    mana_before: u32,
+    mana_after: u32,
+) -> bool {
+    status == CommandStatus::Rejected
+        && disposition == SpellCastDisposition::Rejected
+        && !has_vitals_delta
+        && mana_before == mana_after
 }
 
 fn spell_book() -> TestResult<crate::spell::SpellBook> {
@@ -158,47 +177,60 @@ async fn journey(
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
     let book = spell_book()?;
-    let ordinary = index(&book, "exura")?;
-    let primary_peer = index(&book, "exura gran")?;
-    let aggressive = index(&book, "exevo vis lux")?;
-    let mut client = connect_world(clients, 0xc4).await?;
+    let ordinary = index(&book, "exevo infir flam hur")?;
+    let primary_peer = index(&book, "exori infir vis")?;
+    let mut client = connect_world(clients, 0xc4)
+        .await
+        .map_err(|error| admission_error("initial-admission", error))?;
 
+    let ordinary_definition = book.indexed(ordinary).ok_or("Scorch definition missing")?;
+    let shortest = std::iter::once(ordinary_definition.cooldown_micros)
+        .chain(ordinary_definition.groups.iter().map(|group| group.cooldown_micros))
+        .filter(|&micros| micros > 0).min().map(Duration::from_micros)
+        .ok_or("protection-zone-control: no positive Scorch cooldown to distinguish")?;
+    let pz_path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| tile.protection_zone())
+            && pz_exit(world, at).is_some()
+    }).ok_or("protection-zone-refusal: no reachable PZ boundary with an adjacent non-PZ tile")?;
+    walk(&mut client, world, &pz_path).await?;
+    let exit = pz_exit(world, tile(client.world_spatial().actor_position)?)
+        .ok_or("protection-zone-control: boundary exit disappeared")?;
     let before = mana(&client)?;
-    let pz = cast(&mut client, aggressive).await?;
-    if pz.status != CommandStatus::Accepted
-        || pz.disposition != SpellCastDisposition::Rejected
-        || pz.actor_vitals_delta.is_some()
-        || mana(&client)? != before
+    client.take_events();
+    let started = tokio::time::Instant::now();
+    let pz = cast(&mut client, ordinary).await?;
+    if !refused_without_cost(
+        pz.status, pz.disposition, pz.actor_vitals_delta.is_some(), before, mana(&client)?,
+    ) {
+        return Err(format!("PZ CAST expected rejected/rejected/no-delta reply={pz:?}").into());
+    }
+    assert_no_pz_cooldown(&mut client)?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let stepped = client.step_retrying(exit).await?;
+    if stepped.disposition != StepDisposition::Moved
+        || stepped.world_spatial_delta.is_none()
+        || Some(tile(client.world_spatial().actor_position)?) != destination(world, from, exit)
+    {
+        return Err(format!("protection-zone-control: immediate exit failed {stepped:?}").into());
+    }
+    assert_no_pz_cooldown(&mut client)?;
+    let before = mana(&client)?;
+    let outside = cast(&mut client, ordinary).await?;
+    if !pz_control_in_window(started.elapsed(), shortest) {
+        return Err(format!("protection-zone-control: first outside cast exceeded refusal evidence window {shortest:?}").into());
+    }
+    if outside.status != CommandStatus::Accepted
+        || outside.disposition != SpellCastDisposition::Cast
+        || outside.actor_vitals_delta.is_none()
+        || before.checked_sub(8) != Some(mana(&client)?)
     {
         return Err(format!(
-            "PZ CAST expected accepted/rejected/no-delta reply={pz:?} mana={before}->{}",
+            "protection-zone-control: starter Scorch outside PZ expected Cast and 8 mana debit, reply={outside:?} mana={before}->{}",
             mana(&client)?
         )
         .into());
     }
     row.pass(1, &pz);
-
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-    })
-    .ok_or("no player STEP route out of protection zone")?;
-    walk(&mut client, world, &path).await?;
-    let before = mana(&client)?;
-    let outside = wait_ready(&mut client, ordinary).await?;
-    if outside.status != CommandStatus::Accepted
-        || outside.disposition != SpellCastDisposition::Cast
-        || outside.actor_vitals_delta.is_none()
-        || mana(&client)? >= before
-    {
-        return Err(format!(
-            "outside CAST expected cast/vitals debit reply={outside:?} mana={before}->{}",
-            mana(&client)?
-        )
-        .into());
-    }
     row.pass(2, &outside);
 
     let paid = mana(&client)?;
@@ -222,30 +254,46 @@ async fn journey(
     {
         return Err(format!("primary-group cooldown expected no debit reply={group:?}").into());
     }
-    let source = book
-        .indexed(ordinary)
-        .ok_or("ordinary spell index vanished")?;
-    let secondary_key = source
-        .groups
-        .get(1)
-        .ok_or("served exura has no secondary cooldown group")?
-        .key
-        .as_str();
-    let secondary = (1..=book.source_len())
-        .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
-        .find(|candidate| {
-            *candidate != ordinary
-                && book.indexed(*candidate).is_some_and(|spell| {
-                    spell.groups.iter().skip(1).any(|g| g.key == secondary_key)
-                })
+    use oteryn_protocol_oteryn::actor_spell_catalog as wire;
+    let snapshot = client.session_mut().gated_snapshot(wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
+        .ok_or("secondary-group: no served actor spell catalogue")?;
+    let catalogue = wire::decode_catalog(&snapshot.payload)
+        .map_err(|error| format!("secondary-group: malformed actor spell catalogue {error:?}"))?;
+    let eligible: Vec<_> = catalogue.iter().filter(|entry| entry.available && entry.rune_item.is_none()
+        && entry.soul == 0 && !entry.mana_percent && entry.mana <= paid)
+        .filter_map(|entry| {
+            let index = std::num::NonZeroU32::new(entry.cast_index)?;
+            let spell = book.indexed(index)?;
+            (!spell.needs_target && !spell.groups.is_empty()).then_some((index, spell))
+        }).collect();
+    let pair = eligible.iter().find_map(|&(trigger, source)| {
+        eligible.iter().find_map(|&(peer, other)| {
+            (trigger != peer && !source.groups.iter().any(|group| group.key == other.groups[0].key)
+                && source.groups.iter().skip(1).any(|secondary| other.groups.iter().skip(1).any(|group| group.key == secondary.key)))
+                .then_some((trigger, peer))
         })
-        .ok_or_else(|| {
-            format!("no distinct served spell shares secondary group {secondary_key}")
-        })?;
-    let second = cast(&mut client, secondary).await?;
+    });
+    let (trigger, peer) = pair.ok_or("secondary-group: no eligible affordable spell pair with distinct primary groups and a shared secondary group")?;
+    // The only earlier successful cast here was the ordinary spell. Wait out
+    // its spell and every group timer before attempting the isolated pair.
+    let previous = book.indexed(ordinary).ok_or("ordinary spell missing")?;
+    let required = Duration::from_micros(previous.groups.iter()
+        .map(|group| group.cooldown_micros)
+        .fold(previous.cooldown_micros, u64::max));
+    let started = tokio::time::Instant::now();
+    while !cooldowns_elapsed(started.elapsed(), required) {
+        client.service_liveness(Duration::from_millis(25)).await?;
+        client.take_events();
+    }
+    let trigger = cast(&mut client, trigger).await?;
+    if trigger.status != CommandStatus::Accepted || trigger.disposition != SpellCastDisposition::Cast {
+        return Err(format!("secondary-group: trigger could not cast {trigger:?}").into());
+    }
+    let after_trigger = mana(&client)?;
+    let second = cast(&mut client, peer).await?;
     if second.disposition != SpellCastDisposition::CoolingDown
         || second.actor_vitals_delta.is_some()
-        || mana(&client)? != paid
+        || mana(&client)? != after_trigger
     {
         return Err(format!("secondary-group cooldown expected no debit reply={second:?}").into());
     }
@@ -316,10 +364,9 @@ async fn journey(
     client.session_mut().attack_target(None).await?;
     let fear_mana = mana(&client)?;
     let feared = cast(&mut client, ordinary).await?;
-    if feared.disposition != SpellCastDisposition::Rejected
-        || feared.actor_vitals_delta.is_some()
-        || mana(&client)? != fear_mana
-    {
+    if !refused_without_cost(
+        feared.status, feared.disposition, feared.actor_vitals_delta.is_some(), fear_mana, mana(&client)?,
+    ) {
         return Err(format!("feared CAST expected rejected/no debit reply={feared:?}").into());
     }
     row.pass(5, &feared);
@@ -350,7 +397,9 @@ async fn journey(
     {
         return Err("LOGOUT refused after cast lifecycle".into());
     }
-    let mut fresh = connect_world(clients, 0xc5).await?;
+    let mut fresh = connect_world(clients, 0xc5)
+        .await
+        .map_err(|error| admission_error("fresh-admission", error))?;
     if mana(&fresh)? != durable_mana
         || conditions(&mut fresh)
             .await?
@@ -395,9 +444,53 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     row.finish(result);
 }
 
+fn cooldowns_elapsed(elapsed: Duration, required: Duration) -> bool { elapsed >= required }
+
+fn assert_no_pz_cooldown(client: &mut DevClientSession) -> TestResult {
+    if client.take_events().into_iter().any(|event| matches!(event,
+        oteryn_dev_client::SessionEvent::ActorCooldowns(delta)
+            if delta.value.entries.iter().any(|entry| entry.expires_at_ms > delta.value.server_now_ms)
+    )) {
+        return Err("protection-zone-refusal: refused cast published an active cooldown".into());
+    }
+    Ok(())
+}
+
+fn pz_exit(world: &BundleWorld, from: TilePos) -> Option<StepDirection> {
+    [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
+        .into_iter().find(|&direction| destination(world, from, direction).is_some_and(|at| {
+            at.floor == from.floor
+                && world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
+        }))
+}
+
+fn pz_control_in_window(elapsed: Duration, shortest: Duration) -> bool { elapsed < shortest }
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn second_review_c04_rejects_false_evidence() {
+        assert!(pz_control_in_window(Duration::from_millis(199), Duration::from_millis(200)));
+        assert!(!pz_control_in_window(Duration::from_millis(200), Duration::from_millis(200)));
+    }
+
+    #[test]
+    fn independent_review_c04_rejects_unproven_evidence() {
+        assert!(!cooldowns_elapsed(Duration::from_millis(1), Duration::from_secs(2)));
+        assert!(cooldowns_elapsed(Duration::from_secs(2), Duration::from_secs(2)));
+    }
+
+    #[test]
+    fn refusal_requires_rejected_status_and_no_debit() {
+        let denied = SpellCastDisposition::Rejected;
+        assert!(refused_without_cost(CommandStatus::Rejected, denied, false, 55, 55));
+        assert!(!refused_without_cost(CommandStatus::Accepted, denied, false, 55, 55));
+        assert!(!refused_without_cost(CommandStatus::Rejected, denied, true, 55, 55));
+        assert!(!refused_without_cost(CommandStatus::Rejected, denied, false, 55, 54));
+    }
+
     #[test]
     fn evidence_tokens_are_report_safe() {
         assert_eq!(
