@@ -10,8 +10,9 @@ use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{
     ChannelRuntimeV1, MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements,
 };
-use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::gameplay_transport::quest_log::QuestLogLines;
+use crate::gameplay_transport::spell_premium_coordinator::{SpellPremiumCoordinator, purchase_fixture};
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_quests::quest::{
     loader::load_embedded_quest_state, log::loader::load_embedded_quest_log,
@@ -131,7 +132,7 @@ fn journey(web_already_burned: bool) -> TestResult {
             )?;
             assert!(claims.served.iter().any(|claim| claim.key.as_str() == CHEST_CLAIM));
 
-            let cells = world.movement_cells(deps.room.movement_cells()).map_err(debug)?;
+            let cells = world.movement_cells(activated_pin.qualified_room().movement_cells()).map_err(debug)?;
             let start = local(START);
             let pin = ChannelContentPin::from_activation(
                 deps.admitted.world_id,
@@ -161,6 +162,9 @@ fn journey(web_already_burned: bool) -> TestResult {
 
             let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(deps.admitted.game_session_id).await?.0;
+            deps.runtime.lock().await.bind_attacker_lease(
+                deps.actor, deps.admitted.game_session_id, current.current_character_lease(),
+            ).map_err(debug)?;
             let fence = crate::gameplay_transport::item_fence_of(current).ok_or("item fence")?;
             sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
                 .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
@@ -191,12 +195,28 @@ fn journey(web_already_burned: bool) -> TestResult {
             admitted.runtime_actor = Some(deps.actor);
             admitted.first_entry = FirstEntryOutcome::Positioned;
             admitted.item_fence = Some(fence);
+            let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+            let premium = SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(h.root.clone()),
+            );
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
+            owner.premium_coordinator = Some(&premium);
             owner.movement_cells = (&cells).into();
-            owner.quest_catalogue = Some(Arc::clone(&catalogue));
+            owner.quest_catalogue = Some(catalogue);
             let log_lines = QuestLogLines::new(journal.content).ok_or("Botany journal line bounds")?;
-            owner.quest_log_content = Some(log_lines.clone());
+            owner.quest_log_content = Some(log_lines);
             deps.initialize(&owner).await;
             admit(&mut owner, &mut admitted, Arc::clone(&talk_book)).await?;
             for (index, tool) in [KNIFE, FIRE_BUG].into_iter().enumerate() {
@@ -207,23 +227,20 @@ fn journey(web_already_burned: bool) -> TestResult {
             let initial_log = log(&owner, &mut admitted).await?;
             exercise(&mut owner, &mut admitted, &h, npc, web_already_burned).await?;
 
-            // A new admission owner rebuilds the quest and NPC projections for the reconnect.
-            // The wire helper has already closed the first transport and retained its continuity.
-            drop(owner);
-            let mut reconnected = deps.owner(&h, &authority);
-            reconnected.active_generation = Some(generation);
-            reconnected.movement_cells = (&cells).into();
-            reconnected.quest_catalogue = Some(catalogue);
-            reconnected.quest_log_content = Some(log_lines);
-            deps.initialize(&reconnected).await;
-            admit(&mut reconnected, &mut admitted, talk_book).await?;
-            assert_eq!(speak(&mut reconnected, &mut admitted, npc, "hi").await?, NpcIntentDisposition::Ok);
-            speak(&mut reconnected, &mut admitted, npc, "mission").await?;
-            assert_eq!(speak(&mut reconnected, &mut admitted, npc, "yes").await?, NpcIntentDisposition::Rejected);
+            // Reopen the transport with the retained command ingress and rebuild
+            // the quest and dialogue projections from durable state.
+            let session = admitted.game_session_id;
+            owner.states.quest_sessions.lock().map_err(|_| "quest sessions")?.remove(&session);
+            owner.states.npc_conversations.forget(session);
+            admit(&mut owner, &mut admitted, talk_book).await?;
+            conversation(
+                &mut owner, &mut admitted, npc, &h, (Some(5), 0, 1, 1000),
+                NpcIntentDisposition::Rejected,
+            ).await?;
             checkpoint(&h, Some(5), 0, 1, 1000).await?;
             assert_eq!(finish_receipts(&h).await?, 1);
             assert_eq!(quest_xp(&h).await?, (1, 3000), "reconnect preserves the single XP reward");
-            assert_eq!(log(&reconnected, &mut admitted).await?, initial_log, "the completed quest stays hidden");
+            assert_eq!(log(&owner, &mut admitted).await?, initial_log, "the completed quest stays hidden");
             Ok(())
         }.await;
         h.cleanup().await?;
@@ -317,7 +334,12 @@ async fn admit(
         owner.owner_now(),
     );
     owner.states.chat.set_npc_service(admitted.game_session_id);
-    super::qd_world_fixtures::select_talk_capabilities(owner, admitted, &[3, 4, 6, 11, 15, 16])
+    // World Interaction needs World Map View before any tool-on-map command can decode.
+    super::qd_world_fixtures::select_talk_capabilities(owner, admitted, &[3, 4, 6, 11, 15, 16, 18])?;
+    assert!(admitted.continuity.selected_capabilities.contains(
+        oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1
+    ));
+    Ok(())
 }
 
 async fn exercise(
@@ -329,17 +351,10 @@ async fn exercise(
 ) -> TestResult {
     checkpoint(h, None, 0, 0, 0).await?;
     assert_eq!(stage(h, DOOR_TRACK).await?, None);
-    for word in ["hi", "mission"] {
-        assert_eq!(
-            speak(owner, admitted, npc, word).await?,
-            NpcIntentDisposition::Ok
-        );
-        checkpoint(h, None, 0, 0, 0).await?;
-    }
-    assert_eq!(
-        speak(owner, admitted, npc, "yes").await?,
-        NpcIntentDisposition::Ok
-    );
+    conversation(
+        owner, admitted, npc, h, (None, 0, 0, 0), NpcIntentDisposition::Ok,
+    )
+    .await?;
     checkpoint(h, Some(1), 0, 0, 0).await?;
     assert_eq!(stage(h, DOOR_TRACK).await?, Some(0));
 
@@ -440,22 +455,27 @@ async fn exercise(
     checkpoint(h, Some(4), 1, 0, 0).await?;
 
     arrive(owner, admitted, START).await?;
-    for word in ["hi", "mission"] {
-        assert_eq!(
-            speak(owner, admitted, npc, word).await?,
-            NpcIntentDisposition::Ok
-        );
-        checkpoint(h, Some(4), 1, 0, 0).await?;
-    }
-    let command = admitted.continuity.next_command_id;
-    let confirmation = speech(npc, "yes")?;
     assert_eq!(quest_xp(h).await?, (0, 0));
-    let reward = wire(owner, admitted, command, 7, confirmation.clone()).await?;
-    assert_eq!(
-        decode_npc_intent_result(&reward).map_err(debug)?,
-        NpcIntentDisposition::Ok
-    );
+    let reward = conversation(
+        owner, admitted, npc, h, (Some(4), 1, 0, 0), NpcIntentDisposition::Ok,
+    )
+    .await?;
+    let command = admitted.continuity.next_command_id.checked_sub(1).ok_or("reward command")?;
+    let confirmation = speech(npc, "yes")?;
     checkpoint(h, Some(5), 0, 1, 1000).await?;
+    let returned_almanach: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_quest_callback_consumptions c \
+         JOIN game_reward_claim_mint_receipts m USING(item_instance_id) \
+         JOIN game_item_instances i USING(item_instance_id) \
+         JOIN game_item_texts t USING(item_instance_id) \
+         WHERE c.transition_key=$1 AND m.claim_production_key=$2 \
+           AND i.lifecycle=2 AND t.text=m.root_text",
+    )
+    .bind(FINISH)
+    .bind(CHEST_CLAIM)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(returned_almanach, 1, "Rabaz takes the original chest Almanach");
     assert_eq!(quest_xp(h).await?, (1, 3000), "Rabaz awards 3,000 XP");
     assert_eq!(
         wire(owner, admitted, command, 7, confirmation).await?,
@@ -503,7 +523,8 @@ async fn use_object(
 ) -> TestResult<UseDisposition> {
     owner.clock_origin -= Duration::from_secs(2);
     let target = target(owner, pos, ordinal)?;
-    let payload = if let Some(tool) = tool {
+    let command = admitted.continuity.next_command_id;
+    if let Some(tool) = tool {
         let item = owner
             .active_generation
             .and_then(|g| g.native_gameplay())
@@ -516,17 +537,40 @@ async fn use_object(
                 )
             })
             .ok_or("native tool definition")?;
-        encode_item_use_intent(&UseIntent {
+        let actor = admitted.runtime_actor.ok_or("Botany actor")?;
+        let inventory = owner
+            .observe_character_inventory(actor, admitted.game_session_id)
+            .await
+            .ok_or("Botany tool inventory")?;
+        assert!(
+            inventory.entries.iter().any(|entry| entry.item_definition_ref == item),
+            "the carried tool {tool} must be present before sampling {pos:?}",
+        );
+        let map = owner.bundle_map().ok_or("Botany map")?;
+        let key = crate::map::view::placement_key(tile(pos), ordinal).ok_or("Botany placement")?;
+        assert!(
+            owner.callback_content().iter().any(|callback| {
+                callback.quest == QUEST
+                    && crate::gameplay_transport::quest_callbacks::matches(map, callback, key)
+            }),
+            "the retained tile must match the Botany callback at {pos:?} ordinal {ordinal}",
+        );
+        let payload = encode_item_use_intent(&UseIntent {
             target: UseTarget::ItemByDefinition(item),
             use_with: None,
             use_with_map_item: Some(MapUseTarget::Object(target)),
             use_with_position: None,
         })
-        .map_err(debug)?
-    } else {
-        encode_use_intent(&target).map_err(debug)?
-    };
-    let command = admitted.continuity.next_command_id;
+        .map_err(debug)?;
+        // Use the concrete knife or Fire Bug published in the inventory snapshot.
+        let (next, disposition, _) = super::rust_lottery_fixtures::exchange(
+            owner, *admitted, command, &payload, Some(item), None,
+        )
+        .await?;
+        *admitted = next;
+        return Ok(disposition);
+    }
+    let payload = encode_use_intent(&target).map_err(debug)?;
     decode_use_result(&wire(owner, admitted, command, 2, payload).await?).map_err(debug)
 }
 
@@ -577,16 +621,59 @@ fn speech(npc_actor: EntityRef, text: &str) -> TestResult<Vec<u8>> {
     .map_err(debug)
 }
 
-async fn speak(
+// Rabaz's mission topic belongs to the live NPC conversation. Opening a
+// new wire connection between commands resets that conversation at snapshot.
+async fn conversation(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
-    text: &str,
-) -> TestResult<NpcIntentDisposition> {
+    h: &Harness,
+    (stage, book, hat, gold): (Option<i64>, i64, i64, i64),
+    confirmation: NpcIntentDisposition,
+) -> TestResult<Vec<u8>> {
     owner.clock_origin -= Duration::from_secs(2);
-    let command = admitted.continuity.next_command_id;
-    decode_npc_intent_result(&wire(owner, admitted, command, 7, speech(npc, text)?).await?)
-        .map_err(debug)
+    let session = admitted.game_session_id;
+    let first = admitted.continuity.next_command_id;
+    let commands = [("hi", 0), ("mission", 1), ("yes", 2)]
+        .into_iter()
+        .map(|(word, offset)| Ok((first + offset, 7, speech(npc, word)?)))
+        .collect::<TestResult<_>>()?;
+    let mut replies = super::questl2_fixture::wire_sequence_observed(
+        owner,
+        admitted,
+        commands,
+        async |index, reply: &[u8]| {
+            let expected = if index == 2 {
+                confirmation
+            } else {
+                NpcIntentDisposition::Ok
+            };
+            assert_eq!(
+                decode_npc_intent_result(reply).map_err(debug)?,
+                expected,
+                "Rabaz {:?} at stage {stage:?}",
+                ["hi", "mission", "yes"][index],
+            );
+            if index < 2 {
+                checkpoint(h, stage, book, hat, gold).await?;
+            }
+            if index == 1 {
+                let topic = match stage {
+                    None => 1,
+                    Some(4) => 2,
+                    _ => 0,
+                };
+                assert_eq!(
+                    owner.states.npc_conversations.fixture_quest_topic(session)?,
+                    topic,
+                    "Rabaz's mission topic at stage {stage:?}"
+                );
+            }
+            Ok(())
+        },
+    )
+    .await?;
+    replies.pop().ok_or_else(|| "missing Rabaz confirmation".into())
 }
 
 async fn log(

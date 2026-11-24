@@ -1,5 +1,6 @@
 //! The chosen Ape City recipe, with the committed World geometry and native quest catalogue.
 use super::fixture::{Harness, debug, id};
+use super::questl2_fixture::wire_sequence;
 use super::quest_world_callbacks_fixtures::wire;
 use super::questpc8_authored_programmes_fixtures::{object_target, step, use_target};
 use super::{
@@ -164,7 +165,7 @@ async fn scenario(admin: String) -> TestResult {
     let native = generation.native_gameplay().ok_or("native item provider")?;
     let world = world(native)?;
     let cells = world
-        .movement_cells(deps.room.movement_cells())
+        .movement_cells(content_pin.qualified_room().movement_cells())
         .map_err(debug)?;
     let frame = content_pin.frame_binding().digest();
     let pin = ChannelContentPin::from_activation(
@@ -213,6 +214,14 @@ async fn scenario(admin: String) -> TestResult {
 
     let (consumer, clock, activation, _) =
         crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+    h.root
+        .latch_premium_activation(
+            &activation.activation_id,
+            activation.switch_over_us,
+            activation.switch_over_us + 60_000_000,
+        )
+        .await
+        .map_err(debug)?;
     let premium =
         crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
             consumer,
@@ -246,6 +255,14 @@ async fn scenario(admin: String) -> TestResult {
         .await
         .map_err(|()| "quest fence")?
         .ok_or("current quest fence")?;
+    owner.runtime.lock().await.bind_attacker_lease(
+        deps.actor,
+        admitted.game_session_id,
+        crate::foundation::CharacterLease::new(
+            crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+            fence.character_lease_generation,
+        ).map_err(debug)?,
+    ).map_err(debug)?;
     admitted.item_fence = Some(fence.item_fence());
     h.root
         .initialize_admission_equipment(
@@ -402,16 +419,28 @@ impl Journey<'_, '_, '_, '_> {
 
     async fn say(&mut self, text: &str) -> TestResult<u64> {
         self.relocate(START).await?;
-        assert_eq!(
-            self.talk(self.next(), "hi").await?,
-            NpcIntentDisposition::Ok
-        );
-        let command = self.next();
-        assert_eq!(
-            self.talk(command, text).await?,
-            NpcIntentDisposition::Ok,
-            "{text}"
-        );
+        self.owner.clock_origin -= std::time::Duration::from_secs(4);
+        let greeting = self.next();
+        let command = greeting + 1;
+        let commands: Vec<_> = [(greeting, "hi"), (command, text)]
+            .into_iter()
+            .map(|(id, word)| {
+                encode_npc_talk_intent(&NpcTalkIntent {
+                    npc_actor: self.npc,
+                    text: word.into(),
+                })
+                .map(|payload| (id, COMMAND_TYPE_NPC_TALK_INTENT, payload))
+                .map_err(debug)
+            })
+            .collect::<Result<_, _>>()?;
+        let replies = wire_sequence(self.owner, self.admitted, commands).await?;
+        for (word, reply) in ["hi", text].into_iter().zip(replies) {
+            assert_eq!(
+                decode_npc_intent_result(&reply).map_err(debug)?,
+                NpcIntentDisposition::Ok,
+                "{word}"
+            );
+        }
         Ok(command)
     }
 

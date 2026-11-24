@@ -78,7 +78,7 @@ async fn play(h: &Harness) -> TestResult {
         native,
     )?;
     let cells = world
-        .movement_cells(deps.room.movement_cells())
+        .movement_cells(activation.qualified_room().movement_cells())
         .map_err(debug)?;
     let pin = ChannelContentPin::from_activation(
         deps.admitted.world_id,

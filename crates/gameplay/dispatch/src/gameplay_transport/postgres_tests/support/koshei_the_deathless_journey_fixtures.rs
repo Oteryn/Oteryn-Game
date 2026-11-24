@@ -15,6 +15,8 @@ pub(super) const NAME: &str = "koshei_the_deathless_full_journey";
 const QUEST: &str = "oteryn:quest.koshei_the_deathless_quest";
 const ENTRY: &str = "oteryn:quest-callback/koshei/tomb-entry";
 const FORGE: &str = "oteryn:quest-progress/qnpcfx/koshei/amulet";
+const FORGE_STARTED_AT: &str = "oteryn:quest-progress/qnpcfx/koshei/amulet_started_at";
+const AGE_FORGE: &str = "oteryn:quest-transition/koshei/fixture-age-forge-order";
 const ENTERED: &str = "oteryn:quest-progress/koshei/tomb-entered";
 const KILLED: &str = "oteryn:quest-progress/koshei/tomb-defeated";
 const SEALED: &str = "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/reward_door";
@@ -246,17 +248,39 @@ async fn commission(
         super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, collect, false).await?;
     assert_eq!(early, NpcIntentDisposition::Rejected);
     assert_eq!(State::read(h).await?, *expected);
-    // The writer reads PostgreSQL time. Age the already-earned commission timestamp
-    // in this isolated harness to simulate a day away. Forge phase changes only via TALK.
-    let aged = sqlx::query(
-        "UPDATE game_character_quest_tracks SET value=value-86400 \
-        WHERE character_id=encode($1,'hex')::uuid \
-        AND track_key='oteryn:quest-progress/qnpcfx/koshei/amulet_started_at' AND value>=86400",
-    )
-    .bind(id(41).as_slice())
-    .execute(&h.pool)
-    .await?;
-    assert_eq!(aged.rows_affected(), 1);
+    // Model the donor's 24-hour wait through a new quest revision. The reward
+    // and its deferred SQL guard both continue to use PostgreSQL time.
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("forge timing fence")?;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    let outcome = slot
+        .commit_quest_transition_with_admission(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            crate::durability::quest_state::QuestTransitionRequest {
+                transition_key: AGE_FORGE.into(),
+                cause: crate::durability::quest_state::QuestCause::Command(
+                    crate::foundation::CommandRef::new(
+                        admitted.game_session_id,
+                        crate::foundation::CommandId::new(51_001).map_err(debug)?,
+                    ),
+                ),
+            },
+            std::sync::Arc::clone(owner.quest_catalogue.as_ref().ok_or("quest catalogue")?),
+            &owner.premium_coordinator,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(matches!(
+        outcome,
+        crate::durability::quest_state::QuestTransitionOutcome::Committed(_)
+    ));
+    drop(slot);
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
@@ -398,6 +422,7 @@ pub(super) async fn exercise(
     h: &Harness,
 ) -> TestResult {
     use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestTransition};
     use oteryn_protocol_oteryn::attack::ChaseMode;
     let mut capabilities = admitted
         .continuity
@@ -410,6 +435,29 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &capabilities)
             .ok_or("journey capabilities")?;
+    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
+        .fetch_one(&h.pool)
+        .await?;
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
+    owner.quest_catalogue = Some(std::sync::Arc::new(
+        catalogue
+            .with_fixture_transition(QuestTransition {
+                world_change: None,
+                key: AGE_FORGE.into(),
+                quest: QUEST.into(),
+                effects: vec![QuestEffect {
+                    track: FORGE_STARTED_AT.into(),
+                    from: QuestComparison::Ge(1),
+                    effect: QuestEffectKind::Set(now - 86_400),
+                }],
+                completes: false,
+                experience: None,
+            })
+            .map_err(debug)?,
+    ));
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     let mut expected = State::default();
     assert_eq!(State::read(h).await?, expected);
 

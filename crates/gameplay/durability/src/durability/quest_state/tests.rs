@@ -48,8 +48,8 @@ fn the_quest_state_api_is_linked() {
     let _ = DurabilityRoot::reconcile_character_quest_transition;
     let _ = DurabilityRoot::read_character_quest_state;
     let _ = oteryn_gameplay_quests::quest::QuestStateCatalogue::track;
-    let _ = admit_character_quest_state;
-    let _ = request_pending_obligations;
+    let _ = admit_character_quest_state::<grizzly::NoGrizzlyPremium>;
+    let _ = request_pending_obligations::<grizzly::NoGrizzlyPremium>;
     let _ = request_pending_quest_experience::<2>;
     let _ = QuestStateCopy::xp_obligations;
     let _ = |award: QuestTransitionAward| (award.transition, award.experience);

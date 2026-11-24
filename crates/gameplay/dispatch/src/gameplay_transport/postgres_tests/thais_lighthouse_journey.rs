@@ -17,7 +17,7 @@ use crate::gameplay_transport::connection::{
     ControlLossResult, ControllerBinding, FreshAdmissionAuthority, ResumeAttempt,
 };
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
-use crate::map::overlay::TilePos;
+use crate::map::{overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_quests::quest::{
     loader::load_embedded_quest_state, log::loader::load_embedded_quest_log,
 };
@@ -99,7 +99,10 @@ async fn journey(h: &Harness) -> TestResult {
     assert!(
         log.content
             .catalogues()
-            .all(|catalogue| catalogue.quests().iter().all(|quest| quest.key != QUEST)),
+            .all(|catalogue| catalogue
+                .quests()
+                .iter()
+                .all(|quest| quest.key != QUEST || !quest.shown_in_quest_log)),
         "this script-only quest remains absent from the quest log"
     );
     let catalogue = Arc::new(loaded.catalogue().clone());
@@ -283,6 +286,17 @@ async fn journey(h: &Harness) -> TestResult {
     let mut helper = plate_helper(h, &deps, &owner, &player).await?;
     walk(&mut owner, &mut helper, &[North]).await?;
     assert_at(&owner, &helper, tile(32225, 32268, 9)).await?;
+    let map = owner.bundle_map().ok_or("Lighthouse map")?;
+    for (position, original, pressed) in [
+        (tile(32225, 32268, 9), 431, 430),
+        (tile(32225, 32282, 9), 429, 7767),
+    ] {
+        assert_eq!(
+            map.facts.base_entry(position, 0, original).map(|entry| entry.appearance_id),
+            Some(pressed),
+            "the held plate must transform the source ground at {position:?}",
+        );
+    }
     assert_state(&owner, &player, 2, &[]).await?;
 
     walk(&mut owner, &mut player, &[South, South]).await?;
@@ -417,6 +431,7 @@ async fn plate_helper(
         ..*player
     };
     owner.admit_progression_session(&mut peer).await;
+    owner.admit_quest_session(&peer).await;
     Ok(peer)
 }
 
@@ -519,18 +534,20 @@ async fn assert_state(
         .await
         .map_err(debug)?
         .ok_or("backpack")?;
-    let actual = bag
+    let mut actual = bag
         .entries
         .iter()
         .map(|entry| {
             assert_eq!(entry.item.quantity, 1);
-            entry.item.definition.production_key.as_str()
+            (
+                entry.item.definition.production_key.as_str(),
+                entry.item.item_instance_id,
+            )
         })
         .collect::<Vec<_>>();
-    assert_eq!(actual, expected_items);
-    Ok(bag
-        .entries
-        .iter()
-        .map(|entry| entry.item.item_instance_id)
-        .collect())
+    actual.sort_unstable();
+    let mut expected = expected_items.to_vec();
+    expected.sort_unstable();
+    assert_eq!(actual.iter().map(|(key, _)| *key).collect::<Vec<_>>(), expected);
+    Ok(actual.into_iter().map(|(_, instance)| instance).collect())
 }

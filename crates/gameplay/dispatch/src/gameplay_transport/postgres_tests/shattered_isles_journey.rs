@@ -4,6 +4,7 @@ use std::{ffi::OsStr, path::Path, sync::Arc, time::Duration};
 
 use super::fixture::{Harness, debug, id};
 use super::m39_bone_journey_fixtures::carried;
+use super::questl2_fixture::{wire_sequence, wire_sequence_observed};
 use super::quest_world_callbacks_fixtures::{input_item, wire};
 use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
@@ -182,6 +183,10 @@ async fn scenario(admin: String) -> TestResult {
         )));
     let mut admitted = deps.admitted;
     let session = admitted.game_session_id;
+    let lease = FreshAdmissionStore::from_root(h.root.clone())
+        .current_session(session)
+        .await?
+        .current_character_lease();
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
         owner.offered_capabilities(),
         owner.appearance_available(),
@@ -194,6 +199,7 @@ async fn scenario(admin: String) -> TestResult {
         runtime
             .initialize_first_entry_position(deps.actor)
             .map_err(debug)?;
+        runtime.bind_attacker_lease(deps.actor, session, lease).map_err(debug)?;
         runtime.place_npcs(&npcs, |_| true, true).map_err(debug)?;
     }
     admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -439,7 +445,7 @@ impl Journey<'_, '_, '_, '_> {
             .await?;
         assert_eq!(self.completions().await?, 0);
         let raymond = self.contact("raymond_striker").await?;
-        let terminal = self.admitted.continuity.next_command_id;
+        let terminal = self.admitted.continuity.next_command_id + 1;
         let original = self.talk(raymond, "mission").await?;
         assert_eq!(original, NpcIntentDisposition::Ok);
         self.terminal().await?;
@@ -497,7 +503,7 @@ impl Journey<'_, '_, '_, '_> {
         Ok(())
     }
 
-    async fn contact(&mut self, name: &str) -> TestResult<EntityRef> {
+    async fn contact(&self, name: &str) -> TestResult<EntityRef> {
         let key = format!("oteryn:npc.{name}");
         let npc = self
             .npcs
@@ -528,21 +534,37 @@ impl Journey<'_, '_, '_, '_> {
                 })
                 .ok_or("live journey contact")?
         };
-        let npc = EntityRef {
+        Ok(EntityRef {
             identity: actor.actor.placement_identity(),
             generation: actor.generation,
-        };
-        assert_eq!(
-            self.talk(npc, "hi").await?,
-            NpcIntentDisposition::Ok,
-            "greet {name}"
-        );
-        Ok(npc)
+        })
     }
 
     async fn talk(&mut self, npc: EntityRef, text: &str) -> TestResult<NpcIntentDisposition> {
-        self.talk_id(npc, text, self.admitted.continuity.next_command_id)
-            .await
+        self.advance_clock()?;
+        let commands = self.talk_commands(npc, &["hi", text])?;
+        let replies = wire_sequence(self.owner, self.admitted, commands).await?;
+        assert_eq!(
+            decode_npc_intent_result(&replies[0]).map_err(debug)?,
+            NpcIntentDisposition::Ok
+        );
+        decode_npc_intent_result(&replies[1]).map_err(debug)
+    }
+
+    fn talk_commands(
+        &self,
+        npc: EntityRef,
+        words: &[&str],
+    ) -> TestResult<Vec<(u64, u32, Vec<u8>)>> {
+        let first = self.admitted.continuity.next_command_id;
+        words.iter().zip(first..).map(|(word, id)| {
+            let payload = encode_npc_talk_intent(&NpcTalkIntent {
+                npc_actor: npc,
+                text: (*word).into(),
+            })
+            .map_err(debug)?;
+            Ok((id, COMMAND_TYPE_NPC_TALK_INTENT, payload))
+        }).collect()
     }
 
     async fn talk_id(
@@ -614,15 +636,22 @@ impl Journey<'_, '_, '_, '_> {
         self.wait_for_passage().await?;
         let jack = self.contact("jack_fate").await?;
         assert!(self.owner.states.newhaven_travel.set_jack_fate_test_roll(true));
-        assert_eq!(self.talk(jack, "thais").await?, NpcIntentDisposition::Ok);
-        let before = super::full_world_support::position(
-            self.owner,
-            self.admitted.runtime_actor.ok_or("actor")?,
-        )
-        .await?;
-        assert_eq!(self.talk(jack, "yes").await?, NpcIntentDisposition::Ok);
-        self.arrived((before.x, before.y, before.floor)).await?;
-        assert_eq!(self.talk(jack, "yes").await?, NpcIntentDisposition::Ok);
+        self.advance_clock()?;
+        let commands = self.talk_commands(jack, &["hi", "thais", "yes", "yes"])?;
+        let owner = &*self.owner;
+        let actor = self.admitted.runtime_actor.ok_or("actor")?;
+        let before = super::full_world_support::position(owner, actor).await?;
+        wire_sequence_observed(owner, self.admitted, commands, async |index, reply: &[u8]| {
+            assert_eq!(
+                decode_npc_intent_result(reply).map_err(debug)?,
+                NpcIntentDisposition::Ok,
+                "storm dialogue command {index}"
+            );
+            if index == 2 {
+                assert_eq!(super::full_world_support::position(owner, actor).await?, before);
+            }
+            Ok(())
+        }).await?;
         if expect_wreck {
             self.arrived_at_goroma().await?;
         } else {
@@ -640,8 +669,16 @@ impl Journey<'_, '_, '_, '_> {
     ) -> TestResult {
         self.wait_for_passage().await?;
         let npc = self.contact(npc).await?;
-        assert_eq!(self.talk(npc, keyword).await?, NpcIntentDisposition::Ok);
-        assert_eq!(self.talk(npc, "yes").await?, NpcIntentDisposition::Ok);
+        self.advance_clock()?;
+        let commands = self.talk_commands(npc, &["hi", keyword, "yes"])?;
+        let replies = wire_sequence(self.owner, self.admitted, commands).await?;
+        for (word, reply) in ["hi", keyword, "yes"].into_iter().zip(replies) {
+            assert_eq!(
+                decode_npc_intent_result(&reply).map_err(debug)?,
+                NpcIntentDisposition::Ok,
+                "{word}"
+            );
+        }
         if keyword == "goroma" {
             self.arrived_at_goroma().await
         } else {
@@ -996,6 +1033,8 @@ impl Journey<'_, '_, '_, '_> {
             self.owner
                 .initialize_admitted_position(&mut runtime, actor, session, &position)
                 .await
+                .map_err(debug)?;
+            runtime.bind_attacker_lease(actor, session, current.current_character_lease())
                 .map_err(debug)?;
             actor
         };
