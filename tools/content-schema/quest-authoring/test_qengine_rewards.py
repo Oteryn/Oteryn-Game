@@ -120,21 +120,26 @@ class QuestRewards(unittest.TestCase):
         mounts={row['key']:row for row in doc['mounts']}
         mappings={row['grant_key']:row for row in doc['grant_mappings']}
         self.assertEqual(len(mounts), 275)
+        legacy_mounts = {
+            'black_sheep', 'crystal_wolf', 'dragonling', 'draptor', 'dromedary',
+            'gnarlhound', 'gryphon', 'hibernal_moth', 'ironblight', 'lacewing_moth',
+            'magma_crawler', 'manta_ray', 'midnight_panther', 'mole', 'noble_lion',
+            'shock_head', 'stone_rhino', 'undead_cavebear', 'walker', 'water_buffalo',
+            'white_lion',
+        }
+        aliases = {key: key + '_mount' for key in legacy_mounts}
+        aliases.update(lady_bug='ladybug_mount', wind_up_loco='gloothomotive')
         taming=json.loads((q.ROOT/'content/cosmetics/taming.json').read_bytes())
         for rule in taming:
             self.assertIn(rule['mount_key'],mounts)
-            mapping = mappings[rule['grant_key']]
-            self.assertEqual(mapping['target'], {'kind': 'Mount', 'mount_key': rule['mount_key']})
-            self.assertEqual(mapping['compatible_provenance'], ['mount-taming-v1'])
-            for alias in mapping.get('mount_aliases', []):
+            expected = {'grant_key': rule['grant_key'],
+                        'target': {'kind': 'Mount', 'mount_key': rule['mount_key']},
+                        'compatible_provenance': ['mount-taming-v1']}
+            if name := aliases.get(rule['mount_key'].rsplit('.', 1)[1]):
+                alias = 'oteryn:content.mount.' + name
+                expected['mount_aliases'] = [alias]
                 self.assertEqual(mounts[alias]['look'], mounts[rule['mount_key']]['look'])
-        self.assertEqual(len({alias for mapping in mappings.values()
-                              for alias in mapping.get('mount_aliases', [])}), 23)
-        self.assertEqual(
-            {alias for mapping in mappings.values() for alias in mapping.get('mount_aliases', [])}
-            & {'oteryn:content.mount.black_sheep_mount', 'oteryn:content.mount.gloothomotive'},
-            {'oteryn:content.mount.black_sheep_mount', 'oteryn:content.mount.gloothomotive'},
-        )
+            self.assertEqual(mappings[rule['grant_key']], expected)
         packet=json.loads((q.ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes())
         for grant in packet['grants']:
             if grant['kind']=='mount':
