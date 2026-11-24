@@ -102,7 +102,7 @@ fn owner(
     proficiency: u32,
 ) -> Result<(PlayerSpellState, OwnedCastFacts), String> {
     let (vocation, key) = match spell.name.as_str() {
-        "Food" | "Heal Friend" => (Vocation::Druid, "druid"),
+        "Food" | "Heal Friend" | "Druid familiar" => (Vocation::Druid, "druid"),
         "Chained Penance" => (Vocation::Monk, "monk"),
         "Annihilation" => (Vocation::Knight, "knight"),
         _ => (Vocation::Paladin, "paladin"),
@@ -389,5 +389,57 @@ fn source_skill_formulas_without_a_weapon_use_unarmed_inputs() -> Result<(), Str
         owned.caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW),
         Err(OwnedFactsError::UnavailableEquipment)
     ));
+    Ok(())
+}
+
+#[test]
+fn familiar_engine_admission_reports_cooldown_before_summon() -> Result<(), String> {
+    let content = content()?;
+    let spell = spell(&content, "Druid familiar")?;
+    let (mut state, owned) = owner(&content, &spell, 0, 0)?;
+    let now = SemanticTimeMicros::from_micros(NOW);
+    let caster = owned
+        .caster(&state, &spell, &content, HarmonyMultiplier::ONE, now.get())
+        .map_err(|error| format!("{error:?}"))?;
+    let operational = OperationalCastFacts {
+        caster_position: TilePosition {
+            x: 0,
+            y: 0,
+            floor: 7,
+        },
+        target_position: None,
+        target: None,
+        line_of_sight_clear: None,
+        direction_available: false,
+        wheel_unlocked: None,
+        in_protection_zone: false,
+        target_tile_solid: None,
+        target_tile_creature: None,
+    };
+    let ready_at = SemanticTimeMicros::from_micros(NOW + 10);
+    state.cooldowns.spells.insert(spell.key.clone(), ready_at);
+    let check = |time| {
+        crate::spell::resolve_native_callback_common(
+            &spell,
+            &caster,
+            &state.cooldowns,
+            time,
+            &operational,
+        )
+    };
+    assert!(
+        matches!(
+            check(now),
+            Err(crate::spell::CastRejection::SpellCooling { ready_at: due }) if due == ready_at
+        ),
+        "familiar cooldown result: {:?}",
+        check(now)
+    );
+    assert_eq!(
+        check(ready_at)
+            .map_err(|error| format!("{error:?}"))?
+            .mana_spent,
+        3000
+    );
     Ok(())
 }
