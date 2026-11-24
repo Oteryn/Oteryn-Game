@@ -1001,13 +1001,19 @@ async fn craft(
         let count = number(&operand["count"])?;
         let existing = quantity(&inventory(client)?, item);
         if existing < i64::from(count) {
-            full_row_i14::acquire(
-                client,
-                world,
-                item_id(string(&operand["item_id"]["key"])?)?,
-                u32::try_from(i64::from(count) - existing)?,
-            )
-            .await?;
+            let id = item_id(string(&operand["item_id"]["key"])?)?;
+            let missing = u32::try_from(i64::from(count) - existing)?;
+            if id == 3604 {
+                // Dough itself has no shop route in the town fixture. Use the
+                // same mill, water and mixing commands as the baking journey.
+                let bytes = world_bytes()?;
+                for _ in 0..missing {
+                    full_row_i11::mill_wheat(client, world, &bytes).await?;
+                    full_row_i11::mix_dough(client, world, &bytes, &index, item).await?;
+                }
+            } else {
+                full_row_i14::acquire(client, world, id, missing).await?;
+            }
         }
     }
     let target = &recipe["target"];
