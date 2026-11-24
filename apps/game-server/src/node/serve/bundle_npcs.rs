@@ -833,39 +833,181 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn w19a_messenger_spawns_beside_santa_only_during_christmas() -> Result<(), String> {
-        let santa = "oteryn:npc.santa_claus";
-        let messenger = "oteryn:npc.messenger_of_santa";
-        let boot = timed_boot(&[santa, messenger]);
-        let mut runtime = channel_runtime_with(32);
-        let anchor = crate::map::overlay::TilePos {
-            x: 32357,
-            y: 32210,
-            floor: -7,
-        };
-        let next = crate::map::overlay::TilePos { x: 32358, ..anchor };
-        let open = |tile| tile == anchor || tile == next;
-        assert!(seasonal::SeasonalNpcSpawns::admit(Some(&boot), &[], open).is_empty());
+    fn w19a_seeded_christmas_projects_all_messengers_in_wire_snapshots() {
+        use oteryn_gameplay_dispatch::gameplay_transport::world_spatial as wire;
+        use oteryn_gameplay_foundation::scheduled_events::content_schedule;
+        use oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2;
 
-        let mut spawns =
-            seasonal::SeasonalNpcSpawns::admit(Some(&boot), &["christmas".into()], open);
-        for _ in 0..2 {
-            spawns
-                .tick(&mut runtime)
-                .map_err(|error| format!("{error:?}"))?;
-        }
-        let visible = runtime.visible_entities();
-        let positions = |key| {
-            visible
-                .npcs
-                .iter()
-                .filter(|npc| runtime.npc_key(npc.actor) == Some(key))
-                .map(|npc| (npc.position.x, npc.position.y, npc.position.floor))
-                .collect::<Vec<_>>()
+        let anchors = source_santa_positions();
+        assert_eq!(anchors.len(), 15);
+        let path = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../content"));
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            path,
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .expect("repository NPC catalogue");
+        let LoadedNpcCatalogue {
+            admitted,
+            catalogue_sha256,
+            talk,
+        } = LoadedNpcCatalogue::from_catalogue(&catalogue, &path.join("world"))
+            .expect("qualified NPC catalogue");
+        let boot = NpcBoot::Place {
+            table: NpcPlacementTable::default(),
+            catalogue_sha256,
+            admitted,
+            production: true,
+            talk: talk.clone(),
         };
-        assert_eq!(positions(santa), [(32357, 32210, 7)]);
-        assert_eq!(positions(messenger), [(32358, 32210, 7)]);
-        Ok(())
+        let schedule = |month, day| -> Vec<String> {
+            content_schedule()
+                .seasonal_at(month, day)
+                .into_iter()
+                .map(str::to_owned)
+                .collect()
+        };
+        let open = |tile: crate::map::overlay::TilePos| {
+            let (x, y, z) = (i32::from(tile.x), i32::from(tile.y), -i16::from(tile.floor));
+            anchors.contains(&(x, y, z)) || anchors.contains(&(x - 1, y, z))
+        };
+        let mut runtime = channel_runtime_with(32);
+        seasonal::SeasonalNpcSpawns::admit(Some(&boot), &schedule(11, 24), open)
+            .tick(&mut runtime)
+            .expect("off-season tick");
+        assert!(runtime.visible_entities().npcs.is_empty());
+
+        let active = schedule(12, 12);
+        assert!(active.iter().any(|event| event == "christmas"));
+        let mut spawns = seasonal::SeasonalNpcSpawns::admit(Some(&boot), &active, open);
+        spawns.tick(&mut runtime).expect("Christmas tick");
+        spawns
+            .tick(&mut runtime)
+            .expect("idempotent Christmas tick");
+        let visible = runtime.visible_entities();
+        assert_eq!(visible.npcs.len(), 30);
+        let npcs: Vec<_> = visible
+            .npcs
+            .iter()
+            .map(|actor| wire::ChannelEntity {
+                source_icons: Default::default(),
+                motion: None,
+                display_name: Some(
+                    wire::EntityDisplayName::new(
+                        talk.display_name(runtime.npc_key(actor.actor).expect("NPC key"))
+                            .expect("catalogue name"),
+                    )
+                    .expect("wire name"),
+                ),
+                health_percent: 100,
+                direction: wire::StepDirection::South,
+                kind: wire::VisibleKind::Npc,
+                identity: actor.actor.placement_identity(),
+                generation: actor.generation,
+                position: wire::ActorPosition {
+                    x: actor.position.x,
+                    y: actor.position.y,
+                    floor: actor.position.floor,
+                },
+                revision: actor.revision,
+            })
+            .collect();
+        let capabilities = [
+            wire::CAPABILITY_WORLD_SPATIAL_ENTITIES,
+            CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
+        ];
+        let mut messengers = BTreeSet::new();
+        for &(x, y, floor) in &anchors {
+            let observer = [0xff; 16];
+            let mut entities = npcs.clone();
+            entities.push(wire::ChannelEntity {
+                kind: wire::VisibleKind::Player,
+                identity: observer,
+                display_name: Some(
+                    wire::EntityDisplayName::new("Seeded Observer").expect("wire name"),
+                ),
+                position: wire::ActorPosition { x, y: y + 1, floor },
+                generation: 1,
+                revision: 1,
+                ..npcs[0]
+            });
+            let channel = wire::ChannelEntities {
+                content_generation: [1; 32],
+                observer,
+                entities,
+                lights: Default::default(),
+                observed_at_ms: 0,
+            };
+            let mut visibility = wire::SessionVisibility::default();
+            // NPCs carry no per-session item handles.
+            let snapshot = visibility
+                .snapshot(&channel, &mut |_| Ok(()))
+                .expect("interest snapshot");
+            let (_, bytes) =
+                wire::encode_visibility_snapshot_lit(&capabilities, &snapshot, visibility.lights())
+                    .expect("server snapshot payload");
+            let (decoded, _) = wire::decode_world_spatial_entities_snapshot_with_fields(
+                &bytes,
+                wire::EntityFields::selected(&capabilities),
+            )
+            .expect("client snapshot decode");
+            let at = |name, position| {
+                decoded.entities.iter().filter(move |entity| {
+                    entity.kind == wire::EntityKind::Npc
+                        && entity.position == position
+                        && entity.display_name.is_some_and(|held| {
+                            held.as_str()
+                                .is_ok_and(|value| value.eq_ignore_ascii_case(name))
+                        })
+                })
+            };
+            assert_eq!(
+                at("Santa Claus", wire::ActorPosition { x, y, floor }).count(),
+                1
+            );
+            let mut nearby = at(
+                "Messenger of Santa",
+                wire::ActorPosition { x: x + 1, y, floor },
+            );
+            let merchant = nearby.next().unwrap_or_else(|| {
+                panic!(
+                    "no wire-visible Messenger beside ({x},{y},{floor}): {:?}",
+                    decoded.entities
+                )
+            });
+            assert!(nearby.next().is_none());
+            assert!(messengers.insert(merchant.entity.identity));
+        }
+        assert_eq!(messengers.len(), 15);
+        eprintln!(
+            "W19A_PLACEMENT mode=seeded messenger_next_to_each_santa=15/15 wire_snapshots=15"
+        );
+    }
+
+    fn source_santa_positions() -> BTreeSet<(i32, i32, i16)> {
+        let evidence: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/reference/content-prep/season-20261107/seasonal-calendar-source.json"
+        )))
+        .expect("retained structured placement evidence");
+        let santa_source = evidence["records"]
+            .as_array()
+            .expect("source records")
+            .iter()
+            .find(|record| record["title"] == "Santa Claus")
+            .expect("pinned Santa source");
+        santa_source["placements"]
+            .as_array()
+            .expect("source placements")
+            .iter()
+            .map(|row| {
+                (
+                    i32::try_from(row["x"].as_i64().expect("source x")).expect("coordinate"),
+                    i32::try_from(row["y"].as_i64().expect("source y")).expect("coordinate"),
+                    i16::try_from(row["z"].as_i64().expect("source floor")).expect("floor"),
+                )
+            })
+            .collect()
     }
 
     #[test]
@@ -886,29 +1028,7 @@ pub(crate) mod tests {
         seasonal.tick(&mut runtime).expect("source placements");
         seasonal.tick(&mut runtime).expect("idempotent retry");
         assert_eq!(runtime.visible_entities().npcs.len(), 15);
-        let evidence: serde_json::Value = serde_json::from_str(include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../docs/reference/content-prep/season-20261107/seasonal-calendar-source.json"
-        )))
-        .expect("retained structured placement evidence");
-        let santa_source = evidence["records"]
-            .as_array()
-            .expect("source records")
-            .iter()
-            .find(|record| record["title"] == "Santa Claus")
-            .expect("pinned Santa source");
-        let expected: BTreeSet<_> = santa_source["placements"]
-            .as_array()
-            .expect("source placements")
-            .iter()
-            .map(|row| {
-                (
-                    i32::try_from(row["x"].as_i64().expect("source x")).expect("coordinate"),
-                    i32::try_from(row["y"].as_i64().expect("source y")).expect("coordinate"),
-                    i16::try_from(row["z"].as_i64().expect("source floor")).expect("floor"),
-                )
-            })
-            .collect();
+        let expected = source_santa_positions();
         let actual: BTreeSet<_> = runtime
             .visible_entities()
             .npcs
