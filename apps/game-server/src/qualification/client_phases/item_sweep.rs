@@ -500,10 +500,12 @@ async fn rack(
             rows.key
         ));
         rows.emit("seed", Ok(()));
-        rows.emit(
-            "container",
-            container(&mut client, handle, item.capacity()).await,
-        );
+        if rows.pending.contains(&"container") {
+            rows.emit(
+                "container",
+                container(&mut client, handle, item.capacity()).await,
+            );
+        }
         Ok(())
     }
     .await;
@@ -600,10 +602,10 @@ async fn ground_container(
         match opened {
             Ok(entry) => {
                 rows.emit("seed", Ok(()));
-                if !item.group("container").is_null() {
+                if rows.pending.contains(&"container") {
                     rows.emit("container", container(&mut client, entry.handle, item.capacity()).await);
                 }
-                if item.usable() {
+                if rows.pending.contains(&"use") {
                     rows.emit("use", use_effect_ground(&mut client, entry).await);
                 }
             }
@@ -1088,6 +1090,60 @@ fn food_matches(before: i32, after: i32, seconds: u64, elapsed: Duration) -> boo
         && maximum - observed <= elapsed.as_millis().min(i128::MAX as u128) as i128 + 1000
 }
 
+// RUNE_USE targets come from the native spell book; the generic direct USE
+// cannot exercise a creature or tile rune (rune_use_bridge.rs).
+async fn rune_probe(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    entry: ItemEntry,
+) -> TestResult<(Use, u64)> {
+    let spell = native_spell_book()?
+        .rune(entry.item_definition_ref.get())
+        .ok_or("rune-native-definition-unavailable")?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+    })
+    .ok_or("rune-no-reachable-combat-tile")?;
+    walk(client, world, &path).await?;
+    let creature = if spell.needs_target && !spell.self_target {
+        Some(full_e2ef5::wild_rat(client, world, &[]).await?.entity)
+    } else {
+        None
+    };
+    let position = if creature.is_none() && !spell.self_target {
+        let at = client.world_spatial().actor_position;
+        let from = tile(at)?;
+        let target = [
+            StepDirection::North,
+            StepDirection::East,
+            StepDirection::South,
+            StepDirection::West,
+        ]
+        .into_iter()
+        .filter_map(|direction| destination(world, from, direction))
+        .find(|cell| {
+            cell.floor == from.floor
+                && world
+                    .base()
+                    .tile(cell.x, cell.y, cell.floor)
+                    .is_some_and(|tile| !tile.protection_zone())
+        })
+        .ok_or("rune-no-adjacent-combat-target")?;
+        Some(ActorPosition {
+            x: i32::from(target.x),
+            y: i32::from(target.y),
+            floor: at.floor,
+        })
+    } else {
+        None
+    };
+    full_e2ef5::rune_use(client, entry.item_definition_ref, creature, position).await
+}
+
 async fn use_effect(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -1095,6 +1151,19 @@ async fn use_effect(
     item: &Item,
     index: &crate::content::item_ref::ItemDefinitionIndex,
 ) -> TestResult {
+    if !item.attributes["rune_consumption"].is_null() {
+        let (disposition, _) = rune_probe(client, world, entry).await?;
+        if disposition != Use::Committed {
+            return Err(format!("targeted-rune-USE-{disposition:?}").into());
+        }
+        observe(client, |client| {
+            let count =
+                carried(client, entry.item_definition_ref).map_or(0, |entry| entry.count.get());
+            (count == entry.count.get() - 1).then_some(())
+        })
+        .await?;
+        return Err("targeted-rune-debit-observed-effect-oracle-unavailable".into());
+    }
     let text = item.group("readable_writeable");
     if known(&text["readable"]).as_bool() == Some(true) {
         use oteryn_protocol_oteryn::item_inscription as wire;
@@ -1380,6 +1449,12 @@ async fn sweep_item(
         return;
     };
     rows.emit("seed", Ok(()));
+    if rows.pending.as_slice() == ["cleanup"] {
+        let cleanup = drop_carried(&mut client, reference).await;
+        let released = release(&mut client).await;
+        rows.emit("cleanup", cleanup.and(released));
+        return;
+    }
     if !item.group("container").is_null() {
         rows.emit(
             "container",
@@ -1477,6 +1552,11 @@ pub(super) async fn run<'a>(scopes: [&'a SeamClients<'a>; 5], world: &BundleWorl
         ),
         None => None,
     };
+    let seed_only =
+        std::env::var_os("OTERYN_E2E_ITEM_SWEEP_SEED_ONLY").is_some_and(|value| value == "1");
+    if seed_only && requested.is_none() {
+        return Err("seed-only item sweep requires OTERYN_E2E_ITEM_SWEEP_KEYS".into());
+    }
     let mut entries = Vec::new();
     for (key, item) in items.iter().filter(|(_, item)| item.in_sweep()) {
         if requested.as_mut().is_none_or(|keys| keys.remove(key)) {
@@ -1509,7 +1589,11 @@ pub(super) async fn run<'a>(scopes: [&'a SeamClients<'a>; 5], world: &BundleWorl
         verdict::Harness::global().progress("item-sweep-entry");
         let mut rows = Rows {
             key: key.strip_prefix("oteryn:item.").unwrap_or(key),
-            pending: steps(item),
+            pending: if seed_only {
+                vec!["seed", "cleanup"]
+            } else {
+                steps(item)
+            },
             counts: Tally::default(),
             lap: std::time::Instant::now(),
         };
@@ -1544,7 +1628,7 @@ pub(super) async fn run<'a>(scopes: [&'a SeamClients<'a>; 5], world: &BundleWorl
         tally.fail += rows.counts.fail;
     }
     evidence(&format!(
-        "item_sweep summary total={total} start={start} len={len} selected={} rows_pass={} rows_fail={} mode=seeded",
+        "item_sweep summary total={total} start={start} len={len} selected={} rows_pass={} rows_fail={} mode=seeded seed_only={seed_only}",
         end - start,
         tally.pass,
         tally.fail,

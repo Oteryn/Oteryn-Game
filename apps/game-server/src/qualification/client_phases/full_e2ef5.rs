@@ -1429,7 +1429,7 @@ async fn inventory_quantity(
     }
 }
 
-async fn rune_use(
+pub(super) async fn rune_use(
     client: &mut DevClientSession,
     reference: std::num::NonZeroU32,
     creature: Option<oteryn_dev_client::EntityRef>,
