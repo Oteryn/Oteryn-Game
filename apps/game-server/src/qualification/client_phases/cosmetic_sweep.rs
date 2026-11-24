@@ -363,6 +363,15 @@ async fn release_pair(clients: &SeamClients<'_>) -> TestResult {
     actor.and(observer)
 }
 
+// The first admission initializes the backpack before any fixture item is seeded.
+async fn initialize_pair(clients: &SeamClients<'_>) -> TestResult {
+    for index in 0..2 {
+        let mut client = connect_character(clients, 0xc8, index).await?;
+        logout(&mut client).await?;
+    }
+    release_pair(clients).await
+}
+
 pub(super) async fn run(
     fixtures: &[SeamClients<'_>],
     world: &BundleWorld,
@@ -413,6 +422,7 @@ pub(super) async fn run(
     let mut fail = 0;
     let mut mounts_seen = std::collections::BTreeSet::new();
     let mut fixture_index = 0;
+    let mut initialized = false;
     for (key, entry) in entries.into_iter().skip(start).take(selected) {
         // Canonical and legacy aliases can share one entitlement. Give the
         // second representation a fresh acquisition on the other fixture account.
@@ -440,6 +450,16 @@ pub(super) async fn run(
             let Some(pair) = fixtures.get(fixture_index) else {
                 break Err("harness-fixture-release: no unused fixture pairs remain".into());
             };
+            if !initialized {
+                if let Err(error) = initialize_pair(pair).await {
+                    evidence(&format!(
+                        "cosmetic_sweep fixture=retired pair={fixture_index} phase=initialization error={error}"
+                    ));
+                    fixture_index += 1;
+                    continue;
+                }
+                initialized = true;
+            }
             let accounts = [pair.accounts[1].clone(), pair.accounts[0].clone()];
             let characters = [pair.characters[1], pair.characters[0]];
             let alternate = SeamClients {
@@ -460,6 +480,7 @@ pub(super) async fn run(
                     "cosmetic_sweep fixture=retired pair={fixture_index} error={error}"
                 ));
                 fixture_index += 1;
+                initialized = false;
                 mounts_seen.clear();
                 continue;
             }
@@ -477,6 +498,7 @@ pub(super) async fn run(
                     "cosmetic_sweep fixture=retired pair={fixture_index} error={error}"
                 ));
                 fixture_index += 1;
+                initialized = false;
                 mounts_seen.clear();
                 if rows.next == 0 && fixture_index < fixtures.len() {
                     continue;
