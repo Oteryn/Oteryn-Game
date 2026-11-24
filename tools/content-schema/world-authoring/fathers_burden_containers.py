@@ -74,6 +74,9 @@ def overlay_outputs(outputs):
             palette.append(child)
             summary["palette"]["entries"] += 1
             summary["palette"]["families"]["item"]["entries"] += 1
+        if not installed and palette[slots[material]] == {**child, "retired": True}:
+            # A full recapture initially sees no startup-only container contents.
+            palette[slots[material]] = child
         if palette[slots[material]] != child:
             raise ValueError(f"Unexpected palette binding for material {material}")
         start = parent + 1

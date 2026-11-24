@@ -63,6 +63,7 @@ def admit_map_carriers(root, document):
 
 def admit_route_scenery(root, generated, profile_path, manifest_path, order, canonical):
     import authored_static_item_constructors
+    import key_door_item_profiles
     import qengine_reward_item_profiles as donor
 
     # The Folda corridor carries stones, bloodstains, a bone and patches of ice.
@@ -75,6 +76,10 @@ def admit_route_scenery(root, generated, profile_path, manifest_path, order, can
     # second Alawar door also needs its unlocked and open counterparts.
     doors = {6251: True, 7033: True, 7034: True, 7035: False, 7042: True}
     movement.update(doors)
+    key_doors = {
+        row['production_definition']['production_key']: row
+        for row in json.loads((root / key_door_item_profiles.PATH).read_bytes())['records']
+    }
     document = json.loads(generated[profile_path])
     existing = {row['production_definition']['production_key']: row
                 for row in document['records']}
@@ -86,11 +91,13 @@ def admit_route_scenery(root, generated, profile_path, manifest_path, order, can
             missing.add(identifier)
             continue
         portable = identifier == 3115
+        # M01c already owns the exact ground-only form of the shared Alawar doors.
+        ground_only_door = identifier in doors and prior == key_doors.get(key)
         attributes = prior['attributes']
         physical = prior['semantics']['physical'].get('value', {})
         motion = attributes.get('blocks_movement')
         if (prior['production_binding']['disposition'] != 'EXACT'
-                or prior['admission']['materializable'] != portable
+                or prior['admission']['materializable'] != (portable or ground_only_door)
                 or physical.get('movable') != writing.known(portable)
                 or physical.get('pickupable') != writing.known(portable)
                 or (motion is not solid and not (portable and motion is None))

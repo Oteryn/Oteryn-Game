@@ -115,8 +115,8 @@ mod tests {
         let callbacks = world_callbacks::load_for(catalogue)?;
         // The base registry includes distinct bare and selected-tool bear actions.
         assert_eq!(base.len(), 1_049);
-        assert_eq!(bindings.world_callbacks().count(), 35);
-        assert_eq!(callbacks.len(), 1_084);
+        assert_eq!(bindings.world_callbacks().count(), 100);
+        assert_eq!(callbacks.len(), 1_149);
         assert_eq!(
             callbacks.len(),
             base.len() + bindings.world_callbacks().count()

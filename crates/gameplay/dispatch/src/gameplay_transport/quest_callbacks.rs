@@ -194,6 +194,7 @@ fn unique_eligible<'a>(
     let (door, orchid) = match (selected.key.as_str(), alternative.key.as_str()) {
         (FIRE_DOOR, ORCHID) => (selected, alternative),
         (ORCHID, FIRE_DOOR) => (alternative, selected),
+        // The authored skull sacrifice adds its story proof once eligible.
         (
             "oteryn:quest-callback/paradox-skulls",
             "oteryn:quest-callback/paradox-tower/native-skulls",
