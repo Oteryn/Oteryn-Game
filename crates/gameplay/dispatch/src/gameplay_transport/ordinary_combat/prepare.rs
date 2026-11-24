@@ -2,12 +2,10 @@
 use super::*;
 
 struct SpatialPhase {
-    position: MovementPositionSnapshot,
+    direction_available: bool,
     caster_position: TilePosition,
     origin: TilePosition,
     facing: Direction,
-    /// WU26-14: the direction comes from the aim, so it is available without a facing.
-    aimed: bool,
     bindings: Vec<LiveActorBinding>,
     chain_creatures: Vec<ChainCreature>,
     sight_origin: TilePosition,
@@ -65,11 +63,8 @@ pub(in crate::gameplay_transport) fn aimed_origin(
     facing: Option<Direction>,
     point: Option<TilePosition>,
 ) -> Result<(TilePosition, Direction), SpellCastDisposition> {
-    let d = point
-        .and_then(|p| plans::aimed_cardinal(plan_position(caster), plan_position(p)))
-        .map(cast_direction)
-        .or(facing)
-        .ok_or(SpellCastDisposition::TargetRequired)?;
+    let aim = point.and_then(|p| plans::aimed_cardinal(plan_position(caster), plan_position(p)));
+    let d = cast_direction(plans::player_spell_direction(aim, facing.map(delta)));
     let (dx, dy) = delta(d);
     Ok((offset(caster, dx, dy)?, d))
 }
@@ -502,7 +497,7 @@ async fn prepare_spatial(
             let d = position
                 .facing()
                 .map(direction)
-                .ok_or(SpellCastDisposition::TargetRequired)?;
+                .unwrap_or(cast_direction(plans::DEFAULT_PLAYER_SPELL_DIRECTION));
             let (dx, dy) = delta(d);
             offset(caster_position, dx, dy)?
         }
@@ -524,7 +519,12 @@ async fn prepare_spatial(
     } else {
         position.facing().map(direction)
     };
-    let facing = facing.unwrap_or(Direction::North);
+    let direction_available = directional || position.facing().is_some() || aimed.is_some();
+    let facing = facing.unwrap_or(if directional {
+        cast_direction(plans::DEFAULT_PLAYER_SPELL_DIRECTION)
+    } else {
+        Direction::North
+    });
     let mut candidates = BTreeSet::from([caster_position, origin]);
     for a in &profile.dependencies.abilities {
         candidates.extend(geometry(a, origin, facing)?);
@@ -644,11 +644,10 @@ async fn prepare_spatial(
         })
         .collect::<BTreeSet<_>>();
     Ok(SpatialPhase {
-        position,
+        direction_available,
         caster_position,
         origin,
         facing,
-        aimed: aimed.is_some(),
         bindings,
         chain_creatures,
         sight_origin,
@@ -681,11 +680,10 @@ async fn qualify_targets(
     now: SemanticTimeMicros,
 ) -> Result<TargetPhase, SpellCastDisposition> {
     let SpatialPhase {
-        position,
+        direction_available,
         caster_position,
         origin,
         facing,
-        aimed,
         bindings,
         chain_creatures,
         sight_origin,
@@ -831,7 +829,7 @@ async fn qualify_targets(
         line_of_sight_clear: Some(
             caster_position == origin || sight.contains(&(caster_position, origin)),
         ),
-        direction_available: position.facing().is_some() || aimed,
+        direction_available,
         wheel_unlocked: None,
         in_protection_zone: caster_protection,
         target_tile_solid: tiles.get(&origin).map(|t| t.solid),

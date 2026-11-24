@@ -46,6 +46,26 @@ pub fn aimed_cardinal(from: TilePosition, to: TilePosition) -> Option<Direction>
         (_, y) => Some((0, if y > 0 { 1 } else { -1 })),
     }
 }
+/// Source players start facing south before a recorded turn or step.
+pub const DEFAULT_PLAYER_SPELL_DIRECTION: Direction = (0, 1);
+
+/// An explicit aim takes precedence over the recorded and initial headings.
+pub fn player_spell_direction(aim: Option<Direction>, facing: Option<Direction>) -> Direction {
+    aim.or(facing).unwrap_or(DEFAULT_PLAYER_SPELL_DIRECTION)
+}
+
+#[cfg(test)]
+mod player_facing_tests {
+    use super::*;
+
+    #[test]
+    fn directional_cast_uses_initial_south_heading_until_the_first_turn() {
+        assert_eq!(player_spell_direction(None, None), (0, 1));
+        assert_eq!(player_spell_direction(None, Some((-1, 0))), (-1, 0));
+        assert_eq!(player_spell_direction(Some((1, 0)), Some((-1, 0))), (1, 0));
+    }
+}
+
 /// SPELL-TARGET-1: the geometry origin and facing of a held-target cast. A directional or aimed
 /// spell keeps the caster as origin (the tile in front of it) and takes only its facing from the
 /// target; a single-target spell is centred on the target tile.

@@ -381,12 +381,13 @@ async fn prepare_spatial(
         )?),
         None => None,
     };
-    if needs_direction && facing.is_none() && aimed.is_none() {
-        return reject();
-    }
     let facing_direction = match aimed {
         Some((_, d)) => d,
-        None => facing.map(direction).unwrap_or(Direction::North), // unused by symmetric/self recipes
+        None => facing.map(direction).unwrap_or(if needs_direction {
+            cast_direction(cast_plans::DEFAULT_PLAYER_SPELL_DIRECTION)
+        } else {
+            Direction::North
+        }),
     };
     let is_delayed = parameters.get("delay_ms").is_some();
     let held = is_delayed
@@ -553,7 +554,7 @@ async fn prepare_spatial(
         target: None,
         line_of_sight_clear: target_position
             .map(|p| p == position || clear_sight.contains(&(position, p))),
-        direction_available: facing.is_some() || aimed.is_some(),
+        direction_available: needs_direction || facing.is_some() || aimed.is_some(),
         wheel_unlocked: (parameters.get("wheel").is_some()
             || spell
                 .authored
