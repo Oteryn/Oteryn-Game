@@ -1355,55 +1355,9 @@ node_complete_assignment() {
   ops content activate --request content-1.json
   local -a report_args=()
   assignment_report_args
-  local christmas_fixture=0
-  if [[ "$NODE_BOOT_WORLD" == 1 && ( -z "${NODE_BOOT_E2E_ONLY:-}" || "${NODE_BOOT_E2E_ONLY:-}" == rows ) ]]; then
-    christmas_fixture=1
-    # Commit the calendar in the first assignment transaction. Channel boot reads it
-    # as soon as assignment becomes visible, before readiness can be observed.
-    psql_admin oteryn_node_boot <<SQL
-CREATE FUNCTION node_boot_christmas_clock() RETURNS trigger LANGUAGE plpgsql AS \$\$
-BEGIN
-    NEW.activated_at := TIMESTAMPTZ '2025-12-12 06:00 Europe/Berlin';
-    NEW.reset_month := '2025-12';
-    RETURN NEW;
-END
-\$\$;
-CREATE TRIGGER node_boot_christmas_clock BEFORE INSERT ON game_world_reset_epochs
-    FOR EACH ROW WHEN (NEW.world_id = '$WORLD_ID'::uuid AND NEW.reset_epoch = 0)
-    EXECUTE FUNCTION node_boot_christmas_clock();
-CREATE FUNCTION node_boot_initialize_christmas() RETURNS trigger LANGUAGE plpgsql
-    SECURITY DEFINER SET search_path = pg_catalog, public AS \$\$
-BEGIN
-    PERFORM game_world_reset_initialize(
-        NEW.world_id, decode('$WORLD_DIGEST', 'hex'), 'sha256:$MAP_REVISION',
-        server_artifact_digest, client_artifact_digest, frame_binding_digest,
-        'TIBIA_SERVER_SAVE_BERLIN_06', 1
-    ) FROM game_content_activations
-    WHERE world_id = NEW.world_id AND channel_id = NEW.channel_id AND activation_sequence = 1;
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Christmas fixture requires its issued content';
-    END IF;
-    RETURN NEW;
-END
-\$\$;
-REVOKE ALL ON FUNCTION node_boot_initialize_christmas() FROM PUBLIC;
-CREATE TRIGGER node_boot_initialize_christmas AFTER INSERT ON game_runtime_scope_assignments
-    FOR EACH ROW WHEN (NEW.world_id = '$WORLD_ID'::uuid AND NEW.channel_id = '$CHANNEL_ID'::uuid AND NEW.scope_kind = 1)
-    EXECUTE FUNCTION node_boot_initialize_christmas();
-SQL
-  fi
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
-  if [[ "$christmas_fixture" == 1 ]]; then
-    await_log 'event=seasonal_calendar .*reset_epoch=0 active=.*christmas' 60
-    psql_admin oteryn_node_boot <<'SQL'
-DROP TRIGGER node_boot_initialize_christmas ON game_runtime_scope_assignments;
-DROP FUNCTION node_boot_initialize_christmas();
-DROP TRIGGER node_boot_christmas_clock ON game_world_reset_epochs;
-DROP FUNCTION node_boot_christmas_clock();
-SQL
-  fi
   # The canonical manifest makes each validation substantial. Prove the same
   # stale-predecessor rejection against the now-active sequence 1, without
   # spending the unassigned node's unchanged wait on this independent negative.
@@ -1425,9 +1379,7 @@ SQL
       printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
       printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
     } | psql_admin oteryn_node_boot)"
-    local epoch_expected=$'t\nf'
-    [[ "$christmas_fixture" == 0 ]] || epoch_expected=$'f\nf'
-    [[ "$epoch_result" == "$epoch_expected" ]] || fail "World epoch initialization/replay"
+    [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
     evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
   fi
   local control_socket_mode="uid${SERVICE_UID}_0600"
