@@ -58,6 +58,14 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
 # (pinned path, pinned sha256) -> (current path, current sha256)
 RELOCATIONS = {
     **QUEST_PLAN_PLACEMENT_RELOCATIONS,
+    # The Bear Cave witness extends exact historical marker replay.
+    (
+        "tools/content-schema/item-authoring/historical_world_owner_context.py",
+        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+    ): (
+        "tools/content-schema/item-authoring/historical_world_owner_context.py",
+        "b3f1a84ce55947a58f7f401fb1c6a18727c034d7af6d193a30d37552f7e83605",
+    ),
     (
         "content/world/terrain/index.json",
         "ce986ca83b92f5ea2b7aeaa5bdc75b591cb28d63ab1a93dce0077215ce90979f",
@@ -70,7 +78,7 @@ RELOCATIONS = {
         "96b24f0cbedb168d73aeca26644536693d97b7fe2d2f49ecbd150bdfd4f3037b",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "b3f1a84ce55947a58f7f401fb1c6a18727c034d7af6d193a30d37552f7e83605",
     ),
     # The source-qualified Anomaly ground retains its pre-existing Item route;
     # the complete terrain row otherwise remains byte-identical.
@@ -102,7 +110,7 @@ RELOCATIONS = {
         "db9150a3639c4d6bcd596c040b7d2ad39047fbc3f51c925761bebfbb6def26fd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "b3f1a84ce55947a58f7f401fb1c6a18727c034d7af6d193a30d37552f7e83605",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
@@ -158,21 +166,21 @@ RELOCATIONS = {
         "a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9",
     ): (
         "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-        "2442cec4dabda2c89593259138ed41e41a6e5edf59ab8bd9abdc2340fb6e7539",
+        "456cc7239c6dc1cdde4d51fa87977589f83412048f8ac067cbd0aae9342a898d",
     ),
     (
         "crates/gameplay/content/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "29c05a9d6a5dbee23213ed047510efc41cbdb2723e38a787da64b8d0c9856502",
+        "43963c2f44cfe90ead0f6c4a3a991de3e39818aab206ef40e7d339df81b0431c",
     ),
     (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "29c05a9d6a5dbee23213ed047510efc41cbdb2723e38a787da64b8d0c9856502",
+        "43963c2f44cfe90ead0f6c4a3a991de3e39818aab206ef40e7d339df81b0431c",
     ),
     # QMINT3's tree-first reference view changes only the Forge289 compiler and
     # mapper fingerprints. All454 binding rows and289 literal promotions are
@@ -273,21 +281,21 @@ RELOCATIONS = {
         "00878d28eb56c84f57734956505f60eb1fe7d248b7d1002c19209172a5125cfd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "b3f1a84ce55947a58f7f401fb1c6a18727c034d7af6d193a30d37552f7e83605",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "8e41e838db44b527e4a243d4be1dc5245fe74def7145d9a68cdfc1436d609d5c",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "b3f1a84ce55947a58f7f401fb1c6a18727c034d7af6d193a30d37552f7e83605",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "ae1a4f2c09345efbda4293eee96a93f9054bb33e40f658ab483b8b0c88027477",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "b3f1a84ce55947a58f7f401fb1c6a18727c034d7af6d193a30d37552f7e83605",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",

@@ -21,15 +21,15 @@ def known(value):
     return {"state": "KNOWN", "value": value}
 
 
-def outputs():
-    raw = (ROOT / f"content/assets/files/appearances-{APPEARANCES}.dat").read_bytes()
+def outputs(root=ROOT):
+    raw = (root / f"content/assets/files/appearances-{APPEARANCES}.dat").read_bytes()
     if hashlib.sha256(raw).hexdigest() != APPEARANCES:
         raise ValueError("classic quest ground appearance digest")
     appearance = read_appearances(raw)[593]
     bindings = [
         row["target"]
         for row in json.loads(
-            (ROOT / "imports/crystalserver/bindings/items.json").read_bytes()
+            (root / "imports/crystalserver/bindings/items.json").read_bytes()
         )["bindings"]
         if row["external_id"] == "593"
     ]
@@ -82,7 +82,7 @@ def outputs():
             },
         },
     }
-    index = json.loads((ROOT / INDEX).read_bytes())
+    index = json.loads((root / INDEX).read_bytes())
     if NOTE not in index["notes"]:
         index["notes"] += NOTE
     return {
