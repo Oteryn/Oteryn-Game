@@ -5253,7 +5253,7 @@ mod equipment_projection_tests {
                 .item_policy_for_source_id(id)
                 .ok_or("ranged loot profile")?
                 .record();
-            let claims = projected_equipment_claims(&record.semantics, 5)?;
+            let claims = projected_equipment_claims(&record.semantics, 5, true)?;
             assert_eq!(
                 (claims.slots, claims.level),
                 (vec![5, 6], level),
@@ -5265,7 +5265,7 @@ mod equipment_projection_tests {
                 "Item {id}"
             );
             assert!(
-                projected_equipment_claims(&record.semantics, 6).is_err(),
+                projected_equipment_claims(&record.semantics, 6, true).is_err(),
                 "Item {id}"
             );
         }
