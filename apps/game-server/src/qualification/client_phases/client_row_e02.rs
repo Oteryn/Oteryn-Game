@@ -132,9 +132,14 @@ async fn find_exchange_npc(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
+    book: &crate::gameplay_transport::NpcTalkBook,
 ) -> TestResult<(EntityRef, String)> {
     let mut attempted = Vec::new();
-    for npc in &npcs.npcs {
+    for npc in npcs
+        .npcs
+        .iter()
+        .filter(|npc| book.get(&npc.key).is_some_and(|entry| entry.bank()))
+    {
         let Some(path) = npc_approach_path(client, world, npc).await? else {
             continue;
         };
@@ -166,11 +171,18 @@ async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
+    book: &crate::gameplay_transport::NpcTalkBook,
     refs: [std::num::NonZeroU32; 3],
 ) -> TestResult<[u64; 3]> {
     let mut observed = backpack_coins(client, refs)?;
     let mut attempts = Vec::new();
-    for npc in &npcs.npcs {
+    for npc in npcs.npcs.iter().filter(|npc| {
+        book.get(&npc.key).is_some_and(|entry| {
+            entry.offers().iter().any(|offer| {
+                offer.direction == crate::content::ProjectV2ServiceOfferDirection::BuyFromPlayer
+            })
+        })
+    }) {
         if observed[0] >= 100 {
             continue;
         }
@@ -253,8 +265,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let refs = coin_refs()?;
     let mut client = connect_world(clients, 0x33).await?;
-    let initial = earn_gold(&mut client, world, &metadata.npcs, refs).await?;
-    let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs).await?;
+    let talk_book = full_e2ef20::qualification_npc_talk_book(&mut client).await?;
+    let initial = earn_gold(&mut client, world, &metadata.npcs, &talk_book, refs).await?;
+    let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs, &talk_book).await?;
     let before_pairs = pairs(&client);
     let before_payload = encoded(&client)?;
     let reply = exchange(&mut client, actor, &["1", "yes"]).await?;

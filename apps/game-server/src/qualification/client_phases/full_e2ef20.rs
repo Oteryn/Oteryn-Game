@@ -152,13 +152,41 @@ async fn approach(
     visible_npc(client, npc).ok_or_else(|| format!("step=walk-npc observed=actor-not-visible:{}", npc.key).into())
 }
 
+pub(super) async fn qualification_npc_talk_book(
+    client: &mut DevClientSession,
+) -> TestResult<crate::gameplay_transport::NpcTalkBook> {
+    route_work(client, || {
+        let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let pin = std::fs::read(repo.join("deploy/synology-game/npc-data.pin.json"))
+            .map_err(|error| error.to_string())?;
+        let pin: serde_json::Value =
+            serde_json::from_slice(&pin).map_err(|error| error.to_string())?;
+        let digest = pin["project_sha256"]
+            .as_str()
+            .ok_or("NPC pin is missing the project digest")?;
+        let catalogue =
+            crate::content::load_data_only_npc_catalogue(&repo.join("content/world"), digest)
+                .map_err(|error| error.to_string())?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| error.to_string())?;
+        Ok(crate::gameplay_transport::NpcTalkBook::from_model(&model))
+    })
+    .await
+}
+
 async fn find_exchange_npc(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
+    book: &crate::gameplay_transport::NpcTalkBook,
 ) -> TestResult<(EntityRef, String)> {
     let mut attempted = Vec::new();
-    for npc in &npcs.npcs {
+    for npc in npcs
+        .npcs
+        .iter()
+        .filter(|npc| book.get(&npc.key).is_some_and(|entry| entry.bank()))
+    {
         let Some(path) = npc_approach_path(client, world, npc).await? else {
             continue;
         };
@@ -190,11 +218,18 @@ async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
+    book: &crate::gameplay_transport::NpcTalkBook,
     refs: [std::num::NonZeroU32; 3],
 ) -> TestResult<[u64; 3]> {
     let mut observed = backpack_coins(client, refs)?;
     let mut attempts = Vec::new();
-    for npc in &npcs.npcs {
+    for npc in npcs.npcs.iter().filter(|npc| {
+        book.get(&npc.key).is_some_and(|entry| {
+            entry.offers().iter().any(|offer| {
+                offer.direction == crate::content::ProjectV2ServiceOfferDirection::BuyFromPlayer
+            })
+        })
+    }) {
         if observed[0] >= 100 {
             continue;
         }
@@ -274,10 +309,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let refs = coin_refs()?;
     let mut client = connect_world(clients, 0xb0).await?;
-    let initial = earn_gold(&mut client, world, &metadata.npcs, refs).await?;
+    let talk_book = qualification_npc_talk_book(&mut client).await?;
+    let initial = earn_gold(&mut client, world, &metadata.npcs, &talk_book, refs).await?;
     row.pass("legitimate-gold", initial);
 
-    let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs).await?;
+    let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs, &talk_book).await?;
     row.pass("walk-and-greet", npc_key);
 
     let reply = exchange(&mut client, actor, &["1", "yes"]).await?;
@@ -382,24 +418,7 @@ async fn greet_ten_journey(
     };
     let mut client = connect_world(&clients, 0xb9).await?;
     let result: TestResult = async {
-        let talk_book = route_work(&mut client, || {
-            let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-            let pin = std::fs::read(repo.join("deploy/synology-game/npc-data.pin.json"))
-                .map_err(|error| error.to_string())?;
-            let pin: serde_json::Value =
-                serde_json::from_slice(&pin).map_err(|error| error.to_string())?;
-            let digest = pin["project_sha256"]
-                .as_str()
-                .ok_or("NPC pin is missing the project digest")?;
-            let catalogue =
-                crate::content::load_data_only_npc_catalogue(&repo.join("content/world"), digest)
-                    .map_err(|error| error.to_string())?;
-            let model = catalogue
-                .service_model_for_project()
-                .map_err(|error| error.to_string())?;
-            Ok(crate::gameplay_transport::NpcTalkBook::from_model(&model))
-        })
-        .await?;
+        let talk_book = qualification_npc_talk_book(&mut client).await?;
         // The placement table also contains silent actors. Choose greetings
         // from the authored service book and verify each one over the wire.
         let mut remaining: BTreeMap<TilePos, &str> = npcs
