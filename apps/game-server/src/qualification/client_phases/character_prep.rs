@@ -177,7 +177,11 @@ pub(super) async fn newcomer_island_start(
         y: 31894,
         floor: -6,
     };
-    if world.base().tile(temple.x, temple.y, temple.floor).is_none() {
+    if world
+        .base()
+        .tile(temple.x, temple.y, temple.floor)
+        .is_none()
+    {
         return Err("Dawnport temple is absent from the qualification bundle".into());
     }
 
