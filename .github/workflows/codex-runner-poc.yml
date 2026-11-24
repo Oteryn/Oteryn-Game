@@ -91,6 +91,8 @@ jobs:
           IMAGE: ghcr.io/oteryn/oteryn-game-codex-runner-poc:${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           start=$(date +%s)
+          # Codex Cloud keeps the home directory read-only; docker login stores its config here.
+          export DOCKER_CONFIG="$RUNNER_TEMP/docker-config"
           echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
           docker pull "$IMAGE"
           mkdir -p "$RUNNER_TEMP/seed"
