@@ -91,8 +91,13 @@ async fn cast(client: &mut DevClientSession, target: &str) -> TestResult<(oteryn
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let identity = character_prep::dedicated_character(clients, "NODE_BOOT_EXIVA_ACCOUNT_ID").await?;
     let caster_clients = identity.clients(clients);
+    let target_identity = character_prep::dedicated_character(clients, "NODE_BOOT_C05_TARGET_ACCOUNT").await?;
+    let target_clients = target_identity.clients(clients);
     let mut caster = PREPARATION.connect(&caster_clients, 0xc5, 0).await
         .map_err(|error| admission_error("caster-preparation", error))?;
+    if full_e2ef7::player_level(&mut caster).await? != 8 {
+        return Err("Exiva caster did not admit at level 8".into());
+    }
     let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
         "sorcerer",
         8,
@@ -104,7 +109,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }) {
         return Err(format!("caster preparation did not load level-8 sorcerer vitals: {:?}", caster.actor_vitals()).into());
     }
-    let mut target = connect_character(clients, 0xc6, 1)
+    let mut target = connect_character(&target_clients, 0xc6, 0)
         .await
         .map_err(|error| admission_error("target-admission", error))?;
     let target_name = own_name(&target)?;
@@ -151,7 +156,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let old_session = target.join_snapshot().game_session_id;
     if target.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Err("fresh-admission step logout refused".into()); }
     drop(target);
-    let mut target = connect_character(clients, 0xc7, 1)
+    let mut target = connect_character(&target_clients, 0xc7, 0)
         .await
         .map_err(|error| admission_error("target-readmission", error))?;
     if target.join_snapshot().game_session_id == old_session { return Err("fresh-admission step reused game session".into()); }
