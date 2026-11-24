@@ -772,8 +772,7 @@ async fn request_fixture_control_at(
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
     let output = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
+        crate::qualification::provision_python()
             .arg(script)
             .args([
                 "--socket",

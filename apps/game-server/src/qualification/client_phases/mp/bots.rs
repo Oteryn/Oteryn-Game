@@ -244,8 +244,7 @@ async fn provision_current(bot: &mut Bot<'_, '_>, profile: &str) -> TestResult {
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
     let output = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
+        crate::qualification::provision_python()
             .arg(script)
             .args([
                 "--socket",
