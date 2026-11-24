@@ -299,31 +299,15 @@ async fn route_to_zone(
     world: &BundleWorld,
     protection_zone: bool,
 ) -> TestResult {
-    let from = tile(client.world_spatial().actor_position)?;
     let goal = |at: TilePos| {
         world
             .base()
             .tile(at.x, at.y, at.floor)
             .is_some_and(|tile| tile.protection_zone() == protection_zone)
     };
-    if goal(from) {
-        return Ok(());
-    }
-    let occupied: std::collections::BTreeSet<_> = client
-        .world_entities()
-        .into_iter()
-        .flat_map(|entities| entities.iter())
-        .filter_map(|actor| tile(actor.position).ok())
-        .collect();
-    let path =
-        route_avoiding(world, from, goal, |at| !occupied.contains(&at)).ok_or_else(|| {
-            format!("no unoccupied route from {from:?} to protection_zone={protection_zone}")
-        })?;
-    require(
-        !protection_zone || path.len() <= 6,
-        format!("nearest protection-zone retreat needs {} steps", path.len()),
-    )?;
-    walk(client, world, &path).await
+    walk_to_fixture_tile(client, world, goal, if protection_zone { 6 } else { 64 })
+        .await
+        .map_err(|error| format!("route to protection_zone={protection_zone}: {error}").into())
 }
 
 async fn prepare_character(
@@ -619,7 +603,7 @@ async fn ineligible(
             reach_ground(&mut client, world).await?;
         }
         let target = if spell.takes_target() && !spell.self_target && !rune_targets_own_tile(spell) {
-            Some(spawn_target(&mut client, "deer").await?)
+            Some(spawn_target(&mut client, world, "deer").await?)
         } else {
             None
         };
@@ -732,56 +716,95 @@ async fn approach_for_paralyze(
     world: &BundleWorld,
     target: TilePos,
 ) -> TestResult {
-    let mut blocked = std::collections::BTreeSet::from([target]);
-    for _ in 0..64 {
-        let from = tile(peer.world_spatial().actor_position)?;
-        let path = route_avoiding(
-            world,
-            from,
-            |at| {
-                at != target
-                    && at.floor == target.floor
-                    && u32::from(at.x.abs_diff(target.x)) + u32::from(at.y.abs_diff(target.y)) == 1
-                    && world
-                        .base()
-                        .tile(at.x, at.y, at.floor)
-                        .is_some_and(|tile| !tile.protection_zone())
-            },
-            |at| !blocked.contains(&at),
-        )
-        .ok_or("no reachable Paralyze casting tile after live obstacles")?;
+    walk_to_fixture_tile(
+        peer,
+        world,
+        |at| {
+            at.floor == target.floor
+                && u32::from(at.x.abs_diff(target.x)) + u32::from(at.y.abs_diff(target.y)) == 1
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|tile| !tile.protection_zone())
+        },
+        64,
+    )
+    .await
+    .map_err(|error| format!("Paralyze approach: {error}").into())
+}
+
+async fn walk_to_fixture_tile(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    goal: impl Fn(TilePos) -> bool,
+    step_budget: usize,
+) -> TestResult {
+    let mut blocked = std::collections::BTreeSet::new();
+    let mut moved = 0;
+    loop {
+        let from = tile(client.world_spatial().actor_position)?;
+        if goal(from) {
+            return Ok(());
+        }
+        let occupied: std::collections::BTreeSet<_> = client
+            .world_entities()
+            .into_iter()
+            .flat_map(|entities| entities.iter())
+            .filter(|actor| {
+                matches!(
+                    actor.kind,
+                    oteryn_dev_client::EntityKind::Creature
+                        | oteryn_dev_client::EntityKind::Player
+                        | oteryn_dev_client::EntityKind::Npc
+                )
+            })
+            .filter_map(|actor| tile(actor.position).ok())
+            .collect();
+        let path = route_avoiding(world, from, &goal, |at| {
+            !blocked.contains(&at) && !occupied.contains(&at)
+        })
+        .ok_or_else(|| format!("no reachable fixture tile from {from:?}"))?;
+        require(
+            path.len() <= step_budget.saturating_sub(moved) && blocked.len() < 8,
+            format!(
+                "fixture route exceeded budget: from={from:?} moved={moved} blocked={}",
+                blocked.len()
+            ),
+        )?;
         let Some(&direction) = path.first() else {
             return Ok(());
         };
         let landing =
-            destination(world, from, direction).ok_or("Paralyze route lost its landing")?;
-        let mut outcome = peer.step_retrying(direction).await?;
+            destination(world, from, direction).ok_or("fixture route lost its landing")?;
+        let mut outcome = client.step_retrying(direction).await?;
         for attempt in 1..=6 {
-            let unchanged = tile(peer.world_spatial().actor_position)? == from;
+            let unchanged = tile(client.world_spatial().actor_position)? == from;
             let Some(delay) = town_route_retry_delay(outcome.disposition, unchanged, attempt)
             else {
                 break;
             };
             tokio::time::sleep(delay).await;
-            outcome = peer.step_retrying(direction).await?;
+            outcome = client.step_retrying(direction).await?;
         }
-        let after = tile(peer.world_spatial().actor_position)?;
+        let after = tile(client.world_spatial().actor_position)?;
         match (outcome.disposition, after) {
             (StepDisposition::Blocked, at) if at == from => {
                 blocked.insert(landing);
             }
             (StepDisposition::Moved, at)
-                if at == landing && outcome.world_spatial_delta.is_some() => {}
+                if at == landing && outcome.world_spatial_delta.is_some() =>
+            {
+                moved += 1;
+            }
             _ => {
                 return Err(format!(
-                    "Paralyze approach {from:?}->{landing:?} went to {after:?}: {outcome:?}"
+                    "fixture step {from:?}->{landing:?} went to {after:?}: {outcome:?}"
                 )
                 .into());
             }
         }
-        verdict::Harness::global().progress("paralyze-approach");
+        verdict::Harness::global().progress("spell-sweep-fixture-route");
     }
-    Err("Paralyze approach exhausted its live step budget".into())
 }
 
 async fn positive(
@@ -804,14 +827,14 @@ async fn positive(
     let controlled_cooldown = dispel && rune.is_none();
     let bruise_bane = spell.key == "candidate:spell/bruise_bane";
     if dispel && !bruise_bane {
-        spawn_target(client, "rot_elemental").await?;
+        spawn_target(client, world, "rot_elemental").await?;
     }
     let target = match health_effect {
-        Some(HealthEffect::Damage) => Some(spawn_target(client, "deer").await?),
+        Some(HealthEffect::Damage) => Some(spawn_target(client, world, "deer").await?),
         Some(HealthEffect::Heal) if targets_self => {
             if !bruise_bane && vitals(client)?.health == vitals(client)?.max_health {
                 if !dispel {
-                    spawn_target(client, "bear").await?;
+                    spawn_target(client, world, "bear").await?;
                 }
                 let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
                 while vitals(client)?.health == vitals(client)?.max_health {
@@ -826,7 +849,7 @@ async fn positive(
             None
         }
         _ if spell.takes_target() && !spell.self_target => {
-            Some(spawn_target(client, "deer").await?)
+            Some(spawn_target(client, world, "deer").await?)
         }
         _ => None,
     };
@@ -1214,11 +1237,34 @@ fn pure_effect(spell: &SpellDefinition) -> Option<HealthEffect> {
 
 async fn spawn_target(
     client: &mut DevClientSession,
+    world: &BundleWorld,
     species: &str,
 ) -> TestResult<(oteryn_dev_client::EntityRef, ActorPosition)> {
-    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let answer = request_spawn(session, format!("oteryn:creature.{species}")).await?;
-    let entity = parse_spawned_entity(&answer)?;
+    let mut tried = std::collections::BTreeSet::new();
+    let entity = loop {
+        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+        match request_spawn(session, format!("oteryn:creature.{species}")).await {
+            Ok(answer) => break parse_spawned_entity(&answer)?,
+            Err(error) if error == "no_free_tile" && tried.len() < 3 => {
+                tried.insert(tile(client.world_spatial().actor_position)?);
+                walk_to_fixture_tile(
+                    client,
+                    world,
+                    |at| {
+                        !tried.contains(&at)
+                            && world
+                                .base()
+                                .tile(at.x, at.y, at.floor)
+                                .is_some_and(|tile| !tile.protection_zone())
+                    },
+                    6,
+                )
+                .await
+                .map_err(|route| format!("spawn {species}: {error}; relocation: {route}"))?;
+            }
+            Err(error) => return Err(error.into()),
+        }
+    };
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
     loop {
         if let Some(actor) = client
