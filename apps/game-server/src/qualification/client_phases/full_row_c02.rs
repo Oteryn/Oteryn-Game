@@ -34,6 +34,16 @@ const ROD: u32 = 3066;
 const WAND_MANA: u32 = 1;
 const ROD_MANA: u32 = 2;
 
+// Both prior funding runs stopped after 150 s at 929 gold. The slower
+// run reached command 138 (about 135 movement commands), and the blocked
+// approach can take about 230 steps including the 83-step detour. That
+// projects about 255 s of walking. Allow about 45 s of approach margin
+// and keep the shared observer's separate 150 s acquisition window.
+const FUNDING_APPROACH_BUDGET: Duration = Duration::from_secs(300);
+const FUNDING_HUNT_BUDGET: Duration = Duration::from_secs(150);
+// Both the ranged and Druid legs can spend the extra approach budget.
+const ROW_BUDGET: Duration = Duration::from_secs(420 + 2 * FUNDING_APPROACH_BUDGET.as_secs());
+
 // A packet admitted by the qualification-local signer cannot attest to the Platform issuer.
 pub(super) const PLATFORM_ADMISSION_GAP: &str =
     "need=platform-issued-admission-grant;observed=qualification-local-signer";
@@ -87,11 +97,8 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: std::time::Instant::now(),
         step: 0,
     };
-    let result = verdict::indexed_timeout(
-        Duration::from_secs(420),
-        verdict::observe(journey(&mut row, clients)),
-    )
-    .await;
+    let result =
+        verdict::indexed_timeout(ROW_BUDGET, verdict::observe(journey(&mut row, clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(format!("timeout-after-step-{}", row.step).into()),
@@ -388,7 +395,9 @@ async fn fund_ranged_purchase(
 ) -> TestResult {
     use oteryn_protocol_oteryn::atelier::resources as money;
 
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    let started = tokio::time::Instant::now();
+    let deadline = started + FUNDING_APPROACH_BUDGET + FUNDING_HUNT_BUDGET;
+    let approach_deadline = started + FUNDING_APPROACH_BUDGET;
     let gold = coin_references()?;
     let mut carried = carried_gold(client, &gold)?;
     if carried.checked_add(1) != Some(needed) {
@@ -398,10 +407,20 @@ async fn fund_ranged_purchase(
         )
         .into());
     }
+    tokio::time::timeout_at(
+        approach_deadline,
+        approach_funding_rat(client, world, approach_deadline),
+    )
+    .await
+    .map_err(|_| format!("gold-approach-budget:observed={carried}:needed={needed}"))??;
+    evidence(&format!(
+        "C02_FUNDING_APPROACH needed={needed} elapsed_ms={} budget_s={}",
+        started.elapsed().as_millis(),
+        FUNDING_APPROACH_BUDGET.as_secs()
+    ));
+    let hunt_deadline = deadline.min(tokio::time::Instant::now() + FUNDING_HUNT_BUDGET);
     while carried < needed {
-        let hunt_deadline = deadline.min(tokio::time::Instant::now() + Duration::from_secs(150));
         let hunt = tokio::time::timeout_at(hunt_deadline, async {
-            approach_funding_rat(client, world, hunt_deadline).await?;
             let reply = client
                 .session_mut()
                 .gated_command(
@@ -437,7 +456,8 @@ async fn fund_ranged_purchase(
             .open_container()
             .and_then(|view| view.container_handle);
         evidence(&format!(
-            "C02_FUNDING creature=oteryn:creature.rat corpse_handle={corpse:?} needed={needed} carried_before={carried} carried_after={after}"
+            "C02_FUNDING creature=oteryn:creature.rat corpse_handle={corpse:?} needed={needed} carried_before={carried} carried_after={after} elapsed_ms={}",
+            started.elapsed().as_millis()
         ));
         carried = after;
     }
