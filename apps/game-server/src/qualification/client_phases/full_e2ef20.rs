@@ -382,9 +382,30 @@ async fn greet_ten_journey(
     };
     let mut client = connect_world(&clients, 0xb9).await?;
     let result: TestResult = async {
+        let talk_book = route_work(&mut client, || {
+            let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+            let pin = std::fs::read(repo.join("deploy/synology-game/npc-data.pin.json"))
+                .map_err(|error| error.to_string())?;
+            let pin: serde_json::Value =
+                serde_json::from_slice(&pin).map_err(|error| error.to_string())?;
+            let digest = pin["project_sha256"]
+                .as_str()
+                .ok_or("NPC pin is missing the project digest")?;
+            let catalogue =
+                crate::content::load_data_only_npc_catalogue(&repo.join("content/world"), digest)
+                    .map_err(|error| error.to_string())?;
+            let model = catalogue
+                .service_model_for_project()
+                .map_err(|error| error.to_string())?;
+            Ok(crate::gameplay_transport::NpcTalkBook::from_model(&model))
+        })
+        .await?;
+        // The placement table also contains silent actors. Choose greetings
+        // from the authored service book and verify each one over the wire.
         let mut remaining: BTreeMap<TilePos, &str> = npcs
             .npcs
             .iter()
+            .filter(|npc| talk_book.get(&npc.key).is_some())
             .flat_map(|npc| {
                 npc.placements.iter().map(|placement| {
                     (
@@ -460,7 +481,9 @@ async fn greet_ten_journey(
             if greeted.contains(&actor) {
                 return Err(format!("NPC actor already greeted: {key}").into());
             }
-            let hello = talk(&mut client, actor, "hi").await?;
+            let hello = talk(&mut client, actor, "hi")
+                .await
+                .map_err(|error| format!("NPC greeting at {target:?} for {key}: {error}"))?;
             if hello.open.map(|(npc, _)| npc) != Some(actor) || hello.lines.is_empty() {
                 return Err(
                     format!("NPC greeting did not open a dialogue with {key}: {hello:?}").into(),
