@@ -143,6 +143,22 @@ class KnobTests(unittest.TestCase):
 
 
 class WorldFixtureTests(unittest.TestCase):
+    def test_only_the_disposable_town_profile_selects_the_m03_portal(self):
+        compile_world = section('  evidence "world_profile=', '  PIN="$WORK/world.json"')
+        setup = r'''set -Eeuo pipefail
+evidence() { :; }
+compile_bundle() { printf '%s\n' "$1"; }
+WORLD_COMPILER=(compile_bundle)
+GAME_SOURCE=/fixture/game
+WORLD_REGIONS=126,125
+WORK=.
+'''
+        for profile, command in [('town', 'compile-town-qualification'), ('quests', 'compile-regions')]:
+            with self.subTest(profile=profile), tempfile.TemporaryDirectory() as work:
+                result = bash(setup + compile_world, {'NODE_BOOT_WORLD_PROFILE': profile}, cwd=work)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
+
     def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
         fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
         fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')
