@@ -1102,6 +1102,24 @@ fn walkable_floor_change(key: &str) -> bool {
     })
 }
 
+/// Nonsolid source appearances on authored transition tiles whose pinned Item
+/// definitions lack collision facts. Crystal 201189f8 reads `unpass` for both
+/// portals and ordinary layers in `src/items/items.cpp:233`.
+const NONSOLID_TRANSITION_LAYERS: &[u16] = &[
+    775, 1055, 1056, 1959, 1979, 2586, 2696, 3112, 3116, 3654, 5022, 5590, 6383, 6717, 7707, 15846,
+    15848, 15851, 15852, 15855, 15856, 17396, 17399, 19773, 22106, 23178, 24069, 25049, 25055,
+    25056, 25057, 25058, 29979, 29980, 36973,
+];
+
+fn nonsolid_transition_layer(entry: &PaletteEntry) -> bool {
+    entry.terrain.is_none()
+        && entry
+            .key
+            .strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse::<u16>().ok())
+            .is_some_and(|id| NONSOLID_TRANSITION_LAYERS.binary_search(&id).is_ok())
+}
+
 /// The `border` Terrain records whose catalogue `walkable` fact is not KNOWN true (ascending
 /// Tibia appearance ids; kept equal to `content/world/terrain` by a test): shorelines, cliffs and
 /// other borders that must keep blocking when the bundle states no solidity for them.
@@ -1222,7 +1240,9 @@ fn palette_facts(
             );
         facts.pickupable = definition.pickupable;
         solid = definition.solid.unwrap_or_else(|| {
-            !walkable_floor_change(&entry.key) && !terrain_allows_item_passage(entry)
+            !walkable_floor_change(&entry.key)
+                && !terrain_allows_item_passage(entry)
+                && !nonsolid_transition_layer(entry)
         });
         door = palette_door(&entry.key, item);
     }
@@ -2134,6 +2154,38 @@ mod tests {
             if family == Family::Item {
                 assert!(facts.blocks(3), "{key}");
             }
+        }
+    }
+
+    #[test]
+    fn map_transition_layers_use_source_collision_when_the_item_profile_has_none() {
+        for (id, solid, blocked) in [
+            (25056, None, false),
+            (25058, None, false),
+            (29980, None, false),
+            (21743, None, true),
+            (25056, Some(true), true),
+            (25056, Some(false), false),
+            (6383, None, false),
+            (65535, None, true),
+        ] {
+            let entry = PaletteEntry {
+                key: format!("oteryn:item.tibia.i{id}"),
+                family: Family::Item,
+                id: 0,
+                terrain: None,
+            };
+            let facts = palette_facts(&entry, &|_| {
+                Some(ItemDefinition {
+                    reference: NonZeroU32::MIN,
+                    solid,
+                    blocks_projectile: false,
+                    pickupable: false,
+                    door: false,
+                })
+            })
+            .expect("qualified Item");
+            assert_eq!(facts.solid, blocked, "appearance {id}, profile {solid:?}");
         }
     }
 
