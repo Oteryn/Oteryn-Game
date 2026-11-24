@@ -26,6 +26,17 @@ CURRENT_FARES = {
         dict.fromkeys(("camp", "helheim", "okolnir", "tyrsung"), 50),
     ),
 }
+# Crystal reuses these client IDs for differently named variants; these prices
+# select the named native Item, or the empty vial rather than milk (count 9).
+NAMED_VARIANTS = {
+    2998: ("rocking horse kit", 30),
+    30061: ("giant sapphire", 50000),
+    22057: ("werebear fur", 185),
+    36820: ("bashmu fang", 600),
+    2874: ("vial", 20),
+    25696: ("colourful snail shell", 250),
+    25697: ("green bandage", 180),
+}
 TRAVEL = ROOT / "crates/gameplay/content/src/content/npc_catalogue/travel_routes.json"
 
 
@@ -44,6 +55,11 @@ def main():
             kind, service, key = (row[field] for field in ("type", "service", "offer_or_route"))
             evidence = CURRENT_FARES.get(service.removeprefix("oteryn:service.travel."))
             retained = evidence is not None and kind == "travel" and key in evidence[1]
+            variant = None
+            if kind == "trade" and row["status"] == "ambiguous":
+                item_id = int(key.split("/", 1)[0].removeprefix("oteryn:item.tibia.i"))
+                variant = NAMED_VARIANTS.get(item_id)
+                retained = variant is not None
             if row["status"] == "ambiguous" and not retained:
                 counts[kind, "ambiguous"] += 1
                 continue
@@ -70,11 +86,20 @@ def main():
                 raise ValueError(f"Unknown audit family: {kind}")
             old = int(row["content_gold"])
             donor_prices = {int(value) for value in row["donor_gold"].split(",")}
-            new = evidence[1][key] if retained else int(row["donor_gold"])
+            if variant is not None:
+                new = variant[1]
+                if new not in donor_prices:
+                    raise ValueError(f"Named variant price absent from audit: {service}/{key}")
+            elif retained:
+                new = evidence[1][key]
+            else:
+                new = int(row["donor_gold"])
             if any(target[price] not in (donor_prices | {old, new}) for target in targets):
                 raise ValueError(f"Price has drifted: {service}/{key}")
             differs = any(target[price] != new for target in targets)
-            status = "different" if differs else "wiki-supported" if retained else "matched"
+            status = "different" if differs else (
+                "variant-supported" if variant else "wiki-supported" if retained else "matched"
+            )
             counts[kind, status] += 1
             for target in targets:
                 target[price] = new
