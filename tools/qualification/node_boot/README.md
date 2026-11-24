@@ -115,6 +115,33 @@ wait, readiness's 60-second wait, and all grant/replay/stale-predecessor asserti
 are unchanged. `content_full_manifest_boot` exercises those real content APIs,
 checks the exact issued pins and sequence, and uses the runner's same wait profile.
 
+## Running in Codex Cloud
+
+From the Game checkout, run `tools/qualification/node_boot/cloud_run.sh core`
+through `exec_command` with `sandbox_permissions=require_escalated`. Leave
+`RUNNER_TEMP` unset. To verify the escalated environment, run these commands
+with the same permissions.
+
+| Command | Expected stdout |
+| --- | --- |
+| `id -u` | `1000` |
+| `stat -c '%u %a' /` | `0 755` |
+| `stat -c '%u %a' /tmp` | `0 1777` |
+
+In the default sandbox, `/` and `/tmp` appear owned by UID 65534. The
+unprivileged `run.sh` correctly blocks that ownership with
+`unprivileged_work_ancestor_not_owned`, and `cloud_run.sh` reports
+`CLOUD_RUN=BLOCKED reason=need_escalated_sandbox` during preflight.
+
+Docker and the exact pinned Platform checkout are required. Set
+`PLATFORM_SOURCE` to that checkout if it lives outside `_platform`.
+Pass multiple groups as separate arguments, for example
+`tools/qualification/node_boot/cloud_run.sh core f6`. The Cloud runner uses
+the bundled environment, runs every group sequentially in the same checkout
+and inherits `OTERYN_E2E_CREATURE_BATCH` for `creature_sweep`. It prints a
+summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
+at the path reported on stderr. It exits nonzero if any group fails.
+
 ## Parallel stacks, the single-row loop and diagnostics
 
 Local runs can start several isolated stacks at once. Unset knobs keep the CI
