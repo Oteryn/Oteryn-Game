@@ -515,7 +515,7 @@ async fn drop_carried(client: &mut DevClientSession, reference: NonZeroU32) -> T
         move_item(client, worn, Destination::MainBackpack, Move::Moved).await?;
         observe(client, |client| carried(client, reference)).await?;
     }
-    if let Some(item) = carried(client, reference) {
+    while let Some(item) = carried(client, reference) {
         let at = client.world_spatial().actor_position;
         move_item(
             client,
@@ -528,7 +528,17 @@ async fn drop_carried(client: &mut DevClientSession, reference: NonZeroU32) -> T
             Move::Moved,
         )
         .await?;
-        observe(client, |c| carried(c, reference).is_none().then_some(())).await?;
+        observe(client, |client| {
+            let remaining = client
+                .inventory()?
+                .entries
+                .iter()
+                .find(|entry| entry.handle == item.handle);
+            remaining
+                .is_none_or(|entry| entry.count < item.count)
+                .then_some(())
+        })
+        .await?;
     }
     Ok(())
 }
