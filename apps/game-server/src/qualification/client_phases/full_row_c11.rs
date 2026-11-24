@@ -125,7 +125,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_C11_UNASSIGNED_ACCOUNT").await?;
+    let dedicated = character_prep::dedicated_named_character(clients, "NODE_BOOT_C11_UNASSIGNED_ACCOUNT", Some("Oressa Candidate")).await?;
     let clients = &dedicated.clients(clients);
     let mut client = ORESSA_PREPARATION.connect(clients, 0xcb, 0)
         .await

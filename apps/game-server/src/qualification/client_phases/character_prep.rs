@@ -128,6 +128,14 @@ pub(super) async fn dedicated_character(
     scope: &SeamClients<'_>,
     account_env: &str,
 ) -> TestResult<DedicatedCharacter> {
+    dedicated_named_character(scope, account_env, None).await
+}
+
+pub(super) async fn dedicated_named_character(
+    scope: &SeamClients<'_>,
+    account_env: &str,
+    name: Option<&str>,
+) -> TestResult<DedicatedCharacter> {
     let account = required(account_env)?;
     let account_id = crate::node::uuid_bytes(&account).ok_or("invalid preparation account")?;
     if scope
@@ -140,10 +148,12 @@ pub(super) async fn dedicated_character(
     let mut database = sqlx::PgConnection::connect(scope.url).await?;
     let rows: Vec<Vec<u8>> = sqlx::query_scalar(
         "SELECT uuid_send(character_id) FROM game_character_roots
-         WHERE account_id=$1::uuid AND world_id=encode($2,'hex')::uuid LIMIT 2",
+         WHERE account_id=$1::uuid AND world_id=encode($2,'hex')::uuid
+           AND ($3::text IS NULL OR name=$3) LIMIT 2",
     )
     .bind(&account)
     .bind(scope.world.as_slice())
+    .bind(name)
     .fetch_all(&mut database)
     .await?;
     database.close().await?;

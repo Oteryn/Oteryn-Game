@@ -1408,6 +1408,14 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || failed=1
   done
   [[ $failed == 0 ]] || fail "Character bootstrap"
+  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+    # A separate character uses the existing disposable tag-3 birth gate for this account.
+    local s16_operation=01934f10-7c04-7018-805b-3b1122334418
+    python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
+      "$WORK" "$C11_UNASSIGNED_ACCOUNT" "$WORLD_ID" "$s16_operation" "${INTERPRETATION[@]}" "First Vocation Candidate" Knight
+    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$s16_operation"
+    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$s16_operation"
+  fi
   evidence "characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent"
 }
 
