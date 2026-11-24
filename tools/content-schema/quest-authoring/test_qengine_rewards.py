@@ -7,6 +7,17 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_drome_receipts_are_present_in_the_authored_cosmetics(self):
+        mappings = {row['grant_key']: row for row in self.author['document']['grant_mappings']}
+        for offer, target in (
+            ('phant', {'kind': 'Mount', 'mount_key': 'oteryn:content.mount.phant_mount'}),
+            ('lion-of-war-base', {'kind': 'Outfit', 'outfit_key': 'oteryn:outfit.lion_of_war'}),
+        ):
+            with self.subTest(offer=offer):
+                row = mappings['oteryn:appearance-grant/tibiadrome/' + offer]
+                self.assertEqual(row['target'], target)
+                self.assertEqual(row['compatible_provenance'], ['crystal-201189f-tibiadrome-v1'])
+
     def test_royal_costume_completes_only_after_crown_exchange(self):
         rows = {row['key'].split('/')[-1]: row for row in self.callbacks['callbacks']}
         for name, before, after in [('base', -1, 1), ('shield', 1, 2), ('crown', 2, 3)]:

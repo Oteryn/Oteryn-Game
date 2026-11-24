@@ -319,6 +319,19 @@ def build():
                          'target': {'kind': 'Mount', 'mount_key': 'oteryn:content.mount.' + mount},
                          'compatible_provenance': ['task-board-shop-v1']})
 
+    # The Tibiadrome shop writes these account receipts after deducting points.
+    phant = next(row for row in doc['mounts'] if row['key'] == 'oteryn:content.mount.phant_mount')
+    lion = next(row for row in doc['outfits'] if row['key'] == 'oteryn:outfit.lion_of_war')
+    if (phant['look']['id'], lion['female']['id'], lion['male']['id']) != (1417, 1207, 1206):
+        raise ValueError('Tibiadrome shop appearance identity drift')
+    for offer, target in (
+        ('phant', {'kind': 'Mount', 'mount_key': phant['key']}),
+        ('lion-of-war-base', {'kind': 'Outfit', 'outfit_key': lion['key']}),
+    ):
+        mappings.append({'grant_key': 'oteryn:appearance-grant/tibiadrome/' + offer,
+                         'target': target,
+                         'compatible_provenance': ['crystal-201189f-tibiadrome-v1']})
+
     nx5_promotions = {row['path']: row for row in nx5['promotions']}
     quest_outfits = len(outfits) - len(nx5_doc['outfits'])
     for path in sorted(cosmetics.promotion_paths(doc)):

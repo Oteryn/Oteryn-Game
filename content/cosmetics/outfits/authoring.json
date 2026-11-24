@@ -24706,6 +24706,26 @@
         "compatible_provenance": [
           "task-board-shop-v1"
         ]
+      },
+      {
+        "grant_key": "oteryn:appearance-grant/tibiadrome/phant",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.phant_mount"
+        },
+        "compatible_provenance": [
+          "crystal-201189f-tibiadrome-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:appearance-grant/tibiadrome/lion-of-war-base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.lion_of_war"
+        },
+        "compatible_provenance": [
+          "crystal-201189f-tibiadrome-v1"
+        ]
       }
     ],
     "item_acquisitions": [
@@ -40294,6 +40314,26 @@
           },
           "compatible_provenance": [
             "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:appearance-grant/tibiadrome/phant",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.phant_mount"
+          },
+          "compatible_provenance": [
+            "crystal-201189f-tibiadrome-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:appearance-grant/tibiadrome/lion-of-war-base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.lion_of_war"
+          },
+          "compatible_provenance": [
+            "crystal-201189f-tibiadrome-v1"
           ]
         }
       ],
