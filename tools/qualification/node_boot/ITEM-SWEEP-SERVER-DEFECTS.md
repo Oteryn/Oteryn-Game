@@ -1,0 +1,30 @@
+# Item sweep server defects
+
+Reference revision: CrystalServer `201189f871d23597b82caf88fd611454a2ddefb8`.
+The observed requests below come from the seeded World run at `d0884cc73`.
+A handle in an item request is the session-local handle of the seeded item.
+Slot selection and eligibility are resolved separately. A refusal establishes
+the wire outcome. The owner references identify the relevant decision paths.
+
+| Cause | Keys (Tibia item IDs) | Oteryn server or protocol | Crystal reference | Request, expected and observed |
+| --- | --- | --- | --- | --- |
+| Combat snapshot unavailable | 10323, 10384, 10386, 10388, 10389, 10438, 10439 | `gameplay_transport/attack/cyclopedia.rs:97–123` | `src/server/network/protocol/protocolgame.cpp:2424–2441,5016–5025,5197–5205` | Command 388, self, Offence or Defence tab, sent before equipping and after unequipping. Crystal sends the selected self page with a success byte. Oteryn repeatedly returned Rejected. The Oteryn owner has best-effort lock and live-equipment consistency guards. The observed reply does not identify which guard fired. |
+| Hotkey equipment resolution | 10385, 10387, 10412 | `gameplay_transport/hotkey_equip.rs:325–354` | `src/game/game.cpp:3703–3710,3743–3757`, `data/items/items.xml:27260–27275,27290–27299,27504–27509` | Command 348, carried definition reference. Content and Crystal identify Head, Legs and Necklace respectively. Oteryn returned SlotMismatch. The harness replay uses explicit command 9 to check equipment independently of hotkey destination discovery. |
+| Wrong-vocation refusal reported as a slot mismatch | 10385 | `gameplay_transport/item_move.rs:126–132` | `src/creatures/players/player.cpp:4631–4636`, `data/items/items.xml:27273–27275` | Command 9, carried helmet handle, Head destination, wrong vocation. Crystal accepts the slot shape and its move event declares Knight and Paladin families. Oteryn returned SlotMismatch where the sweep expected RequirementNotMet. |
+| Carried container open returns NothingToUse | 10326, 10346 | `gameplay_transport/connection/routing/use_item.rs:498–563`, `gameplay_transport/loop_move.rs:1637–1648` | `src/lua/creature/actions.cpp:461–467,525–535`, `data/items/items.xml:27016–27024,27122–27130` | Command 2, field 2 item handle for the carried backpack. Crystal opens a container view and both definitions have capacity 20. Oteryn returned Accepted/NothingToUse, leaving capacity unobserved. Its route can also forward an ordinary USE result when the container observation is absent, so the reply alone does not prove line 560 fired. |
+| Backpack equipment destination unavailable | 10326, 10346 | `crates/protocol-oteryn/src/item_view.rs:316–328` | `src/creatures/players/player.cpp:4643–4648`, `data/items/items.xml:27023–27024,27129–27130` | Crystal admits the Backpack equipment slot. Command 9 has a MainBackpack custody destination for storing an item inside the current backpack. Equipment destinations exclude the backpack slot. The harness reports the gap before sending an invalid request. |
+| Active content admission missing | 10219 | `crates/gameplay/items/src/item_ref_admission.rs:63–74` | `data/items/items.xml:26729–26732` | Qualification provisioning requested `oteryn:item.tibia.i10219` as a carried item. Crystal defines crocodile steak as food. The native fixture lookup returned DefinitionNotFound before an item USE request could be sent. This is an active content coverage gap. |
+
+## Harness findings
+
+The earlier seeds for 10210 and 10211 requested carried custody for content
+admitted only to Ground. Crystal gives both lizard weapon racks capacity 25
+(`data/items/items.xml:26689–26698`). The sweep now seeds an adjacent Ground
+root in the disposable World, refreshes the live projection through a normal
+item move, and uses Browse Field and USE to measure the actual result.
+
+Hand defence expectations use the definition's base and extra defence
+(`src/creatures/players/player.cpp:646–655`). Elemental bond is checked through
+the item's inspection projection, as in Crystal's displayed description
+(`src/items/item.cpp:3257–3262`). This check covers the element label. A
+runtime spell or combat effect oracle would require a separate supported action.

@@ -61,6 +61,7 @@ struct Item {
     attributes: Value,
     observation: bool,
     materializable: bool,
+    ground_only: bool,
 }
 
 impl Item {
@@ -153,6 +154,9 @@ fn census(root: &Path) -> TestResult<BTreeMap<String, Item>> {
             let item = items.entry(key.to_owned()).or_default();
             if record["admission"]["materializable"] == true {
                 item.materializable = true;
+                let destinations = list(&record["admission"]["legal_destinations"]);
+                item.ground_only = destinations.iter().any(|d| d == "Ground")
+                    && !destinations.iter().any(|d| d == "CharacterInventory");
                 item.attributes = record["attributes"].take();
                 // Authored facts survive an overlay's UNKNOWN or NOT_APPLICABLE fields.
                 if let Some(semantics) = record["semantics"].as_object_mut() {
@@ -386,7 +390,7 @@ async fn move_item(
         })
         .await?;
     if reply.outcome != expected {
-        return Err(format!("ITEM_MOVE-expected-{expected:?}-observed-{reply:?}").into());
+        return Err(format!("ITEM_MOVE-source-{source}-destination-{destination:?}-expected-{expected:?}-observed-{reply:?}").into());
     }
     Ok(())
 }
@@ -420,6 +424,147 @@ async fn drop_carried(client: &mut DevClientSession, reference: NonZeroU32) -> T
     Ok(())
 }
 
+/// Seed one disposable Ground root using the Channel's current content pin. The
+/// historical-row setup follows event_containers/ground.rs:201–224. Browse and USE
+/// subsequently go through the normal wire path and the live item's custody checks.
+async fn ground_container(
+    fixtures: &mut Fixtures<'_>,
+    world: &BundleWorld,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+    key: &str,
+    revision: &str,
+    reference: NonZeroU32,
+    item: &Item,
+    rows: &mut Rows<'_>,
+) -> TestResult {
+    use oteryn_protocol_oteryn::{browse_field as browse, container_tree as tree};
+    // A real drop publishes a Ground projection invalidation after the
+    // fixture write (loop_move.rs:1253).
+    let marker = provisioning::item_reference(index, 3003)?;
+    let mut client = fixtures
+        .seed(
+            "oteryn:item.tibia.i3003",
+            Build {
+                vocation: 0,
+                level: HIGH,
+            },
+        )
+        .await?;
+    let scope = fixtures.scopes[0];
+    let mut db_result = sqlx::PgConnection::connect(scope.url).await;
+    let mut marker_on_ground = None;
+    let result = async {
+        let db = db_result.as_mut().map_err(|_| "ground-fixture-database-connect")?;
+        let marker_item = carried(&client, marker).ok_or("ground-fixture-marker-missing")?;
+        let at = client.world_spatial().actor_position;
+        let (x, y, floor) = (at.x, at.y, -at.floor);
+        let tile = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+            .into_iter()
+            .find(|&(x, y)| {
+                u16::try_from(x).ok().zip(u16::try_from(y).ok())
+                    .zip(i8::try_from(floor).ok())
+                    .is_some_and(|((x, y), z)| world.base().tile(x, y, z).is_some())
+            })
+            .ok_or("ground-fixture-no-adjacent-tile")?;
+        let position = WorldTilePosition { x: tile.0, y: tile.1, floor: at.floor };
+        let cell = [tile.0.to_be_bytes().as_slice(), tile.1.to_be_bytes().as_slice(),
+            floor.to_be_bytes().as_slice()].concat();
+        let frame = world.frame_binding_digest(WorldId::decode(&scope.world)?);
+        let mut tx = db.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        let id: String = sqlx::query_scalar(
+            "INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(game_character_uuid_v7(),$1::uuid,'Item',$2,$3,1,1,game_character_uuid_v7()) RETURNING item_instance_id::text",
+        ).bind(uuid_text(&scope.world)).bind(key).bind(revision).fetch_one(&mut *tx).await?;
+        let inserted = sqlx::query(
+            "INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) SELECT $1::uuid,world_id,channel_id,$4::text::numeric,$5,convert_to('OTERYN_ITEM_LOOP_DROP/v1:','UTF8') || uuid_send($1::uuid),$6,'sha256:' || encode(server_artifact_digest,'hex'),$7,nextval('game_item_ground_stack_ordinal_seq') FROM game_content_activations WHERE world_id=$2::uuid AND channel_id=$3::uuid ORDER BY activation_sequence DESC LIMIT 1",
+        ).bind(&id).bind(uuid_text(&scope.world)).bind(uuid_text(&scope.channel))
+            .bind(scope.scope_generation.to_string()).bind(&cell)
+            .bind(crate::map::overlay::map_revision(world.base())).bind(frame.as_slice())
+            .execute(&mut *tx).await?;
+        if inserted.rows_affected() != 1 {
+            return Err("ground-fixture-active-pin-unavailable".into());
+        }
+        tx.commit().await?;
+
+        let opened = async {
+            move_item(&mut client, marker_item.handle, Destination::Ground(position), Move::Moved).await?;
+            marker_on_ground = Some(position);
+            let payload = browse::encode_browse_field_intent(&browse::BrowseFieldIntent::Open { position })
+                .map_err(|error| format!("ground-fixture-BROWSE_FIELD-encode-{error:?}"))?;
+            let reply = client.session_mut().gated_command(browse::CAPABILITY_BROWSE_FIELD_V1,
+                browse::COMMAND_TYPE_BROWSE_FIELD_INTENT, &payload).await?;
+            if reply.status != CommandStatus::Accepted
+                || tree::decode_container_view_result(&reply.payload).ok() != Some(tree::ContainerViewOutcome::Opened)
+            {
+                return Err(format!("ground-fixture-BROWSE_FIELD-{position:?}-{reply:?}").into());
+            }
+            observe(&mut client, |client| {
+                let view = client.session_mut().container_views()?.views.iter()
+                    .find(|view| view.browse.is_some_and(|page| page.position == position))?;
+                let mut matches = view.entries.iter().filter(|entry| entry.item_definition_ref == reference);
+                let entry = *matches.next()?;
+                matches.next().is_none().then_some(entry)
+            }).await
+        }.await;
+        match opened {
+            Ok(entry) => {
+                rows.emit("seed", Ok(()));
+                if !item.group("container").is_null() {
+                    rows.emit("container", container(&mut client, entry, item.capacity()).await);
+                }
+                if item.usable() {
+                    rows.emit("use", use_effect_ground(&mut client, entry).await);
+                }
+            }
+            Err(error) => rows.emit("seed", Err(error)),
+        }
+
+        let mut tx = db.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("DELETE FROM game_item_ground_locations WHERE item_instance_id=$1::uuid")
+            .bind(&id).execute(&mut *tx).await?;
+        sqlx::query("DELETE FROM game_item_instances WHERE item_instance_id=$1::uuid")
+            .bind(&id).execute(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(())
+    }.await;
+    let marker_cleanup = async {
+        if let Some(position) = marker_on_ground {
+            let handle = observe(&mut client, |client| {
+                client
+                    .session_mut()
+                    .container_views()?
+                    .views
+                    .iter()
+                    .find(|view| view.browse.is_some_and(|page| page.position == position))?
+                    .entries
+                    .iter()
+                    .find(|entry| entry.item_definition_ref == marker)
+                    .map(|entry| entry.handle)
+            })
+            .await?;
+            move_item(&mut client, handle, Destination::MainBackpack, Move::Moved).await?;
+        }
+        Ok(())
+    }
+    .await;
+    let released = release(&mut client).await;
+    if rows.pending.contains(&"seed") {
+        return result.and(released);
+    }
+    rows.emit("cleanup", result.and(marker_cleanup).and(released));
+    Ok(())
+}
+
+async fn use_effect_ground(client: &mut DevClientSession, entry: ItemEntry) -> TestResult {
+    let reply = client.use_item(entry.handle).await?;
+    Err(format!(
+        "ground-USE-handle-{}-observed-{reply:?}-effect-oracle-unavailable",
+        entry.handle
+    )
+    .into())
+}
+
 async fn container(
     client: &mut DevClientSession,
     entry: ItemEntry,
@@ -427,7 +572,7 @@ async fn container(
 ) -> TestResult {
     let reply = client.use_item(entry.handle).await?;
     if reply.status != CommandStatus::Accepted || reply.disposition != Use::Committed {
-        return Err(format!("container-USE-{reply:?}").into());
+        return Err(format!("container-USE-handle-{}-{reply:?}", entry.handle).into());
     }
     let observed = observe(client, |client| {
         client
@@ -495,20 +640,19 @@ fn stat_checks(item: &Item) -> (Vec<StatCheck>, i64, Vec<&str>) {
             _ => missing.push("weapon-loadout"),
         }
     }
-    if let (Some(defence), Some(extra)) =
-        (points(weapon, "defense"), points(weapon, "extra_defense"))
-    {
+    // Crystal player.cpp:646–655 combines base and extra defence for a
+    // weapon. An absent extra value contributes zero (inspection.rs:474–486).
+    if let Some(defence) = points(weapon, "defense") {
         let shield = matches!(
             known(&weapon["weapon_type"]).as_str(),
             Some("SHIELD" | "SPELLBOOK")
         );
-        add(
-            Stat::DefenceEquipment,
-            (defence + if shield { 0 } else { extra }).max(0),
-            false,
-        );
-    } else if points(weapon, "defense").is_some() {
-        missing.push("hand-defence");
+        let extra = if shield {
+            0
+        } else {
+            points(weapon, "extra_defense").unwrap_or_default()
+        };
+        add(Stat::DefenceEquipment, (defence + extra).max(0), false);
     }
     for resistance in list(known(&protection["resistances"])) {
         let stat = match resistance["kind"].as_str() {
@@ -560,6 +704,7 @@ fn stat_checks(item: &Item) -> (Vec<StatCheck>, i64, Vec<&str>) {
                     true,
                 );
             }
+            ("ELEMENTAL_BOND", Some("ELEMENT")) if value.is_string() => {}
             _ => missing.push(kind),
         }
     }
@@ -669,14 +814,13 @@ async fn equipment(
     } else {
         speed_trial(client, world, build, 0).await
     };
-    // Use the normal client hotkey route so the effective destination is observed.
-    let reply = client
-        .session_mut()
-        .equip_item_definition(entry.item_definition_ref)
-        .await?;
-    if reply.status != CommandStatus::Accepted || reply.outcome != Move::Moved {
-        return Err(format!("equip-{reply:?}").into());
-    }
+    move_item(
+        client,
+        entry.handle,
+        Destination::Equipment(slot),
+        Move::Moved,
+    )
+    .await?;
     let worn = observe(client, |client| {
         client
             .inventory()?
@@ -692,6 +836,7 @@ async fn equipment(
             .as_ref()
             .map_err(|error| format!("baseline-{error}"))?;
         check_stats(&checks, baseline, &stats(client, &checks).await?)?;
+        elemental_bond(client, worn, active).await?;
         baseline_speed?;
         if speed != 0 {
             speed_trial(client, world, build, speed).await?;
@@ -730,6 +875,7 @@ async fn equipment(
     };
     rows.emit("unequip", Ok(()));
     let removed = async {
+        elemental_bond(client, returned, item).await?;
         if stats(client, &checks).await? != baseline? {
             return Err("unequip-did-not-restore-combat-baseline".into());
         }
@@ -747,6 +893,57 @@ async fn equipment(
     rows.emit("attributes_removed", removed);
     if returned.item_definition_ref != entry.item_definition_ref {
         drop_carried(client, returned.item_definition_ref).await?;
+    }
+    Ok(())
+}
+
+// Crystal item.cpp:3257–3262 and the native inspection projection
+// (gameplay_transport/inspection.rs:576) expose the bond as a named element.
+async fn elemental_bond(
+    client: &mut DevClientSession,
+    entry: ItemEntry,
+    item: &Item,
+) -> TestResult {
+    use oteryn_protocol_oteryn::inspection as wire;
+    let bonds: Vec<_> = list(known(&item.group("skill_modifiers")["modifiers"]))
+        .iter()
+        .filter(|m| m["kind"] == "ELEMENTAL_BOND")
+        .filter_map(|m| known(&m["parameter"])["value"].as_str())
+        .collect();
+    if bonds.is_empty() {
+        return Ok(());
+    }
+    let payload = wire::encode_request(wire::Request::Item(entry.handle))
+        .map_err(|error| format!("elemental-bond-inspection-encode-{error:?}"))?;
+    let response = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_INSPECTION_V1,
+            wire::COMMAND_TYPE_INSPECTION,
+            &payload,
+        )
+        .await?;
+    let reply = wire::decode_reply(&response.payload)
+        .map_err(|error| format!("elemental-bond-inspection-decode-{error:?}"))?;
+    let [observed] = reply.items.as_slice() else {
+        return Err(format!(
+            "elemental-bond-inspection-handle-{}-status-{}",
+            entry.handle, reply.status
+        )
+        .into());
+    };
+    let matching = observed
+        .attributes
+        .iter()
+        .filter(|(label, _)| label == "Elemental Bond");
+    if response.status != CommandStatus::Accepted
+        || reply.status != 1
+        || observed.definition_ref != entry.item_definition_ref.get()
+        || !matching
+            .map(|(_, value)| value.to_ascii_uppercase())
+            .eq(bonds.iter().copied())
+    {
+        return Err(format!("elemental-bond-expected-{bonds:?}-observed-{observed:?}").into());
     }
     Ok(())
 }
@@ -974,6 +1171,19 @@ async fn sweep_item(
             return;
         }
     };
+    if item.ground_only {
+        let result = match index.revision(key) {
+            Some(revision) => {
+                ground_container(fixtures, world, index, key, revision, reference, item, rows).await
+            }
+            None => Err("ground-fixture-revision-unavailable".into()),
+        };
+        if let Err(error) = result {
+            rows.emit("seed", Err(error));
+        }
+        rows.blocked("ground-custody");
+        return;
+    }
     let positive = item
         .patterns()
         .first()
@@ -996,7 +1206,13 @@ async fn sweep_item(
             } else {
                 "fixture-seed-or-admission-failed"
             };
-            rows.emit("seed", Err(message.into()));
+            let diagnostic = error.to_string();
+            let message = if diagnostic.starts_with("fixture-") {
+                diagnostic.as_str()
+            } else {
+                message
+            };
+            rows.emit("seed", Err(message.to_owned().into()));
             rows.blocked("seed");
             return;
         }
