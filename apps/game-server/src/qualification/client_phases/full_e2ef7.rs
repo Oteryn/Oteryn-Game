@@ -2832,6 +2832,9 @@ async fn party_spell_journey(
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_S13_ACCOUNT").await?;
     let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
     let scope = SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+    let peer_identity = character_prep::dedicated_character(&scope, "NODE_BOOT_S13_PEER_ACCOUNT").await?;
+    let (accounts, characters) = peer_identity.replace_slot(&scope, 0)?;
+    let scope = SeamClients { accounts: &accounts, characters: &characters, ..scope };
     let clients = &scope;
     const PREPARATION: character_prep::Seeded = character_prep::Seeded {
         profile: "s13-party",
@@ -2853,6 +2856,20 @@ async fn party_spell_journey(
     }
     gate.pass("two-admissions");
     cost.pass("two-admissions");
+    use crate::durability::highscore_snapshot::{CutLimits, SnapshotCatalogues};
+    let root = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)?;
+    root.await_ready().await?;
+    let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
+        .map_err(|error| format!("S13 achievement catalogue: {error:?}"))?;
+    let catalogues = SnapshotCatalogues::activated(std::sync::Arc::new(achievements))
+        .map_err(|error| format!("S13 ranking catalogues: {error:?}"))?;
+    let snapshots = root.refresh_highscore_world_within(
+        wire::WorldId::decode(&clients.world)?, catalogues, CutLimits::REGISTERED,
+    ).await.map_err(|error| format!("S13 fresh ranking cut publication: {error:?}"))?;
+    let cut = snapshots.iter().find(|snapshot| snapshot.category == 10)
+        .ok_or("S13 fresh cut missing achievement category")?;
+    evidence(&format!("S13 fixture-ranking-cut snapshot_id={}", cut.snapshot_id));
+    require_current_light_premium(caster).await?;
     let words = "utori mas sio";
     let index = qualification_spell_index(book, words)?;
     let spell = book.indexed(index).ok_or("party compiled index absent")?;
@@ -2861,6 +2878,9 @@ async fn party_spell_journey(
         .actor_vitals()
         .copied()
         .ok_or("party initial vitals absent")?;
+    if level != 32 || before.mana < 216 {
+        return Err(format!("S13 requires Sorcerer level 32 with at least 216 mana: level={level}, mana={}", before.mana).into());
+    }
     let solo = caster.cast_spell(index, casts::SpellTarget::None, false).await
         .map_err(|e| format!("party solo cast: {e};served-level={level};required-level={},premium={}", spell.level, spell.premium))?;
     verify_party_refusal(&solo, before, caster.actor_vitals().copied().ok_or("party solo lost vitals")?, casts::SpellCastDisposition::Rejected)
