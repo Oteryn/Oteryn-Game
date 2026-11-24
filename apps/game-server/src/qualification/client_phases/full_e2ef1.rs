@@ -2,7 +2,7 @@
 // Mount as the provisioning phase: run BEFORE its control-socket fixtures.
 use super::*;
 #[path = "provision.rs"]
-mod original;
+pub(super) mod original;
 
 pub(super) async fn with_peer_liveness<T>(
     client: &mut oteryn_dev_client::DevClientSession,

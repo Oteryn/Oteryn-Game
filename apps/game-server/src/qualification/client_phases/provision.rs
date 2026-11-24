@@ -30,7 +30,7 @@ pub(in crate::qualification) async fn provision_profile(
     let vocation = if profile == "explorer" {
         "knight"
     } else {
-        profile
+        profile.strip_prefix("spell-sweep-").unwrap_or(profile)
     };
     let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
         vocation,

@@ -556,7 +556,10 @@ async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
 }
 
 /// The spawn needs free non-PZ cells next to the player: walk once to open ground.
-async fn leave_protection_zone(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+pub(super) async fn leave_protection_zone(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult {
     let open = |at: TilePos| {
         world
             .base()
@@ -1368,7 +1371,9 @@ async fn prepare_player(
 }
 
 /// Experience and level from the Cyclopedia GeneralStats tab (the same panel MP09 reads).
-async fn read_stats(client: &mut DevClientSession) -> TestResult<(u64, u32, Option<u8>)> {
+pub(super) async fn read_stats(
+    client: &mut DevClientSession,
+) -> TestResult<(u64, u32, Option<u8>)> {
     let mut view = panel::CyclopediaCharacterPanel {
         selected: true,
         limit: 50,
@@ -1397,7 +1402,7 @@ async fn read_stats(client: &mut DevClientSession) -> TestResult<(u64, u32, Opti
 }
 
 /// Logout with the combat lock honoured: wait it out with keep-alive Turns, never clear it.
-async fn release(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn release(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(930);
     let mut activity_due = tokio::time::Instant::now();
     loop {

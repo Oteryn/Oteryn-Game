@@ -15,6 +15,16 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
         "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
     )
     .then_some((session, profile))
+    .or_else(|| sweep_vocation(profile).map(|_| (session, profile)))
+}
+
+fn sweep_vocation(profile: &str) -> Option<&str> {
+    let vocation = profile.strip_prefix("spell-sweep-")?;
+    matches!(
+        vocation,
+        "druid" | "knight" | "monk" | "paladin" | "sorcerer"
+    )
+    .then_some(vocation)
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -683,7 +693,7 @@ async fn prepare_build(
     let (vocation, level) = match profile {
         "knight-underlevel" => ("knight", 66),
         "explorer" => ("knight", 100),
-        _ => (profile, 100),
+        _ => sweep_vocation(profile).map_or((profile, 100), |vocation| (vocation, 300)),
     };
     let occurrence_profile = if level == 100 { vocation } else { profile };
     qualification_build::prepare_character_with_policy_until(

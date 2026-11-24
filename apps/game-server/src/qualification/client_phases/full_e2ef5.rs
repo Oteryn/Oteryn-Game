@@ -1180,7 +1180,7 @@ pub(super) async fn player_logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
-fn rune_quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
+pub(super) fn rune_quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
     Ok(client
         .inventory()
         .ok_or("native inventory absent")?
@@ -1429,7 +1429,7 @@ async fn inventory_quantity(
     }
 }
 
-async fn rune_use(
+pub(super) async fn rune_use(
     client: &mut DevClientSession,
     reference: std::num::NonZeroU32,
     creature: Option<oteryn_dev_client::EntityRef>,

@@ -775,6 +775,7 @@ const GROUPS: &[(&str, &[&str])] = &[
     ("f7run", &[]),
     ("mp", &[]),
     ("rows", &[]),
+    ("spell_sweep", &[]),
 ];
 
 /// The selected journey groups; `None` runs every group.

@@ -138,7 +138,9 @@ Docker and the exact pinned Platform checkout are required. Set
 Pass multiple groups as separate arguments, for example
 `tools/qualification/node_boot/cloud_run.sh core f6`. The Cloud runner uses
 the bundled environment, runs every group sequentially in the same checkout
-and inherits `OTERYN_E2E_CREATURE_BATCH` for `creature_sweep`. It prints a
+and inherits `OTERYN_E2E_CREATURE_BATCH` for `creature_sweep` and
+`OTERYN_E2E_SPELL_SWEEP_BATCH=start:len` for the opt-in `spell_sweep` group
+(default `0:3`, sorted by the authored spell key). It prints a
 summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
 at the path reported on stderr. It exits nonzero if any group fails.
 
