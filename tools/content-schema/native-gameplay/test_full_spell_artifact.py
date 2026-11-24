@@ -314,7 +314,10 @@ class LootTablesTests(unittest.TestCase):
 
     def test_checked_in_section_is_generated_from_the_production_profiles(self):
         _, creatures = full.read(full.CREATURE_PROFILES)
-        raw = full.loot_tables(creatures)
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'loot-tables.json'
+            full.refresh_loot_tables(output)
+            raw = output.read_bytes()
         self.assertEqual(raw, full.LOOT_TABLES.read_bytes())
         self.assertLessEqual(len(raw), full.LIMITS['loot_tables'])
         document = json.loads(raw)
