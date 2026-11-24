@@ -428,15 +428,14 @@ async fn acquire(
         })
         .collect();
     let here = tile(client.world_spatial().actor_position)?;
-    let placed = npcs
-        .npcs
-        .iter()
-        .filter(|n| sellers.contains(&n.key))
-        .count();
-    let (npc, path) = npcs
-        .npcs
-        .iter()
-        .filter(|n| sellers.contains(&n.key))
+    let candidates = npcs.npcs.iter().filter(|n| {
+        sellers.contains(&n.key)
+            && (item_id != BLANK_RUNE_ID
+                || (n.key == XODET
+                    && n.placements.iter().any(|p| (p.x, p.y, p.floor) == (32398, 32222, 7))))
+    });
+    let placed = candidates.clone().count();
+    let (npc, path) = candidates
         .filter_map(|n| {
             let wander = if n.key == XODET {
                 XODET_WANDER_RADIUS
@@ -446,7 +445,8 @@ async fn acquire(
             let approach = wire::TALK_RANGE_TILES - wander;
             route(world, here, |at| {
                 n.placements.iter().any(|p| {
-                    p.floor == at.floor
+                    (item_id != BLANK_RUNE_ID || (p.x, p.y, p.floor) == (32398, 32222, 7))
+                        && p.floor == at.floor
                         && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
                 })
             })
