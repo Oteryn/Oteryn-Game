@@ -1,4 +1,6 @@
 //! Real admitted connection -> depot/stash dispatch -> fenced item owner -> PostgreSQL.
+#[path = "depot_dispatch/container_batch_cases.rs"]
+mod container_batch_cases;
 #[path = "depot_dispatch/depot_list.rs"]
 mod depot_list;
 #[path = "depot_dispatch/mail_capacity.rs"]
@@ -248,12 +250,42 @@ fn write_text_ground_real_dispatch_movement_closes_external_views() -> TestResul
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Mode {
     Plain,
+    ManagedContainerMove,
+    ManagedArmor,
+    StashContainer,
     List,
     Mail,
     MailCapacity,
     MailPostCapacity,
     ManualSort,
     Retrieve,
+    StashActions(stash_cases::ActionCase),
+}
+
+#[test]
+fn stash_row_actions_resolve_and_edit_the_active_loot_list_on_wire() -> TestResult {
+    run_stash_actions(stash_cases::ActionCase::Row)
+}
+
+#[test]
+fn stash_bulk_matching_and_nested_contents_commit_on_wire() -> TestResult {
+    run_stash_actions(stash_cases::ActionCase::Matching)?;
+    run_stash_actions(stash_cases::ActionCase::Contents)
+}
+
+#[test]
+fn stash_chosen_quantity_preserves_the_source_remainder_on_wire() -> TestResult {
+    run_stash_actions(stash_cases::ActionCase::Quantity)
+}
+
+fn run_stash_actions(case: stash_cases::ActionCase) -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new().stack_size(256 << 20)
+        .spawn(move || scenario_with_premium(true,false,false,false,false,None,Mode::StashActions(case))
+            .map_err(|error| error.to_string()))?
+        .join().map_err(|_| "stash action thread panicked")?.map_err(Into::into)
 }
 
 fn scenario(
@@ -288,6 +320,8 @@ fn scenario_with_premium(
         Mode::Mail | Mode::MailCapacity | Mode::MailPostCapacity | Mode::List
     );
     let retrieve = mode == Mode::Retrieve;
+    let managed = matches!(mode, Mode::ManagedContainerMove | Mode::ManagedArmor);
+    let batch = mode == Mode::StashContainer || managed;
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
             .await
@@ -548,6 +582,7 @@ fn scenario_with_premium(
         // Seed only the carried target, using the existing MINT/TRANSFER owners. The behavior
         // under test starts below at the real dispatch, with a map handle issued by domain 17.
         let mut carried = None;
+        let mut main_bag = None;
         let mut stacks = Vec::new();
         let mut ground = Vec::new();
         // Retrieval: 20 carried stacks fill the main backpack; two more are carried later.
@@ -578,22 +613,51 @@ fn scenario_with_premium(
         if mode == Mode::ManualSort {
             deps.initialize(&owner).await;
         }
+        let contents = mode == Mode::StashActions(stash_cases::ActionCase::Contents);
+        let sapphire = if contents {
+            let reference = index.definition_ref("Item","oteryn:item.tibia.i3029","definition-r1")
+                .ok_or("sapphire reference")?;
+            let definition = crate::gameplay_transport::item_look::typed_definition(index,reference)
+                .ok_or("sapphire definition")?;
+            let facts = generation_item_facts(native, &definition).map_err(debug)?;
+            Some((definition, facts))
+        } else {
+            None
+        };
+        let armor = if mode == Mode::ManagedArmor {
+            let reference = index.definition_ref("Item", "oteryn:item.tibia.i811", "definition-r1")
+                .ok_or("armor reference")?;
+            let definition = crate::gameplay_transport::item_look::typed_definition(index, reference)
+                .ok_or("armor definition")?;
+            let facts = generation_item_facts(native, &definition).map_err(debug)?;
+            Some((definition, facts))
+        } else { None };
         let mut first_page_item = None;
-        let seeded: u32 = if mode == Mode::List {
+        let seeded: u32 = if managed {
+            4
+        } else if mode == Mode::List {
             5
         } else if retrieve {
             22
         } else if mode == Mode::ManualSort {
             page_fixture_start + oteryn_gameplay_items::depot::DEPOT_PAGE_ENTRIES
+        } else if contents {
+            4
         } else if stash || ground_container || mail {
             3
         } else {
             1
         };
         for ordinal in 0..=seeded {
-            let mail_item = ordinal
-                .checked_sub(1)
-                .and_then(|n| mail_items.get(usize::try_from(n).ok()?));
+            let special_item = ordinal.checked_sub(1)
+                .and_then(|n| mail_items.get(usize::try_from(n).ok()?))
+                .or(if ordinal == 3 {sapphire.as_ref()} else {None})
+                .or(if ordinal >= 3 {armor.as_ref()} else {None});
+            let bag = ordinal == 0
+                || (ground_container && ordinal <= 2)
+                || (contents && ordinal == 2)
+                || (batch && ordinal == 1)
+                || (managed && ordinal == 2);
             let mut seed = harness
                 .root
                 .freeze_item_mint(
@@ -614,18 +678,17 @@ fn scenario_with_premium(
                             "fixture:purpose.map-target".into(),
                             0,
                         ),
-                        item: if let Some((definition, _)) = mail_item {
+                        item: if let Some((definition, _)) = special_item {
                             definition.clone()
-                        } else if ordinal == 0 || (ground_container && ordinal <= 2) {
+                        } else if bag {
                             backpack_definition.clone()
                         } else {
                             coin_definition.clone()
                         },
-                        quantity: if ordinal == 0
-                            || (ground_container && ordinal <= 2)
-                            || mail_item.is_some()
-                        {
+                        quantity: if bag || (mail && special_item.is_some()) || mode == Mode::ManagedArmor {
                             1
+                        } else if managed {
+                            40
                         } else {
                             100
                         },
@@ -675,9 +738,9 @@ fn scenario_with_premium(
                         } else {
                             ItemTransferDestination::MainBackpack
                         },
-                        item: if let Some((_, facts)) = mail_item {
+                        item: if let Some((_, facts)) = special_item {
                             facts.clone()
-                        } else if ordinal == 0 || (ground_container && ordinal <= 2) {
+                        } else if bag {
                             backpack_facts.clone()
                         } else {
                             coin_facts.clone()
@@ -732,9 +795,33 @@ fn scenario_with_premium(
             } else if ordinal > 0 {
                 stacks.push(backpack);
             }
+            if mode == Mode::ManagedContainerMove && ordinal == 3 {
+                // Keep the first stack separate so the second pickup cannot merge
+                // it before the managed move exercises both depths.
+                let source = stacks.first().ok_or("source bag")?;
+                container_batch_cases::nest_fixture(&harness.pool, *source, backpack).await?;
+            }
+            if ordinal == 0 {
+                main_bag = Some(backpack);
+            }
             if ordinal == 1 {
                 carried = Some(backpack);
             }
+        }
+        if mode == Mode::ManagedContainerMove {
+            // The batch assertions inspect the nested stack at the end.
+            let [_, _, nested, direct] = stacks.as_mut_slice() else {
+                return Err("missing managed move fixture items".into());
+            };
+            std::mem::swap(nested, direct);
+        } else if batch {
+            let [source, .., nested] = stacks.as_slice() else {
+                return Err("missing batch fixture items".into());
+            };
+            container_batch_cases::nest_fixture(&harness.pool, *source, *nested).await?;
+        }
+        if contents {
+            stash_cases::nest_contents(&harness.pool, &stacks).await?;
         }
         if mode != Mode::ManualSort {
             deps.initialize(&owner).await;
@@ -761,6 +848,15 @@ fn scenario_with_premium(
             None,
         )
         .map_err(debug)?;
+        if let Mode::StashActions(case) = mode {
+            let selected = if contents { stacks[1] } else { stacks[0] };
+            let handle = view.table().handle(&ItemKey::Instance(selected)).ok_or("action handle")?;
+            stash_cases::actions(&owner, admitted, handle, &stacks, &harness.pool, case).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let handle = view
             .table()
             .handle(&ItemKey::Instance(carried.ok_or("carried")?))
@@ -918,6 +1014,15 @@ fn scenario_with_premium(
                 owner.session_premium_gate(session).await.premium_current(),
                 stash_premium == Some(EntitlementState::Active)
             );
+            if batch {
+                let main = main_bag.ok_or("batch fixture main bag")?;
+                let handle = view.table().handle(&ItemKey::Instance(main)).ok_or("main bag handle")?;
+                container_batch_cases::exercise(&owner, admitted, &harness.pool, handle, &stacks, mode).await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return harness.cleanup().await;
+            }
             let other_handles = stacks
                 .iter()
                 .skip(1)

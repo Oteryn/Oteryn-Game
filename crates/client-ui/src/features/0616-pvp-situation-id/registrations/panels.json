@@ -1,0 +1,7 @@
+{
+  "mechanic": "0616-pvp-situation-id",
+  "kind": "panels",
+  "id": "0616-pvp-situation-id-panel",
+  "status": "supported",
+  "entry": "protocol.rs::renewed"
+}

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BanParams",
+  "type": "object",
+  "properties": {
+    "decision_revision": {
+      "$ref": "#/$defs/DecisionRevision"
+    },
+    "effective_at_ms": {
+      "$ref": "#/$defs/EnforcementMillis"
+    },
+    "expires_at_ms": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EnforcementMillis"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "operation_id": {
+      "$ref": "#/$defs/EnforcementId"
+    },
+    "preview_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sanction_stream_id": {
+      "$ref": "#/$defs/EnforcementId"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "operation_id",
+    "sanction_stream_id",
+    "decision_revision",
+    "effective_at_ms"
+  ],
+  "$defs": {
+    "DecisionRevision": {
+      "type": "integer",
+      "format": "uint64",
+      "maximum": 9007199254740991,
+      "minimum": 1
+    },
+    "EnforcementId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "EnforcementMillis": {
+      "type": "integer",
+      "format": "uint64",
+      "maximum": 9007199254740991,
+      "minimum": 1
+    }
+  }
+}

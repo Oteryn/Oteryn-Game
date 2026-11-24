@@ -105,6 +105,18 @@ impl ChannelSpellStates {
         self.actors.get_mut(index).map(|(_, _, state)| state)
     }
 
+    pub(in crate::gameplay_transport) fn house_spell_state(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        fence: CurrentCharacterItemFence,
+    ) -> Option<&PlayerSpellState> {
+        matches_house(runtime, actor, session, fence)?;
+        let (_, _, state) = self.actors.get(self.index(actor, session)?)?;
+        Some(state)
+    }
+
     pub(in crate::gameplay_transport) fn house_vitals(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -112,8 +124,7 @@ impl ChannelSpellStates {
         session: GameSessionId,
         fence: CurrentCharacterItemFence,
     ) -> Option<(u64, ActorVitals)> {
-        matches_house(runtime, actor, session, fence)?;
-        let (_, _, state) = self.actors.get(self.index(actor, session)?)?;
+        let state = self.house_spell_state(runtime, actor, session, fence)?;
         Some((state.revision(), state.vitals()))
     }
 }

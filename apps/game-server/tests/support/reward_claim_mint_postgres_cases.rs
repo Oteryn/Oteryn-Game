@@ -2931,6 +2931,7 @@ mod quest_obligations {
             &harness.node,
             gameplay_fence()?,
             catalogue,
+            &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
         )
         .await)
     }

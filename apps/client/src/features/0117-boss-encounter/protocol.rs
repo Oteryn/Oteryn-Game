@@ -27,7 +27,8 @@ impl Outbox {
             mailbox.boss_encounter.pending = false;
             return;
         }
-        oteryn_client_ui::boss_encounter::apply_result(&mut lock(&self.0).boss_encounter, response);
+        let mut mailbox = lock(&self.0);
+        oteryn_client_ui::boss_encounter::apply_result(&mut mailbox.boss_encounter, response);
     }
 }
 

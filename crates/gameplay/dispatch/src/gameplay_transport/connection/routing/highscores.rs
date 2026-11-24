@@ -16,19 +16,21 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
 ) -> Dispatch {
     use oteryn_protocol_oteryn::highscores_catalogue as catalogue;
     let typed = command.command_type == catalogue::COMMAND_QUERY;
-    if typed || command.command_type == catalogue::COMMAND_CATALOGUE {
+    let battleye = command.command_type == catalogue::COMMAND_BATTLEYE_CATALOGUE;
+    if typed || battleye || command.command_type == catalogue::COMMAND_CATALOGUE {
         if !admitted
             .continuity
             .selected_capabilities
             .contains(catalogue::CAPABILITY)
+            || (battleye && !admitted.continuity.selected_capabilities.contains(catalogue::CAPABILITY_BATTLEYE))
         {
             return Dispatch::Highscores(HighscoresReply::Rejected);
         }
-        if command.command_type == catalogue::COMMAND_CATALOGUE {
+        if battleye || command.command_type == catalogue::COMMAND_CATALOGUE {
             return if command.payload.is_empty() {
                 Dispatch::Highscores(
                     authority
-                        .highscores_catalogue(admitted.world_id, admitted.game_session_id, None)
+                        .highscores_catalogue(admitted.world_id, admitted.game_session_id, None, battleye)
                         .await,
                 )
             } else {
@@ -61,6 +63,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     admitted.world_id,
                     admitted.game_session_id,
                     Some((query, kind)),
+                    false,
                 )
                 .await
         } else {

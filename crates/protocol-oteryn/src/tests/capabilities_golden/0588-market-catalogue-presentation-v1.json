@@ -1,0 +1,17 @@
+{
+  "id": 588,
+  "name": "MARKET_CATALOGUE_PRESENTATION_V1",
+  "constant": "market_details::CAPABILITY_MARKET_CATALOGUE_PRESENTATION_V1",
+  "requires": [
+    63
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

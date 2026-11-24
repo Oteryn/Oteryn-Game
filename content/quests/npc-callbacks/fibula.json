@@ -133,7 +133,7 @@
       ],
       "sources": [
         "owner:questpc6:chosen-recipe:tools/content-schema/quest-authoring/samples/completion242/recipes.json:6863-7011:sha256:6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
-        "game:content/quests/definitions/quests-00000-00099.json:1#/records/20/definition/claims:sha256:6a97e5d1ffa409fbc298d67dac69ff81258b1ce143af007d6d2b7a6a6f07324f"
+        "game:content/quests/definitions/quests-00000-00099.json:1#/records/20/definition/claims:sha256:a17e51cdfc68ac791dd537d0e0ceab25df626b0114405c14a67909746cf96813"
       ]
     },
     {

@@ -149,6 +149,8 @@ def supported_claim(definition):
         definition["readiness"] == "ready"
         or numbered_key_claim(definition) is not None
         or fibula_amulet_claim(definition)
+        or panpipe_key_claim(definition)
+        or outlaw_key_claim(definition)
         or (
             definition.get("definition_profile") == "authored_variant_v1"
             and definition.get("readiness") == "waiting_implementation"
@@ -165,6 +167,19 @@ def supported_claim(definition):
             and len(native.get("placements", [])) == len(definition["placements"])
         )
     )
+
+
+OUTLAW_KEYS = {3301: 2970, 3302: 2969, 3303: 2970, 3304: 2972}
+
+
+def outlaw_key_claim(definition):
+    return any(
+        key_claim(definition, number, item) for number, item in OUTLAW_KEYS.items()
+    )
+
+
+def panpipe_key_claim(definition):
+    return key_claim(definition, 4055, 2969)
 
 
 def fibula_amulet_claim(definition):
@@ -229,6 +244,41 @@ def numbered_key_claim(definition):
     ):
         return number
     return None
+
+
+def key_claim(definition, number, item):
+    """Select the existing key-only lowering, with its exact source key number."""
+    variant = definition.get("source_variant", {})
+    return (
+        definition["identity"]["key"] == f"oteryn:reward-claim.quest.key.id{number}"
+        and definition.get("definition_profile") == "authored_variant_v1"
+        and definition.get("readiness") == "waiting_implementation"
+        and definition.get("native_admission") == "WAITING_IMPLEMENTATION"
+        and definition.get("data_holds") == []
+        and variant.get("achievement_grants") == []
+        and variant.get("charge_dispositions") == []
+        and variant.get("source_data", {}).get("status") == "COMPLETE"
+        and variant.get("native_lowering")
+        == {
+            "status": "WAITING_IMPLEMENTATION",
+            "pending_implementation": ["KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED"],
+        }
+        and len(definition["placements"]) == 1
+        and definition["placements"][0]["reward"]
+        == {
+            "items": [
+                {
+                    "item": {
+                        "family": "Item",
+                        "key": f"oteryn:item.tibia.i{item}",
+                        "revision": "definition-r1",
+                    },
+                    "count": 1,
+                }
+            ],
+            "key_binding": f"canary:door-key/{number}",
+        }
+    )
 
 
 def capture(source_root, selected, root=ROOT, *, route_access=False):
@@ -471,6 +521,30 @@ def selections(root=ROOT):
                 raise ValueError("QUEST_CHEST_CANONICAL_SELECTOR_DRIFT")
             bindings[position] = row
         captured_claims = {r["claim"] for r in document["bindings"]}
+        if "journey" in document:
+            journey = document["journey"]
+            terminal, passage = journey["terminal"], journey["passage"]
+            if (
+                path.name != "outlaw-camp.json"
+                or journey["quest"] != "oteryn:quest.the_outlaw_camp_quest"
+                or captured_claims
+                != {
+                    f"oteryn:reward-claim.quest.key.id{number}"
+                    for number in OUTLAW_KEYS
+                }
+                or terminal["position"] != [32620, 32198, 10]
+                or terminal["appearance"] != 2472
+                or terminal["unique"] != 14091
+                or passage["position"] != [32620, 32199, 10]
+                or passage["appearance"] != 6251
+                or passage["action"] != 3303
+            ):
+                raise ValueError("OUTLAW_CAMP_SOURCE_SELECTOR_DRIFT")
+            for rows, row in ((bindings, terminal), (doors, passage)):
+                position = tuple(row["position"])
+                if position in rows:
+                    raise ValueError("OUTLAW_CAMP_SOURCE_SELECTOR_CONFLICT")
+                rows[position] = row
         for row in document.get("level_access", []):
             position = tuple(row["position"])
             if (
@@ -526,7 +600,8 @@ def selections(root=ROOT):
             if ITEM_ACCESS[key][0] not in doors:
                 raise ValueError("QUEST_CHEST_ITEM_ACCESS_MISSING")
     if any(
-        row["claim"] == "oteryn:reward-claim.kv.panpipe" for row in bindings.values()
+        row.get("claim") == "oteryn:reward-claim.kv.panpipe"
+        for row in bindings.values()
     ):
         # Already captured from both donors: door_key.lua lines137/158. The
         # numeric storage is4055 despite the donors' stale "key3791" label.
@@ -559,6 +634,57 @@ def selections(root=ROOT):
             "claims": ["oteryn:reward-claim.kv.panpipe"],
         }
         sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
+    alias_path = "content/quests/native-reward-placement-aliases.json"
+    key = "oteryn:reward-claim.quest.key.id3899"
+    if (root / alias_path).is_file() and any(
+        alias["claim"] == key
+        for alias in json.loads((root / alias_path).read_bytes())["aliases"]
+    ):
+        position = (32479, 31903, 4)
+        gates_path = "tools/content-schema/quest-authoring/samples/doors/gates.json"
+        manifest_path = (
+            "tools/content-schema/quest-authoring/samples/doors/manifest.json"
+        )
+        gate_key = "canary:door-gate/key/3899"
+        gates_raw = (root / gates_path).read_bytes()
+        manifest_raw = (root / manifest_path).read_bytes()
+        (gate,) = (
+            row
+            for row in json.loads(gates_raw)["gates"]
+            if row["identity"]["key"] == gate_key
+        )
+        (entry,) = (
+            row
+            for row in json.loads(manifest_raw)["entries"]
+            if row.get("destination") == gate_key
+        )
+        if (
+            gate["condition"]["key_binding"] != "canary:door-key/3899"
+            or [claim["key"] for claim in gate["condition"]["key_from_claims"]]
+            != ["canary:reward-claim/quest/key/id3899"]
+            or gate["placements"]
+            != [{"position": dict(zip("xyz", position)), "appearance": None}]
+            or tuple(entry["position"]) != position
+            or entry["status"] != "mapped"
+            or {row["source"] for row in entry["sources"]}
+            != {"canary", "crystalserver"}
+            or any(
+                row["action_key"] != "Storage.Quest.Key.ID3899"
+                for row in entry["sources"]
+            )
+            or position in doors
+        ):
+            raise ValueError("PARADOX_KEY_DOOR_SOURCE_DRIFT")
+        doors[position] = {
+            "position": list(position),
+            "appearance": 1631,
+            "action": 3899,
+            "claims": [key],
+        }
+        for path, raw in ((gates_path, gates_raw), (manifest_path, manifest_raw)):
+            evidence = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
+            if evidence not in sources:
+                sources.append(evidence)
     # The source OTBM box is plain. Crystal registers this USE action in Lua.
     path = "content/quests/world-callbacks/qd-steal-from-thieves.json"
     raw = (root / path).read_bytes()

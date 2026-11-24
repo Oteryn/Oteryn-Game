@@ -3,11 +3,13 @@ use super::*;
 
 pub(super) fn validate_map(
     map: &std::collections::BTreeMap<String, String>,
+    secondary: bool,
 ) -> Result<(), PreferenceError> {
     for (id, value) in map {
-        if !REGISTERED_BINDINGS
-            .iter()
-            .any(|(known, default)| known == id && !default.starts_with("MOUSE"))
+        if !(secondary && super::super::bar_hotkeys::extra_slot(id).is_some())
+            && !REGISTERED_BINDINGS
+                .iter()
+                .any(|(known, default)| known == id && !default.starts_with("MOUSE"))
         {
             return Err(PreferenceError);
         }
@@ -26,8 +28,8 @@ pub(super) fn validate_effective(
     primary: &std::collections::BTreeMap<String, String>,
     secondary: &std::collections::BTreeMap<String, String>,
 ) -> Result<(), PreferenceError> {
-    validate_map(primary)?;
-    validate_map(secondary)?;
+    validate_map(primary, false)?;
+    validate_map(secondary, true)?;
     let mut used = Vec::new();
     for &(id, default) in REGISTERED_BINDINGS {
         if default.starts_with("MOUSE") {
@@ -41,6 +43,15 @@ pub(super) fn validate_effective(
             used.push(chord);
         }
         if let Some(value) = secondary.get(id) {
+            let chord = parse(value)?;
+            if used.contains(&chord) {
+                return Err(PreferenceError);
+            }
+            used.push(chord);
+        }
+    }
+    for (id, value) in secondary {
+        if super::super::bar_hotkeys::extra_slot(id).is_some() {
             let chord = parse(value)?;
             if used.contains(&chord) {
                 return Err(PreferenceError);

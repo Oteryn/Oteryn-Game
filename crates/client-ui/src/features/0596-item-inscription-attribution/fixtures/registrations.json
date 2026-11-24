@@ -1,0 +1,20 @@
+[
+  {
+    "mechanic": "0596-item-inscription-attribution",
+    "kind": "handlers",
+    "id": "0596-item-inscription-attribution-query",
+    "status": "unsupported",
+    "commands": [
+      6356
+    ],
+    "direction": "client_to_server",
+    "reason": "The capability is reserved for the client lane implementing the negotiated occurrence and inscription extensions.",
+    "not_applicable": {
+      "state": "The carried-item text owner supplies the server-owned fields.",
+      "protocol": "The server gates the request on its negotiated capability.",
+      "view": "Client presentation is owned by the client lane.",
+      "input": "The server owns the facts behind this read-only query.",
+      "settings": "The query has no client setting."
+    }
+  }
+]

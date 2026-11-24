@@ -120,7 +120,7 @@ fn take_raid_notice(client: &mut DevClientSession) -> Option<ServerMessage> {
         .find_map(|event| match event {
             oteryn_dev_client::SessionEvent::ServerMessage(delta) => match delta.value {
                 message @ (ServerMessage::Warning(_) | ServerMessage::Advance(_)) => Some(message),
-                ServerMessage::StatusText(_) => None,
+                ServerMessage::StatusText(_) | ServerMessage::BossDefeated(_) => None,
             },
             _ => None,
         })

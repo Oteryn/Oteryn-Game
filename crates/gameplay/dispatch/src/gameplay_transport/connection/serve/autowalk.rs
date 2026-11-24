@@ -4,7 +4,7 @@ use crate::gameplay_transport::AutoWalkTarget;
 use oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT;
 use std::time::Duration;
 
-const BROWSE_RETRY_DELAY: Duration = Duration::from_millis(400);
+const WALK_USE_RETRY_DELAY: Duration = Duration::from_millis(400);
 
 pub(super) enum WalkOutcome {
     Arrived,
@@ -108,16 +108,18 @@ pub(super) async fn walk<S, A>(
     stream: &mut S,
     authority: &A,
     session: &mut ServeState,
-    command_id: u64,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     target: AutoWalkTarget,
 ) -> Result<WalkOutcome, ServeEnd>
 where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    // Crystal game.cpp:5036-5044 stores a 400 ms next-walk-action task;
-    // player.cpp:6190-6192 schedules it only after the walk completes.
-    let browse_retry = matches!(&target, AutoWalkTarget::AdjacentCell(_));
+    // Crystal 201189f8 game.cpp:4222-4238 (USE) and :5036-5044 (browse) store
+    // a 400 ms next-walk-action task. Do not race the initial USE's cooldown.
+    let delay_retry = command.command_type == COMMAND_TYPE_USE_INTENT
+        || matches!(&target, AutoWalkTarget::AdjacentCell(_));
+    let command_id = command.command_id;
     let Some(input) = authority
         .enter_input(session.admitted.game_session_id)
         .await
@@ -229,13 +231,13 @@ where
     if !wait(stream, authority, session, command_id).await? {
         return Ok(WalkOutcome::Cancelled);
     }
-    if browse_retry
+    if delay_retry
         && !wait_until(
             stream,
             authority,
             session,
             command_id,
-            tokio::time::Instant::now() + BROWSE_RETRY_DELAY,
+            tokio::time::Instant::now() + WALK_USE_RETRY_DELAY,
         )
         .await?
     {

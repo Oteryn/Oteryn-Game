@@ -223,10 +223,34 @@ pub(super) fn item_appearances(
 }
 
 pub(super) fn project_regions(
+    mut commands: Commands,
+    toolbar: Query<Entity, With<ToolbarRegion>>,
+    status: Option<Res<StatusBar>>,
+    (positions, children): (Query<&ChildOf>, Query<&Children>),
     owner: NonSend<HostOwner>,
     regions: Res<GameRegions>,
     mut nodes: Query<&mut Node>,
 ) {
+    if let Ok(entity) = toolbar.single()
+        && let Ok(mut node) = nodes.get_mut(entity)
+    {
+        node.display = if owner.settings.preferences.top_menu_visible {
+            Display::Flex
+        } else {
+            Display::None
+        };
+    }
+    if let Some(bar) = status
+        && let Ok(parent) = positions.get(bar.0)
+        && let Ok(siblings) = children.get(parent.parent())
+    {
+        let index = usize::from(owner.settings.preferences.status_bar_bottom);
+        if siblings.get(index).is_some_and(|entity| *entity != bar.0) {
+            commands
+                .entity(parent.parent())
+                .insert_children(index, &[bar.0]);
+        }
+    }
     for (entity, id) in [
         (regions.battle, "battle"),
         (regions.chat, "chat"),

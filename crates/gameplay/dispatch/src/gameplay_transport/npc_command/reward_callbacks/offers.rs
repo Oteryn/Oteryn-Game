@@ -14,6 +14,7 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
         include_str!("../../../../../../../content/quests/npc-offers/hunter-glove-sales.json"),
         SHARED_OFFERS,
         include_str!("../../../../../../../content/quests/chosen-reward-offers.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/an-interest-in-botany.json"),
         include_str!("../../../../../../../content/quests/npc-offers/ape-city.json"),
         include_str!("../../../../../../../content/quests/npc-offers/l6-stories.json"),
         include_str!("../../../../../../../content/quests/npc-offers/m09-rookie.json"),
@@ -21,6 +22,7 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
         include_str!("../../../../../../../content/quests/npc-offers/qd-steal-from-thieves.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-m10.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/threatened-dreams.json"),
         include_str!("../../../../../../../content/quests/npc-offers/rookgaard-exchanges.json"),
     ] {
         let document: Offers = serde_json::from_str(source).ok()?;

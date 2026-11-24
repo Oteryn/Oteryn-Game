@@ -313,7 +313,7 @@ async fn shop_row(
     let watch = row.watch();
     let entry = match tile(client.world_spatial().actor_position) {
         Ok(entry) => entry,
-        Err(error) => return (Err(error), true),
+        Err(error) => return (Err(error), false),
     };
     let mut arrived = false;
     let actor = watch
@@ -353,25 +353,24 @@ async fn shop_row(
         return (result, false);
     }
     // The rows after E01 start on the entry tile, as they did before Sam was reachable.
-    let mut returned = false;
     let back = watch
         .travel("E01 return walk stalled", async {
-            let back = async {
-                let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-                    at == entry
-                })
-                .ok_or("E01 return route unavailable")?;
-                walk(client, world, &path).await
+            let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+                at == entry
+            })
+            .ok_or("E01 return route unavailable")?;
+            walk(client, world, &path).await?;
+            if tile(client.world_spatial().actor_position)? != entry {
+                return Err("E01 return did not reach the entry tile".into());
             }
-            .await;
-            returned = true;
-            back
+            Ok(())
         })
         .await;
     if let Err(error) = &back {
         evidence(&format!("E2EF4_GAP E01 return {error}"));
     }
-    (result.and(back), returned)
+    let reusable = back.is_ok();
+    (result.and(back), reusable)
 }
 
 async fn approach_sam(
@@ -677,6 +676,21 @@ async fn coins(
     Err("converter-charge/converter-retirement/magic-toggle/magic-tick/relog-coins-charges: need legitimately acquired gold and magic gold converters plus eligible coin stacks; source:crates/gameplay/dispatch/src/gameplay_transport/coin_use.rs:24".into())
 }
 
+async fn inventory_after_trade(
+    client: &mut DevClientSession,
+    expected: &BTreeMap<u32, u64>,
+) -> TestResult {
+    // Read through the race's pending pushes before accepting an unchanged
+    // inventory, which otherwise could just be the pre-race projection.
+    let reply = client.session_mut().attack_target(None).await?;
+    if reply.status != CommandStatus::Accepted
+        || reply.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+    {
+        return Err(format!("logout-race: inventory readback refused {reply:?}").into());
+    }
+    wait_inventory(client, expected).await
+}
+
 async fn trade(
     row: &mut Row,
     client: &mut DevClientSession,
@@ -801,16 +815,25 @@ async fn trade(
             | runtime::player_trade::ResultCode::Cancelled => (expected_main, expected_peer),
             result => return Err(format!("logout-race: unexpected final accept {result:?}").into()),
         };
-        if !peer_logged_out {
+        if peer_logged_out {
+            let old = peer.join_snapshot().game_session_id;
+            let fresh = keep_alive(client, connect_character(clients, 0x81, 0)).await?;
+            peer = fresh;
+            peer_logged_out = false;
+            let observed = inventory_units(&peer)?;
+            if peer.join_snapshot().game_session_id == old || observed != other {
+                return Err(format!("logout-race: fresh peer session={:?}, old={old:?}, inventory={observed:?}, expected={other:?}", peer.join_snapshot().game_session_id).into());
+            }
+        } else {
             if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Busy) {
                 return Err(format!("logout-race: unexpected logout {logout:?}").into());
             }
-            wait_inventory(&mut peer, &other).await?;
+            keep_alive(client, inventory_after_trade(&mut peer, &other)).await?;
         }
-        wait_inventory(client, &main).await?;
+        keep_alive(&mut peer, inventory_after_trade(client, &main)).await?;
         row.pass(
             "logout-race",
-            "concurrent-accept-logout-observed-on-active-sessions",
+            format!("accept={:?} logout={:?} both-inventories-exact", accept.result, logout.result),
         );
         Err(platform_admission_gap())
     }

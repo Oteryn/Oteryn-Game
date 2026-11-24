@@ -92,6 +92,15 @@ impl AssetStore {
         })
     }
 
+    /// File names from the verified manifest, including satellite and minimap chunks.
+    pub fn file_names(&self) -> impl Iterator<Item = &str> {
+        self.manifest.keys().map(String::as_str)
+    }
+    /// Decodes one hash-verified 512-pixel world map chunk.
+    pub fn map_chunk(&self, name: &str) -> Result<Vec<u8>, AssetError> {
+        let bytes = self.read_verified(name, MAX_COMPRESSED_SHEET_BYTES)?;
+        crate::sheets::decode_bitmap(name, &bytes, 512)
+    }
     /// Reads `name` from the asset directory and checks it against its manifest `sha256`.
     /// The hash token inside a file name is never the check.
     pub fn read_verified(&self, name: &str, max_bytes: u64) -> Result<Vec<u8>, AssetError> {

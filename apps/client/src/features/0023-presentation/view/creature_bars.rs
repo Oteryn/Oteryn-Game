@@ -4,10 +4,11 @@ use oteryn_renderer::TileCoord;
 use oteryn_session::EntityDetail;
 
 pub(crate) struct CreatureHealthBar {
-    pub own: bool,
     pub at: [f32; 2],
     pub width: f32,
     pub health: u8,
+    pub own: bool,
+    pub covered: bool,
 }
 
 impl PlayView {
@@ -19,13 +20,14 @@ impl PlayView {
             if view.contains(tile) {
                 let [x, y] = view.tile_to_screen(tile);
                 bars.push(CreatureHealthBar {
-                    own,
                     at: [
                         x + offset[0] + 2. * scale,
                         (y + offset[1] - 4. * scale).max(10. * scale),
                     ],
                     width: (view.tile_px() as f32 - 4. * scale).max(1.),
                     health: health.min(100),
+                    own,
+                    covered: self.scene.actor_covered(tile),
                 });
             }
         };

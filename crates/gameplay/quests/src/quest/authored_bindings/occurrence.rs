@@ -60,7 +60,7 @@ impl Occurrence {
         }
         crate::quest::reward_callbacks::validate_callbacks(std::slice::from_ref(callback))
     }
-    pub(super) fn qualify(&self, transition: &mut QuestTransition) {
+    pub(in crate::quest) fn qualify(&self, transition: &mut QuestTransition) {
         transition.world_change = Some(self.gate().into());
     }
     pub(super) fn transition(&self) -> Result<QuestTransition, String> {

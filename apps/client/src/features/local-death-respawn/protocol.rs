@@ -75,6 +75,7 @@ impl Mailbox {
         if vitals.max_health > 0 {
             let dead = vitals.health == 0;
             if dead && !self.death.dead {
+                self.capture_attackers.clear();
                 self.death.deaths = self.death.deaths.saturating_add(1);
                 self.death.receipt_before =
                     self.death.protection.as_ref().map(|value| value.occurrence);
@@ -94,6 +95,17 @@ impl Mailbox {
             self.death.respawned = !dead;
         }
         self.vitals = Some(vitals);
+    }
+}
+
+impl PlayLink {
+    /// The acknowledged respawn is still waiting for the session to drain old commands.
+    pub(in crate::play) fn death_reset_pending(&self) -> bool {
+        let mailbox = lock(&self.mailbox);
+        mailbox.death_reset_commands
+            && !mailbox.death.dead
+            && !mailbox.death.awaiting_acknowledgement()
+            && !mailbox.scope_pending
     }
 }
 
@@ -235,6 +247,9 @@ pub(in crate::play) fn receive_command(
 }
 
 impl PlayLink {
+    pub(crate) fn combat_capture_facts(&self) -> crate::screenshots::CombatCaptureFacts {
+        lock(&self.mailbox).combat_capture
+    }
     /// Live session counters for opt-in desktop captures, read under the mailbox lock.
     pub fn screenshot_facts(&self) -> crate::screenshots::Facts {
         let mailbox = lock(&self.mailbox);

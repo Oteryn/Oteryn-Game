@@ -20,11 +20,13 @@ fn panel() -> PlayerTradePanel {
                 generation: 1,
             }),
             own: Some(player_trade::Offer {
+                appearance_id: None,
                 definition: 981234,
                 count: 2,
                 sub_type: 0,
             }),
             counter: Some(player_trade::Offer {
+                appearance_id: None,
                 definition: 997654,
                 count: 4,
                 sub_type: 0,
@@ -511,6 +513,7 @@ fn trade_contents_decode_render_and_indexed_inspection_use_the_retained_snapshot
         },
         player_trade::ContentsItem {
             item: player_trade::Offer {
+                appearance_id: None,
                 definition: 42,
                 count: 7,
                 sub_type: 0,
@@ -593,5 +596,43 @@ fn trade_contents_decode_render_and_indexed_inspection_use_the_retained_snapshot
             .iter(app.world())
             .any(|text| text.value().to_string().contains("Freshly caught fish"))
     );
+    Ok(())
+}
+
+#[test]
+fn partner_caption_tracks_the_named_spatial_generation() -> TestResult {
+    use oteryn_session::{
+        ActorPosition, EntityDetail, EntityDisplayName, EntityKind, StepDirection,
+        WorldSpatialEntity,
+    };
+    let (mut app, _commands, outbox) = app()?;
+    let mut actor = WorldSpatialEntity {
+        motion: None,
+        kind: EntityKind::Player,
+        display_name: Some(EntityDisplayName::new("Melina").map_err(|_| "name")?),
+        entity: panel().state.and_then(|s| s.partner).ok_or("partner")?,
+        position: ActorPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        },
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    };
+    for expected in [true, false] {
+        outbox.battle_publish(None, Some(7), &[actor]);
+        app.update();
+        assert_eq!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|t| t.contains("Melina")),
+            expected
+        );
+        actor.entity.generation += 1;
+    }
     Ok(())
 }

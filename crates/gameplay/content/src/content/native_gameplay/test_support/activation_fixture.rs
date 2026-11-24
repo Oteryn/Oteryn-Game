@@ -604,7 +604,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 246, 39, 52)
+        (52, 245, 39, 53)
     );
     assert_eq!(
         admitted,
@@ -639,6 +639,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.hirintror",
             "oteryn:creature.ice_overlord",
             "oteryn:creature.ichgahal",
+            "oteryn:creature.koshei_the_deathless",
             "oteryn:creature.mitmah_vanguard",
             "oteryn:creature.murcion",
             "oteryn:creature.ocyakao",

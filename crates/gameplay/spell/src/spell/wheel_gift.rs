@@ -77,6 +77,11 @@ impl PlayerSpellState {
         Some((gift.generation, gift.remaining(now)?))
     }
 
+    /// Advances only in the hit successor that actually triggers Gift of Life.
+    pub fn wheel_gift_activation(&self) -> Option<u64> {
+        (self.wheel_gift.generation != 0).then_some(self.wheel_gift.generation)
+    }
+
     /// An acknowledgement from an older snapshot cannot settle a newer activation.
     pub fn wheel_gift_saved(&mut self, generation: u64) {
         if generation == self.wheel_gift.generation {

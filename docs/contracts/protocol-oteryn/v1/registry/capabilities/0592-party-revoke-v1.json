@@ -1,0 +1,11 @@
+{
+  "id": 592,
+  "name": "PARTY_REVOKE_V1",
+  "owner_decision": "Server protocol gaps owner allocation 2026-11-22",
+  "owner": "World party",
+  "requires": [42],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Advertised with PARTY_V1. Negotiates action 6 on command 45. Legacy request and result bytes are unchanged."
+}

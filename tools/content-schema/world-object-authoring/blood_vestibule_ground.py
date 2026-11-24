@@ -5,9 +5,10 @@ import argparse
 import summer_ground
 
 # Crystal movements_blood_entrance.lua:4 and world-npc.xml:3182-3183.
-IDS = (*range(40196, 40204), *range(40230, 40237))
-SHARD = "content/world/terrain/terrain-08751-08765.json"
-NOTE = " Additionally 15 appearance-only Blood Vestibule ground records."
+# The spawn ground catalogues already supply the other 13 appearances.
+IDS = (40198, 40232)
+SHARD = "content/world/terrain/terrain-08886-08887.json"
+NOTE = " Additionally two appearance-only Blood Vestibule ground records."
 
 
 def outputs(root=summer_ground.ROOT):

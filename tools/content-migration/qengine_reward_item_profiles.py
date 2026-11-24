@@ -89,6 +89,7 @@ IDS |= {6390, 6432}
 IDS |= {22731, 22775}
 # M51 arena trophy custody is qualified from the same pinned physical sources.
 CUSTODY_PROMOTIONS = {5805, 5806}
+CUSTODY_PROMOTION_KEYS = {f'oteryn:item.tibia.i{item}' for item in CUSTODY_PROMOTIONS}
 # Closed source qualification admits zero speed only for these three native Items.
 SOURCE_KNOWN_SPEED_IDS = frozenset({2833, 5805, 5806})
 # Rottin Wood: carried hammer, handcrafted ribbon and rabbit's foot lucky charm.
@@ -147,6 +148,14 @@ IDS |= {3443}
 # M44: source flower harvest and the two remaining native pagoda offerings.
 IDS |= {21389, 21466}
 IDS |= questl2_ready.ITEMS
+# Crystal 201189f8 Explorer Society specimens, tools and terminal backpack.
+# The quest receipt mints the icicle as ordinary custody without starting its
+# donor duration. The native item's duration fact remains available to other owners.
+EXPLORER_ITEMS = {4834, 4837, 4844, 4845, 4847, 4863, 4864, 4868, 4872, 9605}
+EXPLORER_CORPSES = {4378, 4992}
+EXPLORER_PROPS = {3874, 4055, 4994}
+IDS |= EXPLORER_ITEMS | EXPLORER_CORPSES | EXPLORER_PROPS
+
 # Already present in main f5b584ef1's native provider; the existing cohort
 # cardinality includes these six shells, even when a source fact is refined.
 PREVIOUSLY_COUNTED_IDS = {3029, 3035, 3205, 3212, 3234, 3607}
@@ -502,8 +511,8 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         for r in json.loads((root / PROFILE).read_bytes())["records"]
     }
     records = []
-    ground_only = STATIC_IDS | CORPSE_IDS | RAID_CORPSE_IDS
-    timed = CORPSE_IDS | RAID_CORPSE_IDS | WILLI_WASP_DECAY | MERCHANT_SCENERY | {6300}
+    ground_only = STATIC_IDS | CORPSE_IDS | RAID_CORPSE_IDS | EXPLORER_PROPS
+    timed = CORPSE_IDS | RAID_CORPSE_IDS | WILLI_WASP_DECAY | MERCHANT_SCENERY | EXPLORER_CORPSES | {4837, 6300}
     for item_id in sorted(selected):
         node = xml[item_id]
         flower = lion_flower.admitted(item_id, source.attrs(node))
@@ -549,16 +558,23 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
             record = lion_flower.temporal(record, definition, accepted.known_conflict)
         # These exact Ground-only props and corpse stages have canonical
         # identity-only rows; their physical facts come from the pinned sources.
+        identity_only = ground_only | WILLI_WASP_DECAY | EXPLORER_CORPSES
         semantics = (
             definition.get("semantics")
-            if item_id in ground_only | WILLI_WASP_DECAY
+            if item_id in identity_only
             else definition["semantics"]
         )
-        if item_id in ground_only | WILLI_WASP_DECAY and (
+        if item_id in identity_only and (
             definition.get("kind") != "Item"
             or definition["identity"]["family"] != "Item"
         ):
             raise ValueError("QENGINE_REWARD_STATIC_IDENTITY")
+        # The explicit canonical weights take precedence where Crystal's XML
+        # differs. All remaining Item facts use the shared source reconciliation.
+        if item_id in {4864, 4868}:
+            weight = semantics['physical']['value']['weight']
+            if weight['state'] == 'KNOWN':
+                record['semantics']['physical']['value']['weight'] = weight.copy()
         for group in ("physical", "stack", "container", "temporal"):
             if semantics is not None and accepted.known_conflict(
                 semantics[group], record["semantics"][group]
@@ -656,7 +672,7 @@ def reconcile(existing, observed):
         "legal_destinations": ["CharacterInventory", "Ground"],
     }
     if (
-        key in {"oteryn:item.tibia.i5805", "oteryn:item.tibia.i5806"}
+        key in CUSTODY_PROMOTION_KEYS
         and existing.get("admission") == old_custody
         and observed.get("admission") == portable
     ):
@@ -718,6 +734,12 @@ def admit_records(
         known_speed = _admitted_known_speed(record, present.get(key))
         if key in present:
             prior = present[key]
+            if key in CUSTODY_PROMOTION_KEYS and 'readable_writeable' in prior['semantics']:
+                # The text owner retains an unresolved write-once target for these trophies.
+                record = {**record, 'semantics': {
+                    **record['semantics'],
+                    'readable_writeable': prior['semantics']['readable_writeable'],
+                }}
             reconcile_active_physical(prior, record)
             inert = prior["admission"] == {
                 "materializable": False,

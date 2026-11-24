@@ -9,7 +9,7 @@ import refresh_spkg2_qualification_receipts as previous
 
 BASELINE = "d80a41c90e9b87ef6ecb5f894978e47906ae4999"
 MODULE = "lower_wiki_stack_default_successor8_packet"
-SHARD = "content/world/terrain/terrain-08751-08765.json"
+SHARD = "content/world/terrain/terrain-08886-08887.json"
 
 
 def main():

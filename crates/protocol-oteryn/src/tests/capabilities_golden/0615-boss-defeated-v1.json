@@ -1,0 +1,17 @@
+{
+  "id": 615,
+  "name": "BOSS_DEFEATED_V1",
+  "constant": "zones_nologout::CAPABILITY_BOSS_DEFEATED_V1",
+  "requires": [
+    92
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

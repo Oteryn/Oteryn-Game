@@ -14,6 +14,7 @@ SOURCE = (
 
 
 REGISTERED_TALK_QUESTS = {
+    "oteryn:quest.an_interest_in_botany_quest",
     "oteryn:quest.authored.a_pirate_s_death_to_me",
     "oteryn:quest.goblin_merchant_quest",
     "oteryn:quest.machinery_of_war_quest",
@@ -22,18 +23,19 @@ REGISTERED_TALK_QUESTS = {
     "oteryn:quest.barbarian_test",
 }
 
-REGISTERED_TALK_STAGES = (
-    {(key, "s1") for key in REGISTERED_TALK_QUESTS}
-    | {
-        ("oteryn:quest.authored.bank_robbery_mini_world_change", "s1"),
-        ("oteryn:quest.authored.child_of_destiny_quest", "s1"),
-        ("oteryn:quest.authored.child_of_destiny_quest", "s5"),
-        ("oteryn:quest.shadows_of_yalahar_quest", "s1"),
-        ("oteryn:quest.authored.top_of_the_city_quest", "s1"),
-        ("oteryn:quest.authored.top_of_the_city_quest", "s4"),
-    }
-    | {("oteryn:quest.pilgrimage_of_ashes", f"s{stage}") for stage in range(1, 8)}
-)
+REGISTERED_TALK_STAGES = {(key, "s1") for key in REGISTERED_TALK_QUESTS} | {
+    ("oteryn:quest.authored.bank_robbery_mini_world_change", "s1"),
+    ("oteryn:quest.authored.child_of_destiny_quest", "s1"),
+    ("oteryn:quest.authored.child_of_destiny_quest", "s5"),
+    ("oteryn:quest.shadows_of_yalahar_quest", "s1"),
+    ("oteryn:quest.the_shattered_isles_quest", "s1"),
+    ("oteryn:quest.the_shattered_isles_quest", "s3"),
+    ("oteryn:quest.the_shattered_isles_quest", "s6"),
+    ("oteryn:quest.to_blind_the_enemy_quest", "s1"),
+    ("oteryn:quest.authored.top_of_the_city_quest", "s1"),
+    ("oteryn:quest.authored.top_of_the_city_quest", "s4"),
+} | {("oteryn:quest.pilgrimage_of_ashes", f"s{stage}") for stage in range(1, 8)}
+
 
 
 class ChosenSourceBindingPlanTest(unittest.TestCase):

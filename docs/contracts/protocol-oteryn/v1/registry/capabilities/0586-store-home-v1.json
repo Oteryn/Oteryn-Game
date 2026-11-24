@@ -1,0 +1,16 @@
+{
+  "id": 586,
+  "name": "STORE_HOME_V1",
+  "owner_decision": "Owner-assigned client report and Store protocol gaps, 2026-11-22",
+  "owner": "Game catalogue and Store artwork projection; Platform commercial authority.",
+  "requires": [
+    154
+  ],
+  "command_types": [
+    6335,
+    6336
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Configured Platform Store via with_store_offer over BUNDLE_WORLD_OFFERED_CAPABILITIES and channel capabilities"
+}

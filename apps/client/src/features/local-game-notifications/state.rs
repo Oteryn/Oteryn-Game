@@ -40,6 +40,7 @@ impl State {
         let (text, popup) = match &message.value {
             ServerMessage::StatusText(text) | ServerMessage::Advance(text) => (text, false),
             ServerMessage::Warning(text) => (text, true),
+            ServerMessage::BossDefeated(_) => return,
         };
         self.show(&message.server_sequence.to_string(), text, popup);
     }

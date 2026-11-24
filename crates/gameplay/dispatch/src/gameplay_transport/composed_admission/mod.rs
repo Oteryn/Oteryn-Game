@@ -16,6 +16,7 @@ pub(super) struct FamiliarLoginCheckoutProbe {
     pub(super) backpack: std::cell::Cell<u32>,
     pub(super) kit: std::cell::Cell<u32>,
     pub(super) placement: std::cell::Cell<u32>,
+    pub(super) hold_first_write: bool,
     pub(super) writes: std::cell::Cell<u32>,
     pub(super) checkout_misses: std::cell::Cell<u32>,
 }

@@ -7,9 +7,7 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget}
 
 #[test]
 fn srvgap_watch_use_reports_world_time() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
-        return Ok(());
-    }
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
         run(async |admin| {
             let harness = Harness::create_with_admission_seed(admin, "srvgap_watch", true, false).await?;
@@ -48,8 +46,27 @@ fn srvgap_watch_use_reports_world_time() -> TestResult {
                 let result = owner.use_event_item(deps.actor, UseCommand { game_session_id: deps.admitted.game_session_id, command_id: 1 + u64::try_from(offset)?, item_fence: Some(fence) }, intent, Some(ItemKey::Instance(source)), false).await.map_err(|_| "watch owner")?.ok_or("watch handled")?;
                 assert_eq!(result.disposition, UseDisposition::Committed, "{key}");
                 let after = crate::world_clock::WorldClockSource::new(crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS).tibian_minute(owner.world_clock_utc_ms().ok_or("clock")?).ok_or("minute")?;
-                let lines = owner.states.chat.drain(deps.admitted.game_session_id);
-                assert!(lines.iter().any(|line| matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { speaker_name, text } if speaker_name == "Game" && [before, after].iter().any(|minute| text == &format!("The time is {}:{:02}.", minute / 60, minute % 60)))), "{lines:?}");
+                use oteryn_protocol_oteryn::chat::{ChatLine, decode_chat_line, encode_chat_line};
+                let mut admitted = deps.admitted;
+                let requested: &[u32] = if offset == 0 { &[7] } else { &[7, 617] };
+                admitted.continuity.selected_capabilities =
+                    crate::gameplay_transport::capabilities::SelectedCapabilities::select(owner.offered_capabilities(), requested)
+                        .ok_or("watch chat selection")?;
+                let line = owner.chat_next_bound(admitted, &mut 64).await.ok_or("watch feedback")?;
+                let wire = encode_chat_line(&line).map_err(debug)?;
+                let text = match decode_chat_line(&wire).map_err(debug)? {
+                    ChatLine::Private { speaker_name, text } if offset == 0 && speaker_name == "Game" => {
+                        assert_eq!(wire[..2], [8, 2]);
+                        text
+                    }
+                    ChatLine::System { text } if offset == 1 => {
+                        assert_eq!(wire[..2], [8, 9]);
+                        text
+                    }
+                    other => return Err(format!("unexpected watch feedback {other:?}").into()),
+                };
+                assert!([before, after].iter().any(|minute| text == format!("The time is {}:{:02}.", minute / 60, minute % 60)), "{text}");
+                owner.chat_delivered(admitted.game_session_id).await;
             }
             let mut intent = UseIntent { target: UseTarget::Item(std::num::NonZeroU64::new(2).ok_or("handle")?), use_with: None, use_with_map_item: None, use_with_position: None };
             let command = UseCommand { game_session_id: deps.admitted.game_session_id, command_id: 20, item_fence: Some(fence) };

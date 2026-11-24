@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GoldSupplyParams",
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string"
+    },
+    "grain": {
+      "$ref": "#/$defs/Grain"
+    },
+    "params": {
+      "$ref": "#/$defs/GoldSupplyFilters"
+    },
+    "query_id": {
+      "$ref": "#/$defs/GoldSupplyId"
+    },
+    "to": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "query_id",
+    "params",
+    "from",
+    "to",
+    "grain"
+  ],
+  "$defs": {
+    "GoldSupplyFilters": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "GoldSupplyId": {
+      "type": "string",
+      "enum": [
+        "gold_supply"
+      ]
+    },
+    "Grain": {
+      "type": "string",
+      "enum": [
+        "minute",
+        "hour",
+        "day"
+      ]
+    }
+  }
+}
