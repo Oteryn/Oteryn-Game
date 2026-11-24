@@ -91,14 +91,18 @@ fn request(n: u8, maximum: u64) -> TestResult<HouseBidRequest> {
     })
 }
 async fn seed(h: &Harness, active: bool) -> TestResult {
+    seed_with_deadline(h, active, 86_400).await
+}
+
+async fn seed_with_deadline(h: &Harness, active: bool, seconds: i32) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest) VALUES(encode($1,'hex')::uuid,$2,'private_house',$3,100,$4)")
         .bind(id(fixture::WORLD).as_slice()).bind(HOUSE).bind(if active{2_i16}else{1_i16}).bind([7_u8;32].as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_house_ownership VALUES(encode($1,'hex')::uuid,$2,NULL,1,encode($3,'hex')::uuid)")
         .bind(id(fixture::WORLD).as_slice()).bind(HOUSE).bind(id(75).as_slice()).execute(&mut *tx).await?;
     if active {
-        sqlx::query("INSERT INTO game_house_auctions(auction_id,world_id,house_key,first_rent,ends_at,next_order) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,100,clock_timestamp()+interval '1 day',2)")
-            .bind(id(76).as_slice()).bind(id(fixture::WORLD).as_slice()).bind(HOUSE).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_house_auctions(auction_id,world_id,house_key,first_rent,ends_at,next_order) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,100,clock_timestamp()+make_interval(secs => $4::integer),2)")
+            .bind(id(76).as_slice()).bind(id(fixture::WORLD).as_slice()).bind(HOUSE).bind(seconds).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_house_bids VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,500,100,1,1,600)")
             .bind(id(76).as_slice()).bind(id(40).as_slice()).bind(id(fixture::WORLD).as_slice()).bind(id(fixture::CHARACTER).as_slice()).execute(&mut *tx).await?;
     }
@@ -218,19 +222,42 @@ fn house_ownership_recovered_bid_escrow_replay_conflict_and_session_fence() -> T
 #[test]
 fn house_ownership_first_rent_settlement_and_restart_replay() -> TestResult {
     run("house_ownership_winner", |h| async move {
-        seed(&h, true).await?;
         let root = runtime_root(&h).await?;
-        sqlx::query("UPDATE game_house_auctions SET ends_at=clock_timestamp()-interval '1 second' WHERE auction_id=encode($1,'hex')::uuid")
-            .bind(id(76).as_slice()).execute(&h.pool).await?;
+
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = root.open_character_authority(&seal).await.map_err(debug)?;
         let request = settlement_request()?;
+        // Short-lived historical auction. PostgreSQL's real clock crosses its
+        // original deadline, exercising both sides of settlement's due check.
+        seed_with_deadline(&h, true, 5).await?;
+        assert_eq!(
+            root.house_settlement(&authority, &h.node, &gate(&root), request.clone())
+                .await
+                .map_err(debug)?,
+            HouseOwnershipOutcome::NotDue
+        );
         sqlx::query(
             "UPDATE game_house_properties SET rent_gold=200,revision=revision+1 WHERE house_key=$1",
         )
         .bind(HOUSE)
         .execute(&h.pool)
         .await?;
+        tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            loop {
+                let due: bool = sqlx::query_scalar(
+                    "SELECT ends_at <= clock_timestamp() FROM game_house_auctions
+                     WHERE auction_id=encode($1,'hex')::uuid",
+                )
+                .bind(id(76).as_slice())
+                .fetch_one(&h.pool)
+                .await?;
+                if due {
+                    return Ok::<_, sqlx::Error>(());
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+            }
+        })
+        .await??;
         assert_eq!(
             root.house_settlement(&authority, &h.node, &gate(&root), request.clone())
                 .await
