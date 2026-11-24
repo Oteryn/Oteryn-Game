@@ -484,6 +484,9 @@ pub(super) async fn run(
                 mounts_seen.clear();
                 continue;
             }
+            if let Err(error) = anchor_pair(clients).await {
+                break Err(error);
+            }
             if let Entry::Mount(_, Some(binding)) = entry {
                 mounts_seen.insert(binding.mount_key.as_str());
             }
@@ -818,8 +821,12 @@ async fn return_to(
     home: TilePos,
 ) -> TestResult {
     let here = tile(client.world_spatial().actor_position)?;
-    let path =
-        route(world, here, |at| at == home).ok_or("harness-obtain-path: return route absent")?;
+    let path = find_route(
+        here,
+        |at| at == home,
+        |at, direction| reversible_step(world, at, direction),
+    )
+    .map_err(|_| "harness-obtain-path: return route absent")?;
     walk(client, world, &path).await
 }
 
@@ -829,23 +836,79 @@ async fn return_to(
 async fn seed_npc_position(clients: &SeamClients<'_>, at: TilePos) -> TestResult {
     wait_character_released(clients, 0).await?;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    set_fixture_position(&mut db, clients, 0, at).await
+}
+
+// Called only after both fixtures have logged out or terminally released.
+async fn anchor_pair(clients: &SeamClients<'_>) -> TestResult {
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    set_fixture_position(&mut db, clients, 0, TOWN).await?;
+    set_fixture_position(&mut db, clients, 1, TOWN).await
+}
+
+async fn set_fixture_position(
+    db: &mut sqlx::PgConnection,
+    clients: &SeamClients<'_>,
+    index: usize,
+    at: TilePos,
+) -> TestResult {
     let changed = sqlx::query(
         "UPDATE game_character_last_positions
          SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
          WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid",
     )
-    .bind(clients.characters[0].as_slice())
+    .bind(clients.characters[index].as_slice())
     .bind(clients.world.as_slice())
     .bind(i32::from(at.x))
     .bind(i32::from(at.y))
     .bind(-i16::from(at.floor))
-    .execute(&mut db)
+    .execute(db)
     .await?
     .rows_affected();
     if changed != 1 {
-        return Err("harness-obtain-path: disposable actor has no saved position".into());
+        return Err("harness-fixture-position: disposable character has no saved position".into());
     }
     Ok(())
+}
+
+fn reversible_step(world: &BundleWorld, at: TilePos, direction: StepDirection) -> Option<TilePos> {
+    use StepDirection::{East, North, South, West};
+    let reverse = match direction {
+        North => South,
+        East => West,
+        South => North,
+        West => East,
+        _ => return None,
+    };
+    let next = destination_with_teleports(world, at, direction, false)?;
+    (destination_with_teleports(world, next, reverse, false) == Some(at)).then_some(next)
+}
+
+async fn walk_to_taming_ground(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    use StepDirection::{East, North, South, West};
+    let open = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+    };
+    let roomy = |at: TilePos| {
+        open(at)
+            && [North, East, South, West]
+                .into_iter()
+                .filter(|direction| reversible_step(world, at, *direction).is_some_and(open))
+                .count()
+                >= 3
+    };
+    let from = tile(client.world_spatial().actor_position)?;
+    verdict::Harness::global().progress("cosmetic-taming-route");
+    let path = find_route(from, roomy, |at, direction| {
+        reversible_step(world, at, direction)
+    })
+    .map_err(|reachable| {
+        format!("harness-taming-route: no returnable open ground from {from:?} ({reachable} tiles)")
+    })?;
+    walk(client, world, &path).await
 }
 
 async fn obtain_npc(
@@ -872,7 +935,9 @@ async fn obtain_npc(
                 && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 2
         })
     };
-    if let Some(path) = route(world, home, greeting_range) {
+    if let Ok(path) = find_route(home, greeting_range, |at, direction| {
+        reversible_step(world, at, direction)
+    }) {
         walk(client, world, &path).await?;
         talk_for_reward(client, npc, steps, target, state).await?;
         return return_to(client, world, home).await;
@@ -943,7 +1008,7 @@ fn nearby_npc_approach(
                     continue;
                 }
                 if let Ok(path) = find_route(landing, &greeting_range, |at, direction| {
-                    let next = destination_with_teleports(world, at, direction, false)?;
+                    let next = reversible_step(world, at, direction)?;
                     (next.floor == placement.floor && distance(next) <= 8).then_some(next)
                 }) {
                     if !path.is_empty() {
@@ -1337,7 +1402,7 @@ async fn obtain_taming(
     }
     let home = tile(client.world_spatial().actor_position)?;
     if !binding.creature_key.is_empty() {
-        creature_sweep::leave_protection_zone(client, world).await?;
+        walk_to_taming_ground(client, world).await?;
     } else if binding.target_item_key.as_deref() != Some(binding.item_key.as_str()) {
         return Err("harness-obtain-path: construction needs multiple carried components".into());
     }
@@ -1470,7 +1535,6 @@ async fn journey(
     let (mode, actions) =
         prepare(clients, content, outfit, addon, mount, obtain, npcs, items).await?;
     let mut client = connect_character(clients, 0xc9, 0).await?;
-    let home = tile(client.world_spatial().actor_position)?;
     let mut observer = None;
     let result = async {
         let mut state = snapshot(&mut client)?;
@@ -1537,18 +1601,13 @@ async fn journey(
         .await
     }
     .await;
-    // Acquisition can fail after a walk. Return even on failure so the next
-    // entry starts beside its observer rather than outside the temple.
-    let actor_return = return_to(&mut client, world, home).await;
-    let observer_release = if let Some((mut observer, home)) = observer {
-        let back = return_to(&mut observer, world, home).await;
-        back.and(logout(&mut observer).await)
+    let observer_release = if let Some(mut observer) = observer {
+        logout(&mut observer).await
     } else {
         Ok(())
     };
     let release = logout(&mut client).await;
     result?;
-    actor_return?;
     observer_release?;
     release
 }
@@ -1573,7 +1632,7 @@ fn has_unlock(
 async fn exercise(
     rows: &mut Rows<'_>,
     client: &mut DevClientSession,
-    observer: &mut Option<(DevClientSession, TilePos)>,
+    observer: &mut Option<DevClientSession>,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     content: &Content,
@@ -1588,8 +1647,8 @@ async fn exercise(
     rows.pass(mode);
     let peer = connect_character(clients, 0xca, 1).await?;
     let peer_home = tile(peer.world_spatial().actor_position)?;
-    *observer = Some((peer, peer_home));
-    let (observer, _) = observer.as_mut().ok_or("observer fixture missing")?;
+    *observer = Some(peer);
+    let observer = observer.as_mut().ok_or("observer fixture missing")?;
     let actor_position = tile(client.world_spatial().actor_position)?;
     let near = |at: TilePos| {
         at.floor == actor_position.floor
