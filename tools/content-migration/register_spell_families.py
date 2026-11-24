@@ -1845,6 +1845,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
 
     protected_loot_yields.admit(root, items, provider_order)
     food_items = admit_portable_food_profiles(root, items)
+    import exact_item_custody_profiles
+
+    custody_items = exact_item_custody_profiles.admit(root, items, provider_order)
     # These late Item admissions belong to the base provider. Apply their
     # verified top-order facts before deriving the separate SRX-1 supplement.
     hard_items = [
@@ -1856,7 +1859,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     house_top_order = json.loads(
         (root / house_decoration_actions.PROFILES).read_bytes()
     )
-    house_decoration_actions.apply_top_order(hard_items + food_items, house_top_order)
+    house_decoration_actions.apply_top_order(
+        hard_items + food_items + custody_items, house_top_order
+    )
     item_detail_source_facts.apply(root, items, item_detail_weights)
     import forge_item_profiles
 

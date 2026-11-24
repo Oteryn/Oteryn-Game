@@ -200,6 +200,69 @@ mod tests {
     }
 
     #[test]
+    fn active_item_generation_resolves_exact_portable_items_and_corpse_states()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world = oteryn_gameplay_content::content::native_gameplay_test_world_id()?;
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/spells.manifest.json");
+        let native =
+            oteryn_gameplay_content::content::native_gameplay::retained_callback_native_fixture_at(
+                world, &manifest,
+            );
+        for (id, portable) in [
+            (836, true),
+            (860, true),
+            (3994, true),
+            (3995, true),
+            (3996, true),
+            (5678, true),
+            (5949, true),
+            (5964, false),
+            (6125, true),
+            (6278, true),
+            (6392, true),
+            (7373, true),
+            (7374, true),
+            (7376, true),
+            (8012, true),
+            (8177, true),
+            (8747, true),
+            (8862, true),
+            (8864, true),
+            (54373, false),
+            (54374, false),
+            (54375, false),
+            (54376, false),
+            (54396, false),
+            (54397, false),
+            (54398, false),
+            (54399, false),
+            (54412, false),
+            (54413, false),
+            (54414, false),
+            (54415, false),
+            (54568, false),
+            (54569, false),
+            (54570, false),
+            (54571, false),
+            (54678, false),
+            (54679, false),
+            (54680, false),
+            (54681, false),
+        ] {
+            let definition = TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: format!("oteryn:item.tibia.i{id}"),
+                revision_ref: "definition-r1".into(),
+            };
+            let facts = generation_item_facts(&native, &definition)
+                .map_err(|error| format!("{id}: {error:?}"))?;
+            assert_eq!(facts.stack != ItemStackClass::Unknown, portable, "{id}");
+        }
+        Ok(())
+    }
+
+    #[test]
     fn native_amphora_ground_facts_do_not_grant_inventory_or_immovable_admission()
     -> Result<(), Box<dyn std::error::Error>> {
         use oteryn_gameplay_content::content::native_gameplay::ItemProfileRecord;
