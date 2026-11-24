@@ -913,6 +913,15 @@ impl Fixture<'_> {
             // changes the customer session, not the NPC, which may wander afterward.
             Action::Offer(offer, occurrence) => {
                 let sell = (offer.direction.side() == NpcTradeSide::Sell).then_some(*offer);
+                // An already funded buyer can use the same conversation. A sale
+                // still needs the exact authored stock, seeded while released.
+                if sell.is_none()
+                    && self.focused
+                    && let Some(client) = self.client.as_mut()
+                    && i128::from(offer.unit_price) <= gold(balances(client).await?)
+                {
+                    return trade(client, actor, offer, *occurrence).await;
+                }
                 let client = self
                     .enter(
                         at,
@@ -921,8 +930,11 @@ impl Fixture<'_> {
                         if sell.is_none() { offer.unit_price } else { 0 },
                     )
                     .await?;
-                talk(client, actor, "hi").await?;
-                trade(client, actor, offer, *occurrence).await
+                let reply = talk(client, actor, "hi").await?;
+                let focused = reply.open == Some((actor, NpcConversationState::Open));
+                let result = trade(client, actor, offer, *occurrence).await;
+                self.focused = focused && result.is_ok();
+                result
             }
             Action::Route(route) => {
                 let client = self.enter(at, None, Some(route), route.price).await?;
