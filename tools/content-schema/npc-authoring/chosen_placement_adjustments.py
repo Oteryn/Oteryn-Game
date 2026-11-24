@@ -102,3 +102,23 @@ def choose_cell(root, actual_source, choice, occupied, *, require_walkable=False
         "decision": choice["reason"],
         "map": {"path": path, "sha256": hashlib.sha256(raw).hexdigest()},
     }
+
+
+def choose_spawn_cell(root, source, target, center, radius, occupied):
+    """Record a compiler-qualified replacement within the XML spawn square."""
+    if (type(radius) is not int or radius < 0 or source[2] != center[2]
+            or target[2] != center[2] or target in occupied
+            or max(abs(target[i] - center[i]) for i in (0, 1)) > radius):
+        raise ValueError("replacement is outside the donor spawn or is occupied")
+    x, y, z = target
+    path = f"content/world/placements/region-z{z:02}-x{x // 256:03}-y{y // 256:03}.b3"
+    return {
+        "origin": "oteryn",
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "source_cell": dict(zip(("x", "y", "floor"), source)),
+        "cell": dict(zip(("x", "y", "floor"), target)),
+        "spawn_center": dict(zip(("x", "y", "floor"), center)),
+        "spawn_radius": radius,
+        "decision": "Nearest compiler-admitted available cell within the Crystal spawn square.",
+        "map": {"path": path, "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest()},
+    }

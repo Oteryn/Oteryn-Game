@@ -40,7 +40,7 @@ CANDIDATES = HERE / "samples/promotion-candidates-v1.json"
 SCOPE = HERE / "npc_placement_scope.json"
 NPCS = ROOT / "content/npcs/definitions"
 FRAME = "global-target-2026-09-27"
-from chosen_placement_adjustments import choose_cell
+from chosen_placement_adjustments import choose_cell, choose_spawn_cell
 SHARD_SIZE = 500
 SOURCES = {
     "canary": ("opentibiabr/canary", "47dfd51f45280a59a1d3e50ba7edd573d7234446", "oteryn:source.canary"),
@@ -230,7 +230,15 @@ def add_map_placements(records: dict, packet: dict, admitted: set[str]) -> None:
             if cell in occupied or direction not in {"north", "east", "south", "west"}:
                 raise ValueError(f"{npc}: invalid or occupied map placement {cell}")
             evidence = []
-            if "adjustment" in placement:
+            if "spawn_relocation" in placement:
+                relocation = placement["spawn_relocation"]
+                x, y, z = target = cell_of(relocation["target"])
+                evidence.append(choose_spawn_cell(
+                    ROOT, cell, target, cell_of(relocation["center"]),
+                    placement["spawn_radius"], occupied | donor_cells,
+                ))
+                occupied.add(target)
+            elif "adjustment" in placement:
                 (x, y, z), choice_proof = choose_cell(
                     ROOT, cell, placement["adjustment"], occupied | donor_cells,
                     require_walkable=True,
