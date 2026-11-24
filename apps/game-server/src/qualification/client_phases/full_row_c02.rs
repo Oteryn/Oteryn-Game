@@ -249,6 +249,7 @@ async fn c02_walk(
                 break;
             };
             client.service_liveness(delay).await?;
+            client.take_events();
             outcome = client.step_retrying(step).await?;
         }
         if outcome.status == CommandStatus::Accepted
@@ -266,6 +267,7 @@ async fn c02_walk(
                 }
                 recoveries += 1;
                 client.service_liveness(Duration::from_millis(350)).await?;
+                client.take_events();
                 let occupied: BTreeSet<_> = client
                     .world_entities()
                     .into_iter()
@@ -321,6 +323,7 @@ async fn c02_walk(
             .into());
         }
         verdict::Harness::global().progress("walk");
+        client.take_events();
     }
     Ok(())
 }
