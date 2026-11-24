@@ -448,6 +448,39 @@ async fn player_gold(client: &mut DevClientSession) -> TestResult<u64> {
     balances.carried_gold.checked_add(balances.bank_gold).ok_or_else(|| "native gold overflow".into())
 }
 
+const BLUE_VALLEY_ENTRY: TilePos = TilePos { x: 32456, y: 32290, floor: -7 };
+const BLUE_VALLEY_ARRIVAL: TilePos = TilePos { x: 33614, y: 31494, floor: -7 };
+const BLUE_VALLEY_EXIT: TilePos = TilePos { x: 33605, y: 31468, floor: -7 };
+const THAIS_ARRIVAL: TilePos = TilePos { x: 32456, y: 32291, floor: -7 };
+
+async fn cross_portal(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    entrance: TilePos,
+    arrival: TilePos,
+) -> TestResult {
+    if world.floors().teleport(entrance) != Some(arrival) {
+        return Err(format!("C12 compiled portal {entrance:?} does not land at {arrival:?}").into());
+    }
+    let start = tile(client.world_spatial().actor_position)?;
+    // Bound the approach by the normal town window. The final real STEP crosses
+    // the explicit portal edge and is verified against its far landing.
+    let path = route_with_landings(start, |at| at == entrance, |_| true, |at, step| {
+        if destination_with_teleports(world, at, step, false) == Some(entrance)
+            && destination(world, at, step) == Some(arrival)
+        {
+            Some(entrance)
+        } else {
+            destination(world, at, step)
+        }
+    }).ok_or_else(|| format!("C12 portal approach unavailable from {start:?} to {entrance:?}"))?;
+    walk(client, world, &path).await?;
+    if tile(client.world_spatial().actor_position)? != arrival {
+        return Err(format!("C12 portal STEP did not land at {arrival:?}").into());
+    }
+    Ok(())
+}
+
 /// Acquire item 50271 through the declared NPC trade (earning the gold in play) and return nothing
 /// but the confirmed inventory delta.
 async fn acquire(
@@ -457,36 +490,19 @@ async fn acquire(
     definition: NonZeroU32,
 ) -> TestResult<u64> {
     use oteryn_dev_client::client_runtime::npc_shop;
-    if !metadata.npcs.npcs.iter().any(|entry| entry.key == SELLER) {
-        return Err(format!("need=50271-seller-in-served-world;seller={SELLER};placement=33603,31468,7;region=131,122").into());
-    }
+    let npc_entry = metadata.npcs.npcs.iter().find(|entry| entry.key == SELLER)
+        .ok_or("C12 Enpa-Deia Pema placement is absent from the compiled bundle")?;
     let trades = read_json("content/services/trade/trade-00000-00323.json")?;
     let key = format!("oteryn:item.tibia.i{ITEM_ID}");
-    let mut offers: Vec<(String, u64)> = Vec::new();
-    for record in trades["records"].as_array().ok_or("trade records absent")? {
-        let declaration = &record["declaration"];
-        let Some(service) = declaration["identity"]["key"].as_str().and_then(|k| k.strip_prefix("oteryn:service.trade.")) else { continue };
-        for offer in declaration["offers"].as_array().into_iter().flatten() {
-            if let (true, Some(price)) = (
-                offer["direction"] == "SellToPlayer" && offer["item"]["key"] == key,
-                offer["unit_price"].as_u64(),
-            ) {
-                offers.push((format!("oteryn:npc.{service}"), price));
-            }
-        }
-    }
-    let here = tile(client.world_spatial().actor_position)?;
-    let reachable = |npc_key: &str, from: TilePos| {
-        metadata.npcs.npcs.iter().filter(|n| n.key == npc_key).find_map(|n| {
-            route(world, from, |at| n.placements.iter().any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)).map(|path| (n, path))
-        })
-    };
-    let (seller, price) = offers
+    let service = "oteryn:service.trade.enpa_deia_pema";
+    let price = trades["records"].as_array().ok_or("trade records absent")?
         .iter()
-        .filter(|(npc_key, _)| reachable(npc_key, here).is_some())
-        .min_by_key(|(_, price)| *price)
-        .cloned()
-        .ok_or_else(|| format!("needed=acquisition-route-for-{ITEM_ID};content-sellers={};reachable-sellers=0;loot-and-quest-routes=none-declared", offers.len()))?;
+        .map(|record| &record["declaration"])
+        .filter(|declaration| declaration["identity"]["key"] == service)
+        .flat_map(|declaration| declaration["offers"].as_array().into_iter().flatten())
+        .find(|offer| offer["direction"] == "SellToPlayer" && offer["item"]["key"] == key)
+        .and_then(|offer| offer["unit_price"].as_u64())
+        .ok_or("C12 Enpa-Deia Pema has no authored offer for item 50271")?;
     let hunt_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(hunt_deadline, "bounded-observation");
     let mut hunts = 0_u32;
@@ -496,14 +512,19 @@ async fn acquire(
             break;
         }
         if tokio::time::Instant::now() >= hunt_deadline {
-            return Err(format!("needed=player-earned-gold>={price};have={have};route=npc-trade:{seller};ordinary-hunts={hunts}-in-120s").into());
+            return Err(format!("needed=player-earned-gold>={price};have={have};route=npc-trade:{SELLER};ordinary-hunts={hunts}-in-120s").into());
         }
         travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
         client_hunt::hunt(client).await?;
         hunts += 1;
     }
-    let (npc_entry, path) = reachable(&seller, tile(client.world_spatial().actor_position)?)
-        .ok_or("seller unreachable after the gold hunt")?;
+    cross_portal(client, world, BLUE_VALLEY_ENTRY, BLUE_VALLEY_ARRIVAL).await?;
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        npc_entry.placements.iter().any(|placement| {
+            at.floor == placement.floor
+                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+        })
+    }).ok_or("C12 no playable route within three tiles of Enpa-Deia Pema")?;
     walk(client, world, &path).await?;
     let actor = client
         .world_entities()
@@ -615,6 +636,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     let acquired = acquire(&mut client, world, &metadata, definition).await?;
     row.pass("acquire-50271", acquired);
+    cross_portal(&mut client, world, BLUE_VALLEY_EXIT, THAIS_ARRIVAL).await?;
 
     equip_right(&mut client, definition).await?;
     let augmented = samples(&hunt, &mut client, spell_index).await?;

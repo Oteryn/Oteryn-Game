@@ -116,6 +116,115 @@ async fn promotion(clients: &SeamClients<'_>) -> TestResult<Option<String>> {
     Ok(purchase)
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum ApproachAction {
+    UseDoor(u64),
+    Step(StepDirection),
+}
+
+fn plan_approach(
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    edge: impl Fn(TilePos, StepDirection) -> Option<(TilePos, Option<u64>)>,
+) -> Option<Vec<ApproachAction>> {
+    let path = route_with_landings(from, goal, |_| true, |at, direction| {
+        edge(at, direction).map(|(next, _)| next)
+    })?;
+    let mut at = from;
+    let mut actions = Vec::new();
+    for direction in path {
+        let (next, door) = edge(at, direction)?;
+        if let Some(key) = door {
+            actions.push(ApproachAction::UseDoor(key));
+        }
+        actions.push(ApproachAction::Step(direction));
+        at = next;
+    }
+    Some(actions)
+}
+
+fn door_edge(
+    world: &BundleWorld,
+    at: TilePos,
+    direction: StepDirection,
+) -> Option<(TilePos, Option<u64>)> {
+    use crate::map::door::AuthoredClosedDoor;
+    if let Some(next) = destination(world, at, direction) {
+        return Some((next, None));
+    }
+    let door = match direction {
+        StepDirection::North => TilePos { y: at.y.checked_sub(1)?, ..at },
+        StepDirection::East => TilePos { x: at.x.checked_add(1)?, ..at },
+        StepDirection::South => TilePos { y: at.y.checked_add(1)?, ..at },
+        StepDirection::West => TilePos { x: at.x.checked_sub(1)?, ..at },
+        _ => return None,
+    };
+    let doors = world.facts().doors();
+    if !doors.blocks(door) {
+        return None;
+    }
+    let walkable = world.base().tile(door.x, door.y, door.floor)?;
+    for ordinal in 0..walkable.ids().len().min(64) as u8 {
+        let key = crate::map::view::placement_key(door, ordinal)?;
+        if matches!(doors.authored_closed(key), Some(AuthoredClosedDoor::Plain | AuthoredClosedDoor::KeyUnlocked)) {
+            let next = destination_with_collision(world, at, direction, true, |pos| {
+                if pos == door {
+                    world.enterable_with_open_door(pos, key)
+                } else {
+                    world.enterable(pos)
+                }
+            })?;
+            return Some((next, Some(key)));
+        }
+    }
+    None
+}
+
+async fn open_route_door(client: &mut DevClientSession, world: &BundleWorld, key: u64) -> TestResult {
+    use oteryn_protocol_oteryn::{world_map::MapOrigin, world_object::UseDisposition};
+    let (at, ordinal) = crate::map::view::placement_of(key).ok_or("invalid route door key")?;
+    let closed_appearance = world.base().tile(at.x, at.y, at.floor)
+        .and_then(|tile| tile.appearance(ordinal)).ok_or("route door appearance absent")?;
+    let snapshot = client.session_mut().world_map_snapshot().ok_or("route door map view absent")?;
+    let (revision, appearance) = snapshot.tiles.iter()
+        .find(|entry| tile(entry.position).ok() == Some(at))
+        .and_then(|entry| entry.items.iter().find_map(|item| match item.origin {
+            MapOrigin::BaseOrdinal { ordinal: found, object_revision } if found == ordinal => {
+                Some((object_revision, item.appearance_id))
+            }
+            _ => None,
+        })).ok_or("route door absent from live map view")?;
+    if appearance == closed_appearance {
+        let mut placement = world.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let outcome = client.use_object(&placement, revision).await?;
+        if outcome.disposition != UseDisposition::Committed {
+            return Err(format!("route door USE at {at:?} returned {:?}", outcome.disposition).into());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn approach_planner_opens_a_door_before_stepping_and_preserves_budget() {
+    let start = TilePos { x: 100, y: 100, floor: -7 };
+    let edge = |at: TilePos, direction| {
+        (direction == StepDirection::East).then(|| (
+            TilePos { x: at.x + 1, ..at },
+            (at == start).then_some(42),
+        ))
+    };
+    assert_eq!(
+        plan_approach(start, |at| at.x == 102, edge),
+        Some(vec![
+            ApproachAction::UseDoor(42),
+            ApproachAction::Step(StepDirection::East),
+            ApproachAction::Step(StepDirection::East),
+        ])
+    );
+    assert!(plan_approach(start, |at| at.x == 261, edge).is_none());
+}
+
 async fn approach_npc(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -127,13 +236,24 @@ async fn approach_npc(
         .iter()
         .find(|npc| npc.key == key)
         .ok_or_else(|| format!("step=npc-approach no compiled placement for {key}"))?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+    let actions = plan_approach(tile(client.world_spatial().actor_position)?, |at| {
         npc.placements.iter().any(|place| {
             place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
         })
-    })
+    }, |at, direction| door_edge(world, at, direction))
     .ok_or_else(|| format!("step=npc-approach no legitimate walking route to {key}"))?;
-    walk(client, world, &path).await?;
+    let mut steps = Vec::new();
+    for action in actions {
+        match action {
+            ApproachAction::UseDoor(key) => {
+                walk_with_landings(client, &steps, |at, direction| door_edge(world, at, direction).map(|(next, _)| next)).await?;
+                steps.clear();
+                open_route_door(client, world, key).await?;
+            }
+            ApproachAction::Step(direction) => steps.push(direction),
+        }
+    }
+    walk_with_landings(client, &steps, |at, direction| door_edge(world, at, direction).map(|(next, _)| next)).await?;
     client
         .world_entities()
         .and_then(|view| {
@@ -395,6 +515,14 @@ async fn relocation_receipt(
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    run(clients, false).await;
+}
+
+pub(super) async fn run_thais_packet(clients: &SeamClients<'_>) {
+    run(clients, true).await;
+}
+
+async fn run(clients: &SeamClients<'_>, thais_only: bool) {
     let started = std::time::Instant::now();
     let mut row = Row {
         completed: BTreeSet::new(),
@@ -411,7 +539,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         )?;
         let mut client = connect_world(clients, 0xd0).await?;
         let result: TestResult = verdict::observe(async {
-            oressa(&mut row, &mut client, clients, world, &metadata).await?;
+            if thais_only {
+                let birth_level = progress(&mut client).await?.1;
+                check_vocation(&mut client, birth_level, "knight").await?;
+                evidence("P20_CHECK step-1 OUT_OF_SCOPE Dawnport owner-excluded");
+                evidence("P20_CHECK step-2 OUT_OF_SCOPE Dawnport owner-excluded");
+            } else {
+                oressa(&mut row, &mut client, clients, world, &metadata).await?;
+            }
             let initial = progress(&mut client).await?;
             let mut current = initial;
             let mut earned_prerequisites = false;

@@ -6,6 +6,15 @@ from report import combat_results, map_results, matrix_rows, results, summary, s
 
 
 class ReportTests(unittest.TestCase):
+    def test_dawnport_owner_exclusions_are_distinct_terminal_results(self):
+        line = ("SEAM_EVIDENCE e2e_all scenario=S16a.full status=OUT_OF_SCOPE "
+                "seconds=0 evidence=Dawnport owner-excluded")
+        found = results(line)
+        self.assertEqual(found["S16a.full"], ("OUT_OF_SCOPE", 0, "Dawnport owner-excluded"))
+        output, complete = summary([("S16a", "Vocation")], found)
+        self.assertIn("OUT_OF_SCOPE", output)
+        self.assertTrue(complete)
+
     def test_client_capture_does_not_emit_a_full_journey_verdict(self):
         root = Path(__file__).resolve().parents[3]
         phases = root / "apps/game-server/src/qualification/client_phases"

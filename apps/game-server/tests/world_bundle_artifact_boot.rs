@@ -226,6 +226,38 @@ fn compiled_town_bundle_loads_with_the_runtime_item_index() {
                 })
                 .expect("compiler palette must load through the runtime");
             assert!(town.enterable(start));
+            let towns = &town.base().subareas;
+            assert_eq!(towns.default_town, Some(8));
+            let home = towns
+                .town(8)
+                .and_then(|town| town.temple)
+                .expect("Thais home");
+            assert_eq!((home.x, home.y, home.floor), (32369, 32241, -7));
+
+            use oteryn_game_server::map::floor::{Ground, resolve_landing};
+            use oteryn_gameplay_world::movement::CardinalStep;
+            let ground = |(x, y, z): (i32, i32, i32)| {
+                let pos = TilePos {
+                    x: x as u16,
+                    y: y as u16,
+                    floor: -z as i8,
+                };
+                match town.base().tile(pos.x, pos.y, pos.floor) {
+                    Some(tile) if tile.walkable() && town.enterable(pos) => Ground::Walkable,
+                    Some(_) => Ground::Blocked,
+                    None => Ground::Absent,
+                }
+            };
+            for (before, after) in [
+                ((32456, 32291, 7), (33614, 31494, 7)),
+                ((33605, 31469, 7), (32456, 32291, 7)),
+            ] {
+                assert_eq!(
+                    resolve_landing(town.floors(), ground, |_| true, before, CardinalStep::North)
+                        .expect("authored portal destination"),
+                    after
+                );
+            }
         })
         .expect("start town boot thread")
         .join()

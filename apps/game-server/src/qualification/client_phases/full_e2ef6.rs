@@ -80,6 +80,7 @@ pub(super) async fn run(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
+    route_rows_only: bool,
 ) {
     use verdict::Need::Row as After;
     // Own a connection per row: an error/timeout cannot prevent the next row's verdict.
@@ -94,30 +95,23 @@ pub(super) async fn run(
         .await;
     temple.finish(result);
 
-    let mut vocation = Row::new("S16a", VOCATION).needs(&[character_release_need(clients, 1)]);
-    let watch = vocation.0.watch();
-    let result = watch
-        .bound(
-            Duration::from_secs(420),
-            "Oressa journey deadline; remaining actions unproven",
-            first_vocation(&mut vocation, clients, world, spawns, npcs),
-        )
-        .await;
-    vocation.finish(result);
+    verdict::dawnport_excluded("S16a.full");
 
-    // Promotion starts from the knight the first-vocation row produces.
-    let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[character_release_need(clients, 1), After("S16a")]);
-    let watch = loss.0.watch();
-    let result = watch
-        .bound(
-            Duration::from_secs(1100),
-            "experience-loss journey deadline; remaining actions unproven",
-            experience_loss(&mut loss, clients, world, spawns, npcs),
-        )
-        .await;
-    match result {
-        Ok(Some(source)) => finish_missing_receipt(loss, source),
-        other => loss.finish(other.map(|_| ())),
+    if !route_rows_only {
+        // Promotion starts from the knight the first-vocation row produces.
+        let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[character_release_need(clients, 1), After("S16a")]);
+        let watch = loss.0.watch();
+        let result = watch
+            .bound(
+                Duration::from_secs(1100),
+                "experience-loss journey deadline; remaining actions unproven",
+                experience_loss(&mut loss, clients, world, spawns, npcs),
+            )
+            .await;
+        match result {
+            Ok(Some(source)) => finish_missing_receipt(loss, source),
+            other => loss.finish(other.map(|_| ())),
+        }
     }
 
     let mut custody = Row::new("C20b", ITEM_LOSS).needs(&[character_release_need(clients, 1)]);
@@ -131,18 +125,20 @@ pub(super) async fn run(
         .await;
     custody.finish(result);
 
-    // Purchase qualification precedes consumption: Character 0 must retain its
-    // never-aggressed low-level Adventurer eligibility for both protected deaths.
-    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[character_release_need(clients, 1), character_release_need(clients, 0)]);
-    let watch = services.0.watch();
-    let result = watch
-        .bound(
-            Duration::from_secs(1800),
-            "blessing services journey deadline; remaining actions unproven",
-            blessing_services(&mut services, clients, world, spawns, npcs),
-        )
-        .await;
-    finish_blessing_row(services, result);
+    if !route_rows_only {
+        // Purchase qualification precedes consumption: Character 0 must retain its
+        // never-aggressed low-level Adventurer eligibility for both protected deaths.
+        let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[character_release_need(clients, 1), character_release_need(clients, 0)]);
+        let watch = services.0.watch();
+        let result = watch
+            .bound(
+                Duration::from_secs(1800),
+                "blessing services journey deadline; remaining actions unproven",
+                blessing_services(&mut services, clients, world, spawns, npcs),
+            )
+            .await;
+        finish_blessing_row(services, result);
+    }
 
     let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[character_release_need(clients, 0), character_release_need(clients, 1)]);
     let watch = consumption.0.watch();
@@ -501,6 +497,7 @@ async fn resting_bonuses(
     use oteryn_protocol_oteryn::world_object::UseDisposition;
     let mut client = connect_world(clients, 0xf2).await?;
     let result: TestResult<Option<&'static str>> = async {
+        restore_thais_start(&mut client, world).await?;
         let initial = daily_wall(&mut client).await?;
         if initial.claimed || initial.claim_enabled {
             return Err(format!("P10 fresh-day prerequisite blocked: expected an unclaimed, unopened wall on this fresh GameSession; observed={initial:?}").into());
@@ -1468,6 +1465,13 @@ async fn wait_inventory(
     }
 }
 
+async fn restore_thais_start(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = route(world, start, |at| at == TOWN)
+        .ok_or_else(|| format!("Thais qualification start unavailable from {start:?}"))?;
+    walk(client, world, &path).await
+}
+
 async fn return_and_release(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let restore: TestResult = async {
         client.session_mut().attack_target(None).await?;
@@ -1969,6 +1973,7 @@ async fn item_loss(
 ) -> TestResult {
     let mut client = connect_world(clients, 0xc4).await?;
     let result: TestResult = async {
+        restore_thais_start(&mut client, world).await?;
         if !blessings(&mut client).await?.is_empty() { return Err("unprotected item-loss prerequisite blocked: ordinary Character has held blessings".into()); }
         earn_death_prerequisites(&mut client, world, spawns, 9, 1).await?;
         row.pass("earned-loss-eligible-level", progress(&mut client).await?);
@@ -2537,6 +2542,7 @@ async fn adventurer_journey(
 ) -> TestResult {
     let mut victim = connect_character(clients, tag, 0).await?;
     let result: TestResult = async {
+        restore_thais_start(&mut victim, world).await?;
         // Character 0 is still ordinary here: this mount precedes fixture provisioning.
         earn_death_prerequisites(&mut victim, world, spawns, 8, 0).await?;
         if !blessings(&mut victim).await?.iter().any(|key| key == WISDOM.2) {
@@ -2602,6 +2608,7 @@ async fn blessing_death(
     adventurer_journey(row, clients, world, spawns, npcs, 0xa0).await?;
     let mut client = connect_world(clients, 0xa3).await?;
     let result: TestResult = async {
+        restore_thais_start(&mut client, world).await?;
         // Level 21 permanently excludes Adventurer, so the Twist case cannot
         // accidentally PASS by observing KeepAll from the low-level exemption.
         earn_death_prerequisites(&mut client, world, spawns, 21, 0).await?;

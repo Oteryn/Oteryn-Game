@@ -20,7 +20,7 @@ summarize() {
 
   rows=$(awk '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      $3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ && $4 ~ /^status=(PASS|FAIL|OUT_OF_SCOPE)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -31,6 +31,7 @@ summarize() {
         if ($i ~ /^evidence=/) evidence = substr($i, 10)
       }
       reason = (cause != "" ? cause : evidence)
+      if (verdict == "OUT_OF_SCOPE") reason = "Dawnport owner-excluded"
       if (tolower(reason) ~ /password|postgres:\/\/|postgresql:\/\/|secret|token|key=/) reason = ""
       gsub(/\|/, "_", reason)
       printf "%s|%s|%s\n", row, verdict, reason

@@ -759,6 +759,12 @@ impl Row {
     }
 }
 
+pub(super) fn dawnport_excluded(scenario: &str) {
+    evidence(&format!(
+        "e2e_all scenario={scenario} status=OUT_OF_SCOPE seconds=0 evidence=Dawnport owner-excluded"
+    ));
+}
+
 /// Journey groups `NODE_BOOT_E2E_ONLY` selects, each with the groups whose
 /// state it starts from. No group currently consumes another group's state:
 /// each row owns its admissions and cleanup.
@@ -775,6 +781,7 @@ const GROUPS: &[(&str, &[&str])] = &[
     ("f7run", &[]),
     ("mp", &[]),
     ("rows", &[]),
+    ("thaisroutes", &[]),
 ];
 
 /// The selected journey groups; `None` runs every group.
@@ -813,6 +820,10 @@ impl Groups {
             }
         }
         Ok(Self(Some(selected)))
+    }
+
+    pub(super) fn explicit(&self, group: &str) -> bool {
+        self.0.as_ref().is_some_and(|groups| groups.contains(group))
     }
 
     pub(super) fn runs(&self, group: &str) -> bool {
