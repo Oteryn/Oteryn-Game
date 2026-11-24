@@ -57,3 +57,29 @@ still needs reproduction with normal map custody to establish a server defect.
 For 10346 the carried USE again returned Accepted/NothingToUse. The 10326
 session instead closed after its carried USE, before a typed reply arrived
 (`gameplay_transport/connection/serve/mod.rs:527–532`).
+
+## Eligibility and hand-defence owner evidence
+
+The native profiles declare the helmet's allowed vocations and leave its
+level UNKNOWN. The Zaoan legs and wailing widow's necklace have UNKNOWN
+level and vocations. The compiled policy requires both fields to be KNOWN
+before it produces a claim (`crates/gameplay/content/src/content/native_gameplay.rs:4791–4798`).
+The slot precheck then maps an unavailable claim to SlotMismatch. This is a
+content qualification gap ahead of the vocation check.
+
+The `90e3022a8` batch 0:20 completed with 69 PASS and 59 FAIL rows and
+`NODE_BOOT_RESULT=NODE_BOOT_FAIL`. Twin hooks (10392) and Zaoan halberd
+(10406) both equipped and unequipped. Their accepted self Defence pages
+omitted DefenceEquipment while worn. The expected values were 22 and 15
+(`data/items/items.xml:27384–27390,27464–27470`). Crystal defaults extra
+defence to zero (`src/items/items.hpp:305`) and adds it to base defence
+(`src/creatures/players/player.cpp:690–697`). Oteryn requires Known extra
+defence and otherwise yields no hand value
+(`crates/gameplay/combat-rules/src/resolution/player_defence.rs:48–60`), so the
+wire projection omits the field (`gameplay_transport/attack/cyclopedia.rs:475–476`).
+
+The drachaku (10391) returned SlotMismatch to command 9 targeting RightHand.
+The fallback command 348, definition reference 430, lost its transport before
+a typed reply. The equipped elemental-bond inspection was therefore blocked
+for that entry. Crystal's Energy bond is declared in
+`data/items/items.xml:27362–27368`.
