@@ -605,6 +605,31 @@ class PgObserveTests(unittest.TestCase):
 
 
 class CloudRunSummaryTests(unittest.TestCase):
+    def test_cloud_uses_first_eligible_work_parent(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("select_work_parent()"):cloud.index("summarize()")]
+        with tempfile.TemporaryDirectory() as temp:
+            work = Path(temp, "work")
+            work.mkdir()
+            alias = Path(temp, "alias")
+            alias.symlink_to(work, target_is_directory=True)
+            foreign = Path(temp, "foreign")
+            foreign.mkdir()
+            command = helper + textwrap.dedent("""
+                stat() {
+                    if [[ "${@: -1}" == "$foreign" ]]; then
+                        printf '424242\n'
+                    else
+                        printf '0\n'
+                    fi
+                }
+                foreign="$1/foreign"
+                select_work_parent /srv "$1/missing" "$foreign" "$1/alias" /tmp
+                """)
+            result = subprocess.run(["bash", "-c", command, "test", temp],
+                                    check=True, capture_output=True, text=True)
+            self.assertEqual(result.stdout.strip(), str(work.resolve()))
+
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(
             ['bash', str(HERE / 'cloud_run.sh'), '--summarize',
