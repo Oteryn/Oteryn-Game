@@ -4215,9 +4215,6 @@ async fn pvp_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    include!("qualification_hunt_plan.rs");
-    include!("qualification_hunt_route.rs");
-
     let url = required("NODE_BOOT_PVP_DATABASE_URL")?;
     let accounts = [
         required("NODE_BOOT_PVP_ACCOUNT_ID")?,
@@ -4963,9 +4960,6 @@ async fn imbuement_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    include!("qualification_hunt_plan.rs");
-    include!("qualification_hunt_route.rs");
-
     let mut characters = clients.characters.to_vec();
     characters[1] = qualification_character(clients, 1, 0xf6, "Strike Journey", "Knight").await?;
     let clients = &SeamClients {
@@ -7312,3 +7306,6 @@ mod forge_tests {
         Ok(())
     }
 }
+
+include!("qualification_hunt_plan.rs");
+include!("qualification_hunt_route.rs");
