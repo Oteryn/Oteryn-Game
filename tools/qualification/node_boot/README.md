@@ -167,6 +167,14 @@ delta and repeat-use refusal. The served town bundle had no matching binding
 for 287 claims in that slice
 ([reward placement resolver](../../../crates/gameplay/content/src/content/world_reward_claims.rs#L1267)).
 
+The `interactions=60:600` slice emitted 615 PASS and 2,385 FAIL step rows
+and ended with `NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged`. At that
+revision, 580 approaches could not be routed and seven more failed on a live
+route or floor transition. The server refused 11 USE requests after approach.
+Two USE requests committed, but the driver sampled position before processing
+the spatial projection. The later driver waits for the wire update and replans
+after accepted transit redirects.
+
 The runner prints a
 summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
 at the path reported on stderr. It exits nonzero if any group fails.
