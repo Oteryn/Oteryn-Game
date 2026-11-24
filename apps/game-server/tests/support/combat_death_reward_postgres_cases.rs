@@ -617,6 +617,7 @@ fn input(
 ) -> TestResult<CreatureDeathRewardInput<2>> {
     Ok(CreatureDeathRewardInput {
         tutorial_corruptor: None,
+        atomic_source_loot: false,
         corpse_item: Some(corpse_item_ref()),
         loot_table_ref: Some(rat_loot_table_ref()),
         loot_table,
@@ -1598,6 +1599,7 @@ mod kill_reward_live {
                 .await;
             let input = CreatureDeathRewardInput {
                 tutorial_corruptor: None,
+                atomic_source_loot: false,
                 corpse_item: Some(pin.corpse),
                 loot_table_ref: Some(pin.table_ref),
                 loot_table: pin.admitted,
