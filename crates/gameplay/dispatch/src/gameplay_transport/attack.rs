@@ -193,7 +193,10 @@ struct WeaponFacts {
 }
 
 #[cfg(feature = "qualification-cast-evidence")]
-fn qualification_attack_stage(session: GameSessionId, stage: &str) {
+pub(in crate::gameplay_transport) fn qualification_attack_stage(
+    session: GameSessionId,
+    stage: &str,
+) {
     super::operator_event(&format!(
         "event=qualification_auto_attack session={} stage={stage}",
         super::format_connection_trace(*session.as_bytes())
@@ -694,6 +697,14 @@ impl ChannelAttackStates {
         let Some(facts) = target_facts(runtime, room, actor, session, creature, now) else {
             return AttackIntentDisposition::Rejected;
         };
+        #[cfg(feature = "qualification-cast-evidence")]
+        qualification_attack_stage(
+            session,
+            &format!(
+                "target_facts command_id={command_id} distance={} same_floor={} chase={:?}",
+                facts.distance, facts.same_floor, entry.modes.chase
+            ),
+        );
         let previous = entry.state.target();
         match entry
             .state

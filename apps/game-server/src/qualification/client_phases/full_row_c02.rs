@@ -372,7 +372,28 @@ async fn hunt_with_damage_receipt(
             file.seek(SeekFrom::End(0)).ok()?;
             Some(file)
         });
-    let result = full_e2ef7::earn_gold_with_attack_evidence(client, world, required_total).await;
+    let hand_and_ammo: Vec<_> = client
+        .inventory()
+        .into_iter()
+        .flat_map(|inventory| &inventory.equipment)
+        .filter(|entry| {
+            matches!(
+                entry.slot,
+                EquipmentSlot::RightHand | EquipmentSlot::LeftHand | EquipmentSlot::Ammo
+            )
+        })
+        .map(|entry| {
+            (
+                entry.slot,
+                entry.item.item_definition_ref.get(),
+                entry.item.count.get(),
+            )
+        })
+        .collect();
+    evidence(&format!(
+        "C02_HUNT_EQUIPMENT hand_and_ammo={hand_and_ammo:?}"
+    ));
+    let result = full_e2ef7::earn_gold(client, world, required_total).await;
     if let Some(file) = server_log {
         let mut events = BTreeMap::new();
         for line in BufReader::new(file).lines().map_while(Result::ok) {

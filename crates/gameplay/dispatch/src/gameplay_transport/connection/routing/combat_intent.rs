@@ -43,11 +43,29 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         .target_intents
         .admit(tokio::time::Instant::now());
     match decode_attack_target_intent(command.payload) {
-        Ok(target) if admitted_rate => Dispatch::Attack(
-            authority
+        Ok(target) if admitted_rate => {
+            let disposition = authority
                 .attack_target(actor, admitted.game_session_id, command.command_id, target)
-                .await,
-        ),
+                .await;
+            #[cfg(feature = "qualification-cast-evidence")]
+            if let Some(target) = target {
+                let status = if disposition
+                    == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected
+                {
+                    "Rejected"
+                } else {
+                    "Accepted"
+                };
+                crate::gameplay_transport::attack::qualification_attack_stage(
+                    admitted.game_session_id,
+                    &format!(
+                        "attack_reply command_id={} target={target:?} status={status} reason={disposition:?}",
+                        command.command_id
+                    ),
+                );
+            }
+            Dispatch::Attack(disposition)
+        }
         _ => Dispatch::Unregistered,
     }
 }
