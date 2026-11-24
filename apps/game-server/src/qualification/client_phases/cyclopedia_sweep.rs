@@ -1,11 +1,11 @@
 //! Opt-in over the native wire. Select with NODE_BOOT_E2E_ONLY=cyclopedia_sweep.
 //! The census is independent of the replies. Bestiary ordinals use the content order
-//! in gameplay/dispatch/src/gameplay_transport/charm_progression.rs:91; boss thresholds
-//! use gameplay/domain/src/domain/bosstiary.rs:33. Item names come from definition semantics
-//! as in gameplay/dispatch/src/gameplay_transport/inspection.rs:362.
-//! Map progress uses gameplay/dispatch/src/gameplay_transport/cyclopedia.rs:168.
-//! Weather uses the authored area anchors and the period owner at gameplay/weather/src/lib.rs:375,
-//! compared to the admission snapshot at gameplay/dispatch/src/gameplay_transport/connection/serve/snapshot.rs:677.
+//! in crates/gameplay/dispatch/src/gameplay_transport/charm_progression.rs:91; boss thresholds
+//! use crates/gameplay/domain/src/domain/bosstiary.rs:33. Item names come from definition semantics
+//! as in crates/gameplay/dispatch/src/gameplay_transport/inspection.rs:362.
+//! Map progress uses crates/gameplay/dispatch/src/gameplay_transport/cyclopedia.rs:168.
+//! Weather uses the authored area anchors and the period owner at crates/gameplay/weather/src/lib.rs:375,
+//! compared to the admission snapshot at crates/gameplay/dispatch/src/gameplay_transport/connection/serve/snapshot.rs:677.
 use super::*;
 use oteryn_dev_client::{DevClientSession, client_ui::cyclopedia_character as panel};
 use oteryn_gameplay_weather::{WEATHER_SLOT_MS, WorldWeatherSource};
@@ -195,7 +195,8 @@ struct Tally {
 /// One row per step, with remaining rows failed if a dependency fails.
 struct Rows<'a> {
     key: &'a str,
-    remaining: &'a [&'a str],
+    remaining: &'static [&'static str],
+    first_failure: Option<&'static str>,
     tally: &'a mut Tally,
     lap: std::time::Instant,
 }
@@ -215,6 +216,7 @@ impl Rows<'_> {
             }
             Err(error) => {
                 self.tally.fail += 1;
+                self.first_failure.get_or_insert(step);
                 ("FAIL", error.to_string(), format!(" cause={cause}"))
             }
         };
@@ -227,8 +229,9 @@ impl Rows<'_> {
     }
 
     fn finish(&mut self) {
+        let root = self.first_failure.unwrap_or("entry-aborted");
         while !self.remaining.is_empty() {
-            self.emit(Err("an earlier step failed".into()), "blocked");
+            self.emit(Err(format!("blocked-by-{root}").into()), "blocked");
         }
     }
 }
@@ -254,7 +257,7 @@ impl Entry {
                 &["query", "prepare", "spawn", "kill", "progress"]
             }
             Self::Map(_) => &["query", "visit", "progress"],
-            Self::MapAtlas(_) => &["query", "visit"],
+            Self::MapAtlas(_) => &["query", "visit", "progress"],
             Self::Weather(_) => &["visit", "state"],
             Self::Item { .. } | Self::Character(_) | Self::CharacterItems | Self::MapSpeed => {
                 &["query"]
@@ -308,15 +311,29 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
     for (key, entry) in entries.iter().skip(start).take(selected) {
         verdict::Harness::global().progress("cyclopedia-sweep-entry");
         let scenario = Box::leak(format!("CY.{}.full", safe(key)).into_boxed_str());
+        let mut rows = Rows {
+            key,
+            remaining: entry.steps(),
+            first_failure: None,
+            tally: &mut tally,
+            lap: std::time::Instant::now(),
+        };
         verdict::indexed(
             scenario,
-            sweep_entry(&mut sweep, key, entry, &mut tally, scenario),
+            sweep_entry(&mut sweep, entry, &mut rows, scenario),
         )
         .await;
+        if !rows.remaining.is_empty() {
+            rows.emit(Err("indexed watchdog interrupted entry".into()), "deadline");
+            rows.finish();
+            sweep.reader = None;
+            sweep.hunter = None;
+        }
     }
+    let mut release_failures = 0;
     for mut client in [sweep.reader, sweep.hunter].into_iter().flatten() {
         if let Err(error) = creature_sweep::release(&mut client).await {
-            tally.fail += 1;
+            release_failures += 1;
             evidence(&format!(
                 "cyclopedia_sweep release_failed error={}",
                 safe(&error.to_string())
@@ -324,33 +341,31 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
         }
     }
     evidence(&format!(
-        "cyclopedia_sweep summary total={total} selected={selected} rows_pass={} rows_fail={} mode=seeded",
+        "cyclopedia_sweep summary total={total} selected={selected} rows_pass={} rows_fail={} release_failures={release_failures} mode=seeded",
         tally.pass, tally.fail
     ));
-    if tally.fail != 0 {
-        return Err(format!("cyclopedia sweep: {} FAIL rows (see CY.*)", tally.fail).into());
+    if tally.fail != 0 || release_failures != 0 {
+        return Err(format!(
+            "cyclopedia sweep: {} FAIL rows and {release_failures} release failures",
+            tally.fail
+        )
+        .into());
     }
     Ok(())
 }
 
 async fn sweep_entry(
     sweep: &mut Sweep<'_, '_>,
-    key: &str,
     entry: &Entry,
-    tally: &mut Tally,
+    rows: &mut Rows<'_>,
     scenario: &str,
 ) -> TestResult {
-    let started = std::time::Instant::now();
-    let failed_before = tally.fail;
-    let mut rows = Rows {
-        key,
-        remaining: entry.steps(),
-        tally,
-        lap: started,
-    };
+    let started = rows.lap;
+    let key = rows.key;
+    let failed_before = rows.tally.fail;
     let completed = tokio::time::timeout(
         Duration::from_secs(240),
-        Box::pin(check_entry(sweep, key, entry, &mut rows)),
+        Box::pin(check_entry(sweep, key, entry, rows)),
     )
     .await;
     if completed.is_err() {
@@ -359,7 +374,7 @@ async fn sweep_entry(
         sweep.hunter = None;
     }
     rows.finish();
-    let failures = tally.fail - failed_before;
+    let failures = rows.tally.fail - failed_before;
     let (status, cause) = if failures == 0 {
         ("PASS", "")
     } else {
@@ -634,15 +649,37 @@ async fn check_entry(sweep: &mut Sweep<'_, '_>, key: &str, entry: &Entry, rows: 
                     return;
                 }
             };
-            if !rows.emit(
-                prepare_hunter(sweep)
-                    .await
-                    .map(|()| "classed fixture outside protection zone".into()),
-                "precondition",
-            ) {
-                sweep.hunter = None;
-                return;
+            let prepared = async {
+                prepare_hunter(sweep).await?;
+                let client = sweep.hunter.as_mut().ok_or("hunter session absent")?;
+                let credit = match entry {
+                    Entry::Boss { .. } => {
+                        let boost = client_daily_boost::reward_selection(client).await?;
+                        // The owner applies this observed daily selection to the
+                        // exact kill (durability/src/durability/bosstiary.rs:76).
+                        crate::domain::bosstiary::kill_credit(boost.boss_key == key)
+                    }
+                    _ => 1,
+                };
+                Ok(u64::from(credit))
             }
+            .await;
+            let credit = match prepared {
+                Ok(credit) => {
+                    rows.emit(
+                        Ok(format!(
+                            "classed fixture outside protection zone, expected kill credit:{credit}"
+                        )),
+                        "precondition",
+                    );
+                    credit
+                }
+                Err(error) => {
+                    rows.emit(Err(error), "precondition");
+                    sweep.hunter = None;
+                    return;
+                }
+            };
             let Some(client) = &mut sweep.hunter else {
                 return;
             };
@@ -657,7 +694,7 @@ async fn check_entry(sweep: &mut Sweep<'_, '_>, key: &str, entry: &Entry, rows: 
                 }
             };
             if rows.emit(kill(client, sweep.clients, key, target).await, "combat") {
-                let next = creature_query(client, key, entry, kills.saturating_add(1)).await;
+                let next = creature_query(client, key, entry, kills.saturating_add(credit)).await;
                 rows.emit(next.map(|(_, detail)| detail), "progress");
             }
         }
@@ -841,23 +878,17 @@ async fn read_page(
     }
 }
 
-async fn map_query(
-    client: &mut DevClientSession,
-    area: u32,
-    action: Option<u8>,
-) -> TestResult<map::MapResult> {
-    let cap = map::CAPABILITY_CYCLOPEDIA_MAP_V1;
-    let bytes = if let Some(action) = action {
-        let mut payload = [0; map::MAX_REQUEST_BYTES];
-        payload[0] = action;
-        payload[1..5].copy_from_slice(&area.to_le_bytes());
-        command(client, cap, map::COMMAND_TYPE_CYCLOPEDIA_INTENT, &payload).await?
-    } else {
-        command(client, cap, map::COMMAND_TYPE_CYCLOPEDIA_QUERY, &[]).await?
-    };
+async fn map_query(client: &mut DevClientSession) -> TestResult<map::MapResult> {
+    let bytes = command(
+        client,
+        map::CAPABILITY_CYCLOPEDIA_MAP_V1,
+        map::COMMAND_TYPE_CYCLOPEDIA_QUERY,
+        &[],
+    )
+    .await?;
     let result = map::decode_result(&bytes).map_err(debug)?;
     if result.code != 0 {
-        return Err(format!("map action {action:?} returned {result:?}").into());
+        return Err(format!("map query returned {result:?}").into());
     }
     Ok(result)
 }
@@ -946,7 +977,19 @@ async fn check_atlas(
         Ok(format!("membership:{membership:?}"))
     }
     .await;
-    rows.emit(visit, "map-visit");
+    if rows.emit(visit, "map-visit") {
+        let progress = async {
+            let rules = crate::domain::cyclopedia::BasicArea::embedded()
+                .ok_or("missing authored POI rules")?;
+            let before = map_query(client).await?;
+            let found_before = before.found;
+            visit_poi(client, world, before).await?;
+            let after = map_query(client).await?;
+            map_progress_oracle(&after, found_before, rules.generated_count)
+        }
+        .await;
+        rows.emit(progress, "map-progress");
+    }
 }
 
 async fn check_map(
@@ -955,86 +998,107 @@ async fn check_map(
     area: &BasicArea,
     rows: &mut Rows<'_>,
 ) {
-    let before = map_query(client, area.area, None).await.and_then(|result| {
-        if result.found != 0 || result.discovered {
-            return Err(format!("expected unvisited map; got {result:?}").into());
+    let before = match map_query(client).await {
+        Ok(result) if result.found == 0 && !result.discovered => {
+            rows.emit(
+                Ok(format!("authored-area:{},unlocked:false", area.name)),
+                "map-query",
+            );
+            result
         }
-        Ok(format!("authored-area:{},unlocked:false", area.name))
-    });
-    if !rows.emit(before, "map-query") {
-        return;
-    }
-
-    let visit = async {
-        use crate::domain::cyclopedia::Point;
-        let from = tile(client.world_spatial().actor_position)?;
-        let table = &world.base().subareas;
-        let (_, subarea) = table
-            .resolve(from.x, from.y, from.floor)
-            .ok_or("entry has no native subarea")?;
-        let point = |at: TilePos| Point {
-            x: i32::from(at.x),
-            y: i32::from(at.y),
-            floor: i16::from(at.floor),
-        };
-        let mut state = map_query(client, area.area, None).await?;
-        // The owner hides generated POIs outside its view window. Visit reachable
-        // vantage points within the same subarea until a POI is visible.
-        let mut surveyed = Vec::new();
-        while state.visible.is_empty() && state.found == 0 {
-            let here = tile(client.world_spatial().actor_position)?;
-            surveyed.push(point(here));
-            let path = route_avoiding(
-                world,
-                here,
-                |at| surveyed.iter().all(|old| !point(at).in_window(*old)),
-                |at| {
-                    table
-                        .resolve(at.x, at.y, at.floor)
-                        .is_some_and(|(_, id)| id == subarea)
-                },
-            )
-            .ok_or("no POI visible from surveyed subarea")?;
-            walk(client, world, &path).await?;
-            state = map_query(client, area.area, None).await?;
+        Ok(result) => {
+            rows.emit(
+                Err(format!("expected unvisited map; got {result:?}").into()),
+                "map-query",
+            );
+            return;
         }
-        if let Some(&(x, y, z)) = state.visible.first() {
-            // The MapResult uses client z; the local bundle uses its negation.
-            let target = TilePos { x, y, floor: -z };
-            let here = tile(client.world_spatial().actor_position)?;
-            let path = route_avoiding(
-                world,
-                here,
-                |at| at == target,
-                |at| {
-                    table
-                        .resolve(at.x, at.y, at.floor)
-                        .is_some_and(|(_, id)| id == subarea)
-                },
-            )
-            .ok_or("visible POI is unreachable within the subarea")?;
-            walk(client, world, &path).await?;
+        Err(error) => {
+            rows.emit(Err(error), "map-query");
+            return;
         }
-        let at = tile(client.world_spatial().actor_position)?;
-        Ok(format!("visited:{at:?}"))
-    }
-    .await;
+    };
+    let visit = visit_poi(client, world, before)
+        .await
+        .map(|at| format!("visited:{at:?}"));
     if rows.emit(visit, "map-visit") {
-        let progress = async {
-            let after = map_query(client, area.area, None).await?;
-            if after.found == 0
-                || after.found > area.generated_count
-                || after.discovered != (after.found == area.generated_count)
-            {
-                return Err(
-                    format!("map visit did not advance authored POI progress: {after:?}").into(),
-                );
-            }
-            Ok(format!("found:{}", after.found))
-        }
-        .await;
+        let progress = map_query(client)
+            .await
+            .and_then(|after| map_progress_oracle(&after, 0, usize::from(area.generated_count)));
         rows.emit(progress, "map-progress");
     }
+}
+
+fn map_progress_oracle(
+    after: &map::MapResult,
+    before: u8,
+    generated_count: usize,
+) -> TestResult<String> {
+    let found = usize::from(after.found);
+    if after.found <= before
+        || found > generated_count
+        || after.discovered != (found == generated_count)
+    {
+        return Err(format!(
+            "expected progress beyond {before} of {generated_count} authored POIs; got {after:?}"
+        )
+        .into());
+    }
+    Ok(format!("found-before:{before},found-after:{found}"))
+}
+
+async fn visit_poi(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    mut state: map::MapResult,
+) -> TestResult<TilePos> {
+    use crate::domain::cyclopedia::Point;
+    if state.discovered {
+        return Err("current subarea already completed all POIs before this visit".into());
+    }
+    let from = tile(client.world_spatial().actor_position)?;
+    let table = &world.base().subareas;
+    let (_, subarea) = table
+        .resolve(from.x, from.y, from.floor)
+        .ok_or("entry has no native subarea")?;
+    let inside = |at: TilePos| {
+        table
+            .resolve(at.x, at.y, at.floor)
+            .is_some_and(|(_, id)| id == subarea)
+    };
+    let point = |at: TilePos| Point {
+        x: i32::from(at.x),
+        y: i32::from(at.y),
+        floor: i16::from(at.floor),
+    };
+    // The owner hides generated POIs outside its view window. Visit reachable
+    // vantage points within the same subarea until a POI is visible.
+    let before = state.found;
+    let mut surveyed = Vec::new();
+    while state.visible.is_empty() && state.found == before {
+        let here = tile(client.world_spatial().actor_position)?;
+        surveyed.push(point(here));
+        let path = route_avoiding(
+            world,
+            here,
+            |at| surveyed.iter().all(|old| !point(at).in_window(*old)),
+            inside,
+        )
+        .ok_or("no POI visible from surveyed subarea")?;
+        walk(client, world, &path).await?;
+        state = map_query(client).await?;
+    }
+    if state.found == before
+        && let Some(&(x, y, z)) = state.visible.first()
+    {
+        // The MapResult uses client z; the local bundle uses its negation.
+        let target = TilePos { x, y, floor: -z };
+        let here = tile(client.world_spatial().actor_position)?;
+        let path = route_avoiding(world, here, |at| at == target, inside)
+            .ok_or("visible POI is unreachable within the subarea")?;
+        walk(client, world, &path).await?;
+    }
+    tile(client.world_spatial().actor_position)
 }
 
 fn weather_now() -> TestResult<u64> {
@@ -1204,6 +1268,27 @@ mod tests {
         row.points[2] = 99;
         assert!(boss_oracle(&row, "Boss", "nemesis", 1).is_err());
         Ok(())
+    }
+
+    #[test]
+    fn map_oracle_requires_a_new_find_and_consistent_unlock() {
+        let mut after = map::MapResult {
+            code: 0,
+            revision: 1,
+            discovered: false,
+            found: 1,
+            area_percent: 0,
+            pool: 0,
+            epoch: 0,
+            improved: false,
+            visible: Vec::new(),
+        };
+        assert!(map_progress_oracle(&after, 0, 7).is_ok());
+        assert!(map_progress_oracle(&after, 1, 7).is_err());
+        after.discovered = true;
+        assert!(map_progress_oracle(&after, 0, 7).is_err());
+        after.found = 7;
+        assert!(map_progress_oracle(&after, 1, 7).is_ok());
     }
 
     #[test]
