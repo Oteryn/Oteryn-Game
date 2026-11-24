@@ -142,7 +142,7 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
         ))
         .as_slice(),
     ];
-    let mut crops = story::crops()?;
+    let mut crops = story::crops(false)?;
     let start = story::start();
     let expected = |p: Position, ids| ExpectedTile {
         position: (p.x, p.y),
