@@ -159,15 +159,6 @@ case "$NODE_BOOT_WORLD_PROFILE" in
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;
 esac
-export NODE_BOOT_W19A_MODE="${NODE_BOOT_W19A_MODE:-live}"
-case "$NODE_BOOT_W19A_MODE" in
-  live) ;;
-  seeded)
-    [[ "$NODE_BOOT_WORLD_PROFILE/$NODE_BOOT_WORLD/$NODE_BOOT_UNPRIVILEGED/${NODE_BOOT_E2E_ONLY:-}" == town/1/1/rows ]] || blocked w19a_requires_disposable_town_rows
-    WORLD_REGIONS+=';125,121;126,124;126,128;127,123;127,124;128,122;128,123;128,125;129,128;130,122;131,124'
-    ;;
-  *) blocked invalid_w19a_mode ;;
-esac
 readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
 # A kept or reused stack is one topology, so it never runs the separate basic pass.
 # The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
@@ -679,73 +670,7 @@ if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
   compile_world=compile-regions
   if [[ "$NODE_BOOT_WORLD_PROFILE" == town ]]; then compile_world=compile-town-qualification; fi
-  compile_source="$GAME_SOURCE"
-  if [[ "$NODE_BOOT_W19A_MODE" == seeded ]]; then
-    # Keep the town route intact. Distant observers need only source neighborhoods.
-    compile_source="$WORK/w19a-project"
-    mkdir -p "$compile_source"
-    cp -a --reflink=auto "$GAME_SOURCE/content" "$compile_source/"
-    ln -s "$GAME_SOURCE/imports" "$GAME_SOURCE/tools" "$compile_source/"
-    PYTHONPATH="$GAME_SOURCE/tools/content-schema/world-authoring${PYTHONPATH:+:$PYTHONPATH}" \
-      python3 - "$GAME_SOURCE" "$compile_source" <<'PY_W19A_CROP'
-import json
-from pathlib import Path
-import sys
-
-from world_region_codec import decode_region, encode_region, encode_sector_tiles, sector_key
-
-source, crop = map(Path, sys.argv[1:])
-evidence = json.loads((source / "docs/reference/content-prep/season-20261107/seasonal-calendar-source.json").read_text())
-santa = next(record for record in evidence["records"] if record["title"] == "Santa Claus")
-anchors = [(row["x"], row["y"]) for row in santa["placements"]]
-assert len(set(anchors)) == 15
-town = {
-    tuple(map(int, region.split(",")))
-    for region in (source / "tools/qualification/node_boot/town-regions.txt").read_text().strip().split(";")
-}
-# This region also supplies a pinned authored quest prop.
-town.add((128, 125))
-extra = {(x // 256, y // 256) for x, y in anchors} - town
-
-def retained(x, y):
-    return (x // 256, y // 256) not in extra or any(
-        max(abs(x - ax), abs(y - ay)) <= 16 for ax, ay in anchors
-    )
-
-index_path = crop / "content/world/placements/index.json"
-index = json.loads(index_path.read_text())
-shards = []
-for name in index["shards"]:
-    path = crop / name
-    rx, ry = (int(part[1:]) for part in path.stem.split("-")[-2:])
-    if (rx, ry) not in extra:
-        shards.append(name)
-        continue
-    z, rx, ry, sectors = decode_region(path.read_bytes())
-    kept = {}
-    for local, tiles in sectors:
-        cells = [tile for tile in tiles if retained(*tile[:2])]
-        if cells:
-            kept[local] = encode_sector_tiles(*sector_key(*cells[0][:2]), cells)
-    path.unlink()
-    if kept:
-        path.write_bytes(encode_region(z, rx, ry, kept))
-        shards.append(name)
-index_path.unlink()
-index["shards"] = shards
-index_path.write_text(json.dumps(index))
-
-for path in (crop / "content/world/transitions").glob("teleports-*.json"):
-    shard = json.loads(path.read_text())
-    shard["records"] = [
-        row for row in shard["records"]
-        if retained(row["declaration"]["from"]["x"], row["declaration"]["from"]["y"])
-    ]
-    path.unlink()
-    path.write_text(json.dumps(shard))
-PY_W19A_CROP
-  fi
-  "${WORLD_COMPILER[@]}" "$compile_world" "$compile_source" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
+  "${WORLD_COMPILER[@]}" "$compile_world" "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
   PIN="$WORK/world.json"
   python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
 import json, sys
@@ -912,13 +837,7 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    local -a npc_data_args=()
-    if [[ "$NODE_BOOT_W19A_MODE" == seeded && "$2" == "$BASE/node/node.toml" ]]; then
-      # Bind the authored catalogue to the NPC frame in the seeded town crop.
-      npc_data_args=(--npc-data-project "$GAME_SOURCE/content/world"
-        --npc-data-sha256 40947c716ba37cae03c6057ab4fa99a6b6a1313e2cd9bbaff9edf952797f94d5)
-    fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2" "${npc_data_args[@]}"
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
 }
@@ -1365,26 +1284,6 @@ node_assigned_ready() { # §4.2–§4.4
   node_complete_assignment "$boot_started"
 }
 
-initialize_qualification_epoch() {
-  if [[ "$NODE_BOOT_WORLD" == 1 || "$NODE_BOOT_SPELLS" == 1 ]]; then
-    # Full-manifest admission initializes Prey against committed reset history.
-    # Use the Control initializer for both the bundle and the native entry fixture.
-    local epoch_result epoch_bundle=none epoch_digest_sql=NULL
-    if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
-      epoch_bundle=compiled
-      epoch_digest_sql="'$WORLD_DIGEST'"
-    fi
-    epoch_result="$({
-      echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT, TEXT) AS'
-      cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
-      printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
-      printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
-    } | psql_admin oteryn_node_boot)"
-    [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
-    evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
-  fi
-}
-
 # Shared continuation: the lane keeps this node alive during ungranted proofs.
 node_complete_assignment() {
   local boot_started=$1
@@ -1402,16 +1301,6 @@ node_complete_assignment() {
   node_deployment_grants
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
-  if [[ "$NODE_BOOT_W19A_MODE" == seeded ]]; then
-    NODE_BOOT_W19A_SEED_URL="$ADMIN_URL" NODE_BOOT_W19A_SEED_WORLD="$WORLD_ID" \
-      NODE_BOOT_W19A_SEED_CHANNEL="$CHANNEL_ID" NODE_BOOT_W19A_SEED_DIGEST="$WORLD_DIGEST" \
-      cargo +1.100.0 test --locked -p oteryn-game-server --lib \
-      "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}" w19a_write_seeded_christmas_reset -- --nocapture
-    local event
-    event="$(printf "SELECT reset_epoch || ':' || array_to_string(seasonal_event_keys, ',') FROM game_world_reset_active JOIN game_world_event_epochs USING(world_id,reset_epoch) WHERE world_id='%s';\n" "$WORLD_ID" | psql_admin oteryn_node_boot)"
-    [[ "$event" == 1:christmas ]] || fail "W19a committed calendar decision $event"
-    evidence "w19a mode=seeded world_epoch=1 reset_date=2025-12-12 seasonal_event=christmas"
-  fi
   local -a report_args=()
   assignment_report_args
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
@@ -1424,7 +1313,23 @@ node_complete_assignment() {
   ops content activate --request content-stale.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 2 --previous empty || code=$?
   [[ $code == 6 ]] || fail "stale content activation predecessor exit=$code"
   [[ "$(echo 'SELECT count(*) FROM game_content_activations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "content activation rows"
-  if [[ "$NODE_BOOT_W19A_MODE" != seeded ]]; then initialize_qualification_epoch; fi
+  if [[ "$NODE_BOOT_WORLD" == 1 || "$NODE_BOOT_SPELLS" == 1 ]]; then
+    # Full-manifest admission initializes Prey against committed reset history.
+    # Use the Control initializer for both the bundle and the native entry fixture.
+    local epoch_result epoch_bundle=none epoch_digest_sql=NULL
+    if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+      epoch_bundle=compiled
+      epoch_digest_sql="'$WORLD_DIGEST'"
+    fi
+    epoch_result="$({
+      echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT, TEXT) AS'
+      cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
+      printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
+      printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
+    } | psql_admin oteryn_node_boot)"
+    [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
+    evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
+  fi
   local control_socket_mode="uid${SERVICE_UID}_0600"
   if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
     [[ "$(stat -c %a "$BASE/run/control.sock")" == 600 ]] || fail "control socket mode"

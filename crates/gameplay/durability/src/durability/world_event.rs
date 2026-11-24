@@ -98,33 +98,6 @@ pub(super) async fn record_reset(
     Ok(())
 }
 
-/// Seed the initial epoch of a disposable fixture from its issued Channel
-/// content, and commit the calendar with the production reset event writer.
-#[cfg(feature = "test-support")]
-pub async fn seed_christmas_qualification_reset(
-    pool: &sqlx::PgPool,
-    world: WorldId,
-    channel: &str,
-    bundle_digest: &str,
-) -> Result<(), DurabilityError> {
-    let catalogue = prepare_catalogue()?;
-    let mut tx = pool.begin().await?;
-    let seeded = sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) SELECT world_id,1,decode($3,'hex'),'sha256:' || $3,server_artifact_digest,client_artifact_digest,frame_binding_digest,'TIBIA_SERVER_SAVE_BERLIN_06',1,TIMESTAMPTZ '2025-12-12 06:00 Europe/Berlin','2025-12' FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=$2::text::uuid AND activation_sequence=1 AND NOT EXISTS(SELECT 1 FROM game_world_reset_active a WHERE a.world_id=game_content_activations.world_id)")
-        .bind(world.as_bytes().as_slice()).bind(channel).bind(bundle_digest)
-        .execute(&mut *tx).await?;
-    if seeded.rows_affected() != 1 {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    let activated = sqlx::query("INSERT INTO game_world_reset_active(world_id,reset_epoch) VALUES(encode($1,'hex')::uuid,1)")
-        .bind(world.as_bytes().as_slice()).execute(&mut *tx).await?;
-    if activated.rows_affected() != 1 {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    record_reset(&mut tx, world, 1, true, &catalogue).await?;
-    tx.commit().await?;
-    Ok(())
-}
-
 /// A pinned world's kill-count rule. Binding is immutable within an occurrence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorldChangeCounter {

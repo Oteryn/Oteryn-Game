@@ -2,7 +2,7 @@
 //! matrix row, and `reward_bag_use`'s generation-fenced consume/mint owner.
 //!
 //! Player scenario:
-//! 1. Walk to the live Messenger of Santa, TALK "hi" and "trade", and read the
+//! 1. Walk to the compiled Messenger of Santa, TALK "hi" and "trade", and read the
 //!    live offer price. If needed, walk to a real rat spawn, ATTACK and loot until
 //!    the character can afford two bags. Return on foot and open the shop again.
 //! 2. BUY two red Christmas bundles; expect an accepted purchase reply and the exact
@@ -135,41 +135,42 @@ async fn use_intent(
     Ok((reply.status, disposition, reply.server_sequence))
 }
 
-const THAIS: TilePos = TilePos { x: 32357, y: 32210, floor: -7 };
-
-fn named_npcs<'a>(
-    client: &'a DevClientSession,
-    name: &'a str,
-) -> impl Iterator<Item = (oteryn_dev_client::EntityRef, ActorPosition)> + 'a {
-    client.world_entities().into_iter().flat_map(|entities| entities.iter()).filter_map(move |entry| {
-        (entry.kind == oteryn_dev_client::EntityKind::Npc
-            && entry.display_name.is_some_and(|held| held.as_str().is_ok_and(|value| value.eq_ignore_ascii_case(name))))
-            .then_some((entry.entity, entry.position))
-    })
-}
-
-fn near(a: ActorPosition, b: ActorPosition, range: u32) -> bool {
-    a.floor == b.floor && a.x.abs_diff(b.x).max(a.y.abs_diff(b.y)) <= range
-}
-
 async fn quote(
     client: &mut DevClientSession,
     world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<(npc::NpcTradeIntent, u32)> {
     use oteryn_dev_client::client_runtime::npc_shop as shop;
-    let here = client.world_spatial().actor_position;
-    if !named_npcs(client, "Messenger of Santa").any(|(_, at)| near(at, here, 4)) {
-        let path = route(world, tile(here)?, |at| {
-            at.floor == THAIS.floor && at.x.abs_diff(THAIS.x).max(at.y.abs_diff(THAIS.y)) <= 2
+    let seller = npcs
+        .npcs
+        .iter()
+        .find(|entry| entry.key == "oteryn:npc.messenger_of_santa")
+        .ok_or("step 2: compiled world has no Messenger of Santa acquisition actor")?;
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        seller
+            .placements
+            .iter()
+            .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
+    })
+    .ok_or("step 2: no player-walk route to Messenger of Santa")?;
+    walk(client, world, &path).await?;
+    let actor = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|entry| {
+                entry.kind == oteryn_dev_client::EntityKind::Npc
+                    && seller.placements.iter().any(|p| {
+                        entry.position
+                            == ActorPosition {
+                                x: i32::from(p.x),
+                                y: i32::from(p.y),
+                                floor: -i16::from(p.floor),
+                            }
+                    })
+            })
         })
-        .ok_or("step 2: no player-walk route to Messenger of Santa")?;
-        walk(client, world, &path).await?;
-    }
-    let here = client.world_spatial().actor_position;
-    let actor = named_npcs(client, "Messenger of Santa")
-        .find(|(_, at)| near(*at, here, 4))
-        .map(|(actor, _)| actor)
-        .ok_or("step 2: live Messenger of Santa absent within talk range")?;
+        .map(|entry| entry.entity)
+        .ok_or("step 2: Messenger of Santa absent after walking to compiled placement")?;
     for text in ["hi", "trade"] {
         let reply = shop::talk(
             client.session_mut(),
@@ -279,124 +280,16 @@ pub(super) async fn acquire_bundles(client: &mut DevClientSession, clients: &Sea
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let (mut intent, mut count) = quote(client, world).await?;
+    let (mut intent, mut count) = quote(client, world, &metadata.npcs).await?;
     let cost = u64::from(intent.expected_unit_price) * u64::from(intent.quantity);
     if gold_and_goods(quantities(client)?, &coin_values()?).0 < cost {
         earn_price(client, world, &metadata.spawns, cost).await?;
-        (intent, count) = quote(client, world).await?;
+        (intent, count) = quote(client, world, &metadata.npcs).await?;
     }
     acquire(client, &intent, count).await
 }
 
-#[cfg(feature = "qualification-spawn")]
-#[tokio::test]
-async fn w19a_write_seeded_christmas_reset() -> TestResult {
-    let Ok(url) = std::env::var("NODE_BOOT_W19A_SEED_URL") else {
-        return Ok(());
-    };
-    let pool = sqlx::PgPool::connect(&url).await?;
-    let world: Vec<u8> = sqlx::query_scalar("SELECT uuid_send($1::text::uuid)")
-        .bind(required("NODE_BOOT_W19A_SEED_WORLD")?).fetch_one(&pool).await?;
-    let world = WorldId::decode(&world)?;
-    crate::durability::world_event::seed_christmas_qualification_reset(
-        &pool, world, &required("NODE_BOOT_W19A_SEED_CHANNEL")?, &required("NODE_BOOT_W19A_SEED_DIGEST")?,
-    ).await?;
-    pool.close().await;
-    Ok(())
-}
-
-async fn seed_position(clients: &SeamClients<'_>, index: usize, position: TilePos) -> TestResult {
-    use sqlx::Connection as _;
-    wait_character_released(clients, index).await?;
-    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-    let updated = sqlx::query("UPDATE game_character_last_positions SET tile_x=$2,tile_y=$3,tile_floor=$4,write_sequence=write_sequence+1 WHERE character_id=encode($1,'hex')::uuid")
-        .bind(clients.characters[index].as_slice())
-        .bind(i32::from(position.x)).bind(i32::from(position.y)).bind(-i16::from(position.floor))
-        .execute(&mut connection).await?;
-    if updated.rows_affected() != 1 {
-        return Err("W19a observer has no committed logout position to seed".into());
-    }
-    Ok(())
-}
-
-async fn logout_observer(mut client: DevClientSession) -> TestResult {
-    let (result, name, _, _) = logout_retrying_busy(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("W19a fixture logout refused: {name}").into());
-    }
-    Ok(())
-}
-
-fn observer_cell(world: &BundleWorld, anchor: TilePos) -> TestResult<TilePos> {
-    for (dx, dy) in [(0_i16, 2_i16), (0, -2), (2, 0), (-2, 0), (1, 2), (-1, 2)] {
-        if let (Some(x), Some(y)) = (anchor.x.checked_add_signed(dx), anchor.y.checked_add_signed(dy)) {
-            let at = TilePos { x, y, floor: anchor.floor };
-            if world.enterable(at) && world.base().tile(x, y, at.floor).is_some_and(|tile| tile.walkable())
-                && !world.floors().contains(at) && world.floors().teleport(at).is_none()
-            {
-                return Ok(at);
-            }
-        }
-    }
-    Err(format!("W19a no enterable observer cell near {anchor:?}").into())
-}
-
-async fn verify_seeded_placement(clients: &SeamClients<'_>) -> TestResult {
-    let source: serde_json::Value = serde_json::from_str(include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../docs/reference/content-prep/season-20261107/seasonal-calendar-source.json"
-    )))?;
-    let anchor_rows = source["records"].as_array().ok_or("seasonal evidence catalogue absent")?
-        .iter().find(|record| record["title"] == "Santa Claus").ok_or("Santa source absent")?
-        ["placements"].as_array().ok_or("Santa anchors absent")?;
-    if anchor_rows.len() != 15 {
-        return Err("W19a requires exactly 15 source anchors".into());
-    }
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    const OBSERVER: usize = 0;
-    logout_observer(connect_character(clients, 0x9a, OBSERVER).await?).await?;
-    let mut santas = std::collections::BTreeSet::new();
-    let mut messengers = std::collections::BTreeSet::new();
-    for row in anchor_rows {
-        let anchor = TilePos {
-            x: u16::try_from(row["x"].as_u64().ok_or("invalid anchor x")?)?,
-            y: u16::try_from(row["y"].as_u64().ok_or("invalid anchor y")?)?,
-            floor: -i8::try_from(row["z"].as_u64().ok_or("invalid anchor floor")?)?,
-        };
-        let observer = observer_cell(world, anchor)?;
-        seed_position(clients, OBSERVER, observer).await?;
-        let client = connect_character(clients, 0x9a, OBSERVER).await?;
-        if tile(client.world_spatial().actor_position)? != observer {
-            return Err(format!("W19a observer did not join at {observer:?}").into());
-        }
-        let expected = ActorPosition { x: i32::from(anchor.x), y: i32::from(anchor.y), floor: -i16::from(anchor.floor) };
-        let mut pair = None;
-        for (santa, at) in named_npcs(&client, "Santa Claus").filter(|(_, at)| near(*at, expected, 1)) {
-            for (messenger, other) in named_npcs(&client, "Messenger of Santa") {
-                if near(at, other, 1) && at != other
-                    && pair.replace((santa.identity, messenger.identity)).is_some()
-                {
-                    return Err(format!("W19a ambiguous pair near {anchor:?}").into());
-                }
-            }
-        }
-        logout_observer(client).await?;
-        let (santa, messenger) = pair.ok_or_else(|| format!("W19a live Santa–Messenger pair missing near {anchor:?}"))?;
-        if !santas.insert(santa) || !messengers.insert(messenger) {
-            return Err(format!("W19a reused a live actor near {anchor:?}").into());
-        }
-        verdict::Harness::global().progress("w19a-live-placement");
-    }
-    evidence(&format!("W19A_PLACEMENT mode=seeded messenger_next_to_each_santa={}/15 wire_snapshots=15", messengers.len()));
-    Ok(())
-}
-
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    if std::env::var("NODE_BOOT_W19A_MODE").as_deref() == Ok("seeded") {
-        verify_seeded_placement(clients).await?;
-    }
     let mut client = connect_world(clients, 0xa9).await?;
     let purchase_sequence = acquire_bundles(&mut client, clients).await?;
     let before_refusal = quantities(&client)?;
