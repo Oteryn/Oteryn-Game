@@ -384,7 +384,12 @@ impl OwnedCastFacts {
                 }
             }
         }
-        if spell.needs_weapon && attack.is_none() {
+        // Initial casts admit equipment in source order with the other cast rules.
+        // An already accepted callback has no admission phase to check required inputs.
+        if !require_cast_access
+            && ((spell.needs_weapon && attack.is_none())
+                || (spell.needs_shield && shield.is_none()))
+        {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
         // Crystal 201189f8 player.hpp:2009 starts players in attack mode.
@@ -396,9 +401,6 @@ impl OwnedCastFacts {
         } else {
             0.0
         };
-        if spell.needs_shield && shield.is_none() {
-            return Err(OwnedFactsError::UnavailableEquipment);
-        }
         // Crystal 201189f8 combat.cpp:2051,2065-2077 supplies skill 0, attack 7
         // and factor 0 when a skill callback runs without a weapon.
         let (attack_skill, attack_value, melee_weapon) =

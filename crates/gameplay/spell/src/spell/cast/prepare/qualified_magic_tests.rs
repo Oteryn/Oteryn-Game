@@ -397,13 +397,78 @@ fn source_skill_formulas_without_a_weapon_use_unarmed_inputs() -> Result<(), Str
         assert_eq!(caster.attack_factor, 0.0, "{name}");
         assert!(!caster.melee_weapon, "{name}");
     }
-    let spell = spell(&content, "Annihilation")?;
+    Ok(())
+}
+
+#[test]
+fn missing_equipment_reaches_the_ordered_cast_rules_without_payment() -> Result<(), String> {
+    use crate::spell::CastRejection;
+    let content = content()?;
+    let mut spell = spell(&content, "Annihilation")?;
     let (state, owned) = owner(&content, &spell, 0, 0)?;
     assert!(spell.needs_weapon);
-    assert!(matches!(
-        owned.caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW),
-        Err(OwnedFactsError::UnavailableEquipment)
-    ));
+    let caster = owned
+        .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
+        .map_err(|error| format!("qualified caster without equipment: {error:?}"))?;
+    assert!(!caster.melee_weapon);
+    let empty_cooldowns = crate::spell::Cooldowns::default();
+    let operational = OperationalCastFacts {
+        caster_position: TilePosition {
+            x: 1,
+            y: 1,
+            floor: 7,
+        },
+        target_position: Some(TilePosition {
+            x: 2,
+            y: 1,
+            floor: 7,
+        }),
+        target: Some(crate::spell::target::CastTarget {
+            caster: 1,
+            creature: 2,
+            actor: "creature:target".into(),
+            master: None,
+        }),
+        line_of_sight_clear: Some(true),
+        direction_available: true,
+        wheel_unlocked: None,
+        in_protection_zone: false,
+        target_tile_solid: Some(false),
+        target_tile_creature: Some(true),
+    };
+    let resolve = |spell: &SpellDefinition, caster: &CasterState| {
+        crate::spell::resolve_cast_with_operational_facts(
+            spell,
+            caster,
+            &empty_cooldowns,
+            SemanticTimeMicros::from_micros(NOW),
+            &operational,
+            &mut |_, _| panic!("equipment admission must precede the damage draw"),
+        )
+        .err()
+    };
+    assert_eq!(
+        resolve(&spell, &caster),
+        Some(CastRejection::WeaponRequired)
+    );
+    spell.level = caster.level + 1;
+    assert_eq!(
+        resolve(&spell, &caster),
+        Some(CastRejection::LevelTooLow {
+            required: spell.level
+        }),
+    );
+    spell.level = caster.level;
+    spell.needs_weapon = false;
+    spell.needs_shield = true;
+    let caster = owned
+        .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
+        .map_err(|error| format!("qualified caster without shield: {error:?}"))?;
+    assert_eq!(caster.shield_defense, None);
+    assert_eq!(
+        resolve(&spell, &caster),
+        Some(CastRejection::ShieldRequired)
+    );
     Ok(())
 }
 
