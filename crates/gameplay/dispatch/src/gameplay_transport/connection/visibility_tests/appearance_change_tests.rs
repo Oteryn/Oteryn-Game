@@ -1,6 +1,7 @@
 //! Scripted owner outcomes through the real connection dispatch and VIS-2 interest query.
 use super::*;
 use crate::gameplay_transport::appearance_change::observation::{Observation, ObservationError};
+use crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
 use crate::gameplay_transport::item_view::InventoryItems;
 use oteryn_protocol_oteryn::appearance;
 use oteryn_protocol_oteryn::guild_emblem::{CAPABILITY_GUILD_EMBLEM_V1, Emblem, GuildEmblem};
@@ -16,6 +17,7 @@ struct AppearanceChannel {
     calls: Cell<usize>,
     defer_input: bool,
     appearance_busy: Cell<bool>,
+    names_busy: Cell<bool>,
 }
 impl FreshAdmissionAuthority for AppearanceChannel {
     async fn admit(
@@ -48,6 +50,25 @@ impl FreshAdmissionAuthority for AppearanceChannel {
             }
         }
         Some(entities)
+    }
+    async fn observe_named_visible_entities_result(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<ChannelEntities, AdmissionRefusal> {
+        if self.names_busy.get() {
+            return Err(AdmissionRefusal::Unavailable);
+        }
+        let mut channel = self
+            .observe_visible_entities(actor)
+            .await
+            .ok_or(AdmissionRefusal::Rejected)?;
+        for entity in &mut channel.entities {
+            if entity.identity == channel.observer {
+                entity.display_name =
+                    oteryn_protocol_oteryn::entity_names::EntityDisplayName::new("Observer").ok();
+            }
+        }
+        Ok(channel)
     }
     async fn observe_character_inventory(
         &self,
@@ -166,8 +187,19 @@ fn appearance_change_rejected_unresolved_and_downgraded_clients_publish_nothing(
 
 #[test]
 fn busy_appearance_keeps_committed_step_and_defers_new_player() -> TestResult {
-    use oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta;
+    committed_step_during_busy_projection(false)
+}
 
+#[test]
+fn busy_names_keep_committed_step_and_published_identity() -> TestResult {
+    committed_step_during_busy_projection(true)
+}
+
+fn committed_step_during_busy_projection(named: bool) -> TestResult {
+    use oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2;
+    use oteryn_protocol_oteryn::world_spatial_entities::{
+        EntityFields, decode_world_spatial_entities_delta_with_fields,
+    };
     run(async {
         let authority = AppearanceChannel {
             channel: Channel::new(Vec::new()),
@@ -176,14 +208,31 @@ fn busy_appearance_keeps_committed_step_and_defers_new_player() -> TestResult {
             calls: Cell::new(0),
             defer_input: false,
             appearance_busy: Cell::new(false),
+            names_busy: Cell::new(false),
         };
         let mut admitted = session(&[6], SessionContinuity::FRESH);
         let offered = crate::gameplay_transport::appearance_change::offer::offered(
-            PRODUCTION_OFFERED_CAPABILITIES,
+            if named {
+                BUNDLE_WORLD_OFFERED_CAPABILITIES
+            } else {
+                PRODUCTION_OFFERED_CAPABILITIES
+            },
             true,
         );
+        let mut selected = vec![6, 25];
+        if named {
+            selected.push(CAPABILITY_WORLD_SPATIAL_ENTITIES_V2);
+        }
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(&offered, &[6, 25]).ok_or("capabilities")?;
+            SelectedCapabilities::select(&offered, &selected).ok_or("capabilities")?;
+        if named {
+            assert!(
+                admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(CAPABILITY_WORLD_SPATIAL_ENTITIES_V2)
+            );
+        }
         let (mut client, mut server) = tokio::io::duplex(1 << 16);
         let serving = async {
             serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
@@ -198,6 +247,7 @@ fn busy_appearance_keeps_committed_step_and_defers_new_player() -> TestResult {
             entrant.kind = VisibleKind::Player;
             authority.channel.others.borrow_mut().push(entrant);
             authority.appearance_busy.set(true);
+            authority.names_busy.set(named);
             let step = encode_client_command(
                 1,
                 &ClientCommandValue {
@@ -215,20 +265,34 @@ fn busy_appearance_keeps_committed_step_and_defers_new_player() -> TestResult {
             let moved = read_one(&mut client).await?;
             let delta = decode_state_delta(decode_wire_envelope(&moved)?.payload())?;
             assert_eq!(delta.domain_id, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY);
-            let spatial = decode_world_spatial_entities_delta(delta.payload)
-                .map_err(|error| format!("{error:?}"))?;
+            let (spatial, _) = decode_world_spatial_entities_delta_with_fields(
+                delta.payload,
+                EntityFields::selected(&selected),
+            )
+            .map_err(|error| format!("{error:?}"))?;
             assert_eq!(spatial.actor_position, at(101, 100));
             assert!(spatial.enter.is_empty());
+            if named {
+                assert!(spatial.update.iter().any(|entity| {
+                    entity
+                        .display_name
+                        .is_some_and(|name| matches!(name.as_str(), Ok("Observer")))
+                }));
+            }
 
             authority.appearance_busy.set(false);
+            authority.names_busy.set(false);
             let mapping = read_one(&mut client).await?;
             let delta = decode_state_delta(decode_wire_envelope(&mapping)?.payload())?;
             assert_eq!(delta.domain_id, appearance::STATE_DOMAIN_APPEARANCE);
             let entered = read_one(&mut client).await?;
             let delta = decode_state_delta(decode_wire_envelope(&entered)?.payload())?;
             assert_eq!(delta.domain_id, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY);
-            let spatial = decode_world_spatial_entities_delta(delta.payload)
-                .map_err(|error| format!("{error:?}"))?;
+            let (spatial, _) = decode_world_spatial_entities_delta_with_fields(
+                delta.payload,
+                EntityFields::selected(&selected),
+            )
+            .map_err(|error| format!("{error:?}"))?;
             assert_eq!(spatial.actor_position, at(101, 100));
             assert!(
                 spatial
@@ -269,6 +333,7 @@ async fn scenario_actor(
         calls: Cell::new(0),
         defer_input: false,
         appearance_busy: Cell::new(false),
+        names_busy: Cell::new(false),
     };
     let mut admitted = session(&[6], SessionContinuity::FRESH);
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
@@ -508,6 +573,7 @@ fn qualification_session_decodes_served_visibility_and_guarded_step() -> TestRes
                     calls: Cell::new(0),
                     defer_input: true,
                     appearance_busy: Cell::new(false),
+                    names_busy: Cell::new(false),
                 };
                 let bundle_appearance =
                     crate::gameplay_transport::appearance_change::offer::offered(

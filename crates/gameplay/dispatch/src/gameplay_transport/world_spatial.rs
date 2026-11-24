@@ -299,6 +299,19 @@ impl SessionVisibility {
         self.published
     }
 
+    /// Retain a published display name for the same incarnation while names are unreadable.
+    pub(crate) fn retain_published_names(&self, channel: &mut ChannelEntities) {
+        for entity in &mut channel.entities {
+            if entity.display_name.is_none() {
+                entity.display_name = self
+                    .entities
+                    .get(&entity.identity)
+                    .filter(|known| known.entity.generation == entity.generation)
+                    .and_then(|known| known.display_name);
+            }
+        }
+    }
+
     /// A view that shows objects (corpses) when `objects`, the session's capability 4.
     pub fn with_objects(objects: bool) -> Self {
         Self {

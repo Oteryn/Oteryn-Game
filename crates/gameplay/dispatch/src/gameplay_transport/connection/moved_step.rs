@@ -28,12 +28,32 @@ where
     A: FreshAdmissionAuthority,
 {
     let (frames_out, delta_sequence, new_revision) = if let Some(view) = visibility {
-        let mut channel = crate::gameplay_transport::entity_names::observe(
+        let mut channel = match crate::gameplay_transport::entity_names::observe_result(
             authority,
             actor,
             admitted.continuity.selected_capabilities,
         )
-        .await?;
+        .await
+        {
+            Ok(channel) => channel,
+            Err(AdmissionRefusal::Unavailable) => {
+                // The naming read already used its bounded retry. The move's committed
+                // position can still publish with the exact names previously observed.
+                let without_names = admitted
+                    .continuity
+                    .selected_capabilities
+                    .without_projection(
+                        oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
+                    );
+                let mut channel = authority
+                    .observe_projected_entities(actor, without_names)
+                    .await
+                    .ok()?;
+                view.retain_published_names(&mut channel);
+                channel
+            }
+            Err(_) => return None,
+        };
         // The step's committed position is the observer's own.
         let observer = channel.observer;
         for own in channel

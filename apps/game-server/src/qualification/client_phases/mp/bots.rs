@@ -8,6 +8,8 @@ use oteryn_dev_client::client_runtime::party as party_client;
 use oteryn_dev_client::{DevClientSession, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::{attack, logout::LogoutResult, party, target_move};
 
+const STEP_BUDGET: Duration = Duration::from_secs(10);
+
 pub(super) struct Bot<'p, 'a> {
     pub pair: &'p SeamClients<'a>,
     pub index: usize,
@@ -327,6 +329,34 @@ pub(super) async fn walk_bot(
     Ok(())
 }
 
+pub(super) async fn walk_bot_to_logout(
+    bots: &mut [Bot<'_, '_>],
+    index: usize,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    let (before, remaining) = bots.split_at_mut(index);
+    let (bot, after) = remaining.split_first_mut().ok_or("logout walker missing")?;
+    let result = while_servicing_liveness(
+        async {
+            walk_with_landing_budget(
+                bot.client()?,
+                path,
+                |at, direction| destination(world, at, direction),
+                Some(STEP_BUDGET),
+            )
+            .await
+        },
+        async || {
+            pump_at(before, "walk-to-logout-peer").await?;
+            pump_at(after, "walk-to-logout-peer").await?;
+            Ok(())
+        },
+    )
+    .await?;
+    bot.contextualize("walk-to-logout", result)
+}
+
 pub(super) fn positions(bots: &[Bot<'_, '_>]) -> TestResult<Vec<TilePos>> {
     bots.iter()
         .map(|bot| {
@@ -489,7 +519,7 @@ async fn step_confirmed(
     world: &BundleWorld,
     direction: StepDirection,
 ) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    let deadline = tokio::time::Instant::now() + STEP_BUDGET;
     let origin = tile(bots[index].client()?.world_spatial().actor_position)?;
     let landing = destination(world, origin, direction);
     let context = format!(

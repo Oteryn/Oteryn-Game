@@ -267,7 +267,7 @@ pub(super) async fn run(
             for index in 0..bots.len() {
                 let path = bots::route_bot(&bots, index, world, |at| is_logout_rest_tile(world, at))?
                     .ok_or_else(|| format!("hunter {index} has no reachable logout protection tile"))?;
-                bots::walk_bot(&mut bots, index, world, &path).await?;
+                bots::walk_bot_to_logout(&mut bots, index, world, &path).await?;
             }
             let mut saved = Vec::new();
             for bot in &mut bots { saved.push((stats(bot).await?.0, bot.client()?.join_snapshot().game_session_id)); }
