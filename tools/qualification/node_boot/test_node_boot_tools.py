@@ -241,6 +241,7 @@ compile_bundle() { printf '%s\n' "$1"; }
 WORLD_COMPILER=(compile_bundle)
 GAME_SOURCE=/fixture/game
 WORLD_REGIONS=126,125
+NODE_READY_WAIT_SECONDS=60
 WORK=.
 '''
         for profile, command in [('town', 'compile-town-qualification'), ('quests', 'compile-regions')]:
@@ -248,6 +249,17 @@ WORK=.
                 result = bash(setup + compile_world, {'NODE_BOOT_WORLD_PROFILE': profile}, cwd=work)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
+
+    def test_house_sweep_readiness_window_scales_with_regions(self):
+        readiness_setup = section('NODE_READY_WAIT_SECONDS=60', '# A kept or reused stack')
+        script = ('set -Eeuo pipefail\n' + readiness_setup
+                  + 'printf "%s\\n" "$NODE_READY_WAIT_SECONDS"\n')
+        regions = ';'.join(f'{region},125' for region in range(120, 141))
+        for profile, expected in [('town', '60'), ('quests', '60'), ('house_sweep', '312')]:
+            with self.subTest(profile=profile):
+                result = bash(script, {'NODE_BOOT_WORLD_PROFILE': profile, 'WORLD_REGIONS': regions})
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(result.stdout.strip(), expected)
 
     def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
         fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
