@@ -23,6 +23,14 @@ game_platform_retain_test_logs() {
 }
 game_platform_fail() {
   game_platform_retain_test_logs || set -- "$1" diagnostic_redaction_failed
+  if [[ "$2" == journey_assertion_failed && -n "${3:-}" ]]; then
+    printf 'GAME_PLATFORM_EVIDENCE flow=%s expected_exit=0 observed_exit=%s\n' "$1" "$3"
+    if [[ -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" && -f "$NODE_BOOT_FAILURE_LOG_DIR/$1.log" ]]; then
+      # The Rust journey emits a bounded reason. Read it from the redacted copy.
+      sed -nE "s/^Error: \"([a-zA-Z0-9_:]{1,128})\"$/GAME_PLATFORM_EVIDENCE flow=$1 driver_reason=\1/p" \
+        "$NODE_BOOT_FAILURE_LOG_DIR/$1.log" || true
+    fi
+  fi
   # The node-boot shard captures stdout in qualification-client.log.
   if [[ "$2" == harness_not_ready && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
     && -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" && -f "$NODE_BOOT_FAILURE_LOG_DIR/portal-harness.log" ]]; then
@@ -179,7 +187,7 @@ game_platform_identity() {
       GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" LOCALAPPDATA="$WORK/native-client" \
       timeout --kill-after=1s "${budget}s" cargo test --locked -p oteryn-security-auth-tests --test "$target" \
         "$target" -- --exact --nocapture > "$WORK/$target.log" 2>&1 \
-      || game_platform_fail "$target" journey_assertion_failed
+      || game_platform_fail "$target" journey_assertion_failed "$?"
     kill -0 "$NODE_PID" 2>/dev/null || game_platform_fail game node_exited_during_native
     if [[ "$target" == native_ticket_and_gateway_fail_closed ]]; then
       grep -Fx 'NODE_BOOT_EVIDENCE flow=native_ticket_gateway result=fail_closed game_admissions=0' "$WORK/$target.log" \
@@ -213,7 +221,7 @@ game_platform_identity() {
     GAME_PLATFORM_GAMEPLAY_CERT="$WP5_PKI/gameplay.crt" \
     timeout --kill-after=1s 60s cargo test --locked -p oteryn-security-auth-tests --test native_ticket_and_gateway_fail_closed \
       native_ticket_gateway_admits -- --exact --nocapture > "$WORK/native_ticket_gateway_admits.log" 2>&1 \
-    || game_platform_fail native_ticket_gateway_admits journey_assertion_failed
+    || game_platform_fail native_ticket_gateway_admits journey_assertion_failed "$?"
   kill -0 "$NODE_PID" 2>/dev/null || game_platform_fail game node_exited_during_admission
   grep -Fx 'NODE_BOOT_EVIDENCE flow=native_ticket_gateway result=pass game_admissions=1 identity_character_scope=exact' "$WORK/native_ticket_gateway_admits.log" \
     || game_platform_fail native_ticket_gateway_admits evidence_missing
