@@ -7,6 +7,12 @@ use super::*;
 use full_row_s06::{apply_appearance, change, own_binding, snapshot, wait_for_selection};
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_gameplay_characters::speed::{StepSpeedTable, player_effective_speed};
+use oteryn_gameplay_quests::quest::{
+    loader::{LoweredQuestState, load_embedded_quest_state},
+    reward_callbacks,
+    reward_callbacks::{CreationSex, ItemAmount, OutfitReward, TrackRequirement},
+    world_callbacks::Storage,
+};
 use oteryn_protocol_oteryn::logout::LogoutResult;
 use oteryn_protocol_oteryn::{actor_motion, appearance};
 use serde::Deserialize;
@@ -89,6 +95,8 @@ struct Grant {
     sex: Option<String>,
     #[serde(default)]
     outfit_aliases: Vec<String>,
+    #[serde(default)]
+    mount_aliases: Vec<String>,
 }
 
 #[derive(Deserialize, PartialEq, Eq)]
@@ -124,6 +132,7 @@ impl Taming {
     }
 }
 
+#[derive(Clone, Copy)]
 enum Entry<'a> {
     Outfit(&'a Outfit, u8),
     Mount(&'a Mount, Option<&'a Taming>),
@@ -224,6 +233,9 @@ impl Grant {
                     }
                     (Target::Addon { addon: source, .. }, Target::Addon { outfit_key, addon }) => {
                         source == addon && self.outfit_aliases.contains(outfit_key)
+                    }
+                    (Target::Mount { .. }, Target::Mount { mount_key }) => {
+                        self.mount_aliases.contains(mount_key)
                     }
                     _ => false,
                 })
@@ -402,8 +414,18 @@ pub(super) async fn run(
         ..*clients
     };
     for (key, entry) in entries.into_iter().skip(start).take(selected) {
+        // Canonical and legacy aliases can share one entitlement. Give the
+        // second representation a fresh acquisition on the other fixture account.
+        let entry = match *entry {
+            Entry::Mount(mount, None) => {
+                Entry::Mount(mount, taming_binding(&content, &taming, &mount.key))
+            }
+            _ => *entry,
+        };
         let clients = match entry {
-            Entry::Mount(mount, Some(_)) if !mounts_seen.insert(mount.key.as_str()) => &alternate,
+            Entry::Mount(_, Some(binding)) if !mounts_seen.insert(binding.mount_key.as_str()) => {
+                &alternate
+            }
             _ => clients,
         };
         verdict::Harness::global().progress("cosmetic-sweep-entry");
@@ -422,7 +444,7 @@ pub(super) async fn run(
         };
         let mut items = Vec::new();
         let result = journey(
-            &mut rows, clients, world, &content, entry, &obtain, npcs, &mut items,
+            &mut rows, clients, world, &content, &entry, &obtain, npcs, &mut items,
         )
         .await;
         let cleanup = retire_fixture_items(clients, &items).await;
@@ -444,69 +466,85 @@ pub(super) async fn run(
 
 #[derive(Deserialize)]
 struct NpcReward {
+    #[serde(skip)]
+    offer: bool,
+    #[serde(default)]
+    any_topic: bool,
+    #[serde(default)]
+    storage: Vec<Storage>,
+    #[serde(default)]
+    requires: Vec<TrackRequirement>,
     npc: String,
     keywords: Vec<String>,
-    topic: u32,
-    next_topic: u32,
+    topic: u16,
+    next_topic: u16,
     quest: Option<String>,
     #[serde(default)]
-    take: Vec<RequiredItem>,
-    outfit: Option<RewardOutfit>,
+    take: Vec<ItemAmount>,
+    outfit: Option<OutfitReward>,
     #[serde(default)]
-    outfits: Vec<RewardOutfit>,
-}
-
-#[derive(Deserialize)]
-struct RequiredItem {
-    item: String,
-    count: i64,
-}
-
-#[derive(Deserialize)]
-struct RewardOutfit {
-    outfit: String,
-    addons: u8,
-    sex: Option<String>,
+    outfits: Vec<OutfitReward>,
 }
 
 struct ObtainContent {
     callbacks: Vec<NpcReward>,
+    quest_state: LoweredQuestState,
     item_rules: serde_json::Value,
 }
 
 impl ObtainContent {
     fn load(root: &Path) -> TestResult<Self> {
-        let mut callbacks = Vec::new();
-        for directory in ["npc-callbacks", "authored-bindings"] {
-            let mut files = std::fs::read_dir(root.join("content/quests").join(directory))?
-                .collect::<Result<Vec<_>, _>>()?;
-            files.sort_by_key(|entry| entry.file_name());
-            for file in files {
-                if file
-                    .path()
-                    .extension()
-                    .and_then(|extension| extension.to_str())
-                    != Some("json")
+        let quest_root = root.join("content/quests");
+        // Use the production catalogue loader and the NPC owner's admitted callbacks.
+        // crates/gameplay/dispatch/src/gameplay_transport/npc_command/reward_callbacks.rs:73
+        let quest_state = load_embedded_quest_state(super::super::SERVED_CONTENT_REVISION)
+            .map_err(|error| format!("quest catalogue: {error:?}"))?;
+        let mut callbacks = reward_callbacks::offered_for(quest_state.catalogue())?
+            .into_iter()
+            .filter(|callback| {
+                callback.carried_item.is_none()
+                    && callback.world_claim.is_none()
+                    && !callback.keywords.is_empty()
+                    && callback.creation_sex != Some(CreationSex::Male)
+            })
+            .map(|callback| NpcReward {
+                offer: false,
+                any_topic: false,
+                storage: callback.storage,
+                requires: callback.requires,
+                npc: callback.npc,
+                keywords: callback.keywords,
+                topic: callback.topic,
+                next_topic: callback.next_topic,
+                quest: Some(callback.quest),
+                take: callback.take,
+                outfit: callback.outfit,
+                outfits: callback.outfits,
+            })
+            .collect::<Vec<_>>();
+        // Server reads the same shared offers in NPC reward_callbacks/offers.rs:10.
+        let mut offer_paths = vec![
+            quest_root.join("shared-reward-offers.json"),
+            quest_root.join("chosen-reward-offers.json"),
+        ];
+        for entry in std::fs::read_dir(quest_root.join("npc-offers"))? {
+            let path = entry?.path();
+            if path
+                .extension()
+                .is_some_and(|extension| extension == "json")
+            {
+                offer_paths.push(path);
+            }
+        }
+        offer_paths.sort();
+        for path in offer_paths {
+            let document: serde_json::Value = serde_json::from_slice(&std::fs::read(path)?)?;
+            for value in document["offers"].as_array().into_iter().flatten() {
+                if let Ok(mut offer) = serde_json::from_value::<NpcReward>(value.clone())
+                    && !offer.keywords.is_empty()
                 {
-                    continue;
-                }
-                let value: serde_json::Value =
-                    serde_json::from_slice(&std::fs::read(file.path())?)?;
-                let direct = value["callbacks"].as_array().into_iter().flatten();
-                let staged = value["quests"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .flat_map(|quest| quest["stages"].as_array().into_iter().flatten())
-                    .map(|stage| &stage["trigger"]["callback"])
-                    .filter(|callback| callback.is_object());
-                for callback in direct.chain(staged) {
-                    if callback["npc"].is_string()
-                        && callback["keywords"].is_array()
-                        && let Ok(callback) = serde_json::from_value(callback.clone())
-                    {
-                        callbacks.push(callback);
-                    }
+                    offer.offer = true;
+                    callbacks.push(offer);
                 }
             }
         }
@@ -515,55 +553,129 @@ impl ObtainContent {
         )?)?;
         Ok(Self {
             callbacks,
+            quest_state,
             item_rules,
         })
     }
 
-    fn npc_route(&self, target: &Target) -> TestResult<Option<Vec<&NpcReward>>> {
-        let Some(reward) = self.callbacks.iter().find(|callback| {
+    fn npc_route(
+        &self,
+        target: &Target,
+        npcs: &oteryn_world_bundle::npc::Table,
+    ) -> Option<Vec<&NpcReward>> {
+        let mut rewards = self
+            .callbacks
+            .iter()
+            .filter(|callback| {
+                npcs.npcs
+                    .iter()
+                    .any(|npc| npc.key == callback.npc && !npc.placements.is_empty())
+                    && callback
+                        .outfit
+                        .iter()
+                        .chain(&callback.outfits)
+                        .any(|reward| {
+                            reward.sex != Some(CreationSex::Male)
+                                && match target {
+                                    Target::Outfit { outfit_key } => outfit_key == &reward.outfit,
+                                    Target::Addon { outfit_key, addon } => {
+                                        outfit_key == &reward.outfit
+                                            && reward.addons & addon_mask(*addon) != 0
+                                    }
+                                    Target::Mount { .. } => false,
+                                }
+                        })
+            })
+            .collect::<Vec<_>>();
+        rewards.sort_by_key(|callback| {
             callback
                 .outfit
                 .iter()
                 .chain(&callback.outfits)
-                .any(|reward| {
-                    reward
-                        .sex
-                        .as_deref()
-                        .is_none_or(|sex| sex.eq_ignore_ascii_case("female"))
-                        && match target {
-                            Target::Outfit { outfit_key } => outfit_key == &reward.outfit,
-                            Target::Addon { outfit_key, addon } => {
-                                outfit_key == &reward.outfit
-                                    && reward.addons & addon_mask(*addon) != 0
-                            }
-                            Target::Mount { .. } => false,
+                .map(|outfit| outfit.addons.count_ones())
+                .min()
+                .unwrap_or(0)
+        });
+        rewards
+            .into_iter()
+            .find_map(|reward| self.dialogue_to(reward))
+    }
+
+    fn dialogue_to<'a>(&'a self, reward: &'a NpcReward) -> Option<Vec<&'a NpcReward>> {
+        use std::collections::{BTreeSet, VecDeque};
+        let steps = self
+            .callbacks
+            .iter()
+            .filter(|step| step.npc == reward.npc && (step.offer || step.quest == reward.quest))
+            .collect::<Vec<_>>();
+        let start = (0, std::collections::BTreeMap::new());
+        let mut queue = VecDeque::from([(start.clone(), Vec::new())]);
+        let mut seen = BTreeSet::from([start]);
+        // Bound authored graph traversal. Runtime dialogue is still the oracle.
+        while let Some(((topic, tracks), path)) = queue.pop_front() {
+            let value = |key: &str| {
+                tracks.get(key).copied().or_else(|| {
+                    self.quest_state
+                        .catalogue()
+                        .track(key)
+                        .map(|track| track.initial)
+                })
+            };
+            for &step in &steps {
+                if (!step.any_topic && step.topic != topic)
+                    || !step.storage.iter().all(|s| {
+                        value(&s.track).is_some_and(|v| (s.minimum..=s.maximum).contains(&v))
+                    })
+                    || !step.requires.iter().all(|s| {
+                        value(&s.track).is_some_and(|v| (s.minimum..=s.maximum).contains(&v))
+                    })
+                {
+                    continue;
+                }
+                let mut next_path = path.clone();
+                next_path.push(step);
+                if std::ptr::eq(step, reward) {
+                    return Some(next_path);
+                }
+                let mut next_tracks = tracks.clone();
+                // Offer predicates only gate the prompt. The confirmed callback owns writes.
+                if !step.offer {
+                    for s in &step.storage {
+                        let prior = value(&s.track)?;
+                        let next = if s.read_only
+                            || s.preserve
+                            || s.set_if.is_some_and(|expected| expected != prior)
+                        {
+                            prior
+                        } else if let Some(add) = s.add {
+                            prior.saturating_add(add).min(s.set)
+                        } else if s.increment {
+                            prior.saturating_add(s.set)
+                        } else if s.at_least {
+                            prior.max(s.set)
+                        } else {
+                            s.set
+                        };
+                        if Some(next)
+                            != self
+                                .quest_state
+                                .catalogue()
+                                .track(&s.track)
+                                .map(|track| track.initial)
+                        {
+                            next_tracks.insert(s.track.clone(), next);
+                        } else {
+                            next_tracks.remove(&s.track);
                         }
-                })
-        }) else {
-            return Ok(None);
-        };
-        let mut steps = vec![reward];
-        let mut topic = reward.topic;
-        let mut seen = std::collections::BTreeSet::new();
-        while topic != 0 {
-            if !seen.insert(topic) {
-                return Err("harness-obtain-path: NPC topic cycle".into());
+                    }
+                }
+                let next = (step.next_topic, next_tracks);
+                if seen.len() < 4096 && seen.insert(next.clone()) {
+                    queue.push_back((next, next_path));
+                }
             }
-            let previous = self
-                .callbacks
-                .iter()
-                .find(|callback| {
-                    callback.npc == reward.npc
-                        && callback.quest == reward.quest
-                        && callback.next_topic == topic
-                        && callback.topic != topic
-                })
-                .ok_or("harness-obtain-path: NPC topic predecessor missing")?;
-            steps.push(previous);
-            topic = previous.topic;
         }
-        steps.reverse();
-        Ok(Some(steps))
+        None
     }
 
     fn direct_item(&self, grant: &str) -> Option<String> {
@@ -589,7 +701,6 @@ enum ObtainAction<'a> {
     Npc(Target, Vec<&'a NpcReward>),
     Item(Target, String),
     Tame(&'a Taming),
-    OwnedTame(Taming),
 }
 
 impl Target {
@@ -640,15 +751,40 @@ async fn return_to(
     walk(client, world, &path).await
 }
 
+// Position is a disposable fixture prerequisite. Keep the server-owned world,
+// frame, and map binding and let admission validate the seeded cell.
+// apps/game-server/migrations/0080_character_last_position.sql:23,52
+async fn seed_npc_position(clients: &SeamClients<'_>, at: TilePos) -> TestResult {
+    wait_character_released(clients, 0).await?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let changed = sqlx::query(
+        "UPDATE game_character_last_positions
+         SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
+         WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(i32::from(at.x))
+    .bind(i32::from(at.y))
+    .bind(-i16::from(at.floor))
+    .execute(&mut db)
+    .await?
+    .rows_affected();
+    if changed != 1 {
+        return Err("harness-obtain-path: disposable actor has no saved position".into());
+    }
+    Ok(())
+}
+
 async fn obtain_npc(
     client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
     steps: &[&NpcReward],
     target: &Target,
     state: &mut appearance::Snapshot,
 ) -> TestResult {
-    use oteryn_dev_client::{client_runtime::npc_shop, client_ui::npc_shop as ui};
     let first = steps
         .first()
         .ok_or("harness-obtain-path: NPC dialogue empty")?;
@@ -656,27 +792,78 @@ async fn obtain_npc(
         .npcs
         .iter()
         .find(|npc| npc.key == first.npc)
-        .ok_or_else(|| {
-            format!(
-                "harness-obtain-path: NPC {} absent from town bundle",
-                first.npc
-            )
-        })?;
+        .ok_or_else(|| format!("harness-obtain-path: NPC {} absent from fixture", first.npc))?;
     let home = tile(client.world_spatial().actor_position)?;
-    let basis = spatial_basis::current(client)?;
-    let path = route(world, home, |at| {
+    if let Some(path) = route(world, home, |at| {
         npc.placements.iter().any(|placement| {
             placement.floor == at.floor
                 && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 2
         })
-    })
-    .ok_or_else(|| {
-        format!(
-            "harness-obtain-path: NPC {} unreachable in town bundle",
-            first.npc
-        )
-    })?;
-    walk(client, world, &path).await?;
+    }) {
+        walk(client, world, &path).await?;
+        talk_for_reward(client, npc, steps, target, state).await?;
+        return return_to(client, world, home).await;
+    }
+    let landing = npc
+        .placements
+        .iter()
+        .find_map(|npc| {
+            [(0, -1), (1, 0), (0, 1), (-1, 0)]
+                .into_iter()
+                .find_map(|(dx, dy)| {
+                    let at = TilePos {
+                        x: npc.x.checked_add_signed(dx)?,
+                        y: npc.y.checked_add_signed(dy)?,
+                        floor: npc.floor,
+                    };
+                    (world.base().tile(at.x, at.y, at.floor).is_some() && world.enterable(at))
+                        .then_some(at)
+                })
+        })
+        .ok_or_else(|| {
+            format!(
+                "harness-obtain-path: NPC {} has no adjacent fixture tile",
+                first.npc
+            )
+        })?;
+    logout(client).await?;
+    evidence(&format!(
+        "cosmetic_sweep prerequisite mode=seeded source=saved-position npc={}",
+        first.npc
+    ));
+    let result = async {
+        seed_npc_position(clients, landing).await?;
+        let mut nearby = connect_character(clients, 0xc9, 0).await?;
+        let dialogue = async {
+            if tile(nearby.world_spatial().actor_position)? != landing {
+                return Err("harness-obtain-path: admission refused seeded NPC position".into());
+            }
+            let mut nearby_state = snapshot(&mut nearby)?;
+            talk_for_reward(&mut nearby, npc, steps, target, &mut nearby_state).await
+        }
+        .await;
+        dialogue.and(logout(&mut nearby).await)
+    }
+    .await;
+    let restored = async {
+        seed_npc_position(clients, home).await?;
+        *client = connect_character(clients, 0xc9, 0).await?;
+        *state = snapshot(client)?;
+        Ok(())
+    }
+    .await;
+    result.and(restored)
+}
+
+async fn talk_for_reward(
+    client: &mut DevClientSession,
+    npc: &oteryn_world_bundle::npc::Npc,
+    steps: &[&NpcReward],
+    target: &Target,
+    state: &mut appearance::Snapshot,
+) -> TestResult {
+    use oteryn_dev_client::{client_runtime::npc_shop, client_ui::npc_shop as ui};
+    let basis = spatial_basis::current(client)?;
     let entity = client
         .world_entities()
         .and_then(|entities| {
@@ -708,10 +895,10 @@ async fn obtain_npc(
             return Err(format!("server-npc-dialogue: {text} returned {result:?}").into());
         }
     }
-    wait_target(client, state, target).await?;
-    return_to(client, world, home).await
+    wait_target(client, state, target).await
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn prepare<'a>(
     clients: &SeamClients<'_>,
     content: &Content,
@@ -719,6 +906,7 @@ async fn prepare<'a>(
     addon: u8,
     mount: Option<(&Mount, Option<&'a Taming>)>,
     obtain: &'a ObtainContent,
+    npcs: &oteryn_world_bundle::npc::Table,
     items: &mut Vec<Vec<u8>>,
 ) -> TestResult<(String, Vec<ObtainAction<'a>>)> {
     wait_character_released(clients, 0).await?;
@@ -737,9 +925,9 @@ async fn prepare<'a>(
     let mut seeded = Vec::new();
     let mut actions = Vec::new();
     for target in targets {
-        if let Some(steps) = obtain.npc_route(&target)? {
+        if let Some(steps) = obtain.npc_route(&target, npcs) {
             for item in steps.iter().flat_map(|step| &step.take) {
-                seed_item(clients, &item.item, item.count, items).await?;
+                seed_item(clients, &item.item, i64::from(item.count), items).await?;
             }
             actions.push(ObtainAction::Npc(target, steps));
             continue;
@@ -756,32 +944,25 @@ async fn prepare<'a>(
             actions.push(ObtainAction::Item(target, item));
             continue;
         }
-        if let Target::Mount { mount_key } = &target
-            && let Some(binding) = obtain_taming_binding(mount_key)?
-        {
-            // The explicit taming slice owns binding-specific attempts. Mount journeys
-            // load the same authored binding before attempting the selected mount.
-            seed_taming_prerequisites(clients, &binding, items).await?;
-            actions.push(ObtainAction::OwnedTame(binding));
-            continue;
-        }
         let (key, provenance) = grant(content, &target, None)
             .ok_or("content cosmetic has no authored grant mapping")?;
-        if key.contains("/quest-grant") || key.contains("/npc-grant") || key.contains("/quest/") {
-            return Err(format!("harness-obtain-path: quest/NPC journey missing for {key}").into());
-        }
+        let reason = if key.contains("/quest-grant")
+            || key.contains("/npc-grant")
+            || key.contains("/quest/")
+        {
+            "quest-journey-unavailable-in-fixture"
+        } else {
+            "no-supported-direct-obtain-path"
+        };
         seed(clients, key, provenance).await?;
-        seeded.push(key);
+        seeded.push(format!("{key}[{reason}]"));
     }
     if let Some((_, Some(binding))) = mount {
         seed_taming_prerequisites(clients, binding, items).await?;
         actions.push(ObtainAction::Tame(binding));
     }
     let mode = if !seeded.is_empty() {
-        format!(
-            "mode=seeded reason=no-supported-direct-obtain-path grants:{}",
-            seeded.join(",")
-        )
+        format!("mode=seeded grants:{}", seeded.join(","))
     } else if actions.is_empty() {
         "mode=starter".into()
     } else {
@@ -790,17 +971,61 @@ async fn prepare<'a>(
     Ok((mode, actions))
 }
 
-fn obtain_taming_binding(mount: &str) -> TestResult<Option<Taming>> {
-    let path =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/cosmetics/taming-native.json");
-    let bindings: Vec<Taming> = serde_json::from_slice(&std::fs::read(path)?)?;
-    Ok(bindings
-        .into_iter()
-        .find(|binding| binding.mount_key == mount))
+fn taming_binding<'a>(
+    content: &Content,
+    bindings: &'a [Taming],
+    mount: &str,
+) -> Option<&'a Taming> {
+    let target = Target::Mount {
+        mount_key: mount.into(),
+    };
+    bindings
+        .iter()
+        .find(|binding| binding.mount_key == mount)
+        .or_else(|| {
+            bindings
+                .iter()
+                .find(|binding| grant(content, &target, Some(&binding.grant_key)).is_some())
+        })
 }
 
 // Disposable inventory setup uses the same migration-owned fixture approach as
 // gameplay_transport/postgres_tests/support/item_look_fixtures.rs:592.
+fn fixture_stack_limit(key: &str) -> TestResult<i64> {
+    use crate::content::{ReferenceItemField::Known, native_gameplay::ItemProfilesDocument};
+    use std::sync::OnceLock;
+
+    static LIMITS: OnceLock<Result<BTreeMap<String, u16>, String>> = OnceLock::new();
+    let limits = LIMITS.get_or_init(|| {
+        let input = native_input().map_err(|error| error.to_string())?;
+        let Some(item_profiles) = &input.item_profiles else {
+            return Ok(BTreeMap::new());
+        };
+        let document: ItemProfilesDocument =
+            serde_json::from_slice(&item_profiles.bytes).map_err(|error| error.to_string())?;
+        Ok(document
+            .records
+            .into_iter()
+            .filter_map(|record| {
+                if let Known(stack) = record.semantics.stack
+                    && stack.stackable == Known(true)
+                    && let Known(limit @ 1..) = stack.stack_max
+                {
+                    return Some((record.production_definition.production_key, limit));
+                }
+                None
+            })
+            .collect())
+    });
+    Ok(i64::from(
+        *limits
+            .as_ref()
+            .map_err(Clone::clone)?
+            .get(key)
+            .unwrap_or(&1),
+    ))
+}
+
 async fn seed_item(
     clients: &SeamClients<'_>,
     key: &str,
@@ -808,7 +1033,15 @@ async fn seed_item(
     items: &mut Vec<Vec<u8>>,
 ) -> TestResult {
     let index = provisioning::item_index()?;
-    let revision = index.revision(key).ok_or("content taming item absent")?;
+    let revision = index
+        .revision(key)
+        .ok_or("content cosmetic prerequisite item absent")?;
+    let stack_limit = if count > 1 {
+        fixture_stack_limit(key)?
+    } else {
+        1
+    };
+    let stack_count = (count + stack_limit - 1) / stack_limit;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let mut tx = sqlx::Connection::begin(&mut db).await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
@@ -821,8 +1054,9 @@ async fn seed_item(
         ), minted AS (
             INSERT INTO game_item_instances(item_instance_id, world_id, definition_family,
                 definition_production_key, definition_revision_ref, quantity, lifecycle, minted_transaction_id)
-            SELECT game_character_uuid_v7(), world_id, 'Item', $2, $3, 1, 1, game_character_uuid_v7()
-            FROM backpack CROSS JOIN generate_series(1, $4::bigint)
+            SELECT game_character_uuid_v7(), world_id, 'Item', $2, $3,
+                LEAST($5, $4 - stack_n * $5), 1, game_character_uuid_v7()
+            FROM backpack CROSS JOIN generate_series(0, $6::bigint - 1) AS stack_n
             RETURNING item_instance_id, world_id, minted_transaction_id
         )
         INSERT INTO game_item_container_entries(character_id, world_id, parent_item_instance_id,
@@ -833,11 +1067,11 @@ async fn seed_item(
             m.minted_transaction_id
         FROM minted m CROSS JOIN backpack b
         RETURNING uuid_send(item_instance_id)",
-    ).bind(clients.characters[0].as_slice()).bind(key).bind(revision).bind(count)
+    ).bind(clients.characters[0].as_slice()).bind(key).bind(revision).bind(count).bind(stack_limit).bind(stack_count)
         .fetch_all(&mut *tx).await?;
-    if placed.len() != usize::try_from(count)? {
+    if placed.len() != usize::try_from(stack_count)? {
         return Err(format!(
-            "harness-taming-fixture: expected {count} items, placed {}",
+            "harness-item-fixture: expected {stack_count} item instances, placed {}",
             placed.len()
         )
         .into());
@@ -969,7 +1203,11 @@ async fn obtain_taming(
             if result.status != CommandStatus::Accepted
                 || result.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
             {
-                return Err("harness-taming-equipment: prerequisite equip refused".into());
+                return Err(format!(
+                    "server-taming-equipment: {key} equip returned {:?}/{:?}",
+                    result.status, result.outcome
+                )
+                .into());
             }
         }
     }
@@ -1105,7 +1343,8 @@ async fn journey(
             return Err("no admitted appearance definition for this content key".into());
         }
     };
-    let (mode, actions) = prepare(clients, content, outfit, addon, mount, obtain, items).await?;
+    let (mode, actions) =
+        prepare(clients, content, outfit, addon, mount, obtain, npcs, items).await?;
     let mut client = connect_character(clients, 0xc9, 0).await?;
     let home = tile(client.world_spatial().actor_position)?;
     let mut observer = None;
@@ -1115,7 +1354,16 @@ async fn journey(
             match action {
                 ObtainAction::Npc(target, steps) => {
                     if !target.owned(&state.catalogue) {
-                        obtain_npc(&mut client, world, npcs, &steps, &target, &mut state).await?;
+                        obtain_npc(
+                            &mut client,
+                            clients,
+                            world,
+                            npcs,
+                            &steps,
+                            &target,
+                            &mut state,
+                        )
+                        .await?;
                     }
                 }
                 ObtainAction::Item(target, key) => {
@@ -1126,9 +1374,6 @@ async fn journey(
                 }
                 ObtainAction::Tame(binding) => {
                     obtain_taming(&mut client, world, binding, &mut state).await?
-                }
-                ObtainAction::OwnedTame(binding) => {
-                    obtain_taming(&mut client, world, &binding, &mut state).await?
                 }
             }
         }
@@ -1433,6 +1678,88 @@ fn check_speed(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn assassin_journey_uses_shared_reward_and_requires_npc_placement() -> TestResult {
+        use oteryn_world_bundle::npc::{Direction, Npc, Placement, Table};
+
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let obtain = ObtainContent::load(&root)?;
+        let target = Target::Outfit {
+            outfit_key: "oteryn:outfit.assassin".into(),
+        };
+        assert!(obtain.npc_route(&target, &Table::default()).is_none());
+        let npcs = Table {
+            npcs: vec![Npc {
+                key: "oteryn:npc.vescu".into(),
+                placements: vec![Placement {
+                    floor: 7,
+                    x: 1,
+                    y: 1,
+                    direction: Direction::North,
+                }],
+            }],
+        };
+        let steps = obtain
+            .npc_route(&target, &npcs)
+            .ok_or("missing Vescu reward route")?;
+        let words = steps
+            .iter()
+            .map(|step| step.keywords[0].as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            words,
+            [
+                "sober",
+                "potion",
+                "yes",
+                "yes",
+                "30 bonelord eyes",
+                "yes",
+                "10 red dragon scales",
+                "yes",
+                "30 lizard scales",
+                "yes",
+                "20 fish fins",
+                "yes",
+                "20 vampire dust",
+                "yes",
+                "10 demon dust",
+                "yes",
+                "warrior's sweat",
+                "yes",
+                "secret",
+            ]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_mount_alias_uses_the_canonical_taming_grant() -> TestResult {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/cosmetics");
+        let mut cosmetics = content(&root)?;
+        cosmetics.grant_mappings = vec![serde_json::from_value(serde_json::json!({
+            "grant_key": "oteryn:taming.black_sheep",
+            "target": {"kind": "Mount", "mount_key": "oteryn:content.mount.black_sheep"},
+            "compatible_provenance": ["mount-taming-v1"],
+            "mount_aliases": ["oteryn:content.mount.black_sheep_mount"]
+        }))?];
+        let old_key = "oteryn:content.mount.black_sheep_mount";
+        let target = Target::Mount {
+            mount_key: old_key.into(),
+        };
+        assert_eq!(
+            grant(&cosmetics, &target, None),
+            Some(("oteryn:taming.black_sheep", "mount-taming-v1"))
+        );
+        let bindings: Vec<Taming> =
+            serde_json::from_slice(&std::fs::read(root.join("taming-native.json"))?)?;
+        let binding = taming_binding(&cosmetics, &bindings, old_key)
+            .ok_or("legacy mount did not resolve its real taming item binding")?;
+        assert_eq!(binding.grant_key, "oteryn:taming.black_sheep");
+        assert_eq!(binding.mount_key, "oteryn:content.mount.black_sheep");
+        Ok(())
+    }
 
     #[test]
     fn batch_requires_nonempty_decimal_slice() -> TestResult {
