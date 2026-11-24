@@ -283,7 +283,10 @@ enum MapAction {
     Rope,
     Sewer,
     Teleport(TilePos),
-    CallbackTeleport(TilePos),
+    CallbackTeleport {
+        landing: TilePos,
+        transit: bool,
+    },
     Terrain {
         tool: u32,
         after: u16,
@@ -337,6 +340,29 @@ fn callback_teleport(
         y: destination.y,
         floor: destination.floor,
     })
+}
+
+fn callback_available_for_transit(
+    callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
+) -> bool {
+    use oteryn_gameplay_quests::quest::world_callbacks::ActorKind;
+
+    callback.actor_kind == ActorKind::Player
+        && callback.admission.is_none()
+        && !callback.requires_world_admission
+        && !callback.requires_premium
+        && !callback.premium_required
+        && callback.minimum_level.is_none()
+        && callback.character_requirements.is_none()
+        && callback.world_requirements.is_empty()
+        && callback.required_completed_quests.is_empty()
+        && callback.required_travel.is_empty()
+        && callback.present.is_empty()
+        && callback.storage.is_empty()
+        && callback.state_ops.is_empty()
+        && callback.state_operations.is_empty()
+        && callback.activation.is_none()
+        && callback.requirements.is_none()
 }
 
 fn map_entries(
@@ -511,8 +537,14 @@ fn map_entries(
                             has_secondary_effects: callback.teleport.is_some()
                                 || has_additional_callback_effects(callback),
                         },
-                        None => callback_teleport(callback)
-                            .map_or(MapAction::Callback, MapAction::CallbackTeleport),
+                        None => {
+                            callback_teleport(callback).map_or(MapAction::Callback, |landing| {
+                                MapAction::CallbackTeleport {
+                                    landing,
+                                    transit: callback_available_for_transit(callback),
+                                }
+                            })
+                        }
                     })
                 } else if world.facts().doors().contains(key) || item.attrs.door.is_some() {
                     Some(MapAction::Door)
@@ -773,7 +805,12 @@ async fn use_map_action(
 }
 
 fn movement_landing(world: &BundleWorld, placement: TilePos, action: MapAction) -> Option<TilePos> {
-    if let MapAction::Teleport(destination) | MapAction::CallbackTeleport(destination) = action {
+    if let MapAction::Teleport(destination)
+    | MapAction::CallbackTeleport {
+        landing: destination,
+        ..
+    } = action
+    {
         return Some(destination);
     }
     if matches!(action, MapAction::Sewer) {
@@ -1896,8 +1933,12 @@ pub(super) async fn run(
     }
     let mut connections = BTreeMap::<TilePos, Vec<RouteStep>>::new();
     for entry in entries.values() {
-        if let Entry::Interaction(placement, action @ (MapAction::Ladder | MapAction::Sewer)) =
-            entry
+        if let Entry::Interaction(
+            placement,
+            action @ (MapAction::Ladder
+            | MapAction::Sewer
+            | MapAction::CallbackTeleport { transit: true, .. }),
+        ) = entry
             && let Some(landing) = movement_landing(world, placement.at, *action)
             && world.enterable(landing)
             && world
@@ -2262,6 +2303,9 @@ mod tests {
                 floor: -8,
             })
         );
+        assert!(callback_available_for_transit(&callback));
+        callback.requires_premium = true;
+        assert!(!callback_available_for_transit(&callback));
         callback.success_message = Some("A second authored effect".into());
         assert_eq!(callback_teleport(&callback), None);
         Ok(())
