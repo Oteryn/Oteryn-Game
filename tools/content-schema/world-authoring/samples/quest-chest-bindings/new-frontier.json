@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.quest.u8_54.the_new_frontier.chest_tome_of_knowledge1",
+      "position": [
+        33164,
+        31257,
+        10
+      ],
+      "appearance": 2472,
+      "unique": 6287,
+      "source_line": 2741
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_54.the_new_frontier.chest_tome_of_knowledge2",
+      "position": [
+        33057,
+        31019,
+        2
+      ],
+      "appearance": 2472,
+      "unique": 6288,
+      "source_line": 2748
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.gold_ingot",
+      "position": [
+        33055,
+        31029,
+        7
+      ],
+      "appearance": 2472,
+      "unique": 6098,
+      "source_line": 1332
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.pig_bank",
+      "position": [
+        33053,
+        31029,
+        7
+      ],
+      "appearance": 2472,
+      "unique": 6099,
+      "source_line": 1339
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.potions",
+      "position": [
+        33057,
+        31029,
+        7
+      ],
+      "appearance": 2472,
+      "unique": 6097,
+      "source_line": 1324
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": []
+}

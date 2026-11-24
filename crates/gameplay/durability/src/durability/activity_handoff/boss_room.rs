@@ -321,12 +321,12 @@ async fn read_definition(
         let Some(pin) = origin_pin else {
             return Ok(None);
         };
-        sqlx::query("SELECT boss_key,boss_creature_key,content_revision,room_template_key,template_revision,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,after_kill_seconds,lever_positions,entry_positions,exit_position,boss_position FROM game_boss_room_publications WHERE world_id=encode($1,'hex')::uuid AND boss_key=$2 AND content_revision=$3 AND origin_frame_digest=$4 AND origin_map_digest=$5 AND server_artifact_digest=$6 AND enabled FOR SHARE")
+        sqlx::query("SELECT boss_key,boss_creature_key,content_revision,room_template_key,template_revision,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,after_kill_seconds,lever_positions,entry_positions,exit_position,boss_position FROM game_boss_room_publication_read_locked(encode($1,'hex')::uuid,$2,$3,$4,$5,$6)")
             .bind(world.as_bytes().as_slice()).bind(key).bind(content_revision)
             .bind(pin.coordinate_frame_digest.as_slice()).bind(pin.map_revision_digest.as_slice())
             .bind(pin.server_artifact_digest.as_slice()).fetch_optional(&mut **tx).await?
     } else {
-        sqlx::query("SELECT boss_key,boss_creature_key,content_revision,room_template_key,template_revision,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,after_kill_seconds,lever_positions,entry_positions,exit_position,boss_position FROM game_boss_room_catalogue c WHERE boss_key=$1 AND enabled AND NOT EXISTS(SELECT 1 FROM game_boss_room_publications p WHERE p.boss_key=c.boss_key) FOR SHARE")
+        sqlx::query("SELECT boss_key,boss_creature_key,content_revision,room_template_key,template_revision,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,after_kill_seconds,lever_positions,entry_positions,exit_position,boss_position FROM game_boss_room_catalogue_read_locked($1,true)")
             .bind(key).fetch_optional(&mut **tx).await?
     };
     let Some(row) = row else {

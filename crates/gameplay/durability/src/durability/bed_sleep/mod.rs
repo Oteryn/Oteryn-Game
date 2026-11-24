@@ -159,8 +159,13 @@ impl BedSleepPlan {
         // Serialize the historical-receipt check with the SQL sleep owner.
         sqlx::query("SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(request.fence.game_session_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-        let replayed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_bed_sleep_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)")
-        .bind(request.fence.game_session_id.as_bytes().as_slice()).bind(request.command_id.to_string()).fetch_one(&mut **tx).await?;
+        let replayed: bool = sqlx::query_scalar(
+            "SELECT game_house_bed_sleep_receipted(encode($1,'hex')::uuid,$2::text::numeric)",
+        )
+        .bind(request.fence.game_session_id.as_bytes().as_slice())
+        .bind(request.command_id.to_string())
+        .fetch_one(&mut **tx)
+        .await?;
         if !replayed
             && let Some(house) = &self.final_house
             && super::house_hireling::fence::assert_house_custody_fence(

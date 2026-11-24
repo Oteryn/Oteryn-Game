@@ -127,8 +127,11 @@ async fn open(
     progress_details: bool,
 ) -> Result<Reply> {
     let revision: Option<String> = sqlx::query_scalar(
-        "SELECT content_revision FROM game_boss_room_catalogue WHERE boss_key=$1 AND enabled FOR SHARE"
-    ).bind(boss_key).fetch_optional(&mut **tx).await?;
+        "SELECT content_revision FROM game_boss_room_catalogue_read_locked($1,false)",
+    )
+    .bind(boss_key)
+    .fetch_optional(&mut **tx)
+    .await?;
     let Some(content_revision) = revision else {
         return Ok(Reply::Refused {
             context: None,
@@ -194,8 +197,11 @@ async fn act(
     let boss_key: String = row.try_get("boss_key")?;
     let content_revision: String = row.try_get("content_revision")?;
     let current: Option<String> = sqlx::query_scalar(
-        "SELECT content_revision FROM game_boss_room_catalogue WHERE boss_key=$1 AND enabled FOR SHARE"
-    ).bind(&boss_key).fetch_optional(&mut **tx).await?;
+        "SELECT content_revision FROM game_boss_room_catalogue_read_locked($1,false)",
+    )
+    .bind(&boss_key)
+    .fetch_optional(&mut **tx)
+    .await?;
     if current.as_ref() != Some(&content_revision) {
         return Ok(refusal(Refusal::ContentChanged));
     }

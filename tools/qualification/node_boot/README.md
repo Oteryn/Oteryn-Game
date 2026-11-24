@@ -149,7 +149,10 @@ and defaults to `0:3`. The sweep reports each entry, spawn, combat, reward and
 cooldown step as a `BS.*` row. The census includes encounter definitions, lever
 candidates, arena creature references and held world spawn points. Records
 without a player-facing entry binding produce failures alongside any observed
-wire failures. The fenced level-100 build is declared as `mode=seeded`.
+wire failures. Held spawn rows record the world route, spawn, kill, and loot.
+The fenced knight build uses the highest known entry threshold in the batch
+with a level-200 combat floor. The build and carried kit are recorded as
+`mode=seeded`.
 
 ## Parallel stacks, the single-row loop and diagnostics
 
