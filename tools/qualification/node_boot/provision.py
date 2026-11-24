@@ -8,6 +8,7 @@ import uuid
 
 
 PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "knight-underlevel")
+SWEEP_PROFILE = re.compile(r"sweep-(?:knight|paladin|sorcerer|druid|monk)@(?:[1-9][0-9]{2}|1000)")
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")
 
@@ -32,9 +33,19 @@ def _request(socket_path, line, limit):
         return answer
 
 
+def valid_profile(profile):
+    return profile in PROFILES or SWEEP_PROFILE.fullmatch(profile) is not None
+
+
+def parse_profile(profile):
+    if not valid_profile(profile):
+        raise argparse.ArgumentTypeError("invalid qualification profile")
+    return profile
+
+
 def provision(socket_path, session, profile):
     identifier = uuid.UUID(session)
-    if identifier.version != 7 or str(identifier) != session or profile not in PROFILES:
+    if identifier.version != 7 or str(identifier) != session or not valid_profile(profile):
         raise ValueError("invalid qualification request")
     answer = _request(socket_path, f"qualify {session} {profile}\n", 64)
     if answer != b"qualified\n":
@@ -82,7 +93,7 @@ if __name__ == "__main__":
     parser.add_argument("--socket", required=True)
     parser.add_argument("--session", required=True)
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--profile", choices=PROFILES)
+    group.add_argument("--profile", type=parse_profile)
     group.add_argument("--place-sweep-player", choices=("hunting-ground",))
     group.add_argument("--spawn", metavar="CREATURE_KEY")
     group.add_argument("--inspect-damage", metavar="TARGET")

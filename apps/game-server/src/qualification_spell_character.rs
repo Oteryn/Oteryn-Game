@@ -19,8 +19,15 @@ use crate::durability::character_progression::{
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionAuthoritySnapshot};
+use oteryn_simulation_determinism::ExactI64;
 #[cfg(test)]
-use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+use oteryn_simulation_determinism::RoundingMode;
+
+pub(crate) const SWEEP_BASE_LEVEL: u32 = 100;
+pub(crate) const SWEEP_MAX_LEVEL: u32 = 1000;
+pub(crate) const fn sweep_weapon(level: u32) -> u32 {
+    if level >= 250 { 7388 } else { 3276 }
+}
 
 pub(super) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -485,6 +492,88 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     {
         return Err("fenced spell fixture did not produce requested source build".into());
     }
+    Ok(())
+}
+
+/// Raise the level of an authenticated qualification build under its served policy.
+pub(super) async fn raise_qualification_level<const N: usize>(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    (level, occurrence): (u32, [u8; 16]),
+    policy: FiniteProgressionPolicy<String, N>,
+    deadline: tokio::time::Instant,
+) -> TestResult {
+    let character =
+        CharacterId::from_bytes(*current.current_character_lease().character_id().as_bytes())
+            .map_err(debug)?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(character).await;
+    let before = retry_holder(Some(root), deadline, progression_busy, async || {
+        root.read_character_progression(authority, character).await
+    })
+    .await
+    .map_err(debug)?
+    .ok_or("qualification build has no source progression")?;
+    if before.context != policy.context
+        || before.policy_revision != policy.policy_revision
+        || before.reward_revision != policy.reward_revision
+    {
+        return Err("qualification seed progression policy mismatch".into());
+    }
+    if before.level >= level {
+        return Ok(());
+    }
+    let threshold = policy
+        .thresholds
+        .iter()
+        .find(|threshold| threshold.level == level)
+        .ok_or("qualification seed level absent from source progression")?;
+    let amount = threshold
+        .minimum_experience
+        .get()
+        .checked_sub(before.total_experience.get())
+        .filter(|amount| *amount > 0)
+        .ok_or("qualification seed XP must advance progression")?;
+    let fence = CurrentCharacterGameplayFence {
+        character_id: character,
+        game_session_id: current.current_game_session_id(),
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: current.current_character_lease().generation(),
+        runtime_scope: current.current_runtime_scope(),
+        scope_ownership_generation: current.current_scope_generation(),
+        expected_character_revision: retry_holder(
+            Some(root),
+            deadline,
+            authority_busy,
+            async || root.read_current_character(authority, character).await,
+        )
+        .await
+        .map_err(debug)?
+        .revision,
+    };
+    let occurrence = ExperienceRewardOccurrence::from_bytes(occurrence).map_err(debug)?;
+    retry_holder(Some(root), deadline, progression_busy, async || {
+        slot.commit_experience(
+            root,
+            authority,
+            node,
+            fence,
+            ExperienceAwardRequest {
+                occurrence,
+                amount: ExactI64::new(amount),
+                context: policy.context.clone(),
+                policy_revision: policy.policy_revision.clone(),
+                reward_revision: policy.reward_revision.clone(),
+                policy: policy.clone(),
+            },
+            None,
+        )
+        .await
+    })
+    .await
+    .map_err(debug)?;
     Ok(())
 }
 

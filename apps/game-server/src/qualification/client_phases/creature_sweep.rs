@@ -6,12 +6,10 @@
 //! `OTERYN_E2E_CREATURE_BATCH=start:len` selects a slice of the key-sorted species list of
 //! `content/creatures/definitions` (default `0:3`; anything else is an error).
 //!
-//! Spawn path: `tools/qualification/node_boot/provision.py --spawn` over `NODE_BOOT_CONTROL_SOCKET`
-//! (`sudo -n python3`, as `provision.rs` runs the fixture), answered by the node's uid-0 `spawn`
-//! control route (`qualification_wild_spawn.rs`, feature `qualification-spawn`).
-//!
-//! One shared session serves the whole sweep and restores low health using the classed build. A creature that cannot be killed within the bound
-//! gets `kill FAIL cause=deadline`; the sweep releases the target and moves on.
+//! The control launcher selects direct Python in unprivileged mode and sudo on the privileged node.
+//! The sweep carries earned XP between species and seeds a minimum level from the authored
+//! difficulty rating, bounded to 100..=1000. The seed equips an axe tier matching that minimum.
+//! The bot heals or retreats during combat. Death fails the species and triggers fresh admission.
 //!
 //! Rows per species: `CS.<key>.spawn|kill|xp|corpse|loot|full`. `spawn` carries the node answer, or
 //! the rejected token with cause=precondition. A FAIL row makes `run` return Err, which `journeys`
@@ -19,13 +17,14 @@
 //! XP oracle: the authored `experience` through the server's own
 //! `crates/gameplay/characters/src/hunting_experience.rs:13 hunting_experience` (called from
 //! `crates/gameplay/durability/src/durability/party_kill_xp.rs:369`), with no prey, the observed daily boost, full
-//! stamina and no premium for a solo level-100 kill (`animus_mastery_experience` adds nothing without
+//! stamina and no premium for a solo kill (`animus_mastery_experience` adds nothing without
 //! mastery, `crates/gameplay/combat/src/combat/death_reward.rs:939`).
 //! Loot oracle: the authored loot table. `crates/gameplay/items/src/loot_plan.rs:370 roll_entries`
 //! draws each entry independently with a 95..105% chance factor (`loot_factor_percent`), so an empty
 //! corpse is possible for any table and every item count lies in its entry's min..max.
 use super::*;
 use crate::content::creature_reward::CreatureRewardTable;
+use crate::qualification_spell_character::{SWEEP_BASE_LEVEL, SWEEP_MAX_LEVEL, sweep_weapon};
 use oteryn_dev_client::{
     DevClientSession, EntityDetail, EntityKind, client_ui::cyclopedia_character as panel,
 };
@@ -37,7 +36,6 @@ use std::collections::BTreeSet;
 const BATCH_VARIABLE: &str = "OTERYN_E2E_CREATURE_BATCH";
 const BATCH_DEFAULT: (usize, usize) = (0, 3);
 const STEPS: [&str; 5] = ["spawn", "kill", "xp", "corpse", "loot"];
-const SWEEP_LEVEL: u32 = 100;
 const SWEEP_CHARACTER: usize = 0;
 /// A full stamina bar in minutes (`composed_admission/vitals.rs:191`); no hunting time passes first.
 const FULL_STAMINA_MINUTES: i32 = 2520;
@@ -199,6 +197,7 @@ fn failure(step: &'static str, cause: &'static str, detail: impl std::fmt::Displ
 
 struct Definition {
     name: String,
+    health: Option<u64>,
     experience: u64,
     reward_boss: bool,
 }
@@ -221,6 +220,7 @@ struct Species {
     definition: Option<Definition>,
     key: String,
     loot: LootBinding,
+    suggested_level: Option<u32>,
 }
 
 fn read_shards(directory: &Path, prefix: &str) -> TestResult<Vec<serde_json::Value>> {
@@ -263,6 +263,7 @@ fn definitions(root: &Path) -> TestResult<BTreeMap<String, (Definition, Option<S
             (
                 Definition {
                     name: name.to_owned(),
+                    health: profile["health"].as_u64(),
                     experience: profile["experience"].as_u64().unwrap_or(0),
                     reward_boss: profile["details"]["system_eligibility"]["reward_boss"]
                         .as_bool()
@@ -356,6 +357,27 @@ pub(super) async fn run(
         "creature_sweep batch start={start} len={len} selected={}",
         end - start
     ));
+    #[derive(serde::Deserialize)]
+    struct RatingRow {
+        key: String,
+        suggested_level: u32,
+    }
+    #[derive(serde::Deserialize)]
+    struct Ratings {
+        creatures: Vec<RatingRow>,
+    }
+    let ratings: Ratings = serde_json::from_slice(&std::fs::read(
+        root.join("content/creatures/level-rating.json"),
+    )?)?;
+    let mut suggested_levels = BTreeMap::new();
+    for rating in ratings.creatures {
+        if suggested_levels
+            .insert(rating.key, rating.suggested_level)
+            .is_some()
+        {
+            return Err("duplicate creature difficulty rating".into());
+        }
+    }
     let tables = loot_tables(&root)?;
     let items = provisioning::item_index()?;
     let mut tally = Tally::default();
@@ -385,10 +407,12 @@ pub(super) async fn run(
             short: token(key.strip_prefix("oteryn:creature.").unwrap_or(key)),
             definition: Some(Definition {
                 name: definition.name.clone(),
+                health: definition.health,
                 experience: definition.experience,
                 reward_boss: definition.reward_boss,
             }),
             key: (*key).clone(),
+            suggested_level: suggested_levels.get(key.as_str()).copied(),
             loot,
         };
         let scenario: &'static str =
@@ -470,12 +494,13 @@ async fn sweep_species(
 async fn ready(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
+    species: &Species,
     session: &mut Option<DevClientSession>,
 ) -> TestResult {
     if session.is_none() {
         *session = Some(connect_character(clients, 0x80, SWEEP_CHARACTER).await?);
     }
-    prepare_player(clients, session).await?;
+    prepare_player(clients, species, session).await?;
     let client = session.as_mut().ok_or("session absent")?;
     restore_fixture_health(client).await?;
     leave_protection_zone(client, world).await
@@ -707,7 +732,7 @@ async fn hunt(
             "no creature definition with a display name in content/creatures/definitions",
         )
     })?;
-    if let Err(error) = ready(clients, world, session).await {
+    if let Err(error) = ready(clients, world, species, session).await {
         // A failed setup leaves no trusted session; the next species starts fresh.
         *session = None;
         return Err(failure("spawn", "precondition", format!("setup:{error}")));
@@ -1373,9 +1398,10 @@ fn matches_seeded_loot<K: Ord>(got: &BTreeMap<K, u64>, expected: &BTreeMap<K, u6
     got == expected
 }
 
-/// Provision the level-100 axe build once (the fenced fixture command), then reuse it.
+/// Seed a minimum level and matching equipment while preserving earned XP.
 async fn prepare_player(
     clients: &SeamClients<'_>,
+    species: &Species,
     session: &mut Option<DevClientSession>,
 ) -> TestResult {
     let client = session.as_mut().ok_or("session absent")?;
@@ -1388,7 +1414,26 @@ async fn prepare_player(
     });
     let classed = vocation.is_some() && vocation == expected;
     let items = provisioning::item_index()?;
-    let axe = provisioning::item_reference(&items, 3276)?;
+    let (difficulty_source, difficulty_level) = if let Some(level) = species.suggested_level {
+        ("suggested_level", u64::from(level))
+    } else {
+        let health = species
+            .definition
+            .as_ref()
+            .and_then(|definition| definition.health)
+            .ok_or("creature has neither a difficulty rating nor authored health")?;
+        // For species omitted from the rating table, allocate a level per 100 authored HP.
+        ("health", health.div_ceil(100))
+    };
+    let target_level = u32::try_from(
+        difficulty_level.clamp(u64::from(SWEEP_BASE_LEVEL), u64::from(SWEEP_MAX_LEVEL)),
+    )?;
+    let weapon = sweep_weapon(target_level);
+    evidence(&format!(
+        "creature_sweep seed species={} mode=seeded difficulty_source={difficulty_source} difficulty_level={difficulty_level} target_level={target_level} weapon=i{weapon}",
+        species.short
+    ));
+    let axe = provisioning::item_reference(&items, weapon)?;
     let rope = provisioning::item_reference(&items, 3003)?;
     let shovel = provisioning::item_reference(&items, 3457)?;
     let supplied = client.inventory().is_some_and(|inventory| {
@@ -1405,18 +1450,25 @@ async fn prepare_player(
                     .any(|item| item.item_definition_ref == *reference && item.count.get() == 1)
             })
     });
-    if fixture_ready(level, classed, supplied) {
+    if fixture_ready(level, classed, supplied) && level >= target_level {
+        evidence(&format!(
+            "creature_sweep seed_verified species={} mode=seeded level={level} weapon=i{weapon}",
+            species.short
+        ));
         return Ok(());
     }
-    // A classed level-one bootstrap still receives the initial level-100 grant.
-    let expected_level = if classed && level != 1 {
-        level
-    } else {
-        SWEEP_LEVEL
-    };
+    let expected_level = level.max(target_level);
     let fresh = session.take().ok_or("session absent")?;
     *session = Some(
-        provisioning::provision_fixture(fresh, clients, SWEEP_CHARACTER, expected_level).await?,
+        provisioning::provision_fixture(
+            fresh,
+            clients,
+            SWEEP_CHARACTER,
+            expected_level,
+            &profile,
+            target_level,
+        )
+        .await?,
     );
     Ok(())
 }

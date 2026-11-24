@@ -20,11 +20,22 @@ pub(super) async fn provision_at_level(
 }
 
 pub(in crate::qualification) async fn provision_profile(
+    client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    index: usize,
+    expected_level: u32,
+    profile: &str,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    provision_build(client, clients, index, expected_level, profile, None).await
+}
+
+pub(super) async fn provision_build(
     mut client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
     index: usize,
     expected_level: u32,
     profile: &str,
+    seed: Option<(u32, u32)>,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let vocation = if profile == "explorer" {
@@ -42,7 +53,11 @@ pub(in crate::qualification) async fn provision_profile(
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
-    let profile = profile.to_owned();
+    let profile = seed.map_or_else(
+        || profile.to_owned(),
+        |(target, _)| format!("sweep-{vocation}@{target}"),
+    );
+    let weapon = seed.map_or(3276, |(_, weapon)| weapon);
     let status = tokio::task::spawn_blocking(move || {
         crate::qualification::provision_python()
             .arg(script)
@@ -72,7 +87,7 @@ pub(in crate::qualification) async fn provision_profile(
         return Err("fresh admission did not load the provisioned build and mana".into());
     }
     let definitions = item_index()?;
-    for id in [3276, 3003, 3457] {
+    for id in [weapon, 3003, 3457] {
         let reference = item_reference(&definitions, id)?;
         if !client.inventory().is_some_and(|inventory| {
             inventory
@@ -84,7 +99,7 @@ pub(in crate::qualification) async fn provision_profile(
             return Err(format!("fresh admission missing provisioned Item {id}").into());
         }
     }
-    let reference = item_reference(&definitions, 3276)?;
+    let reference = item_reference(&definitions, weapon)?;
     // Fenced provisioning installs an unforged copy; the session owns selected 485 encoding.
     if !client.inventory().is_some_and(|inventory| {
         inventory
@@ -117,6 +132,12 @@ pub(in crate::qualification) async fn provision_profile(
         }
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
+    }
+    if let Some((target, _)) = seed {
+        evidence(&format!(
+            "provisioning mode=seeded build=fenced target_level={target} level={expected_level} weapon=i{weapon} items=rope,shovel reload=fresh_admission"
+        ));
+        return Ok(client);
     }
     evidence(&format!(
         "provisioning build=fenced level={expected_level} items=axe,rope,shovel reload=fresh_admission"

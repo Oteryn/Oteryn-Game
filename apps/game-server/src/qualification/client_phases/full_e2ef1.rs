@@ -34,8 +34,21 @@ pub(super) async fn provision_fixture(
     clients: &SeamClients<'_>,
     index: usize,
     expected_level: u32,
+    profile: &str,
+    target_level: u32,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    original::provision_at_level(client, clients, index, expected_level).await
+    original::provision_build(
+        client,
+        clients,
+        index,
+        expected_level,
+        profile,
+        Some((
+            target_level,
+            crate::qualification_spell_character::sweep_weapon(target_level),
+        )),
+    )
+    .await
 }
 
 pub(super) async fn provision(

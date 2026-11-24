@@ -6,14 +6,27 @@ use crate::qualification_spell_character as qualification_build;
 #[cfg(any(test, feature = "qualification-spawn"))]
 use crate::qualification_wild_spawn as wild_spawn;
 
+use qualification_build::{SWEEP_BASE_LEVEL, SWEEP_MAX_LEVEL, sweep_weapon};
+
+fn sweep_seed_profile(profile: &str) -> Option<(&str, u32)> {
+    let (vocation, level) = profile.strip_prefix("sweep-")?.split_once('@')?;
+    let target: u32 = level.parse().ok()?;
+    (matches!(
+        vocation,
+        "knight" | "paladin" | "sorcerer" | "druid" | "monk"
+    ) && level == target.to_string()
+        && (SWEEP_BASE_LEVEL..=SWEEP_MAX_LEVEL).contains(&target))
+    .then_some((vocation, target))
+}
+
 fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
     let (session, profile) = text.strip_prefix("qualify ")?.split_once(' ')?;
     let session = parse_operation_id(session.as_bytes())?;
-    matches!(
+    (matches!(
         profile,
         "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
-    )
+    ) || sweep_seed_profile(profile).is_some())
     .then_some((session, profile))
 }
 
@@ -750,10 +763,14 @@ async fn prepare_build(
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
+    let seed = sweep_seed_profile(profile);
     let (vocation, level) = match profile {
         "knight-underlevel" => ("knight", 66),
         "explorer" => ("knight", 100),
-        _ => (profile, 100),
+        _ => (
+            seed.map_or(profile, |(vocation, _)| vocation),
+            SWEEP_BASE_LEVEL,
+        ),
     };
     let occurrence_profile = if level == 100 { vocation } else { profile };
     qualification_build::prepare_character_with_policy_until(
@@ -772,11 +789,33 @@ async fn prepare_build(
                 b"vocation",
             ),
         },
-        policy,
+        policy.clone(),
         deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    let weapon = if let Some((_, target)) = seed {
+        qualification_build::raise_qualification_level(
+            root,
+            authority,
+            proof,
+            &current,
+            (
+                target,
+                fixture_occurrence(
+                    current.current_game_session_id().as_bytes(),
+                    profile,
+                    b"sweep-xp",
+                ),
+            ),
+            policy,
+            deadline,
+        )
+        .await?;
+        sweep_weapon(target)
+    } else {
+        3276
+    };
+    prepare_items(root, authority, proof, &current, native, deadline, weapon).await
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -807,6 +846,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
+    weapon: u32,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -881,7 +921,7 @@ async fn prepare_items(
         .ok_or("qualification Item index missing")?;
     // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
     // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    for (ordinal, id) in [weapon, 3003, 3457].into_iter().enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
@@ -1681,7 +1721,7 @@ mod tests {
             crate::content::qualify_native_entry_room_from_gameplay_manifest(world, &manifest)?;
         let native = crate::content::qualified_native_gameplay_test_state(room.compiled())?;
         let index = native.item_index().ok_or("Item index")?;
-        for id in [3276, 3003, 3457] {
+        for id in [3276, 7388, 3003, 3457] {
             let key = format!("oteryn:item.tibia.i{id}");
             let definition = crate::durability::item_mint::TypedDefinitionRef {
                 family: "Item".into(),
@@ -1753,12 +1793,24 @@ mod tests {
     #[test]
     fn qualification_request_accepts_only_named_profiles_and_v7_sessions() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
-        for profile in ["explorer", "knight", "paladin", "sorcerer", "druid", "monk"] {
+        for profile in [
+            "explorer",
+            "knight",
+            "paladin",
+            "sorcerer",
+            "druid",
+            "monk",
+            "sweep-sorcerer@100",
+            "sweep-knight@1000",
+        ] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }
         for text in [
             format!("qualify {id} master_sorcerer"),
             format!("qualify {id} knight extra"),
+            format!("qualify {id} sweep-knight@99"),
+            format!("qualify {id} sweep-knight@1001"),
+            format!("qualify {id} sweep-druid@0100"),
             format!("qualify {id} knight\nqualify {id} druid"),
             "qualify 01890f4c-3b2a-4c01-8d11-9a321b7c0004 knight".into(),
         ] {
