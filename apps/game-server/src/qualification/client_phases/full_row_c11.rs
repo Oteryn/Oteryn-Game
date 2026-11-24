@@ -1,8 +1,8 @@
 //! Packet E2E-C11: the concrete C11 player journey derived from the matrix, audit, and the
 //! production Harmony, spell-cast, vocation-choice, and Battle Instinct owners.
 //!
-//! 1. Admit the node-boot character, walk to Oressa, and send `hi`, `monk`, `yes`; require each
-//!    NPC reply to be accepted and the confirmation delta to say `Your vocation is now monk.`.
+//! 1. Admit the Dawnport candidate, ask Oressa about Monk, and follow Manop’s shrine
+//!    pilgrimage. Require his confirmed vocation and transfer to Blue Valley.
 //! 2. Observe the admitted monk's server-owned vitals and its solo Serene state.
 //! 3. Send five `exori infir pug` builder casts, requiring accepted spell replies, exact mana
 //!    deltas, and Harmony deltas 1 through 5.
@@ -18,7 +18,7 @@
 use super::full_row_c01::admission_error;
 use super::full_row_p20::talk;
 use super::*;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_dev_client::DevClientSession;
 use std::collections::BTreeSet;
 
 const ORESSA_PREPARATION: character_prep::Seeded = character_prep::Seeded {
@@ -94,7 +94,7 @@ impl Row {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("C11", "dawnport-temple,unassigned-level-8,premium-knight,wheel-fee-gold", "Oressa choice and Wheel mechanics");
+    character_prep::declare_seeded("C11", "dawnport-temple,unassigned-level-8,platform-ledger-premium-knight,wheel-fee-gold", "Oressa choice and Wheel mechanics");
     let mut row = Row::new();
     let terminal = match verdict::indexed_timeout(
         Duration::from_secs(300), verdict::observe(async {
@@ -136,28 +136,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .connect(clients, 0xcb, 0)
         .await
         .map_err(|error| admission_error("initial-admission", error))?;
-    let (vocation, level) = admitted_build(&mut client).await?;
-    if monk_path(vocation, level) != Some(false) || level != 8 {
-        return Err(format!("Oressa candidate must first admit unassigned at level 8; observed vocation={vocation} level={level}").into());
-    }
     let temple = TilePos { x: 32064, y: 31894, floor: -6 };
     let admitted_at = tile(client.world_spatial().actor_position)?;
     if admitted_at != temple {
         return Err(format!("C11 candidate admitted at {admitted_at:?}; expected Dawnport temple {temple:?}").into());
     }
-    choose_monk(&mut client, world, &metadata.npcs)
+    let level = choose_monk(&mut client, world, &metadata.npcs, &bytes)
         .await
         .map_err(|error| {
             verdict::context(format!("step=player-monk-choice observed={error}"), error)
         })?;
     let (chosen, chosen_level) = admitted_build(&mut client).await?;
     if !is_vocation(chosen, "monk") || chosen_level != level {
-        return Err(format!("Oressa confirmation did not persist the level-8 Monk build; observed vocation={chosen} level={chosen_level}").into());
+        return Err(format!("Manop confirmation did not persist the level-8 Monk build; observed vocation={chosen} level={chosen_level}").into());
     }
-    row.pass("player-monk-choice", "Oressa-confirmed");
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == temple)
-        .ok_or("no player walk route from Oressa back to the initial admission tile")?;
-    walk(&mut client, world, &path).await?;
+    row.pass("player-monk-choice", "Manop-confirmed");
 
     if client.actor_vitals().is_some_and(|v| v.serene) {
         row.pass("solo-serene", client.actor_vitals());
@@ -363,7 +356,6 @@ async fn knight_journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult 
     let clients = &dedicated.clients(clients);
     let mut client = KNIGHT_PREPARATION.connect(clients, 0xca, 0).await?;
     character_prep::grant_item(&client, 3043, 2).await?;
-    character_prep::grant_premium(&client).await?;
     let prior = client.join_snapshot().game_session_id;
     let (result, detail, _, _) = logout_retrying_busy(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -562,59 +554,81 @@ async fn choose_monk(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
-) -> TestResult {
-    use oteryn_dev_client::client_runtime::npc_shop;
-    use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
-
-    const ORESSA: TilePos = TilePos {
-        x: 32064,
-        y: 31892,
-        floor: -6,
-    };
-    if !npcs.npcs.iter().any(|npc| {
-        npc.key == "oteryn:npc.oressa"
-            && npc
-                .placements
-                .iter()
-                .any(|p| (p.x, p.y, p.floor) == (ORESSA.x, ORESSA.y, ORESSA.floor))
-    }) {
-        return Err("Oressa absent from the served NPC table at 32064,31892,6".into());
+    bytes: &[u8],
+) -> TestResult<u32> {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    const ORESSA: TilePos = TilePos { x: 32064, y: 31892, floor: -6 };
+    const MANOP: TilePos = TilePos { x: 32058, y: 31898, floor: -4 };
+    const BLUE_VALLEY: TilePos = TilePos { x: 33614, y: 31494, floor: -7 };
+    for (key, at) in [("oteryn:npc.oressa", ORESSA), ("oteryn:npc.ambassador_manop", MANOP)] {
+        if !npcs.npcs.iter().any(|npc| npc.key == key
+            && npc.placements.iter().any(|p| (p.x, p.y, p.floor) == (at.x, at.y, at.floor)))
+        {
+            return Err(format!("required Dawnport NPC placement absent: {key} at {at:?}").into());
+        }
     }
-    let actor = walk_to_npc(client, world, ORESSA, "Oressa").await?;
-    let mut offer = Vec::new();
-    for text in ["hi", "monk", "yes"] {
-        client.take_events();
-        let disposition = npc_shop::talk(
-            client.session_mut(),
-            &NpcTalkIntent {
-                npc_actor: actor,
-                text: text.into(),
-            },
-        )
-        .await?;
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
-        let mut lines = Vec::new();
-        while lines.is_empty() && tokio::time::Instant::now() < deadline {
-            client.service_liveness(Duration::from_millis(20)).await?;
-            for event in client.take_events() {
-                if let SessionEvent::NpcConversation(delta) = event {
-                    lines.extend(delta.value.lines);
+
+    let oressa = walk_to_npc(client, world, ORESSA, "Oressa").await?;
+    let (vocation, level) = admitted_build(client).await?;
+    if monk_path(vocation, level) != Some(false) || level != 8 {
+        return Err(format!("Oressa candidate must first admit unassigned at level 8; observed vocation={vocation} level={level}").into());
+    }
+    talk(client, oressa, "hi").await?;
+    let redirect = talk(client, oressa, "monk").await?;
+    if !redirect.iter().any(|line| line.contains("cannot confirm") || line.contains("Manop")) {
+        return Err(format!("Oressa did not redirect the Monk candidate: {redirect:?}").into());
+    }
+    let manop = walk_to_npc(client, world, MANOP, "Ambassador Manop").await?;
+    talk(client, manop, "hi").await?;
+    let intro = talk(client, manop, "pilgrimage").await?;
+    evidence(&format!("C11_MANOP_INVITATION {intro:?}"));
+
+    // Crystal's Dawnport branch requires each of action IDs 7101–7104 before
+    // Manop offers the level-8 vocation confirmation.
+    let mut shrines = std::collections::BTreeMap::new();
+    oteryn_world_bundle::bundle::visit(bytes, |_, sector| {
+        for tile in sector.tiles {
+            for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
+                if let Some(action @ 7101..=7104) = item.attrs.action
+                    && let Ok(ordinal) = u8::try_from(ordinal)
+                {
+                    let at = TilePos { x: tile.x, y: tile.y, floor: sector.floor };
+                    shrines.entry(action).or_insert((at, ordinal));
                 }
             }
         }
-        if disposition != NpcIntentDisposition::Ok
-            || (text == "yes"
-                && !lines
-                    .iter()
-                    .any(|line| line == "Your vocation is now monk."))
-        {
-            return Err(format!("player command={text} disposition={disposition:?} replies={lines:?} offer={offer:?}; need=unassigned-level-8-character-and-confirmed-Oressa-Monk-offer").into());
-        }
-        if text == "monk" {
-            offer = lines;
+        Ok(())
+    })?;
+    for action in 7101..=7104 {
+        let &(at, ordinal) = shrines.get(&action)
+            .ok_or_else(|| format!("Dawnport Monk shrine action {action} absent from served map"))?;
+        let from = tile(client.world_spatial().actor_position)?;
+        let path = route(world, from, |pos| {
+            pos.floor == at.floor && pos.x.abs_diff(at.x).max(pos.y.abs_diff(at.y)) == 1
+        }).ok_or_else(|| format!("no walking route to Dawnport Monk shrine {action} at {at:?}"))?;
+        walk(client, world, &path).await?;
+        let key = crate::map::view::placement_key(at, ordinal).ok_or("invalid Dawnport shrine placement")?;
+        let mut placement = world.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let outcome = client.use_object(&placement, 0).await?;
+        if outcome.status != CommandStatus::Accepted || outcome.disposition != UseDisposition::Committed {
+            return Err(format!("Dawnport Monk shrine {action} USE refused: {outcome:?}").into());
         }
     }
-    Ok(())
+
+    let manop = walk_to_npc(client, world, MANOP, "Ambassador Manop").await?;
+    talk(client, manop, "hi").await?;
+    let offer = talk(client, manop, "seeker").await?;
+    if !offer.iter().any(|line| line.contains("Blue Valley as a MONK")) {
+        return Err(format!("Ambassador Manop did not offer the Monk vocation: {offer:?}").into());
+    }
+    let confirmation = talk(client, manop, "yes").await?;
+    if !confirmation.iter().any(|line| line.contains("Welcome to the Blue Valley"))
+        || tile(client.world_spatial().actor_position)? != BLUE_VALLEY
+    {
+        return Err(format!("Ambassador Manop did not confirm Monk and transfer to Blue Valley: {confirmation:?}").into());
+    }
+    Ok(level)
 }
 async fn logout(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     use oteryn_protocol_oteryn::logout::LogoutResult;
@@ -649,7 +663,7 @@ async fn admitted_build(client: &mut DevClientSession) -> TestResult<(u8, u32)> 
         .gated_command(
             wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
             wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
-            &[wire::CharacterTab::GeneralStats as u8, 0, 0, 1],
+            &[wire::CharacterTab::GeneralStats as u8, 0, 0, 50],
         )
         .await?;
     if reply.status != CommandStatus::Accepted {

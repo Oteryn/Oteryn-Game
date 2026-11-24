@@ -311,7 +311,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         now,
                     )
                     .await
-                    .map_err(|_| ())?;
+                    .map_err(|error| {
+                        if request.tab == wire::CharacterTab::GeneralStats {
+                            use crate::durability::character_authority::CharacterAuthorityError;
+                            let reason = match error {
+                                CharacterAuthorityError::Unavailable(crate::durability::DurabilityError::RootUnavailable) => "holder_unavailable",
+                                CharacterAuthorityError::Unavailable(_) => "storage_unavailable",
+                                CharacterAuthorityError::Rejected => "admission_fence_or_target_rejected",
+                                CharacterAuthorityError::Conflict => "conflict",
+                                CharacterAuthorityError::NameUnavailable => "name_unavailable",
+                            };
+                            super::operator_event(&format!(
+                                "cyclopedia_general_stats_refused command={command_id} reason={reason}"
+                            ));
+                        }
+                    })?;
                 // Each extension field reaches only a session that selected its capability.
                 if !admitted
                     .continuity
