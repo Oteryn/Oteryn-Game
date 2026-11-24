@@ -807,6 +807,13 @@ start_x = 32369
 start_y = 32238
 start_floor = 7''')
 PY_WORLD
+    if [[ "${NODE_BOOT_E2E_ONLY:-}" == spell_sweep ]]; then
+      cat >> "$WORK/node.toml" <<'TOML'
+[premium_activation]
+activation_id = "node-boot-spell-sweep"
+switch_over_us = 1
+TOML
+    fi
   fi
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
     game_platform_config "$WORK/node.toml"
@@ -821,6 +828,14 @@ if (( ${#NODE_CLOCK_FEATURES[@]} )); then
   printf '0' > "$OTERYN_QUALIFICATION_CLOCK_FILE"
   chmod 0644 "$OTERYN_QUALIFICATION_CLOCK_FILE"
   NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_CLOCK_FILE=$OTERYN_QUALIFICATION_CLOCK_FILE")
+fi
+if [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_E2E_ONLY:-}" == spell_sweep && -f "$WORK/portal-report.json" ]]; then
+  cat "$WORK/portal/certs/clients/premium.pem" "$WORK/portal/certs/clients/premium.key" > "$WORK/profile-b-client.pem"
+  secret_to "$SERVICE_UID" "$WORK/profile-b-client.pem" "$BASE/node/secrets/profile-b-client.pem"
+  NODE_GAMEPLAY_ENV+=("OTERYN_PLATFORM_PROFILE_B_AUTHORITY_ENABLED=true"
+    "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
+    "OTERYN_PLATFORM_STREAMS_URL=https://localhost:$WP5_PORT"
+    "OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
 fi
 fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler

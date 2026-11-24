@@ -219,7 +219,7 @@ async fn sweep(
         "ineligible",
         ineligible(&clients[2], world, index, spell).await,
     );
-    let result = prepare(clients, world, spell).await;
+    let result = prepare(clients, world, index, spell).await;
     let (mut client, rune) = match result {
         Ok(value) => {
             rows.record("prepare", Ok(()));
@@ -243,6 +243,7 @@ async fn sweep(
 async fn prepare(
     clients: &[SeamClients<'_>; 3],
     world: &BundleWorld,
+    spell_index: NonZeroU32,
     spell: &SpellDefinition,
 ) -> TestResult<(DevClientSession, Option<NonZeroU32>)> {
     require(
@@ -263,11 +264,38 @@ async fn prepare(
         pair,
         index,
         FIXTURE_LEVEL,
-        &format!("spell-sweep-{profile}"),
+        &format!("spell-sweep-{profile}:{spell_index}"),
     )
     .await?;
     let setup = async {
-        let rune = acquire(&mut client, world, spell).await?;
+        let item = match spell.carrier {
+            Carrier::Instant { .. } => match spell.execution {
+                Execution::Conjure { reagent, .. } => reagent,
+                _ => None,
+            },
+            Carrier::Rune { item, .. } => Some(item),
+        };
+        let reference = item
+            .map(|id| provisioning::item_reference(&provisioning::item_index()?, id))
+            .transpose()?;
+        if let Some(reference) = reference {
+            require(
+                full_e2ef5::rune_quantity(&client, reference)? > 0,
+                format!("seeded backpack item {reference} missing after reload"),
+            )?;
+        }
+        let rune = reference.filter(|_| matches!(spell.carrier, Carrier::Rune { .. }));
+        let pools = vitals(&client)?;
+        require(
+            pools.mana >= mana_cost(pools, spell.mana) && pools.soul >= spell.soul,
+            format!(
+                "fixture resources insufficient mana={} required_mana={} soul={} required_soul={}",
+                pools.mana,
+                mana_cost(pools, spell.mana),
+                pools.soul,
+                spell.soul
+            ),
+        )?;
         if spell.aggressive || pure_effect(spell) == Some(HealthEffect::Heal) {
             creature_sweep::leave_protection_zone(&mut client, world).await?;
         }
@@ -324,23 +352,52 @@ async fn cast(
         };
         Ok(Reply::Rune(reply))
     } else {
-        let target = target.map_or(SpellTarget::None, |(_, position)| {
-            SpellTarget::Position(SpellTargetPosition {
-                x: position.x,
-                y: position.y,
-                floor: position.floor,
+        let aimed = needs_target && target.is_some();
+        let target = if aimed {
+            SpellTarget::AttackTarget
+        } else {
+            target.map_or(SpellTarget::None, |(_, position)| {
+                SpellTarget::Position(SpellTargetPosition {
+                    x: position.x,
+                    y: position.y,
+                    floor: position.floor,
+                })
             })
-        });
-        let outcome = client.cast_spell(index, target, false).await?;
+        };
+        let outcome = client.cast_spell(index, target, aimed).await?;
         require(
             outcome.status == CommandStatus::Accepted,
-            format!("spell command status {:?}", outcome.status),
+            format!(
+                "spell command={} status={:?} disposition={:?} server_sequence={}",
+                outcome.command_id,
+                outcome.status,
+                outcome.disposition,
+                outcome.result_server_sequence
+            ),
         )?;
         Ok(Reply::Spell(
             outcome.disposition,
             outcome.actor_vitals_delta.is_some(),
         ))
     }
+}
+
+async fn select_attack_target(
+    client: &mut DevClientSession,
+    rune: Option<NonZeroU32>,
+    target: Option<(oteryn_dev_client::EntityRef, ActorPosition)>,
+    needs_target: bool,
+) -> TestResult {
+    if let Some((entity, _)) = target.filter(|_| rune.is_none() && needs_target) {
+        let attack = client.session_mut().attack_target(Some(&entity)).await?;
+        require(
+            attack.status == CommandStatus::Accepted
+                && attack.disposition
+                    == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok,
+            format!("fixture attack target rejected: {attack:?}"),
+        )?;
+    }
+    Ok(())
 }
 
 async fn ineligible(
@@ -352,23 +409,27 @@ async fn ineligible(
     let mut client = connect_character(clients, 0x81, 1).await?;
     let result = async {
         let (_, level, vocation) = creature_sweep::read_stats(&mut client).await?;
-        let wrong_vocation = vocation
-            == oteryn_protocol_oteryn::cyclopedia_character::vocation_id("none")
-            && !spell.vocations.is_empty()
-            && !spell.vocations.contains(&Vocation::None);
+        let wrong_vocation = vocation.is_some_and(|id| {
+            ["none", "sorcerer", "druid", "knight", "paladin", "monk"]
+                .into_iter()
+                .find(|key| oteryn_protocol_oteryn::cyclopedia_character::vocation_id(key) == Some(id))
+                .and_then(Vocation::from_key)
+                .is_some_and(|actual| !spell.vocations.is_empty() && !spell.vocations.contains(&actual))
+        });
         require(
             level < spell.level || wrong_vocation,
-            "negative fixture has no proven level or vocation mismatch",
+            format!("negative fixture mismatch unproven: level={level}, required={}, vocation_id={vocation:?}, allowed={:?}", spell.level, spell.vocations),
         )?;
         let rune = acquire(&mut client, world, spell).await?;
         if spell.aggressive {
             creature_sweep::leave_protection_zone(&mut client, world).await?;
         }
-        let target = if rune.is_some() && spell.needs_target {
+        let target = if spell.needs_target && !spell.self_target {
             Some(spawn_target(&mut client).await?)
         } else {
             None
         };
+        select_attack_target(&mut client, rune, target, spell.needs_target).await?;
         let before = vitals(&client)?;
         let reply = cast(&mut client, index, rune, target, spell.needs_target).await?;
         let denied = eligibility_refusal(&reply, level < spell.level);
@@ -418,8 +479,10 @@ async fn positive(
             }
             None
         }
+        _ if spell.needs_target && !spell.self_target => Some(spawn_target(client).await?),
         _ => None,
     };
+    select_attack_target(client, rune, target, spell.needs_target).await?;
     let condition = condition_icon(spell);
     let conditions_before = if condition.is_some() {
         Some(condition_status(client).await?)
@@ -452,7 +515,9 @@ async fn positive(
     let quantity = product
         .map(|(reference, _)| full_e2ef5::rune_quantity(client, reference))
         .transpose()?;
+    let first_sent = std::time::Instant::now();
     let reply = cast(client, index, rune, target, spell.needs_target).await?;
+    let first_received = std::time::Instant::now();
     require(
         matches!(
             reply,
@@ -461,13 +526,29 @@ async fn positive(
         format!("eligible cast refused: {reply:?}"),
     )?;
     let after = vitals(client)?;
-    let has_cooldown =
-        spell.cooldown_micros > 0 || spell.groups.iter().any(|group| group.cooldown_micros > 0);
+    let cooldown_us = spell
+        .groups
+        .iter()
+        .map(|group| group.cooldown_micros)
+        .chain(std::iter::once(spell.cooldown_micros))
+        .max()
+        .unwrap_or(0);
+    let has_cooldown = cooldown_us > 0;
+    let retry_sent = std::time::Instant::now();
     let retry = if has_cooldown {
         Some(cast(client, index, rune, target, spell.needs_target).await)
     } else {
         None
     };
+    let retry_received = std::time::Instant::now();
+    let upper_us = retry_received.duration_since(first_sent).as_micros();
+    let lower_us = retry_sent.duration_since(first_received).as_micros();
+    evidence(&format!(
+        "spell_sweep timing key={} first_sent_us=0 first_received_us={} retry_sent_us={} retry_received_us={upper_us} cooldown_us={cooldown_us}",
+        spell.key,
+        first_received.duration_since(first_sent).as_micros(),
+        retry_sent.duration_since(first_sent).as_micros()
+    ));
     rows.record(
         "cast_cost",
         require(
@@ -492,7 +573,11 @@ async fn positive(
                 Reply::Spell(SpellCastDisposition::CoolingDown, false)
                     | Reply::Rune(UseDisposition::Exhausted)
             ) && pools_unchanged(after, vitals(client)?);
-            require(expected, format!("authored cooldown mismatch: {reply:?}"))
+            require(expected, format!(
+                "cooldown reply={reply:?} elapsed_lower_us={lower_us} elapsed_upper_us={upper_us} authored_us={cooldown_us} classification={}",
+                if upper_us < u128::from(cooldown_us) { "within-window" }
+                else { "inconclusive-wire-timing" }
+            ))
         }
         .await;
         rows.record("cooldown", cooldown);
@@ -537,7 +622,14 @@ async fn positive(
                 "authored heal did not increase caster health",
             ),
             (Some(HealthEffect::Damage), Some((entity, _))) => {
-                damage_observed(client, entity).await
+                if rune.is_none() && spell.needs_target {
+                    Err(
+                        "aggregate damage also includes the selected attack target's auto-attacks"
+                            .into(),
+                    )
+                } else {
+                    damage_observed(client, entity).await
+                }
             }
             _ => Err("authored effect has no implemented wire oracle".into()),
         }
@@ -702,14 +794,17 @@ fn pools_unchanged(before: ActorVitals, after: ActorVitals) -> bool {
 }
 
 // Source mana calculation: crates/gameplay/spell-rules/src/cast.rs:272.
-fn paid(before: ActorVitals, after: ActorVitals, mana: ManaCost, soul: u32) -> bool {
-    let mana = match mana {
+fn mana_cost(before: ActorVitals, mana: ManaCost) -> u32 {
+    match mana {
         ManaCost::Fixed(mana) => mana,
         ManaCost::PercentOfMaximum(percent) => {
             u32::try_from(u64::from(before.max_mana) * u64::from(percent) / 100).unwrap_or(u32::MAX)
         }
-    };
-    before.mana.checked_sub(mana) == Some(after.mana)
+    }
+}
+
+fn paid(before: ActorVitals, after: ActorVitals, mana: ManaCost, soul: u32) -> bool {
+    before.mana.checked_sub(mana_cost(before, mana)) == Some(after.mana)
         && before.soul.checked_sub(soul) == Some(after.soul)
 }
 

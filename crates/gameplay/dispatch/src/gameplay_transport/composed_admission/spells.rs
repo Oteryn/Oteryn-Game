@@ -219,13 +219,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .chat
                     .push_party_spell_feedback(game_session_id, &feedback.text);
             }
+            #[cfg(feature = "qualification-cast-evidence")]
+            self.log_spell_refusal(&intent, command_id, "cast_parameters", &outcome);
             return Some(outcome);
         }
         match self
             .cast_native_familiar(actor, game_session_id, command_id, &intent, &access)
             .await
         {
-            actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
+            actor_spell::NativeCastDispatch::Outcome(outcome) => {
+                #[cfg(feature = "qualification-cast-evidence")]
+                self.log_spell_refusal(&intent, command_id, "cast_native_familiar", &outcome);
+                return Some(outcome);
+            }
             actor_spell::NativeCastDispatch::Pending => return None,
             actor_spell::NativeCastDispatch::RuneRefused(_) => {
                 return Some(actor_spell::SpellCastOutcome::rejected());
@@ -236,7 +242,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .cast_world_items(actor, game_session_id, command_id, &intent, &access)
             .await
         {
-            actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
+            actor_spell::NativeCastDispatch::Outcome(outcome) => {
+                #[cfg(feature = "qualification-cast-evidence")]
+                self.log_spell_refusal(&intent, command_id, "cast_world_items", &outcome);
+                return Some(outcome);
+            }
             actor_spell::NativeCastDispatch::Pending => return None,
             actor_spell::NativeCastDispatch::RuneRefused(_) => {
                 return Some(actor_spell::SpellCastOutcome::rejected());
@@ -248,6 +258,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             actor_spell::NativeCastDispatch::Outcome(outcome) => {
+                #[cfg(feature = "qualification-cast-evidence")]
+                self.log_spell_refusal(&intent, command_id, "cast_native_combat", &outcome);
                 let _ = self.drain_kill_rewards(game_session_id).await;
                 self.party_spell_feedback(game_session_id, &intent, &outcome);
                 Some(outcome)
@@ -269,9 +281,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     None
                 } else {
+                    #[cfg(feature = "qualification-cast-evidence")]
+                    self.log_spell_refusal(&intent, command_id, "cast_spell", &outcome);
                     Some(outcome)
                 }
             }
+        }
+    }
+
+    #[cfg(feature = "qualification-cast-evidence")]
+    fn log_spell_refusal(
+        &self,
+        intent: &actor_spell::SpellCastIntent,
+        command: u64,
+        owner: &str,
+        outcome: &actor_spell::SpellCastOutcome,
+    ) {
+        if outcome.disposition != actor_spell::SpellCastDisposition::Cast {
+            let spell = self
+                .spells
+                .source_indexed(intent.spell)
+                .map_or("<unknown>", |(definition, _)| definition.key.as_str());
+            eprintln!(
+                "SEAM_EVIDENCE spell_sweep_refusal spell={spell} command={command} owner={owner} disposition={:?}",
+                outcome.disposition
+            );
         }
     }
 

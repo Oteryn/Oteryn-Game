@@ -962,7 +962,17 @@ pub struct CheckedNativeCommit {
     owner: super::CheckedOwnerBatch,
 }
 
+#[cfg_attr(feature = "qualification-cast-evidence", track_caller)]
 fn reject<T>() -> Result<T, SpellCastDisposition> {
+    #[cfg(feature = "qualification-cast-evidence")]
+    {
+        let source = std::panic::Location::caller();
+        eprintln!(
+            "SEAM_EVIDENCE native_owner_refused file={} line={}",
+            source.file(),
+            source.line()
+        );
+    }
     Err(SpellCastDisposition::Rejected)
 }
 
@@ -2739,8 +2749,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     let mut prepared=match prepared_result{
                         Ok(p)=>p,Err(disposition)=>{
                         Box::pin(refusal_on_live_transaction(&mut tx)).await?;
-                        #[cfg(test)]
-                        eprintln!("SEAM_EVIDENCE native_combat_prepare result={disposition:?} ordinary={}",ordinary_combat::applicable(spell));
+                        #[cfg(any(test, feature = "qualification-cast-evidence"))]
+                        eprintln!("SEAM_EVIDENCE native_combat_prepare spell={} command={command_id} result={disposition:?} ordinary={}",spell.key,ordinary_combat::applicable(spell));
                         if let (Some(rune),Some(legacy))=(rune.as_ref(),legacy.as_ref()) {
                             let refused=rune_item_cast::use_refusal(&mut tx,&authority,runtime,states,room,objects,spell,actor,rune,legacy,disposition,now).await;
                             return Ok(NativeCastDispatch::RuneRefused(refused));

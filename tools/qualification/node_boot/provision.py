@@ -36,9 +36,16 @@ def _request(socket_path, line, limit):
         return answer
 
 
+def valid_profile(profile):
+    base, separator, index = profile.partition(":")
+    return base in PROFILES and (
+        not separator or (base.startswith("spell-sweep-") and re.fullmatch(r"[1-9][0-9]{0,9}", index))
+    )
+
+
 def provision(socket_path, session, profile):
     identifier = uuid.UUID(session)
-    if identifier.version != 7 or str(identifier) != session or profile not in PROFILES:
+    if identifier.version != 7 or str(identifier) != session or not valid_profile(profile):
         raise ValueError("invalid qualification request")
     answer = _request(socket_path, f"qualify {session} {profile}\n", 64)
     if answer != b"qualified\n":
@@ -86,7 +93,7 @@ if __name__ == "__main__":
     parser.add_argument("--socket", required=True)
     parser.add_argument("--session", required=True)
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--profile", choices=PROFILES)
+    group.add_argument("--profile")
     group.add_argument("--spawn", metavar="CREATURE_KEY")
     group.add_argument("--inspect-damage", metavar="TARGET")
     args = parser.parse_args()

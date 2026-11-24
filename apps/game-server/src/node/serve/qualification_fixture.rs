@@ -19,7 +19,14 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
 }
 
 fn sweep_vocation(profile: &str) -> Option<&str> {
-    let vocation = profile.strip_prefix("spell-sweep-")?;
+    let profile = profile.strip_prefix("spell-sweep-")?;
+    let vocation = match profile.split_once(':') {
+        Some((vocation, index)) => {
+            index.parse::<std::num::NonZeroU32>().ok()?;
+            vocation
+        }
+        None => profile,
+    };
     matches!(
         vocation,
         "druid" | "knight" | "monk" | "paladin" | "sorcerer"
@@ -64,6 +71,9 @@ pub(super) async fn prepare(
     proof: &NodeIncarnationProof,
     config: &NodeConfig,
     native: Option<&NativeGameplayState>,
+    #[cfg(feature = "qualification-spawn")] premium: Option<
+        &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    >,
     bytes: &[u8],
 ) -> &'static str {
     let (native, session, profile) =
@@ -75,7 +85,15 @@ pub(super) async fn prepare(
             }
         };
     match Box::pin(prepare_build(
-        root, authority, proof, config, native, session, profile,
+        root,
+        authority,
+        proof,
+        config,
+        native,
+        session,
+        profile,
+        #[cfg(feature = "qualification-spawn")]
+        premium,
     ))
     .await
     {
@@ -639,6 +657,7 @@ fn refusal_warning(
         .field("profile", FieldValue::Owned(profile.to_owned()))
 }
 
+#[cfg_attr(feature = "qualification-spawn", allow(clippy::too_many_arguments))]
 async fn prepare_build(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -647,6 +666,9 @@ async fn prepare_build(
     native: &NativeGameplayState,
     session: [u8; 16],
     profile: &str,
+    #[cfg(feature = "qualification-spawn")] premium: Option<
+        &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    >,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let session = crate::foundation::GameSessionId::decode(&session)?;
@@ -695,7 +717,11 @@ async fn prepare_build(
         "explorer" => ("knight", 100),
         _ => sweep_vocation(profile).map_or((profile, 100), |vocation| (vocation, 300)),
     };
-    let occurrence_profile = if level == 100 { vocation } else { profile };
+    let occurrence_profile = if level == 100 {
+        vocation
+    } else {
+        profile.split_once(':').map_or(profile, |(base, _)| base)
+    };
     qualification_build::prepare_character_with_policy_until(
         root,
         authority,
@@ -716,7 +742,128 @@ async fn prepare_build(
         deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    #[cfg(feature = "qualification-spawn")]
+    if sweep_vocation(profile).is_some()
+        && config
+            .premium_activation
+            .as_ref()
+            .is_some_and(|activation| activation.activation_id == "node-boot-spell-sweep")
+    {
+        if current.session_state() != crate::foundation::GameSessionState::Active
+            || current.current_transport().is_none()
+        {
+            return Err("spell sweep requires an active admission".into());
+        }
+        let record = qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            qualification_build::authority_busy,
+            async || root.read_current_character(authority, character).await,
+        )
+        .await
+        .map_err(qualification_build::debug)?;
+        let account = uuid_text(record.account_id.as_bytes());
+        if !matches!(
+            account.as_str(),
+            "01934f10-7c00-7000-8000-000000000007"
+                | "01934f10-7c00-7000-8000-000000000008"
+                | "01934f10-7c00-7000-8000-000000000009"
+                | "01934f10-7c00-7000-8000-00000000000a"
+                | "01934f10-7c00-7000-8000-00000000000b"
+        ) {
+            return Err("spell sweep Premium requires a dedicated positive account".into());
+        }
+        grant_premium(root, premium, *record.account_id.as_bytes(), deadline).await?;
+    }
+    let supply = if sweep_vocation(profile).is_some() {
+        profile
+            .split_once(':')
+            .map(|(_, index)| {
+                let spell = native
+                    .spell_book()
+                    .indexed(index.parse()?)
+                    .ok_or("unknown spell sweep index")?;
+                Ok::<_, Box<dyn std::error::Error>>(match spell.carrier {
+                    crate::spell::Carrier::Rune { item, .. } => Some(item),
+                    crate::spell::Carrier::Instant { .. } => match spell.execution {
+                        crate::spell::Execution::Conjure { reagent, .. } => reagent,
+                        _ => None,
+                    },
+                })
+            })
+            .transpose()?
+            .flatten()
+    } else {
+        None
+    };
+    prepare_items(root, authority, proof, &current, native, deadline, supply).await
+}
+
+// Same bounded snapshot ingestion as the e2efx1 qualification fixture.
+#[cfg(feature = "qualification-spawn")]
+async fn grant_premium(
+    root: &DurabilityRoot,
+    coordinator: Option<
+        &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    >,
+    account: [u8; 16],
+    deadline: tokio::time::Instant,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::premium::{
+        IngestOutcome, PRODUCER_PROFILE, PRODUCT_ID, PRODUCT_VERSION, SNAPSHOT_SCHEMA,
+    };
+    let account_text = uuid_text(&account);
+    let coordinator = coordinator.ok_or("qualification Premium coordinator absent")?;
+    let now = unix_now();
+    let timestamp = |seconds| -> Result<String, time::error::ComponentRange> {
+        let utc = time::OffsetDateTime::from_unix_timestamp(seconds)?;
+        Ok(format!(
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+            utc.year(),
+            u8::from(utc.month()),
+            utc.day(),
+            utc.hour(),
+            utc.minute(),
+            utc.second()
+        ))
+    };
+    let nonce =
+        crate::premium::client::fresh_nonce().ok_or("qualification Premium nonce unavailable")?;
+    let body = serde_json::to_vec(&serde_json::json!({
+        "schema": SNAPSHOT_SCHEMA,
+        "producer_revision": "0000000000000000000000000000000000000001",
+        "producer_profile": PRODUCER_PROFILE,
+        "nonce": nonce,
+        "account_id": account_text,
+        "product_id": PRODUCT_ID,
+        "product_version": PRODUCT_VERSION,
+        "entitlement_id": account_text,
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 1,
+        "authority_revision": now,
+        "effective_from": "2026-01-01T00:00:00Z",
+        "effective_until": "2030-01-01T00:00:00Z",
+        "authority_issued_at": timestamp(now)?,
+        "authority_valid_until": timestamp(now + 3600)?,
+        "refresh_after": timestamp(now + 2400)?,
+    }))?;
+    let consumer = coordinator.consumer();
+    loop {
+        let outcome = consumer.ingest(root, account, &nonce, &body).await;
+        if matches!(outcome, IngestOutcome::Accepted | IngestOutcome::Replayed) {
+            break;
+        }
+        if outcome != IngestOutcome::FenceUnavailable || tokio::time::Instant::now() >= deadline {
+            return Err(format!("qualification Premium delivery refused: {outcome:?}").into());
+        }
+        root.request_ready();
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    coordinator
+        .premium_gate(account)
+        .await
+        .require()
+        .map_err(|_| "qualification Premium gate remained closed".into())
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -738,6 +885,7 @@ fn fixture_occurrence(character: &[u8; 16], vocation: &str, phase: &[u8]) -> [u8
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
 // inserts. They are setup evidence only, not proof of player chest interaction.
+#[allow(clippy::too_many_arguments)]
 async fn prepare_items(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -747,6 +895,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
+    supply: Option<u32>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -821,7 +970,7 @@ async fn prepare_items(
         .ok_or("qualification Item index missing")?;
     // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
     // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    for (ordinal, id) in [3276, 3003, 3457].into_iter().chain(supply).enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
@@ -835,7 +984,7 @@ async fn prepare_items(
             .equipment
             .iter()
             .chain(bag.entries.iter().map(|entry| &entry.item))
-            .any(|existing| existing.definition == definition && existing.quantity == 1)
+            .any(|existing| existing.definition == definition && existing.quantity >= 1)
         {
             continue;
         }
