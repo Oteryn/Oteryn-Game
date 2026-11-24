@@ -268,7 +268,7 @@ async fn c02_walk(
                     .world_entities()
                     .into_iter()
                     .flat_map(|view| {
-                        view.iter().filter(|entity| {
+                        view.iter().filter(move |entity| {
                             &entity.entity.identity != view.own_identity()
                                 && matches!(
                                     entity.kind,
