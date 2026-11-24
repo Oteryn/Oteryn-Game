@@ -1,0 +1,9 @@
+npc	x	y	z	donor_radius	compiled_tile_rejection	radius_probe	Crystal 201189f8 source
+plunderpurse	32071	31882	5	1	NoGround	no compiler-admitted alternate	data-global/world/world-npc.xml:349
+atui	33833	32011	7	1	NoGround	no compiler-admitted alternate	data-global/world/world-npc.xml:1790
+sharon	32065	32327	7	1	NotWalkable	no compiler-admitted alternate	data-global/world/world-npc.xml:2048
+elgar	32070	32335	7	1	NotWalkable	no compiler-admitted alternate	data-global/world/world-npc.xml:2054
+javala	33889	32654	8	1	NoGround	no compiler-admitted alternate	data-global/world/world-npc.xml:2591
+niral	33028	32911	9	1	NoGround	no compiler-admitted alternate	data-global/world/world-npc.xml:2747
+skullfrost_npc	32549	32622	11	1	NoGround	no compiler-admitted alternate	data-global/world/world-npc.xml:2958
+bloodshade_rotten	34069	31982	14	3	NoGround	no compiler-admitted alternate	data-global/world/world-npc.xml:3183
