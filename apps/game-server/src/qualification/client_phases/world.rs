@@ -15,6 +15,8 @@ mod general_stats;
 mod creature_sweep;
 #[path = "mp/mount.rs"]
 mod mp;
+#[path = "npc_sweep.rs"]
+mod npc_sweep;
 pub(in crate::qualification) use mp::legacy_d150;
 
 include!("character_core.rs");
@@ -3196,7 +3198,9 @@ pub(super) async fn journeys(
     let mp_selected = groups.runs("mp");
     let sweep_selected = groups.runs("creature_sweep")
         && std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty());
-    if mp_selected || sweep_selected {
+    let npc_selected = groups.runs("npc_sweep")
+        && std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty());
+    if mp_selected || sweep_selected || npc_selected {
         let [mp_first, mp_second, sweep] = extra_world_fixtures(clients, packet_clients).await?;
         if sweep_selected {
             creature_sweep::run(&sweep.clients(clients), world, &generation.rewards).await?;
@@ -3209,6 +3213,9 @@ pub(super) async fn journeys(
                 &metadata.manifest.subareas,
             )
             .await;
+        }
+        if npc_selected {
+            npc_sweep::run(&sweep.clients(clients), world).await?;
         }
     }
     // The core/profile pair has not inherited packet movement, loot or death.

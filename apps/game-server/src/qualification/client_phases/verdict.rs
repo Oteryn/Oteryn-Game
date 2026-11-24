@@ -774,6 +774,7 @@ const GROUPS: &[(&str, &[&str])] = &[
     ("f7forge", &[]),
     ("f7run", &[]),
     ("mp", &[]),
+    ("npc_sweep", &[]),
     ("rows", &[]),
 ];
 
