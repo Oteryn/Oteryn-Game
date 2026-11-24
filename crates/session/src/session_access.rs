@@ -141,6 +141,11 @@ impl<S: SessionStream> Session<S> {
         self.bulletin.as_deref()
     }
 
+    /// Whether the session can still exchange commands on its current transport.
+    pub fn is_usable(&self) -> bool {
+        !self.unusable
+    }
+
     /// The capabilities the server selected at admission (never widened by a resume).
     pub fn selected_capabilities(&self) -> &[u32] {
         &self.selected_capabilities

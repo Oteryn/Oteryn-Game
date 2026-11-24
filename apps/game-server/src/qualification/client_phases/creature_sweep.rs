@@ -447,16 +447,19 @@ async fn sweep_species(
 ) -> TestResult {
     let started = std::time::Instant::now();
     let mut rows = Rows::new(&species.short);
-    if let Err(stop) = Box::pin(hunt(
+    let result = Box::pin(hunt(
         clients, world, items, rewards, species, session, &mut rows,
     ))
-    .await
-    {
-        if stop.cause == "player-death" {
-            // Closing the transport lets the owner settle death and release the lease.
-            // The next fresh admission goes through the existing release gate.
-            drop(session.take());
-        }
+    .await;
+    let player_died = result
+        .as_ref()
+        .is_err_and(|stop| stop.cause == "player-death");
+    if player_died || session.as_ref().is_some_and(|client| !client.is_usable()) {
+        // Closing the transport lets the owner settle and release the lease.
+        // The next species obtains a fresh grant through the existing release gate.
+        drop(session.take());
+    }
+    if let Err(stop) = result {
         rows.fail(stop.step, stop.cause, &stop.detail);
         rows.block_rest(stop.step);
     }
