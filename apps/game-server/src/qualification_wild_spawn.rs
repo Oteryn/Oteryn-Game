@@ -77,7 +77,7 @@ pub(crate) fn next_command_source() -> Result<u16, SpawnRefusal> {
 pub(crate) const SWEEP_HUNT_POSITION: MovementLocalPosition = MovementLocalPosition {
     x: 32369,
     y: 32230,
-    floor: -7,
+    floor: 7,
 };
 
 /// The eight neighbours of `center` on its floor, orthogonal first, in a fixed order.
