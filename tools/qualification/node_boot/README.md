@@ -151,8 +151,9 @@ candidates, arena creature references and held world spawn points. Records
 without a player-facing entry binding produce failures alongside any observed
 wire failures. Held spawn rows record the world route, spawn, kill, and loot.
 The fenced knight build uses the highest known entry threshold in the batch
-with a level-200 combat floor. The build and carried kit are recorded as
-`mode=seeded`.
+with a level-400 combat floor. The build, carried kit, and any seeded quest
+access are recorded as `mode=seeded`. Use `NODE_BOOT_WORLD_PROFILE=quests`
+for the broader boss map and its measured readiness budget.
 
 ## Parallel stacks, the single-row loop and diagnostics
 

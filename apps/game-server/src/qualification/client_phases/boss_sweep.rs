@@ -16,6 +16,7 @@ use oteryn_protocol_oteryn::{
 use serde::Deserialize;
 
 const BATCH_VARIABLE: &str = "OTERYN_E2E_BOSS_SWEEP_BATCH";
+const COMBAT_FIXTURE_MINIMUM_LEVEL: u32 = 400;
 const STEPS: [&str; 7] = [
     "ineligible",
     "eligible",
@@ -77,6 +78,26 @@ struct Entry {
     held: Option<HeldSpawn>,
 }
 
+impl Entry {
+    fn needs_quest_fixture(&self) -> bool {
+        use oteryn_gameplay_quests::quest::soul_war::SoulWarBoss;
+
+        self.creature.as_deref().is_some_and(|creature| {
+            rotten_blood_minimum(creature).is_some()
+                || SoulWarBoss::from_creature(creature).is_some()
+                || self.koshei_switch()
+        })
+    }
+
+    fn koshei_switch(&self) -> bool {
+        self.creature.as_deref() == Some("oteryn:creature.koshei_the_deathless")
+            && self
+                .held
+                .as_ref()
+                .is_some_and(|held| held.at == KOSHEI_HELD)
+    }
+}
+
 struct Catalogue {
     entries: Vec<Entry>,
     levers: Vec<Lever>,
@@ -128,18 +149,22 @@ fn census(root: &Path) -> TestResult<Catalogue> {
         for record in records {
             let key = required_key(&record["declaration"]["identity"]["key"])?;
             let details = &record["authoring"]["profile"]["details"];
-            // Only bind a matching primary source identity. Secondary participants are not
-            // proof that their own lever starts this encounter.
-            let creature = details["participants"][0]["creatures"][0]["key"]
-                .as_str()
-                .filter(|creature| short(creature) == short(key));
-            let (lever, donor) = resolve_lever(&levers, creature);
+            let primary = details["participants"][0]["creatures"][0]["key"].as_str();
+            let matching = primary.filter(|creature| short(creature) == short(key));
+            let (lever, donor) = donor_lever(&levers, short(key))
+                .unwrap_or_else(|| resolve_lever(&levers, matching));
+            let creature = lever
+                .and_then(|index| levers[index].creature_key.as_deref())
+                .or(primary);
+            let (gap, gap_source) =
+                donor_gap(short(key)).unwrap_or(("encounter-has-no-unambiguous-lever-binding", ""));
+            let donor = donor.or((!gap_source.is_empty()).then_some(gap_source));
             entries.push(Entry {
                 key: format!("{}.encounter", short(key)),
                 source: donor.map_or_else(|| format!("{source}:1"), str::to_owned),
                 creature: creature.map(str::to_owned),
                 lever,
-                gap: "encounter-has-no-unambiguous-lever-binding",
+                gap,
                 held: None,
             });
         }
@@ -193,6 +218,156 @@ fn census(root: &Path) -> TestResult<Catalogue> {
         return Err("duplicate boss sweep entry key".into());
     }
     Ok(Catalogue { entries, levers })
+}
+
+fn donor_gap(key: &str) -> Option<(&'static str, &'static str)> {
+    Some(match key {
+        "azerus" => (
+            "scripted room",
+            "Crystal201189f8:data-global/scripts/quests/in_service_of_yalahar/actions_last_fight.lua:41",
+        ),
+        "carnisylvan_sapling" => (
+            "self-removing combat actor",
+            "Crystal201189f8:data-global/scripts/spells/monster/sapling_explode.lua:21",
+        ),
+        "charged_anomaly" => (
+            "phase of Anomaly",
+            "Crystal201189f8:data-global/scripts/quests/heart_of_destruction/creaturescripts_anomaly_transform.lua:6",
+        ),
+        "charging_outburst" => (
+            "phase of Outburst",
+            "Crystal201189f8:data-global/scripts/quests/heart_of_destruction/creaturescripts_outburst_charge.lua:6",
+        ),
+        "cobra_bastion" => (
+            "zone entry movement; encounter covers ambient Cobra populations",
+            "Crystal201189f8:data-global/scripts/quests/grave_danger/cobra_bastion/movements_access_storage.lua:16",
+        ),
+        "corrupted_soul" => (
+            "summoned by Soulcatcher",
+            "Crystal201189f8:data-global/scripts/quests/forgotten_knowledge/creaturescripts_soulcatcher_summon.lua:7",
+        ),
+        "crystal_smelly_cheese" => (
+            "Ratmiral phase actor",
+            "Crystal201189f8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:7",
+        ),
+        "crystal_weak_spot" => (
+            "Ratmiral phase actor",
+            "Crystal201189f8:data-global/scripts/quests/a_pirates_tail_quest/actions_ratmiral_blackwhiskers.lua:32",
+        ),
+        "cult_soul_remains" => (
+            "cultist death trigger",
+            "Crystal201189f8:data-global/scripts/quests/cults_of_tibia/creaturescripts_carlin_vortex_spawn.lua:4",
+        ),
+        "dangerous_depth_makeshift_homes" => (
+            "Lost Exile task death trigger",
+            "Crystal201189f8:data-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua:13",
+        ),
+        "death_priest_shargon" => (
+            "scripted lever absent from compiled lever census",
+            "Crystal201189f8:data-global/scripts/quests/dark_trails/actions_lever_death_priest_shargon.lua:60",
+        ),
+        "deep_terror" => (
+            "tentacle-triggered encounter",
+            "Crystal201189f8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_tentacle.lua:13",
+        ),
+        "dragon_egg" => (
+            "Frozen Horror room actor",
+            "Crystal201189f8:data-global/scripts/quests/forgotten_knowledge/actions_frozen_horror.lua:10",
+        ),
+        "drume" => (
+            "scripted lever absent from compiled lever census",
+            "Crystal201189f8:data-global/scripts/quests/the_order_of_lion_quest/action_drume.lua:114",
+        ),
+        "eruption_of_destruction" => (
+            "combat script found, entry trigger unidentified",
+            "Crystal201189f8:data-crystal/scripts/spells/monster/eruption_of_destruction_explosion.lua:90",
+        ),
+        "essence_of_malice" => (
+            "scripted lever entry",
+            "Crystal201189f8:data-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua:278",
+        ),
+        "feroxa" => (
+            "Grimvale silvered trap trigger",
+            "Crystal201189f8:data-global/scripts/quests/grimvale/movements_silvered_trap.lua:9",
+        ),
+        "ferumbras_mortal_shell" => (
+            "seal movement trigger",
+            "Crystal201189f8:data-global/scripts/quests/ferumbras_ascension/movements_seal.lua:47",
+        ),
+        "field_fill_aspect_of_power" => (
+            "Soul War phase actor",
+            "Crystal201189f8:data-global/scripts/quests/soul_war/soul_war_mechanics.lua:929",
+        ),
+        "field_fill_bone_capsule" => (
+            "Ferumbras Ascension phase actor",
+            "Crystal201189f8:data-global/scripts/quests/ferumbras_ascension/creaturescripts_bone_capsule.lua:5",
+        ),
+        "field_fill_cerebellum" => (
+            "brain room portal actor",
+            "Crystal201189f8:data-global/scripts/quests/feaster_of_souls/actions_portal_brain_head.lua:74",
+        ),
+        "field_fill_destabilized_ferumbras" => (
+            "vortex movement trigger",
+            "Crystal201189f8:data-global/scripts/quests/ferumbras_ascension/movements_vortex.lua:15",
+        ),
+        "field_fill_foam_stalker" => (
+            "combat spell trigger",
+            "Crystal201189f8:data-global/scripts/spells/monster/foam_splash.lua:52",
+        ),
+        "field_fill_goshnar_s_malice" => (
+            "Soul War room defined in donor quest catalogue",
+            "Crystal201189f8:data-global/lib/quests/soul_war.lua:334",
+        ),
+        "field_fill_lisa" => (
+            "combat script found, entry trigger unidentified",
+            "Crystal201189f8:data-crystal/scripts/spells/monster/lisa_heal.lua:23",
+        ),
+        "field_fill_soul_cage" => (
+            "Soul War phase actor",
+            "Crystal201189f8:data-global/lib/quests/soul_war.lua:998",
+        ),
+        "field_fill_tyrn" => (
+            "combat script found, entry trigger unidentified",
+            "Crystal201189f8:data-crystal/scripts/spells/monster/tyrn_heal.lua:19",
+        ),
+        "fury_of_the_emperor" => (
+            "quest sceptre trigger",
+            "Crystal201189f8:data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua:2",
+        ),
+        "gaz_haragoth" => (
+            "combat script found, entry trigger unidentified",
+            "Crystal201189f8:data-global/scripts/creaturescripts/monster/gaz_haragoth_heal.lua:12",
+        ),
+        "glooth_generator" => (
+            "combat script found, entry trigger unidentified",
+            "Crystal201189f8:data-crystal/scripts/spells/monster/generator.lua:13",
+        ),
+        "glooth_horror" => (
+            "scripted spawn",
+            "Crystal201189f8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_glooth_horror.lua:4",
+        ),
+        _ => return None,
+    })
+}
+
+fn donor_lever(levers: &[Lever], key: &str) -> Option<(Option<usize>, Option<&'static str>)> {
+    let (path, source) = match key {
+        "crystal_herald_of_fire" => (
+            "data-global/scripts/quests/targuna/actions_herald_lever.lua",
+            "Crystal201189f8:data-global/scripts/quests/targuna/actions_herald_lever.lua:6",
+        ),
+        "crystal_lord_retro" => (
+            "data-global/scripts/quests/25_years_of _tibia_quest/lever_lord_retro.lua",
+            "Crystal201189f8:data-global/scripts/quests/25_years_of _tibia_quest/lever_lord_retro.lua:3",
+        ),
+        "ghulosh" => (
+            "data-global/scripts/actions/bosses_levers/ghulosh.lua",
+            "Crystal201189f8:data-global/scripts/actions/bosses_levers/ghulosh.lua:5",
+        ),
+        _ => return None,
+    };
+    let index = levers.iter().position(|lever| lever.path == path)?;
+    Some((Some(index), Some(source)))
 }
 
 fn resolve_lever(
@@ -349,10 +524,17 @@ pub(super) async fn run(
         })
         .max()
         .unwrap_or(1)
-        .max(200);
+        .max(COMBAT_FIXTURE_MINIMUM_LEVEL);
     evidence(&format!(
         "boss_sweep build mode=seeded vocation=knight level={build_level} gear=i7388 supplies=rope,shovel,i7643"
     ));
+    let quest_seed = tokio::time::timeout(
+        Duration::from_secs(10),
+        seed_quest_access(clients, selected),
+    )
+    .await
+    .map_err(|_| "quest access fixture deadline".into())
+    .and_then(|result| result);
     let mut tally = Tally::default();
     for (offset, entry) in selected.iter().enumerate() {
         let leader_index = offset % clients.accounts.len();
@@ -372,6 +554,11 @@ pub(super) async fn run(
         };
         let mut party = Vec::new();
         let work = async {
+            if entry.needs_quest_fixture()
+                && let Err(error) = &quest_seed
+            {
+                return Err(failure("fixture", format!("quest access seed: {error}")));
+            }
             if let Some(held) = &entry.held {
                 held_journey(
                     clients,
@@ -402,7 +589,7 @@ pub(super) async fn run(
                 } else {
                     "entry_binding_missing"
                 };
-                Err(failure(cause, entry.gap))
+                Err(failure(cause, format!("{}; {}", entry.gap, entry.source)))
             }
         };
         let budget = entry
@@ -897,6 +1084,117 @@ fn required_level(authored: &Lever, creature: &str) -> u32 {
         .unwrap_or(1)
 }
 
+const KOSHEI_HELD: TilePos = TilePos {
+    x: 33271,
+    y: 32406,
+    floor: -12,
+};
+const KOSHEI_SWITCH: TilePos = TilePos {
+    x: 33281,
+    y: 32447,
+    floor: -8,
+};
+const KOSHEI_ENTRY_SOURCE: &str =
+    "content/quests/authored-bindings/koshei_the_deathless_journey.json:62";
+
+async fn seed_quest_access(clients: &SeamClients<'_>, selected: &[Entry]) -> TestResult {
+    use oteryn_gameplay_quests::quest::{
+        rotten_blood::{ACCESS_TRACK, RottenBloodBoss},
+        soul_war::SoulWarBoss,
+    };
+
+    let creatures = || {
+        selected
+            .iter()
+            .filter_map(|entry| entry.creature.as_deref())
+    };
+    let rotten_blood = creatures().filter_map(RottenBloodBoss::from_creature_key);
+    let soul_war = creatures().filter_map(SoulWarBoss::from_creature);
+    let rotten_final = rotten_blood
+        .clone()
+        .any(|boss| boss == RottenBloodBoss::Bakragore);
+    let soul_final = soul_war
+        .clone()
+        .any(|boss| boss == SoulWarBoss::Megalomania);
+    let rotten_access = rotten_blood.count() > 0;
+    let soul_access = soul_war.count() > 0;
+    let koshei_access = selected.iter().any(Entry::koshei_switch);
+    if !rotten_access && !soul_access && !koshei_access {
+        return Ok(());
+    }
+
+    // The owner tests exercise both the unseeded rejection and the accepted
+    // prerequisite states in gameplay_transport/postgres_tests/boss_activity.rs:810.
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let mut transaction = connection.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *transaction)
+        .await?;
+    for character in clients.characters {
+        if rotten_access {
+            sqlx::query(
+                "INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
+                 SELECT character_id,$2,'oteryn:quest/rotten-blood',4,character_revision
+                 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
+                 ON CONFLICT DO NOTHING",
+            )
+            .bind(character.as_slice())
+            .bind(ACCESS_TRACK)
+            .execute(&mut *transaction)
+            .await?;
+        }
+        if rotten_final {
+            sqlx::query(
+                "INSERT INTO game_character_rotten_blood(character_id,child_flags)
+                 VALUES(encode($1,'hex')::uuid,15) ON CONFLICT DO NOTHING",
+            )
+            .bind(character.as_slice())
+            .execute(&mut *transaction)
+            .await?;
+        }
+        if koshei_access {
+            // The dispatch owner drives the complete quest in
+            // postgres_tests/support/koshei_the_deathless_journey_fixtures.rs.
+            for (track, value) in [
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+                    4,
+                ),
+                ("oteryn:quest-progress/qnpcfx/koshei/amulet", 2),
+            ] {
+                sqlx::query(
+                    "INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
+                     SELECT character_id,$2,'oteryn:quest.koshei_the_deathless_quest',$3,character_revision
+                     FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
+                     ON CONFLICT DO NOTHING",
+                )
+                .bind(character.as_slice())
+                .bind(track)
+                .bind(i64::from(value))
+                .execute(&mut *transaction)
+                .await?;
+            }
+        }
+        if soul_access {
+            sqlx::query(
+                "INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at)
+                 VALUES(encode($1,'hex')::uuid,true,CASE WHEN $2 THEN 31 ELSE 0 END,
+                 CASE WHEN $2 THEN floor(extract(epoch FROM transaction_timestamp()))::bigint-1209601 END)
+                 ON CONFLICT DO NOTHING",
+            )
+            .bind(character.as_slice())
+            .bind(soul_final)
+            .execute(&mut *transaction)
+            .await?;
+        }
+    }
+    transaction.commit().await?;
+    evidence(&format!(
+        "boss_sweep quest_access mode=seeded rotten_blood={rotten_access} rotten_blood_final={rotten_final} soul_war={soul_access} soul_war_final={soul_final} koshei={koshei_access} koshei_source={KOSHEI_ENTRY_SOURCE} oracle=crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:810"
+    ));
+    Ok(())
+}
+
 async fn seeded_knight(
     client: DevClientSession,
     clients: &SeamClients<'_>,
@@ -945,8 +1243,15 @@ async fn held_journey(
             format!("held spawn {target:?} lies outside the loaded world bundle"),
         ));
     }
+    let koshei_switch = rows.entry.koshei_switch();
     let path = creature_sweep::far_route(world, from, |at| {
-        at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) == 1
+        if koshei_switch {
+            at.x == KOSHEI_SWITCH.x - 1
+                && at.y == KOSHEI_SWITCH.y
+                && at.floor == KOSHEI_SWITCH.floor
+        } else {
+            at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) == 1
+        }
     });
     let path = match path {
         Ok(path) => path,
@@ -954,7 +1259,14 @@ async fn held_journey(
             party.push(player);
             return Err(failure(
                 "world_route",
-                format!("no native route from {from:?} to held spawn {target:?}"),
+                format!(
+                    "no native route from {from:?} to {}",
+                    if koshei_switch {
+                        format!("tomb switch {KOSHEI_SWITCH:?}")
+                    } else {
+                        format!("held spawn {target:?}")
+                    }
+                ),
             ));
         }
     };
@@ -966,7 +1278,28 @@ async fn held_journey(
     walk(player, world, &path)
         .await
         .map_err(|error| failure("world_route", error))?;
-    rows.emit(None, "walked-to-authored-world-spawn");
+    if koshei_switch {
+        rows.emit(None, "walked-to-authored-tomb-switch");
+        let key = crate::map::view::placement_key(KOSHEI_SWITCH, 1)
+            .ok_or_else(|| failure("content", KOSHEI_ENTRY_SOURCE))?;
+        let mut placement = world.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let reply = player
+            .use_object(&placement, 0)
+            .await
+            .map_err(|error| failure("world_spawn_trigger", error))?;
+        if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
+            return Err(failure(
+                "world_spawn_trigger",
+                format!(
+                    "Koshei switch: {:?}; {KOSHEI_ENTRY_SOURCE}",
+                    reply.disposition
+                ),
+            ));
+        }
+    } else {
+        rows.emit(None, "walked-to-authored-world-spawn");
+    }
     let wait = held.respawn.min(Duration::from_secs(120));
     let target = observe_boss(player, &definition.name, target, wait)
         .await
@@ -1383,6 +1716,33 @@ mod tests {
                 .count(),
             2
         );
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_room_bindings_preserve_parent_boss_identity() -> TestResult {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let catalogue = census(&root)?;
+        for (key, creature) in [
+            ("crystal_herald_of_fire", "oteryn:creature.herald_of_fire"),
+            ("crystal_lord_retro", "oteryn:creature.lord_retro"),
+            ("ghulosh", "oteryn:creature.ghulosh"),
+        ] {
+            let entry = catalogue
+                .entries
+                .iter()
+                .find(|entry| entry.key == format!("{key}.encounter"))
+                .ok_or("missing aliased encounter")?;
+            assert_eq!(entry.creature.as_deref(), Some(creature));
+            assert!(entry.lever.is_some());
+            assert!(entry.source.starts_with("Crystal201189f8:"));
+        }
+        let triggers = catalogue
+            .entries
+            .iter()
+            .filter(|entry| entry.koshei_switch())
+            .count();
+        assert_eq!(triggers, 1);
         Ok(())
     }
 
