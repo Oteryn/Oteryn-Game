@@ -1863,6 +1863,12 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         hard_items + food_items + custody_items, house_top_order
     )
     item_detail_source_facts.apply(root, items, item_detail_weights)
+    starter_path = starting_loadout_profiles.FRAGMENT
+    starter_items = json.loads(generated[starter_path])
+    item_detail_source_facts.apply_elemental_bonds(root, items, starter_items)
+    generated[starter_path] = newhaven_starter_profiles.encode_fragment(
+        starter_items["records"]
+    )
     import forge_item_profiles
 
     forge_item_profiles.project(items, forge_item_profiles.owners(root))

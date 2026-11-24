@@ -1,5 +1,6 @@
 """Replay qualified Item Details facts after native profile admission."""
 
+import copy
 import json
 from collections import Counter
 
@@ -102,6 +103,51 @@ def apply_capture_stats(profiles, capture):
             raise ValueError("ITEM_DETAILS_PRODUCTION_IDENTITY")
         if row := capture.get(item_id(identity)):
             apply_stats(record, row["basic"], counts)
+
+
+def apply_elemental_bonds(root, *providers):
+    from lower_elemental_magic_modifier_packet import native_order
+
+    bonds = {}
+    for path in (root / "content/items/definitions").glob("items-*.json"):
+        for row in json.loads(path.read_bytes())["records"]:
+            definition = row["definition"]
+            identity = definition["identity"]
+            modifiers = definition.get("semantics", {}).get("skill_modifiers", {})
+            vector = modifiers.get("value", {}).get("modifiers", {}).get("value", [])
+            for fact in vector:
+                if fact["kind"] != "ELEMENTAL_BOND" or fact["parameter"]["state"] != "KNOWN":
+                    continue
+                key = (identity["key"], identity["revision"])
+                if key in bonds:
+                    raise ValueError(f"ITEM_DETAILS_DUPLICATE_BOND:{key[0]}")
+                bonds[key] = fact
+
+    order = native_order(root)
+    for provider in providers:
+        for record in provider["records"]:
+            identity = record["production_binding"]["target"]
+            key = (identity["key"], identity["revision"])
+            fact = bonds.get(key)
+            if fact is None:
+                continue
+            semantics = record["semantics"]
+            modifiers = semantics.get("skill_modifiers", {"state": "UNKNOWN"})
+            vector = modifiers.get("value", {}).get(
+                "modifiers", {"state": modifiers["state"]}
+            )
+            if vector["state"] not in ("KNOWN", "UNKNOWN"):
+                raise ValueError(f"ITEM_DETAILS_BOND_VECTOR_CONFLICT:{key[0]}")
+            values = vector.get("value", [])
+            existing = [value for value in values if value["kind"] == "ELEMENTAL_BOND"]
+            if existing:
+                if len(existing) != 1 or existing[0]["parameter"] != fact["parameter"]:
+                    raise ValueError(f"ITEM_DETAILS_BOND_CONFLICT:{key[0]}")
+                continue
+            completed = sorted(
+                [*values, copy.deepcopy(fact)], key=lambda value: order[value["kind"]]
+            )
+            semantics["skill_modifiers"] = known({"modifiers": known(completed)})
 
 
 def apply(root, profiles, weights):

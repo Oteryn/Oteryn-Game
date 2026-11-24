@@ -984,6 +984,26 @@ mod tests {
     }
 
     #[test]
+    fn inspection_projects_elemental_bond_from_current_profiles()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world = crate::content::native_gameplay_test_world_id()?;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("active native gameplay")?;
+        for (id, element) in [(3289, "Earth"), (50166, "Energy")] {
+            let key = format!("oteryn:item.tibia.i{id}");
+            let item = native.item_policy(&key, "definition-r1").ok_or("active item")?;
+            let response = details(item.record(), 0, 1, 1, None, None).ok_or("item details")?;
+            assert!(response.attributes.iter().any(|(label, value)| {
+                label == "Elemental Bond" && value == element
+            }), "{key} inspection attributes: {:?}", response.attributes);
+        }
+        Ok(())
+    }
+
+    #[test]
     fn inspection_projects_source_weights_for_reviewed_items_and_retains_real_zero()
     -> Result<(), Box<dyn std::error::Error>> {
         let source_ids = [

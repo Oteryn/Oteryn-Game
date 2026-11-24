@@ -2300,6 +2300,33 @@ mod tests {
     }
 
     #[test]
+    fn active_item_details_preserve_canonical_elemental_bonds() {
+        use crate::content::{
+            ReferenceItemField::Known, ReferenceModifierElement, ReferenceModifierParameter,
+            ReferenceSkillModifierKind,
+        };
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let generation = controller.active().unwrap();
+        let native = generation.native_gameplay().unwrap();
+        for (id, element) in [
+            (3289, ReferenceModifierElement::Earth),
+            (50166, ReferenceModifierElement::Energy),
+        ] {
+            let key = format!("oteryn:item.tibia.i{id}");
+            let item = native.item_policy(&key, "definition-r1").unwrap();
+            let has_bond = matches!(
+                &item.record().semantics.skill_modifiers,
+                Known(group) if matches!(&group.modifiers, Known(modifiers) if modifiers.iter().any(|modifier| {
+                    modifier.kind == ReferenceSkillModifierKind::ElementalBond &&
+                    modifier.parameter == Known(ReferenceModifierParameter::Element(element))
+                }))
+            );
+            assert!(has_bond, "{key}");
+        }
+    }
+
+    #[test]
     fn creature_source_identity_preserves_nulls_and_rejects_changed_pinned_bytes() {
         let baseline = qualify_native_entry_room(test_source(1).unwrap().world_id).unwrap();
         let mut supplied = input();
