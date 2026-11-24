@@ -710,6 +710,22 @@ fn charm_unlock_balances_match(
         && other_after == Some(u64::from(charm_balance(after, !minor)))
 }
 
+async fn charm_fixture(
+    client: &mut DevClientSession,
+    profile: String,
+) -> TestResult<Result<String, String>> {
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let setup = tokio::spawn(request_fixture_control(session, "--profile", profile));
+    // Let each idle read finish so a ready control reply never interrupts frame handling.
+    while !setup.is_finished() {
+        client
+            .session_mut()
+            .service_liveness_discarding_events(Duration::from_millis(100))
+            .await?;
+    }
+    Ok(setup.await?)
+}
+
 async fn fund_major_points(
     client: &mut DevClientSession,
     view: &mut oteryn_protocol_oteryn::charm_progression::CharmProgressionReply,
@@ -721,8 +737,7 @@ async fn fund_major_points(
         if balance >= cost {
             break;
         }
-        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-        let setup = request_fixture_control(session, "--profile", "progress-charms".into()).await;
+        let setup = charm_fixture(client, "progress-charms".into()).await?;
         *view = charm_command(client, Action::Query).await?;
         if charm_balance(&view.charms, false) <= balance {
             return Err(format!("harness-charm-funding-no-currency-gain-{setup:?}").into());
@@ -955,15 +970,9 @@ async fn charm(
             continue;
         }
         if remaining != 0 {
-            let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
             let mut kills = threshold - remaining;
             for _ in 0..6 {
-                let setup = request_fixture_control(
-                    session.clone(),
-                    "--profile",
-                    format!("progress-mastery:{species}"),
-                )
-                .await;
+                let setup = charm_fixture(client, format!("progress-mastery:{species}")).await?;
                 if setup
                     .as_ref()
                     .is_err_and(|reason| reason == "mastery_target_unavailable")
