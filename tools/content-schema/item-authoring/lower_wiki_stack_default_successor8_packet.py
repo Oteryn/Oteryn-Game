@@ -14,7 +14,7 @@ IDS = frozenset({23229, 23230, 23231, 23232, 23295, 23299, 23335, 23339})
 PROOF = "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v4.json"
 PROOF_SHA = "f9465526c2c133f436a414bd9702df23aeb3739b0d9023f718407108bec163b7"
 RECEIPT = "docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v18.json"
-RECEIPT_SHA = "34490ba0b59a19f6b8209423280b699e3bfdd14f8d49854ef6083ba1065574d9"
+RECEIPT_SHA = "d054de5058cf4ea43dd0766f0d1006fdc3e4963d7d9a58f0634cdb804309ce31"
 OUTPUT = (
     "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json"
 )
