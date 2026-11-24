@@ -273,6 +273,37 @@ pub(super) async fn pump(bots: &mut [Bot<'_, '_>]) -> TestResult<Vec<Vec<Session
     pump_at(bots, "liveness").await
 }
 
+pub(super) async fn with_peer_liveness<'p, 'a, T>(
+    bots: &mut [Bot<'p, 'a>],
+    actor: usize,
+    operation: impl AsyncFnOnce(&mut Bot<'p, 'a>) -> TestResult<T>,
+) -> TestResult<T> {
+    let (before, rest) = bots.split_at_mut_checked(actor).ok_or("MP actor missing")?;
+    let (active, after) = rest.split_first_mut().ok_or("MP actor missing")?;
+    let result = while_servicing_liveness(operation(active), async || {
+        for peer in before.iter_mut().chain(after.iter_mut()) {
+            let result = async {
+                peer.client()?
+                    .service_liveness(Duration::from_millis(20))
+                    .await?;
+                TestResult::Ok(())
+            }
+            .await;
+            if let Err(error) = peer.contextualize("parked-peer-liveness", result) {
+                peer.session = None;
+                return Err(error);
+            }
+        }
+        Ok(())
+    })
+    .await;
+    if result.is_err() {
+        // A failed peer can interrupt the actor in the middle of an exchange.
+        active.session = None;
+    }
+    result?
+}
+
 async fn pump_at(bots: &mut [Bot<'_, '_>], stage: &str) -> TestResult<Vec<Vec<SessionEvent>>> {
     let mut events = Vec::with_capacity(bots.len());
     for bot in bots {
@@ -582,8 +613,11 @@ pub(super) async fn invite_accept(
     peer: usize,
 ) -> TestResult {
     let target = bots[peer].own()?;
-    party(&mut bots[leader], Some(party::PartyIntent::Invite(target))).await?;
-    let invitations = party(&mut bots[peer], None).await?;
+    with_peer_liveness(bots, leader, async |bot| {
+        party(bot, Some(party::PartyIntent::Invite(target))).await
+    })
+    .await?;
+    let invitations = with_peer_liveness(bots, peer, async |bot| party(bot, None).await).await?;
     let leader_name = bots[leader].name.as_str();
     let handle = invitations
         .invitations
@@ -591,7 +625,10 @@ pub(super) async fn invite_accept(
         .find(|invite| invite.name == leader_name)
         .ok_or("invited bot did not observe leader invitation")?
         .handle;
-    party(&mut bots[peer], Some(party::PartyIntent::Accept(handle))).await?;
+    with_peer_liveness(bots, peer, async |bot| {
+        party(bot, Some(party::PartyIntent::Accept(handle))).await
+    })
+    .await?;
     Ok(())
 }
 

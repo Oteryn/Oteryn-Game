@@ -81,8 +81,8 @@ pub(super) async fn run(
     let mut before = Vec::new();
     let prepared = if admitted {
         check("join-and-level-range", async {
-            for (bot, vocation) in bots.iter_mut().zip(["knight", "druid", "paladin"]) {
-                let (xp, level, observed) = stats(bot).await?;
+            for (index, vocation) in ["knight", "druid", "paladin"].into_iter().enumerate() {
+                let (xp, level, observed) = bots::with_peer_liveness(&mut bots, index, async |bot| stats(bot).await).await?;
                 if observed != character::vocation_id(vocation) { return Err(format!("GeneralStats vocation={observed:?} expected={vocation} level={level} xp={xp}").into()); }
                 before.push((xp, level));
             }
@@ -364,7 +364,8 @@ async fn read_stats(bot: &mut Bot<'_, '_>) -> TestResult<(u64, u32, Option<u8>)>
 async fn views(bots: &mut [Bot<'_, '_>], leader: usize, count: usize) -> TestResult {
     let name = bots[leader].name.clone();
     let names: Vec<_> = bots.iter().map(|b| b.name.clone()).collect();
-    for bot in bots {
+    for index in 0..bots.len() {
+        bots::with_peer_liveness(bots, index, async |bot| {
         let reply = party(bot, None).await?;
         let durable = tokio::time::timeout(Duration::from_secs(15), async {
             let mut database = sqlx::PgConnection::connect(bot.pair.url).await?;
@@ -388,6 +389,8 @@ async fn views(bots: &mut [Bot<'_, '_>], leader: usize, count: usize) -> TestRes
         {
             return Err(format!("own party query participant={} reply={reply:?}", bot.name).into());
         }
+            Ok(())
+        }).await?;
     }
     Ok(())
 }
@@ -855,8 +858,9 @@ async fn solo_hunt_award(
 }
 
 async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> TestResult {
-    let (_, leader_level, _) = stats(&mut bots[0]).await?;
-    let (_, low_level, _) = stats(&mut bots[3]).await?;
+    let (_, leader_level, _) =
+        bots::with_peer_liveness(bots, 0, async |bot| stats(bot).await).await?;
+    let (_, low_level, _) = bots::with_peer_liveness(bots, 3, async |bot| stats(bot).await).await?;
     if !is_threshold_probe(leader_level, low_level) {
         return Err(format!(
             "underlevel probe is eligible: leader={leader_level};member={low_level}"
@@ -866,7 +870,8 @@ async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> T
     prepare_hunt_ground(bots, world).await?;
     bots::invite_accept(bots, 0, 3).await?;
     for index in [0, 3] {
-        let view = party(&mut bots[index], None).await?;
+        let view =
+            bots::with_peer_liveness(bots, index, async |bot| party(bot, None).await).await?;
         if view.members.len() != 2
             || !view
                 .members
