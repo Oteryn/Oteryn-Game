@@ -72,6 +72,10 @@ fn hand_defence_uses_base_value_when_extra_defence_is_omitted() {
     for (key, value, skill_index) in [
         ("oteryn:item.tibia.i10392", 22, 2),
         ("oteryn:item.tibia.i10406", 15, 3),
+        ("oteryn:item.tibia.i21176", 18, 3),
+        ("oteryn:item.tibia.i22727", 28, 3),
+        ("oteryn:item.tibia.i50181", 14, 0),
+        ("oteryn:item.tibia.i50182", 15, 0),
     ] {
         assert_eq!(
             hand_defence(&native, constants(), |slot| {
@@ -82,6 +86,7 @@ fn hand_defence_uses_base_value_when_extra_defence_is_omitted() {
                 value,
                 skill_index: Some(skill_index),
             }),
+            "{key}",
         );
     }
 }
