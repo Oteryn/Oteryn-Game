@@ -412,7 +412,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
-        == "c0d5b3f3d5e41669af82254075767bfc05e0dea4358525173958f0b1836a1c17",
+        == "72ab77e4f793f1547599f9fd6ce2b5bc0563c20d9c24ee5a7faccd3c64fb1c3f",
         "HIT_MAGIC_PACKET_DIGEST",
     )
     magic = {
@@ -444,7 +444,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
-        == "26e28db88bf524a27179535ec74ddd47af0c913bd3dd93003436bb45ff77f071",
+        == "9f83ef163365cf089d75ae9bd7207103b79ded1f6d366fcd29686573a060e949",
         "USE_OBSERVATION_PACKET_DIGEST",
     )
     packet = json.loads(raw)
@@ -530,7 +530,7 @@ def use_relation_targets():
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
-        == "26e28db88bf524a27179535ec74ddd47af0c913bd3dd93003436bb45ff77f071",
+        == "9f83ef163365cf089d75ae9bd7207103b79ded1f6d366fcd29686573a060e949",
         "USE_OBSERVATION_PACKET_DIGEST",
     )
     return {target_id(p["target"]) for p in json.loads(raw)["promotions"]}

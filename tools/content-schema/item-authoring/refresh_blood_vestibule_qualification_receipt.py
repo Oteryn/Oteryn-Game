@@ -7,14 +7,14 @@ from pathlib import Path
 
 import refresh_spkg2_qualification_receipts as previous
 
-BASELINE = "d80a41c90e9b87ef6ecb5f894978e47906ae4999"
+BASELINE = "d9fcedeb82d8fc930ba46576fc12c1c98fbe0687"
 MODULE = "lower_wiki_stack_default_successor8_packet"
 SHARD = "content/world/terrain/terrain-08886-08887.json"
 
 
 def main():
     proof = "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v4.json"
-    receipt = "docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v15.json"
+    receipt = "docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v17.json"
     proof_pin, receipt_pin = (
         previous.digest(
             subprocess.check_output(
@@ -28,7 +28,7 @@ def main():
     previous.RECIPES = tuple(recipes)
     previous.refresh(
         previous.ROOT,
-        (MODULE, "RECEIPT", receipt, receipt_pin, 16),
+        (MODULE, "RECEIPT", receipt, receipt_pin, 18),
         additional_owner_inputs=(SHARD,),
         base_head=BASELINE,
         reason="Blood Vestibule adds qualified appearance-only ground and refreshes Item provenance",
