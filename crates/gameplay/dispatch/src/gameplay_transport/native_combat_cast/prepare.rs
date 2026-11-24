@@ -458,10 +458,12 @@ async fn prepare_spatial(
         },
         roster,
     )?;
+    let has_chain = parameters.get("chain").is_some();
+    let override_chain = has_chain && parameters.get("target_filter").is_some();
     cast_plans::extend_native_target_tiles(
         &mut candidates,
         targets.iter().map(|target| target.position),
-        parameters.get("chain").is_some(),
+        has_chain && !override_chain,
     );
     let caster_id = u64::from(actor.actor_local_id());
     if saved.is_none() && !bindings.iter().any(|b| b.actor == actor) {
@@ -485,7 +487,16 @@ async fn prepare_spatial(
         }
         paths.insert((sight_origin, *target), sight_steps(sight_origin, *target)?);
     }
-    if parameters.get("chain").is_some() {
+    if override_chain {
+        let pairs = crate::spell::native_combat::override_chain_sight_pairs(
+            parameters, stage, caster_id, position, &targets,
+        )
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+        for (from, to) in pairs {
+            candidates.insert(to);
+            paths.insert((from, to), sight_steps(from, to)?);
+        }
+    } else if has_chain {
         for a in targets
             .iter()
             .map(|t| t.position)
