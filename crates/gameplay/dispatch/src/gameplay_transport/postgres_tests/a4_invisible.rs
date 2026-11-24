@@ -75,19 +75,7 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                     bytes,
                 };
                 supplied.cosmetics = pinned(serde_json::to_vec(&cosmetics)?);
-                // Qualify the same source fixture with NOLOGOUT on the caster's entry tile.
-                let mut source: serde_json::Value = serde_json::from_slice(source)?;
-                let tile = source["tiles"]
-                    .as_array_mut()
-                    .and_then(|tiles| {
-                        tiles.iter_mut().find(|tile| {
-                            tile["native_position"] == serde_json::json!([2, 11, -7])
-                        })
-                    })
-                    .ok_or("caster source tile")?;
-                let flags = tile["otbm_flags"].as_u64().ok_or("source tile flags")?;
-                tile["otbm_flags"] = serde_json::json!(flags | 8);
-                supplied.source_world = Some(pinned(serde_json::to_vec(&source)?));
+                supplied.source_world = Some(pinned(source.to_vec()));
                 supplied
                     .build_training
                     .as_mut()
@@ -276,7 +264,8 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                     .and_then(|bytes| PlayerStatus::decode(&bytes))
                     .ok_or("visible player status")?;
                 assert_eq!(visible.presence, PlayerPresence::Online);
-                assert!(visible.no_logout);
+                // The pinned source tile at (5856, 5309, 7) has OTBM flags 0.
+                assert!(!visible.no_logout);
                 Some((reader, target, view))
             } else {
                 None

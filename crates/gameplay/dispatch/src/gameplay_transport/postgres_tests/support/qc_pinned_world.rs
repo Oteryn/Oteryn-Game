@@ -17,43 +17,57 @@ pub(super) fn artifact() -> TestResult<(Vec<u8>, serde_json::Value)> {
         None => {
             static BUILD: Mutex<()> = Mutex::new(());
             let _publish = BUILD.lock().map_err(|_| "world pin build lock poisoned")?;
-            // Nextest runs every case in its own process. Serialize the build across
-            // processes so concurrent cases neither race the toolchain install nor run
-            // parallel release builds; later cases reuse this digest's artifact.
+            // Nextest runs every case in its own process. Compile this pin once across
+            // processes and publish it only after checking the resulting digest.
             let path = std::env::temp_dir().join(format!("qc-pin-{digest}"));
             std::fs::create_dir_all(&path)?;
             let build_lock = std::fs::File::create(path.join(".build.lock"))?;
             build_lock.lock()?;
             if !path.join(&filename).is_file() {
-                // Build into a private directory and publish by rename, so an
-                // interrupted build never leaves a partial artifact at the shared path.
-                let staging =
-                    std::env::temp_dir().join(format!("qc-pin-{digest}-{}", std::process::id()));
-                let status = std::process::Command::new("cargo")
-                    .current_dir(root)
-                    .args([
-                        "run",
-                        "--locked",
-                        "--release",
-                        "-p",
-                        "oteryn-world-bundle-compiler",
-                        "--",
-                        "pin-check",
-                        ".",
-                    ])
-                    .arg(&staging)
-                    .status()?;
-                if !status.success() {
-                    return Err("world pin-check failed".into());
-                }
-                std::fs::rename(staging.join(&filename), path.join(&filename))?;
-                let _ = std::fs::remove_dir_all(&staging);
+                let bytes = compile_pinned_world(&root, &boot_pins(&pin)?.bundle)?;
+                let staging = path.join(format!(".{filename}.{}.tmp", std::process::id()));
+                std::fs::write(&staging, bytes)?;
+                std::fs::rename(staging, path.join(&filename))?;
             }
             path
         }
     };
     let bytes = std::fs::read(output.join(filename))?;
     Ok((bytes, pin))
+}
+
+fn compile_pinned_world(root: &Path, pins: &crate::map::BundlePins) -> TestResult<Vec<u8>> {
+    use oteryn_world_bundle::bundle::{BuildClass, Identity};
+    use oteryn_world_bundle_compiler::{compile, project, source};
+
+    let identity: Identity = serde_json::from_slice(&std::fs::read(
+        root.join("content/world/pins/oteryn.identity.json"),
+    )?)?;
+    if pins.production
+        || identity.project_format_version != pins.project_format_version
+        || identity.world_schema_version != pins.world_schema_version
+        || identity.content_revision != pins.content_revision
+    {
+        return Err("pinned World identity mismatch".into());
+    }
+    let project = source::project(root)?;
+    let (registry, palette) = source::registry(root, &project)?;
+    let compiled = compile::compile(
+        &compile::Input {
+            regions: &project.regions,
+            palette: &palette,
+            identity,
+            world: source::world_extent(root)?,
+            build_class: BuildClass::NonProduction,
+            draft_areas: project::draft_areas(&project.index)?,
+            families: &project.families,
+        },
+        &registry,
+    )?;
+    if compiled.digest != pins.digest {
+        return Err("compiled World digest differs from the published pin".into());
+    }
+    Ok(compiled.bytes)
 }
 
 pub(super) fn world(
@@ -100,7 +114,7 @@ pub(super) fn world_near(
     boot(native, &projected, &pins)
 }
 
-fn boot_pins(pin: &serde_json::Value) -> TestResult<crate::map::boot::BootPins> {
+pub(super) fn boot_pins(pin: &serde_json::Value) -> TestResult<crate::map::boot::BootPins> {
     let field = |key: &str| -> TestResult<&str> { Ok(pin[key].as_str().ok_or("world pin field")?) };
     let hex = field("digest")?;
     let mut digest = [0; 32];

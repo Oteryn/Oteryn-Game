@@ -24,9 +24,8 @@ pub(super) fn source_world_with_bundle(
         .runtime_scope
         .channel_id()
         .ok_or("World Channel")?;
-    // Nextest runs each case in a separate process. Resolve the shared artifact
-    // before activating native content so the cold pin build runs only once and
-    // its compiler allocations are released before the World is booted.
+    // Resolve the shared artifact before activating native content so the cold
+    // compiler's data can be dropped before the World is booted.
     let bytes = if let Some(path) = std::env::var_os("SRX3_DEFAULT_WORLD_BUNDLE") {
         std::fs::read(path)?
     } else {
@@ -39,29 +38,21 @@ pub(super) fn source_world_with_bundle(
         .native_gameplay()
         .ok_or("actual native definitions")?;
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let decoded = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(())).map_err(debug)?;
     let pin: serde_json::Value =
         serde_json::from_slice(&std::fs::read(root.join("content/world/pins/oteryn.json"))?)?;
-    let actual: String = decoded.digest.iter().map(|v| format!("{v:02x}")).collect();
-    assert_eq!(
-        pin["digest"].as_str(),
-        Some(actual.as_str()),
-        "actual published whole World pin"
-    );
-    let pins = crate::map::BundlePins {
-        digest: decoded.digest,
-        project_format_version: decoded.manifest.identity.project_format_version.clone(),
-        world_schema_version: decoded.manifest.identity.world_schema_version.clone(),
-        content_revision: decoded.manifest.identity.content_revision.clone(),
-        production: false,
+    // World boot validates the full bundle against these committed pins.
+    let pins = crate::map::boot::BootPins {
+        start: crate::map::overlay::TilePos {
+            x: u16::try_from(origin.x)?,
+            y: u16::try_from(origin.y)?,
+            floor: i8::try_from(origin.floor.checked_neg().ok_or("source native floor")?)?,
+        },
+        ..super::qc_pinned_world::boot_pins(&pin)?
     };
     let index = native.item_index().ok_or("actual item index")?;
     let missing = std::cell::RefCell::new(std::collections::BTreeSet::new());
     let projected = std::cell::RefCell::new(std::collections::BTreeMap::new());
-    let boot=crate::map::boot::boot(&bytes,&crate::map::boot::BootPins {
-        bundle:pins,map_revision:crate::map::overlay::internal_map_revision(&actual),
-        start:crate::map::overlay::TilePos{x:u16::try_from(origin.x)?,y:u16::try_from(origin.y)?,floor:i8::try_from(origin.floor.checked_neg().ok_or("source native floor")?)?},
-    },world,channel,|key|{
+    let boot=crate::map::boot::boot(&bytes,&pins,world,channel,|key|{
         use crate::content::{ReferenceItemField as F,ReferenceItemType};
         if let Some(cached)=projected.borrow().get(key).copied(){return Some(cached);}
         let (Some(revision), Some(reference)) = (index.revision(key), index.revision(key).and_then(|revision|index.definition_ref("Item",key,revision))) else {
