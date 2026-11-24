@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -17,6 +18,81 @@ KEY = f"oteryn:terrain.tibia.i{IDENTIFIER}"
 SHARD = "content/world/terrain/terrain-08612-08612.json"
 APPEARANCES_SHA256 = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 MARKER_NOTE = " Additionally one decision-21 appearance-only Summer ground; total 8613 Terrain records."
+
+
+@lru_cache
+def ground_membership(root):
+    admitted = json.loads(
+        (root / "imports/official/appearance-membership/admitted.json").read_bytes()
+    )
+    membership = next(
+        row for row in admitted["files"] if row["label"] == "client-15.30"
+    )
+    raw = (
+        root / "imports/official/appearance-membership" / membership["manifest"]
+    ).read_bytes()
+    members = json.loads(raw)
+    digest = APPEARANCES_SHA256
+    if (
+        hashlib.sha256(raw).hexdigest() != membership["manifest_sha256"]
+        or membership["appearances_sha256"] != digest
+    ):
+        raise ValueError("official appearance membership digest")
+    return membership, members["entries_sha256"], {row[0] for row in members["entries"]}
+
+
+def ground_record(root, artifact, appearance, identifier):
+    key = f"oteryn:terrain.tibia.i{identifier}"
+    digest = APPEARANCES_SHA256
+    membership, entries_sha256, identifiers = ground_membership(root)
+    if identifier not in identifiers:
+        raise ValueError(f"Ground {identifier} has no official appearance membership")
+    known = lambda value: {"state": "KNOWN", "value": value}
+    return {
+        "identity": {"family": "Terrain", "key": key, "revision": "definition-r1"},
+        "kind": known("ground"),
+        "walkable": known("unpass" not in appearance.flags),
+        "ground_speed": known(appearance.speed),
+        "blocks_projectile": {"state": "UNKNOWN"},
+        "blocks_sight": {"state": "UNKNOWN"},
+        "floor_change": {"state": "UNKNOWN"},
+        "automap": known(
+            {
+                "shown": appearance.automap_color is not None,
+                **(
+                    {"color": appearance.automap_color}
+                    if appearance.automap_color is not None
+                    else {}
+                ),
+            }
+        ),
+        "client_projection": known({"appearance_id": identifier}),
+        "provenance": {
+            "source": {
+                "engine": "official_client",
+                "publisher": "CipSoft",
+                "product": "Tibia-client",
+                "revision": digest,
+                "profile": "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
+                "client_version": "15.30",
+                "artifact": artifact,
+                "membership_manifest_sha256": membership["manifest_sha256"],
+                "membership_entries_sha256": entries_sha256,
+            },
+            "source_item_id": identifier,
+            "route": {"owner": "Terrain", "reason": "appearance_only_ground"},
+            "fields": {
+                field: [f"official_client:{digest}.{flag}"]
+                for field, flag in [
+                    ("kind", "flags.bank"),
+                    ("walkable", "flags.unpass"),
+                    ("ground_speed", "bank.waypoints"),
+                    ("automap", "flags.automap"),
+                    ("client_projection", "id"),
+                ]
+            },
+        },
+    }
 
 
 def outputs(root=ROOT):
@@ -44,70 +120,7 @@ def outputs(root=ROOT):
     )
     if any(row["external_id"] == str(IDENTIFIER) for row in bindings["bindings"]):
         raise ValueError("appearance-only ground unexpectedly has an Item binding")
-    admitted = json.loads(
-        (root / "imports/official/appearance-membership/admitted.json").read_bytes()
-    )
-    membership = next(
-        row for row in admitted["files"] if row["label"] == "client-15.30"
-    )
-    raw = (
-        root / "imports/official/appearance-membership" / membership["manifest"]
-    ).read_bytes()
-    members = json.loads(raw)
-    digest = file["sha256"]
-    if (
-        hashlib.sha256(raw).hexdigest() != membership["manifest_sha256"]
-        or membership["appearances_sha256"] != digest
-    ):
-        raise ValueError("official appearance membership digest")
-    if not any(row[0] == IDENTIFIER for row in members["entries"]):
-        raise ValueError("Summer ground has no official appearance membership")
-    known = lambda value: {"state": "KNOWN", "value": value}
-    record = {
-        "identity": {"family": "Terrain", "key": KEY, "revision": "definition-r1"},
-        "kind": known("ground"),
-        "walkable": known("unpass" not in appearance.flags),
-        "ground_speed": known(appearance.speed),
-        "blocks_projectile": {"state": "UNKNOWN"},
-        "blocks_sight": {"state": "UNKNOWN"},
-        "floor_change": {"state": "UNKNOWN"},
-        "automap": known(
-            {
-                "shown": appearance.automap_color is not None,
-                **(
-                    {"color": appearance.automap_color}
-                    if appearance.automap_color is not None
-                    else {}
-                ),
-            }
-        ),
-        "client_projection": known({"appearance_id": IDENTIFIER}),
-        "provenance": {
-            "source": {
-                "engine": "official_client",
-                "publisher": "CipSoft",
-                "product": "Tibia-client",
-                "revision": digest,
-                "profile": "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
-                "client_version": "15.30",
-                "artifact": artifact,
-                "membership_manifest_sha256": membership["manifest_sha256"],
-                "membership_entries_sha256": members["entries_sha256"],
-            },
-            "source_item_id": IDENTIFIER,
-            "route": {"owner": "Terrain", "reason": "appearance_only_ground"},
-            "fields": {
-                field: [f"official_client:{digest}.{flag}"]
-                for field, flag in [
-                    ("kind", "flags.bank"),
-                    ("walkable", "flags.unpass"),
-                    ("ground_speed", "bank.waypoints"),
-                    ("automap", "flags.automap"),
-                    ("client_projection", "id"),
-                ]
-            },
-        },
-    }
+    record = ground_record(root, artifact, appearance, IDENTIFIER)
     index_path = "content/world/placements/index.json"
     index = json.loads((root / index_path).read_bytes())
     selected = [row for row in index["palette"] if row["source_item_id"] == IDENTIFIER]

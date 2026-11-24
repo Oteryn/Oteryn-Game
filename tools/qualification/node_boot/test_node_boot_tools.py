@@ -210,6 +210,19 @@ class KnobTests(unittest.TestCase):
 
 
 class WorldFixtureTests(unittest.TestCase):
+    def test_town_crop_contains_s16a_route_and_uses_the_region_file(self):
+        regions = (HERE / 'town-regions.txt').read_text().strip().split(';')
+        self.assertEqual(len(regions), len(set(regions)))
+        # The Dawnport temple, the route planner's first landing, and Oressa.
+        for x, y in ((32064, 31894), (32065, 31894), (32064, 31892)):
+            with self.subTest(tile=(x, y)):
+                self.assertIn(f'{x // 256},{y // 256}', regions)
+        profile = section('NODE_BOOT_WORLD_PROFILE=', 'readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS')
+        result = bash(profile + 'printf "%s\\n" "$WORLD_REGIONS"\n',
+                      {'GAME_SOURCE': str(HERE.parents[2])})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout.strip().split(';'), regions)
+
     def test_spell_manifest_initializes_world_epoch_without_a_bundle(self):
         assignment = function('node_complete_assignment')
         epoch_setup = assignment.split('|| fail "content activation rows"\n', 1)[1].split(

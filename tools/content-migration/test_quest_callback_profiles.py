@@ -46,6 +46,8 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         (self.root / 'content/quests').mkdir(parents=True)
+        (self.root / 'content/quests/authored-bindings').symlink_to(
+            ROOT / 'content/quests/authored-bindings', target_is_directory=True)
         (self.root / 'content/interactions').symlink_to(ROOT / 'content/interactions', target_is_directory=True)
         (self.root / 'content/items').symlink_to(ROOT / 'content/items', target_is_directory=True)
         (self.root / 'content/assets').symlink_to(ROOT / 'content/assets', target_is_directory=True)
