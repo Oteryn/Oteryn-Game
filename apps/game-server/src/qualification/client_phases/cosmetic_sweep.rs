@@ -736,15 +736,40 @@ async fn return_to(
     walk(client, world, &path).await
 }
 
+// Position is a disposable fixture prerequisite. Keep the server-owned world,
+// frame, and map binding and let admission validate the seeded cell.
+// apps/game-server/migrations/0080_character_last_position.sql:23,52
+async fn seed_npc_position(clients: &SeamClients<'_>, at: TilePos) -> TestResult {
+    wait_character_released(clients, 0).await?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let changed = sqlx::query(
+        "UPDATE game_character_last_positions
+         SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
+         WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(i32::from(at.x))
+    .bind(i32::from(at.y))
+    .bind(-i16::from(at.floor))
+    .execute(&mut db)
+    .await?
+    .rows_affected();
+    if changed != 1 {
+        return Err("harness-obtain-path: disposable actor has no saved position".into());
+    }
+    Ok(())
+}
+
 async fn obtain_npc(
     client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
     steps: &[&NpcReward],
     target: &Target,
     state: &mut appearance::Snapshot,
 ) -> TestResult {
-    use oteryn_dev_client::{client_runtime::npc_shop, client_ui::npc_shop as ui};
     let first = steps
         .first()
         .ok_or("harness-obtain-path: NPC dialogue empty")?;
@@ -752,27 +777,78 @@ async fn obtain_npc(
         .npcs
         .iter()
         .find(|npc| npc.key == first.npc)
-        .ok_or_else(|| {
-            format!(
-                "harness-obtain-path: NPC {} absent from town bundle",
-                first.npc
-            )
-        })?;
+        .ok_or_else(|| format!("harness-obtain-path: NPC {} absent from fixture", first.npc))?;
     let home = tile(client.world_spatial().actor_position)?;
-    let basis = spatial_basis::current(client)?;
-    let path = route(world, home, |at| {
+    if let Some(path) = route(world, home, |at| {
         npc.placements.iter().any(|placement| {
             placement.floor == at.floor
                 && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 2
         })
-    })
-    .ok_or_else(|| {
-        format!(
-            "harness-obtain-path: NPC {} unreachable in town bundle",
-            first.npc
-        )
-    })?;
-    walk(client, world, &path).await?;
+    }) {
+        walk(client, world, &path).await?;
+        talk_for_reward(client, npc, steps, target, state).await?;
+        return return_to(client, world, home).await;
+    }
+    let landing = npc
+        .placements
+        .iter()
+        .find_map(|npc| {
+            [(0, -1), (1, 0), (0, 1), (-1, 0)]
+                .into_iter()
+                .find_map(|(dx, dy)| {
+                    let at = TilePos {
+                        x: npc.x.checked_add_signed(dx)?,
+                        y: npc.y.checked_add_signed(dy)?,
+                        floor: npc.floor,
+                    };
+                    (world.base().tile(at.x, at.y, at.floor).is_some() && world.enterable(at))
+                        .then_some(at)
+                })
+        })
+        .ok_or_else(|| {
+            format!(
+                "harness-obtain-path: NPC {} has no adjacent fixture tile",
+                first.npc
+            )
+        })?;
+    logout(client).await?;
+    evidence(&format!(
+        "cosmetic_sweep prerequisite mode=seeded source=saved-position npc={}",
+        first.npc
+    ));
+    let result = async {
+        seed_npc_position(clients, landing).await?;
+        let mut nearby = connect_character(clients, 0xc9, 0).await?;
+        let dialogue = async {
+            if tile(nearby.world_spatial().actor_position)? != landing {
+                return Err("harness-obtain-path: admission refused seeded NPC position".into());
+            }
+            let mut nearby_state = snapshot(&mut nearby)?;
+            talk_for_reward(&mut nearby, npc, steps, target, &mut nearby_state).await
+        }
+        .await;
+        dialogue.and(logout(&mut nearby).await)
+    }
+    .await;
+    let restored = async {
+        seed_npc_position(clients, home).await?;
+        *client = connect_character(clients, 0xc9, 0).await?;
+        *state = snapshot(client)?;
+        Ok(())
+    }
+    .await;
+    result.and(restored)
+}
+
+async fn talk_for_reward(
+    client: &mut DevClientSession,
+    npc: &oteryn_world_bundle::npc::Npc,
+    steps: &[&NpcReward],
+    target: &Target,
+    state: &mut appearance::Snapshot,
+) -> TestResult {
+    use oteryn_dev_client::{client_runtime::npc_shop, client_ui::npc_shop as ui};
+    let basis = spatial_basis::current(client)?;
     let entity = client
         .world_entities()
         .and_then(|entities| {
@@ -804,8 +880,7 @@ async fn obtain_npc(
             return Err(format!("server-npc-dialogue: {text} returned {result:?}").into());
         }
     }
-    wait_target(client, state, target).await?;
-    return_to(client, world, home).await
+    wait_target(client, state, target).await
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1264,7 +1339,16 @@ async fn journey(
             match action {
                 ObtainAction::Npc(target, steps) => {
                     if !target.owned(&state.catalogue) {
-                        obtain_npc(&mut client, world, npcs, &steps, &target, &mut state).await?;
+                        obtain_npc(
+                            &mut client,
+                            clients,
+                            world,
+                            npcs,
+                            &steps,
+                            &target,
+                            &mut state,
+                        )
+                        .await?;
                     }
                 }
                 ObtainAction::Item(target, key) => {
