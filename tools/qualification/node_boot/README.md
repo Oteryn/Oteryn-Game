@@ -142,7 +142,7 @@ and supports these opt-in content groups.
 
 | Group | Batch variable |
 | --- | --- |
-| `cosmetic_sweep` | `OTERYN_E2E_COSMETIC_SWEEP_BATCH=start:len` (default `0:3`) |
+| `cosmetic_sweep` | `OTERYN_E2E_COSMETIC_SWEEP_BATCH=start:len` (default `0:3`), `OTERYN_E2E_COSMETIC_SWEEP_FAMILY=outfits\|addons\|mounts\|taming` (default `all`) |
 | `creature_sweep` | `OTERYN_E2E_CREATURE_BATCH` |
 
 It prints a

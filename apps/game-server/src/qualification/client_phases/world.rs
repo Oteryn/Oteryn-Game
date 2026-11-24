@@ -3202,7 +3202,7 @@ pub(super) async fn journeys(
     if cosmetic_selected || mp_selected || sweep_selected {
         let [mp_first, mp_second, sweep] = extra_world_fixtures(clients, packet_clients).await?;
         if cosmetic_selected {
-            cosmetic_sweep::run(&sweep.clients(clients), world).await?;
+            cosmetic_sweep::run(&sweep.clients(clients), world, &metadata.npcs).await?;
         }
         if sweep_selected {
             creature_sweep::run(&sweep.clients(clients), world, &generation.rewards).await?;

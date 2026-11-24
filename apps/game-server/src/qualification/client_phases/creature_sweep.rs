@@ -556,7 +556,10 @@ async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
 }
 
 /// The spawn needs free non-PZ cells next to the player: walk once to open ground.
-async fn leave_protection_zone(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+pub(super) async fn leave_protection_zone(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult {
     let open = |at: TilePos| {
         world
             .base()
