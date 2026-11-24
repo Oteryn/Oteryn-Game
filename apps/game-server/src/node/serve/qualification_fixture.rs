@@ -191,7 +191,8 @@ pub(super) async fn place_sweep_player(
             target
         } else {
             let anchor = wild_spawn::SWEEP_HUNT_POSITION;
-            let valid_tile = |position| wild_spawn::static_cell_refusal(owners.room, position).is_ok();
+            let valid_tile =
+                |position| wild_spawn::static_cell_refusal(owners.room, position).is_ok();
             // Search a fixed, bounded neighbourhood in the loaded World. A walkable
             // player cell alone does not guarantee space for the adjacent spawn.
             (0_i32..=8)

@@ -1403,12 +1403,18 @@ async fn check_weather(sweep: &mut Sweep<'_, '_>, area: &WeatherArea, rows: &mut
             let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
             let floor = -position.floor;
             let coordinates = format!("{},{},{floor}", position.x, position.y);
-            let answer = request_fixture_control(session, "--place-weather-player", coordinates).await?;
+            let answer =
+                request_fixture_control(session, "--place-weather-player", coordinates).await?;
             if answer != format!("placed {} {} {floor}", position.x, position.y) {
                 return Err("qualification fixture did not place the weather reader".into());
             }
+            let target = ActorPosition {
+                x: i32::from(position.x),
+                y: i32::from(position.y),
+                floor: i16::from(floor),
+            };
             tokio::time::timeout(Duration::from_secs(15), async {
-                while !matches_area(client.world_spatial().actor_position) {
+                while client.world_spatial().actor_position != target {
                     client.service_liveness(Duration::from_millis(100)).await?;
                     client.take_events();
                 }
