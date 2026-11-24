@@ -45,8 +45,9 @@ pub(super) async fn read_with_sources(
             };
             Some(((fact.unlock_key, fact.content_revision), source))
         }).collect();
-    let store: Vec<String> = sqlx::query_scalar("SELECT offer_key FROM game_character_store_cosmetics WHERE character_id=encode($1,'hex')::uuid AND world_id=(SELECT world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid) AND offer_key=ANY($2::text[]) AND operation_id IS NOT NULL ORDER BY offer_key LIMIT 32")
-        .bind(character.as_bytes().as_slice()).bind(grant_keys).fetch_all(connection).await?;
+    let store: Vec<String> = sqlx::query_scalar("SELECT offer_key FROM game_character_store_cosmetics WHERE character_id=encode($1,'hex')::uuid AND world_id=(SELECT world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid) AND offer_key=ANY($2::text[]) AND operation_id IS NOT NULL ORDER BY offer_key LIMIT $3")
+        .bind(character.as_bytes().as_slice()).bind(grant_keys)
+        .bind(crate::content::store_cosmetics::MAX_OFFERS).fetch_all(connection).await?;
     facts.extend(store.into_iter().map(|key| {
         ((key, crate::content::store_cosmetics::PROVENANCE.into()), Source::Store)
     }));

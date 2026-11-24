@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
 pub const PROVENANCE: &str = "store-cosmetics-v1";
+pub const MAX_OFFERS: i64 = 256;
 pub const DOCUMENT: &[u8] = include_bytes!("../../../../../rulesets/economy/store/cosmetics.json");
 #[derive(Debug, Deserialize)]
 pub struct StoreCosmeticOffer {
@@ -32,7 +33,8 @@ struct Source {
 }
 static CATALOGUE: LazyLock<Option<Document>> = LazyLock::new(|| {
     let document: Document = serde_json::from_slice(DOCUMENT).ok()?;
-    (document.offers.len() <= 32 && document.offers.iter().all(|o| o.price > 0)).then_some(document)
+    (document.offers.len() <= MAX_OFFERS as usize && document.offers.iter().all(|o| o.price > 0))
+        .then_some(document)
 });
 pub fn offers() -> Option<&'static [StoreCosmeticOffer]> {
     Some(&CATALOGUE.as_ref()?.offers)
@@ -104,29 +106,72 @@ mod tests {
             "../../../../../docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json"
         ))?;
         let records = evidence["records"].as_array().ok_or("records")?;
-        for offer in super::offers().ok_or("catalogue")? {
-            let reference = records
-                .iter()
-                .find(|r| r["facts"]["name"]["value"] == "Field Surgeon")
-                .ok_or("reference")?;
-            assert_eq!(
-                reference["facts"]["full_store_price"]["classification"],
-                "PROVEN"
-            );
-            assert_eq!(
-                reference["facts"]["full_store_price"]["value"].as_u64(),
-                Some(offer.price)
-            );
-            let looks = super::CATALOGUE
-                .as_ref()
-                .ok_or("catalogue")?
-                .source
-                .outfit_looks
-                .get(&offer.unlock_key)
-                .ok_or("looks")?;
-            assert_eq!(reference["facts"]["male_look_type"]["value"], looks[0]);
-            assert_eq!(reference["facts"]["female_look_type"]["value"], looks[1]);
+        let offer = super::offer("store:outfit:field-surgeon").ok_or("Field Surgeon offer")?;
+        let reference = records
+            .iter()
+            .find(|r| r["facts"]["name"]["value"] == "Field Surgeon")
+            .ok_or("reference")?;
+        assert_eq!(
+            reference["facts"]["full_store_price"]["classification"],
+            "PROVEN"
+        );
+        assert_eq!(
+            reference["facts"]["full_store_price"]["value"].as_u64(),
+            Some(offer.price)
+        );
+        let looks = super::CATALOGUE
+            .as_ref()
+            .ok_or("catalogue")?
+            .source
+            .outfit_looks
+            .get(&offer.unlock_key)
+            .ok_or("looks")?;
+        assert_eq!(reference["facts"]["male_look_type"]["value"], looks[0]);
+        assert_eq!(reference["facts"]["female_look_type"]["value"], looks[1]);
+        Ok(())
+    }
+
+    #[test]
+    fn every_store_offer_points_to_an_admitted_cosmetic() -> Result<(), Box<dyn std::error::Error>>
+    {
+        use std::collections::BTreeSet;
+        let document = super::CATALOGUE.as_ref().ok_or("catalogue")?;
+        let authoring: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../content/cosmetics/outfits/authoring.json"
+        ))?;
+        let outfits = authoring["document"]["outfits"]
+            .as_array()
+            .ok_or("outfits")?;
+        let mounts = authoring["document"]["mounts"].as_array().ok_or("mounts")?;
+        let mut keys = BTreeSet::new();
+        for offer in &document.offers {
+            assert!(keys.insert(&offer.key));
+            assert_eq!(offer.preview.key, offer.unlock_key);
+            match offer.preview.kind {
+                2 => {
+                    let row = outfits
+                        .iter()
+                        .find(|r| r["key"] == offer.unlock_key)
+                        .ok_or("outfit")?;
+                    let [male, female] = document.source.outfit_looks[&offer.unlock_key];
+                    assert_eq!(row["male"]["id"], male);
+                    assert_eq!(row["female"]["id"], female);
+                    assert_eq!(row["addon_count"], 2);
+                }
+                3 => {
+                    let row = mounts
+                        .iter()
+                        .find(|r| r["key"] == offer.unlock_key)
+                        .ok_or("mount")?;
+                    assert_eq!(
+                        row["look"]["id"],
+                        document.source.mount_looks[&offer.unlock_key]
+                    );
+                }
+                kind => panic!("unexpected cosmetic preview kind {kind}"),
+            }
         }
+        assert_eq!(keys.len(), 211);
         Ok(())
     }
 }
