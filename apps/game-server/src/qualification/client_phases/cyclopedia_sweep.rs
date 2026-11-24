@@ -692,7 +692,7 @@ async fn kill(
                 creature_sweep::recover_in_combat(client, world, &target),
             )
             .await
-            .map_err(|_| "combat recovery exceeded the combat deadline")??;
+            .map_err(|_| oteryn_dev_client::SessionError::Timeout("combat recovery exchange"))??;
             if client
                 .actor_vitals()
                 .is_some_and(|vitals| vitals.health == 0)
@@ -1418,7 +1418,9 @@ async fn check_weather(sweep: &mut Sweep<'_, '_>, area: &WeatherArea, rows: &mut
                 Ok::<_, oteryn_dev_client::DevClientError>(())
             })
             .await
-            .map_err(|_| "weather placement was not served on the wire")??;
+            .map_err(|_| {
+                oteryn_dev_client::SessionError::Timeout("weather placement observation")
+            })??;
         }
         let position = client.world_spatial().actor_position;
         if !matches_area(position) {
@@ -1482,6 +1484,9 @@ mod tests {
         };
         assert!(lost_transport(&error));
         assert!(lost_transport(&SessionError::SessionUnusable));
+        assert!(lost_transport(&SessionError::Timeout(
+            "combat recovery exchange"
+        )));
         assert!(!lost_transport(&SessionError::ActivityScopeChanged));
         assert!(!lost_transport(&std::io::Error::other("content fixture")));
     }

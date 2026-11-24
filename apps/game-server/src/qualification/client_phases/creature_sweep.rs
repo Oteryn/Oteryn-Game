@@ -573,7 +573,13 @@ async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
         }
     })
     .await
-    .map_err(|_| format!("sweep recovery did not reach half health: vitals={:?}, recovery={recovery:?}", client.actor_vitals()))?
+    .map_err(|_| {
+        evidence(&format!(
+            "sweep recovery did not reach half health: vitals={:?}, recovery={recovery:?}",
+            client.actor_vitals()
+        ));
+        oteryn_dev_client::SessionError::Timeout("sweep recovery exchange")
+    })?
 }
 
 pub(super) async fn recover_in_combat(
@@ -679,7 +685,7 @@ async fn leave_protection_zone(client: &mut DevClientSession, world: &BundleWorl
         }
     })
     .await
-    .map_err(|_| "qualification sweep placement was not observed")?
+    .map_err(|_| oteryn_dev_client::SessionError::Timeout("sweep placement observation"))?
 }
 
 fn creature_named(entry: &oteryn_dev_client::WorldSpatialEntity, name: &str) -> bool {
