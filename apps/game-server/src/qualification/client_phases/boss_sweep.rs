@@ -314,10 +314,6 @@ fn donor_gap(key: &str) -> Option<(&'static str, &'static str)> {
             "combat spell trigger",
             "Crystal201189f8:data-global/scripts/spells/monster/foam_splash.lua:52",
         ),
-        "field_fill_goshnar_s_malice" => (
-            "Soul War room defined in donor quest catalogue",
-            "Crystal201189f8:data-global/lib/quests/soul_war.lua:334",
-        ),
         "field_fill_lisa" => (
             "combat script found, entry trigger unidentified",
             "Crystal201189f8:data-crystal/scripts/spells/monster/lisa_heal.lua:23",
@@ -351,22 +347,32 @@ fn donor_gap(key: &str) -> Option<(&'static str, &'static str)> {
 }
 
 fn donor_lever(levers: &[Lever], key: &str) -> Option<(Option<usize>, Option<&'static str>)> {
-    let (path, source) = match key {
+    let (path, creature, source) = match key {
         "crystal_herald_of_fire" => (
             "data-global/scripts/quests/targuna/actions_herald_lever.lua",
+            "oteryn:creature.herald_of_fire",
             "Crystal201189f8:data-global/scripts/quests/targuna/actions_herald_lever.lua:6",
         ),
         "crystal_lord_retro" => (
             "data-global/scripts/quests/25_years_of _tibia_quest/lever_lord_retro.lua",
+            "oteryn:creature.lord_retro",
             "Crystal201189f8:data-global/scripts/quests/25_years_of _tibia_quest/lever_lord_retro.lua:3",
+        ),
+        "field_fill_goshnar_s_malice" => (
+            "data-global/lib/quests/soul_war.lua",
+            "oteryn:creature.goshnar_s_malice",
+            "Crystal201189f8:data-global/lib/quests/soul_war.lua:867",
         ),
         "ghulosh" => (
             "data-global/scripts/actions/bosses_levers/ghulosh.lua",
+            "oteryn:creature.ghulosh",
             "Crystal201189f8:data-global/scripts/actions/bosses_levers/ghulosh.lua:5",
         ),
         _ => return None,
     };
-    let index = levers.iter().position(|lever| lever.path == path)?;
+    let index = levers
+        .iter()
+        .position(|lever| lever.path == path && lever.creature_key.as_deref() == Some(creature))?;
     Some((Some(index), Some(source)))
 }
 
@@ -1760,6 +1766,10 @@ mod tests {
         for (key, creature) in [
             ("crystal_herald_of_fire", "oteryn:creature.herald_of_fire"),
             ("crystal_lord_retro", "oteryn:creature.lord_retro"),
+            (
+                "field_fill_goshnar_s_malice",
+                "oteryn:creature.goshnar_s_malice",
+            ),
             ("ghulosh", "oteryn:creature.ghulosh"),
         ] {
             let entry = catalogue
