@@ -1,7 +1,7 @@
 name: Codex Cloud runner PoC
 
-# Proof of concept, not a required check: one ephemeral JIT runner started
-# inside a Codex Cloud task picks up this job. It runs only when this file
+# Proof of concept, not a required check: ephemeral JIT runners started inside
+# Codex Cloud tasks pick up the node boot shards. It runs only when this file
 # changes or by hand.
 on:
   pull_request:
@@ -16,77 +16,62 @@ concurrency:
   group: codex-runner-poc-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # main head of the scheduled hosted node boot run 45380109179, for comparison.
+  SOURCE_SHA: 4614584bd7552dc164ba2b9c45364a400ddb414d
+
 jobs:
-  relay:
-    name: Codex runner PoC / relay e2e archive to ghcr (hosted)
+  plan:
+    name: Codex runner PoC / plan node boot shards (hosted)
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    permissions:
-      actions: read
-      contents: read
-      packages: write
-    env:
-      SOURCE_RUN: "45369833403"
-      SOURCE_SHA: 2b9bfde7e898dd7b28d017f2d172a08cf689ceb1
+    timeout-minutes: 10
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
     steps:
-      - name: Download the planner of the source run
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      - name: Check out the source head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          name: pr-postgres-test-planner
-          path: ${{ runner.temp }}/relay/pg-planner
-          run-id: ${{ env.SOURCE_RUN }}
-          github-token: ${{ github.token }}
-      - name: Download the e2e archive of the source run
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: pr-postgres-test-archives-e2e
-          path: ${{ runner.temp }}/relay/pg-selected
-          run-id: ${{ env.SOURCE_RUN }}
-          github-token: ${{ github.token }}
-      - name: Push the archive to ghcr
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - name: Plan the full set and keep the PoC shards
+        id: plan
         env:
-          GH_TOKEN: ${{ github.token }}
-          IMAGE: ghcr.io/oteryn/oteryn-game-codex-runner-poc:pg-${{ github.run_id }}-${{ github.run_attempt }}
+          KEEP: basic rows-000-010 rows-200-210 g-f4-f5-f6 g-f7add-f7clock-f7cont-f7forge-f7run spells rows-100-110 rows-300-open
         run: |
           set -euo pipefail
-          cd "$RUNNER_TEMP/relay"
-          (cd pg-selected && sha256sum -c SHA256SUMS)
-          ls -la pg-planner pg-selected
-          printf 'FROM scratch\nCOPY pg-planner /pg-planner\nCOPY pg-selected /pg-selected\n' > Dockerfile
-          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-          docker build -t "$IMAGE" .
-          docker push "$IMAGE"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          python3 tools/qualification/node_boot/matrix.py plan --set full --groups '' --rows '' \
+            --batch 10 --basic '' --spells '' --game-platform '' > "$RUNNER_TEMP/all.json"
+          python3 - "$RUNNER_TEMP/all.json" "$KEEP" > "$RUNNER_TEMP/shards.json" <<'PY'
+          import json, sys
+          keep = sys.argv[2].split()
+          shards = [s for s in json.load(open(sys.argv[1])) if s["name"] in keep]
+          assert sorted(s["name"] for s in shards) == sorted(keep), [s["name"] for s in shards]
+          print(json.dumps(shards, separators=(",", ":")))
+          PY
+          printf 'shards=%s\n' "$(cat "$RUNNER_TEMP/shards.json")" >> "$GITHUB_OUTPUT"
+          python3 -c 'import json,sys; [print(s["name"], s["entry"], s["env"]) for s in json.load(open(sys.argv[1]))]' \
+            "$RUNNER_TEMP/shards.json" | tee -a "$GITHUB_STEP_SUMMARY"
 
-  pg_partition:
-    name: Codex runner PoC / PostgreSQL e2e partition ${{ matrix.index }} of 20
-    needs: relay
+  node_boot:
+    name: Codex runner PoC / node boot ${{ matrix.shard.name }}
+    needs: plan
     strategy:
       fail-fast: false
       matrix:
-        index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-    permissions:
-      contents: read
-      packages: read
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
     runs-on: [self-hosted, codex-cloud]
-    timeout-minutes: 45
-    env:
-      # Head and partition of the hosted source run (hosted test step: 5m42s on 4 CPUs).
-      SOURCE_SHA: 2b9bfde7e898dd7b28d017f2d172a08cf689ceb1
-      BUILD_WORKSPACE: /home/runner/work/Oteryn-Game/Oteryn-Game
-      ARCHIVE_INDEX: ${{ matrix.index }}
-      ARCHIVE_TOTAL: "20"
-      CI_IMAGE: ghcr.io/oteryn/oteryn-game-ci-runner:pr-3469
+    timeout-minutes: 120
     steps:
-      # The Codex Cloud environment already holds a clone of this repository, the Rust toolchain
-      # and a prepared PostgreSQL 18 test cluster, so only the test archive comes over the network.
+      # The Codex Cloud environment holds a clone of this repository, the Rust toolchain and
+      # Docker. The unprivileged harness mode builds its own Game binaries on the task machine.
       - name: Runner facts
         run: |
           nproc
           free -g
-          df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP"
-          command -v cargo-nextest || echo 'no native cargo-nextest'
-          if unshare --user --mount --map-root-user true 2>/dev/null; then echo 'unshare ok'; else echo 'no unshare'; fi
-          git -C /workspace/Oteryn-Game rev-parse HEAD
+          df -h "$GITHUB_WORKSPACE" /tmp
+          id -u
+          for p in docker python3 node openssl cargo psql setsid timeout rustup; do printf '%s ' "$p"; command -v "$p" || echo missing; done
 
       - name: Source tree from the environment clone
         run: |
@@ -102,123 +87,48 @@ jobs:
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           echo "source tree took $(( $(date +%s) - start ))s"
 
-      # A throwaway cluster from the environment's PostgreSQL 18 binaries: the retained cluster's
-      # identity check fails in some task containers, and a fresh one needs no shared state.
-      - name: Start ephemeral PostgreSQL 18
-        run: |
-          set +x
-          set -euo pipefail
-          start=$(date +%s)
-          export OTERYN_AUTO_START=0
-          source /workspace/oteryn-env/env.sh
-          bin="$(dirname "$(command -v postgres)")"
-          "$bin/postgres" --version | grep -Eq ' 18\.'
-          dir="$RUNNER_TEMP/pr-postgres"
-          rm -rf -- "$dir"
-          mkdir -p "$dir/sock"
-          chmod 700 "$dir"
-          password="$(python3 -c 'import secrets; print(secrets.token_hex(24))')"
-          echo "::add-mask::$password"
-          printf '%s\n' "$password" > "$dir/pwfile"
-          locale=en_US.UTF-8
-          locale -a 2>/dev/null | grep -qiE '^en_US\.utf-?8$' || locale=C.UTF-8
-          "$bin/initdb" -D "$dir/data" -U oteryn_test_admin --pwfile="$dir/pwfile" \
-            --auth=scram-sha-256 --encoding=UTF8 --locale="$locale" >/dev/null
-          rm -f -- "$dir/pwfile"
-          started=''
-          for _ in 1 2 3; do
-            port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')"
-            if "$bin/pg_ctl" -D "$dir/data" -l "$dir/postgres.log" -w -t 60 start \
-              -o "-c listen_addresses=127.0.0.1 -p $port -k $dir/sock -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=200"; then
-              started=1
-              break
-            fi
-          done
-          if [[ -z "$started" ]]; then
-            grep -viE 'password|secret|token|://' "$dir/postgres.log" | tail -n 50 >&2 || true
-            exit 1
-          fi
-          "$bin/pg_isready" -h 127.0.0.1 -p "$port" -U oteryn_test_admin -d postgres
-          echo "CODEX_PG_URL=postgresql://oteryn_test_admin:${password}@127.0.0.1:${port}/postgres" >> "$GITHUB_ENV"
-          echo "postgres start took $(( $(date +%s) - start ))s (locale $locale)"
-
-      - name: Pull the test archive from ghcr
+      - name: Exact public Platform producer
         env:
-          GH_TOKEN: ${{ github.token }}
-          IMAGE: ghcr.io/oteryn/oteryn-game-codex-runner-poc:pg-${{ github.run_id }}-${{ github.run_attempt }}
+          PLATFORM_REF: ${{ matrix.shard.platform_ref }}
         run: |
           set -euo pipefail
-          start=$(date +%s)
-          # Codex Cloud keeps the home directory read-only; docker login stores its config here.
-          export DOCKER_CONFIG="$RUNNER_TEMP/docker-config"
-          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-          docker pull -q "$IMAGE"
-          id=$(docker create "$IMAGE" /none)
-          docker cp "$id:/pg-planner" "$RUNNER_TEMP/pg-planner"
-          docker cp "$id:/pg-selected" "$RUNNER_TEMP/pg-selected"
-          docker rm "$id"
-          echo "archive pull took $(( $(date +%s) - start ))s"
+          git init -q _platform
+          git -C _platform fetch -q --depth 1 --no-tags https://github.com/Oteryn/Oteryn-Platform.git "$PLATFORM_REF"
+          git -C _platform checkout -q --detach FETCH_HEAD
+          test "$(git -C _platform rev-parse HEAD)" = "$PLATFORM_REF"
 
-      - name: Verify archive and plan the partition
-        run: |
-          set -euo pipefail
-          cd "$RUNNER_TEMP/pg-selected"
-          sha256sum -c SHA256SUMS
-          test "$(cat head-sha)" = "$SOURCE_SHA"
-          test "$(cat workspace)" = "$BUILD_WORKSPACE"
-          mkdir -p "$RUNNER_TEMP/pg-plan" "$RUNNER_TEMP/pg-archives"
-          mv pg-e2e.json "$RUNNER_TEMP/pg-plan/"
-          mv pg-e2e.tar.zst "$RUNNER_TEMP/pg-archives/"
-          cd "$GITHUB_WORKSPACE"
-          printf '%s  %s\n' '0e3cdf32579feec5d270659382d23bbe9de29b9d10d59ce994b34bcb1d4f8188' "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" | sha256sum -c -
-          python3 "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" "$RUNNER_TEMP/pg-plan" "$ARCHIVE_INDEX" "$ARCHIVE_TOTAL" \
-            tools/ci/pg_test_durations.json --optional-archives
-          wc -l "$RUNNER_TEMP"/pg-plan/*.filters
-
-      # The binaries read repository files through the build job's workspace path, which is
-      # read-only on Codex Cloud. Natively a private mount namespace puts the checkout there;
-      # without unshare or a native nextest the tests run in the CI image instead.
-      - name: Run registered PostgreSQL E2E targets
+      - name: Select shard
         env:
-          GH_TOKEN: ${{ github.token }}
+          SHARD_JSON: ${{ toJSON(matrix.shard) }}
         run: |
-          set +x
           set -euo pipefail
-          export OTERYN_AUTO_START=0
-          source /workspace/oteryn-env/env.sh
-          export OTERYN_TEST_POSTGRES_ADMIN_URL="$CODEX_PG_URL"
-          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-e2e.filters"
-          test "${#filters[@]}" -gt 0
-          args=(nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
-            --workspace-remap "$BUILD_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml"
-            --no-fail-fast "${filters[@]}")
-          start=$(date +%s)
-          status=0
-          exec > >(tee -a "$RUNNER_TEMP/pg-nextest.log") 2>&1
-          nextest=$(command -v cargo-nextest || true)
-          if [[ -n "$nextest" ]] && unshare --user --mount --map-root-user true 2>/dev/null; then
-            echo 'mode: native'
-            export PG_WORKSPACE="$BUILD_WORKSPACE" PG_SOURCE="$GITHUB_WORKSPACE" PG_RUN_UID="$(id -u)" PG_RUN_GID="$(id -g)"
-            unshare --user --mount --map-root-user --propagation private bash -euc '
-              mount -t tmpfs -o mode=0755 tmpfs /home
-              mkdir -p "$PG_WORKSPACE"
-              mount --bind "$PG_SOURCE" "$PG_WORKSPACE"
-              cd "$PG_WORKSPACE"
-              exec unshare --user --map-user="$PG_RUN_UID" --map-group="$PG_RUN_GID" -- "$@"
-            ' pg-run "$nextest" "${args[@]}" || status=$?
-          else
-            echo 'mode: CI image'
-            export DOCKER_CONFIG="$RUNNER_TEMP/docker-config"
-            docker pull -q "$CI_IMAGE"
-            docker run --rm --network host \
-              -v "$GITHUB_WORKSPACE:$BUILD_WORKSPACE" -v "$RUNNER_TEMP:$RUNNER_TEMP" -w "$BUILD_WORKSPACE" \
-              -e OTERYN_TEST_POSTGRES_ADMIN_URL \
-              "$CI_IMAGE" cargo-nextest "${args[@]}" || status=$?
+          python3 tools/qualification/node_boot/matrix.py export-env "$SHARD_JSON" > "$RUNNER_TEMP/shard.env"
+          cat "$RUNNER_TEMP/shard.env" | tee -a "$GITHUB_ENV"
+
+      - name: Run node boot shard (unprivileged)
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+        run: |
+          set +e +x
+          set -uo pipefail
+          source /workspace/oteryn-env/env.sh >/dev/null 2>&1 || { echo '::error::environment unavailable'; exit 2; }
+          export OTERYN_AUTO_START=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+          logs="$RUNNER_TEMP/node-boot-failure-logs"
+          mkdir -p "$logs"
+          evidence="$logs/qualification-client.log"
+          started=$SECONDS
+          # The harness work directory must sit under root- or self-owned ancestors: use /tmp.
+          (unset RUNNER_TEMP; NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_FAILURE_LOG_DIR="$logs" \
+            bash tools/qualification/node_boot/run.sh) > "$evidence" 2>&1
+          code=$?
+          echo "shard ${SHARD_NAME:-?} exit=$code seconds=$((SECONDS - started))"
+          grep -aE '^(NODE_BOOT_EVIDENCE |SEAM_EVIDENCE |NODE_BOOT_RESULT=)' "$evidence" \
+            | grep -viE 'password|postgres(ql)?://|secret|token|key=' | tee -a "$GITHUB_STEP_SUMMARY" | tail -n 40
+          grep -aE '^NODE_BOOT_RESULT=' "$evidence" | tail -n 1 | sed 's/^/::notice title=node boot result::/'
+          grep -aE '^SEAM_EVIDENCE .*status=FAIL' "$evidence" | grep -viE 'password|postgres(ql)?://|secret|token|key=' \
+            | cut -c1-300 | head -n 20 | sed 's/^/::error title=node boot FAIL::/'
+          if [[ "$code" != 0 ]]; then
+            tail -n 30 "$evidence" | grep -viE 'password|postgres(ql)?://|secret|token|key=' | cut -c1-300 \
+              | sed 's/^/::warning title=node boot tail::/' | tail -n 10
           fi
-          echo "tests took $(( $(date +%s) - start ))s, exit $status"
-          # Step logs do not upload from Codex Cloud; annotations travel with the job result.
-          if (( status != 0 )); then
-            grep -E '^\s*(FAIL|SIGSEGV|SIGABRT|TIMEOUT|LEAK)' "$RUNNER_TEMP/pg-nextest.log" | sort -u | head -n 20 |
-              while IFS= read -r line; do echo "::error title=Codex e2e partition ${ARCHIVE_INDEX}::${line}"; done || true
-          fi
-          exit "$status"
+          exit "$code"
