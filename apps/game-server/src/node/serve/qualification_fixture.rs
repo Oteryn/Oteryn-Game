@@ -17,6 +17,36 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     .then_some((session, profile))
 }
 
+// The item sweep uses the same disposable-node gate, current-session fence and audited mint.
+fn item_request(bytes: &[u8]) -> Option<([u8; 16], &str, u32, &str)> {
+    if !cfg!(feature = "qualification-spawn") {
+        return None;
+    }
+    let text = std::str::from_utf8(bytes).ok()?.strip_suffix('\n')?;
+    let mut fields = text.strip_prefix("qualify ")?.split(' ');
+    let session = parse_operation_id(fields.next()?.as_bytes())?;
+    if fields.next()? != "item" {
+        return None;
+    }
+    let vocation = fields.next()?;
+    let level: u32 = fields.next()?.parse().ok()?;
+    let key = fields.next()?;
+    if fields.next().is_some() {
+        return None;
+    }
+    ((level == 0 || (1..=1000).contains(&level))
+        && matches!(
+            vocation,
+            "knight" | "paladin" | "sorcerer" | "druid" | "monk"
+        )
+        && key.starts_with("oteryn:item.")
+        && key.len() <= 100
+        && key
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || b":._/-".contains(&byte)))
+    .then_some((session, vocation, level, key))
+}
+
 #[derive(Debug, PartialEq, Eq)]
 enum EarlyRefusal {
     FixtureDisabled,
@@ -56,6 +86,32 @@ pub(super) async fn prepare(
     native: Option<&NativeGameplayState>,
     bytes: &[u8],
 ) -> &'static str {
+    if config.qualification_fixture
+        && let Some(native) = native
+        && let Some((session, vocation, level, key)) = item_request(bytes)
+    {
+        return match Box::pin(prepare_build(
+            root,
+            authority,
+            proof,
+            config,
+            native,
+            session,
+            vocation,
+            Some((level, key)),
+        ))
+        .await
+        {
+            Ok(()) => "qualified",
+            Err(error) => {
+                emit(
+                    PROCESS,
+                    &refusal_warning(&session, vocation, error.as_ref()),
+                );
+                "rejected"
+            }
+        };
+    }
     let (native, session, profile) =
         match prepare_request(config.qualification_fixture, native, bytes) {
             Ok(prepared) => prepared,
@@ -65,7 +121,7 @@ pub(super) async fn prepare(
             }
         };
     match Box::pin(prepare_build(
-        root, authority, proof, config, native, session, profile,
+        root, authority, proof, config, native, session, profile, None,
     ))
     .await
     {
@@ -629,6 +685,8 @@ fn refusal_warning(
         .field("profile", FieldValue::Owned(profile.to_owned()))
 }
 
+// Keep the same control, authority and content owners together for both fixture modes.
+#[allow(clippy::too_many_arguments)]
 async fn prepare_build(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -637,6 +695,7 @@ async fn prepare_build(
     native: &NativeGameplayState,
     session: [u8; 16],
     profile: &str,
+    item: Option<(u32, &str)>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let session = crate::foundation::GameSessionId::decode(&session)?;
@@ -657,6 +716,18 @@ async fn prepare_build(
             != super::super::uuid_bytes(&config.scope.channel_id)
     {
         return Err("qualification scope mismatch".into());
+    }
+    if let Some((0, key)) = item {
+        return prepare_items(
+            root,
+            authority,
+            proof,
+            &current,
+            native,
+            deadline,
+            Some(key),
+        )
+        .await;
     }
     let character = crate::domain::CharacterId::from_bytes(
         *current.current_character_lease().character_id().as_bytes(),
@@ -680,12 +751,22 @@ async fn prepare_build(
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
-    let (vocation, level) = match profile {
-        "knight-underlevel" => ("knight", 66),
-        "explorer" => ("knight", 100),
-        _ => (profile, 100),
+    let (vocation, level) = item.map_or_else(
+        || match profile {
+            "knight-underlevel" => ("knight", 66),
+            "explorer" => ("knight", 100),
+            _ => (profile, 100),
+        },
+        |(level, _)| (profile, level),
+    );
+    let sweep_profile = format!("item-{vocation}-{level}");
+    let occurrence_profile = if item.is_some() {
+        &sweep_profile
+    } else if level == 100 {
+        vocation
+    } else {
+        profile
     };
-    let occurrence_profile = if level == 100 { vocation } else { profile };
     qualification_build::prepare_character_with_policy_until(
         root,
         authority,
@@ -706,7 +787,16 @@ async fn prepare_build(
         deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    prepare_items(
+        root,
+        authority,
+        proof,
+        &current,
+        native,
+        deadline,
+        item.map(|(_, key)| key),
+    )
+    .await
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -737,6 +827,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
+    sweep_key: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -811,13 +902,23 @@ async fn prepare_items(
         .ok_or("qualification Item index missing")?;
     // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
     // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
-        let key = format!("oteryn:item.tibia.i{id}");
+    let defaults = [
+        ("oteryn:item.tibia.i3276", "i3276"),
+        ("oteryn:item.tibia.i3003", "i3003"),
+        ("oteryn:item.tibia.i3457", "i3457"),
+    ];
+    let requested = [(sweep_key.unwrap_or_default(), "item-sweep")];
+    let items = if sweep_key.is_some() {
+        &requested[..]
+    } else {
+        &defaults[..]
+    };
+    for (ordinal, &(key, claim_tag)) in items.iter().enumerate() {
         let definition = TypedDefinitionRef {
             family: "Item".into(),
-            production_key: key.clone(),
+            production_key: key.into(),
             revision_ref: index
-                .revision(&key)
+                .revision(key)
                 .ok_or("qualification Item absent")?
                 .into(),
         };
@@ -841,10 +942,7 @@ async fn prepare_items(
             ),
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),
-                production_key: fixture_gear_claim(
-                    current.current_game_session_id(),
-                    &format!("i{id}"),
-                ),
+                production_key: fixture_gear_claim(current.current_game_session_id(), claim_tag),
                 revision_ref: "qualification-v1".into(),
             },
             source_placement: "oteryn:qualification.node-boot".into(),

@@ -309,7 +309,7 @@ pub(super) async fn buy_meat(
     .await
 }
 
-async fn damage_and_spend_mana(
+pub(super) async fn damage_and_spend_mana(
     client: &mut DevClientSession,
     world: &BundleWorld,
 ) -> TestResult<(u32, u32, u32, u32)> {
@@ -434,7 +434,7 @@ async fn accepted_logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
-async fn food_remaining(
+pub(super) async fn food_remaining(
     client: &mut DevClientSession,
     after_result: Option<u64>,
 ) -> TestResult<i32> {

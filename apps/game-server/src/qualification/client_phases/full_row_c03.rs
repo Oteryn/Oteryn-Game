@@ -124,7 +124,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     row.finish(result);
 }
 
-async fn tab(client: &mut DevClientSession, tab: CharacterTab) -> TestResult<combat::CombatStats> {
+pub(super) async fn tab(client: &mut DevClientSession, tab: CharacterTab) -> TestResult<combat::CombatStats> {
     use oteryn_dev_client::client_ui::cyclopedia_character::{
         CyclopediaCharacterPanel, Intent, request,
     };

@@ -559,7 +559,7 @@ async fn refuse_illusion(
 
 // A four-step, same-floor PZ corridor keeps the two speed trials on identical
 // ground without monster combat, floor transitions or path-selection differences.
-fn corridor(world: &BundleWorld, from: TilePos) -> Option<Vec<TilePos>> {
+pub(super) fn corridor(world: &BundleWorld, from: TilePos) -> Option<Vec<TilePos>> {
     for direction in [
         StepDirection::North,
         StepDirection::East,
@@ -657,7 +657,7 @@ async fn cadence_leg(client: &mut DevClientSession, cells: &[TilePos]) -> TestRe
     }
     Ok(intervals[intervals.len() / 2])
 }
-async fn cadence(client: &mut DevClientSession, cells: &[TilePos]) -> TestResult<Duration> {
+pub(super) async fn cadence(client: &mut DevClientSession, cells: &[TilePos]) -> TestResult<Duration> {
     let outward = cadence_leg(client, cells).await?;
     let reverse: Vec<_> = cells.iter().rev().copied().collect();
     let inward = cadence_leg(client, &reverse).await?;

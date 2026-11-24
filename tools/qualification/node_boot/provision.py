@@ -83,10 +83,22 @@ if __name__ == "__main__":
     parser.add_argument("--session", required=True)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--profile", choices=PROFILES)
+    group.add_argument("--item", nargs=3, metavar=("VOCATION", "LEVEL", "KEY"))
     group.add_argument("--spawn", metavar="CREATURE_KEY")
     group.add_argument("--inspect-damage", metavar="TARGET")
     args = parser.parse_args()
-    if args.spawn is not None:
+    if args.item is not None:
+        vocation, level, key = args.item
+        identifier = uuid.UUID(args.session)
+        if (identifier.version != 7 or str(identifier) != args.session
+                or vocation not in ("knight", "paladin", "sorcerer", "druid", "monk")
+                or not level.isdecimal() or not 0 <= int(level) <= 1000
+                or not key.startswith("oteryn:item.") or not CREATURE_KEY.fullmatch(key)):
+            raise ValueError("invalid qualification item request")
+        if _request(args.socket, f"qualify {args.session} item {vocation} {level} {key}\n",
+                    64) != b"qualified\n":
+            raise RuntimeError("node refused qualification item preparation")
+    elif args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
     elif args.inspect_damage is not None:
         print(inspect_damage(args.socket, args.session, args.inspect_damage))

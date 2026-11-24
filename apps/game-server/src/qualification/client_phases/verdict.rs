@@ -773,6 +773,7 @@ const GROUPS: &[(&str, &[&str])] = &[
     ("f7cont", &[]),
     ("f7forge", &[]),
     ("f7run", &[]),
+    ("item_sweep", &[]),
     ("mp", &[]),
     ("rows", &[]),
 ];
@@ -812,7 +813,16 @@ impl Groups {
                 pending.extend(after.iter().copied());
             }
         }
+        if selected.contains("item_sweep") && selected.len() != 1 {
+            return Err("item_sweep needs a fresh stack and must run alone".into());
+        }
         Ok(Self(Some(selected)))
+    }
+
+    pub(super) fn explicitly_runs(&self, group: &str) -> bool {
+        self.0
+            .as_ref()
+            .is_some_and(|selected| selected.contains(group))
     }
 
     pub(super) fn runs(&self, group: &str) -> bool {
