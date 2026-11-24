@@ -202,6 +202,10 @@ if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$NODE_BOOT_P
 fi
 readonly SPAWN_PROOF=node::serve::qualification_fixture::tests::qualification_spawn_transaction_returns_pool_and_bounds_backend
 NODE_SPAWN_FEATURES=(--features qualification-spawn)
+if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
+  [[ -z "${NODE_BOOT_PREBUILT_DIR:-}" ]] || blocked unprivileged_requires_local_game_build
+  NODE_SPAWN_FEATURES=(--features qualification-unprivileged)
+fi
 NODE_BOOT_LIBTEST=""
 WORLD_COMPILER=(cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler --)
 if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then

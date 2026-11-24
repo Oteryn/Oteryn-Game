@@ -20,12 +20,34 @@ pub const MAX_PASSWORD_BYTES: usize = 1024;
 pub const MAX_ROOT_CA_BYTES: usize = 64 * 1024;
 
 /// Use one OS identity for operator and service in explicitly opted-in qualification builds.
+#[cfg(feature = "qualification-unprivileged")]
 pub fn qualification_operator_uid() -> Option<u32> {
-    #[cfg(feature = "qualification-spawn")]
-    if std::env::var("NODE_BOOT_UNPRIVILEGED").as_deref() == Ok("1") {
-        return Some(secure_file::effective_uid());
-    }
+    qualification_operator_uid_for_setting(
+        secure_file::effective_uid(),
+        std::env::var_os("NODE_BOOT_UNPRIVILEGED").as_deref(),
+    )
+}
+
+/// Builds without unprivileged qualification keep the deployment identity checks.
+#[cfg(not(feature = "qualification-unprivileged"))]
+pub const fn qualification_operator_uid() -> Option<u32> {
     None
+}
+
+/// Resolve the qualification UID from an explicit setting and the compiled feature.
+pub fn qualification_operator_uid_for_setting(
+    invoking: u32,
+    setting: Option<&std::ffi::OsStr>,
+) -> Option<u32> {
+    #[cfg(feature = "qualification-unprivileged")]
+    {
+        (setting == Some(std::ffi::OsStr::new("1"))).then_some(invoking)
+    }
+    #[cfg(not(feature = "qualification-unprivileged"))]
+    {
+        let _ = (invoking, setting);
+        None
+    }
 }
 
 /// A startup input failure. `key` names the configuration key whose value or

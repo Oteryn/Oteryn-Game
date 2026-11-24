@@ -126,7 +126,7 @@ values: `NODE_BOOT_SERVICE_USER` (`oteryn-node-boot[-suffix]`), `NODE_BOOT_BASE`
 `NODE_BOOT_NO_PROGRESS_S` are passed to the seam harness when set.
 
 On a host without sudo, set `NODE_BOOT_UNPRIVILEGED=1` for a disposable
-`qualification-spawn` run. The runner uses a private temporary deployment
+`qualification-unprivileged` run. The runner uses a private temporary deployment
 directory and runs Game's operator and service with the caller's UID. Docker
 and the pinned Platform checkout are still required. Operator/service isolation
 checks are skipped and the output records `mode=unprivileged` so a successful

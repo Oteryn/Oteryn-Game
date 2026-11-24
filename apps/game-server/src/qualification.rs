@@ -99,13 +99,13 @@ fn required(name: &str) -> Result<String, io::Error> {
 }
 
 fn provision_python() -> std::process::Command {
+    #[cfg(feature = "qualification-unprivileged")]
     if crate::node::qualification_operator_uid().is_some() {
-        std::process::Command::new("python3")
-    } else {
-        let mut command = std::process::Command::new("sudo");
-        command.args(["-n", "python3"]);
-        command
+        return std::process::Command::new("python3");
     }
+    let mut command = std::process::Command::new("sudo");
+    command.args(["-n", "python3"]);
+    command
 }
 
 fn evidence(line: &str) {

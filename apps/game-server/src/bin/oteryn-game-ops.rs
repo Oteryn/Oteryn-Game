@@ -1658,14 +1658,39 @@ fn resync_outcome(result: Result<u64, oteryn_game_server::node::serve::ResyncErr
     }
 }
 
+fn check_operator_uid(invoking: u32, qualification_uid: Option<u32>) -> Outcome {
+    if invoking != qualification_uid.unwrap_or(0) {
+        return Err(Failure::Identity("oteryn-game-ops runs only as root"));
+    }
+    Ok(())
+}
+
+fn check_service_uid(invoking: u32, service_uid: u32, qualification_uid: Option<u32>) -> Outcome {
+    #[cfg(not(feature = "qualification-unprivileged"))]
+    let _ = qualification_uid;
+    #[cfg(feature = "qualification-unprivileged")]
+    if let Some(uid) = qualification_uid {
+        if service_uid != uid {
+            return Err(Failure::Identity(
+                "unprivileged qualification requires operator and service to share a UID",
+            ));
+        }
+        return Ok(());
+    }
+    if service_uid == invoking {
+        return Err(Failure::Identity(
+            "oteryn-game-ops refuses to run as the service user",
+        ));
+    }
+    Ok(())
+}
+
 async fn run(raw: Vec<String>) -> Outcome {
     let mut arguments = Arguments::parse(raw)?;
     let config_path = PathBuf::from(arguments.take("config")?);
     let invoking = secure_file::effective_uid();
     let qualification_uid = oteryn_game_server::node::qualification_operator_uid();
-    if invoking != qualification_uid.unwrap_or(0) {
-        return Err(Failure::Identity("oteryn-game-ops runs only as root"));
-    }
+    check_operator_uid(invoking, qualification_uid)?;
     let document = read_file(
         "--config",
         &config_path,
@@ -1674,17 +1699,7 @@ async fn run(raw: Vec<String>) -> Outcome {
         oteryn_game_server::node::config::MAX_CONFIG_BYTES,
     )?;
     let config = OpsConfig::parse(&document).map_err(|error| Failure::Input(error.to_string()))?;
-    if let Some(uid) = qualification_uid {
-        if config.operator.service_uid != uid {
-            return Err(Failure::Identity(
-                "unprivileged qualification requires operator and service to share a UID",
-            ));
-        }
-    } else if config.operator.service_uid == invoking {
-        return Err(Failure::Identity(
-            "oteryn-game-ops refuses to run as the service user",
-        ));
-    }
+    check_service_uid(invoking, config.operator.service_uid, qualification_uid)?;
     dispatch(
         config,
         invoking,
@@ -1804,6 +1819,43 @@ fn main() -> ExitCode {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
+
+    #[test]
+    fn unprivileged_qualification_operator_requires_feature_and_setting() {
+        use oteryn_game_server::node::qualification_operator_uid_for_setting;
+        use std::ffi::OsStr;
+
+        let current = 1000;
+        for setting in [None, Some(OsStr::new("0")), Some(OsStr::new("1"))] {
+            let enabled =
+                cfg!(feature = "qualification-unprivileged") && setting == Some(OsStr::new("1"));
+            let operator = qualification_operator_uid_for_setting(current, setting);
+            assert_eq!(operator.unwrap_or(0), if enabled { current } else { 0 });
+            if enabled {
+                assert!(check_operator_uid(current, operator).is_ok());
+                assert!(check_service_uid(current, current, operator).is_ok());
+                assert!(matches!(
+                    check_service_uid(current, current + 1, operator),
+                    Err(Failure::Identity(
+                        "unprivileged qualification requires operator and service to share a UID"
+                    ))
+                ));
+            } else {
+                assert!(check_operator_uid(0, operator).is_ok());
+                assert!(check_service_uid(0, current, operator).is_ok());
+                assert!(matches!(
+                    check_operator_uid(current, operator),
+                    Err(Failure::Identity("oteryn-game-ops runs only as root"))
+                ));
+                assert!(matches!(
+                    check_service_uid(0, 0, operator),
+                    Err(Failure::Identity(
+                        "oteryn-game-ops refuses to run as the service user"
+                    ))
+                ));
+            }
+        }
+    }
 
     #[test]
     fn retained_s2_unicode_descriptor_facts_return_input_error() {
