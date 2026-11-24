@@ -1127,7 +1127,7 @@ const KOSHEI_ENTRY_SOURCE: &str =
 async fn write_quest_access(url: &str, character: &[u8; 16], entry: &Entry) -> TestResult {
     use oteryn_gameplay_quests::quest::{
         rotten_blood::{ACCESS_TRACK, RottenBloodBoss},
-        soul_war::SoulWarBoss,
+        soul_war::{ALL_MINI_BOSSES, SoulWarBoss, TAINT_DURATION_SECONDS},
     };
 
     let creature = entry.creature.as_deref().unwrap_or_default();
@@ -1195,17 +1195,31 @@ async fn write_quest_access(url: &str, character: &[u8; 16], entry: &Entry) -> T
         }
     }
     if soul_access {
+        // A fresh taint clock is part of the final room gate. The owner proves
+        // expiry rejection, then seeds the database clock (boss_activity.rs:849–864).
+        let defeated = if soul_final {
+            i16::from(ALL_MINI_BOSSES)
+        } else {
+            0
+        };
         sqlx::query(
             "INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at)
-             VALUES(encode($1,'hex')::uuid,true,CASE WHEN $2 THEN 31 ELSE 0 END,
-             CASE WHEN $2 THEN floor(extract(epoch FROM transaction_timestamp()))::bigint-1209601 END)
+             VALUES(encode($1,'hex')::uuid,true,$2,
+             CASE WHEN $2 > 0 THEN floor(extract(epoch FROM transaction_timestamp()))::bigint END)
              ON CONFLICT (character_id) DO UPDATE SET
-             defeated_bosses=excluded.defeated_bosses,
-             first_taint_at=LEAST(game_character_soul_war.first_taint_at,excluded.first_taint_at)
-             WHERE excluded.defeated_bosses=31",
+             teleport_access=true,
+             defeated_bosses=GREATEST(game_character_soul_war.defeated_bosses, excluded.defeated_bosses),
+             first_taint_at=CASE
+                WHEN excluded.first_taint_at IS NULL THEN game_character_soul_war.first_taint_at
+                WHEN game_character_soul_war.first_taint_at > excluded.first_taint_at - $3
+                THEN game_character_soul_war.first_taint_at
+                ELSE excluded.first_taint_at
+             END
+             WHERE excluded.defeated_bosses > 0 OR NOT game_character_soul_war.teleport_access",
         )
         .bind(character.as_slice())
-        .bind(soul_final)
+        .bind(defeated)
+        .bind(TAINT_DURATION_SECONDS)
         .execute(&mut *transaction)
         .await?;
     }
