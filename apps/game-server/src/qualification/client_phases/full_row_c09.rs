@@ -282,7 +282,12 @@ async fn walk_to_frodo(
     client.take_events();
     let used = client.use_object(&placement, 0).await?;
     if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {
-        return Err(format!("tavern door USE reply={used:?}").into());
+        return Err(format!(
+            "tavern door USE reply={used:?} at {:?} vitals={:?}",
+            client.world_spatial().actor_position,
+            client.actor_vitals()
+        )
+        .into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let position = ActorPosition {
@@ -328,8 +333,7 @@ pub(super) async fn buy_meat(
     reference: NonZeroU32,
     units: u32,
 ) -> TestResult {
-    buy_meat_from_frodo(client, world, reference, units, false).await?;
-    Ok(())
+    buy_meat_from_frodo(client, world, reference, units, false).await
 }
 
 async fn buy_meat_from_frodo(
@@ -337,8 +341,8 @@ async fn buy_meat_from_frodo(
     world: &BundleWorld,
     reference: NonZeroU32,
     units: u32,
-    require_door: bool,
-) -> TestResult<Option<BundleWorld>> {
+    tavern_interior: bool,
+) -> TestResult {
     use oteryn_dev_client::client_runtime::npc_shop as runtime;
     use oteryn_protocol_oteryn::npc_service as wire;
     let metadata = oteryn_world_bundle::bundle::visit(
@@ -352,7 +356,7 @@ async fn buy_meat_from_frodo(
         .iter()
         .find(|npc| npc.key == "oteryn:npc.frodo")
         .ok_or("Frodo absent from compiled World bundle")?;
-    let approach = if require_door {
+    let approach = if tavern_interior {
         // Enter the tavern interior before looking for Frodo. The first tile
         // within nominal talk range can still be at the doorway.
         1
@@ -364,14 +368,9 @@ async fn buy_meat_from_frodo(
             p.floor == at.floor && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
         })
     };
-    let open_world = if require_door {
-        Some(walk_to_frodo(client, world, here, within_talk_range).await?)
-    } else {
-        let path = route(world, here, within_talk_range)
-            .ok_or("no walk route to Frodo within talk range")?;
-        walk(client, world, &path).await?;
-        None
-    };
+    let path =
+        route(world, here, within_talk_range).ok_or("no walk route to Frodo within talk range")?;
+    walk(client, world, &path).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let actor = loop {
         if let Some(actor) = visible_frodo(client, &npc.placements) {
@@ -444,7 +443,7 @@ async fn buy_meat_from_frodo(
         before + u64::from(units) * u64::from(offer.count),
     )
     .await?;
-    Ok(open_world)
+    Ok(())
 }
 
 async fn damage_and_spend_mana(
@@ -663,17 +662,34 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             .await?;
     let clients = &identity.clients(clients);
     let mut client = character_prep::connect_row_character(clients).await?;
+    let frodo = metadata
+        .npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == "oteryn:npc.frodo")
+        .ok_or("Frodo absent from compiled World bundle")?;
+    let here = tile(client.world_spatial().actor_position)?;
+    let tavern_open = walk_to_frodo(&mut client, world, here, |at| {
+        frodo
+            .placements
+            .iter()
+            .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 1)
+    })
+    .await?;
     // Seven meats can fill the 20-minute stomach. Keep an additional unit
     // available to exercise the refusal after allowing the regeneration ticks.
     const MEATS: u32 = 8;
     // The pinned Frodo trade charges five gold per meat.
-    super::full_row_c02::earn_gold(&mut client, world, &metadata.spawns, 5 * u64::from(MEATS))
-        .await
-        .map_err(|error| format!("fund-Frodo-trade: {error}"))?;
+    super::full_row_c02::earn_gold(
+        &mut client,
+        &tavern_open,
+        &metadata.spawns,
+        5 * u64::from(MEATS),
+    )
+    .await
+    .map_err(|error| format!("fund-Frodo-trade: {error}"))?;
     let initial = quantity(&client, meat)?;
-    let tavern_open = buy_meat_from_frodo(&mut client, world, meat, MEATS, true)
-        .await?
-        .ok_or("C09 purchase lacks the observed open tavern map")?;
+    buy_meat_from_frodo(&mut client, &tavern_open, meat, MEATS, true).await?;
     if quantity(&client, meat)? != initial + u64::from(MEATS) {
         return Err(format!(
             "purchase delta expected={MEATS} observed={}",
