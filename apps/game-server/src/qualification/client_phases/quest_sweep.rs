@@ -689,12 +689,63 @@ impl Journey<'_, '_> {
         .collect())
     }
 
+    async fn drive_map_callback(
+        &mut self,
+        step_in: bool,
+        callback: &Value,
+    ) -> TestResult<Option<Replay<'static>>> {
+        let selector = &callback["selector"];
+        let target = callback_target(self.world, selector)?;
+        let arrival = if callback["teleport"].is_object() {
+            Some(authored_tile(&callback["teleport"])?)
+        } else {
+            None
+        };
+        if step_in {
+            if tile(self.client.world_spatial().actor_position)? == target {
+                return Err("step-in-already-on-target".into());
+            }
+            if let Some(arrival) = arrival {
+                let start = tile(self.client.world_spatial().actor_position)?;
+                let mut path = route(self.world, start, |at| at == target)
+                    .ok_or("no-wire-route-in-served-bundle")?;
+                let final_step = path.pop().ok_or("step-in-already-on-target")?;
+                walk(self.client, self.world, &path).await?;
+                let _ = self.client.step_retrying(final_step).await?;
+                if tile(self.client.world_spatial().actor_position)? != arrival {
+                    return Err("access-arrival-mismatch".into());
+                }
+            } else {
+                self.approach(target, 0).await?;
+            }
+            Ok(None)
+        } else {
+            let ordinal = target_ordinal(self.world, target, selector)?;
+            let placement = crate::map::view::placement_key(target, ordinal)
+                .ok_or("invalid-target-placement")?;
+            self.approach(target, 1).await?;
+            if self.use_object(placement).await? != UseDisposition::Committed {
+                return Err("map-use-refused".into());
+            }
+            if let Some(arrival) = arrival
+                && tile(self.client.world_spatial().actor_position)? != arrival
+            {
+                return Err("access-arrival-mismatch".into());
+            }
+            Ok(Some(Replay::Use(placement)))
+        }
+    }
+
     async fn stage(&mut self, quest: &str, stage: &Stage, callback: &Value) -> TestResult {
         let transition = text(&callback["key"])?;
-        let definition = self
-            .catalogue
-            .transition(transition)
-            .ok_or("transition-not-admitted")?;
+        let Some(definition) = self.catalogue.transition(transition) else {
+            if stage.completes || !is_stateless_travel(stage, callback) {
+                return Err("transition-not-admitted".into());
+            }
+            self.drive_map_callback(stage.trigger.kind == "step_in", callback)
+                .await?;
+            return self.check_log(quest).await;
+        };
         if definition.quest != quest || definition.completes != stage.completes {
             return Err("authored-transition-mismatch".into());
         }
@@ -845,46 +896,8 @@ impl Journey<'_, '_> {
                 None
             }
             "map_use" | "step_in" => {
-                let selector = &callback["selector"];
-                let target = callback_target(self.world, selector)?;
-                let arrival = if callback["teleport"].is_object() {
-                    Some(authored_tile(&callback["teleport"])?)
-                } else {
-                    None
-                };
-                if stage.trigger.kind == "step_in" {
-                    if tile(self.client.world_spatial().actor_position)? == target {
-                        return Err("step-in-already-on-target".into());
-                    }
-                    if let Some(arrival) = arrival {
-                        let start = tile(self.client.world_spatial().actor_position)?;
-                        let mut path = route(self.world, start, |at| at == target)
-                            .ok_or("no-wire-route-in-served-bundle")?;
-                        let final_step = path.pop().ok_or("step-in-already-on-target")?;
-                        walk(self.client, self.world, &path).await?;
-                        let _ = self.client.step_retrying(final_step).await?;
-                        if tile(self.client.world_spatial().actor_position)? != arrival {
-                            return Err("access-arrival-mismatch".into());
-                        }
-                    } else {
-                        self.approach(target, 0).await?;
-                    }
-                    None
-                } else {
-                    let ordinal = target_ordinal(self.world, target, selector)?;
-                    let placement = crate::map::view::placement_key(target, ordinal)
-                        .ok_or("invalid-target-placement")?;
-                    self.approach(target, 1).await?;
-                    if self.use_object(placement).await? != UseDisposition::Committed {
-                        return Err("map-use-refused".into());
-                    }
-                    if let Some(arrival) = arrival
-                        && tile(self.client.world_spatial().actor_position)? != arrival
-                    {
-                        return Err("access-arrival-mismatch".into());
-                    }
-                    Some(Replay::Use(placement))
-                }
+                self.drive_map_callback(stage.trigger.kind == "step_in", callback)
+                    .await?
             }
             _ => return Err("unsupported-wire-trigger".into()),
         };
@@ -1095,6 +1108,15 @@ impl Journey<'_, '_> {
         }
         self.check_log(quest).await
     }
+}
+
+// world_callbacks/clock.rs:46 distinguishes travel from callbacks that need a durable receipt.
+fn is_stateless_travel(stage: &Stage, callback: &Value) -> bool {
+    matches!(stage.trigger.kind.as_str(), "map_use" | "step_in")
+        && serde_json::from_value::<oteryn_gameplay_quests::quest::world_callbacks::Callback>(
+            callback.clone(),
+        )
+        .is_ok_and(|callback| callback.teleport.is_some() && !callback.requires_durable_commit())
 }
 
 fn authored_tile(position: &Value) -> TestResult<TilePos> {
