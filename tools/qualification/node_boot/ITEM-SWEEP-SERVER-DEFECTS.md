@@ -216,3 +216,14 @@ destination class to 2853, 2854, 2857, 2859, 2863 and 2867
 evidence is recorded above. The glider crank 21902 produced a malformed
 overlay during direct USE (`crates/session/src/domain_dispatch.rs:263–272`,
 Crystal `items.xml:43460–43464`). That wire symptom remains unresolved.
+
+The `1700:419` resume reproduced the drop limit and established its
+downstream effect. After the same-tile cleanup refusals, the node's
+qualification owner (`apps/game-server/src/node/serve/qualification_fixture.rs:1007`)
+reported `Refused(MainBackpackFull)` while reserving more Knight fixture
+items. Near the transition, 664–668 had failing cleanup rows and later
+fiery weapon variants had seed refusals with no gameplay probe. The
+full-backpack refusals are fixture fallout. Separately, the node logged
+`DefinitionNotFound` for typed production keys such as 5678, 5949, 5964,
+6125, 6278 and 6392. That explicit active-content refusal extends the
+already recorded admission class.
