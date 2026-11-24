@@ -1,5 +1,5 @@
 //! Pure authored spell applicability and source effect eligibility.
-use super::geometry::PlanRejected;
+use super::geometry::{PlanRejected, TilePosition};
 use oteryn_gameplay_content::content::spell_data::executable_catalog::{
     AbilityProfile, DefinitionRef, EffectProfile, OperationalProfile,
 };
@@ -8,6 +8,22 @@ use oteryn_gameplay_content::content::spell_data::{
 };
 use serde_json::Value;
 use std::collections::BTreeSet;
+
+/// Whether a positioned actor can participate in this cast's spatial reads.
+/// A missing footprint membership means the cast still needs its broader sight scope.
+pub fn actor_in_cast_scope(
+    caster: TilePosition,
+    at: TilePosition,
+    max_sight_distance: u32,
+    in_footprint: Option<bool>,
+) -> bool {
+    let (caster_x, caster_y, caster_floor) = caster;
+    let (x, y, floor) = at;
+    floor == caster_floor
+        && x.abs_diff(caster_x) <= max_sight_distance
+        && y.abs_diff(caster_y) <= max_sight_distance
+        && in_footprint.unwrap_or(true)
+}
 
 pub fn applicable(spell: &SpellDefinition) -> bool {
     matches!(
@@ -368,4 +384,18 @@ mod tests {
             Err(PlanRejected)
         );
     }
+}
+
+#[cfg(test)]
+#[test]
+fn ordinary_area_cast_excludes_actors_outside_its_footprint() {
+    let caster = (32369, 32230, 7);
+    let wave = (32369, 32229, 7);
+    let unrelated = (32321, 32275, 7);
+    let other_floor = (32369, 32229, 8);
+
+    assert!(!actor_in_cast_scope(caster, unrelated, 64, Some(false)));
+    assert!(actor_in_cast_scope(caster, wave, 64, Some(true)));
+    assert!(actor_in_cast_scope(caster, unrelated, 64, None));
+    assert!(!actor_in_cast_scope(caster, other_floor, 64, Some(true)));
 }

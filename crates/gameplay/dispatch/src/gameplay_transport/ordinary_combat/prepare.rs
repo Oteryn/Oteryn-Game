@@ -524,14 +524,29 @@ async fn prepare_spatial(
     for a in &profile.dependencies.abilities {
         candidates.extend(geometry(a, origin, facing)?);
     }
+    // Unrelated actors cannot be hit by an area cast. Their tiles must not
+    // widen the footprint or make its qualification depend on distant terrain.
+    let area_only = spell.chain.is_none()
+        && matches!(
+            spell.execution,
+            Execution::Effects(_) | Execution::AbilityVariants(_)
+        )
+        && !profile.dependencies.abilities.is_empty()
+        && profile
+            .dependencies
+            .abilities
+            .iter()
+            .all(|ability| ability.area.is_some());
     let mut bindings = Vec::new();
     let mut chain_creatures = Vec::new();
     for (a, p, _) in roster {
         let p = tile(p.position());
-        if p.floor != caster_position.floor
-            || p.x.abs_diff(caster_position.x) > MAX_SIGHT_DISTANCE
-            || p.y.abs_diff(caster_position.y) > MAX_SIGHT_DISTANCE
-        {
+        if !rules::actor_in_cast_scope(
+            plan_position(caster_position),
+            plan_position(p),
+            MAX_SIGHT_DISTANCE,
+            area_only.then(|| candidates.contains(&p) || attack_target_tile == Some(p)),
+        ) {
             continue;
         }
         let atom = if runtime.contains_live_creature(*a) {
