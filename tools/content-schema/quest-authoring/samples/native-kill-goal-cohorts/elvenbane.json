@@ -89,7 +89,7 @@
       "sources": [
         {
           "path": "content/world/spawns/spawns-02000-03999.json",
-          "sha256": "00f3f314eb78e7eff2dd1ec1b199b74a329d46aac6703c8258b22737f262b04a"
+          "sha256": "c09f4779bdeae76475e0a67fdd0d3a42d4eb6614206afff802a23bfc738c133e"
         },
         {
           "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
@@ -157,7 +157,7 @@
       "sources": [
         {
           "path": "content/world/spawns/spawns-02000-03999.json",
-          "sha256": "00f3f314eb78e7eff2dd1ec1b199b74a329d46aac6703c8258b22737f262b04a"
+          "sha256": "c09f4779bdeae76475e0a67fdd0d3a42d4eb6614206afff802a23bfc738c133e"
         },
         {
           "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
@@ -191,7 +191,7 @@
       "sources": [
         {
           "path": "content/world/spawns/spawns-02000-03999.json",
-          "sha256": "00f3f314eb78e7eff2dd1ec1b199b74a329d46aac6703c8258b22737f262b04a"
+          "sha256": "c09f4779bdeae76475e0a67fdd0d3a42d4eb6614206afff802a23bfc738c133e"
         },
         {
           "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",

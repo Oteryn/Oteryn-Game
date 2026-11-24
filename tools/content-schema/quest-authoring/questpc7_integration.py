@@ -65,6 +65,8 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
 
 def outputs(root, inputs, pin, load_module, lane):
     import json
+    import sys
+
     from questpc7_feaster_programme import PHASE_ROUTE_KEYS
     encoded=lambda value:(json.dumps(value,ensure_ascii=False,indent=2)+'\n').encode()
     worlds,objectives,bindings=lane
@@ -79,6 +81,11 @@ def outputs(root, inputs, pin, load_module, lane):
     smith.placements(root,planned_props)
     from questpc7_index_witness import rebind
     rebind(root,worlds,planned_props)
+    sys.path.insert(0, str(root / "tools/content-migration"))
+    from source_relocations import retain_quest_plan_citations
+
+    main_worlds = retain_quest_plan_citations(main_worlds)
+    objectives = retain_quest_plan_citations(objectives)
     return {
         'content/quests/questpc7-world-callbacks.json':encoded({'schema':1,'callbacks':main_worlds}),
         'content/quests/world-callbacks/feaster-phase-routes.json':encoded({'schema':1,'callbacks':phase_routes}),
