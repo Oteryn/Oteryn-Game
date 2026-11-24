@@ -193,6 +193,179 @@ pub(super) async fn earn_gold(
     Ok(())
 }
 
+const HUNT_ROUTE_RADIUS: u16 = 160;
+const RANGED_SELLER_RADIUS: u16 = 1024;
+const MAX_ROUTE_RECOVERIES: usize = 8;
+
+fn c02_route(
+    world: &BundleWorld,
+    from: TilePos,
+    origin: TilePos,
+    radius: u16,
+    goal: impl Fn(TilePos) -> bool,
+    available: impl Fn(TilePos) -> bool,
+) -> Option<Vec<StepDirection>> {
+    find_route(from, goal, |at, direction| {
+        let next = destination(world, at, direction)?;
+        (next.x.abs_diff(origin.x) <= radius
+            && next.y.abs_diff(origin.y) <= radius
+            && next.floor.abs_diff(origin.floor) <= 2
+            && available(next))
+        .then_some(next)
+    })
+    .ok()
+}
+
+async fn c02_walk(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: Vec<StepDirection>,
+    radius: u16,
+    deadline: Option<tokio::time::Instant>,
+) -> TestResult {
+    let origin = tile(client.world_spatial().actor_position)?;
+    let goal = path
+        .iter()
+        .try_fold(origin, |from, &step| destination(world, from, step))
+        .ok_or("C02 route has no static destination")?;
+    let mut path = VecDeque::from(path);
+    let mut recoveries = 0;
+    while let Some(step) = path.pop_front() {
+        if deadline.is_some_and(|until| tokio::time::Instant::now() >= until) {
+            return Err("C02 route exhausted its acquisition deadline".into());
+        }
+        let before = client.world_spatial().actor_position;
+        let from = tile(before)?;
+        let expected = destination(world, from, step).ok_or("C02 step has no static landing")?;
+        let mut outcome = client.step_retrying(step).await?;
+        for attempt in 1..=6 {
+            let Some(delay) = town_route_retry_delay(
+                outcome.disposition,
+                client.world_spatial().actor_position == before,
+                attempt,
+            ) else {
+                break;
+            };
+            client.service_liveness(delay).await?;
+            outcome = client.step_retrying(step).await?;
+        }
+        if outcome.status == CommandStatus::Accepted
+            && outcome.disposition == StepDisposition::Blocked
+            && client.world_spatial().actor_position == before
+        {
+            loop {
+                if recoveries == MAX_ROUTE_RECOVERIES
+                    || deadline.is_some_and(|until| tokio::time::Instant::now() >= until)
+                {
+                    return Err(format!(
+                        "C02 route recovery exhausted:from={from:?}:blocked={expected:?}:goal={goal:?}"
+                    )
+                    .into());
+                }
+                recoveries += 1;
+                client.service_liveness(Duration::from_millis(350)).await?;
+                let occupied: BTreeSet<_> = client
+                    .world_entities()
+                    .into_iter()
+                    .flat_map(|view| {
+                        view.iter().filter(|entity| {
+                            &entity.entity.identity != view.own_identity()
+                                && matches!(
+                                    entity.kind,
+                                    EntityKind::Creature | EntityKind::Npc | EntityKind::Player
+                                )
+                        })
+                    })
+                    .filter_map(|entity| tile(entity.position).ok())
+                    .collect();
+                let route = c02_route(
+                    world,
+                    from,
+                    origin,
+                    radius,
+                    |at| at == goal,
+                    |at| at != expected && !occupied.contains(&at),
+                );
+                if let Some(detour) = route {
+                    evidence(&format!(
+                        "C02_ROUTE_RECOVERY mode=detour attempt={recoveries} blocked={expected:?} occupied={occupied:?} steps={}",
+                        detour.len()
+                    ));
+                    path = detour.into();
+                    break;
+                }
+                if !occupied.contains(&expected) {
+                    evidence(&format!(
+                        "C02_ROUTE_RECOVERY mode=retry attempt={recoveries} blocked={expected:?}"
+                    ));
+                    path.push_front(step);
+                    break;
+                }
+            }
+            continue;
+        }
+        if outcome.status != CommandStatus::Accepted
+            || outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || tile(client.world_spatial().actor_position)? != expected
+        {
+            return Err(format!(
+                "C02 route step {step:?} from={from:?} expected={expected:?}: {outcome:?}"
+            )
+            .into());
+        }
+        verdict::Harness::global().progress("walk");
+    }
+    Ok(())
+}
+
+async fn approach_funding_rat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    deadline: tokio::time::Instant,
+) -> TestResult {
+    let origin = tile(client.world_spatial().actor_position)?;
+    let rat_spawns: BTreeSet<_> = spawns
+        .sources
+        .iter()
+        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
+        .filter(|(_, point)| {
+            spawns
+                .creatures
+                .get(point.creature as usize)
+                .is_some_and(|entry| entry.key == "oteryn:creature.rat")
+        })
+        .map(|(floor, point)| TilePos {
+            x: point.x,
+            y: point.y,
+            floor,
+        })
+        .collect();
+    let path = c02_route(
+        world,
+        origin,
+        origin,
+        HUNT_ROUTE_RADIUS,
+        |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+                && rat_spawns.iter().any(|rat| {
+                    rat.floor == at.floor && rat.x.abs_diff(at.x).max(rat.y.abs_diff(at.y)) <= 1
+                })
+        },
+        |_| true,
+    )
+    .ok_or("C02 funding has no reachable unprotected Rat spawn")?;
+    evidence(&format!(
+        "C02_FUNDING_ROUTE origin={origin:?} steps={}",
+        path.len()
+    ));
+    c02_walk(client, world, path, HUNT_ROUTE_RADIUS, Some(deadline)).await
+}
+
 async fn hunt_with_damage_receipt(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -234,6 +407,7 @@ async fn hunt_with_damage_receipt(
 async fn fund_ranged_purchase(
     client: &mut DevClientSession,
     world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
     needed: u64,
 ) -> TestResult {
     use oteryn_protocol_oteryn::atelier::resources as money;
@@ -249,7 +423,9 @@ async fn fund_ranged_purchase(
         .into());
     }
     while carried < needed {
-        let hunt = tokio::time::timeout_at(deadline, async {
+        let hunt_deadline = deadline.min(tokio::time::Instant::now() + Duration::from_secs(150));
+        let hunt = tokio::time::timeout_at(hunt_deadline, async {
+            approach_funding_rat(client, world, spawns, hunt_deadline).await?;
             let reply = client
                 .session_mut()
                 .gated_command(
@@ -324,23 +500,40 @@ async fn buy(
         })
         .collect();
     let here = tile(client.world_spatial().actor_position)?;
+    let radius = if matches!(id, BOW | ARROW) {
+        RANGED_SELLER_RADIUS
+    } else {
+        HUNT_ROUTE_RADIUS
+    };
     let (seller, path) = npcs
         .npcs
         .iter()
         .filter(|n| sellers.contains(&n.key))
         .filter_map(|n| {
             let approach = npc::TALK_RANGE_TILES - if n.key == "oteryn:npc.xodet" { 2 } else { 0 };
-            route(world, here, |at| {
-                n.placements.iter().any(|p| {
-                    p.floor == at.floor
-                        && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
-                })
-            })
+            c02_route(
+                world,
+                here,
+                here,
+                radius,
+                |at| {
+                    n.placements.iter().any(|p| {
+                        p.floor == at.floor
+                            && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
+                    })
+                },
+                |_| true,
+            )
             .map(|p| (n, p))
         })
         .min_by_key(|(_, p)| p.len())
-        .ok_or_else(|| format!("reachable-seller-absent:item={id}"))?;
-    walk(client, world, &path).await?;
+        .ok_or_else(|| format!("reachable-seller-absent:item={id}:radius={radius}"))?;
+    evidence(&format!(
+        "C02_SELLER_ROUTE item={id} seller={} steps={}",
+        seller.key,
+        path.len()
+    ));
+    c02_walk(client, world, path, radius, None).await?;
     let player = client.world_spatial().actor_position;
     let actor = client
         .world_entities()
@@ -696,7 +889,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     .connect(&ranged_clients, 0xc2, 0)
     .await?;
-    fund_ranged_purchase(&mut client, world, 930)
+    fund_ranged_purchase(&mut client, world, &metadata.spawns, 930)
         .await
         .map_err(|error| format!("fund-ranged-kit: {error}"))?;
     let mut purchase_sequences = Vec::new();
@@ -797,7 +990,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     .connect(&druid_clients, 0xc4, 0)
     .await?;
     require_eligible_druid(&mut client).await?;
-    fund_ranged_purchase(&mut client, world, 500)
+    fund_ranged_purchase(&mut client, world, &metadata.spawns, 500)
         .await
         .map_err(|error| format!("fund-rod: {error}"))?;
     buy(&mut client, world, &metadata.npcs, ROD, 1).await?;
