@@ -1262,7 +1262,79 @@ mod tests {
         let book = NpcTalkBook::from_model(&model);
         let entry = book.get(YASIR).ok_or("native Yasir")?;
         assert!(!entry.admitted_dialogue);
-        assert_eq!(entry.offers().len(), 757);
+        assert_eq!(entry.offers().len(), 812);
+        // Global Cyclopedia quotes newly admitted for Yasir, after alias resolution.
+        for (id, price) in [
+            (5921, 50),
+            (9039, 5000),
+            (9040, 5000),
+            (10299, 15),
+            (40527, 120),
+            (40528, 135),
+            (40529, 175),
+            (43739, 5000),
+            (43847, 4500),
+            (43848, 4200),
+            (43856, 5200),
+            (43857, 4700),
+            (43858, 3000),
+            (43859, 5800),
+            (43888, 5000),
+            (43961, 3400000),
+            (43962, 3200000),
+            (43963, 5400000),
+            (43964, 900000),
+            (43965, 950000),
+            (43966, 1100000),
+            (43967, 1000000),
+            (43968, 2000000),
+            (44438, 210),
+            (44439, 280),
+            (44440, 240),
+            (44727, 85000),
+            (44728, 225000),
+            (44729, 580),
+            (44736, 385),
+            (44737, 540),
+            (44738, 480),
+            (44739, 620),
+            (44740, 810),
+            (44741, 560),
+            (44742, 950),
+            (48253, 2780),
+            (50065, 2500000),
+            (50066, 1800000),
+            (51424, 870),
+            (51428, 570),
+            (51429, 49000),
+            (51430, 46000),
+            (51471, 3650),
+            (51487, 670),
+            (52729, 900000),
+            (53778, 580),
+            (54128, 500),
+            (54268, 2800000),
+            (54269, 3400000),
+            (54270, 5700000),
+            (54363, 670),
+            (54364, 900),
+            (54611, 110000),
+            (54639, 720),
+        ] {
+            let item = format!("oteryn:item.tibia.i{id}");
+            let matches: Vec<_> = entry
+                .offers()
+                .iter()
+                .filter(|offer| {
+                    offer.item.key == item
+                        && offer.direction
+                            == crate::content::ProjectV2ServiceOfferDirection::BuyFromPlayer
+                        && offer.currency.is_none()
+                })
+                .map(|offer| offer.unit_price)
+                .collect();
+            assert_eq!(matches, [price], "captured Yasir offer {id}");
+        }
         let (_, source) = model
             .npcs()
             .iter()

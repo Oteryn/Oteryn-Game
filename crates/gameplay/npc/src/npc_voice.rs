@@ -328,9 +328,23 @@ mod tests {
             assert_eq!(offer.count, Some(1));
             assert!(matches!(
                 (offer.sub_type, offer.unit_price),
-                (Some(500), 347222) | (Some(1800), 1250000) | (Some(14400), 10000000)
+                (Some(500), 434028) | (Some(1800), 1562500) | (Some(14400), 12500000)
             ));
         }
+        let ahmet = model
+            .services()
+            .iter()
+            .find(|(key, _)| key.key == "oteryn:service.trade.ahmet")
+            .map(|(_, service)| service)
+            .expect("Ahmet service");
+        let vials: Vec<_> = ahmet
+            .offers
+            .iter()
+            .filter(|offer| offer.item.key == "oteryn:item.tibia.i2874")
+            .map(|offer| (offer.sub_type, offer.unit_price))
+            .collect();
+        assert!(vials.contains(&(Some(7), 20)));
+        assert!(!vials.iter().any(|(subtype, _)| *subtype == Some(0)));
         assert!(
             model
                 .services()
