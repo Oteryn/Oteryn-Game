@@ -30,6 +30,7 @@ fn notice_authority(
             committed: None,
             earned,
             reward_granted: None,
+            refresh_taming: false,
             gate_message_id: None, potion_utterance: None, refusal_detail: None,
         },
     }

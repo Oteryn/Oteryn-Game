@@ -286,20 +286,28 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         }
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
-            authority.tame_mount(
-                actor,
-                UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command.command_id,
-                    item_fence: admitted.item_fence,
-                },
-                intent.clone(),
-                source,
-                item_target,
-                intent
-                    .use_with
-                    .is_some_and(|target| visibility.as_ref().is_some_and(|v| v.shows(target))),
-            ),
+            async {
+                let visible = match (visibility.as_ref(), intent.use_with) {
+                    (Some(view), Some(target)) if view.shows(target) => true,
+                    (Some(_), Some(target)) => authority
+                        .observe_visible_entities(actor)
+                        .await
+                        .is_some_and(|channel| adjacent_taming_target(&channel, target)),
+                    _ => false,
+                };
+                authority.tame_mount(
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    intent.clone(),
+                    source,
+                    item_target,
+                    visible,
+                ).await
+            },
         )
         .await
         .ok()?
@@ -594,6 +602,28 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             ),
             Err(_) => Dispatch::Use(UseOutcome::rejected()),
         }
+    })
+}
+
+// A creature may enter the observer's reach between publications. Only use the
+// observer-filtered current view, and require the exact live incarnation on a
+// same-floor use-with tile before accepting a cache miss.
+fn adjacent_taming_target(
+    channel: &transport::world_spatial::ChannelEntities,
+    target: transport::world_spatial::EntityRef,
+) -> bool {
+    use transport::world_spatial::VisibleKind;
+    let Some(observer) = channel.entities.iter().find(|entity| entity.identity == channel.observer)
+    else {
+        return false;
+    };
+    channel.entities.iter().any(|entity| {
+        matches!(entity.kind, VisibleKind::Creature)
+            && entity.identity == target.identity
+            && entity.generation == target.generation
+            && entity.position.floor == observer.position.floor
+            && entity.position.x.abs_diff(observer.position.x) <= 1
+            && entity.position.y.abs_diff(observer.position.y) <= 1
     })
 }
 

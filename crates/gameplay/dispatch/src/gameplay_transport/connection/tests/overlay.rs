@@ -28,6 +28,7 @@ fn admitted_use_commits_and_the_join_snapshot_carries_the_door_overlay()
                 committed: Some(committed.clone()),
                 earned: EarnedNotice::NoneEarned,
                 reward_granted: None,
+                refresh_taming: false,
                 gate_message_id: None, potion_utterance: None, refusal_detail: None,
             },
         };

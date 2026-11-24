@@ -198,7 +198,10 @@ pub(super) async fn run(
     let success = use_on(entity);
     let success_command = retained.continuity.next_command_id;
     let payload = encode_item_use_intent(&success).map_err(debug)?;
-    let (results, next) = wire::exchange(owner, retained, std::slice::from_ref(&payload)).await?;
+    // The creature is live on the adjacent use-with tile as the command
+    // arrives, before the observer's incremental view publishes it.
+    let (results, next, _) =
+        wire::exchange_with_view(owner, retained, std::slice::from_ref(&payload), true).await?;
     assert_eq!(results, [UseDisposition::Committed]);
     retained = next;
     assert!(
@@ -354,5 +357,42 @@ async fn rollback(
             .read_actor_position(actor)
             .is_err()
     );
+    Ok(())
+}
+
+pub(super) async fn feedback(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    index: &ItemDefinitionIndex,
+) -> TestResult {
+    use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+    use oteryn_protocol_oteryn::{chat::ChatLine, world_object::{UseTarget, encode_item_use_intent}};
+
+    let mut admitted = admitted(owner, actor, session)?;
+    let offered = [4, 6, 7, 14, 15].map(|id| OfferedCapability { id, requires: &[] });
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(&offered, &[4, 6, 7, 14, 15]).ok_or("chat capabilities")?;
+    owner.states.chat.admit_as(
+        session, "Tamer", Some(*item_fence()?.character_id.as_bytes()), owner.owner_now(),
+    );
+    let key = "oteryn:item.tibia.i5907";
+    let rule = crate::content::native_gameplay::mount_taming::rules().iter()
+        .find(|rule| rule.item_key == key).ok_or("slingshot rule")?;
+    let definition = index.definition_ref("Item", key, index.revision(key).ok_or("slingshot")?)
+        .ok_or("slingshot definition")?;
+    let (_, entity) = spawn(owner, actor, "oteryn:creature.bear", 1).await?;
+    crate::gameplay_transport::mount_taming::test_draw::set(0);
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::ItemByDefinition(definition),
+        use_with: Some(entity),
+        use_with_map_item: None,
+        use_with_position: None,
+    }).map_err(debug)?;
+    let (results, _, lines) = wire::exchange_with_view(owner, admitted, &[payload], false).await?;
+    assert_eq!(results, [UseDisposition::Committed]);
+    assert_eq!(h.count("game_account_appearance_unlocks").await?, 1);
+    assert_eq!(lines, [ChatLine::Private { speaker_name: "Game".into(), text: rule.success_text.clone() }]);
     Ok(())
 }

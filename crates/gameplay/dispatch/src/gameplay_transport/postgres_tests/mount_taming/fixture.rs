@@ -5,6 +5,7 @@ pub(super) async fn scenario(admin: String, cases: Cases) -> TestResult {
     let tag = match cases {
         Cases::Construction => "mount_taming_construction",
         Cases::Outcomes => "mount_taming_wire",
+        Cases::Feedback => "mount_taming_feedback",
         Cases::Items => "mount_taming_items",
         Cases::MusicBox => "mount_taming_music",
     };
@@ -180,6 +181,7 @@ pub(super) async fn scenario(admin: String, cases: Cases) -> TestResult {
     match cases {
         Cases::Construction => construction::run(&owner, &harness, actor, session, index).await?,
         Cases::Outcomes => outcomes::run(&owner, &harness, actor, session, index).await?,
+        Cases::Feedback => outcomes::feedback(&owner, &harness, actor, session, index).await?,
         Cases::Items => pairs::run(&owner, &harness, actor, session, index, false).await?,
         Cases::MusicBox => pairs::run(&owner, &harness, actor, session, index, true).await?,
     }

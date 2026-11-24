@@ -636,6 +636,8 @@ pub struct UseOutcome {
     /// The gate message id of a `SEALED` outcome (1 to 127): carried to the result under
     /// capability 11, required by the codec for `SEALED` and absent for every other disposition.
     pub gate_message_id: Option<u8>,
+    /// Publish the creature and earned appearance changes before draining taming feedback.
+    pub refresh_taming: bool,
     pub potion_utterance: Option<oteryn_protocol_oteryn::world_object::PotionUtterance>,
     /// PARITY-REFUSAL-DETAIL-1: the refusal detail the disposition alone does not name (the
     /// floor of a target out of reach). `None` sends the disposition's own detail under
@@ -650,6 +652,7 @@ impl UseOutcome {
             committed: None,
             earned: EarnedNotice::NoneEarned,
             reward_granted: None,
+            refresh_taming: false,
             gate_message_id: None,
             potion_utterance: None,
             refusal_detail: None,

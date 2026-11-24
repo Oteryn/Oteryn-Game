@@ -105,6 +105,10 @@ where
         // carries it has actually been transmitted.
         session.admitted.continuity.overlay_revision = entry.revision;
     }
+    if outcome.refresh_taming {
+        refresh::visibility(stream, authority, session).await?;
+        refresh::chat(stream, authority, session).await?;
+    }
     achievement_notices::immediate(stream, authority, session, &outcome.earned).await?;
     // W09: queued item-use status text follows its result and inventory delta immediately,
     // rather than waiting for a later movement command. The existing capability gate applies.

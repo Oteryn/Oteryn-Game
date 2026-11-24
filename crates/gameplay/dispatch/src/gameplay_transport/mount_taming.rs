@@ -81,7 +81,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .tame(actor, command, intent, source, item_target, visible)
             .await
         {
-            Ok(value) => Ok(value.map(outcome)),
+            Ok(value) => Ok(value),
             Err(Some(disposition)) => Ok(Some(outcome(disposition))),
             Err(None) => Err(()),
         }
@@ -189,7 +189,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         item_target: Option<ItemKey>,
         visible: bool,
-    ) -> Result<Option<UseDisposition>, Option<UseDisposition>> {
+    ) -> Result<Option<UseOutcome>, Option<UseDisposition>> {
         let reject = Some(UseDisposition::Rejected);
         let Some(native) = self
             .active_generation
@@ -243,7 +243,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_mount_taming_receipt(self.character, fence, command_ref, binding)
             .await
         {
-            Ok(Some(_)) => return Ok(Some(UseDisposition::Committed)),
+            Ok(Some(_)) => return Ok(Some(outcome(UseDisposition::Committed))),
             Ok(None) => {}
             Err(ItemUseError::Unavailable(_)) => return Err(None),
             Err(_) => return Err(reject),
@@ -500,7 +500,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.states
                     .chat
                     .push_party_spell_feedback(command.game_session_id, text);
-                Ok(Some(UseDisposition::Committed))
+                Ok(Some(UseOutcome {
+                    refresh_taming: true,
+                    ..outcome(UseDisposition::Committed)
+                }))
             }
             Ok(None) => {
                 guard.uncertain = false;

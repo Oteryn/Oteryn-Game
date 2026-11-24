@@ -1,4 +1,5 @@
 use super::*;
+use oteryn_protocol_oteryn::chat::{ChatLine, DELTA_TYPE_CHAT_LINE_V1, STATE_DOMAIN_CHAT};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub(super) async fn exchange(
@@ -6,6 +7,16 @@ pub(super) async fn exchange(
     admitted: AdmittedSession,
     payloads: &[Vec<u8>],
 ) -> TestResult<(Vec<UseDisposition>, AdmittedSession)> {
+    let (results, retained, _) = exchange_with_view(owner, admitted, payloads, false).await?;
+    Ok((results, retained))
+}
+
+pub(super) async fn exchange_with_view(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    payloads: &[Vec<u8>],
+    target_pending_publication: bool,
+) -> TestResult<(Vec<UseDisposition>, AdmittedSession, Vec<ChatLine>)> {
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     for (command_id, payload) in (admitted.continuity.next_command_id..).zip(payloads) {
         let frame = oteryn_protocol_oteryn::encode_client_command(
@@ -25,7 +36,7 @@ pub(super) async fn exchange(
     let end = crate::gameplay_transport::connection::serve_admitted(
         &mut server,
         admitted,
-        &WireOwner(owner),
+        &WireOwner(owner, std::cell::Cell::new(target_pending_publication)),
         crate::gameplay_transport::connection::IDLE_LIVENESS,
     )
     .await;
@@ -39,6 +50,7 @@ pub(super) async fn exchange(
     client.read_to_end(&mut output).await?;
     let mut cursor = 0;
     let mut results = Vec::new();
+    let mut chat = Vec::new();
     while cursor < output.len() {
         let length = u32::from_be_bytes(output[cursor..cursor + 4].try_into()?) as usize;
         let frame =
@@ -50,7 +62,15 @@ pub(super) async fn exchange(
                     .map_err(debug)?,
             );
         }
+        if frame.message_type() == crate::foundation::MessageType::StateDelta {
+            let delta = oteryn_protocol_oteryn::decode_state_delta(frame.payload())?;
+            if (delta.domain_id, delta.delta_type) == (STATE_DOMAIN_CHAT, DELTA_TYPE_CHAT_LINE_V1) {
+                chat.push(
+                    oteryn_protocol_oteryn::chat::decode_chat_line(delta.payload).map_err(debug)?,
+                );
+            }
+        }
         cursor += 4 + length;
     }
-    Ok((results, retained))
+    Ok((results, retained, chat))
 }

@@ -44,13 +44,33 @@ fn mount_taming_postgres_real_dispatch_outcomes_refusals_replay_and_reload() -> 
         .map_err(Into::into)
 }
 
-struct WireOwner<'a, 'b, 'f, 's>(&'a ComposedFreshAdmission<'b, 'f, 's>);
+struct WireOwner<'a, 'b, 'f, 's>(
+    &'a ComposedFreshAdmission<'b, 'f, 's>,
+    std::cell::Cell<bool>,
+);
 impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
+    async fn chat_next_bound(
+        &self,
+        admitted: AdmittedSession,
+        remaining: &mut usize,
+    ) -> Option<oteryn_protocol_oteryn::chat::ChatLine> {
+        self.0.chat_next_bound(admitted, remaining).await
+    }
+
+    async fn chat_delivered(&self, session: GameSessionId) {
+        self.0.chat_delivered(session).await;
+    }
+
+
     async fn observe_visible_entities(
         &self,
         actor: ExactActorRef,
     ) -> Option<crate::gameplay_transport::world_spatial::ChannelEntities> {
-        self.0.observe_visible_entities(actor).await
+        let mut observation = self.0.observe_visible_entities(actor).await?;
+        if self.1.replace(false) {
+            observation.entities.retain(|entity| entity.identity == observation.observer);
+        }
+        Some(observation)
     }
     async fn observe(
         &self,
@@ -234,6 +254,7 @@ async fn quantity(h: &Harness) -> TestResult<i64> {
 enum Cases {
     Construction,
     Outcomes,
+    Feedback,
     Items,
     MusicBox,
 }
@@ -252,6 +273,11 @@ fn mount_taming_postgres_construction_hotkeys_use_production_catalogue() -> Test
     // item actions. Exercise its complete atomic success, replay and refusal.
     super::item_cosmetics_fixtures::run_stock_glider(false, false)?;
     super::item_cosmetics_fixtures::run_stock_glider(false, true)
+}
+
+#[test]
+fn mount_taming_postgres_commit_publishes_feedback() -> TestResult {
+    run_pairs(Cases::Feedback)
 }
 
 #[test]
