@@ -51,6 +51,7 @@ def world_successor_files(dirs: list[dict])->list[str]:
     # The source-only static surface registry is pinned by activity_static.py
     # and its runtime/compiler consumers; it is not a legacy WorldProject locator.
     files.add("source-static-definitions.json")
+    files.add("provenance/citizenship-portals.json")
     return sorted(files)
 def spawn_family_files()->list[str]:
     """The spawn family index, held boss file and shards, relative to the legacy root; the index must match the directory."""

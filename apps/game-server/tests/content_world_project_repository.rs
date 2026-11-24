@@ -82,19 +82,21 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
     "transitions/index.json",
     "worlds/index.json",
 ];
-/// The one successor shard that sits beside a legacy locator: the `World` family record in
-/// `worlds/`. Legacy lookups of `worlds/world.json` scan that directory, so this exception is
-/// bounded to exactly one shard and is counted in the scan budget of `filesystem_limits`.
-const SHARED_DIRECTORY_SUCCESSOR_SHARDS: [&str; 1] = ["worlds/worlds-00000-00000.json"];
+/// Successor files beside legacy locators. Each lookup in the shared directories
+/// counts these extra entries against the scan budget in `filesystem_limits`.
+const SHARED_DIRECTORY_SUCCESSOR_FILES: [&str; 2] = [
+    "provenance/citizenship-portals.json",
+    "worlds/worlds-00000-00000.json",
+];
 /// Successor family shards (written by `tools/content-schema/world-authoring`) are likewise
 /// never WorldProject locators. They sit only in a successor directory that holds no legacy
 /// locator, so legacy locator lookups scan no additional directory entries, except for the
-/// single explicit `SHARED_DIRECTORY_SUCCESSOR_SHARDS` entry.
+/// explicit `SHARED_DIRECTORY_SUCCESSOR_FILES` entries.
 fn is_successor_shard(locator: &str) -> bool {
     // Native Activity definitions belong to the compiled successor World, never
     // to the manifest-listed legacy editable package.
     locator == "source-static-definitions.json"
-        || SHARED_DIRECTORY_SUCCESSOR_SHARDS.contains(&locator)
+        || SHARED_DIRECTORY_SUCCESSOR_FILES.contains(&locator)
         || is_unshared_successor_shard(locator)
         || is_spawn_family_file(locator)
         || is_npc_placement_family_file(locator)
