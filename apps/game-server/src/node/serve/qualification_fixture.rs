@@ -771,13 +771,29 @@ async fn prepare_charm_points(
         .definitions()
         .filter(|definition| definition.category == crate::domain::charm::CharmCategory::Major)
         .map(|definition| definition.stage_costs[0])
-        .sum();
+        .max()
+        .ok_or("qualification major charm catalogue is empty")?;
+    let completed: std::collections::BTreeSet<_> = qualification_build::retry_holder(
+        Some(root),
+        deadline,
+        qualification_build::progression_busy,
+        async || {
+            root.read_current_echo_warden_completions(authority, proof, fence.item_fence())
+                .await
+        },
+    )
+    .await?
+    .into_iter()
+    .collect();
     let mut species: Vec<_> = native
         .creature_profiles()
         .records
         .iter()
         .filter_map(|record| {
             let key = record.profile.target.key.as_str();
+            if completed.contains(key) {
+                return None;
+            }
             let stars = native.reward_table().encounter_facts(key)?.bestiary_stars?;
             let points = first_species_charm_points(stars);
             (points != 0).then_some((std::cmp::Reverse(points), key, stars))
@@ -786,6 +802,12 @@ async fn prepare_charm_points(
     species.sort_unstable();
     let mut funded = 0;
     for (_, key, stars) in species {
+        if funded > 0
+            && deadline.saturating_duration_since(tokio::time::Instant::now())
+                <= Duration::from_secs(2)
+        {
+            break;
+        }
         let receipt = BestiaryKillOccurrence::from_bytes(fixture_occurrence(
             character.as_bytes(),
             "progress-charms",
