@@ -526,8 +526,15 @@ def validate_record(record):
             else ["static activity geometry differs from its qualified source"]
         )
     if "item_pointer" not in record["provenance"]:
+        import alawar_static
         import feroxa_static
 
+        if record["provenance"]["source"].get("profile") == alawar_static.PROFILE:
+            return (
+                []
+                if record in alawar_static.records()
+                else ["Alawar scenery differs from its qualified official source"]
+            )
         if (
             record["provenance"]["source"].get("profile") == feroxa_static.PROFILE
             or record["provenance"]["source_item_id"] == feroxa_static.IDENTIFIER

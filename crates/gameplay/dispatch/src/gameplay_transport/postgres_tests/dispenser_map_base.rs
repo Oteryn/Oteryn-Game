@@ -11,8 +11,29 @@ use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum CaskCase {
+    Fill,
+    Capacity,
+    Step,
+}
+
+#[test]
+fn map_cask_capacity_refusal_leaves_the_authored_source_untouched() -> TestResult {
+    run_case(CaskCase::Capacity)
+}
+
+#[test]
+fn retired_map_cask_allows_the_next_step_after_a_lost_acknowledgement() -> TestResult {
+    run_case(CaskCase::Step)
+}
+
 #[test]
 fn flask_on_map_base_cask_spends_only_available_charges_and_replays() -> TestResult {
+    run_case(CaskCase::Fill)
+}
+
+fn run_case(case: CaskCase) -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -23,7 +44,7 @@ fn flask_on_map_base_cask_spends_only_available_charges_and_replays() -> TestRes
                 .enable_all()
                 .build()
                 .map_err(|error| error.to_string())?
-                .block_on(scenario(admin))
+                .block_on(scenario(admin, case))
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -31,7 +52,7 @@ fn flask_on_map_base_cask_spends_only_available_charges_and_replays() -> TestRes
     Ok(())
 }
 
-async fn scenario(admin: String) -> TestResult {
+async fn scenario(admin: String, case: CaskCase) -> TestResult {
     const CASK: &str = "oteryn:item.tibia.i25880";
     const FLASK: &str = "oteryn:item.tibia.i283";
     const BAG: &str = "oteryn:item.tibia.i2854";
@@ -151,7 +172,16 @@ async fn scenario(admin: String) -> TestResult {
         .bind(pin.identity().client_artifact_digest().as_slice())
         .bind(room.frame_binding().digest().as_slice())
         .execute(&harness.pool).await?;
-    super::item_look_fixtures::seed_main_backpack(&harness, &[(FLASK, 2), (FLASK, 3)]).await?;
+    let mut entries = vec![(FLASK, 2), (FLASK, 3)];
+    if case == CaskCase::Capacity {
+        entries.resize(19, ("oteryn:item.tibia.i43872", 1));
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_character_progression_state SET level=1 WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
+    super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
 
     let pos = TilePos { x: 7, ..start };
     assert!(!map.enterable(pos), "the authored cask blocks the tile");
@@ -181,6 +211,17 @@ async fn scenario(admin: String) -> TestResult {
         )
         .await
         .ok_or("map cask USE-WITH outcome")?;
+    if case == CaskCase::Capacity {
+        assert_eq!(first.disposition, UseDisposition::NotPossible);
+        let effects: (i64, i64, i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_map_item_mint_receipts),
+             (SELECT count(*) FROM game_item_ground_locations),
+             (SELECT count(*) FROM game_item_consume_transform_records),
+             (SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid)"
+        ).bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
+        assert_eq!(effects, (0, 0, 0, 2), "the refused fill has no physical or receipt side effects");
+        return Ok(());
+    }
     assert_eq!(first.disposition, UseDisposition::Committed);
 
     let (cask, charges): (Vec<u8>, i32) = sqlx::query_as(
@@ -253,6 +294,14 @@ async fn scenario(admin: String) -> TestResult {
             result = &mut fill => return Err(format!("last charge returned before cancellation: {result:?}").into()),
             ready = tokio::time::timeout(std::time::Duration::from_secs(5), acknowledged.notified()) => ready?,
         }
+    }
+    if case == CaskCase::Step {
+        let (step, _) = owner.paced_step(
+            deps.actor, session,
+            oteryn_protocol_oteryn::world_spatial::StepDirection::East,
+        ).await;
+        assert!(step.moved_to.is_some(), "ordinary STEP must reconcile the retired cask before collision");
+        return Ok(());
     }
     let depleted = crate::gameplay_transport::loop_move::loop_ground(&owner, map.base(), Some(index))
         .await

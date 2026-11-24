@@ -18,11 +18,7 @@ pub(in crate::durability) async fn retire_top(
     let row = sqlx::query(
         "SELECT uuid_send(g.item_instance_id) AS item, g.spatial_position, g.stack_ordinal,
                 g.runtime_scope_ownership_generation::text AS generation, i.definition_family,
-                i.definition_production_key, i.definition_revision_ref,
-                NOT EXISTS(SELECT 1 FROM game_item_corpse_container_entries WHERE parent_item_instance_id=g.item_instance_id)
-                AND NOT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=g.item_instance_id)
-                AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=g.item_instance_id)
-                AS empty_root
+                i.definition_production_key, i.definition_revision_ref
          FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id)
          WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid
            AND g.scope_kind=1 AND g.spatial_position IN ($3,$4) AND i.lifecycle=1
@@ -44,7 +40,6 @@ pub(in crate::durability) async fn retire_top(
         || row.try_get::<&str, _>("definition_family")? != "Item"
         || row.try_get::<&str, _>("definition_production_key")? != item.key
         || row.try_get::<&str, _>("definition_revision_ref")? != item.revision
-        || !row.try_get::<bool, _>("empty_root")?
         || load_reservation(tx, item.identity, &generation.get().to_string())
             .await?
             .is_some()
@@ -74,7 +69,7 @@ pub(in crate::durability) async fn retire_top(
     let tuple = tx.tuple();
     let mut message = decay_message(step, &fence, &admitted);
     message.cause = None;
-    message.arena_reset = Some(audit::OneItemArenaResetV1 {
+    let cause = audit::OneItemArenaResetV1 {
         world_id: scope.world_id().as_bytes().to_vec(),
         channel_id: scope
             .channel_id()
@@ -89,7 +84,8 @@ pub(in crate::durability) async fn retire_top(
         pit: u32::from(visit.state.pit),
         deadline_unix_ms: u64::try_from(visit.state.deadline_ms)
             .map_err(|_| DurabilityError::InvalidStoredState)?,
-    });
+    };
+    message.arena_reset = Some(cause.clone());
     let envelope = audit::encode_decay_retire_event(
         DecayRetireEventIdentity {
             event_id,
@@ -118,6 +114,11 @@ pub(in crate::durability) async fn retire_top(
         work_units_used: 0,
     };
     retirement_workflow::insert_reservation(tx, step, &admitted, &reservation, tuple).await?;
+    world_reset_cause::retire_death_contents(
+        tx, permit, &fence, node, step, &admitted, Some(&cause),
+        #[cfg(any(test, feature = "test-support"))]
+        None,
+    ).await?;
     apply_retire(tx, permit, step, &admitted, &reservation, tuple).await?;
     Ok(())
 }

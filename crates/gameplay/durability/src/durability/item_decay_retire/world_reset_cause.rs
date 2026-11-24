@@ -111,7 +111,8 @@ pub(super) fn bind_message(message: &mut OneItemDecayRetireV1, cause: RetireCaus
         .as_ref()
         .map_or_else(Vec::new, |state| state.item_instance_id.clone());
     match cause {
-        RetireCause::CorpseDecay | RetireCause::ArenaReset(_) => return,
+        RetireCause::CorpseDecay => return,
+        RetireCause::ArenaReset(_) => {},
         RetireCause::WorldReset(reset) => {
             message.world_reset = Some(audit::OneItemWorldResetV1 {
                 world_id: reset.world.as_bytes().to_vec(),

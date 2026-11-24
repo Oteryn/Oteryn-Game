@@ -64,8 +64,29 @@ fn arena_reset_proof_preserves_runtime_ground_removal_guard() -> TestResult {
     })
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ResetCase {
+    Top,
+    Container,
+    ProjectionRetry,
+}
+
+#[test]
+fn svargrond_wire_entry_retires_the_populated_ground_tree() -> TestResult {
+    run_reset_case(ResetCase::Container)
+}
+
+#[test]
+fn svargrond_poll_projects_committed_wire_entry_after_transient_ground_refusal() -> TestResult {
+    run_reset_case(ResetCase::ProjectionRetry)
+}
+
 #[test]
 fn svargrond_pit_reset_retires_only_the_movable_top_item_under_current_lease() -> TestResult {
+    run_reset_case(ResetCase::Top)
+}
+
+fn run_reset_case(case: ResetCase) -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -73,7 +94,7 @@ fn svargrond_pit_reset_retires_only_the_movable_top_item_under_current_lease() -
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(move || scenario(case).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "arena item reset scenario panicked")??;
     eprintln!(
@@ -83,8 +104,8 @@ fn svargrond_pit_reset_retires_only_the_movable_top_item_under_current_lease() -
     Ok(())
 }
 
-fn scenario() -> TestResult {
-    run(async |admin| {
+fn scenario(case: ResetCase) -> TestResult {
+    run(async move |admin| {
         let h = Harness::create_with_admission_seed(admin, "arena_pit_item_reset", false, false)
             .await?;
         super::reset();
@@ -210,6 +231,41 @@ fn scenario() -> TestResult {
             )
             .await?;
         }
+        let tree = if case == ResetCase::Container {
+            super::quest_world_callbacks_fixtures::input_item(
+                &owner, fence,
+                &Offering {
+                    position: Position { x: 32207, y: 31098, floor: -7 },
+                    item: "oteryn:item.tibia.i2854".into(),
+                    count: 1,
+                },
+                5, false,
+            ).await?;
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            let root: String = sqlx::query_scalar(
+                "SELECT i.item_instance_id::text FROM game_item_instances i
+                 JOIN game_item_ground_locations g USING(item_instance_id)
+                 WHERE i.definition_production_key='oteryn:item.tibia.i2854'"
+            ).fetch_one(&mut *tx).await?;
+            sqlx::query(
+                "WITH child AS (
+                    INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
+                      definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+                    SELECT game_character_uuid_v7(),world_id,'Item','oteryn:item.tibia.i3031',
+                       'definition-r1',3,1,game_character_uuid_v7()
+                    FROM game_item_instances WHERE item_instance_id=$1::uuid
+                    RETURNING item_instance_id, world_id
+                 )
+                 INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,
+                    placement_ordinal,placed_transaction_id)
+                 SELECT item_instance_id,world_id,$1::uuid,1,game_character_uuid_v7() FROM child"
+            ).bind(&root).execute(&mut *tx).await?;
+            tx.commit().await?;
+            Some(root)
+        } else {
+            None
+        };
         owner.states.loop_ground.invalidate();
         let creature = deps
             .runtime
@@ -252,6 +308,44 @@ fn scenario() -> TestResult {
 
         let payload = wire::encode_match_request(ArenaAction::Enter).map_err(debug)?;
         let entry = admitted.continuity.next_command_id;
+        if case == ResetCase::ProjectionRetry {
+            sqlx::raw_sql(
+                "CREATE FUNCTION refuse_test_pit_reset() RETURNS trigger LANGUAGE plpgsql AS
+                   $$ BEGIN RAISE EXCEPTION 'test transient pit reset refusal'; END $$;
+                 CREATE TRIGGER refuse_test_pit_reset BEFORE INSERT ON game_arena_pit_item_resets
+                   FOR EACH ROW EXECUTE FUNCTION refuse_test_pit_reset();"
+            ).execute(&h.pool).await?;
+            let before = deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?;
+            assert!(owner.arena_match_wire(admitted, entry, &payload).await.is_none());
+            assert_eq!(deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?, before);
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_svargrond_pit_leases").fetch_one(&h.pool).await?, 1);
+            sqlx::query("DROP TRIGGER refuse_test_pit_reset ON game_arena_pit_item_resets")
+                .execute(&h.pool).await?;
+            owner.drain_arena_matches(0).await;
+            assert_ne!(deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?, before,
+                "native polling must project a committed entry after the reset becomes available");
+            let replay = owner.arena_match_wire(admitted, entry, &payload).await.ok_or("entry replay")?;
+            assert_eq!(wire::decode_match_result(&replay).map_err(debug)?.state.pit, 1);
+            assert_eq!(ground_roots(&h).await?, 3);
+            return Ok(());
+        }
+        if let Some(tree) = tree {
+            let bytes = owner.arena_match_wire(admitted, entry, &payload).await.ok_or("entry response")?;
+            assert_eq!(wire::decode_match_result(&bytes).map_err(debug)?.disposition, ArenaDisposition::Applied);
+            let retired: (i16, i64, i64, i64) = sqlx::query_as(
+                "SELECT i.lifecycle,
+                 (SELECT count(*) FROM game_item_decay_retire_receipts WHERE ground_root_item_instance_id=i.item_instance_id AND cause_kind='ARENA_RESET'),
+                 (SELECT count(*) FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id),
+                 (SELECT count(*) FROM game_item_audit_outbox o JOIN game_item_decay_retire_receipts r USING(event_id)
+                    WHERE r.ground_root_item_instance_id=i.item_instance_id)
+                 FROM game_item_instances i WHERE i.item_instance_id=$1::uuid"
+            ).bind(&tree).fetch_one(&h.pool).await?;
+            assert_eq!(retired, (2, 2, 0, 2), "the root and its child retire together");
+            let replay = owner.arena_match_wire(admitted, entry, &payload).await.ok_or("entry replay")?;
+            assert_eq!(replay, bytes);
+            assert_eq!(ground_roots(&h).await?, 4, "only the exposed tree retires");
+            return Ok(());
+        }
         let index = native.item_index().ok_or("native item index")?;
         let barrier = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
         let enter = super::guild_wire_fixtures::exchange(

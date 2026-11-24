@@ -213,7 +213,7 @@ class WorldFixtureTests(unittest.TestCase):
     def test_spell_manifest_initializes_world_epoch_without_a_bundle(self):
         assignment = function('node_complete_assignment')
         epoch_setup = assignment.split('|| fail "content activation rows"\n', 1)[1].split(
-            '  [[ "$(sudo stat', 1
+            '  local control_socket_mode=', 1
         )[0]
         setup = r'''set -Eeuo pipefail
 fail() { echo "$*"; return 1; }
@@ -256,8 +256,8 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 10)
-        self.assertEqual(len(set(accounts)), 10)
+        self.assertEqual(len(accounts), 11)
+        self.assertEqual(len(set(accounts)), len(accounts))
 
 
 class ReuseTests(unittest.TestCase):
@@ -584,6 +584,31 @@ class PgObserveTests(unittest.TestCase):
             self.assertIn(setting, RUN_TEXT)
         self.assertIn('echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres', RUN_TEXT)
         self.assertIn('cp -R "$PG_OBS" "$NODE_BOOT_FAILURE_LOG_DIR/postgres-world', RUN_TEXT)
+
+
+class CloudRunSummaryTests(unittest.TestCase):
+    def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
+        result = subprocess.run(
+            ['bash', str(HERE / 'cloud_run.sh'), '--summarize',
+             str(HERE / 'cloud_run_fixture.log'), 'core'],
+            capture_output=True, text=True, check=True,
+        )
+        self.assertEqual(result.stderr, '')
+        self.assertEqual(result.stdout, textwrap.dedent('''\
+            CLOUD_RUN group=core result=NODE_BOOT_FAIL seconds=0
+            ROWS-BEGIN
+            P16|PASS|
+            P17|FAIL|precondition
+            CS.rat|FAIL|expected-loot
+            ROWS-END
+            SEAM_EVIDENCE E2EF1_GAP row=P17 expected rat route
+            Error: P17 timed out
+            P17 refusal: fixture unavailable
+            DIAG P17 attempt=1
+            DIAG P17 attempt=2
+            DIAG P17 attempt=3
+            DIAG CS.rat expected loot from fixture
+            '''))
 
 
 class FailureSummaryTests(unittest.TestCase):

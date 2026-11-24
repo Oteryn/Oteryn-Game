@@ -286,6 +286,57 @@ impl DurabilityRoot {
             .await?
     }
 
+    /// The committed lease is a durable projection obligation until the Channel
+    /// installs the corresponding fight. At most one row exists per pit.
+    pub async fn read_arena_projection_leases(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        generation: u64,
+    ) -> Result<(i64, Vec<(crate::domain::CharacterId, MatchState)>), DurabilityError> {
+        let crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = scope
+        else {
+            return Ok((0, Vec::new()));
+        };
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            let states: Vec<(sqlx::types::Uuid, sqlx::types::Uuid, sqlx::types::Uuid, serde_json::Value)> = sqlx::query_as(
+                "SELECT l.character_id,l.game_session_id,l.run_id,s.body FROM game_svargrond_pit_leases l
+                 JOIN game_character_arena_matches s USING(character_id)
+                 WHERE l.world_id=encode($1,'hex')::uuid AND l.channel_id=encode($2,'hex')::uuid
+                   AND l.scope_generation=$3::text::numeric AND s.body->>'phase' IN ('1','2')
+                   AND s.body->>'pit'=l.pit::text AND s.body->>'deadline_ms'=l.expires_at_ms::text
+                 ORDER BY l.pit LIMIT 10"
+            ).bind(world_id.as_bytes().as_slice())
+             .bind(channel_id.as_bytes().as_slice())
+             .bind(generation.to_string())
+             .fetch_all(&mut *tx).await?;
+            let now_ms = now(&mut tx).await?;
+            let states = states.into_iter()
+                .map(|(character, session, run, body)| {
+                    let state: MatchState = serde_json::from_value(body).map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if &state.session != session.as_bytes() || &state.run != run.as_bytes()
+                        || state.scope_generation != generation
+                    {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    let character = crate::domain::CharacterId::from_bytes(*character.as_bytes())
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    Ok((character, state))
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok((now_ms, states))
+        })).await
+    }
+
     pub async fn commit_arena_match(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,

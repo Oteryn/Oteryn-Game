@@ -450,12 +450,12 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 234);
+        assert_eq!(corrections.len(), 236);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys.len(), 234);
+        assert_eq!(keys.len(), corrections.len());
         let dalbrect = corrections
             .iter()
             .find(|row| row.key == "oteryn:service.travel.dalbrect/isle_of_kings")
@@ -469,9 +469,10 @@ mod tests {
         );
         let sources = source["rows"].as_array().ok_or("source rows")?;
         let evidence = evidence["records"].as_array().ok_or("evidence rows")?;
+        let nargor = "oteryn:service.travel.sebastian/nargor";
         let corrected = corrections
             .iter()
-            .filter(|row| !row.native_addition)
+            .filter(|row| !row.native_addition || row.key == nargor)
             .collect::<Vec<_>>();
         assert_eq!(corrected.len(), 195);
         assert_eq!(sources.len(), 195);
@@ -506,7 +507,13 @@ mod tests {
                 assert!(row.premium, "{}", row.key);
             }
             // Source-backed access needs a live quest owner or event before admission.
-            if facts["quest_requirements"]["value"] != serde_json::json!([])
+            if row.key == nargor {
+                assert!(!row.held);
+                assert_eq!(
+                    row.quest_gate.as_deref(),
+                    Some("oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor"),
+                );
+            } else if facts["quest_requirements"]["value"] != serde_json::json!([])
                 || !facts["travel_guard_conditions"]["value"].is_null()
                 || row.key == "oteryn:service.travel.kendra_thais/nostalgia"
             {

@@ -55,9 +55,11 @@ def source_policies(root=ROOT, roots=ROOTS, *, explicit_weights=False):
                     or ('weight' in attributes and not explicit_weights)):
                 raise ValueError('Encounter corpse source overrides the selected Game policy')
             capacity = int(attributes['containersize']) if 'containersize' in attributes else None
-            duration = int(attributes['duration']) * 1000
             target = int(attributes['decayto']) or None
-            if (capacity is not None and not 1 <= capacity <= 65535) or not 1 <= duration <= 2**63-1:
+            duration = int(attributes['duration']) * 1000 if 'duration' in attributes else None
+            if ((capacity is not None and not 1 <= capacity <= 65535)
+                    or (duration is None and target is not None)
+                    or (duration is not None and not 1 <= duration <= 2**63-1)):
                 raise ValueError('Encounter corpse source quantity is outside its typed field')
             policy = capacity, duration, target
             if item in policies and policies[item] != policy:

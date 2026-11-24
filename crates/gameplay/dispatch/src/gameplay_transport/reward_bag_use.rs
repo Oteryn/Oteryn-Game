@@ -62,9 +62,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .flat_map(|bag| &bag.entries)
                 .chain(inventory.nested.iter().map(|(_, entry)| entry))
                 .find(|entry| entry.item.item_instance_id == id);
+            // SP04 owns ordinary carried Blue Present USE. Only the qualified
+            // bundle Ground extension needs the original wire intent here.
             if !carried.is_some_and(|entry| {
                 let key = &entry.item.definition.production_key;
-                key == BLUE_PRESENT || legacy_conversion_rule(key).is_some()
+                legacy_conversion_rule(key).is_some()
+                    || (key == BLUE_PRESENT
+                        && self.bundle_map().is_some()
+                        && self.rooms().gate_ground_item_action().is_some())
             }) {
                 return Ok(None);
             }

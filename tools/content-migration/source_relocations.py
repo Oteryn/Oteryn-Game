@@ -72,19 +72,20 @@ RELOCATIONS = {
     ),
     # ITEMGLOB3 supersedes only the Wiki modifier rows for i47376 and i49872.
     # Neither Item belongs to the closed stack or elemental-magic cohorts.
+    # The merged World refresh changes only the packet's map-owner digests.
     (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
         "82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "3d17b49b7ce0831575afc3bacd38ac89f7d8c275e6f46cdd94d6b928c31d7efb",
+        "17f828cc66dfe6629e8d11663673a6eda7d72fbb1adc08e956f2c53e818d5049",
     ),
     (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
         "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "3d17b49b7ce0831575afc3bacd38ac89f7d8c275e6f46cdd94d6b928c31d7efb",
+        "17f828cc66dfe6629e8d11663673a6eda7d72fbb1adc08e956f2c53e818d5049",
     ),
     # Numeric17 reuses the Mantra/Bond compiler's source readers. Their behavior
     # is unchanged by the exact Global overlay check on live Mantra/Bond rows.
@@ -102,21 +103,21 @@ RELOCATIONS = {
         "a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9",
     ): (
         "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-        "1b1703361f64fb7ff2ff7c9551f6c7f84ef55b20f13ed04131af4d648c399641",
+        "5524d0a35c47e77092490798a17c938ab3e8c392d485805ae0ab48559f04b260",
     ),
     (
         "crates/gameplay/content/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "5499116a0add5dcb0518eb1f86c59a90987a0c1322d35ac1f201069dafd04dba",
+        "b933eaae211fdbdda5e52b78fa7193cd00d4766587da2932e31012dc95915d8c",
     ),
     (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "5499116a0add5dcb0518eb1f86c59a90987a0c1322d35ac1f201069dafd04dba",
+        "b933eaae211fdbdda5e52b78fa7193cd00d4766587da2932e31012dc95915d8c",
     ),
     # QMINT3's tree-first reference view changes only the Forge289 compiler and
     # mapper fingerprints. All454 binding rows and289 literal promotions are

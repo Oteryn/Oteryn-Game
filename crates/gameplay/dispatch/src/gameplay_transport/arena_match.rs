@@ -712,16 +712,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Some(());
         }
         if let Some(remaining_ms) = state.projection_remaining_ms(now_ms) {
-            if let Some(old) = &existing
-                && (old.state.pit != state.pit || old.state.run != state.run)
-            {
-                let _ = pillar::project(self, &old.state, PillarProjection::Release);
-            }
             let destination = center(state.pit)?;
             if !walkable(self, &runtime, destination) {
                 return None;
             }
             if state.phase == 2 {
+                if let Some(old) = &existing
+                    && (old.state.pit != state.pit || old.state.run != state.run)
+                {
+                    let _ = pillar::project(self, &old.state, PillarProjection::Release);
+                }
                 let _ = pillar::project(self, state, PillarProjection::Victory);
                 // Crystal svargrond_arena.lua:285-313: waiting at the victory
                 // portal still owns the original kick timer, including recovery.
@@ -747,6 +747,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             drop(runtime);
             pit_reset::reset_items(self, actor, session, permit, fence, state).await?;
             let mut runtime = self.runtime.lock().await;
+            if let Some(old) = &existing
+                && (old.state.pit != state.pit || old.state.run != state.run)
+            {
+                let _ = pillar::project(self, &old.state, PillarProjection::Release);
+            }
             if runtime.read_actor_position(actor) != Ok(current)
                 || self.states.spell_states.try_lock().ok()?.is_dead(actor)
             {

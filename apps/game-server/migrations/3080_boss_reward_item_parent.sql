@@ -17,13 +17,13 @@ ALTER TABLE game_boss_reward_collection_receipts
 
 CREATE FUNCTION game_boss_reward_item_parent_guard() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM game_boss_reward_items p
-        WHERE (p.character_id,p.world_id,p.death_id,p.item_ordinal)
-             =(NEW.character_id,NEW.world_id,NEW.death_id,NEW.parent_item_ordinal)
-          AND p.parent_item_ordinal IS NULL AND p.quantity=1 AND p.expired=NEW.expired
-          AND p.collected_transaction_id IS NULL
-    ) OR (SELECT count(*) FROM game_boss_reward_items i
+    PERFORM 1 FROM game_boss_reward_items p
+    WHERE (p.character_id,p.world_id,p.death_id,p.item_ordinal)
+         =(NEW.character_id,NEW.world_id,NEW.death_id,NEW.parent_item_ordinal)
+      AND p.parent_item_ordinal IS NULL AND p.quantity=1 AND p.expired=NEW.expired
+      AND p.collected_transaction_id IS NULL
+    FOR NO KEY UPDATE;
+    IF NOT FOUND OR (SELECT count(*) FROM game_boss_reward_items i
           WHERE (i.character_id,i.world_id,i.death_id,i.parent_item_ordinal)
                =(NEW.character_id,NEW.world_id,NEW.death_id,NEW.parent_item_ordinal))>=20 THEN
         RAISE EXCEPTION 'boss reward child requires a single root parent with an available slot' USING ERRCODE='23514';

@@ -1,13 +1,9 @@
 //! Flask-on-dispenser is an ordinary USE_WITH, composed with the item action owner.
 use super::*;
-use crate::durability::consume_transform::ConsumeTransformRequest;
+use crate::durability::consume_transform::{ConsumeTransformRequest, ConsumeTransformResult};
 use crate::durability::item_loop_move::LoopGround;
-use crate::durability::item_transfer::CurrentCharacterItemFence;
-use crate::durability::map_item_mint::{
-    MAP_DISPENSER_KEY, MapItemMintError, MapItemMintOutcome, MapItemMintRequest,
-};
-use crate::durability::spell_owner_commit::SpellLanePermit;
-use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
+use crate::durability::map_item_mint::{MAP_DISPENSER_KEY, MapItemMintError, MapItemMintRequest};
+use crate::foundation::{ChannelRuntimeV1, GameSessionId, MovementLocalPosition};
 use crate::gameplay_transport::world_map::{
     MapHandleTarget, MapViewSource, resolve_map_handle, resolve_map_target,
 };
@@ -159,13 +155,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         {
-            return Ok(
-                if receipt.recipe.as_deref() == Some("oteryn:dispenser.fill") {
-                    outcome(receipt.disposition)
-                } else {
-                    None
-                },
-            );
+            return if receipt.recipe.as_deref() == Some("oteryn:dispenser.fill") {
+                self.finish_dispenser(command.game_session_id, Some(receipt))
+                    .await
+            } else {
+                Ok(None)
+            };
         }
         let Some(ItemKey::Instance(flask)) = source else {
             return Ok(None);
@@ -195,7 +190,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(source) = entries.clone().find(|item| item.item_instance_id == flask) else {
             return Ok(None);
         };
-        let (dispenser, map_origin) = if let Some((mint, position)) = map_mint {
+        if let Some((mint, position)) = map_mint {
             if !matching_flask(&mint.item.definition, &source.definition) {
                 return Ok(None);
             }
@@ -229,24 +224,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Ok(outcome(UseDisposition::TooFar));
                 }
             }
-            match self.materialize_map_cask(&permit, fence, mint).await {
-                Ok(dispenser) => (dispenser, Some(position)),
+            request.source = flask;
+            let _ground_change =
+                super::super::loop_move::GroundChange(Some(&self.states.loop_ground));
+            let receipt = match self
+                .root
+                .consume_dispenser_from_map(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    mint,
+                    native,
+                    &weights,
+                )
+                .await
+            {
+                Ok(receipt) => receipt,
                 Err(MapItemMintError::Refused(_)) => {
                     return Ok(outcome(UseDisposition::StaleState));
                 }
-                Err(
-                    MapItemMintError::AuthorityRejected
-                    | MapItemMintError::InvalidInput
-                    | MapItemMintError::ConflictingCause
-                    | MapItemMintError::ConflictingCandidate,
-                ) => return Ok(outcome(UseDisposition::Rejected)),
                 Err(MapItemMintError::Unavailable(_) | MapItemMintError::CapacityExceeded) => {
                     return Err(());
                 }
-            }
-        } else {
-            (instance.ok_or(())?, None)
-        };
+                Err(_) => return Ok(outcome(UseDisposition::Rejected)),
+            };
+            return self
+                .finish_dispenser(command.game_session_id, receipt)
+                .await;
+        }
+        let dispenser = instance.ok_or(())?;
         let target_definition;
         let ground_source;
         if let Some(target) = entries.find(|item| item.item_instance_id == dispenser) {
@@ -263,13 +271,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             target_definition = target.definition().clone();
             ground_source = Some(target);
-        }
-        if map_origin.is_some_and(|origin| {
-            ground_source
-                .as_ref()
-                .is_none_or(|source| source.position() != origin)
-        }) {
-            return Ok(outcome(UseDisposition::StaleState));
         }
         if !matching_flask(&target_definition, &source.definition) {
             return Ok(None);
@@ -343,34 +344,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
         };
-        #[cfg(test)]
-        if receipt.as_ref().is_ok_and(|result| {
-            result.as_ref().is_some_and(|receipt| {
-                receipt.fresh && receipt.disposition == UseDisposition::Committed
-            })
-        }) && DISPENSER_ACK_BARRIER
-            .try_with(|ready| ready.notify_one())
-            .is_ok()
-        {
-            std::future::pending::<()>().await;
+        self.finish_dispenser(command.game_session_id, receipt.map_err(|_| ())?)
+            .await
+    }
+
+    async fn finish_dispenser(
+        &self,
+        session: GameSessionId,
+        receipt: Option<ConsumeTransformResult>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        let Some(receipt) = receipt else {
+            return Ok(None);
+        };
+        if receipt.disposition == UseDisposition::Committed {
+            let dispenser = &receipt.effects["dispenser"];
+            let remaining = dispenser["after"].as_u64();
+            if remaining == Some(0) && dispenser["source_kind"].as_i64() == Some(3) {
+                self.states.loop_ground.invalidate();
+                super::super::loop_move::reconcile_cask_collision(self)
+                    .await
+                    .ok_or(())?;
+            }
+            #[cfg(test)]
+            if receipt.fresh
+                && DISPENSER_ACK_BARRIER
+                    .try_with(|ready| ready.notify_one())
+                    .is_ok()
+            {
+                std::future::pending::<()>().await;
+            }
+            if receipt.fresh
+                && let Some(charges) = remaining
+            {
+                self.states.loop_ground.invalidate();
+                self.states
+                    .chat
+                    .push_quest_feedback(session, &format!("Remaining {charges} charges."));
+            }
         }
-        receipt
-            .map(|receipt| {
-                receipt.and_then(|receipt| {
-                    if receipt.fresh
-                        && receipt.disposition == UseDisposition::Committed
-                        && let Some(charges) = receipt.effects["dispenser"]["after"].as_u64()
-                    {
-                        self.states.loop_ground.invalidate();
-                        self.states.chat.push_quest_feedback(
-                            command.game_session_id,
-                            &format!("Remaining {charges} charges."),
-                        );
-                    }
-                    outcome(receipt.disposition)
-                })
-            })
-            .map_err(|_| ())
+        Ok(Some(UseOutcome {
+            disposition: receipt.disposition,
+            ..UseOutcome::rejected()
+        }))
     }
 
     fn map_cask_request(
@@ -472,35 +487,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
         };
         Some((mint, position))
-    }
-
-    async fn materialize_map_cask(
-        &self,
-        permit: &SpellLanePermit,
-        fence: CurrentCharacterItemFence,
-        mint: MapItemMintRequest,
-    ) -> Result<[u8; 16], MapItemMintError> {
-        // A previous attempt may have materialized the cask before the fill could
-        // commit. Resume that exact Ground instance from the original receipt.
-        if let Some(receipt) = self
-            .root
-            .read_map_item_mint_receipt(self.character, &fence, &mint)
-            .await?
-        {
-            return Ok(receipt.item_instance_id);
-        }
-        let mut candidate = self
-            .root
-            .freeze_map_item_mint(self.character, self.holder, fence, mint)
-            .await?;
-        let _ground_change =
-            crate::gameplay_transport::loop_move::GroundChange(Some(&self.states.loop_ground));
-        let (MapItemMintOutcome::Committed(receipt)
-        | MapItemMintOutcome::AlreadyCommitted(receipt)) = self
-            .root
-            .commit_map_item_mint(permit, self.character, self.holder, fence, &mut candidate)
-            .await?;
-        Ok(receipt.item_instance_id)
     }
 }
 
