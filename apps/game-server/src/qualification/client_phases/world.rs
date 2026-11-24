@@ -3444,9 +3444,8 @@ fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
 }
 
 pub(super) fn requires_platform_grant(account: &str) -> bool {
-    std::env::var("NODE_BOOT_PLATFORM_GRANT_ACCOUNTS").is_ok_and(|accounts| {
-        accounts.split(',').any(|required| required == account)
-    })
+    std::env::var("NODE_BOOT_PLATFORM_GRANT_ACCOUNTS")
+        .is_ok_and(|accounts| accounts.split(',').any(|required| required == account))
 }
 
 async fn platform_row_grant(clients: &SeamClients<'_>, index: usize) -> TestResult<String> {
@@ -3458,10 +3457,14 @@ async fn platform_row_grant(clients: &SeamClients<'_>, index: usize) -> TestResu
     let address = clients.address.to_string();
     let output = tokio::task::spawn_blocking(move || {
         std::process::Command::new("python3")
-            .arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tools/qualification/node_boot/platform_grant.py"))
+            .arg(
+                Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../tools/qualification/node_boot/platform_grant.py"),
+            )
             .args([work, account, character, world, channel, address])
             .output()
-    }).await??;
+    })
+    .await??;
     if !output.status.success() {
         return Err("Platform-issued row grant unavailable".into());
     }
