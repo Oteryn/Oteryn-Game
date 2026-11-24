@@ -6,6 +6,9 @@ use oteryn_protocol_oteryn::chat::{
     CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, ChatDisposition, ChatSpeechMode,
     decode_chat_intent_result, encode_chat_intent,
 };
+use oteryn_protocol_oteryn::logout::{
+    CAPABILITY_LOGOUT_V1, COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result,
+};
 
 struct GuardAuthority {
     movement: StepAuthority,
@@ -94,6 +97,15 @@ fn guard_case(
                             command_id: 1,
                             command_type,
                             payload: &payload,
+                        },
+                    )?
+                } else if command_type == COMMAND_TYPE_LOGOUT_INTENT {
+                    oteryn_protocol_oteryn::encode_client_command(
+                        1,
+                        &oteryn_protocol_oteryn::ClientCommandValue {
+                            command_id: 1,
+                            command_type,
+                            payload: &[],
                         },
                     )?
                 } else {
@@ -189,6 +201,14 @@ fn guard_case(
                                         disposition: ChatDisposition::Rejected,
                                         wait_seconds: 0,
                                     })
+                                );
+                            }
+                            COMMAND_TYPE_LOGOUT_INTENT
+                                if capabilities.contains(&CAPABILITY_LOGOUT_V1) =>
+                            {
+                                assert_eq!(
+                                    decode_logout_result(results[0].payload),
+                                    Ok(LogoutResult::Busy)
                                 );
                             }
                             _ => assert!(results[0].payload.is_empty()),
@@ -298,5 +318,16 @@ fn house_scope_step_guard_defers_and_replay_never_executes() -> Result<(), Box<d
         COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
         &[],
         true,
+    )
+}
+
+#[test]
+fn selected_logout_guard_deferral_returns_busy() -> Result<(), Box<dyn Error>> {
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        COMMAND_TYPE_LOGOUT_INTENT,
+        &[CAPABILITY_LOGOUT_V1],
+        false,
     )
 }

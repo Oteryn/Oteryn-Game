@@ -422,7 +422,7 @@ where
     session.admitted.continuity.server_sequence = session.sequence;
     outcome.training_logged_out =
         matches!(&dispatch, Dispatch::Training(result) if result.disposition == 3);
-    // Encode a typed refusal without running STEP or CHAT post-dispatch effects.
+    // Encode a typed refusal without running post-dispatch effects.
     let result = if guard_deferred
         && matches!(dispatch, Dispatch::Unregistered)
         && session
@@ -431,6 +431,9 @@ where
     {
         let mut refusal = match command.command_type {
             COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT => Dispatch::Step(StepOutcome::rejected(), 0),
+            COMMAND_TYPE_LOGOUT_INTENT if decode_logout_intent(command.payload).is_ok() => {
+                Dispatch::Logout(LogoutResult::Busy)
+            }
             COMMAND_TYPE_CHAT_INTENT => Dispatch::Chat(
                 ChatIntentResult {
                     disposition: ChatDisposition::Rejected,
