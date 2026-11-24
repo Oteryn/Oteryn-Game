@@ -9,9 +9,11 @@ use crate::ability::creature_bite::CreatureBiteVitals;
 use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_actor};
 use crate::combat_attack::{SwingPoll, player_fist_formula, player_melee_formula};
 use crate::durability::spell_owner_commit::SpellLanePermit;
+use crate::durability::{DurabilityError, character_progression::CharacterProgressionError};
 use crate::foundation::CharacterId;
 use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
+use crate::gameplay_transport::connection::AdmissionRefusal;
 use crate::gameplay_transport::kill_reward::KillSettlementQueue;
 use crate::gameplay_transport::task_board::bounty_talisman;
 use crate::spell::cast::{CharacterCastFacts, SwingSkills};
@@ -180,15 +182,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .entries
             .iter()
+            .filter(|entry| entry.state.target().is_some())
             .map(|entry| entry.session)
             .collect::<std::collections::BTreeSet<_>>();
+        let retry = crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root);
         let mut talismans = std::collections::BTreeMap::new();
         for session in sessions {
-            let Ok(snapshot) = self.bounty_talisman_for_session(session).await else {
-                return;
-            };
-            talismans.insert(session, snapshot);
+            if let Ok(snapshot) = retry
+                .retry_unavailable(async || {
+                    self.bounty_talisman_for_session(session)
+                        .await
+                        .map_err(|error| match error {
+                            CharacterProgressionError::Unavailable(
+                                DurabilityError::RootUnavailable,
+                            ) => AdmissionRefusal::Unavailable,
+                            _ => AdmissionRefusal::Rejected,
+                        })
+                })
+                .await
+            {
+                talismans.insert(session, snapshot);
+            }
         }
+        drop(retry);
         let now = now.unwrap_or_else(|| self.owner_now());
         let needs_health_names = {
             let runtime = self.runtime.lock().await;
@@ -338,7 +354,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry.clear_target();
                 continue;
             }
-            if unavailable_source_players.contains(&entry.actor.placement_identity()) {
+            // An unavailable bounty read affects this attacker only. Defer
+            // before consuming its swing clock or doing ranged payment.
+            if !talismans.contains_key(&entry.session)
+                || unavailable_source_players.contains(&entry.actor.placement_identity())
+            {
                 continue;
             }
             let Ok(required_health) =
