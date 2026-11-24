@@ -314,6 +314,7 @@ pub(super) async fn prepare_inner(
         profile,
         actor,
         attack_target,
+        legacy.and_then(|use_intent| use_intent.creature),
         &roster,
         states,
         now,
@@ -405,6 +406,7 @@ async fn prepare_spatial(
     profile: &crate::spell::executable_catalog::OperationalProfile,
     actor: ExactActorRef,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
+    rune_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     roster: &[(
         ExactActorRef,
         MovementPositionSnapshot,
@@ -431,10 +433,13 @@ async fn prepare_spatial(
                 })
                 .map(|c| c.actor)
                 .or_else(|| {
-                    matches!(
-                        spell.carrier,
-                        crate::spell::Carrier::Rune { item: 3165, .. }
-                    )
+                    // An item use names a specific creature, including the caster.
+                    // The caller captured its generation before acquiring the writer.
+                    (rune_target == Some(held)
+                        || matches!(
+                            spell.carrier,
+                            crate::spell::Carrier::Rune { item: 3165, .. }
+                        ))
                     .then(|| {
                         runtime
                             .visible_entities()
