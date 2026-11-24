@@ -323,6 +323,11 @@ impl DevClientSession {
         &mut self.session
     }
 
+    /// Whether the session can still exchange commands after its last observation.
+    pub fn is_usable(&self) -> bool {
+        self.session.is_usable()
+    }
+
     /// The join snapshot exactly as decoded, before any command.
     pub fn join_snapshot(&self) -> &JoinSnapshot {
         self.session.join_snapshot()
