@@ -3,7 +3,8 @@ mod gallery;
 #[path = "cyclopedia_character/holdings.rs"]
 mod holdings;
 // PAR-P12 Cyclopedia character tabs on the admitted session owner (capability 199).
-use super::{ComposedFreshAdmission, connection::AdmittedSession};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission, connection::{AdmissionRefusal, AdmittedSession}};
+use crate::durability::{DurabilityError, character_authority::CharacterAuthorityError};
 use oteryn_protocol_oteryn::cyclopedia_character as wire;
 
 macro_rules! authority_methods {
@@ -264,17 +265,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await?;
                 }
-                let (view, mut extension) = self
-                    .root
-                    .read_cyclopedia_character_tab_extended(
-                        self.character,
-                        self.holder,
-                        fence,
-                        target,
-                        request.tab,
-                        request.page,
-                        now,
-                    )
+                let (view, mut extension) = AdmissionRetryBudget::for_command(self.root)
+                    .retry_unavailable(async || {
+                        self.root
+                            .read_cyclopedia_character_tab_extended(
+                                self.character,
+                                self.holder,
+                                fence,
+                                target,
+                                request.tab,
+                                request.page,
+                                now,
+                            )
+                            .await
+                            .map_err(|error| match error {
+                                CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded) => AdmissionRefusal::Unavailable,
+                                _ => AdmissionRefusal::Rejected,
+                            })
+                    })
                     .await
                     .map_err(|_| ())?;
                 // Each extension field reaches only a session that selected its capability.
