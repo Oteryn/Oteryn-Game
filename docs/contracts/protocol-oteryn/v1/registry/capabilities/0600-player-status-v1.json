@@ -1,0 +1,15 @@
+{
+  "id": 600,
+  "name": "PLAYER_STATUS_V1",
+  "owner_decision": "Server lane: other players status",
+  "owner": "Game visibility and logout",
+  "requires": [
+    6
+  ],
+  "command_types": [
+    6363
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only"
+}

@@ -207,9 +207,27 @@ pub(in crate::gameplay_transport) async fn execute(
     if let DatabaseResult::Mutation(receipt) = &outcome
         && receipt.accepted
         && !receipt.replayed
-        && let (Some(session), Some(text)) = (receipt.notify_session, intent.feedback())
+        && let Some(target) = target
     {
-        owner.states.chat.push_party_spell_feedback(session, text);
+        let hub = &owner.states.server_messages;
+        let peer_text = intent.feedback().unwrap_or("A request to join your team was withdrawn.");
+        let notified = receipt.changed
+            && hub.send_team_finder(target.session, target.connection_generation, peer_text);
+        if receipt.changed {
+            let actor_text = match intent {
+                Intent::Member { request: true, .. } => "Your request to join the team was sent.",
+                Intent::Member { request: false, .. } => "Your request to join the team was withdrawn.",
+                _ => "The team application was updated.",
+            };
+            hub.send_team_finder(
+                admitted.game_session_id,
+                admitted.continuity.connection_generation,
+                actor_text,
+            );
+        }
+        if !notified && let (Some(session), Some(text)) = (receipt.notify_session, intent.feedback()) {
+            owner.states.chat.push_party_spell_feedback(session, text);
+        }
     }
     project(view, admitted, outcome)
 }
@@ -219,5 +237,6 @@ fn rejected() -> team_finder::MutationOutcome {
         accepted: false,
         replayed: false,
         notify_session: None,
+        changed: false,
     }
 }

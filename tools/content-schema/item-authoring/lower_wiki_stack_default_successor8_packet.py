@@ -18,6 +18,33 @@ RECEIPT_SHA = "34ba3fe5c5b78897e318e40079b9416450ca37e244d22d752422ba42b681a838"
 OUTPUT = (
     "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json"
 )
+LATER_TERRAIN = "content/world/terrain/terrain-08751-08757.json"
+LATER_TERRAIN_SHA = "b7b183cc46f685bb4e7c0a7ae2d6c683c1eba39d00dea18f65bdf9b5d1140664"
+
+
+def receipt_input(root, pin):
+    path, digest = pin["path"], pin["sha256"]
+    raw = (root / path).read_bytes()
+    if base.sha(raw) == digest or not path.startswith("docs/agents/evidence/"):
+        return base.checked(root, path, digest)
+
+    # Rebuild the frozen packet by removing only the independently pinned,
+    # later Terrain input. The receipt still checks the original hash and size.
+    packet = json.loads(raw)
+    if context.canonical(packet) != raw:
+        raise ValueError(f"source digest drift: {path}")
+    for container in (packet, packet.get("source", {}), packet.get("sources", {})):
+        for key in ("map_owner_inputs", "world_owner_inputs"):
+            inputs = container.get(key, {})
+            if inputs.get(LATER_TERRAIN) != LATER_TERRAIN_SHA:
+                continue
+            base.checked(root, LATER_TERRAIN, LATER_TERRAIN_SHA)
+            del inputs[LATER_TERRAIN]
+            predecessor = context.canonical(packet)
+            if base.sha(predecessor) == digest:
+                return predecessor
+            inputs[LATER_TERRAIN] = LATER_TERRAIN_SHA
+    return base.checked(root, path, digest)
 
 
 def own_id_frame(root, proof, frame):
@@ -175,7 +202,7 @@ def build(root=ROOT):
     for pin in proof["input_pins"] + proof["world_owner_inputs"]:
         base.checked(root, pin["path"], pin["sha256"])
     for pin in receipt["source_dependency_pins"]:
-        data = base.checked(root, pin["path"], pin["sha256"])
+        data = receipt_input(root, pin)
         if len(data) != pin["bytes"]:
             raise ValueError(f"successor8 receipt pin byte count drift: {pin['path']}")
     original, objects, bound, wiki, pages, definitions, routed = context.current_inputs(

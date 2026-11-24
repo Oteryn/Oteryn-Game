@@ -153,6 +153,12 @@ class EvidenceTests(unittest.TestCase):
         self.assertTrue(matrix.shard_passed({**result, "exit_code": 0, "result": "NODE_BOOT_PASS"}))
         self.assertFalse(matrix.shard_passed({**result, "exit_code": 1, "result": "NODE_BOOT_PASS"}))
 
+    def test_unprivileged_pass_does_not_qualify_a_shard(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = self.write(tmp, "log", "NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged\n")
+            result = matrix.extract(log, name="g-core", entry="node_boot", exit_code=0, seconds=60)
+        self.assertFalse(matrix.shard_passed(result))
+
     def test_summary_fails_on_missing_evidence_empty_world_shard_and_missing_status(self):
         shards = matrix.plan("pr")
         prefix = "node-boot-1-1-"

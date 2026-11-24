@@ -66,8 +66,16 @@ pub(in super::super) fn result(
                     CommandStatus::Accepted
                 },
                 detail(
-                    encode_use_result_with_gate(disposition, gate)
-                        .map_err(|_| ServeEnd::Disconnected)?,
+                    oteryn_protocol_oteryn::world_object::encode_use_result_with_utterance(
+                        disposition,
+                        gate,
+                        outcome.potion_utterance.filter(|_| {
+                            selected.contains(
+                            oteryn_protocol_oteryn::world_object::CAPABILITY_POTION_UTTERANCE_V1,
+                        )
+                        }),
+                    )
+                    .map_err(|_| ServeEnd::Disconnected)?,
                     outcome
                         .refusal_detail
                         .or(RefusalDetail::of_use(outcome.disposition)),

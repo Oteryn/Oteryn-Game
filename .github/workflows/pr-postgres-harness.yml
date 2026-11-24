@@ -161,7 +161,7 @@ jobs:
           printf '%s  %s\n' '0e3cdf32579feec5d270659382d23bbe9de29b9d10d59ce994b34bcb1d4f8188' "$output/plan_pg_partitions.py" | sha256sum -c -
           if git cat-file -e "HEAD:tools/ci/pg_archive_affinity.py" 2>/dev/null; then
             git show "HEAD:tools/ci/pg_archive_affinity.py" > "$output/pg_archive_affinity.py"
-            printf '%s  %s\n' 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a' "$output/pg_archive_affinity.py" | sha256sum -c -
+            printf '%s  %s\n' '84a076b61932722644423a5fa05e3e68edeb210b1480fb8076dc9a2d39404a8c' "$output/pg_archive_affinity.py" | sha256sum -c -
             echo 'affinity=true' >> "$GITHUB_OUTPUT"
           fi
 
@@ -219,7 +219,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "$CALIBRATED" == true ]]; then
-            printf '%s  %s\n' 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a' "$RUNNER_TEMP/pg-planner/pg_archive_affinity.py" | sha256sum -c -
+            printf '%s  %s\n' '84a076b61932722644423a5fa05e3e68edeb210b1480fb8076dc9a2d39404a8c' "$RUNNER_TEMP/pg-planner/pg_archive_affinity.py" | sha256sum -c -
           fi
           python3 -I - <<'PYTHON'
           import json
@@ -801,7 +801,7 @@ jobs:
           planner="$RUNNER_TEMP/pg-planner/plan_pg_partitions.py"
           affinity="$RUNNER_TEMP/pg-planner/pg_archive_affinity.py"
           printf '%s  %s\n' '0e3cdf32579feec5d270659382d23bbe9de29b9d10d59ce994b34bcb1d4f8188' "$planner" | sha256sum -c -
-          printf '%s  %s\n' 'db285d452e0cb5814a95f0c8b25ab969af5ee9637fd051a1a0fdbcb8221cb64a' "$affinity" | sha256sum -c -
+          printf '%s  %s\n' '84a076b61932722644423a5fa05e3e68edeb210b1480fb8076dc9a2d39404a8c' "$affinity" | sha256sum -c -
           python3 -I - "$planner" "$affinity" <<'PY'
           import json
           import os

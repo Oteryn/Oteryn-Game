@@ -3,6 +3,8 @@
 pub(super) mod catalogue;
 #[path = "appearance_change/command_replay.rs"]
 mod command_replay;
+#[path = "appearance_change/familiar.rs"]
+mod familiar;
 #[path = "appearance_change/observation.rs"]
 pub mod observation;
 #[path = "appearance_change/offer.rs"]
@@ -399,6 +401,7 @@ macro_rules! authority_methods {
         fn appearance_observation(&self, _actor: crate::foundation::ExactActorRef, _session: crate::foundation::GameSessionId, _entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Option<$crate::gameplay_transport::appearance_change::observation::Observation>> { async { None } }
         fn appearance_observation_projected(&self, actor: crate::foundation::ExactActorRef, session: crate::foundation::GameSessionId, _empty_outfit: bool, entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Option<$crate::gameplay_transport::appearance_change::observation::Observation>> { self.appearance_observation(actor, session, entities) }
         fn appearance_observation_projected_result(&self, actor: crate::foundation::ExactActorRef, session: crate::foundation::GameSessionId, empty_outfit: bool, entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Result<$crate::gameplay_transport::appearance_change::observation::Observation, $crate::gameplay_transport::appearance_change::observation::ObservationError>> { async move { self.appearance_observation_projected(actor, session, empty_outfit, entities).await.ok_or($crate::gameplay_transport::appearance_change::observation::ObservationError::Unavailable) } }
+        fn familiar_appearance(&self, _actor: crate::foundation::ExactActorRef, _command: $crate::gameplay_transport::connection::UseCommand, _kind: u32, _payload: &[u8]) -> impl std::future::Future<Output=Option<Vec<u8>>> { async { None } }
         fn appearance_change(&self, _actor: crate::foundation::ExactActorRef, _command: $crate::gameplay_transport::connection::UseCommand, _change: oteryn_protocol_oteryn::appearance::Change) -> impl std::future::Future<Output=Option<oteryn_protocol_oteryn::appearance::ChangeResult>> { async { Some(oteryn_protocol_oteryn::appearance::ChangeResult::Rejected) } }
     };
 }
@@ -453,6 +456,17 @@ macro_rules! composed_methods {
             )
             .await
         }
+        async fn familiar_appearance(
+            &self,
+            actor: ExactActorRef,
+            command: connection::UseCommand,
+            kind: u32,
+            payload: &[u8],
+        ) -> Option<Vec<u8>> {
+            self.familiar_appearance_command(actor, command, kind, payload)
+                .await
+        }
+
         async fn appearance_change(
             &self,
             actor: ExactActorRef,

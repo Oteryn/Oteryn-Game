@@ -42,8 +42,9 @@ fn coverage() -> TestResult {
             keys.insert(key.as_str().ok_or("claim key")?.to_owned());
         }
     }
-    assert_eq!(quests, 42);
-    assert_eq!(keys.len(), 59);
+    assert_eq!(quests, 43);
+    assert_eq!(keys.len(), 60);
+    assert!(keys.contains("oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach"));
     let mut definitions = BTreeMap::new();
     for shard in REWARD_CLAIM_SHARDS {
         let document: Value = serde_json::from_str(shard)?;
@@ -132,7 +133,7 @@ fn coverage() -> TestResult {
             placements += 1;
         }
     }
-    assert_eq!(placements, 60);
+    assert_eq!(placements, 61);
     assert!(
         unserved.is_empty(),
         "source claims did not bind with native items: {unserved:?}"

@@ -1,0 +1,16 @@
+{
+  "id": 579,
+  "name": "FAMILIAR_APPEARANCE_V1",
+  "owner_decision": "Server and protocol gap closure",
+  "owner": "familiar appearance",
+  "requires": [
+    25
+  ],
+  "command_types": [
+    6324,
+    6325
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES gated by the composed owner and its loaded native content."
+}

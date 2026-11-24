@@ -1,0 +1,10 @@
+{
+  "id": 6372,
+  "name": "MANA_SHIELD_REMAINING",
+  "owner_decision": "Server/client contract gaps package, 2026-11-22",
+  "capability": 605,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto#MANA_SHIELD_REMAINING",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto#MANA_SHIELD_REMAINING",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 4
+}

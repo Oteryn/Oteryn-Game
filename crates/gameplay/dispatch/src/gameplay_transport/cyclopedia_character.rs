@@ -39,6 +39,27 @@ macro_rules! composed_methods {
 pub(super) use composed_methods;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn cyclopedia_movement_speed(
+        &self,
+        admitted: AdmittedSession,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> Option<wire::MovementSpeed> {
+        let actor = admitted.runtime_actor?;
+        let session = admitted.game_session_id;
+        let equipment = self.observe_movement_equipment(actor, session).await?;
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        let state = states.get(&runtime, actor, session)?;
+        let delta = equipment.observed_delta(&runtime, &states, actor, fence)?;
+        let current = super::actor_spell::actor_movement::spell_state_speed(
+            &runtime, state, actor, session, self.owner_now().get(), Some(delta), true,
+        )?;
+        Some(wire::MovementSpeed {
+            current,
+            base: u16::try_from(state.owned_base_speed()).ok()?,
+        })
+    }
+
     pub(super) async fn cyclopedia_character_wire(
         &self,
         admitted: AdmittedSession,
@@ -90,6 +111,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                     .map_err(|_| ())?;
                 wire::encode_badges(&badges).map_err(|_| ())
+            }
+            wire::blessings_dialog::COMMAND_TYPE_BLESSINGS_HOLDINGS => {
+                if !payload.is_empty()
+                    || !admitted.continuity.selected_capabilities
+                        .contains(wire::blessings_dialog::CAPABILITY_BLESSINGS_DIALOG_V1)
+                    || !admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::death_protection::CAPABILITY_DEATH_AND_BLESSINGS_V1)
+                {
+                    return Err(());
+                }
+                let holdings = self.root
+                    .read_blessings_holdings(self.character, self.holder, fence)
+                    .await
+                    .map_err(|_| ())?;
+                wire::blessings_dialog::encode_holdings(&holdings).ok_or(())
             }
             wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB => {
                 if payload.first() == Some(&wire::blessings_dialog::SELECTOR) {
@@ -168,7 +203,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .encode()
                         .map_err(|_| ());
                 }
-                if payload.first() == Some(&wire::gallery::SELECTOR) {
+                if matches!(payload.first(), Some(&wire::gallery::SELECTOR | &wire::gallery::owned::SELECTOR)) {
                     return self.cyclopedia_gallery(admitted, payload).await;
                 }
                 if payload.first() == Some(&wire::offence::SELECTOR) {
@@ -300,7 +335,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     extension.deaths = None;
                 }
-                view.encode_extended(&extension).map_err(|_| ())
+                let mut bytes = view.encode_extended(&extension).map_err(|_| ())?;
+                if request.tab == wire::CharacterTab::GeneralStats
+                    && admitted.continuity.selected_capabilities
+                        .contains(wire::CAPABILITY_CYCLOPEDIA_MOVEMENT_SPEED_V1)
+                {
+                    let speed = if target == fence.character_id {
+                        self.cyclopedia_movement_speed(admitted, fence).await
+                    } else {
+                        None
+                    };
+                    wire::MovementSpeed::encode_suffix(speed, &mut bytes);
+                }
+                Ok(bytes)
             }
             _ => Err(()),
         }

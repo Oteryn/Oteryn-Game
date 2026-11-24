@@ -12,6 +12,7 @@ use oteryn_session::{CommandStatus, GatedCommandResult};
 #[test]
 fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selectors() -> TestResult
 {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     for (mode, kind) in [
         (1i16, WorldType::Optional),
         (2, WorldType::Open),
@@ -53,13 +54,14 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
                     id: 507,
                     requires: &[9],
                 },
+                OfferedCapability { id: 583, requires: &[507] },
             ];
             admitted.continuity.selected_capabilities =
                 SelectedCapabilities::select(&offers, &[9, 507]).ok_or("select world catalogue")?;
             let world = admitted.world_id;
             sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')")
             .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
-            sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',$2,20,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'catalogue-fixture')")
+            sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity,battleye_status) VALUES(encode($1,'hex')::uuid,'policy-1',$2,20,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'catalogue-fixture',$2)")
             .bind(world.as_bytes().as_slice()).bind(mode).execute(&h.pool).await?;
             super::highscores_world_fixtures::snapshot(&h.pool, world, 1, character.as_bytes(), 1).await?;
             let query = oteryn_protocol_oteryn::highscores::HighscoresQuery {
@@ -80,6 +82,7 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
                 world,
                 admitted.game_session_id,
                 None,
+                false,
             )
             .await;
             let typed = crate::durability::highscores_catalogue::answer_session(
@@ -88,6 +91,7 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
                 world,
                 admitted.game_session_id,
                 Some((query, Some(kind))),
+                false,
             )
             .await;
             admission_writer.rollback().await?;
@@ -243,6 +247,18 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
                 .0,
                 CommandStatus::Rejected
             );
+            admitted.continuity.selected_capabilities =
+                SelectedCapabilities::select(&offers, &[9, 507]).ok_or("select legacy catalogue")?;
+            assert_eq!(super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 7, 6329, &[]).await?.0, CommandStatus::Rejected);
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(&offers, &[9, 507, 583]).ok_or("select BattlEye catalogue")?;
+            let (status, payload) = super::cyclopedia_fixtures::support::exchange(&owner, &mut admitted, 8, 6329, &[]).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(wire::decode_battleye_catalogue(&payload).map_err(debug)?, [
+                wire::BattlEyeEntry {
+                    entry: wire::Entry { world: wire::WorldId::decode(world.as_bytes()).map_err(debug)?, world_type: kind },
+                    battleye: wire::BattlEyeStatus::from_id(u8::try_from(mode)?).ok_or("BattlEye status")?,
+                }
+            ]);
             drop(owner);
             drop(authority);
             drop(seal);

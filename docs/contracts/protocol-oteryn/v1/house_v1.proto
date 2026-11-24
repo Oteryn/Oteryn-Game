@@ -79,3 +79,17 @@ message GuildhallLeadershipV1 { bytes guild_id = 1; bytes successor_character_id
 // Under selected capability 99, Guild Bank ledger entries also carry kinds
 // 4 Hall reserve (debit), 5 Hall refund (credit), 6 Hall payment (burn or surplus refund).
 // Without 99, that query projects only kinds 1..3; native ordinals/cursors remain stable.
+
+// Capability 614 (requires 49), command 6390, uses HouseQueryV1 and HouseResultV1
+// for catalogue rows. Field 5 (ACL) is refused. It places state-2 properties with
+// an unsettled auction that has yet to end first, ordered by the earliest end
+// timestamp and then native House key. All remaining properties follow in native
+// House key order. The cutoff is the database statement time. End timestamps have
+// Unix-millisecond precision for ordering. The cursor is opaque and must be sent
+// unchanged to continue the same town's auction list. It records the last row's
+// sort position at the time it was sent. Changes between pages can still move
+// other rows across that position. Refresh without a cursor to restart.
+// Command 57 retains native House key ordering.
+// Crystal201189f8 protocolgame.cpp:11393–11421 supplies public auction status and
+// deadlines. The Tibia Fandom archive documents the Cyclopedia auction view at
+// https://tibia.fandom.com/wiki/Cyclopedia#Houses.

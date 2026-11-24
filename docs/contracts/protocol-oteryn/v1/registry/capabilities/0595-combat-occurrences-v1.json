@@ -1,0 +1,16 @@
+{
+  "id": 595,
+  "name": "COMBAT_OCCURRENCES_V1",
+  "owner_decision": "Client occurrence and inscription protocol gap packet",
+  "owner": "Game fenced death settlement owner",
+  "requires": [
+    382
+  ],
+  "command_types": [
+    6352,
+    6354
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; requires the current immutable death receipt owner."
+}

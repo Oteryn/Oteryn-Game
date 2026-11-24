@@ -223,8 +223,17 @@ where
         drop(input_permit.take());
     }
     let npc_relocation = None;
+    use oteryn_protocol_oteryn::loop_training::{
+        COMMAND_TYPE_OFFLINE_TRAINING_CHOOSE, decode_offline_training_skill,
+    };
+    let training_action = command.command_type != COMMAND_TYPE_OFFLINE_TRAINING_CHOOSE
+        || (session
+            .selected_capabilities
+            .command_selected(command.command_type)
+            && decode_offline_training_skill(command.payload).is_ok());
     if input_permit.is_some()
         && !guard_deferred
+        && training_action
         && !authority
             .training_activity(session.admitted, command.command_type)
             .await
@@ -243,7 +252,11 @@ where
         } else {
             None
         };
-    if command.command_type != oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_INTENT {
+    if !matches!(
+        command.command_type,
+        oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_INTENT
+            | oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_ROW_ACTION
+    ) {
         session.stash_rows = None;
     }
     let walk_target = autowalk::target(session, command);

@@ -1,0 +1,10 @@
+name=offline_training_skills
+commands=6369
+[route]
+if command.payload.is_empty()
+    && let Some(skills) = authority.offline_training_skills(session.admitted).await
+{
+    Dispatch::Reply(CommandStatus::Accepted, skills.encode())
+} else {
+    Dispatch::Reply(CommandStatus::Rejected, Vec::new())
+}

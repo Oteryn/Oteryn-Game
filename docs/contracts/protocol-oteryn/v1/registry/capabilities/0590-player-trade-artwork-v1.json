@@ -1,0 +1,14 @@
+{
+  "id": 590,
+  "name": "PLAYER_TRADE_ARTWORK_V1",
+  "owner_decision": "Frozen offer appearance",
+  "owner": "Player trade",
+  "requires": [
+    4,
+    60
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Selected only with its listed dependencies. Extends the existing routes and grants no new command or domain authority."
+}

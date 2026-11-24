@@ -1,0 +1,15 @@
+{
+  "id": 608,
+  "name": "ACTOR_SPELL_PARAMETERS_V2",
+  "owner_decision": "Native action-bar spell parameters (2026-11-22)",
+  "owner": "Current Channel actor spell owner",
+  "requires": [
+    4
+  ],
+  "command_types": [
+    6380
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Also gated by ITEM_VIEW_OFFERED_CAPABILITIES. Both scopes require active native gameplay."
+}

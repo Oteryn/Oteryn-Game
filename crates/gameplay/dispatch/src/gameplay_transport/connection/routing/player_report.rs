@@ -23,6 +23,14 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             transport::player_report::PlayerReportOutcome::Payload(bytes) => {
                 Dispatch::Reply(crate::foundation::CommandStatus::Accepted, bytes)
             }
+            transport::player_report::PlayerReportOutcome::ConversationUnavailable => {
+                Dispatch::Reply(
+                    crate::foundation::CommandStatus::Rejected,
+                    oteryn_protocol_oteryn::player_report::CONVERSATION_UNAVAILABLE
+                        .as_bytes()
+                        .to_vec(),
+                )
+            }
             transport::player_report::PlayerReportOutcome::Rejected => Dispatch::Unregistered,
             transport::player_report::PlayerReportOutcome::Unavailable => {
                 return None;
