@@ -153,7 +153,7 @@ For a house settlement timeout, compare expired rows in `game_house_auctions`
 with committed receipts in `game_house_settlement_steps`. The live sweep saw
 expired auctions persist for more than 40 minutes with zero settlement receipts.
 The auction expiry scheduler is still missing in the tested checkout
-([HOUSE-WIRE-1](../../../docs/agents/tasks/HOUSE-WIRE-1.md#status)). Its production
+([HOUSE-WIRE-1](../../../docs/agents/tasks/HOUSE-WIRE-1.md#unfinished)). Its production
 caller needs to dispatch to `DurabilityRoot::house_settlement` in
 `crates/gameplay/durability/src/durability/house_ownership/premium.rs`.
 Use successful winner projection timings to calibrate the 15-second probe.
