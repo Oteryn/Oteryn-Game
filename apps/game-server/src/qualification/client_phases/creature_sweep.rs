@@ -1355,9 +1355,7 @@ async fn prepare_player(
         return Ok(());
     }
     // A classed level-one bootstrap still receives the initial level-100 grant.
-    let initial_unprivileged_build =
-        level == 1 && crate::node::qualification_operator_uid().is_some();
-    let expected_level = if classed && !initial_unprivileged_build {
+    let expected_level = if classed && level != 1 {
         level
     } else {
         SWEEP_LEVEL
