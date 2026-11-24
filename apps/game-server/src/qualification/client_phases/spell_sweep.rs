@@ -228,7 +228,31 @@ async fn sweep(
         "ineligible",
         ineligible(&clients[2], world, index, spell).await,
     );
-    let result = prepare(clients, world, index, spell).await;
+    let pvp_fixture = if spell.key == "candidate:spell/bruise_bane" {
+        full_row_s02::pvp_world().await.map(Some)
+    } else {
+        Ok(None)
+    };
+    let pvp = pvp_fixture
+        .as_ref()
+        .ok()
+        .and_then(Option::as_ref)
+        .map(|fixture| fixture.clients(&clients[0]));
+    let result = match (pvp_fixture.as_ref(), pvp.as_ref()) {
+        (Err(error), _) => Err(format!("Bruise Bane Open PvP fixture: {error}").into()),
+        (Ok(_), Some(pair)) => {
+            async {
+                let mut client = prepare_character(pair, 0, "knight", index).await?;
+                if let Err(error) = reach_ground(&mut client, world).await {
+                    return combine(Err(error), release_fixture(&mut client, world).await)
+                        .map(|()| (client, None));
+                }
+                Ok((client, None))
+            }
+            .await
+        }
+        (Ok(_), None) => prepare(clients, world, index, spell).await,
+    };
     let (mut client, rune) = match result {
         Ok(value) => {
             rows.record("prepare", Ok(()));
@@ -247,7 +271,7 @@ async fn sweep(
         index,
         rune,
         rows,
-        (clients, world),
+        (pvp.as_ref(), world),
         &mut paralysis_source,
     )
     .await;
@@ -303,6 +327,23 @@ async fn route_to_zone(
     walk(client, world, &path).await
 }
 
+async fn prepare_character(
+    pair: &SeamClients<'_>,
+    index: usize,
+    profile: &str,
+    spell_index: NonZeroU32,
+) -> TestResult<DevClientSession> {
+    let client = connect_character(pair, 0x80, index).await?;
+    provisioning::original::provision_profile(
+        client,
+        pair,
+        index,
+        FIXTURE_LEVEL,
+        &format!("spell-sweep-{profile}:{spell_index}"),
+    )
+    .await
+}
+
 async fn prepare(
     clients: &[SeamClients<'_>; 3],
     world: &BundleWorld,
@@ -321,15 +362,7 @@ async fn prepare(
     // Character. The sixth Character stays unclassed for the refusal probe.
     let pair = &clients[slot / 2];
     let index = slot % 2;
-    let client = connect_character(pair, 0x80, index).await?;
-    let mut client = provisioning::original::provision_profile(
-        client,
-        pair,
-        index,
-        FIXTURE_LEVEL,
-        &format!("spell-sweep-{profile}:{spell_index}"),
-    )
-    .await?;
+    let mut client = prepare_character(pair, index, profile, spell_index).await?;
     let setup = async {
         let item = match spell.carrier {
             Carrier::Instant { .. } => match spell.execution {
@@ -599,7 +632,7 @@ fn eligibility_refusal(reply: &Reply, underlevel: bool) -> bool {
 // C16b uses the same real item-use command and exact visible player entity.
 async fn paralyze_bruise_fixture(
     target: &mut DevClientSession,
-    clients: &[SeamClients<'_>; 3],
+    pair: &SeamClients<'_>,
     world: &BundleWorld,
     source: &mut Option<DevClientSession>,
 ) -> TestResult {
@@ -609,10 +642,17 @@ async fn paralyze_bruise_fixture(
         .filter_map(|index| book.indexed(index).map(|spell| (index, spell)))
         .find(|(_, spell)| matches!(spell.carrier, Carrier::Rune { item: 3165, .. }))
         .ok_or("Paralyze rune missing from active spell book")?;
-    let (peer, rune) =
-        full_e2ef5::with_observer_liveness(target, prepare(clients, world, index, spell)).await?;
+    let (_, profile) = profile(spell)?;
+    let peer =
+        full_e2ef5::with_observer_liveness(target, prepare_character(pair, 1, profile, index))
+            .await?;
     let peer = source.insert(peer);
-    let rune = rune.ok_or("seeded Paralyze rune absent")?;
+    let rune = provisioning::item_reference(&provisioning::item_index()?, 3165)?;
+    require(
+        full_e2ef5::rune_quantity(peer, rune)? > 0,
+        "seeded Paralyze rune absent",
+    )?;
+    full_e2ef5::with_observer_liveness(target, full_row_s02::set_open_attack(peer)).await?;
     let position = tile(target.world_spatial().actor_position)?;
     let from = tile(peer.world_spatial().actor_position)?;
     let path = route(world, from, |at| {
@@ -652,7 +692,7 @@ async fn positive(
     index: NonZeroU32,
     rune: Option<NonZeroU32>,
     rows: &mut Rows<'_>,
-    (clients, world): (&[SeamClients<'_>; 3], &BundleWorld),
+    (pvp, world): (Option<&SeamClients<'_>>, &BundleWorld),
     paralysis_source: &mut Option<DevClientSession>,
 ) -> TestResult {
     let health_effect = pure_effect(spell);
@@ -673,7 +713,11 @@ async fn positive(
         Some(HealthEffect::Heal) if targets_self => {
             if vitals(client)?.health == vitals(client)?.max_health {
                 if !dispel || bruise_bane {
-                    spawn_target(client, "bear").await?;
+                    if bruise_bane {
+                        spawn_target_at(client, "bear", "NODE_BOOT_PVP_CONTROL_SOCKET").await?;
+                    } else {
+                        spawn_target(client, "bear").await?;
+                    }
                 }
                 let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
                 while vitals(client)?.health == vitals(client)?.max_health {
@@ -692,7 +736,13 @@ async fn positive(
     };
     select_attack_target(client, rune, target, spell.needs_target).await?;
     let paralysis_result = if bruise_bane {
-        paralyze_bruise_fixture(client, clients, world, paralysis_source).await
+        paralyze_bruise_fixture(
+            client,
+            pvp.ok_or("Open PvP pair absent")?,
+            world,
+            paralysis_source,
+        )
+        .await
     } else {
         Ok(())
     };
@@ -1060,8 +1110,22 @@ async fn spawn_target(
     client: &mut DevClientSession,
     species: &str,
 ) -> TestResult<(oteryn_dev_client::EntityRef, ActorPosition)> {
+    spawn_target_at(client, species, "NODE_BOOT_CONTROL_SOCKET").await
+}
+
+async fn spawn_target_at(
+    client: &mut DevClientSession,
+    species: &str,
+    socket_key: &str,
+) -> TestResult<(oteryn_dev_client::EntityRef, ActorPosition)> {
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let answer = request_spawn(session, format!("oteryn:creature.{species}")).await?;
+    let answer = request_fixture_control_at(
+        socket_key,
+        session,
+        "--spawn",
+        format!("oteryn:creature.{species}"),
+    )
+    .await?;
     let entity = parse_spawned_entity(&answer)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
     loop {

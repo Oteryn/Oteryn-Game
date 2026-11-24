@@ -759,7 +759,16 @@ async fn request_fixture_control(
     operation: &'static str,
     argument: String,
 ) -> Result<String, String> {
-    let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
+    request_fixture_control_at("NODE_BOOT_CONTROL_SOCKET", session, operation, argument).await
+}
+
+async fn request_fixture_control_at(
+    socket_key: &str,
+    session: String,
+    operation: &'static str,
+    argument: String,
+) -> Result<String, String> {
+    let socket = required(socket_key).map_err(|error| error.to_string())?;
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
     let output = tokio::task::spawn_blocking(move || {

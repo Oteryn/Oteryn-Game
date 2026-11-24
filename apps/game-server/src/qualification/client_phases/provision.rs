@@ -26,7 +26,14 @@ pub(in crate::qualification) async fn provision_profile(
     expected_level: u32,
     profile: &str,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let pvp = std::env::var("NODE_BOOT_PVP_WORLD_ID")
+        .ok()
+        .and_then(|world| crate::node::uuid_bytes(&world));
+    let socket = required(if pvp == Some(clients.world) {
+        "NODE_BOOT_PVP_CONTROL_SOCKET"
+    } else {
+        "NODE_BOOT_CONTROL_SOCKET"
+    })?;
     let vocation = if profile == "explorer" {
         "knight"
     } else {
