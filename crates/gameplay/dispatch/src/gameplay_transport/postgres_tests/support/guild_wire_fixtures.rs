@@ -1,4 +1,4 @@
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use super::fixture::{self, debug};
 
 use super::TestResult;
@@ -83,6 +83,18 @@ pub(super) async fn exchange_with_holder_pressure(
             }
         };
         client.shutdown().await?;
+        let mut trailing = Vec::new();
+        client.read_to_end(&mut trailing).await?;
+        let mut frames = trailing.as_slice();
+        while !frames.is_empty() {
+            let frame = read_frame(&mut frames).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            assert_ne!(
+                envelope.message_type(),
+                MessageType::CommandResult,
+                "command {id}/{kind} emitted more than one terminal reply",
+            );
+        }
         Ok(reply)
     };
     let (ended, result): (_, TestResult<(CommandStatus, Vec<u8>)>) = tokio::time::timeout(
@@ -93,6 +105,11 @@ pub(super) async fn exchange_with_holder_pressure(
     match &ended {
         crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(current)
         | crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenClosed(current, _) => {
+            assert_eq!(current.game_session_id, before.game_session_id);
+            assert_eq!(
+                current.continuity.connection_generation,
+                before.continuity.connection_generation,
+            );
             *admitted = *current
         }
         _ => {}

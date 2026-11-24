@@ -699,6 +699,14 @@ pub(super) async fn projection_read<T, E>(
 ) -> Option<T> {
     let budget =
         super::AdmissionRetryBudget::for_holder_window(root, std::time::Duration::from_secs(10));
+    projection_read_with_budget(&budget, read, busy).await
+}
+
+async fn projection_read_with_budget<T, E>(
+    budget: &super::AdmissionRetryBudget<'_>,
+    read: impl AsyncFnMut() -> Result<T, E>,
+    busy: impl Fn(&E) -> bool,
+) -> Option<T> {
     tokio::time::timeout_at(budget.deadline, budget.retry_holder(read, busy))
         .await
         .ok()?
@@ -1842,6 +1850,56 @@ mod tests {
             project(field).overlay().has_added_item(tile),
             "current native fields convert coordinates and revision exactly once"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn projection_retries_only_temporary_holder_refusal() -> Result<(), Box<dyn std::error::Error>>
+    {
+        use crate::durability::DurabilityError;
+
+        let mut session_bytes = [1; 16];
+        session_bytes[6] = 0x70;
+        session_bytes[8] = 0x80;
+        let session = crate::foundation::GameSessionId::decode(&session_bytes)
+            .map_err(|error| format!("{error:?}"))?;
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .start_paused(true)
+            .build()?
+            .block_on(async {
+                let budget = super::super::AdmissionRetryBudget::new(&session);
+                let attempts = std::cell::Cell::new(0);
+                let result = projection_read_with_budget(
+                    &budget,
+                    async || {
+                        attempts.set(attempts.get() + 1);
+                        if attempts.get() < 3 {
+                            Err(DurabilityError::RootUnavailable)
+                        } else {
+                            Ok(42)
+                        }
+                    },
+                    super::super::root_holder_busy,
+                )
+                .await;
+                assert_eq!(result, Some(42));
+                assert_eq!(attempts.get(), 3);
+
+                let budget = super::super::AdmissionRetryBudget::new(&session);
+                attempts.set(0);
+                let result = projection_read_with_budget(
+                    &budget,
+                    async || {
+                        attempts.set(attempts.get() + 1);
+                        Err::<u8, _>(DurabilityError::CommitRejected)
+                    },
+                    super::super::root_holder_busy,
+                )
+                .await;
+                assert_eq!(result, None);
+                assert_eq!(attempts.get(), 1);
+            });
         Ok(())
     }
 

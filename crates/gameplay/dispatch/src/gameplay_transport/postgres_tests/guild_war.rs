@@ -211,6 +211,7 @@ fn scenario(warring_killer: bool) -> TestResult {
         ).await?;
         assert_eq!(status, CommandStatus::Accepted);
         let declared = decode_guild_war_result(&payload).map_err(debug)?;
+        assert_eq!(declared.code, 1);
         assert_eq!(score(&h, declared.war).await?, (1, 0, 0, None));
         let timing: (Option<i64>, Option<i64>) = sqlx::query_as(
             "SELECT started_at,ends_at FROM game_guild_wars WHERE war_id=encode($1,'hex')::uuid",
