@@ -1745,10 +1745,21 @@ async fn proficiency(
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-    let bytes = world_bytes()?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let hunt =
-        full_row_p05::hunt_for_race(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    let rat_key = "oteryn:creature.rat";
+    creature_sweep::leave_protection_zone(client, world).await?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let entity = parse_spawned_entity(&request_spawn(session, rat_key.into()).await?)?;
+    let visibility_deadline = tokio::time::Instant::now() + Duration::from_secs(4);
+    let target = loop {
+        if let Some(target) = client.world_entities().and_then(|view| view.get(&entity)) {
+            break *target;
+        }
+        if tokio::time::Instant::now() >= visibility_deadline {
+            return Err("harness-proficiency-rat-spawn-not-visible".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+    };
+    let hunt = full_row_p05::hunt_target(client, rat_key, target).await?;
     let rats = document(&root.join("creatures/definitions/creatures-01000-01499.json"))?;
     let rat = list(&rats["records"])?
         .iter()

@@ -410,10 +410,18 @@ pub(super) async fn hunt_for_race(
     spawns: &oteryn_world_bundle::spawn::Table,
     key: &str,
 ) -> TestResult<KillSample> {
+    let target = wait_for_spawn(client, world, spawns, key).await?;
+    hunt_target(client, key, target).await
+}
+
+pub(super) async fn hunt_target(
+    client: &mut DevClientSession,
+    key: &str,
+    target: oteryn_dev_client::WorldSpatialEntity,
+) -> TestResult<KillSample> {
     use oteryn_dev_client::{EntityKind, SessionEvent};
     use oteryn_protocol_oteryn::analyser::AnalyserFact;
     let race = race_reference(key)?;
-    let target = wait_for_spawn(client, world, spawns, key).await?;
     let old_corpses: Vec<_> = client
         .world_entities()
         .into_iter()
@@ -464,8 +472,7 @@ pub(super) async fn hunt_for_race(
                     AnalyserFact::Kill { race } => kills.push(race),
                     AnalyserFact::Impact(
                         oteryn_protocol_oteryn::analyser::AnalyserImpact::Damage {
-                            element,
-                            ..
+                            element, ..
                         },
                     ) => damage_elements |= 1 << element.wire(),
                     AnalyserFact::Experience { raw, gained } => experience.push((raw, gained)),
