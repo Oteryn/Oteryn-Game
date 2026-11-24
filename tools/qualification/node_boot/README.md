@@ -152,7 +152,9 @@ detail projection omitted the authored report in all 12 accepted detail replies
 ([server detail projection](../../../crates/gameplay/dispatch/src/gameplay_transport/charm_progression/catalogue.rs#L204)).
 The other 28 reports linked to creatures that had no canonical wire race
 ([race catalogue](../../../crates/gameplay/dispatch/src/gameplay_transport/charm_progression.rs#L91)).
-The census preserves both failure categories and the dependent steps.
+The `documents=40:400` slice added 217 accepted replies with missing text and
+183 reports with no canonical race. It emitted 434 PASS and 766 FAIL step rows
+and ended with `NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged`.
 
 The runner prints a
 summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
