@@ -326,3 +326,32 @@ fn hold_holder(
         })
     })))
 }
+
+
+#[test]
+fn ground_projection_waits_for_a_busy_holder_postgres() -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ground-projection-busy-holder", || {
+        run(async |admin| {
+            let h = Harness::create_with_admission_seed(admin, "ground_projection_busy", true, false).await?;
+            let fence = super::fixture::fence(1)?;
+            let read = crate::gameplay_transport::loop_move::projection_read(
+                &h.root,
+                async || h.root.read_item_loop_ground_for_scope(fence.runtime_scope).await,
+                crate::gameplay_transport::root_holder_busy,
+            );
+            assert!(priority_handoff(&h.root, async { read.await.is_some() }).await?);
+            let attempts = std::cell::Cell::new(0);
+            let rejected = crate::gameplay_transport::loop_move::projection_read(
+                &h.root,
+                async || {
+                    attempts.set(attempts.get() + 1);
+                    Err::<(), _>(crate::durability::DurabilityError::CommitRejected)
+                },
+                crate::gameplay_transport::root_holder_busy,
+            ).await;
+            assert!(rejected.is_none());
+            assert_eq!(attempts.get(), 1);
+            h.cleanup().await
+        })
+    })
+}

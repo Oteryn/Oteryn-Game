@@ -1499,6 +1499,21 @@ const HOLDER_RETRY_FLOOR: Duration = Duration::from_millis(50);
 /// its lane meanwhile, so the window stays short of the root recovery window.
 const COMMAND_HOLDER_WINDOW: Duration = Duration::from_secs(1);
 
+fn root_holder_busy(error: &crate::durability::DurabilityError) -> bool {
+    matches!(error, crate::durability::DurabilityError::RootUnavailable)
+}
+
+fn progression_holder_busy(
+    error: &crate::durability::character_progression::CharacterProgressionError,
+) -> bool {
+    matches!(
+        error,
+        crate::durability::character_progression::CharacterProgressionError::Unavailable(
+            crate::durability::DurabilityError::RootUnavailable,
+        )
+    )
+}
+
 impl<'r> AdmissionRetryBudget<'r> {
     fn new(game_session_id: &GameSessionId) -> Self {
         Self {
@@ -1515,8 +1530,12 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// lock refresh (NODEBOOT-1): a busy holder is retried, waiting for its return, for at most
     /// [`COMMAND_HOLDER_WINDOW`], then the command fails closed as before.
     fn for_command(root: &'r DurabilityRoot) -> Self {
+        Self::for_holder_window(root, COMMAND_HOLDER_WINDOW)
+    }
+
+    fn for_holder_window(root: &'r DurabilityRoot, window: Duration) -> Self {
         Self {
-            deadline: tokio::time::Instant::now() + COMMAND_HOLDER_WINDOW,
+            deadline: tokio::time::Instant::now() + window,
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
@@ -1637,6 +1656,27 @@ impl<'r> AdmissionRetryBudget<'r> {
                         return Err(refusal);
                     }
                 }
+            }
+        }
+    }
+
+    /// Retries errors that prove the operation could not acquire a holder.
+    async fn retry_holder<T, E>(
+        &self,
+        mut step: impl AsyncFnMut() -> Result<T, E>,
+        busy: impl Fn(&E) -> bool,
+    ) -> Result<T, E> {
+        loop {
+            match step().await {
+                Err(error) if busy(&error) => {
+                    if !self
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await
+                    {
+                        return Err(error);
+                    }
+                }
+                result => return result,
             }
         }
     }

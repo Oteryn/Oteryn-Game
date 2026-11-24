@@ -92,9 +92,17 @@ pub(super) async fn execute(
         request.operation,
         Operation::Add | Operation::GroupAdd | Operation::GroupRename
     );
-    let prepared = match owner
-        .root
-        .prepare_vip(owner.character, owner.holder, fence, command, request)
+    let budget = super::AdmissionRetryBudget::for_command(owner.root);
+    let prepared = match budget
+        .retry_holder(
+            async || {
+                owner
+                    .root
+                    .prepare_vip(owner.character, owner.holder, fence, command, request.clone())
+                    .await
+            },
+            super::root_holder_busy,
+        )
         .await
     {
         Ok(prepared) => prepared,

@@ -692,25 +692,17 @@ impl LoopGroundCache {
 /// A view may overlap the same connection's inventory refresh on the bounded
 /// durability holder. Retry only that temporary resource refusal, within one
 /// deadline; stored-state and authority errors still close the view.
-async fn projection_read<T, E, F, Fut>(mut read: F, busy: impl Fn(&E) -> bool) -> Option<T>
-where
-    F: FnMut() -> Fut,
-    Fut: std::future::Future<Output = Result<T, E>>,
-{
-    tokio::time::timeout(std::time::Duration::from_secs(10), async {
-        loop {
-            match read().await {
-                Ok(value) => return Some(value),
-                Err(error) if busy(&error) => {
-                    tokio::time::sleep(std::time::Duration::from_millis(5)).await
-                }
-                Err(_) => return None,
-            }
-        }
-    })
-    .await
-    .ok()
-    .flatten()
+pub(super) async fn projection_read<T, E>(
+    root: &super::DurabilityRoot,
+    read: impl AsyncFnMut() -> Result<T, E>,
+    busy: impl Fn(&E) -> bool,
+) -> Option<T> {
+    let budget =
+        super::AdmissionRetryBudget::for_holder_window(root, std::time::Duration::from_secs(10));
+    tokio::time::timeout_at(budget.deadline, budget.retry_holder(read, busy))
+        .await
+        .ok()?
+        .ok()
 }
 
 /// The Channel's loop Ground overlay over the bundle `base`; `None` without a pinned index or
@@ -741,8 +733,9 @@ pub async fn loop_ground(
     }
     let index = index?;
     let items = projection_read(
-        || admission.root.read_item_loop_ground_for_scope(scope),
-        |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
+        admission.root,
+        async || admission.root.read_item_loop_ground_for_scope(scope).await,
+        super::root_holder_busy,
     )
     .await?;
     let taken = if let crate::foundation::RuntimeScopeRefV1::Channel {
@@ -751,14 +744,18 @@ pub async fn loop_ground(
     } = scope
     {
         projection_read(
-            || {
-                admission.root.read_map_item_mint_placements(
-                    world_id,
-                    channel_id,
-                    base.digest(),
-                    admission.reset_epoch,
-                    base.entry_count(),
-                )
+            admission.root,
+            async || {
+                admission
+                    .root
+                    .read_map_item_mint_placements(
+                        world_id,
+                        channel_id,
+                        base.digest(),
+                        admission.reset_epoch,
+                        base.entry_count(),
+                    )
+                    .await
             },
             |error| {
                 matches!(
@@ -1845,44 +1842,6 @@ mod tests {
             project(field).overlay().has_added_item(tile),
             "current native fields convert coordinates and revision exactly once"
         );
-        Ok(())
-    }
-
-    #[test]
-    fn projection_retries_only_temporary_holder_refusal() -> Result<(), Box<dyn std::error::Error>>
-    {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?
-            .block_on(async {
-                let attempts = std::cell::Cell::new(0);
-                let result = projection_read(
-                    || {
-                        let attempt = attempts.get() + 1;
-                        attempts.set(attempt);
-                        std::future::ready(if attempt < 3 { Err(true) } else { Ok(42) })
-                    },
-                    |temporary| *temporary,
-                )
-                .await;
-                assert_eq!(result, Some(42));
-                assert_eq!(attempts.get(), 3);
-                let attempts = std::cell::Cell::new(0);
-                let result = projection_read(
-                    || {
-                        attempts.set(attempts.get() + 1);
-                        std::future::ready(Err::<u8, _>(false))
-                    },
-                    |temporary| *temporary,
-                )
-                .await;
-                assert_eq!(result, None);
-                assert_eq!(
-                    attempts.get(),
-                    1,
-                    "an authority or stored-state refusal is never retried as resource contention"
-                );
-            });
         Ok(())
     }
 
