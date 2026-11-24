@@ -157,3 +157,15 @@ unverified through gameplay.
 | Cause | Keys observed through explicit MOVE | Oteryn owners | Crystal 201189f8 | Expected and observed |
 | --- | --- | --- | --- | --- |
 | Compiled claim refuses an unknown exclusion-group list before eligibility | 34088, 34089, 43870–43875, 43877–43880 | `content/native_gameplay.rs:4776–4798`, `durability/character_equipment.rs:1549–1559`, `gameplay_transport/hotkey_equip.rs:334–347` | `data/items/items.xml:64323–64376,76181–76342,76366–76485`, `src/creatures/players/player.cpp:4631–4636` | Command type 9 targeted RightHand with the fresh carried item handle. Among the positive and restriction probes, 34 rows returned `SlotMismatch/NotPossible` for these twelve keys. The matching native WEAPON patterns reserve SHIELD, give level and vocation, and declare `mutually_exclusive_groups=UNKNOWN`. The content owner rejects that field before evaluating either eligibility gate. Crystal declares the two-handed weapon and its eligible builds without the Oteryn group-list prerequisite. For 43870, the eligible build was a level-600 Knight, and the level and vocation rejection probes also returned `SlotMismatch`. |
+
+### Batch 1400:719 cleanup capacity
+
+The harness drops carried leftovers at the actor's tile, commonly the town
+entry (32369,32238,7). Later command 9 cleanup moves at that tile began
+returning `NoRoom/NotEnoughRoom` for keys including 44620, 44636, 44637,
+44642, 44643, 44648 and 44649. The server maps ground-cell capacity refusal
+to this outcome (`durability/item_loop_move.rs:302–303`). Because the
+restriction helper returns its cleanup error after an otherwise successful
+restriction check, the same disposal refusal also appears under
+`equip_level` and `equip_vocation`. Those rows fail end to end and
+do not establish a failed eligibility decision.
