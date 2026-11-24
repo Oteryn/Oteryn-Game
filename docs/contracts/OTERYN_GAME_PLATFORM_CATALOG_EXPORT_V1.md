@@ -34,7 +34,7 @@ For schema `1.0.0`, `source_revision` is an exact lowercase 40-hex commit SHA fr
 
 `ruleset_id` and `content_profile_id` are stable namespaced Game identifiers. A consumer must not replace either with protocol version, display version or legacy datapack identity.
 
-The v1 producer input boundary is normalized `NativeCatalogInput` derived from the canonical native semantic graph/registries. The current task implements validation, canonicalization and artifact production; a broad runtime/content adapter is a later Game task.
+The v1 producer input boundary is normalized `NativeCatalogInput` derived from the canonical native semantic graph/registries. The public view profile uses the validated WorldProject loaded by Game's shared CONTENT loader.
 
 ## 4. Stable identity
 
@@ -212,6 +212,8 @@ That fixture proves the negative semantics: current absence of a broad native ca
 
 Unit tests may use synthetic supported records solely to exercise validation and determinism. Synthetic fixtures grant no native availability/completeness claim.
 
+`fixtures/supported-native-input.json` contains a sample of admitted public records. It declares partial coverage for the sampled capabilities and exercises the Game payload revision below. Platform can use it to test wiki lists, search and version switching (F21). The opt-in `build.py --preproduction` path exports the WorldProject from the selected checkout’s committed HEAD.
+
 ## 14. Consumer obligations
 
 A Platform consumer for schema `1.0.0` must verify contract/schema/authority identity, exact payload digest, capability/completeness manifests, stable keys, endpoint integrity and its own resource limits before persisting an inactive candidate.
@@ -228,6 +230,22 @@ The `data` object is a bounded transport carrier. A capability may be promoted f
 Until that evidence exists, the capability remains `unsupported/unknown`; the generic `data` carrier is not permission to publish ad-hoc authoritative fields.
 
 A capability-specific additive contract must preserve stable native identity, provenance, completeness semantics and the v1 no-fallback rule. A breaking payload change requires a new schema/capability revision and explicit consumer compatibility evidence.
+
+### Public WorldProject payloads, revision 1
+
+The opt-in preproduction export of `oteryn:profile.public-content-view-v1` carries the following Game-owned payloads for offline compatibility testing and inactive import. The v1.0.0 envelope is unchanged. Each record has an integer `data.payload_revision` equal to `1` and its `type` equals its `capability_id`. Only the fields listed here are accepted. A consumer must validate this exact revision before accepting the payload as production-relevant. The offline artifacts use the `preproduction-unallocated` authority epoch.
+
+| Capability | Record and admitted source | Other `data` fields |
+| --- | --- | --- |
+| `item` | Entity from a client-safe Item Reference definition | Required `definition_revision`, boolean `materializable`, and `stack_class` (`Unknown`, `NonStackable` or `StackCapable`). Optional `name` is the known item presentation name. |
+| `creature` | Entity from a client-safe Creature Reference definition | Required `definition_revision`. Optional typed Creature profile fields `name` (the admitted display name), `health` (maximum health), `experience`, `speed`, `armor`, `resistances`, and `immunities`. The four numeric stats are nonnegative integers. `resistances` is an array of `{damage_type, percent}` objects, where `damage_type` is a string and `percent` is `{numerator, denominator}` with a signed integer numerator and positive integer denominator. `immunities` is an array of damage-type strings. |
+| `npc` | Entity from a public NPC declaration | Required `definition_revision`. |
+| `creature_loot` | Relation from a Creature to an Item, from the Creature's linked Reference loot table | Required `algorithm` with value `IndependentBernoulliPpm`, nonnegative integer `min_count` and `max_count` with `min_count <= max_count`, and integer `probability_ppm` in `0..=1000000`. This revision covers flat tables with independent rows. Tables with nested, unique, subtype, conditional, or other selection semantics are omitted as a unit. |
+| `npc_shop` | Relation from a public NPC to an Item, from an offer in a linked Service declaration | Required `direction` (`BuyFromPlayer` or `SellToPlayer`), nonnegative integer `unit_price`, nullable nonnegative integers `count` and `sub_type`, and nullable `currency` (an explicit native key resolving to an exported Item). Null `count` carries the source default of one. Null `currency` carries absence of an explicit currency. |
+
+Entity keys and the `definition_revision` strings come from the admitted definitions. Optional fields are emitted when the typed public source provides a value representable in v1. An omitted field carries no availability claim. Entity identities and relation rows outside v1 bounds are omitted, and relations to omitted entities are excluded. A supported capability with these omissions reports partial coverage. Reference authoring metadata, raw source annotations and hidden or secret identities are excluded. Relation keys identify source rows by their zero-based ordinal in the admitted table or service offer list. A loot key has the form `<creature_key>.loot.<ordinal>`. A shop key has the form `<npc_key>.shop.<service_key>.row.<ordinal>` with the colon in the service key encoded as a dot. Row identities are scoped to the snapshot for version comparisons. Relations require exported endpoints. Shop offers with pending parity, hidden NPCs or unexported items or currencies are omitted. Repeated links to the same Service emit one copy of each offer. The projection omits rows with ambiguous wire identities and requires loot references to match the native definition revision.
+
+For the opt-in preproduction export, Game derives each manifest entry from the same admitted project and public output. A capability has support once at least one contracted record is emitted. It is complete when every source record of that kind in the admitted project is emitted, including all linked rows for a relation capability, with no omissions due to wire bounds. An omitted source record makes an otherwise supported capability partial. If expanding a relation capability would exceed the artifact's row or byte limit, Game omits that capability as a unit so a truncated prefix cannot hide an ambiguous relation key. Zero emitted records give `unsupported/unknown`. The scope is the admitted WorldProject, so separate spell and quest loaders and uncontracted declaration families confer no support. Both producer and verifier reject records assigned to unsupported capabilities. The profile has no tombstone history source.
 
 ## 16. Cross-repository operational semantics
 
@@ -262,7 +280,13 @@ Implementations may use more specific local codes but must preserve these failur
 
 ### Rollout, mixed versions and rollback
 
-The rollout classification is `server-first-safe` for contract/producer availability: merging Game v1 does not change runtime or Platform behavior. Platform then implements an inactive consumer for this exact schema.
+The cross-repository lock records the Platform inactive consumer as
+`NOT_IMPLEMENTED_INACTIVE_CONSUMER_PENDING` and production as disabled.
+The protected-main build retains eight `unsupported/unknown` capabilities and
+empty record lists while matching consumer validation is pending. The opt-in
+preproduction build and committed sample provide fixture inputs for that
+validation and F21. Capability promotion and activation remain subject to the
+following order.
 
 Required order:
 

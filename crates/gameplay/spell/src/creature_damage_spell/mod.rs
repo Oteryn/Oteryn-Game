@@ -15,7 +15,9 @@ use crate::creature_auto_attack::{
 };
 use crate::creature_damage_spell_delayed as delayed;
 use crate::foundation::owner_timer::SemanticTimeMicros;
-use crate::foundation::{ApplicationFacts, ConditionDefinition};
+use crate::foundation::{
+    ApplicationFacts, AttributeModifier, AttributeModifiers, ConditionDefinition, ConditionValues,
+};
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
 };
@@ -320,7 +322,7 @@ impl SpellSource {
         profiles: &[ProjectV2AuthoringProfile],
         content_digest: [u8; 32],
     ) -> Result<Self, AttackError> {
-        Self::from_native_branch(
+        let mut source = Self::from_native_branch(
             creature,
             index,
             records,
@@ -329,7 +331,82 @@ impl SpellSource {
             None,
             None,
             ScheduleList::Attack,
-        )
+        )?;
+        if source.creature_key == "oteryn:creature.dark_torturer"
+            && source.ability.key == "oteryn:ability.spell.dark_torturer_skill_reducer"
+            && source.ability.revision == "definition-r1"
+        {
+            source.add_dark_torturer_cone_variants()?;
+        }
+        Ok(source)
+    }
+
+    fn add_dark_torturer_cone_variants(&mut self) -> Result<(), AttackError> {
+        let Some(presentation) = self.presentation.as_ref() else {
+            return Err(AttackError::UnsupportedShape);
+        };
+        let [ProjectV2AbilityEffect::Inline(effect)] = presentation.effects.as_slice() else {
+            return Err(AttackError::UnsupportedShape);
+        };
+        if !self.needs_direction
+            || self.needs_target
+            || !matches!(self.area, Some(ProjectV2AbilityArea::Matrix { .. }))
+            || self.windup.is_some()
+            || self.chain.is_some()
+            || !self.variants.is_empty()
+            || !self.conditions.is_empty()
+            || !matches!(
+                effect.operation,
+                crate::content::ProjectV2InlineEffectOperation::PresentationOnly
+            )
+            || effect
+                .presentation
+                .as_ref()
+                .and_then(|cue| cue.impact_asset_binding.as_deref())
+                != Some("canary.appearance:effect/sound_purple")
+        {
+            return Err(AttackError::UnsupportedShape);
+        }
+
+        // TibiaWiki Dark Torturer (2026-06-16): Great Musical Wave reduces
+        // shielding by 60–95% for about four seconds. Crystal 201189f8 provides
+        // the cone and cue, but its Lua uses the unregistered SKILL_DEFENSEPERCENT.
+        const DURATION_MS: u32 = 4_000;
+        const MIN_PERCENT: i32 = 5;
+        const MAX_PERCENT: i32 = 40;
+        let condition_key = format!("{}.defence", effect.key);
+        let mut variants = Vec::new();
+        for percent in MIN_PERCENT..=MAX_PERCENT {
+            let mut child = self.clone();
+            let mut identity = self.ability.clone();
+            identity.key = format!("{}.variant-{percent}", identity.key);
+            child.conditions.push(
+                ConditionDefinition::new(
+                    &condition_key,
+                    1,
+                    ConditionValues::SourceAttributes {
+                        modifiers: AttributeModifiers {
+                            shielding: Some(AttributeModifier::PercentOfBase(percent)),
+                            ..AttributeModifiers::default()
+                        },
+                        duration_ms: DURATION_MS,
+                    },
+                )
+                .ok_or(AttackError::InvalidSource)?,
+            );
+            child.variant_child = Some(identity);
+            variants.push(Ok(child));
+        }
+        self.fingerprint = Sha256::new()
+            .chain_update(self.fingerprint)
+            .chain_update(b"dark_torturer_shielding_percent_v2")
+            .chain_update(MIN_PERCENT.to_be_bytes())
+            .chain_update(MAX_PERCENT.to_be_bytes())
+            .chain_update(DURATION_MS.to_be_bytes())
+            .finalize()
+            .into();
+        self.variants = variants;
+        Ok(())
     }
     /// Appearance-only defense retains its native schedule and source body; it mutates
     /// the existing physical creature condition owner rather than a player roster.
@@ -3147,4 +3224,71 @@ fn source_overpower_roll(
     )
     .map_err(|_| AttackError::InvalidPlan)?;
     Ok(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(draw, 1, 100) as u8)
+}
+
+#[cfg(test)]
+mod dark_torturer_tests {
+    use super::{ConditionValues, Data, SpellSource};
+    use crate::content::native_gameplay::CreatureProfilesDocument;
+    use oteryn_gameplay_domain::domain::condition::attributes::CombatSkill;
+
+    #[test]
+    fn dark_torturer_cone_rolls_every_documented_shielding_value()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let input = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/creatures/definitions/spell-native-profiles.json"
+        ))?;
+        let profiles: CreatureProfilesDocument = serde_json::from_slice(&input)?;
+        let creature = profiles
+            .records
+            .iter()
+            .find(|record| record.profile.target.key == "oteryn:creature.dark_torturer")
+            .ok_or("Dark Torturer profile")?;
+        let Some(Data::Behavior(behavior)) =
+            creature.behavior.as_ref().map(|profile| &profile.data)
+        else {
+            return Err("Dark Torturer behaviour".into());
+        };
+        let entry = behavior
+            .attacks
+            .iter()
+            .position(|attack| {
+                attack.ability.key == "oteryn:ability.spell.dark_torturer_skill_reducer"
+            })
+            .ok_or("Dark Torturer cone schedule")?;
+        let definitions = creature
+            .attack_definitions
+            .as_ref()
+            .ok_or("Dark Torturer attack definitions")?;
+        let source = SpellSource::from_native(
+            &creature.profile.target,
+            entry,
+            &definitions.records,
+            &definitions.profiles,
+            [0; 32],
+        )
+        .map_err(|error| format!("{error:?}"))?;
+
+        assert_eq!(source.variants.len(), (5..=40).count());
+        for (variant, remaining) in source.variants.iter().zip(5..=40) {
+            let variant = variant.as_ref().map_err(|error| format!("{error:?}"))?;
+            let [condition] = variant.conditions.as_slice() else {
+                return Err("one condition per cone variant".into());
+            };
+            let ConditionValues::SourceAttributes {
+                modifiers,
+                duration_ms,
+            } = condition.values()
+            else {
+                return Err("shielding attribute condition".into());
+            };
+            assert_eq!(
+                modifiers.combat_skill(CombatSkill::Shield, 100),
+                Some(remaining)
+            );
+            assert_eq!(duration_ms, 4_000);
+        }
+        Ok(())
+    }
 }

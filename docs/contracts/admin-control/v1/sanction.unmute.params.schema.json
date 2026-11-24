@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UnmuteParams",
+  "type": "object",
+  "properties": {
+    "account_id": {
+      "$ref": "#/$defs/EnforcementId"
+    },
+    "audit_ref": {
+      "$ref": "#/$defs/EnforcementId"
+    },
+    "character_id": {
+      "$ref": "#/$defs/EnforcementId"
+    },
+    "command_version": {
+      "$ref": "#/$defs/EnforcementVersion"
+    },
+    "correlation_id": {
+      "$ref": "#/$defs/EnforcementId"
+    },
+    "decided_at_ms": {
+      "$ref": "#/$defs/EnforcementMillis"
+    },
+    "decision_revision": {
+      "$ref": "#/$defs/DecisionRevision"
+    },
+    "effective_at_ms": {
+      "type": "null"
+    },
+    "expires_at_ms": {
+      "type": "null"
+    },
+    "intent": {
+      "$ref": "#/$defs/RevokeIntent"
+    },
+    "operation_id": {
+      "$ref": "#/$defs/EnforcementId"
+    },
+    "policy_revision": {
+      "$ref": "#/$defs/DecisionRevision"
+    },
+    "preview_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "prior_decision_revision": {
+      "$ref": "#/$defs/DecisionRevision"
+    },
+    "profile": {
+      "$ref": "#/$defs/EnforcementMuteProfile"
+    },
+    "reason_code": {
+      "$ref": "#/$defs/EnforcementReason"
+    },
+    "sanction_stream_id": {
+      "$ref": "#/$defs/EnforcementId"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "operation_id",
+    "sanction_stream_id",
+    "decision_revision",
+    "command_version",
+    "intent",
+    "profile",
+    "prior_decision_revision",
+    "policy_revision",
+    "account_id",
+    "character_id",
+    "effective_at_ms",
+    "expires_at_ms",
+    "reason_code",
+    "decided_at_ms",
+    "audit_ref",
+    "correlation_id"
+  ],
+  "$defs": {
+    "DecisionRevision": {
+      "type": "integer",
+      "format": "uint64",
+      "maximum": 9007199254740991,
+      "minimum": 1
+    },
+    "EnforcementId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "EnforcementMillis": {
+      "type": "integer",
+      "format": "uint64",
+      "maximum": 9007199254740991,
+      "minimum": 1
+    },
+    "EnforcementMuteProfile": {
+      "type": "string",
+      "enum": [
+        "MUTE"
+      ]
+    },
+    "EnforcementReason": {
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 65535,
+      "minimum": 1
+    },
+    "EnforcementVersion": {
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 1,
+      "minimum": 1
+    },
+    "RevokeIntent": {
+      "type": "string",
+      "enum": [
+        "REVOKE"
+      ]
+    }
+  }
+}

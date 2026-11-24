@@ -70,7 +70,18 @@ fn model() -> WheelPanel {
                 full_slot: vec![],
             })
             .collect(),
-        revelations: vec![],
+        revelations: (0..4)
+            .map(|domain| wire::Revelation {
+                domain,
+                name: format!("Revelation {}", domain + 1),
+                stages: [250, 500, 1000]
+                    .map(|minimum_points| wire::Stage {
+                        minimum_points,
+                        effects: vec![],
+                    })
+                    .to_vec(),
+            })
+            .collect(),
         current: vec![],
         draft: vec![],
     });
@@ -688,6 +699,7 @@ fn wheel_opens_installed_gem_and_its_workshop_modifier() -> TestResult {
     );
     let (mut app, _commands, _) = fixture(p)?;
     activate_caption(&mut app, "Inspect gem in vessel 2")?;
+    assert_eq!(panel(&app)?.vessel_slot, 1);
     assert_eq!(panel(&app)?.gem, Some([1; 16]));
     activate_caption(&mut app, "Workshop: Fire Resistance")?;
     assert_eq!(panel(&app)?.modifier, Some((0, 9)));
@@ -699,7 +711,7 @@ fn wheel_opens_installed_gem_and_its_workshop_modifier() -> TestResult {
         !app.world_mut()
             .query::<&Text>()
             .iter(app.world())
-            .any(|t| t.0 == "Fire Resistance")
+            .any(|t| t.0 == "Fire Resistance" || t.0 == "Workshop: Fire Resistance")
     );
     let mut fields = app
         .world_mut()
@@ -774,13 +786,9 @@ fn wheel_reports_gem_points_separately_from_ring_unlock_points() -> TestResult {
     let (mut app, _, outbox) = fixture(p)?;
     outbox.bevy_hud_skills_fixture()?;
     app.update();
-    assert!(
-        app.world_mut()
-            .query::<&Text>()
-            .iter(app.world())
-            .any(|t| t.0.contains("Level points: 0")
-                && t.0.contains("Achievements and scrolls: 100"))
-    );
+    assert!(app.world_mut().query::<&Text>().iter(app.world()).any(|t| {
+        t.0.contains("Level points: 0") && t.0.contains("Task and pilgrimage points: 100")
+    }));
     assert!(
         app.world_mut()
             .query::<&Text>()

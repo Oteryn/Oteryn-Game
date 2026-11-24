@@ -8,7 +8,7 @@ use crate::durability::{
     quest_state::kill_objectives::NativeObjectiveDeath,
 };
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
-use oteryn_gameplay_quests::quest::kill_objectives as rules;
+use oteryn_gameplay_quests::quest::{death_objectives, kill_objectives as rules};
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -19,6 +19,7 @@ struct Snapshot {
     lease: u64,
     revision: u64,
     phases: std::collections::BTreeMap<String, i64>,
+    grave_objectives: Vec<&'static str>,
 }
 
 #[derive(Debug, Clone)]
@@ -117,6 +118,7 @@ pub(super) fn capture(
                 lease: lease.generation(),
                 revision: 0,
                 phases: Default::default(),
+                grave_objectives: Vec::new(),
             };
             if let Some(source) =
                 NativeObjectiveDeath::capture_overlord(runtime, entry.target, actor, session)
@@ -129,11 +131,56 @@ pub(super) fn capture(
             }
         }
     }
+    capture_grave_objectives(runtime, entry, &cache.sessions, &mut captured);
     let captured = Arc::new(captured);
     cache
         .deaths
         .push((entry.target, entry.facts.occurrence, Arc::clone(&captured)));
     entry.objectives = Some(captured);
+}
+
+/// The donor dispatches Grave Danger from the living encounter's physical
+/// damage map. Session, stage and boss-room eligibility are frozen at death.
+fn capture_grave_objectives(
+    runtime: &mut ChannelRuntimeV1,
+    entry: &PendingKillSettlement,
+    sessions: &[Snapshot],
+    captured: &mut Vec<CapturedObjective>,
+) {
+    let at = entry.facts.corpse;
+    let Ok(objectives) = death_objectives::load() else {
+        return;
+    };
+    let Some(rule) = objectives.iter().find(|rule| {
+        death_objectives::is_grave_boss(&rule.key)
+            && rule.matches(&entry.creature, at.x, at.y, at.floor)
+    }) else {
+        return;
+    };
+    for snapshot in sessions {
+        // The Grave Danger knight hook owns contributor credit. Scarlett
+        // keeps her separate Cobra objective's principal eligibility.
+        if rule.creature == "oteryn:creature.scarlett_etzel"
+            && snapshot.actor != entry.facts.principal.actor
+        {
+            continue;
+        }
+        if snapshot.grave_objectives.contains(&rule.key.as_str())
+            && let Some(source) = NativeObjectiveDeath::capture_grave_boss(
+                runtime,
+                entry.target,
+                snapshot.actor,
+                snapshot.session,
+                snapshot.revision,
+            )
+        {
+            captured.push(CapturedObjective {
+                snapshot: snapshot.clone(),
+                transition: &rule.key,
+                source,
+            });
+        }
+    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -176,6 +223,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 lease: lease.generation(),
                 revision,
                 phases,
+                grave_objectives: death_objectives::load()
+                    .ok()
+                    .into_iter()
+                    .flatten()
+                    .filter(|rule| {
+                        death_objectives::is_grave_boss(&rule.key) && rule.active(&tracks)
+                    })
+                    .map(|rule| rule.key.as_str())
+                    .collect(),
             })
         });
         let attack = self.states.attack.lock().await;
@@ -214,16 +270,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 
 /// Additional quest-only recipients do not become XP or loot members.
-pub(super) fn overlord_recipients(
+pub(super) fn boss_objective_recipients(
     entry: &PendingKillSettlement,
 ) -> Vec<(crate::domain::CharacterId, GameSessionId, u64)> {
-    if oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_none() {
-        return Vec::new();
-    }
     entry
         .objectives
         .iter()
         .flat_map(|items| items.iter())
+        .filter(|item| is_boss_objective(entry, item))
         .filter_map(|item| {
             crate::domain::CharacterId::from_bytes(item.snapshot.character)
                 .ok()
@@ -232,8 +286,21 @@ pub(super) fn overlord_recipients(
         .collect()
 }
 
+fn is_boss_objective(entry: &PendingKillSettlement, item: &CapturedObjective) -> bool {
+    death_objectives::is_grave_boss(item.transition)
+        || oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some()
+}
+
+pub(super) fn has_grave_boss_credit(entry: &PendingKillSettlement) -> bool {
+    entry.objectives.as_ref().is_some_and(|items| {
+        items
+            .iter()
+            .any(|item| death_objectives::is_grave_boss(item.transition))
+    })
+}
+
 /// The XP owner holds all captured Character slots and the native Channel turn.
-/// Ordinary objectives require the original principal; Overlords require sealed physical damage.
+/// Ordinary objectives require the original principal. Boss objectives prove physical damage.
 pub(super) async fn apply_in_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
@@ -246,14 +313,19 @@ pub(super) async fn apply_in_transaction(
     catalogue: Option<&oteryn_gameplay_quests::quest::QuestStateCatalogue>,
 ) -> Result<Vec<crate::durability::quest_state::CommittedQuestTransition>, CharacterProgressionError>
 {
-    if oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some() {
+    if oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some()
+        || has_grave_boss_credit(entry)
+    {
         let captured = entry
             .objectives
             .as_ref()
             .ok_or(CharacterProgressionError::AuthorityRejected)?;
         let catalogue = catalogue.ok_or(CharacterProgressionError::InvalidInput)?;
         let mut committed = Vec::new();
-        for objective in captured.iter() {
+        for objective in captured
+            .iter()
+            .filter(|item| is_boss_objective(entry, item))
+        {
             let snapshot = &objective.snapshot;
             let Some(fence) = quest_fences.iter().find(|fence| {
                 fence.character_id.as_bytes() == &snapshot.character

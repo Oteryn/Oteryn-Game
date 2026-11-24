@@ -97,10 +97,10 @@ pub(super) fn render(
             .map(|v| v.saturating_sub(50))
             .filter(|points| *points <= reply.unlock_points)
             .map_or_else(
-                || format!("Level, achievements and scrolls: {}", reply.unlock_points),
+                || format!("Level, task and pilgrimage points: {}", reply.unlock_points),
                 |points| {
                     format!(
-                        "Level points: {points}   Achievements and scrolls: {}",
+                        "Level points: {points}   Task and pilgrimage points: {}",
                         reply.unlock_points - points
                     )
                 },
@@ -348,9 +348,9 @@ pub(super) fn render(
         }) {
             label(commands, skins, content, line);
         }
-        if let Some(targets) = &panel.preset_vessels {
-            for (slot, (v, target)) in board.slots.iter().zip(targets).enumerate() {
-                if v.open && v.gem != *target {
+        if panel.preset_vessels.is_some() {
+            for slot in 0..board.slots.len() {
+                if panel.preset_vessel_change(slot as u8).is_some() {
                     button(
                         commands,
                         skins,

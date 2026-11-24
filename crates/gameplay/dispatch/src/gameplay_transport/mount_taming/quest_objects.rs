@@ -17,8 +17,27 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                 .is_some_and(|tool| tool.selected_instance)
                 && (matches!(
                     callback.key.as_str(),
-                    "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
+                    "oteryn:quest-callback/alawars-vault-folda-shaft"
+                        | "oteryn:quest-callback/an-interest-in-botany/s2"
+                        | "oteryn:quest-callback/an-interest-in-botany/s3"
+                        | "oteryn:quest-callback/an-interest-in-botany/s3-web"
+                        | "oteryn:quest-callback/authored-ape-city-amphora-1"
+                        | "oteryn:quest-callback/authored-ape-city-amphora-2"
+                        | "oteryn:quest-callback/authored-ape-city-amphora-3"
+                        | "oteryn:quest-callback/authored-ape-city-amphora-4"
+                        | "oteryn:quest-callback/authored-ape-city-snake-destroyer"
+                        | "oteryn:quest-callback/authored-new-frontier/bait-tree-1"
+                        | "oteryn:quest-callback/authored-new-frontier/bait-tree-2"
+                        | "oteryn:quest-callback/authored-new-frontier/bait-tree-3"
+                        | "oteryn:quest-callback/authored-shattered-isles-ring"
+                        | "oteryn:quest-callback/authored-shattered-isles-s4"
+                        | "oteryn:quest-callback/explorer-society/collect-bells"
+                        | "oteryn:quest-callback/explorer-society/cut-ice"
+                        | "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
+                        | "oteryn:quest-callback/authored-threatened-dreams/book-table-1"
+                        | "oteryn:quest-callback/authored-threatened-dreams/book-table-2"
+                        | "oteryn:quest-callback/to-blind-the-enemy/mirror"
                 ) || [
                     (
                         "oteryn:quest.bigfoot_s_burden_quest",
@@ -72,6 +91,47 @@ pub(crate) fn matches_source(
 mod tests {
     use super::*;
     use oteryn_gameplay_quests::quest::{native_rules::NativeRule, world_callbacks};
+
+    #[test]
+    fn authored_journey_map_tools_reach_the_carried_tool_owner() -> Result<(), String> {
+        use oteryn_gameplay_quests::quest::loader::load_embedded_quest_state;
+
+        let lowered =
+            load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let callbacks = world_callbacks::load_for(lowered.catalogue())?;
+        for (prefix, expected_count) in [
+            ("authored-ape-city-", 5),
+            ("authored-new-frontier/", 3),
+            ("authored-shattered-isles-", 2),
+            ("explorer-society/", 2),
+            ("to-blind-the-enemy/", 1),
+        ] {
+            let selected_tools: Vec<_> = callbacks
+                .iter()
+                .filter(|callback| {
+                    callback
+                        .key
+                        .strip_prefix("oteryn:quest-callback/")
+                        .is_some_and(|key| key.starts_with(prefix))
+                        && callback
+                            .item_on_target
+                            .as_ref()
+                            .is_some_and(|tool| tool.selected_instance)
+                })
+                .collect();
+            assert_eq!(selected_tools.len(), expected_count, "{prefix}");
+            let unhandled: Vec<_> = selected_tools
+                .into_iter()
+                .filter(|callback| !accepts(callback))
+                .map(|callback| callback.key.as_str())
+                .collect();
+            assert!(
+                unhandled.is_empty(),
+                "unhandled {prefix} tools: {unhandled:?}"
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn gnome_daily_world_tools_reach_the_carried_tool_owner() -> Result<(), String> {

@@ -74,7 +74,15 @@ pub(crate) async fn serve<S>(stream: &mut S, node: &Node, admission: usize) -> O
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
 {
-    oteryn_session::read_frame(stream).await.ok()?;
+    let frame = oteryn_session::read_frame(stream).await.ok()?;
+    let envelope = decode_wire_envelope(&frame).ok()?;
+    let offered = envelope.client_bootstrap().ok()?.supported_capabilities;
+    for capability in [7, 92, 134, 615, 616, 617] {
+        assert!(
+            offered.contains(&capability),
+            "missing native capability {capability}"
+        );
+    }
     let current = uuid(&node.login_channel.lock().ok()?.clone())?;
     if current == uuid(CHANNEL_B)? && node.refuse_destination.load(Ordering::SeqCst) {
         oteryn_session::write_frame(

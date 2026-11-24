@@ -25,3 +25,10 @@ message MarketReplyV1 {
   repeated MarketRowV1 rows = 3; // at most 32
   uint32 action = 4; // 0 CLOSED; otherwise the request action identifying this projection
 }
+
+// MARKET_DETAILS (6126). Statistics is available anywhere, limited to ten
+// requests per second per GameSession. Catalogue and Book require a depot.
+message MarketDetailsRequestV1 {
+  uint32 action = 1; // Must be 9.
+  bytes query_json = 8; // UTF-8 market_details::Query, documented in market-details-t124.md.
+}

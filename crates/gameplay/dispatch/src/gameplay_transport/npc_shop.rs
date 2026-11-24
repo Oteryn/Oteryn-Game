@@ -90,6 +90,7 @@ pub(super) async fn npc_shop(
     actor: ExactActorRef,
     command: UseCommand,
     intent: NpcShopIntent,
+    include_equipped: bool,
 ) -> NpcShopStep {
     let trade = trade_intent(&intent);
     match intent.action {
@@ -98,7 +99,7 @@ pub(super) async fn npc_shop(
             if intent.side != NpcTradeSide::Sell {
                 return NpcShopStep::rejected();
             }
-            match npc_trade_command::trade(admission, actor, command, trade, true)
+            match npc_trade_command::trade(admission, actor, command, trade, npc_trade_command::Mode::SellAll { include_equipped })
                 .await
                 .map_err(|step| *step)
             {
@@ -258,9 +259,19 @@ macro_rules! authority_methods {
         /// NPC-TRADE-SELLALL-1: one `NPC_SHOP` (command 97) of the admitted actor.
         fn npc_shop(
             &self,
+            actor: $crate::foundation::ExactActorRef,
+            command: $crate::gameplay_transport::connection::UseCommand,
+            intent: oteryn_protocol_oteryn::npc_shop::NpcShopIntent,
+        ) -> impl std::future::Future<Output = $crate::gameplay_transport::npc_shop::NpcShopStep> {
+            self.npc_shop_with_scope(actor, command, intent, false)
+        }
+
+        fn npc_shop_with_scope(
+            &self,
             _actor: $crate::foundation::ExactActorRef,
             _command: $crate::gameplay_transport::connection::UseCommand,
             _intent: oteryn_protocol_oteryn::npc_shop::NpcShopIntent,
+            _include_equipped: bool,
         ) -> impl std::future::Future<Output = $crate::gameplay_transport::npc_shop::NpcShopStep> {
             async { $crate::gameplay_transport::npc_shop::NpcShopStep::rejected() }
         }
@@ -277,13 +288,14 @@ macro_rules! composed_methods {
             npc_shop::quote_window(self, session, window)
         }
 
-        async fn npc_shop(
+        async fn npc_shop_with_scope(
             &self,
             actor: crate::foundation::ExactActorRef,
             command: connection::UseCommand,
             intent: oteryn_protocol_oteryn::npc_shop::NpcShopIntent,
+            include_equipped: bool,
         ) -> npc_shop::NpcShopStep {
-            npc_shop::npc_shop(self, actor, command, intent).await
+            npc_shop::npc_shop(self, actor, command, intent, include_equipped).await
         }
     };
 }

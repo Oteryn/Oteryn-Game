@@ -27,6 +27,7 @@ fn toolbar_pvp_reply_projects_risk_timer_and_controls() -> Result {
         remaining_ms: 60001,
         situations: vec![oteryn_client_runtime::party_skull::PvpSituation {
             incoming: true,
+            situation_id: None,
             remaining_ms: 9000,
         }],
     };
@@ -185,15 +186,29 @@ fn risk_count(app: &mut App) -> usize {
 
 #[test]
 fn new_incoming_pvp_situation_requests_a_capture() -> Result {
+    incoming_capture(false)
+}
+
+#[test]
+fn equal_timer_renewal_requests_a_capture_once() -> Result {
+    incoming_capture(true)
+}
+
+fn incoming_capture(identified: bool) -> Result {
     use crate::play::{SettingsState, screenshot::CaptureAction};
     let (link, mut commands, outbox) = play_channel();
     outbox.bevy_pvp_initialize();
+    if identified {
+        outbox.bevy_pvp_id_selected();
+    }
     let mut settings = SettingsState::new(None);
     settings.preferences.screenshots.on_player_attacking = true;
     let start = std::time::Instant::now();
-    for (index, incoming) in [false, true, true, true].into_iter().enumerate() {
+    for index in 0..=3 + usize::from(identified) {
+        let incoming = index > 0;
+        let last = index == 3 + usize::from(identified);
         let now = start + std::time::Duration::from_secs(3 * index as u64);
-        if index == 3 {
+        if last {
             settings.preferences.screenshots.automatic_disabled = true;
             settings.prepare_screenshots(now, Some(&link));
             settings.preferences.screenshots.automatic_disabled = false;
@@ -212,9 +227,14 @@ fn new_incoming_pvp_situation_requests_a_capture() -> Result {
             situations: vec![
                 oteryn_client_runtime::party_skull::PvpSituation {
                     incoming,
-                    remaining_ms: 9000,
+                    situation_id: identified.then_some(10 + index.min(2) as u64),
+                    remaining_ms: if (index == 2 && !identified) || (index == 3 && identified) {
+                        15000
+                    } else {
+                        9000
+                    },
                 };
-                1 + usize::from(index == 3)
+                1 + usize::from(last)
             ],
         };
         outbox.bevy_pvp_result(
@@ -231,7 +251,7 @@ fn new_incoming_pvp_situation_requests_a_capture() -> Result {
                 settings.prepare_screenshots(now, Some(&link)),
                 CaptureAction::Save
             ),
-            index == 1
+            matches!(index, 1 | 2)
         );
         settings.cancel_screenshot();
     }

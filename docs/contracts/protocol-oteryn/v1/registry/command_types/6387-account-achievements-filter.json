@@ -1,0 +1,10 @@
+{
+  "id": 6387,
+  "name": "ACCOUNT_ACHIEVEMENTS_FILTER",
+  "owner_decision": "Client server gap allocation",
+  "capability": 612,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/achievement-completion-filter-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/account_achievements_v1.proto#AccountAchievementsResult",
+  "max_payload_bytes": 7,
+  "max_result_payload_bytes": 32788
+}

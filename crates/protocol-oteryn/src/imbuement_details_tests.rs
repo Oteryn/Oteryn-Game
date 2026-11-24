@@ -46,3 +46,40 @@ fn imbuement_details_strict_roundtrip_and_material_bounds() -> Result<(), Error>
     assert!(decode_reply(&[0; MAX_REPLY_BYTES + 1]).is_err());
     Ok(())
 }
+
+#[test]
+fn imbuement_affordability_flags_follow_quote_order() -> Result<(), Error> {
+    use crate::imbuement_details::{AffordabilityReply, Material, Quote, Reply};
+    use crate::item_view::ItemHandle;
+    let quote = Quote {
+        family: 1,
+        tier: 1,
+        gold: 7500,
+        requires_premium: false,
+        recipe_available: true,
+        success_percent: 100,
+        materials: vec![Material {
+            definition_key: "oteryn:item.tibia.i11444".into(),
+            quantity: 20,
+        }],
+    };
+    let details = Reply {
+        item: ItemHandle::new(1).ok_or(Error::Malformed)?,
+        quotes: vec![
+            quote.clone(),
+            Quote {
+                tier: 2,
+                gold: 60000,
+                ..quote
+            },
+        ],
+    };
+    let reply = AffordabilityReply::from_funds(details, 7500);
+    assert_eq!(reply.affordable, [true, false]);
+    let mut encoded = reply.encode()?;
+    assert_eq!(&encoded[..3], &[2, 1, 0]);
+    assert_eq!(AffordabilityReply::decode(&encoded)?, reply);
+    encoded[1] = 2;
+    assert!(AffordabilityReply::decode(&encoded).is_err());
+    Ok(())
+}

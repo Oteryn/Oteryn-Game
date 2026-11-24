@@ -276,6 +276,8 @@ fn imbuement_postgres_storage_bounds_bindings_and_restart() -> TestResult {
                         &harness.node,
                         fence()?,
                         NpcTradeRequest {
+                            shopping_bag: None,
+                            include_equipped: false,
                             fluid_subtype: None,
         full_charges: None,
                             cause: NpcTradeCause {

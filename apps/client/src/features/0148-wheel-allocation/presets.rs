@@ -88,7 +88,7 @@ fn submit_panel(
             }
             5 => {
                 let code = panel.preset_fields[1].trim().to_owned();
-                if ["K0", "S0", "M0", "D0", "P0"]
+                if ["K0", "S0", "M0", "D0", "P0", "K1", "S1", "M1", "D1", "P1"]
                     .iter()
                     .any(|p| code.starts_with(p))
                 {

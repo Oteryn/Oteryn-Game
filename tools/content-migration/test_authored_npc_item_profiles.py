@@ -36,6 +36,17 @@ class AuthoredNpcCustody(unittest.TestCase):
             self.assertTrue(row['admission']['materializable'])
             self.assertIn('CharacterInventory', row['admission']['legal_destinations'])
 
+    def test_npc_shop_shopping_bag_has_exact_native_custody(self):
+        generated = self.generated()
+        self.admit(generated)
+        row, = [item for item in json.loads(generated[PROFILE])['records']
+                if item['production_definition']['production_key'] == 'oteryn:item.tibia.i21411']
+        self.assertEqual(row['production_binding']['external_id'], '21411')
+        self.assertEqual(row['admission']['stack_class'], 'NonStackable')
+        self.assertIn('CharacterInventory', row['admission']['legal_destinations'])
+        self.assertEqual(row['semantics']['container']['value']['capacity']['value'], 20)
+        self.assertEqual(row['semantics']['physical']['value']['weight']['value'], 1800)
+
     def test_changed_authoring_pin_refuses_without_any_generated_mutation(self):
         generated = self.generated()
         before = copy.deepcopy(generated)

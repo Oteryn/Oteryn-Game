@@ -47,7 +47,7 @@ fn pinned_catalogue_service_model_counts() {
     // Grizzly Adams rank shop, S10 services, exact NPC-TRADE-3 subtype restoration,
     // and the four source-owned Djinn shops.
     assert_eq!(model.services().len(), 406);
-    assert_eq!(model.admitted_offer_count(), 12_692);
+    assert_eq!(model.admitted_offer_count(), 13_675);
     assert_eq!(model.admitted_route_count(), 199);
     assert_eq!(model.generated_reply_npc_count(), 453);
     let expected: BTreeMap<&str, usize> = BTreeMap::from([
@@ -56,7 +56,7 @@ fn pinned_catalogue_service_model_counts() {
         // The Nah'Bob i3284 offer lacks a native subtype; i3083 lacks full-charge proof.
         ("ChargedOrFluidPending", 1),
         ("CountOutOfRange", 0),
-        ("NonGoldCurrency", 31),
+        ("NonGoldCurrency", 36),
         ("ParityPending", 0),
         ("SellPriceAboveCoinCapacity", 17),
         ("TimedCountMismatch", 9),

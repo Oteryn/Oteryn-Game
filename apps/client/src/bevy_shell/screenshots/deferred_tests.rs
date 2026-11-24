@@ -157,8 +157,67 @@ fn deferred_manual_capture_leaves_death_capture_for_the_current_destination() ->
 
 #[test]
 fn disabling_automatic_capture_during_readback_drops_the_save() -> TestResult {
+    readback_after_preference_change(|options| options.automatic_disabled = true, false, 0)
+}
+
+#[test]
+fn only_disabling_the_trigger_of_an_inflight_readback_cancels_it() -> TestResult {
+    readback_after_preference_change(|options| options.on_low_health = false, false, 0)?;
+    readback_after_preference_change(|options| options.on_death = true, false, 1)
+}
+
+fn readback_after_preference_change(
+    change: impl FnOnce(&mut crate::play::ScreenshotPreferences),
+    handoff: bool,
+    expected: usize,
+) -> TestResult {
     let folder = TestDir::new()?;
     let mut app = app(folder.path(), false)?;
+    let (outbox, entity) = pending_low_health_capture(&mut app)?;
+    change(
+        &mut app
+            .world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences
+            .screenshots,
+    );
+    if handoff {
+        outbox.screenshot_activity_handoff()?;
+    }
+    app.world_mut().trigger(ScreenshotCaptured {
+        entity,
+        image: frame(),
+    });
+    app.world_mut().despawn(entity);
+    wait_for_writes(&mut app)?;
+    assert_eq!(std::fs::read_dir(folder.path())?.count(), expected);
+    Ok(())
+}
+
+#[test]
+fn activity_handoff_during_readback_drops_the_old_capture() -> TestResult {
+    readback_after_preference_change(|_| {}, true, 0)
+}
+
+fn publish_health(outbox: &crate::play::Outbox, revision: u64, health: u32) {
+    outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
+        oteryn_session::AppliedDelta {
+            server_sequence: revision,
+            base_revision: revision - 1,
+            new_revision: revision,
+            value: oteryn_session::ActorVitals {
+                health,
+                max_health: 100,
+                ..default()
+            },
+        },
+    )]);
+}
+
+fn pending_low_health_capture(
+    app: &mut App,
+) -> Result<(crate::play::Outbox, Entity), Box<dyn std::error::Error>> {
     let (link, _, outbox) = crate::play::play_channel();
     {
         let mut owner = app.world_mut().non_send_mut::<HostOwner>();
@@ -169,36 +228,53 @@ fn disabling_automatic_capture_during_readback_drops_the_save() -> TestResult {
         });
     }
     for (revision, health) in [(1, 100), (2, 3)] {
-        outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
-            oteryn_session::AppliedDelta {
-                server_sequence: revision,
-                base_revision: revision - 1,
-                new_revision: revision,
-                value: oteryn_session::ActorVitals {
-                    health,
-                    max_health: 100,
-                    ..default()
-                },
-            },
-        )]);
+        publish_health(&outbox, revision, health);
         app.update();
     }
     let entity = app
         .world_mut()
         .query_filtered::<Entity, With<Screenshot>>()
         .single(app.world())?;
-    app.world_mut()
-        .non_send_mut::<HostOwner>()
-        .settings
-        .preferences
-        .screenshots
-        .automatic_disabled = true;
+    Ok((outbox, entity))
+}
+
+#[test]
+fn restored_crop_and_trigger_do_not_reuse_a_cancelled_readback() -> TestResult {
+    let folder = TestDir::new()?;
+    let mut app = app(folder.path(), false)?;
+    let (outbox, old) = pending_low_health_capture(&mut app)?;
+    for (revision, enabled) in [(3, false), (4, true)] {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let mut prefs = owner.settings.preferences.clone();
+        prefs.screenshots.game_only = !enabled;
+        prefs.screenshots.on_low_health = enabled;
+        owner.settings.apply(prefs);
+        publish_health(&outbox, revision, 100);
+        app.update();
+    }
+    publish_health(&outbox, 5, 3);
+    app.update();
     app.world_mut().trigger(ScreenshotCaptured {
-        entity,
+        entity: old,
         image: frame(),
     });
-    app.world_mut().despawn(entity);
+    app.world_mut().despawn(old);
     wait_for_writes(&mut app)?;
-    assert_eq!(std::fs::read_dir(folder.path())?.count(), 0);
+    assert_eq!(
+        std::fs::read_dir(folder.path())?.count(),
+        0,
+        "old frame was saved for the new event"
+    );
+    let fresh = app
+        .world_mut()
+        .query_filtered::<Entity, With<Screenshot>>()
+        .single(app.world())?;
+    app.world_mut().trigger(ScreenshotCaptured {
+        entity: fresh,
+        image: frame(),
+    });
+    app.world_mut().despawn(fresh);
+    wait_for_writes(&mut app)?;
+    assert_eq!(std::fs::read_dir(folder.path())?.count(), 1);
     Ok(())
 }

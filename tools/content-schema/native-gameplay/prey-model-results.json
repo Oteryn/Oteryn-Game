@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "bcbd1c14f365573e148ce5f47102679e7f5b8017ef68a3b9043ab29e94c9478c",
+  "input_sha256": "ae4ffad1cc4997e2bc72a43c10f21705abd5de8bf2873626a1a7e39d7dfb213b",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -212,7 +212,7 @@
         },
         {
           "creature": "oteryn:creature.the_collector",
-          "source_path": "content/world/spawns/spawns-54000-54688.json",
+          "source_path": "content/world/spawns/spawns-54000-54689.json",
           "source_group": "oteryn:spawn.x32028_y31816_z8.boss.oteryn_creature_the_collector",
           "source_point": 0,
           "cell": {
@@ -318,7 +318,7 @@
         },
         {
           "creature": "oteryn:creature.doctor_perhaps",
-          "source_path": "content/world/spawns/spawns-54000-54688.json",
+          "source_path": "content/world/spawns/spawns-54000-54689.json",
           "source_group": "oteryn:spawn.x32751_y31450_z6.fixed_boss",
           "source_point": 0,
           "cell": {
@@ -422,7 +422,7 @@
         },
         {
           "creature": "oteryn:creature.black_knight",
-          "source_path": "content/world/spawns/spawns-54000-54688.json",
+          "source_path": "content/world/spawns/spawns-54000-54689.json",
           "source_group": "oteryn:spawn.x32874_y31948_z11.fixed_boss",
           "source_point": 0,
           "cell": {
@@ -526,7 +526,7 @@
         },
         {
           "creature": "oteryn:creature.ancient_lion_knight",
-          "source_path": "content/world/spawns/spawns-54000-54688.json",
+          "source_path": "content/world/spawns/spawns-54000-54689.json",
           "source_group": "oteryn:spawn.x32439_y32470_z6.boss.oteryn_creature_ancient_lion_knight",
           "source_point": 0,
           "cell": {
@@ -632,7 +632,7 @@
         },
         {
           "creature": "oteryn:creature.xogixath",
-          "source_path": "content/world/spawns/spawns-54000-54688.json",
+          "source_path": "content/world/spawns/spawns-54000-54689.json",
           "source_group": "oteryn:spawn.x33794_y31478_z8.boss.oteryn_creature_xogixath",
           "source_point": 0,
           "cell": {

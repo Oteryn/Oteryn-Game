@@ -11,6 +11,7 @@ pub enum StorePage {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct StorePanel {
+    pub product_navigation: u64,
     pub cosmetic_tokens: Option<u64>,
     pub token_supported: bool,
     pub token_balance_refresh: bool,

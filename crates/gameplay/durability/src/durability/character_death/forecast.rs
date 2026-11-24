@@ -112,6 +112,41 @@ impl DurabilityRoot {
             .await
     }
 
+    pub async fn read_blessings_holdings(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> Result<Vec<oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::Holding>, CharacterProgressionError> {
+        use oteryn_gameplay_content::content::blessing_catalogue::BlessingCatalogue;
+        use oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::Holding;
+        let recovery = authority.record_for(self).map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        let catalogue = BlessingCatalogue::load().map_err(|_| DurabilityError::InvalidStoredState)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_observation_transaction(holder, deadline).await?;
+            observe_recovery_fence(&mut tx, &recovery).await?;
+            if observe_item_only_fence(&mut tx, &fence, &node).await?.is_err() {
+                return Ok(Err(CharacterProgressionError::AuthorityRejected));
+            }
+            let keys: Vec<_> = catalogue.blessings.into_iter().map(|blessing| blessing.storage_key).collect();
+            let rows: Vec<(String, bool, i16)> = sqlx::query_as(
+                "SELECT known.key, held.blessing_key IS NOT NULL, LEAST(COALESCE(store.copies, 0), 255)::smallint
+                   FROM unnest($2::text[]) AS known(key)
+              LEFT JOIN game_character_blessings held
+                     ON held.character_id=encode($1,'hex')::uuid AND held.blessing_key=known.key
+              LEFT JOIN game_character_store_blessing_copies store
+                     ON store.character_id=encode($1,'hex')::uuid AND store.blessing_key=known.key
+               ORDER BY known.key COLLATE \"C\""
+            ).bind(fence.character_id.as_bytes().as_slice()).bind(&keys).fetch_all(&mut *tx).await?;
+            let holdings = rows.into_iter().map(|(key, held, copies)| {
+                Ok(Holding { key, held, store_copies: u8::try_from(copies).map_err(|_| DurabilityError::InvalidStoredState)? })
+            }).collect::<Result<Vec<_>, DurabilityError>>()?;
+            tx.rollback().await?;
+            Ok(Ok(holdings))
+        })).await?
+    }
+
     async fn read_protection_snapshot(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,

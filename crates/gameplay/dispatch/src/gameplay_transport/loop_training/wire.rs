@@ -27,6 +27,19 @@ pub(in crate::gameplay_transport) async fn dispatch(
             };
             authority.offline_training(admitted, command, target).await
         }
+        COMMAND_TYPE_OFFLINE_TRAINING_CHOOSE => {
+            if !admitted
+                .continuity
+                .selected_capabilities
+                .contains(CAPABILITY_OFFLINE_TRAINING_CHOICE_V1)
+            {
+                return Some(TrainingResult::REFUSED);
+            }
+            let Ok(family) = decode_offline_training_skill(payload) else {
+                return Some(TrainingResult::REFUSED);
+            };
+            authority.choose_offline_training(admitted, family).await
+        }
         COMMAND_TYPE_EXERCISE_TRAINING => {
             let Ok(intent) = decode_exercise_training(payload) else {
                 return Some(TrainingResult::REFUSED);

@@ -25,6 +25,8 @@ fn intent() -> NpcTradeIntent {
 
 fn receipt() -> NpcTradeReceipt {
     NpcTradeReceipt {
+        packed: false,
+        include_equipped: false,
         npc_key: "npc.alesar".to_owned(),
         catalogue_revision: 9,
         offer_index: 2,
@@ -82,17 +84,29 @@ fn identities_are_uuid_v7_fixed_per_command_and_distinct_per_tag() {
 
 #[test]
 fn replay_answers_only_the_intent_it_committed() {
-    assert!(answers(&receipt(), &intent(), false));
+    assert!(answers(&receipt(), &intent(), Mode::Direct));
     // NPC-TRADE-SELLALL-1: a trade answers only its own kind; a sell-all's stored quantity is the
     // units it sold, never the intent's.
-    assert!(!answers(&receipt(), &intent(), true));
+    assert!(!answers(
+        &receipt(),
+        &intent(),
+        Mode::SellAll {
+            include_equipped: false
+        }
+    ));
     let sold = NpcTradeReceipt {
         sell_all: true,
         quantity: 37,
         ..receipt()
     };
-    assert!(answers(&sold, &intent(), true));
-    assert!(!answers(&sold, &intent(), false));
+    assert!(answers(
+        &sold,
+        &intent(),
+        Mode::SellAll {
+            include_equipped: false
+        }
+    ));
+    assert!(!answers(&sold, &intent(), Mode::Direct));
     let changed = [
         NpcTradeIntent {
             catalogue_revision: 10,
@@ -116,9 +130,18 @@ fn replay_answers_only_the_intent_it_committed() {
         },
     ];
     for intent in changed {
-        assert!(!answers(&receipt(), &intent, false), "{intent:?}");
+        assert!(!answers(&receipt(), &intent, Mode::Direct), "{intent:?}");
         if intent.quantity == 3 {
-            assert!(!answers(&sold, &intent, true), "{intent:?}");
+            assert!(
+                !answers(
+                    &sold,
+                    &intent,
+                    Mode::SellAll {
+                        include_equipped: false
+                    }
+                ),
+                "{intent:?}"
+            );
         }
     }
 }

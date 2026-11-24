@@ -561,3 +561,161 @@ fn console_display_checkboxes_edit_independent_options() -> TestResult {
     );
     Ok(())
 }
+
+mod sound;
+
+#[test]
+fn side_lock_switches_update_the_live_rows_at_each_dock() -> TestResult {
+    use crate::play::BarDock;
+    for (id, dock) in [
+        ("action_bars.bottom_lock", BarDock::Bottom),
+        ("action_bars.left_lock", BarDock::Left),
+        ("action_bars.right_lock", BarDock::Right),
+    ] {
+        let mut app = app(Page::ActionBars, None)?;
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .edit_preferences(|p| p.bar_layout.rows[0].dock = BarDock::Left);
+        let checkbox = app
+            .world_mut()
+            .spawn(Control::Check(id))
+            .observe(toggle)
+            .id();
+        app.world_mut().trigger(ValueChange {
+            source: checkbox,
+            value: false,
+            is_final: true,
+        });
+        let ok = app.world_mut().spawn(Control::Ok).observe(activate).id();
+        app.world_mut().trigger(Activate { entity: ok });
+        let (link, _, _) = crate::play::play_channel();
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .sync_bar_actions(&link);
+        for row in link.bar_layout().rows {
+            assert_eq!(row.locked, row.dock != dock, "{id}");
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn default_delay_uses_os_repeat_without_erasing_custom_delay() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let mut app = app(Page::Controls, None)?;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .edit_preferences(|p| {
+            p.controls.keyboard_delay_ms = 500;
+            p.keyboard_delay_ms = 500;
+        });
+    let checkbox = app
+        .world_mut()
+        .spawn(Control::Check("controls.default_delay"))
+        .observe(toggle)
+        .id();
+    app.world_mut().trigger(ValueChange {
+        source: checkbox,
+        value: true,
+        is_final: true,
+    });
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    owner.apply(true);
+    for repeat in [false, true] {
+        let key = NormalizedInputEvent::Key {
+            code: KeyCode::new(82)?,
+            modifiers: Modifiers::NONE,
+            state: ButtonState::Pressed,
+            repeat,
+        };
+        let routed = owner.settings.control_events_at(
+            &[key],
+            false,
+            std::time::Duration::from_millis(if repeat { 50 } else { 0 }),
+        );
+        assert_eq!(routed.len(), 1);
+    }
+    assert_eq!(owner.settings.preferences.controls.keyboard_delay_ms, 500);
+    Ok(())
+}
+
+#[test]
+fn status_bar_control_restores_a_hidden_cpkg7_panel() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let path = root.path().join("preferences.json");
+    let mut saved = serde_json::to_value(crate::play::ReferencePreferences::default())?;
+    saved
+        .as_object_mut()
+        .ok_or("preferences")?
+        .remove("status_bar_visible");
+    saved["status_panel_visible"] = false.into();
+    std::fs::write(&path, serde_json::to_vec(&saved)?)?;
+    let mut app = app(Page::Hud, Some(path.clone()))?;
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .settings
+            .preferences
+            .status_bar_visible
+    );
+    let checkbox = app
+        .world_mut()
+        .spawn(Control::Check("hud.status_bars"))
+        .observe(toggle)
+        .id();
+    app.world_mut().trigger(ValueChange {
+        source: checkbox,
+        value: true,
+        is_final: true,
+    });
+    let apply = app.world_mut().spawn(Control::Apply).observe(activate).id();
+    app.world_mut().trigger(Activate { entity: apply });
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .settings
+            .preferences
+            .status_bar_visible
+    );
+    assert!(
+        crate::play::SettingsState::new(Some(path))
+            .preferences
+            .status_bar_visible
+    );
+    Ok(())
+}
+
+#[test]
+fn main_status_preferences_round_trip_independently() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let path = root.path().join("preferences.json");
+    let mut saved = serde_json::to_value(crate::play::ReferencePreferences::default())?;
+    saved["status_panel_visible"] = true.into();
+    saved["status_bar_visible"] = false.into();
+    std::fs::write(&path, serde_json::to_vec(&saved)?)?;
+    let mut app = app(Page::Hud, Some(path.clone()))?;
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .settings
+            .preferences
+            .status_bar_visible
+    );
+    let checkbox = app
+        .world_mut()
+        .spawn(Control::Check("hud.status_visible"))
+        .observe(toggle)
+        .id();
+    app.world_mut().trigger(ValueChange {
+        source: checkbox,
+        value: false,
+        is_final: true,
+    });
+    let apply = app.world_mut().spawn(Control::Apply).observe(activate).id();
+    app.world_mut().trigger(Activate { entity: apply });
+    let saved = serde_json::to_value(crate::play::SettingsState::new(Some(path)).preferences)?;
+    assert_eq!(saved["status_bar_visible"], false);
+    assert_eq!(saved["status_panel_visible"], false);
+    Ok(())
+}

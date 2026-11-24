@@ -229,6 +229,9 @@ pub struct ChatSpeaker {
     pub generation: NonZeroU64,
 }
 
+/// Selected on top of CHAT_V1 to receive authenticated system feedback.
+pub const CAPABILITY_CHAT_SYSTEM_MESSAGE_V1: u32 = 617;
+
 /// `ChatLineV1`: one line of the session's chat.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ChatLine {
@@ -251,6 +254,10 @@ pub enum ChatLine {
     Guild(guild_room::GuildChatLine),
     Party {
         speaker_name: String,
+        text: String,
+    },
+    /// Capability 617, line kind 9. Created only by the Game owner.
+    System {
         text: String,
     },
     /// Capability 80, line kind 6.
@@ -525,6 +532,11 @@ pub fn encode_chat_line(line: &ChatLine) -> WireResult<Vec<u8>> {
             push_varint_field(&mut output, 6, *room as u64);
             push_message_field(&mut output, 7, text.as_bytes());
         }
+        ChatLine::System { text } => {
+            check_text(text, MAX_CHAT_TEXT_BYTES)?;
+            push_varint_field(&mut output, 1, 9);
+            push_message_field(&mut output, 7, text.as_bytes());
+        }
         ChatLine::Dropped => push_varint_field(&mut output, 1, 4),
     }
     Ok(output)
@@ -606,6 +618,9 @@ pub fn decode_chat_line(payload: &[u8]) -> WireResult<ChatLine> {
         Some(4) if no_spatial(&f) && f.room.is_none() && f.name.is_none() && f.text.is_none() => {
             Ok(ChatLine::Dropped)
         }
+        Some(9) if no_spatial(&f) && f.room.is_none() && f.name.is_none() => Ok(ChatLine::System {
+            text: f.text.ok_or_else(malformed)?,
+        }),
         _ => Err(malformed()),
     }
 }

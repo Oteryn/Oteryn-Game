@@ -15,9 +15,11 @@ pub(super) struct Filters {
     level: bool,
     vocation: bool,
     hands: usize,
-    attempted: std::collections::BTreeMap<u32, std::time::Instant>,
+    attempted: std::collections::BTreeMap<u32, std::time::Duration>,
     pub rows: Vec<usize>,
-    character_refresh: Option<std::time::Instant>,
+    details: std::collections::BTreeMap<u32, InspectedItem>,
+    activity: Option<u64>,
+    character_refresh: Option<std::time::Duration>,
 }
 const CLASSES: [&str; 7] = ["All", "Sword", "Axe", "Club", "Distance", "Wand", "Fist"];
 const HANDS: [&str; 3] = ["All", "One", "Two"];
@@ -55,57 +57,70 @@ impl Filters {
             ),
         ]
     }
-    pub fn update(&mut self, link: &crate::play::PlayLink, panel: &WeaponProficiencyPanel) -> bool {
+    pub fn update(
+        &mut self,
+        link: &crate::play::PlayLink,
+        panel: &WeaponProficiencyPanel,
+        now: std::time::Duration,
+    ) -> bool {
         let Some(catalogue) = &panel.catalogue else {
             return false;
         };
+        let activity = Some(link.activity_generation());
+        if self.activity != activity {
+            self.activity = activity;
+            self.details.clear();
+            self.attempted.clear();
+        }
         let rows = if self.class == 0 && self.hands == 0 && !self.level && !self.vocation {
             (0..catalogue.entries.len()).collect()
         } else {
-            let details = link.inspection_panel();
             let (level, vocation) = link.weapon_filter_character();
-            let now = std::time::Instant::now();
             if ((self.level && level.is_none()) || (self.vocation && vocation.is_none()))
                 && self.character_refresh.is_none_or(|last| {
-                    now.saturating_duration_since(last) >= std::time::Duration::from_secs(10)
+                    now.saturating_sub(last) >= std::time::Duration::from_secs(10)
                 })
             {
                 link.refresh_skills_character();
                 self.character_refresh = Some(now);
             }
-            self.attempted.retain(|id, last| {
-                now.duration_since(*last) < std::time::Duration::from_secs(10)
-                    && catalogue
+            let mut next = None;
+            let available = link.with_inspected_items(|details| {
+                for item in &details.inspected_items {
+                    if catalogue
                         .entries
                         .iter()
-                        .any(|entry| entry.definition == *id)
+                        .any(|entry| entry.definition == item.definition_ref)
+                        && self.details.get(&item.definition_ref) != Some(item)
+                    {
+                        self.attempted.remove(&item.definition_ref);
+                        self.details.insert(item.definition_ref, item.clone());
+                    }
+                }
+                !details.open && !details.catalogue_open && !details.pending
             });
-            let mut next = None;
             let rows = catalogue
                 .entries
                 .iter()
                 .enumerate()
-                .filter_map(|(index, e)| {
-                    if let Some(item) = details
-                        .inspected_items
-                        .iter()
-                        .find(|item| item.definition_ref == e.definition)
-                    {
+                .filter_map(|(index, entry)| {
+                    if let Some(item) = self.details.get(&entry.definition) {
                         return self.matches(item, level, vocation).then_some(index);
                     }
-                    if e.definition != 0
-                        && next.is_none()
-                        && !self.attempted.contains_key(&e.definition)
+                    let attempted = self.attempted.get(&entry.definition).copied();
+                    if entry.definition != 0
+                        && attempted.is_none_or(|last| {
+                            now.saturating_sub(last) >= std::time::Duration::from_secs(10)
+                        })
+                        && next.is_none_or(|(prior, _)| attempted < prior)
                     {
-                        next = Some(e.definition);
+                        next = Some((attempted, entry.definition));
                     }
                     None
                 })
                 .collect();
-            if !details.open
-                && !details.catalogue_open
-                && !details.pending
-                && let Some(id) = next
+            if available
+                && let Some((_, id)) = next
                 && link.inspect(Request::Catalogue(id))
             {
                 self.attempted.insert(id, now);
@@ -157,15 +172,7 @@ impl Filters {
                         key == canonical(voc) || key == canonical(base)
                     });
                 }
-                match weapon.and_then(|v| v.split(',').next()).map(str::trim) {
-                    Some("axe" | "sword" | "club") => base.eq_ignore_ascii_case("Knight"),
-                    Some("wand") => {
-                        base.eq_ignore_ascii_case("Druid") || base.eq_ignore_ascii_case("Sorcerer")
-                    }
-                    Some("fist") => base.eq_ignore_ascii_case("Monk"),
-                    Some("distance") => base.eq_ignore_ascii_case("Paladin"),
-                    _ => true,
-                }
+                true
             })
     }
 }

@@ -23,7 +23,7 @@ pub struct Signer {
 pub struct OperationPolicy {
     pub min_risk_class: RiskClass,
     pub allowed_permissions: BTreeSet<String>,
-    /// Empty means global operations only; world-scoped calls require explicit enablement.
+    /// World-scoped calls require an allowlist. Global operations ignore this field.
     pub worlds: BTreeSet<String>,
 }
 #[derive(Debug, Clone, Deserialize)]

@@ -3,6 +3,10 @@
 import argparse
 import json
 import re
+import sys
+from collections import Counter
+from copy import deepcopy
+from functools import cache
 
 import appearance_membership as membership
 import lower_elemental_magic_modifier_packet as shared
@@ -168,8 +172,47 @@ def qualified_membership(entry, binding, obj, members):
     )
 
 
+@cache
+def global_capture(root):
+    sys.path.insert(0, str(root / "tools/content-migration"))
+    from import_cyclopedia_global import load_capture
+
+    return load_capture(root)
+
+
+def historical_modifier_view(root, entry, definition):
+    if not definition or not (previous := entry.get("source_expected_vector")):
+        return definition
+    current = shared.leaf(definition, "skill_modifiers.modifiers")
+    historical = {"state": "KNOWN", "value": previous}
+    if current["state"] != "KNOWN" or current == historical:
+        return definition
+    capture = global_capture(root)
+    from import_cyclopedia_global import skill_boosts
+
+    boost = capture.get(entry["item_id"], {}).get("basic", {}).get("Skill Boost")
+    if boost is None or current["value"] not in (
+        skill_boosts(boost, previous, Counter()),
+        skill_boosts(boost, [], Counter()),
+    ):
+        return definition
+    view = deepcopy(definition)
+    view["semantics"]["skill_modifiers"]["value"]["modifiers"] = historical
+    return view
+
+
 def qualify(
-    entry, definition, binding, obj, observations, routed, order, cutoff, members
+    entry,
+    definition,
+    binding,
+    obj,
+    observations,
+    routed,
+    order,
+    cutoff,
+    members,
+    *,
+    root=ROOT,
 ):
     if observations != entry["retained_stats_observations"] or not qualified_membership(
         entry, binding, obj, members
@@ -177,7 +220,7 @@ def qualify(
         return None
     row = shared.qualify(
         entry,
-        definition,
+        historical_modifier_view(root, entry, definition),
         binding,
         obj,
         [
@@ -245,6 +288,7 @@ def build(root=ROOT):
             order,
             proof["source_cutoff"],
             members,
+            root=root,
         )
         if row and entry["item_id"] in SOURCE_IDS:
             source_rows.append(row)

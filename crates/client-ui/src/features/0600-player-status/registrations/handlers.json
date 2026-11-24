@@ -1,0 +1,18 @@
+{
+  "mechanic": "0600-player-status",
+  "kind": "handlers",
+  "id": "0600-player-status-query",
+  "status": "unsupported",
+  "commands": [
+    6363
+  ],
+  "direction": "client_to_server",
+  "reason": "This server delivery reserves the negotiated query for the client status presentation lane.",
+  "not_applicable": {
+    "state": "Status is observed from the server's visible actor and tile owners.",
+    "protocol": "The client does not yet offer capability 600.",
+    "view": "The client status presentation is delivered separately.",
+    "input": "The client has no status query action.",
+    "settings": "Player status has no client setting."
+  }
+}

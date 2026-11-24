@@ -28,6 +28,7 @@ fn own_pvp_status_crosses_session_caller_and_rejects_bad_replies() -> Result<(),
                         remaining_ms: 60001,
                         situations: vec![wire::PvpSituation {
                             incoming: true,
+                            situation_id: None,
                             remaining_ms: 9000,
                         }],
                     };
@@ -108,6 +109,7 @@ fn frag_limits_and_open_situations_cross_caller_and_clear_on_refusal() -> Result
                         remaining_ms: 0,
                         situations: vec![wire::PvpSituation {
                             incoming: false,
+                            situation_id: None,
                             remaining_ms: 1000,
                         }],
                     };

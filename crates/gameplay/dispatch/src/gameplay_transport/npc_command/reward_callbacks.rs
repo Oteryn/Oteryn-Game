@@ -311,7 +311,19 @@ pub(super) fn prepare(
                     && c.matches_keyword(&text)
             });
             let callback = matching.next()?;
-            if !callback.accepts_npc_match(matching.next().is_some()) {
+            let other = matching.next();
+            if !callback.accepts_npc_match(other.is_some()) {
+                // Eroth uses "mission" both before accepting and for the terminal
+                // report. When neither stage applies, the terminal source owns
+                // the refusal, including on a new connection after completion.
+                if let Some(other) = other
+                    && context.2 == "oteryn:npc.eroth"
+                    && callback.quest == other.quest
+                    && matching.next().is_none()
+                    && let Some(terminal) = [callback, other].into_iter().find(|c| c.completes)
+                {
+                    return refusal(&terminal.failure_reply);
+                }
                 return None;
             }
             if (!meets_level(callback.minimum_level)

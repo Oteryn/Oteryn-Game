@@ -94,6 +94,13 @@ pub(super) fn check_line(line: ChatLine, selected: &[u32]) -> Result<ChatLine, S
     {
         return Err(SessionError::SessionUnusable);
     }
+    if matches!(line, ChatLine::System { .. })
+        && !selected.contains(&chat::CAPABILITY_CHAT_SYSTEM_MESSAGE_V1)
+    {
+        return Err(SessionError::CapabilityNotSelected {
+            capability: chat::CAPABILITY_CHAT_SYSTEM_MESSAGE_V1,
+        });
+    }
     if matches!(line, ChatLine::PrivateChannel(_))
         && !selected.contains(&CAPABILITY_CHAT_PRIVATE_CHANNEL_V1)
     {

@@ -154,3 +154,72 @@ fn stale_catalogue_choice_cannot_assign_unobserved_spell() -> Result<(), Box<dyn
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn assigned_incantation_parameters_follow_the_slot_display_setting()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, _) = super::super::super::tests::fixture()?;
+    let (link, _, outbox) = crate::play::play_channel();
+    let spell = oteryn_session::spell_catalog::SpellCatalogEntry {
+        cast_index: 71,
+        name: "Find Person".into(),
+        words: "exiva".into(),
+        level: 8,
+        mana: 20,
+        mana_percent: false,
+        soul: 0,
+        learned: true,
+        available: true,
+        cooldown_groups: vec![],
+        rune_item: None,
+    };
+    let plain = oteryn_session::spell_catalog::SpellCatalogEntry {
+        cast_index: 72,
+        name: "Light Healing".into(),
+        words: "exura".into(),
+        ..spell.clone()
+    };
+    crate::play::feature_0287_actor_spell_catalog::protocol::bevy_catalog_fixture(
+        &outbox,
+        oteryn_session::spell_catalog::encode_catalog(&[spell, plain])
+            .map_err(|e| format!("{e:?}"))?,
+    )?;
+    assert!(link.assign_bar_action(
+        0,
+        BarAction::Text {
+            text: "exiva \"Alice\"".into(),
+            send_automatically: true
+        }
+    ));
+    assert!(link.assign_bar_action(
+        1,
+        BarAction::Text {
+            text: "exura Alice".into(),
+            send_automatically: true,
+        }
+    ));
+    assert!(link.spell_slot_labels()[1].contains("exura Alice"));
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .link = link;
+    for show in [true, false] {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.settings.preferences.action_bar.show_spell_parameters = show;
+        owner
+            .settings
+            .sync_local_preferences(&owner.play.as_ref().ok_or("play")?.link);
+        app.update();
+        let label = app
+            .world_mut()
+            .query::<(&super::super::super::SlotCaption, &Text)>()
+            .iter(app.world())
+            .find(|(s, _)| s.0 == 0)
+            .ok_or("caption")?
+            .1;
+        assert_eq!(label.lines().any(|s| s == "Alice"), show);
+    }
+    Ok(())
+}

@@ -1,0 +1,19 @@
+{
+  "id": 583,
+  "name": "HIGHSCORES_BATTLEYE_V1",
+  "constant": "highscores_catalogue::CAPABILITY_BATTLEYE",
+  "requires": [
+    507
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    6329
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

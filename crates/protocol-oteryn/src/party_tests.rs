@@ -10,6 +10,10 @@ fn party_wire_roundtrips() -> Result<()> {
         PartyIntent::Leave,
         PartyIntent::Kick(3),
         PartyIntent::PassLeadership(4),
+        PartyIntent::Revoke(EntityRef {
+            identity: [7; 16],
+            generation: 2,
+        }),
     ] {
         let bytes = encode_party_intent(intent)?;
         assert!(bytes.len() <= MAX_PARTY_INTENT_BYTES);

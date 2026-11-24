@@ -1,5 +1,7 @@
-//! Candidate parameter-bearing spell intent. Numeric command/capability IDs are
-//! deliberately owned by the protocol registry, not allocated by this codec.
+//! Parameter-bearing cast over the negotiated command 6380.
+
+pub const CAPABILITY_ACTOR_SPELL_PARAMETERS_V2: u32 = 608;
+pub const COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_PARAMETERS_V2: u32 = 6380;
 use crate::actor_spell::{
     ActorSpellError, SpellCastIntent, decode_spell_cast_intent, encode_spell_cast_intent,
 };

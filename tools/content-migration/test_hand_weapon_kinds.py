@@ -38,6 +38,8 @@ class HandKinds(unittest.TestCase):
         self.assertEqual(facts,json.loads((hand.ROOT/hand.PROOF).read_bytes()))
         row=next(r for r in facts['records'] if r['source_id']==3425)
         self.assertEqual((row['weapon_type'],row['source_line']),('SHIELD',10447))
+        book = next(r for r in facts['records'] if r['source_id'] == 3059)
+        self.assertEqual((book['weapon_type'], book['source_line']), ('SPELLBOOK', 6988))
         profiles['records'][0]['authoring']['taxonomy']={'primary':'Shields'}
         with self.assertRaises(ValueError):hand.capture(hand.ROOT,profiles)
 

@@ -1,0 +1,14 @@
+{
+  "id": 589,
+  "name": "NPC_SHOP_OPTIONS_V1",
+  "owner_decision": "Packed buys and equipment sale scope",
+  "owner": "NPC trade",
+  "requires": [
+    3,
+    4
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES. Selected only with its listed dependencies. Extends the existing routes and grants no new command or domain authority."
+}
