@@ -185,3 +185,35 @@ fn cursor_on_another_floor_is_target_illegal_not_the_facing() {
         Ok((at(100, 99), Direction::North))
     );
 }
+
+#[test]
+fn scorch_after_teleport_qualifies_only_its_own_footprint() {
+    let scorch = source("candidate:spell/scorch");
+    let profile = scorch.authored.as_ref().unwrap();
+    let landing = at(32377, 32219);
+    let origin = at(32378, 32219);
+    let unrelated = at(32349, 32187);
+    let mut candidates = BTreeSet::from([landing, origin]);
+    candidates
+        .extend(geometry(&profile.dependencies.abilities[0], origin, Direction::East).unwrap());
+    let footprint = candidates.clone();
+
+    add_roster_tiles(
+        &mut candidates,
+        [origin, unrelated].into_iter(),
+        &scorch,
+        &cast(SpellTarget::None, false),
+        profile,
+    );
+
+    assert_eq!(candidates, footprint);
+
+    add_roster_tiles(
+        &mut candidates,
+        [unrelated].into_iter(),
+        &scorch,
+        &cast(SpellTarget::AttackTarget, false),
+        profile,
+    );
+    assert!(candidates.contains(&unrelated));
+}

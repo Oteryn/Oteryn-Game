@@ -392,6 +392,36 @@ pub(super) async fn prepare_inner(
     })
 }
 
+fn add_roster_tiles(
+    candidates: &mut BTreeSet<TilePosition>,
+    positions: impl Iterator<Item = TilePosition>,
+    spell: &SpellDefinition,
+    intent: &SpellCastIntent,
+    profile: &crate::spell::executable_catalog::OperationalProfile,
+) {
+    // Untargeted damage waves can affect only the authored geometry. Nearby actors
+    // outside it must not introduce unqualified cells into the cast's tile reads.
+    let footprint_only = spell.aggressive
+        && intent.target == SpellTarget::None
+        && !intent.aim_at_target
+        && !spell.target_or_direction
+        && spell.chain.is_none()
+        && profile.header.targeting.needs_direction
+        && profile
+            .dependencies
+            .abilities
+            .iter()
+            .all(|ability| ability.area.is_some() && ability.chain.is_none())
+        && profile
+            .dependencies
+            .effects
+            .iter()
+            .all(|effect| effect.operation == "damage");
+    if !footprint_only {
+        candidates.extend(positions);
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn prepare_spatial(
     tx: &mut Transaction<'_, Postgres>,
@@ -552,7 +582,6 @@ async fn prepare_spatial(
             actor: atom,
             position: p,
         });
-        candidates.insert(p);
         if spell.chain.is_some() {
             for dx in -9..=9 {
                 for dy in -9..=9 {
@@ -561,6 +590,13 @@ async fn prepare_spatial(
             }
         }
     }
+    add_roster_tiles(
+        &mut candidates,
+        chain_creatures.iter().map(|creature| creature.position),
+        spell,
+        intent,
+        profile,
+    );
     if bindings.len() > crate::spell::combat_batch::MAX_EFFECTS {
         return reject();
     }
