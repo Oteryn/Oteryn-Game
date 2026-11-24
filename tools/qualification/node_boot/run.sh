@@ -1409,6 +1409,7 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
       "$S13_ACCOUNT"|"$LIGHT_ACCOUNT_ID"|"$EXIVA_ACCOUNT_ID"|"$F5_C17A_ACCOUNT"|"$F5_C17C_ACCOUNT"|"$F5_C13_ACCOUNT"|"$F5_C18A_ACCOUNT") requested_vocation=Sorcerer ;;
       "$F5_C17D_ACCOUNT"|"$C11_UNASSIGNED_ACCOUNT"|"$C11_KNIGHT_ACCOUNT") requested_vocation=Knight ;;
       "$C12_MONK_ACCOUNT") requested_vocation=Monk ;;
+      "$C06_CASTER_ACCOUNT") requested_vocation=Sorcerer ;;
     esac
     if ! python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
       "$WORK" "$account" "$WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name" "$requested_vocation"; then
