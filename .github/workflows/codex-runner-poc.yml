@@ -109,10 +109,15 @@ jobs:
           start=$(date +%s)
           export OTERYN_AUTO_START=0
           source /workspace/oteryn-env/env.sh
-          if ! bash /workspace/oteryn-env/start.sh > "$RUNNER_TEMP/pg-start.log" 2>&1; then
-            grep -viE 'password|secret|token|://' "$RUNNER_TEMP/pg-start.log" | tail -n 30
-            exit 1
-          fi
+          # A start can fail transiently (the cluster lock or a slow first start); retry before failing.
+          ok=0
+          for attempt in 1 2 3 4 5; do
+            if bash /workspace/oteryn-env/start.sh > "$RUNNER_TEMP/pg-start.log" 2>&1; then ok=1; break; fi
+            echo "postgres start attempt $attempt failed:"
+            grep -viE 'password|secret|token|://' "$RUNNER_TEMP/pg-start.log" | tail -n 15
+            sleep $((attempt * 3))
+          done
+          (( ok == 1 )) || exit 1
           test -n "${OTERYN_TEST_POSTGRES_ADMIN_URL:-}" || { echo 'env.sh sets no OTERYN_TEST_POSTGRES_ADMIN_URL' >&2; exit 1; }
           echo "postgres start took $(( $(date +%s) - start ))s"
 
