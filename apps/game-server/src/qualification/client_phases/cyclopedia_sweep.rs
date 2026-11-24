@@ -437,10 +437,7 @@ async fn sweep_entry(
         }
     }
     for session in [&mut sweep.reader, &mut sweep.hunter] {
-        if session
-            .as_mut()
-            .is_some_and(|client| !client.session_mut().is_usable())
-        {
+        if session.as_ref().is_some_and(|client| !client.is_usable()) {
             drop(session.take());
         }
     }
