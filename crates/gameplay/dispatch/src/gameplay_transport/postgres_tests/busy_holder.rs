@@ -142,10 +142,14 @@ fn a_step_lock_refresh_waits_for_a_busy_holder_postgres() -> TestResult {
             track(&owner, &dependencies)?;
             let session = dependencies.admitted.game_session_id;
             assert!(owner.refresh_pvp_locks(dependencies.actor, session).await);
-            let busy = hold_holder(&h.root, Duration::from_millis(300))?;
-            let refreshed = owner.refresh_pvp_locks(dependencies.actor, session).await;
-            busy.await??;
-            assert!(refreshed, "the timed refresh refused on a busy holder");
+            assert!(
+                holder_return_in_final_retry_interval(
+                    &h.root,
+                    owner.refresh_pvp_locks(dependencies.actor, session),
+                )
+                .await?,
+                "the PvP read refused before the holder deadline"
+            );
             let refreshed = priority_handoff(
                 &h.root,
                 owner.refresh_pvp_locks(dependencies.actor, session),
@@ -226,12 +230,12 @@ fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
                 )
                 .ok_or("activity capability")?;
             assert!(owner.activity_transfer_input(admitted).await.is_ok());
-            let busy = hold_holder(&h.root, Duration::from_millis(300))?;
-            let accepted = owner.activity_transfer_input(admitted).await;
-            busy.await??;
             assert!(
-                accepted.is_ok(),
-                "the timed activity input refused on a busy holder"
+                holder_return_in_final_retry_interval(&h.root, async {
+                    owner.activity_transfer_input(admitted).await.is_ok()
+                })
+                .await?,
+                "the activity input refused before the holder deadline"
             );
             let accepted = priority_handoff(&h.root, async {
                 owner.activity_transfer_input(admitted).await.is_ok()
@@ -253,6 +257,35 @@ fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
             h.cleanup().await
         })
     })
+}
+
+// Poll between advances so the retry reaches the final partial interval while
+// PostgreSQL's only holder is still checked out. Resume time before doing SQL.
+async fn holder_return_in_final_retry_interval(
+    root: &crate::durability::DurabilityRoot,
+    operation: impl Future<Output = bool>,
+) -> TestResult<bool> {
+    use std::task::Poll;
+    let held = root.issue_ready_semantic_pass().await?;
+    let mut operation = std::pin::pin!(
+        crate::durability::DurabilityRoot::with_holder_owner(operation)
+    );
+    tokio::time::pause();
+    let mut result = std::future::poll_fn(|cx| Poll::Ready(operation.as_mut().poll(cx))).await;
+    for _ in 0..4 {
+        if result.is_ready() {
+            break;
+        }
+        // Advance slightly past the timer's millisecond resolution.
+        tokio::time::advance(Duration::from_millis(201)).await;
+        result = std::future::poll_fn(|cx| Poll::Ready(operation.as_mut().poll(cx))).await;
+    }
+    tokio::time::resume();
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    match result {
+        Poll::Pending => Ok(operation.await),
+        Poll::Ready(result) => Ok(result),
+    }
 }
 
 // The caller is the real fenced read/input guard. Keep its holder identity independent
