@@ -135,3 +135,19 @@ Wild Growth (3156) and Paralyse (3165) returned `ProtectionZone` to direct USE
 and to the low-level repeat. The fixture used the protected town entry and did
 not target a legal combat cell or actor. Those refusals leave the rune effect
 and level oracle unexercised.
+
+### Batch 400:1000 terminal verdict
+
+| Batch | Selected | Seed PASS | Seed FAIL | PASS rows | FAIL rows | Terminal result |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `400:1000` | 1,000 | 64 | 936 | 230 | 3,956 | `NODE_BOOT_FAIL` |
+
+The sweep emitted a verdict for every planned row. The initial fixture
+release failure cascaded through later seeds and their dependent steps.
+Among the recorded failures, 1,905 rows were blocked by their seed and
+923 by ground custody. The run recorded 31 self combat snapshot rejections,
+seven explicit equipment `SlotMismatch` rows, and the staff inspection
+omission documented above. There were 16 `NothingToUse` and 12 `StaleState`
+replies. These include weapon and generic-ground requests with the
+precondition gaps described above. The 936 failed seeds leave their items
+unverified through gameplay.
