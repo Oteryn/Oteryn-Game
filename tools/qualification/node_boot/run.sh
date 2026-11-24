@@ -156,12 +156,17 @@ esac
 selected_groups="${NODE_BOOT_E2E_ONLY:-}"
 if [[ ",${selected_groups//[[:space:]]/}," == *,transition_sweep,* && "$NODE_BOOT_WORLD" == 1 ]]; then
   [[ "$NODE_BOOT_REUSE_STACK" != 1 ]] || blocked transition_sweep_requires_fresh_stack
-  NODE_BOOT_WORLD_PROFILE=full
+  NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-full}"
 fi
 NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
 case "$NODE_BOOT_WORLD_PROFILE" in
   # Real Thais/town outskirts and the default-start and seller regions.
   full) WORLD_REGIONS=all ;;
+  transition-regions)
+    [[ ",${selected_groups//[[:space:]]/}," == ,transition_sweep, ]] || blocked regional_profile_requires_transition_sweep
+    WORLD_REGIONS="$(python3 "$GAME_SOURCE/tools/qualification/node_boot/transition_regions.py" \
+      "$GAME_SOURCE" "${OTERYN_E2E_TRANSITION_SWEEP_BATCH:-0:3}")" || blocked invalid_transition_region_batch
+    ;;
   town) WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt")" ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;
@@ -680,7 +685,9 @@ MAP_REVISION=map-s3b-1
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
   compile_world=compile-regions
-  if [[ "$NODE_BOOT_WORLD_PROFILE" == town ]]; then compile_world=compile-town-qualification; fi
+  if [[ "$NODE_BOOT_WORLD_PROFILE" == town || "$NODE_BOOT_WORLD_PROFILE" == transition-regions ]]; then
+    compile_world=compile-town-qualification
+  fi
   if [[ "$NODE_BOOT_WORLD_PROFILE" == full ]]; then
     compile_world=compile
     compile_scope=non-production
@@ -1293,6 +1300,17 @@ SQL
   evidence "flow=deployment_administration issuer=database_owner scope=seeded_world_channel operations=$operations game_roles_can_issue=0"
 }
 
+world_ready_timings() {
+  awk '
+    / event=content_activated | event=world_bundle .*state=booted| event=listener_bound | event=readiness .*ready=true/ {
+      event = $5
+      split($2, time, "=")
+      if (previous) printf("NODE_BOOT_EVIDENCE readiness_step=%s elapsed_ms=%.0f\n", event, time[2] - previous)
+      previous = time[2]
+    }
+  ' "$1"
+}
+
 node_assigned_ready() { # §4.2–§4.4
   local boot_started=$SECONDS
   start_node
@@ -1323,6 +1341,7 @@ node_complete_assignment() {
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" "$NODE_READINESS_WAIT_SECONDS"
+  world_ready_timings "$node_log"
   # The canonical manifest makes each validation substantial. Prove the same
   # stale-predecessor rejection against the now-active sequence 1, without
   # spending the unassigned node's unchanged wait on this independent negative.
@@ -1560,6 +1579,7 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   # A new incarnation starts with no active Content and reactivates only the current issuance.
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" "$NODE_READINESS_WAIT_SECONDS"
+  world_ready_timings "$node_log"
   node_signal -TERM "$NODE_PID"
   for _ in $(seq 1 30); do node_signal -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "replacement did not shut down cleanly"
@@ -1709,7 +1729,7 @@ SQL
 }
 
 pvp_world_shutdown() { # the Open PvP World's node ends cleanly before the lifecycle probes
-  node_signal -TERM "$PVP_NODE_PID"
+  node_signal -TERM "$PVP_NODE_PID" || pvp_fail "PvP shutdown could not signal the recorded process"
   for _ in $(seq 1 30); do node_signal -0 "$PVP_NODE_PID" 2>/dev/null || break; sleep 1; done
   grep -q "event=shutdown .*state=complete" "$WORK/pvp-node.log" || pvp_fail "PvP node did not shut down cleanly"
   [[ ! -e "$PVP_BASE/run/control.sock" ]] || fail "PvP socket left after graceful shutdown"
