@@ -356,6 +356,12 @@ async fn travel_to_svargrond(
         .iter()
         .find(|entry| entry.key == CAPTAIN)
         .ok_or("step=svargrond-travel Captain Bluebear absent from the compiled bundle")?;
+    // The captain stands on the upper dock. Face west from the east shore
+    // and land on the dock within native talk range.
+    let facing = TilePos { x: 32316, y: 32208, floor: -7 };
+    let cast_from = TilePos { x: 32315, ..facing };
+    let dock = TilePos { x: 32314, floor: -6, ..facing };
+    levitate_to_ledge(client, world, facing, StepDirection::West, cast_from, dock).await?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         captain.placements.iter().any(|p| {
             p.floor == at.floor
@@ -456,35 +462,26 @@ async fn prepare_svargrond_travel(client: &mut DevClientSession, price: u64) -> 
     }
 }
 
-async fn approach_svargrond_portal(
+async fn levitate_to_ledge(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    portal: TilePos,
-) -> TestResult<StepDirection> {
+    facing: TilePos,
+    direction: StepDirection,
+    cast_from: TilePos,
+    ledge: TilePos,
+) -> TestResult {
     use oteryn_dev_client::{ChatIntent, ChatSpeechMode};
-
-    let origin = tile(client.world_spatial().actor_position)?;
-    if let Some((path, step)) = approach(world, origin, portal) {
-        walk(client, world, &path).await?;
-        return Ok(step);
-    }
-    // The citizenship room is above the temple. Step south to face the
-    // authored ledge and use normal Levitate from the uncovered tile.
-    let facing_step = TilePos { x: 32212, y: 31128, floor: -6 };
-    let cast_from = TilePos { y: 31129, ..facing_step };
-    let ledge = TilePos { y: 31130, floor: -5, ..facing_step };
-    if destination(world, facing_step, StepDirection::South) != Some(cast_from)
+    if destination(world, facing, direction) != Some(cast_from)
         || !world.enterable(ledge)
         || world.base().tile(cast_from.x, cast_from.y, ledge.floor).is_some()
     {
-        return Err("step=svargrond-route authored temple ledge geometry was not served".into());
+        return Err(format!("step=levitate-route authored ledge geometry differs at {cast_from:?} -> {ledge:?}").into());
     }
-    let (path, step) = approach(world, ledge, portal)
-        .ok_or("step=svargrond-route no native approach from temple ledge to portal")?;
-    let mut to_ledge = route(world, origin, |at| at == facing_step)
-        .ok_or("step=svargrond-route no native STEP route to Levitate approach")?;
-    to_ledge.push(StepDirection::South);
-    walk(client, world, &to_ledge).await?;
+    let origin = tile(client.world_spatial().actor_position)?;
+    let mut path = route(world, origin, |at| at == facing)
+        .ok_or_else(|| format!("step=levitate-route no native STEP approach to {facing:?}"))?;
+    path.push(direction);
+    walk(client, world, &path).await?;
     let mana_before = client.actor_vitals().ok_or("Levitate pre-cast vitals absent")?.mana;
     client.take_events();
     let cast = client.chat(&ChatIntent::Say {
@@ -507,7 +504,27 @@ async fn approach_svargrond_portal(
         client.service_liveness(Duration::from_millis(25)).await?;
         client.take_events();
     }
-    evidence(&format!("W23_CHECK temple-ledge PASS from={cast_from:?} to={ledge:?}"));
+    evidence(&format!("W23_CHECK levitate-ledge PASS from={cast_from:?} to={ledge:?}"));
+    Ok(())
+}
+
+async fn approach_svargrond_portal(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    portal: TilePos,
+) -> TestResult<StepDirection> {
+    let origin = tile(client.world_spatial().actor_position)?;
+    if let Some((path, step)) = approach(world, origin, portal) {
+        walk(client, world, &path).await?;
+        return Ok(step);
+    }
+    // The citizenship room is above the temple.
+    let facing = TilePos { x: 32212, y: 31128, floor: -6 };
+    let cast_from = TilePos { y: 31129, ..facing };
+    let ledge = TilePos { y: 31130, floor: -5, ..facing };
+    let (path, step) = approach(world, ledge, portal)
+        .ok_or("step=svargrond-route no native approach from temple ledge to portal")?;
+    levitate_to_ledge(client, world, facing, StepDirection::South, cast_from, ledge).await?;
     walk(client, world, &path).await?;
     Ok(step)
 }
