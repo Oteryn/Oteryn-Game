@@ -142,7 +142,7 @@ def validate(authoring):
             raise ValueError("duplicate item acquisition")
         acquisitions.add(row["item_key"])
     grants = set()
-    mounts = {row["key"] for row in document["mounts"]}
+    mounts = {row["key"]: row for row in document["mounts"]}
     for mapping in document.get("grant_mappings", []):
         if mapping["grant_key"] in grants:
             raise ValueError("duplicate cosmetics grant key")
@@ -164,6 +164,14 @@ def validate(authoring):
                     or any(alias[sex] != original[sex] for sex in ("female", "male"))
                     or (target["kind"] == "Addon" and target["addon"] > alias["addon_count"])):
                 raise ValueError("cosmetics alias must retain exact source looks and addon")
+        for key in mapping.get("mount_aliases", []):
+            alias = mounts.get(key)
+            original = mounts.get(target.get("mount_key"))
+            if (target["kind"] != "Mount" or alias is None or original is None
+                    or key == original["key"]
+                    or any(alias[field] != original[field]
+                           for field in ("look", "speed_bonus", "premium"))):
+                raise ValueError("mount alias must retain exact source look, speed and premium")
         if not valid or (mapping.get("sex") is not None and target["kind"] == "Mount"):
             raise ValueError("unknown cosmetics grant target")
     for sex in ["female", "male"]:

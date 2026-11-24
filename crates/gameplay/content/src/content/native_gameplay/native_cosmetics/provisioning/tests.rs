@@ -144,7 +144,7 @@ fn mount_catalogue_includes_jaracal_and_radiant_nimbus() -> Result<(), Box<dyn s
     };
     let section = materialize(descriptor, &path)?;
     let catalogue = super::super::decode(&section.bytes)?.ok_or("native cosmetics unavailable")?;
-    assert_eq!(catalogue.mount_keys.len(), 252);
+    assert_eq!(catalogue.mount_keys.len(), 275);
     for (name, client_id) in [("jaracal", 1962), ("radiant_nimbus", 1975)] {
         let key = format!("oteryn:content.mount.{name}");
         assert_eq!(
@@ -152,6 +152,52 @@ fn mount_catalogue_includes_jaracal_and_radiant_nimbus() -> Result<(), Box<dyn s
             Some((client_id, 10, true)),
             "{key}"
         );
+    }
+    Ok(())
+}
+
+#[test]
+fn production_task_board_cosmetics_bind_existing_shop_receipts()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, Sex, UnlockFact};
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let path = root.join("content/cosmetics/outfits/native-cosmetics.json");
+    let bytes = std::fs::read(&path)?;
+    let descriptor = PinnedGameplayBytes {
+        sha256: super::super::super::hex(crate::content::digest::sha256(&bytes)),
+        bytes,
+    };
+    let section = materialize(descriptor, &path)?;
+    let catalogue = super::super::decode(&section.bytes)?.ok_or("native cosmetics unavailable")?;
+    let content = &catalogue.content;
+    let check = |offer, target| {
+        let key = format!("oteryn:taskboard/shop/offer-{offer}");
+        assert_eq!(
+            content.earned_unlock(&key, "task-board-shop-v1", target),
+            UnlockFact::Compatible
+        );
+        assert_eq!(
+            content.earned_unlock(&key, "other-source", target),
+            UnlockFact::Incompatible
+        );
+    };
+    for (offer, key, look) in [
+        (0, "oteryn:outfit.feral_trapper", 1907),
+        (3, "oteryn:outfit.falconer", 1282),
+    ] {
+        assert_eq!(content.look_type(key, Sex::Male), Some(look));
+        check(offer, EarnedCosmetic::Outfit(key));
+        check(offer + 1, EarnedCosmetic::Addon(key, 1));
+        check(offer + 2, EarnedCosmetic::Addon(key, 2));
+    }
+    for (offer, key, look) in [
+        (6, "oteryn:content.mount.tidal_seawater_predator", 1908),
+        (7, "oteryn:content.mount.ashen_coast_predator", 1909),
+        (8, "oteryn:content.mount.crimson_bay_predator", 1910),
+        (9, "oteryn:content.mount.antelope", 1281),
+    ] {
+        assert_eq!(content.mount_metadata(key).map(|(id, _, _)| id), Some(look));
+        check(offer, EarnedCosmetic::Mount(key));
     }
     Ok(())
 }

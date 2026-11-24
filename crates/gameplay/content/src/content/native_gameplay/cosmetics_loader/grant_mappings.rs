@@ -13,6 +13,8 @@ pub(super) struct GrantMapping {
     #[serde(default)]
     outfit_aliases: Vec<String>,
     #[serde(default)]
+    mount_aliases: Vec<String>,
+    #[serde(default)]
     sex: Option<GrantSex>,
 }
 
@@ -105,6 +107,32 @@ pub(super) fn validate(
                 return Err(invalid());
             }
         }
+        if !mapping.mount_aliases.is_empty() {
+            let Target::Mount { mount_key } = &mapping.target else {
+                return Err(invalid());
+            };
+            let original = mounts
+                .iter()
+                .find(|m| m.key == *mount_key)
+                .ok_or_else(invalid)?;
+            let mut aliases = BTreeSet::new();
+            if mapping.mount_aliases.len() > 16
+                || mapping.mount_aliases.iter().any(|key| {
+                    key == mount_key
+                        || !aliases.insert(key)
+                        || !mounts.iter().any(|alias| {
+                            alias.key == *key
+                                && alias.look.id == original.look.id
+                                && alias.look.source_record_sha256
+                                    == original.look.source_record_sha256
+                                && alias.speed_bonus == original.speed_bonus
+                                && alias.premium == original.premium
+                        })
+                })
+            {
+                return Err(invalid());
+            }
+        }
         if !exists || (mapping.sex.is_some() && matches!(mapping.target, Target::Mount { .. })) {
             return Err(invalid());
         }
@@ -143,7 +171,9 @@ pub(super) fn resolve_for_sex(
             (outfit_key == key || mapping.outfit_aliases.iter().any(|alias| alias == key))
                 && *addon == bit
         }
-        (Target::Mount { mount_key }, EarnedCosmetic::Mount(key)) => mount_key == key,
+        (Target::Mount { mount_key }, EarnedCosmetic::Mount(key)) => {
+            mount_key == key || mapping.mount_aliases.iter().any(|alias| alias == key)
+        }
         _ => false,
     };
     if !matches {
@@ -162,6 +192,53 @@ pub(super) fn resolve_for_sex(
 #[cfg(test)]
 mod sex_qualified_tests {
     use super::*;
+
+    #[test]
+    fn mount_alias_uses_the_same_receipt_and_requires_the_same_appearance()
+    -> std::result::Result<(), serde_json::Error> {
+        let author: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/cosmetics/outfits/authoring.json"
+        )))?;
+        let document = &author["document"];
+        let primary = "oteryn:content.mount.black_sheep";
+        let alias = "oteryn:content.mount.black_sheep_mount";
+        let mut mounts: Vec<Mount> = document["mounts"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|mount| mount["key"] == primary || mount["key"] == alias)
+            .map(|mount| serde_json::from_value(mount.clone()))
+            .collect::<std::result::Result<_, _>>()?;
+        let mapping: GrantMapping = serde_json::from_value(
+            document["grant_mappings"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .find(|mapping| mapping["grant_key"] == "oteryn:taming.black_sheep")
+                .cloned()
+                .unwrap_or_default(),
+        )?;
+        assert!(validate(std::slice::from_ref(&mapping), &[], &mounts).is_ok());
+        for key in [primary, alias] {
+            let target = EarnedCosmetic::Mount(key);
+            assert_eq!(
+                resolve(Some(&mapping), "mount-taming-v1", target),
+                UnlockFact::Compatible
+            );
+            assert_eq!(
+                resolve(Some(&mapping), "other-source", target),
+                UnlockFact::Incompatible
+            );
+        }
+        for mount in &mut mounts {
+            if mount.key == alias {
+                mount.look.id += 1;
+            }
+        }
+        assert!(validate(std::slice::from_ref(&mapping), &[], &mounts).is_err());
+        Ok(())
+    }
 
     #[test]
     fn aliases_require_identical_source_looks_and_supported_addons()

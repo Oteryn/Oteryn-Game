@@ -293,8 +293,31 @@ def build():
             existing = next(m for m in mappings if m['grant_key'] == row['grant_key'])
             if existing['target'] != row['target']:
                 existing['outfit_aliases'] = [row['target']['outfit_key']]
+    # The NX-5 Citizen key is the same starter look pair. Its addons share
+    # the canonical NPC and item receipts, including sex-qualified grants.
+    for mapping in mappings:
+        target = mapping['target']
+        if target['kind'] == 'Addon' and target['outfit_key'] == 'oteryn:outfit.citizen':
+            mapping['outfit_aliases'] = ['oteryn:content.outfit.citizen_outfits']
     # Taming uses the same production cosmetics owner as quest/item grants.
     taming_cosmetics.append(ROOT, doc, looks)
+    # Crystal 201189f8 data/scripts/lib/task_board_shop.lua:37-126.
+    # The shop already owns the debit and receipt. Bind its existing offer IDs
+    # to the admitted cosmetics so an appearance ID alone grants nothing.
+    for base, outfit in ((0, 'feral_trapper'), (3, 'falconer')):
+        outfit_key = 'oteryn:outfit.' + outfit
+        for addon in range(3):
+            target = {'kind': 'Outfit', 'outfit_key': outfit_key}
+            if addon:
+                target.update(kind='Addon', addon=addon)
+            mappings.append({'grant_key': f'oteryn:taskboard/shop/offer-{base + addon}',
+                             'target': target, 'compatible_provenance': ['task-board-shop-v1']})
+    for offer, mount in ((6, 'tidal_seawater_predator'), (7, 'ashen_coast_predator'),
+                         (8, 'crimson_bay_predator'), (9, 'antelope')):
+        mappings.append({'grant_key': f'oteryn:taskboard/shop/offer-{offer}',
+                         'target': {'kind': 'Mount', 'mount_key': 'oteryn:content.mount.' + mount},
+                         'compatible_provenance': ['task-board-shop-v1']})
+
     nx5_promotions = {row['path']: row for row in nx5['promotions']}
     quest_outfits = len(outfits) - len(nx5_doc['outfits'])
     for path in sorted(cosmetics.promotion_paths(doc)):

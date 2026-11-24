@@ -512,6 +512,16 @@
             "minLength": 1,
             "maxLength": 512
           }
+        },
+        "mount_aliases": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
         }
       }
     },

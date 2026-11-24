@@ -84,4 +84,28 @@ def populate(root, inputs, looks, source, item_packet):
     catalogue_rows = {row.get('name'): row.attrib for row in ET.fromstring(raw)}
     for name in ('Jaracal', 'Radiant Nimbus'):
         mounts.append(definition(catalogue_rows[name], identities.get(name_key(name)), catalogue_source))
+    # Legacy wiki declarations and active taming rules can name the same mount
+    # with different keys. Bind them through the exact Crystal mount row so a
+    # taming receipt grants both appearances without changing its stored key.
+    by_mount_key = {mount['key']: mount for mount in mounts}
+    for number, line in enumerate(raw.decode().splitlines(), 1):
+        match = re.search(r'<mount id="(\d+)" clientid="(\d+)" name="([^"]+)"', line)
+        if match is None:
+            continue
+        _, look, name = match.groups()
+        alias = identities.get(name_key(name))
+        donor = by_name.get(name_key(name))
+        if alias is None or alias in by_mount_key or donor is None or donor['clientid'] != look:
+            continue
+        primary = stable_keys.get(int(donor['id']))
+        if primary is None:
+            continue
+        citation = {**catalogue_source, 'reference':
+                    f'https://github.com/zimbadev/crystalserver/blob/{CATALOGUE_REVISION}/{MOUNTS_XML}#L{number}'}
+        mount = definition(catalogue_rows[name], alias, citation)
+        mounts.append(mount)
+        by_mount_key[alias] = mount
+        for mapping in mappings:
+            if mapping['target']['mount_key'] == primary:
+                mapping.setdefault('mount_aliases', []).append(alias)
     return sorted(mounts, key=lambda r: r['key']), mappings
