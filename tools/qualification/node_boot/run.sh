@@ -666,6 +666,7 @@ PY_STAGE
   evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$NODE_BOOT_SPELL_MANIFEST" | cut -d ' ' -f 1) activation_wait_seconds=$NODE_ACTIVATION_WAIT_SECONDS"
 fi
 MAP_REVISION=map-s3b-1
+NODE_NPC_ARGS=()
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
   compile_world=compile-regions
@@ -686,6 +687,31 @@ PY_REGION_PIN
   install_owned root:root -m 0644 "$WORK/world.otwb" "$BASE/world/world.otbundle"
   install_owned root:root -m 0644 "$PIN" "$BASE/world/world.json"
   MAP_REVISION="$WORLD_DIGEST"
+  if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 && ${NODE_BOOT_E2E_ONLY:-} == f4 ]]; then
+    # Bind the NPC catalogue from the same checkout that compiled the World.
+    # The node verifies the project digest and independently matches the bundle's catalogue digest.
+    PYTHONPATH="$GAME_SOURCE/deploy/synology-game" python3 - "$GAME_SOURCE" "$WORK" <<'PY_NPC_STAGE'
+import json
+import sys
+from pathlib import Path
+from stage_npc_data import PIN_SCHEMA, catalogue_digest, collect_catalogue, project_files, stage
+
+repo, work = map(Path, sys.argv[1:])
+content = repo / "content"
+revision, project = project_files(content / "world")
+pin = work / "npc-data.pin.json"
+pin.write_text(json.dumps({
+    "schema": PIN_SCHEMA,
+    "project_revision": revision,
+    "project_sha256": catalogue_digest(project.items()),
+    "catalogue_sha256": catalogue_digest(collect_catalogue(content)),
+}), encoding="utf-8")
+stage(pin, repo, work / "npc-data")
+PY_NPC_STAGE
+    mv -- "$WORK/npc-data" "$BASE/npc-data"
+    NODE_NPC_ARGS=(--npc-data-project "$BASE/npc-data/content/world"
+      --npc-data-sha256 "$(< "$BASE/npc-data/PROJECT_SHA256")")
+  fi
 fi
 install_owned "$SERVICE_UID" -d -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
 install_owned "$SERVICE_UID" -d -m 0755 "$BASE/node/secrets"
@@ -837,7 +863,7 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2"
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2" "${NODE_NPC_ARGS[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
 }
@@ -1517,7 +1543,7 @@ restart_without_supersession() { # fails at S2 custody, never ready
   ops authorization issue --file launch-b.json --binding node-boot-b
   write_node_config launch-b.json
   local code=0
-  "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" 2> "$WORK/restart.log" || code=$?
+  "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" "${NODE_NPC_ARGS[@]}" 2> "$WORK/restart.log" || code=$?
   cat "$WORK/restart.log"
   [[ $code == 13 ]] || fail "restart without supersession exit=$code"
   local line node revision
