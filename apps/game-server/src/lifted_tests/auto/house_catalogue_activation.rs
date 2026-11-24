@@ -1,5 +1,6 @@
 use crate::bestiary_postgres_harness as fixture;
 use crate::durability::DurabilityRoot;
+use crate::durability::house_management::{HouseManagementPage, QualifiedHouse};
 use crate::durability::house_ownership::{
     HouseBidRequest, HouseCatalogueActivation, HouseOwnershipOutcome,
 };
@@ -46,6 +47,26 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         world, channel, generation, sequence: 1, digest: DIGEST,
         entries: vec![serde_json::json!({"house_key":HOUSE,"kind":"private_house","rent_gold":100})],
     };
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = root.open_character_authority(&seal).await.map_err(debug)?;
+    let fence = fixture::item_fence()?;
+    let listing = || {
+        root.read_house_management(
+            &authority,
+            &h.node,
+            fence,
+            HouseManagementPage {
+                houses: vec![QualifiedHouse {
+                    key: HOUSE.into(),
+                    kind: "private_house",
+                }],
+                cursor: None,
+                auction_order: false,
+            },
+            DIGEST,
+        )
+    };
+    assert!(listing().await.map_err(debug)?.is_empty());
     assert!(root.activate_house_catalogue(&h.node, catalogue(2)).await.is_err());
     assert_eq!(h.count("game_house_properties").await?, 0);
     for _ in 0..2 {
@@ -59,10 +80,12 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     assert_eq!(vacant, (1, 100, "1".into(), true));
     assert_eq!(h.count("game_house_auctions").await?, 0);
 
-    let seal = h.recovery.seal_current().map_err(debug)?;
-    let authority = root.open_character_authority(&seal).await.map_err(debug)?;
+    let rows = listing().await.map_err(debug)?;
+    let [row] = rows.as_slice() else {
+        return Err("live town query must return exactly one activated house".into());
+    };
+    assert_eq!((row.house.as_str(), row.state, row.rent, row.ends_ms), (HOUSE, 1, 100, None));
     let gate = SpellPremiumCoordinator::new(Arc::new(PremiumConsumer::default()), None, None, Some(root.clone()));
-    let fence = fixture::item_fence()?;
     let request = |command, maximum| -> fixture::TestResult<HouseBidRequest> {
         Ok(HouseBidRequest {
             operation_id: id(command),
@@ -84,6 +107,12 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     ).bind(HOUSE).fetch_one(&h.pool).await?;
     assert_eq!(opened, (2, 100, 400, true));
     assert_eq!(h.count("game_house_auctions").await?, 1);
+    let rows = listing().await.map_err(debug)?;
+    let [row] = rows.as_slice() else {
+        return Err("live town query must return exactly one auction".into());
+    };
+    assert_eq!((row.house.as_str(), row.state, row.rent, row.own_maximum), (HOUSE, 2, 100, Some(300)));
+    assert!(row.ends_ms.is_some());
     Ok(())
 }
 
