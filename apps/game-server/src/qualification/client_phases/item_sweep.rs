@@ -644,22 +644,46 @@ async fn corpse(
 ) -> TestResult {
     use oteryn_dev_client::EntityDetail;
     use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightModes};
-    let sword_key = "oteryn:item.tibia.i3265";
-    let sword = self::reference(index, sword_key)?;
+    let axe_key = "oteryn:item.tibia.i3276";
+    let axe = self::reference(index, axe_key)?;
     let build = Build {
         vocation: 0,
         level: HIGH,
     };
-    let mut client = fixtures.seed(sword_key, build).await?;
+    let mut client = fixtures.seed(axe_key, build).await?;
     let (scope, character) = fixtures.fixture(build);
     let probe = async {
-        let weapon = carried(&client, sword).ok_or("corpse-fixture-sword-missing")?;
-        move_item(
+        let weapon = carried(&client, axe).ok_or("corpse-fixture-axe-missing")?;
+        if let Err(move_error) = move_item(
             &mut client,
             weapon.handle,
             Destination::Equipment(EquipmentSlot::RightHand),
             Move::Moved,
         )
+        .await
+        {
+            let outcome = oteryn_dev_client::client_runtime::hotkey_equip::equip_definition(
+                client.session_mut(),
+                axe,
+            )
+            .await?;
+            if outcome != Move::Moved {
+                return Err(format!(
+                    "corpse-fixture-weapon-owner: {move_error}; hotkey={outcome:?}"
+                )
+                .into());
+            }
+        }
+        observe(&mut client, |client| {
+            client
+                .inventory()?
+                .equipment
+                .iter()
+                .any(|item| {
+                    item.slot == EquipmentSlot::RightHand && item.item.item_definition_ref == axe
+                })
+                .then_some(())
+        })
         .await?;
         super::creature_sweep::leave_protection_zone(&mut client, world).await?;
         let answer = request_spawn(
@@ -767,7 +791,7 @@ async fn corpse(
     }
     .await;
     let _ = client.session_mut().attack_target(None).await;
-    let cleanup = drop_carried(&mut client, sword).await;
+    let cleanup = drop_carried(&mut client, axe).await;
     let released = release_fixture(client, scope, character).await;
     rows.emit("cleanup", cleanup.and(released));
     probe
