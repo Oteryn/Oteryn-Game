@@ -1191,6 +1191,15 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     import qready2_native_profiles
 
+    # Route scenery owns map collision facts independently of reward and tool custody.
+    quest_callback_profiles.admit_route_scenery(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     quest_callback_profiles.admit(
         root,
         generated,
@@ -1693,6 +1702,17 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
+    # Crystal201189f koshei_the_deathless.lua:19 and action_boss.lua:4
+    # select the fresh body, with its full admitted Ground decay chain.
+    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
+    creatures = json.loads(generated[creature_path])
+    koshei = next(row for row in creatures["records"]
+                  if row["profile"]["target"]["key"] == "oteryn:creature.koshei_the_deathless")
+    details = koshei["profile"]["data"]["profile"]["details"]
+    if details["corpse_item"]["key"] != "oteryn:item.tibia.i7538":
+        raise ValueError("KOSHEI_CORPSE_SOURCE_CHANGED")
+    details["corpse_item"]["key"] = "oteryn:item.tibia.i7535"
+    generated[creature_path] = spell_import.canonical_bytes(creatures)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions
@@ -1710,7 +1730,6 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # Owner-authored quest variants retain admitted attack closures, with no donor identity.
     import engenc_elemental_profiles
 
-    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     creatures = json.loads(generated[creature_path])
     engenc_elemental_profiles.apply(creatures)
     nrwicked_profiles.admit_creatures(

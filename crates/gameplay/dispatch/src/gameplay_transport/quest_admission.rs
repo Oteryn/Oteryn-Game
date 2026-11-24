@@ -38,6 +38,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.holder,
                     fence,
                     self.quest_catalogue.as_ref(),
+                    &self.premium_coordinator,
                 )
                 .await;
                 let mut retry = admission.retry || admission.copy.is_none();

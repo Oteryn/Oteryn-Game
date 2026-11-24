@@ -802,6 +802,12 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
                 pinned_world: pinned_world.as_ref(),
             };
             for case in cases {
+                if case.claim == oteryn_gameplay_quests::quest::world_callbacks::SERPENTINE_PEARL_CLAIM {
+                    // The existing evidence name now exercises the same claim after its tower prerequisites.
+                    super::serpentine_tower_journey_fixtures::journey()
+                        .map_err(|error| error.to_string())?;
+                    continue;
+                }
                 for key in std::iter::once(case.root.as_str())
                     .chain(case.contents.iter().map(|(key, _, _)| key.as_str()))
                 {

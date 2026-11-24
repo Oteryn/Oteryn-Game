@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1",
+      "position": [
+        33194,
+        32458,
+        7
+      ],
+      "appearance": 408,
+      "unique": 6236,
+      "source_line": 2431
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2",
+      "position": [
+        33305,
+        32277,
+        10
+      ],
+      "appearance": 1983,
+      "unique": 6237,
+      "source_line": 2438
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3",
+      "position": [
+        33212,
+        32593,
+        7
+      ],
+      "appearance": 231,
+      "unique": 6238,
+      "source_line": 2445
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4",
+      "position": [
+        33053,
+        32468,
+        11
+      ],
+      "appearance": 1983,
+      "unique": 6239,
+      "source_line": 2452
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs",
+      "position": [
+        33261,
+        32444,
+        12
+      ],
+      "appearance": 2472,
+      "unique": 6240,
+      "source_line": 2459
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum",
+      "position": [
+        33261,
+        32448,
+        12
+      ],
+      "appearance": 2480,
+      "unique": 6241,
+      "source_line": 2466
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": []
+}
