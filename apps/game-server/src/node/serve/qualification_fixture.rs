@@ -61,8 +61,9 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "c11-unassigned" => Some((crate::durability::character_build::NO_VOCATION, 8)),
         "c11-knight" => Some(("knight", 625)),
         "c12-monk" => Some(("monk", 20)),
-        "c02-ranged" => Some(("sorcerer", 15)),
-        "c02-druid" => Some(("druid", 15)),
+        // The authored town route to the Rat has over 200 steps.
+        "c02-ranged" => Some(("sorcerer", 100)),
+        "c02-druid" => Some(("druid", 100)),
         "c06-sorcerer" => Some(("sorcerer", 15)),
         "f5-c17a" => Some(("sorcerer", 20)),
         "f5-c17c" => Some(("sorcerer", 23)),

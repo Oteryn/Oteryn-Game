@@ -679,7 +679,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     character_prep::declare_seeded(
         "C02.full",
-        "dedicated level-15 Sorcerer and Druid with 929 and 499 carried gold",
+        "dedicated level-100 Sorcerer and Druid with 929 and 499 carried gold",
         "Practise both purchases after earning the remaining gold through Rat combat and loot",
     );
     let ranged =
