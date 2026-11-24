@@ -339,9 +339,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         let target_character = *lease.character_id().as_bytes();
-        let Ok(mut physical) = runtime.stage_spell_batch(&batch) else {
+        let effect_ordinal = effect.sub_ordinal;
+        let Ok(mut physical) = runtime.stage_pvp_swing_batch(&batch, ordinal) else {
             return false;
         };
+        if !physical.will_apply() {
+            return false;
+        }
         let Ok(player) =
             super::actor_spell::stage_player_batch_with_attack(runtime, states, &batch, &damage)
         else {
@@ -433,7 +437,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     use crate::foundation::runtime_actor_spell_types::PlayerBatchProof;
                     let damage = hit
                         .player
-                        .health_receipt(target, ordinal)
+                        .health_receipt(target, effect_ordinal)
                         .ok_or(DurabilityError::Unavailable)?;
                     let damage = u32::try_from(damage.health_before - damage.health_after)
                         .map_err(|_| DurabilityError::Unavailable)?;

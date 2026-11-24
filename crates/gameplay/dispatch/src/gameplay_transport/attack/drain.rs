@@ -1808,7 +1808,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             now_ms: now.get() / 1000,
             effects: vec![crate::spell::combat_batch::OwnerCombatEffect {
                 target: hit.target,
-                sub_ordinal: hit.ordinal,
+                sub_ordinal: 0,
                 change: crate::spell::combat_batch::OwnerCombatChange::Damage {
                     target_atom: atom,
                     magnitude,
