@@ -230,7 +230,20 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
         .await;
         let reason = match outcome {
             Ok(Ok(())) => "missing-step-evidence".to_owned(),
-            Ok(Err(error)) => error.to_string(),
+            Ok(Err(error)) => {
+                // A failed exchange can poison the connection. Preserve this
+                // row's error and let the next entry acquire a clean admission.
+                if let Some(client) = session.as_mut()
+                    && client
+                        .session_mut()
+                        .service_liveness_discarding_events(Duration::ZERO)
+                        .await
+                        .is_err()
+                {
+                    drop(session.take());
+                }
+                error.to_string()
+            }
             Err(_) => {
                 drop(session.take());
                 "entry-deadline".to_owned()
