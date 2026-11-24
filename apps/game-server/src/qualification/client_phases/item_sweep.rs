@@ -797,11 +797,14 @@ async fn corpse(
         Ok(())
     }
     .await;
+    if let Err(error) = probe {
+        rows.emit("seed", Err(error));
+    }
     let _ = client.session_mut().attack_target(None).await;
     let cleanup = drop_carried(&mut client, axe).await;
     let released = release_fixture(client, scope, character).await;
     rows.emit("cleanup", cleanup.and(released));
-    probe
+    Ok(())
 }
 
 /// Seed one disposable Ground root using the Channel's current content pin. The

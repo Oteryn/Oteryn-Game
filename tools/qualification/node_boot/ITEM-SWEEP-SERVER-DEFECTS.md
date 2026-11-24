@@ -357,3 +357,14 @@ also carries an owned hireling identity
 Crystal 201189f8 `hireling_lamp.lua:7–24` requires the player's house
 tile. Classify the backpack reservation as the wrong fixture for this
 action. No lamp USE verdict was produced for this key.
+
+A placement census decoded the 1,209 B3 shards listed in
+`content/world/placements/index.json` and inspected top-level items on
+tiles with a house in the authored catalogue. Of 348 bed keys in the
+pending ledger, 31 have a matching base-map placement, including 12 whose
+house entrance and item are in the item-sweep town regions. The other
+317 have no matching base placement in a catalogue house. This census
+covers base placements. It does not establish which states can be created
+by installing, rotating, or sleeping in a bed. A match outside the town
+regions still needs a loaded entrance, accessible route and live custody
+before it can count as a seed PASS.
