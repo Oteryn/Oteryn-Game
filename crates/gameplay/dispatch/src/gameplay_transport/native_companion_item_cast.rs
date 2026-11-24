@@ -437,7 +437,7 @@ pub(super) async fn prepare_direct(
         let cue = QualifiedCueTile::from_current_tile(room, runtime, &fact)
             .map_err(|_| SpellCastDisposition::NotAvailable)?;
         cues.push(LocatedCueRequest {
-            binding: "appearance:effect/teleport".into(),
+            binding: crate::spell::spell_presentations::SOURCE_TELEPORT_CUE.into(),
             target: CueTarget::Tile(cue),
         });
     }

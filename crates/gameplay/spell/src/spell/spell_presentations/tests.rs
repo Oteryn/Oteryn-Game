@@ -489,3 +489,42 @@ fn native_haste_profiles_admit_the_authored_magic_green_cue() {
         );
     }
 }
+
+#[test]
+fn named_summon_uses_the_registered_teleport_cue() {
+    let (active, runtime, actor, session) = ordinary_passive_cue_fixture();
+    let (index, definition) =
+        ordinary_passive_cue_definition(&active, "candidate:spell/summon_creature");
+    let mut owner = SpellPresentationOwner::new(&runtime);
+    let mut batch = ordinary_passive_cue_batch(actor, session);
+    let prepared = owner.prepare_source_definition(
+        &runtime,
+        &active,
+        index,
+        &definition,
+        &mut batch,
+        vec![ordinary_passive_cue_request(actor, SOURCE_TELEPORT_CUE)],
+    );
+    assert_eq!(
+        prepared.map(|cue| cue
+            .events
+            .into_iter()
+            .map(|event| event.cue)
+            .collect::<Vec<_>>()),
+        Ok(vec![Cue::Effect(11)])
+    );
+
+    let (index, definition) = ordinary_passive_cue_definition(&active, "candidate:spell/charge");
+    let mut batch = ordinary_passive_cue_batch(actor, session);
+    assert!(matches!(
+        owner.prepare_source_definition(
+            &runtime,
+            &active,
+            index,
+            &definition,
+            &mut batch,
+            vec![ordinary_passive_cue_request(actor, SOURCE_TELEPORT_CUE)]
+        ),
+        Err(Error::UnqualifiedSource)
+    ));
+}
