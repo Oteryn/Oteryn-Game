@@ -912,7 +912,13 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2"
+    local -a npc_data_args=()
+    if [[ "$NODE_BOOT_W19A_MODE" == seeded && "$2" == "$BASE/node/node.toml" ]]; then
+      # Bind the authored catalogue to the NPC frame in the seeded town crop.
+      npc_data_args=(--npc-data-project "$GAME_SOURCE/content/world"
+        --npc-data-sha256 40947c716ba37cae03c6057ab4fa99a6b6a1313e2cd9bbaff9edf952797f94d5)
+    fi
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2" "${npc_data_args[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
 }
