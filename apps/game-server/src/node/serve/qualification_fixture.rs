@@ -1258,7 +1258,7 @@ async fn prepare_items(
             .commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
             .await
             .map_err(|error| format!("qualification Item commit: {error:?}"))?;
-        fixture_item_committed(outcome)?;
+        fixture_item_committed(outcome, quantity)?;
     }
     Ok(())
 }
@@ -1304,13 +1304,14 @@ impl crate::durability::item_loop_move::ItemLoopContent for FixtureItemContent<'
 
 fn fixture_item_committed(
     outcome: crate::durability::reward_claim_mint::RewardClaimMintOutcome,
+    expected_quantity: u32,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::reward_claim_mint::RewardClaimMintOutcome;
     let receipt = match outcome {
         RewardClaimMintOutcome::Committed(receipt)
         | RewardClaimMintOutcome::AlreadyCommitted(receipt) => receipt,
     };
-    if receipt.quantity != 1 {
+    if receipt.quantity != expected_quantity {
         return Err(format!(
             "qualification Item receipt has quantity {}",
             receipt.quantity
@@ -1806,14 +1807,20 @@ mod tests {
             item_instance_id: [3; 16],
             occurred_at_unix_ms: 1,
             envelope_sha256: [4; 32],
-            quantity: 1,
+            quantity: 3,
             destination: crate::durability::item_transfer::ContainerEntryPosition {
                 parent_item_instance_id: [5; 16],
                 placement_ordinal: 0,
             },
         };
-        assert!(fixture_item_committed(RewardClaimMintOutcome::Committed(receipt.clone())).is_ok());
-        assert!(fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(receipt)).is_ok());
+        assert!(
+            fixture_item_committed(RewardClaimMintOutcome::Committed(receipt.clone()), 3).is_ok()
+        );
+        assert!(
+            fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(receipt.clone()), 3)
+                .is_ok()
+        );
+        assert!(fixture_item_committed(RewardClaimMintOutcome::Committed(receipt), 1).is_err());
     }
 
     fn assert_early_warning(reason: EarlyRefusal, expected: &str) {
