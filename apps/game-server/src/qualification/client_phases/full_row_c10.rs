@@ -354,6 +354,20 @@ fn plan_bed(world: &BundleWorld, from: TilePos, exact: Option<NonZeroU32>) -> Te
         if !present.contains(&house) {
             continue;
         }
+        // Exact replay keys often have no placement in the town bundle.
+        // Check for their definition before searching for an entrance route.
+        if exact.is_some_and(|reference| {
+            !facts.house_tiles(house).any(|bed| {
+                world.base().tile(bed.x, bed.y, bed.floor).is_some_and(|stack| {
+                    stack.ids().iter().zip(stack.depths()).filter(|&(_, &depth)| depth == 0)
+                        .enumerate().any(|(ordinal, (&id, _))| u8::try_from(ordinal).ok()
+                            .and_then(|ordinal| facts.base_entry(bed, ordinal, id))
+                            .is_some_and(|entry| entry.definition == MapDefinition::Item(reference)))
+                })
+            })
+        }) {
+            continue;
+        }
         let Some(path) = route(world, from, |at| at == entrance) else { continue };
         if closest.as_ref().is_some_and(|(length, _)| path.len() >= *length) {
             continue;

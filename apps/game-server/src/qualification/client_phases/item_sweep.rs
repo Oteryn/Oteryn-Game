@@ -291,6 +291,15 @@ impl Fixtures<'_> {
     }
 
     async fn seed(&mut self, key: &str, build: Build) -> TestResult<DevClientSession> {
+        self.seed_with_gear(key, build, &[]).await
+    }
+
+    async fn seed_with_gear(
+        &mut self,
+        key: &str,
+        build: Build,
+        gear: &[&str],
+    ) -> TestResult<DevClientSession> {
         let index = build.vocation * 2 + usize::from(build.level == HIGH);
         let scope = self.scopes[index / 2];
         let client = connect_character(scope, 0x71, index % 2).await?;
@@ -298,28 +307,37 @@ impl Fixtures<'_> {
         let script = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../tools/qualification/node_boot/provision.py");
         let socket = self.socket.clone();
-        let key = key.to_owned();
+        let mut keys: Vec<_> = std::iter::once(key)
+            .chain(gear.iter().copied())
+            .map(str::to_owned)
+            .collect();
         let level = if self.prepared[index] { 0 } else { build.level };
         let status = tokio::task::spawn_blocking(move || {
-            crate::qualification::provision_python()
-                .arg(script)
-                .args([
-                    "--socket",
-                    &socket,
-                    "--session",
-                    &session,
-                    "--item",
-                    VOCATIONS[build.vocation],
-                    &level.to_string(),
-                    &key,
-                ])
-                .status()
+            for (index, key) in keys.drain(..).enumerate() {
+                let status = crate::qualification::provision_python()
+                    .arg(&script)
+                    .args([
+                        "--socket",
+                        &socket,
+                        "--session",
+                        &session,
+                        "--item",
+                        VOCATIONS[build.vocation],
+                        &(if index == 0 { level } else { 0 }).to_string(),
+                        &key,
+                    ])
+                    .status()?;
+                if !status.success() {
+                    return Ok::<_, std::io::Error>(false);
+                }
+            }
+            Ok(true)
         })
         .await;
         // Release even after fixture refusal. Dropping an admitted socket instead
         // would park the Character in reconnect grace and block the next item.
         let released = release_fixture(client, scope, index % 2).await;
-        if !status??.success() {
+        if !status?? {
             return Err("fixture-item-preparation-refused".into());
         }
         released?;
@@ -570,6 +588,179 @@ async fn rack(
     }
     rows.emit("cleanup", opened.and(released));
     Ok(())
+}
+
+/// Bind exact fresh corpse definitions to the weakest authored creature that
+/// can produce them. Decayed and alternate forms need a separate transition.
+fn corpse_sources(root: &Path) -> TestResult<BTreeMap<String, String>> {
+    let path = root.join("content/creatures/definitions/spell-native-profiles.json");
+    let source = document(&path)?;
+    let mut candidates = BTreeMap::<String, (u64, String)>::new();
+    for entry in list(&source["records"]) {
+        let row = &entry["profile"];
+        let profile = &row["data"]["profile"];
+        let Some(item) = profile["details"]["corpse_item"]["key"].as_str() else {
+            continue;
+        };
+        let Some(creature) = row["target"]["key"].as_str() else {
+            continue;
+        };
+        let item = item
+            .strip_prefix("canary:item/")
+            .map_or_else(|| item.to_owned(), |id| format!("oteryn:item.tibia.i{id}"));
+        let creature = creature.strip_prefix("canary:creature/").map_or_else(
+            || creature.to_owned(),
+            |name| format!("oteryn:creature.{name}"),
+        );
+        let choice = (profile["health"].as_u64().unwrap_or(u64::MAX), creature);
+        if candidates.get(&item).is_none_or(|old| choice < *old) {
+            candidates.insert(item, choice);
+        }
+    }
+    Ok(candidates
+        .into_iter()
+        .map(|(item, (_, creature))| (item, creature))
+        .collect())
+}
+
+async fn corpse(
+    fixtures: &mut Fixtures<'_>,
+    world: &BundleWorld,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+    creature: &str,
+    reference: NonZeroU32,
+    item: &Item,
+    rows: &mut Rows<'_>,
+) -> TestResult {
+    use oteryn_dev_client::EntityDetail;
+    use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightModes};
+    let sword_key = "oteryn:item.tibia.i3265";
+    let sword = self::reference(index, sword_key)?;
+    let build = Build {
+        vocation: 0,
+        level: HIGH,
+    };
+    let mut client = fixtures.seed(sword_key, build).await?;
+    let (scope, character) = fixtures.fixture(build);
+    let probe = async {
+        let weapon = carried(&client, sword).ok_or("corpse-fixture-sword-missing")?;
+        move_item(
+            &mut client,
+            weapon.handle,
+            Destination::Equipment(EquipmentSlot::RightHand),
+            Move::Moved,
+        )
+        .await?;
+        super::creature_sweep::leave_protection_zone(&mut client, world).await?;
+        let answer = request_spawn(
+            uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+            creature.to_owned(),
+        )
+        .await?;
+        let target = parse_spawned_entity(&answer)?;
+        observe(&mut client, |client| {
+            client.world_entities()?.get(&target).copied()
+        })
+        .await?;
+        let modes = FightModes {
+            chase: ChaseMode::Chase,
+            ..FightModes::DEFAULT
+        };
+        if client
+            .session_mut()
+            .set_fight_modes(&modes)
+            .await?
+            .disposition
+            != AttackIntentDisposition::Ok
+            || client
+                .session_mut()
+                .attack_target(Some(&target))
+                .await?
+                .disposition
+                != AttackIntentDisposition::Ok
+        {
+            return Err("corpse-fixture-attack-refused".into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
+        loop {
+            verdict::Harness::global().progress("item-corpse-fight");
+            client.service_liveness(Duration::from_millis(50)).await?;
+            if client
+                .world_entities()
+                .is_some_and(|entities| entities.get(&target).is_none())
+            {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err("corpse-fixture-kill-deadline".into());
+            }
+        }
+        let death = committed_hunt_death(
+            &mut client,
+            scope,
+            Some(scope.characters[character]),
+            creature,
+            target,
+            tokio::time::Instant::now() + Duration::from_secs(20),
+        )
+        .await?;
+        let identity = death.actor.corpse_identity();
+        let handle = observe(&mut client, |client| {
+            client.world_entities()?.iter().find_map(|entity| {
+                if entity.entity.identity != identity
+                    || entity.kind != oteryn_dev_client::EntityKind::Corpse
+                {
+                    return None;
+                }
+                match entity.detail {
+                    EntityDetail::Object {
+                        item_handle,
+                        item_definition_ref,
+                        ..
+                    }
+                    | EntityDetail::ObjectWithAppearance {
+                        item_handle,
+                        item_definition_ref,
+                        ..
+                    } if item_definition_ref == reference.get() => item_handle,
+                    _ => None,
+                }
+            })
+        })
+        .await?;
+        rows.emit("seed", Ok(()));
+        if rows.pending.contains(&"container") {
+            rows.emit(
+                "container",
+                async {
+                    super::creature_sweep::open_corpse(&mut client, handle).await?;
+                    let capacity = client.session_mut().container_views().and_then(|views| {
+                        views
+                            .views
+                            .iter()
+                            .find(|view| view.container_handle == handle)
+                            .map(|view| u64::from(view.capacity))
+                    });
+                    if capacity != item.capacity() {
+                        return Err(format!(
+                            "corpse-capacity-expected-{:?}-observed-{capacity:?}",
+                            item.capacity()
+                        )
+                        .into());
+                    }
+                    Ok(())
+                }
+                .await,
+            );
+        }
+        Ok(())
+    }
+    .await;
+    let _ = client.session_mut().attack_target(None).await;
+    let cleanup = drop_carried(&mut client, sword).await;
+    let released = release_fixture(client, scope, character).await;
+    rows.emit("cleanup", cleanup.and(released));
+    probe
 }
 
 /// Seed one disposable Ground root using the Channel's current content pin. The
@@ -1145,6 +1336,83 @@ fn food_matches(before: i32, after: i32, seconds: u64, elapsed: Duration) -> boo
         && maximum - observed <= elapsed.as_millis().min(i128::MAX as u128) as i128 + 1000
 }
 
+const AMMO_GEAR: [&str; 3] = [
+    "oteryn:item.tibia.i35562", // Quiver
+    "oteryn:item.tibia.i3350",  // Bow
+    "oteryn:item.tibia.i3349",  // Crossbow
+];
+
+fn ammunition(item: &Item) -> bool {
+    known(&item.group("weapon")["weapon_type"]).as_str() == Some("AMMUNITION")
+}
+
+async fn ammo_attack(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+    entry: ItemEntry,
+) -> TestResult {
+    use oteryn_dev_client::client_runtime::hotkey_equip::equip_definition;
+    use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+    let quiver = reference(index, AMMO_GEAR[0])?;
+    for definition in [quiver, entry.item_definition_ref] {
+        let moved = equip_definition(client.session_mut(), definition).await?;
+        if moved != Move::Moved {
+            return Err(format!("ammo-quiver-move-{definition}-{moved:?}").into());
+        }
+    }
+    let quiver_handle = observe(client, |client| {
+        client
+            .inventory()?
+            .equipment
+            .iter()
+            .find(|worn| worn.item.item_definition_ref == quiver)
+            .map(|worn| worn.item.handle)
+    })
+    .await?;
+    let target = full_e2ef5::wild_rat(client, world, &[]).await?.entity;
+    let quiver_count = |client: &mut DevClientSession| {
+        let views = client.session_mut().container_views()?;
+        let view = views
+            .views
+            .iter()
+            .find(|view| view.container_handle == quiver_handle)?;
+        Some(
+            view.entries
+                .iter()
+                .filter(|ammo| ammo.item_definition_ref == entry.item_definition_ref)
+                .map(|ammo| ammo.count.get())
+                .sum::<u32>(),
+        )
+    };
+    let opened = client.use_item(quiver_handle).await?;
+    if opened.status != CommandStatus::Accepted || opened.disposition != Use::Committed {
+        return Err(format!("ammo-quiver-open-{opened:?}").into());
+    }
+    let count = observe(client, quiver_count).await?;
+    if count == 0 {
+        return Err("ammo-quiver-credit-absent".into());
+    }
+    for launcher in &AMMO_GEAR[1..] {
+        let launcher = reference(index, launcher)?;
+        if equip_definition(client.session_mut(), launcher).await? != Move::Moved {
+            continue;
+        }
+        let attack = client.session_mut().attack_target(Some(&target)).await?;
+        if attack.disposition == AttackIntentDisposition::Ok {
+            let debit = observe(client, |client| {
+                quiver_count(client).filter(|&remaining| remaining < count)
+            })
+            .await;
+            client.session_mut().attack_target(None).await?;
+            if debit.is_ok() {
+                return Ok(());
+            }
+        }
+    }
+    Err("ammo-ranged-attack-did-not-debit-quiver".into())
+}
+
 // RUNE_USE targets come from the native spell book; the generic direct USE
 // cannot exercise a creature or tile rune (rune_use_bridge.rs).
 async fn rune_probe(
@@ -1433,6 +1701,7 @@ async fn sweep_item(
     world: &BundleWorld,
     index: &crate::content::item_ref::ItemDefinitionIndex,
     items: &BTreeMap<String, Item>,
+    corpse_sources: &BTreeMap<String, String>,
     key: &str,
     item: &Item,
     rows: &mut Rows<'_>,
@@ -1467,6 +1736,16 @@ async fn sweep_item(
         rows.blocked("house-custody");
         return;
     }
+    if let Some(creature) = corpse_sources
+        .get(key)
+        .filter(|_| item.ground_only && item.capacity().is_some())
+    {
+        if let Err(error) = corpse(fixtures, world, index, creature, reference, item, rows).await {
+            rows.emit("seed", Err(error));
+        }
+        rows.blocked("corpse-custody");
+        return;
+    }
     if item.ground_only {
         let result = match index.revision(key) {
             Some(revision) => {
@@ -1484,12 +1763,23 @@ async fn sweep_item(
         .patterns()
         .first()
         .unwrap_or_else(|| item.group("use_requirements"));
-    let Some(build) = Build::supported(positive) else {
+    let ammo_gear = ammunition(item) && rows.pending.contains(&"use");
+    let paladin = Build {
+        vocation: 1,
+        level: HIGH,
+    };
+    let build = if ammo_gear && paladin.permits(positive) {
+        Some(paladin)
+    } else {
+        Build::supported(positive)
+    };
+    let Some(build) = build else {
         rows.emit("seed", Err("eligible-build-unavailable".into()));
         rows.blocked("seed");
         return;
     };
-    let mut client = match fixtures.seed(key, build).await {
+    let gear = if ammo_gear { AMMO_GEAR.as_slice() } else { &[] };
+    let mut client = match fixtures.seed_with_gear(key, build, gear).await {
         Ok(client) => client,
         Err(error) => {
             // System errors may contain external transport detail. Report the classified
@@ -1534,7 +1824,7 @@ async fn sweep_item(
             container(&mut client, entry.handle, item.capacity()).await,
         );
     }
-    if !item.patterns().is_empty() {
+    if !item.patterns().is_empty() && !ammo_gear {
         let result = match item.target("EQUIP") {
             Some(key) => items.get(key).ok_or("equip-transform-definition-missing"),
             None => Ok(item),
@@ -1556,14 +1846,27 @@ async fn sweep_item(
             }
         }
     }
-    if item.usable() {
+    if ammo_gear {
+        rows.emit("use", ammo_attack(&mut client, world, index, entry).await);
+        for step in ["equip", "attributes", "unequip", "attributes_removed"] {
+            if rows.pending.contains(&step) {
+                rows.emit(step, Err("ammo-quiver-equipment-oracle-unavailable".into()));
+            }
+        }
+    } else if item.usable() {
         let result = match carried(&client, reference) {
             Some(entry) => use_effect(&mut client, world, entry, item, index).await,
             None => Err("use-blocked-by-item-custody".into()),
         };
         rows.emit("use", result);
     }
-    let cleanup = drop_carried(&mut client, reference).await;
+    let mut cleanup = drop_carried(&mut client, reference).await;
+    for key in gear {
+        match self::reference(index, key) {
+            Ok(definition) => cleanup = cleanup.and(drop_carried(&mut client, definition).await),
+            Err(error) => cleanup = cleanup.and(Err(error)),
+        }
+    }
     let (scope, index) = fixtures.fixture(build);
     let release = release_fixture(client, scope, index).await;
     rows.emit("cleanup", cleanup.and(release));
@@ -1589,7 +1892,7 @@ fn steps(item: &Item) -> Vec<&'static str> {
     if !item.patterns().is_empty() {
         steps.extend(["equip", "attributes", "unequip", "attributes_removed"]);
     }
-    if item.usable() {
+    if item.usable() || ammunition(item) {
         steps.push("use");
     }
     steps.push("cleanup");
@@ -1615,6 +1918,7 @@ pub(super) async fn run<'a>(scopes: [&'a SeamClients<'a>; 5], world: &BundleWorl
     }?;
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let items = census(&root)?;
+    let corpse_sources = corpse_sources(&root)?;
     let mut requested = match std::env::var_os("OTERYN_E2E_ITEM_SWEEP_KEYS") {
         Some(path) => Some(
             std::fs::read_to_string(path)?
@@ -1677,12 +1981,13 @@ pub(super) async fn run<'a>(scopes: [&'a SeamClients<'a>; 5], world: &BundleWorl
         .fetch_one(&mut cleanup_db)
         .await?;
         let result = tokio::time::timeout(
-            Duration::from_secs(1200),
+            Duration::from_secs(if seed_only { 240 } else { 1200 }),
             Box::pin(sweep_item(
                 &mut fixtures,
                 world,
                 &index,
                 &items,
+                &corpse_sources,
                 key,
                 item,
                 &mut rows,
