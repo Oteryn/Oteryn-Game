@@ -15,10 +15,10 @@ use crate::content::world_reward_claims::{
     BindingReport, BoundPlacement, bind_embedded_reward_claims,
 };
 use crate::map::view::MapFacts;
-use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::daily_reward::{
     DailyRewardCommand, DailyRewardReply, decode_reply,
 };
+use oteryn_dev_client::{DevClientSession, UseOutcome};
 use oteryn_protocol_oteryn::daily_reward::{self as daily, DailyRewardWall};
 use oteryn_protocol_oteryn::item_look as look;
 use oteryn_protocol_oteryn::world_map::MapDefinition;
@@ -274,7 +274,7 @@ impl Placement {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum MapAction {
     Door,
     Ladder,
@@ -723,13 +723,16 @@ async fn use_map_action(
     }
     let mut target = placement.target(world);
     target.expected_revision = revision;
-    let disposition = if let Some(tool) = tool {
-        tool_use(client, tool, target).await?
+    let (disposition, gate_message) = if let Some(tool) = tool {
+        (tool_use(client, tool, target).await?, None)
     } else {
-        use_target(client, &target).await?
+        let reply = use_target(client, &target).await?;
+        (reply.disposition, reply.gate_message_id)
     };
     if disposition != UseDisposition::Committed {
-        return Err(format!("map-use-refused: {disposition:?}").into());
+        return Err(
+            format!("map-use-refused: {action:?} {disposition:?} gate={gate_message:?}").into(),
+        );
     }
     Ok(())
 }
@@ -1232,12 +1235,11 @@ fn exact_reward(before: &Quantities, after: &Quantities, reward: &Quantities) ->
 async fn use_target(
     client: &mut DevClientSession,
     target: &WorldObjectTarget,
-) -> TestResult<UseDisposition> {
+) -> TestResult<UseOutcome> {
     Ok(client
         .session_mut()
         .use_object(&target.placement, target.expected_revision)
-        .await?
-        .disposition)
+        .await?)
 }
 
 async fn chest(
@@ -1277,7 +1279,7 @@ async fn chest(
         .iter()
         .map(|item| item.handle)
         .collect();
-    let result = use_target(client, &target).await?;
+    let result = use_target(client, &target).await?.disposition;
     if result != UseDisposition::Committed {
         return Err(format!("use-refused: {result:?}").into());
     }
@@ -1315,7 +1317,7 @@ async fn chest(
         check_reward_container(client, items, placement, &before_handles).await?;
     }
     rows.pass("exact-authored-inventory-delta");
-    let result = use_target(client, &target).await?;
+    let result = use_target(client, &target).await?.disposition;
     if result != UseDisposition::NothingToUse || inventory(client)? != awarded {
         return Err(
             format!("once-claim-mismatch: repeat USE={result:?} or inventory changed").into(),
@@ -1721,7 +1723,7 @@ pub(super) async fn run(
                 }
                 Entry::NestedMapDocument => Err("nested-document-harness-unavailable: requires acquiring authored container custody".into()),
                 Entry::Interaction(placement, action) => {
-                    rows.pass("authored-action-placement");
+                    rows.pass(&format!("authored-action-placement: {action:?}"));
                     map_action(&mut client, clients, &mut rows, &routes, *placement, *action).await
                 }
                 Entry::Claim => {
