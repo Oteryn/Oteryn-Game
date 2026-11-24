@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 import unittest
-from unittest.mock import patch
+from unittest.mock import DEFAULT, patch
 
 import regenerate_content as regeneration
 
@@ -46,9 +46,8 @@ class MonsterReferenceLevelTests(unittest.TestCase):
 
     def test_creature_roundtrip_requires_the_explicit_default(self):
         import copy
-        import validate_world_project_v2_to_tree as validation
         from primal_reference_overlay import apply_reference
-
+        import validate_world_project_v2_to_tree as validation
         reference = json.loads((ROOT / "content/world/definitions/reference.json").read_text())
         apply_reference(reference["records"], ROOT)
         declarations = json.loads((ROOT / "content/world/definitions/declarations.json").read_text())
@@ -69,19 +68,23 @@ class MonsterReferenceLevelTests(unittest.TestCase):
 
     def test_resolve_no_stage_never_mutates_git_index(self):
         commands = []
+        # Record orchestration without executing any generators in this checkout.
         with (
             patch("sys.argv", ["regenerate_content.py", "--resolve", "--skip-checks", "--no-stage"]),
             patch.object(regeneration, "resolve_conflicts", return_value=[]),
-            patch.object(regeneration, "refresh_quest_callback_proof"),
-            patch.object(regeneration, "materialize_world"),
+            patch.multiple(
+                regeneration,
+                refresh_quest_callback_proof=DEFAULT,
+                materialize_world=DEFAULT,
+                canonicalize_world=DEFAULT,
+                refresh_source_cohort_extent=DEFAULT,
+                repin_rust_inventory=DEFAULT,
+                refresh_world_metadata=DEFAULT,
+                refresh_quest_donor_capture=DEFAULT,
+            ),
             patch("questpc7_thaian_authoring.install"),
             patch("buddel_travel.install_buddel"),
             patch("travel_route_corrections.project_routes"),
-            patch.object(regeneration, "canonicalize_world"),
-            patch.object(regeneration, "refresh_source_cohort_extent"),
-            patch.object(regeneration, "repin_rust_inventory"),
-            patch.object(regeneration, "refresh_world_metadata"),
-            patch.object(regeneration, "refresh_quest_donor_capture"),
             patch.object(regeneration, "derived_paths", return_value=set()),
             patch.object(regeneration, "git", return_value=""),
             patch.object(regeneration, "run", side_effect=commands.append),

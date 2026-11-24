@@ -16,4 +16,4 @@ class ExistingElderReferenceTests(unittest.TestCase):
         terminal.extend_records(records,ROOT)
         self.assertEqual([i for i,r in enumerate(records) if r['identity']['key']==terminal.KEY],[25377])
         self.assertEqual(records[25377],original,'all original UNKNOWN reference fields stay unchanged')
-        self.assertEqual(len(records),34123)
+        self.assertEqual(len(records), 34_123)

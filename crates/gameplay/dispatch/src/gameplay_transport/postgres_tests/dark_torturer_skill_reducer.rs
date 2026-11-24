@@ -7,6 +7,7 @@ use crate::foundation::{
     MovementLocalPosition, RuntimeWorkStamp, WorldId,
 };
 use crate::gameplay_transport::actor_spell::tests::FACTS;
+use crate::gameplay_transport::monster_profile_cycle::with_native_ai_seed;
 use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_simulation_determinism::SemanticTimeMicros;
@@ -15,6 +16,8 @@ use std::time::{Duration, Instant};
 const CREATURE: &str = "oteryn:creature.dark_torturer";
 const ABILITY: &str = "oteryn:ability.spell.dark_torturer_skill_reducer";
 const DURATION_US: u64 = 4_000_000;
+// Select the source 5% cone on the fixture caster's first eligible attack think.
+const CONE_SEED: [u8; 32] = [62; 32];
 
 #[test]
 fn dark_torturer_cone_applies_one_defence_roll_per_cast() -> TestResult {
@@ -173,7 +176,7 @@ async fn scenario(harness: &Harness, replay: bool) -> TestResult {
 
     for tick in 0..128 {
         let now = SemanticTimeMicros::from_micros(now.get() + tick * 1_000_000);
-        owner.drain_monster_melee_at(now).await;
+        with_native_ai_seed(CONE_SEED, owner.drain_monster_melee_at(now)).await;
         let mut runtime = owner.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
         let Some(proposal) = states

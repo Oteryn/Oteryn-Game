@@ -124,23 +124,21 @@ class TreasureRewardTests(unittest.TestCase):
 
         import build_questpc4_treasure_reward_profiles as producer
         import refresh_equipment_profile_pin as cli
-        cohort = '    ("QUESTPC4-TREASURE-REWARDS", 5),\n'
-        source = cli.TEST.read_text()
-        self.assertEqual(source.count(cohort), 1)
-        source = source.replace(cohort, "")
-        files = (
-            "tools/content-schema/native-gameplay/key-door-item-profiles.json",
-            producer.PROOF,
-            "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json",
-        )
+        from key_door_item_profiles import PATH as KEY_DOOR_PROOF
+        from qengine_reward_item_profiles import PROOF as QENGINE_PROOF
+
+        published = cli.TEST.read_text()
+        cohort = f'    ("QUESTPC4-TREASURE-REWARDS", {len(scoped.IDS)}),\n'
+        self.assertEqual(published.count(cohort), 1)
+        source = published.replace(cohort, "")
         with tempfile.TemporaryDirectory() as tmp:
             root = fixtures.ROOT.__class__(tmp)
             target = root / "pin.rs"
             target.write_text(source)
-            for name in files:
+            for name in (KEY_DOOR_PROOF, producer.PROOF, QENGINE_PROOF):
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes((cli.ROOT / name).read_bytes())
+                path.write_bytes((fixtures.ROOT / name).read_bytes())
             with (
                 patch.object(cli, "ROOT", root),
                 patch.object(cli, "TEST", target),

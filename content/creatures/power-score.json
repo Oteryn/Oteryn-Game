@@ -462,7 +462,7 @@
       "attack_count_differs_from_donor": {
         "damage": 9,
         "non_damage": 3,
-        "unreferenced": 12
+        "unreferenced": 20
       },
       "conflicting_creature_bindings": {
         "damage": 33
@@ -475,8 +475,9 @@
         "non_damage": 44
       },
       "no_unique_donor_bundle": {
-        "damage": 245,
-        "non_damage": 27
+        "damage": 254,
+        "non_damage": 29,
+        "unreferenced": 10
       },
       "source_provenance_ambiguous": {
         "damage": 4
@@ -572,11 +573,11 @@
     "observations": 1500,
     "source": "content/world/areas/hunting-places (pinned TibiaWiki reference)",
     "unavailable_import_attacks_by_reason": {
-      "attack_count_differs_from_donor": 24,
+      "attack_count_differs_from_donor": 32,
       "conflicting_creature_bindings": 33,
       "donor_ability_has_no_effects": 36,
       "donor_health_conflict": 314,
-      "no_unique_donor_bundle": 272,
+      "no_unique_donor_bundle": 293,
       "source_provenance_ambiguous": 4
     },
     "unidentifiable_constants": [

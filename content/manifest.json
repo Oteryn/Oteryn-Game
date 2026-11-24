@@ -634,12 +634,6 @@
       "path": "content/items/readable-profiles.json"
     },
     {
-      "path": "content/items/relations/items.json"
-    },
-    {
-      "path": "content/items/taxonomy/items.json"
-    },
-    {
       "path": "content/items/writable-profiles.json"
     },
     {
@@ -871,6 +865,9 @@
       "path": "tools/content-schema/native-gameplay/engnpc2-slug-corpse-profiles.json"
     },
     {
+      "path": "tools/content-schema/native-gameplay/galthen-global-item-details.json"
+    },
+    {
       "path": "tools/content-schema/native-gameplay/item-detail-weight-facts.json"
     },
     {
@@ -990,7 +987,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "f2bc8e4231a2e887514379b92a9cee1ad43bd1627dd6422cf01c8adc46fd6e3c"
+          "sha256": "8f088b6f17c2237fe443a18b5a462c1eb071066e808e9c76aef56ca868d65691"
         },
         {
           "creates_canonical_identities": false,
@@ -1069,7 +1066,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "2286133c39e444b11438ccbcdb9e38d91584938fb6aab0ee129112fccef639bf"
+          "sha256": "9688e5e829291cc29961726c8327ee39b21aa8b786b92d42c62e12e22aa0dfc2"
         },
         {
           "creates_canonical_identities": false,

@@ -5,63 +5,89 @@ use sqlx::PgConnection;
 
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-/// Match the stub case and the native item-transfer harness database names.
-fn is_house_case_database(database: &str, harness_only: bool) -> bool {
-    let Some((stem, nanos)) = database.rsplit_once('_') else {
-        return false;
-    };
-    if !nanos
-        .parse::<u128>()
-        .is_ok_and(|number| nanos == number.to_string())
-    {
-        return false;
-    }
-    let harness_tag = |prefix: &str| {
-        stem.strip_prefix(prefix).is_some_and(|suffix| {
-            !suffix.is_empty()
-                && suffix
-                    .bytes()
-                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
-        })
-    };
-    (!harness_only && stem == "house_interior")
-        || harness_tag("it_house_interior_")
-        || harness_tag("it_house_loader_")
-}
-
-/// A House case's own database as the canonical test admin on PostgreSQL 18.6.
+/// A House case's own database, as the canonical test admin on 18.6.
 async fn dedicated_database(connection: &mut PgConnection, harness_only: bool) -> TestResult<bool> {
-    let (database, actor, version): (String, String, String) = sqlx::query_as(
-        "SELECT current_database(), session_user::text, current_setting('server_version_num')",
+    let (database, actor, version, is_template): (String, String, String, bool) = sqlx::query_as(
+        "SELECT current_database(), session_user::text, current_setting('server_version_num'),
+                datistemplate FROM pg_catalog.pg_database WHERE datname = current_database()",
     )
     .fetch_one(&mut *connection)
     .await?;
-    Ok(is_house_case_database(&database, harness_only)
+    Ok(!is_template
+        && dedicated_house_name(&database, harness_only)
         && actor == "oteryn_test_admin"
         && version == oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM)
 }
 
-#[test]
-fn house_fixture_only_accepts_its_own_case_databases() {
-    let stub = "house_interior_1795478400000000000";
-    assert!(is_house_case_database(stub, false));
-    assert!(!is_house_case_database(stub, true));
-    for name in [
-        "it_house_interior_capacity_1795478400000000000",
-        "it_house_loader_current_1795478400000000000",
-    ] {
-        assert!(is_house_case_database(name, true));
-    }
+fn dedicated_house_name(database: &str, harness_only: bool) -> bool {
+    let tag = if let Some(case) = database.strip_prefix("oteryn_case_") {
+        // The migrated-template helper uses the creating process and its hex sequence.
+        let Some((process, rest)) = case.split_once('_') else {
+            return false;
+        };
+        let Some((sequence, tag)) = rest.split_once('_') else {
+            return false;
+        };
+        if process != format!("{:x}", std::process::id())
+            || !u64::from_str_radix(sequence, 16)
+                .is_ok_and(|value| format!("{value:x}") == sequence)
+        {
+            return false;
+        }
+        tag
+    } else {
+        // Freshly migrated cases keep the original tag and decimal timestamp format.
+        let Some((tag, nanos)) = database.rsplit_once('_') else {
+            return false;
+        };
+        if !nanos
+            .parse::<u128>()
+            .is_ok_and(|number| nanos == number.to_string())
+        {
+            return false;
+        }
+        tag
+    };
+    let harness_tag = |prefix: &str| {
+        tag.strip_prefix(prefix).is_some_and(|tag| {
+            !tag.is_empty()
+                && tag
+                    .bytes()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+        })
+    };
+    (!harness_only && tag == "house_interior")
+        || harness_tag("it_house_interior_")
+        || harness_tag("it_house_loader_")
+}
 
+#[test]
+fn house_fixture_requires_owned_house_case_names() {
+    let process = std::process::id();
+    let case = |tag: &str| format!("oteryn_case_{process:x}_0_{tag}");
+    for stub in [case("house_interior"), "house_interior_123".to_owned()] {
+        assert!(dedicated_house_name(&stub, false));
+        assert!(!dedicated_house_name(&stub, true));
+    }
+    for tag in ["it_house_interior_f28", "it_house_loader_current"] {
+        assert!(dedicated_house_name(&case(tag), true));
+        assert!(dedicated_house_name(&format!("{tag}_123"), true));
+    }
     for name in [
-        "postgres",
-        "oteryn_tpl_1234567890abcdef",
-        "it_ordinary_transfer_1795478400000000000",
-        "it_house_interior__1795478400000000000",
-        "it_house_loader_current_not_decimal",
-        "it_house_loader_current_+1795478400000000000",
+        "postgres".to_owned(),
+        "oteryn_tpl_0123456789abcdef".to_owned(),
+        case("it_item_transfer"),
+        "it_ordinary_transfer_1795478400000000000".to_owned(),
+        "it_house_interior__1795478400000000000".to_owned(),
+        "it_house_loader_current_not_decimal".to_owned(),
+        "it_house_loader_current_+1795478400000000000".to_owned(),
+        "house_interior_0123".to_owned(),
+        case("it_house_loader_"),
+        format!("oteryn_case_{:x}_0_it_house_interior_f28", process ^ 1),
+        format!("oteryn_case_{process:x}_+1_it_house_interior_f28"),
+        format!("oteryn_case_{process:x}_01_it_house_interior_f28"),
     ] {
-        assert!(!is_house_case_database(name, false), "{name}");
+        assert!(!dedicated_house_name(&name, false), "{name}");
     }
 }
 

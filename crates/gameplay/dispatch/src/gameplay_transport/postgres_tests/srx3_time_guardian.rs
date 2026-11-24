@@ -9,7 +9,11 @@ use super::srx3_native_source_cast_fixtures::{
 use super::{Dependencies, TestResult, reset};
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::foundation::MovementLocalPosition;
+use crate::gameplay_transport::monster_profile_cycle::with_native_ai_seed;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+
+// The base actor's first due defense draw selects time_guardian, not time_guardiann.
+const DEFENSE_SEED: [u8; 32] = [3; 32];
 
 const ARENA: MovementLocalPosition = MovementLocalPosition {
     x: 32977,
@@ -113,7 +117,8 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
             let time_limit =
                 now + 128 * 2 * crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000;
             while now < time_limit {
-                selected = settle_monster_melee_at_until(&owner, now, async || {
+                // Replay native defense draws independently of unrelated Item profile updates.
+                let turn = settle_monster_melee_at_until(&owner, now, async || {
                     assert!(
                         owner.runtime.lock().await.contains_live_creature(base),
                         "source base remains a live distinct actor"
@@ -131,8 +136,8 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
                                 proposal.ability.key == "oteryn:ability.spell.time_guardian"
                             })
                         })
-                })
-                .await?;
+                });
+                selected = with_native_ai_seed(DEFENSE_SEED, turn).await?;
                 if selected {
                     break;
                 }
@@ -140,7 +145,15 @@ fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgr
             }
             assert!(
                 selected,
-                "actual native defense schedule selects source time guardian"
+                "actual native defense schedule selects source time guardian, last think: {:?}",
+                owner
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .monster_melee
+                    .creature_ai
+                    .last_report_for_test(base)
             );
             {
                 let runtime = owner.runtime.lock().await;

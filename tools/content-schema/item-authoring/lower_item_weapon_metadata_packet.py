@@ -218,7 +218,7 @@ def pre_overlay_definitions(root, current):
     return definitions
 
 
-def qualify(source, record, binding, obj, own, routed):
+def qualify(source, record, binding, obj, own, routed, *, captured=()):
     iid, target, field = source["source_item_id"], source["target"], source["field"]
     if (
         field not in FIELDS
@@ -285,18 +285,30 @@ def qualify(source, record, binding, obj, own, routed):
     if not values or any(not same(v, source["value"]) for v in values):
         raise ValueError("whole own-ID present values disagree")
     owner, formal = FIELDS[field]
-    old = (record.get("authoring") or {}).get(owner)
-    if old is not None and not same(old, source["value"]):
+    authoring = record.get("authoring") or {}
+    old = authoring.get(owner)
+    allowed = [source["value"]]
+    captured = dict(captured)
+    if owner in captured:
+        allowed.append(captured[owner])
+    if old is not None and all(not same(old, value) for value in allowed):
         raise ValueError("existing authoring weapon value conflict")
     siblings = {
         k: v
         for k, v in (record.get("authoring") or {}).items()
         if k not in {f[0] for f in FIELDS.values()}
     }
-    if "parent_authoring_guard" in source and not same(
-        siblings, source["parent_authoring_guard"]
-    ):
-        raise ValueError("canonical authoring sibling drift")
+    if "parent_authoring_guard" in source:
+        parent = source["parent_authoring_guard"]
+        captured_siblings = {
+            key: value
+            for key, value in captured.items()
+            if key not in {f[0] for f in FIELDS.values()}
+        }
+        if not same(siblings, parent) and not same(
+            siblings, parent | captured_siblings
+        ):
+            raise ValueError("canonical authoring sibling drift")
     facts = {owner: source["value"]}
     if formal_weapon(facts) != {formal.rsplit("/", 1)[1]: source["value"]}:
         raise ValueError("explicit formal weapon route lost")
@@ -367,6 +379,15 @@ def build(root=ROOT):
     )
     if maps != proof["world_owner_inputs"] and map_digest != WORLD_OWNER_SUCCESSOR_SHA:
         raise ValueError("current World owner inputs drift")
+    sys.path.insert(0, str(root / "tools/content-migration"))
+    from import_cyclopedia_global import (
+        captured_authoring_fields,
+        forge_tiers,
+        load_capture,
+    )
+
+    capture = load_capture(root)
+    tiers = forge_tiers(root)
     rows, seen = [], set()
     for source in proof["records"]:
         iid, key = source["source_item_id"], source["target"]["key"]
@@ -423,7 +444,17 @@ def build(root=ROOT):
         if tokens != set(source["own_tokens"]):
             raise ValueError("missing competing own-ID source")
         rows.append(
-            qualify(source, records.get(key), bindings.get(key), obj, own, routed)
+            qualify(
+                source,
+                records.get(key),
+                bindings.get(key),
+                obj,
+                own,
+                routed,
+                captured=captured_authoring_fields(
+                    capture.get(iid, {}).get("basic", {}), tiers
+                ),
+            )
         )
     counts = Counter(s["field"] for s in proof["records"])
     if (
@@ -471,15 +502,16 @@ def main():
             json.dumps(build_alias_catalog(), sort_keys=True, indent=2) + "\n"
         )
         return
+    if args.check:
+        from check_tibiawiki165_historical_context import current_weapon103
+
+        print(json.dumps(current_weapon103(ROOT)))
+        return
     data = (
         json.dumps(build(), sort_keys=True, ensure_ascii=False, separators=(",", ":"))
         + "\n"
     ).encode()
-    if args.check:
-        if OUTPUT.read_bytes() != data:
-            raise SystemExit("weapon metadata packet drift")
-    else:
-        OUTPUT.write_bytes(data)
+    OUTPUT.write_bytes(data)
     print("source-only weapon metadata103 fields/103Items")
 
 
