@@ -448,13 +448,12 @@ impl BundleFacts {
         })
     }
 
-    /// Whether palette entry `index` blocks a tile: a `wall`, explicitly unwalkable
-    /// Terrain layer or a solid Item. An index
+    /// Whether palette entry `index` has blocking collision facts. An index
     /// outside the palette blocks.
     pub fn blocks(&self, index: u32) -> bool {
         self.palette
             .get(index as usize)
-            .is_none_or(|entry| entry.facts.terrain_kind == Some(TerrainKind::Wall) || entry.solid)
+            .is_none_or(|entry| entry.solid)
     }
 
     /// Collision of a transformed entry whose exact definition and appearance
@@ -1127,13 +1126,10 @@ const UNWALKABLE_BORDERS: &[u16] = &[
     38734, 38735,
 ];
 
-/// Whether the bundle routes the Item entry to a Terrain record that does not block by itself:
-/// the compiler routes the World's grounds and borders to Item keys whose production definitions
-/// leave them without a solidity fact. A `ground` never blocks by itself (the base tile's ground
-/// already decides whether the cell can be walked on); a `border` only when the terrain
-/// catalogue proves it walkable (`UNWALKABLE_BORDERS`), so an unwalkable or unknown border, a
-/// wall, any other Terrain kind and every other Item without the fact still block.
-fn terrain_floor(entry: &PaletteEntry) -> bool {
+/// Whether the Item's routed Terrain facts allow passage when Item solidity is absent.
+/// The base tile's ground already decides whether it can be walked on. A border
+/// needs a walkable catalogue entry, and a wall needs an explicit walkable fact.
+fn terrain_allows_item_passage(entry: &PaletteEntry) -> bool {
     let Some(terrain) = entry.terrain.as_ref() else {
         return false;
     };
@@ -1144,6 +1140,7 @@ fn terrain_floor(entry: &PaletteEntry) -> bool {
                 && palette_appearance(&entry.key)
                     .is_some_and(|id| UNWALKABLE_BORDERS.binary_search(&id).is_err())
         }
+        TerrainKind::Wall => terrain.walkable == Some(true),
         _ => false,
     }
 }
@@ -1176,6 +1173,9 @@ fn palette_facts(
     };
     // Crystal 201189f src/items/items.cpp:233 applies unpass to every layer,
     // including Soulpit's non-wall static decorations and blocked ground.
+    let wall_blocks = entry
+        .terrain
+        .is_some_and(|terrain| terrain.kind == TerrainKind::Wall && terrain.walkable != Some(true));
     let mut solid = entry
         .terrain
         .as_ref()
@@ -1221,9 +1221,9 @@ fn palette_facts(
                         .is_some_and(|terrain| terrain.kind == TerrainKind::Wall),
             );
         facts.pickupable = definition.pickupable;
-        solid = definition
-            .solid
-            .unwrap_or_else(|| !walkable_floor_change(&entry.key) && !terrain_floor(entry));
+        solid = definition.solid.unwrap_or_else(|| {
+            !walkable_floor_change(&entry.key) && !terrain_allows_item_passage(entry)
+        });
         door = palette_door(&entry.key, item);
     }
     Ok(PaletteFacts {
@@ -1231,7 +1231,7 @@ fn palette_facts(
         family: entry.family,
         id: entry.id,
         facts,
-        solid,
+        solid: solid || wall_blocks,
         door,
     })
 }
@@ -2090,6 +2090,51 @@ mod tests {
             );
         }
         assert!(facts("oteryn:item.tibia.i4408", None, None), "plain item");
+    }
+
+    #[test]
+    fn a_walkable_wall_layer_does_not_block_an_authored_transition() {
+        for (key, family) in [
+            ("oteryn:item.tibia.i11553", Family::Item),
+            ("oteryn:terrain.tibia.i11553", Family::Terrain),
+        ] {
+            let mut facts = BundleFacts::default();
+            for (walkable, solid) in [
+                (Some(true), None),
+                (Some(false), None),
+                (None, None),
+                (Some(true), Some(true)),
+            ] {
+                let entry = PaletteEntry {
+                    key: key.into(),
+                    family,
+                    id: 0,
+                    terrain: Some(oteryn_world_bundle::bundle::Terrain {
+                        kind: TerrainKind::Wall,
+                        walkable,
+                        ground_speed: None,
+                        blocks_projectile: None,
+                    }),
+                };
+                let entry = palette_facts(&entry, &|_| {
+                    Some(ItemDefinition {
+                        reference: NonZeroU32::MIN,
+                        solid,
+                        blocks_projectile: false,
+                        pickupable: false,
+                        door: false,
+                    })
+                })
+                .expect("qualified wall layer");
+                facts.palette.push(entry);
+            }
+            assert!(!facts.blocks(0), "{key}");
+            assert!(facts.blocks(1), "{key}");
+            assert!(facts.blocks(2), "{key}");
+            if family == Family::Item {
+                assert!(facts.blocks(3), "{key}");
+            }
+        }
     }
 
     /// The unwalkable-border list equals the terrain catalogue's `border` records whose
