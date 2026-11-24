@@ -4,7 +4,6 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
-import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -323,13 +322,10 @@ class LootTablesTests(unittest.TestCase):
 
     def test_checked_in_section_is_generated_from_the_production_profiles(self):
         _, creatures = full.read(full.CREATURE_PROFILES)
-        sys.path.insert(0, str(full.ROOT / 'tools/content-migration'))
-        import register_spell_families
-
-        # Use the final registration, which applies the pinned quest loot
-        # refinements after building the base loot tables.
-        loot_path = full.LOOT_TABLES.relative_to(full.ROOT).as_posix()
-        raw = register_spell_families.outputs()[loot_path]
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'loot-tables.json'
+            full.refresh_loot_tables(output)
+            raw = output.read_bytes()
         self.assertEqual(raw, full.LOOT_TABLES.read_bytes())
         self.assertLessEqual(len(raw), full.LIMITS['loot_tables'])
         document = json.loads(raw)

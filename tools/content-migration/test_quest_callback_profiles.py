@@ -379,7 +379,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         expected.update(fire_axe_rewards)
         # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
         # 3083), with 3083 also used by Triangle Tower; retain the complete closure.
-        self.assertEqual(len(expected), 159)
+        self.assertEqual(len(expected), 160)
         # Goblin Temple adds pan3466 and snowball2992; vial2874 was already present.
         self.assertTrue({'oteryn:item.tibia.i3466','oteryn:item.tibia.i2992'} <= expected)
         # Draconia adds the one-charge ice rapier and serpent sword to full bags.

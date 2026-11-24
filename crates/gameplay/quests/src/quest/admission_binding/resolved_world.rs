@@ -1,6 +1,10 @@
 //! Extend admission with an immutable resolved World source, preserving published owners.
 use super::*;
 
+// Caller-supplied sets keep the original bound. The catalogue's immutable
+// composition has its own bound for the published cohorts.
+const MAX_RESOLVED_CALLBACKS: usize = 1024;
+
 pub fn validate_resolved_world(
     catalogue: &super::super::QuestStateCatalogue,
     transition: &QuestTransition,
@@ -12,7 +16,7 @@ pub fn validate_resolved_world(
     // The catalogue's immutable composition already passed both bounds and closure.
     let composed = catalogue.authored_world_callbacks();
     if !composed.is_some_and(|registered| std::ptr::eq(registered, callbacks))
-        && (callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS
+        && (callbacks.len() > MAX_RESOLVED_CALLBACKS
             || callbacks
                 .iter()
                 .map(|callback| &callback.key)
@@ -125,11 +129,13 @@ mod tests {
             callbacks.len(),
             base.len() + bindings.world_callbacks().count()
         );
-        assert!(callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS);
+        assert!(callbacks.len() > MAX_RESOLVED_CALLBACKS);
         // The restored Twenty Miles routes remain part of the published set.
         assert_eq!(
             base.iter()
-                .filter(|callback| callback.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest")
+                .filter(
+                    |callback| callback.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest"
+                )
                 .count(),
             44 + 30
         );
@@ -175,7 +181,7 @@ mod tests {
             validate_resolved_world(catalogue, transition, false, &additional),
             Err("resolved World source bounds".into())
         );
-        let oversized = vec![callback.clone(); world_callbacks::MAX_RUNTIME_CALLBACKS + 1];
+        let oversized = vec![callback.clone(); MAX_RESOLVED_CALLBACKS + 1];
         assert_eq!(
             validate_resolved_world(catalogue, transition, false, &oversized),
             Err("resolved World source bounds".into())

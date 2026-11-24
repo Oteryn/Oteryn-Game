@@ -238,12 +238,10 @@ mod tests {
         let reset = catalogue
             .transition("oteryn:quest-transition/classic/rottin-wood/start-disrepair")
             .ok_or("wall counter reset")?;
+        let resolved = super::super::world_callbacks::load_for(catalogue)?;
         let validate = |transition| {
             super::super::admission_binding::validate_resolved_world(
-                catalogue,
-                transition,
-                false,
-                &registered,
+                catalogue, transition, false, &resolved,
             )
         };
         validate(reset)?;

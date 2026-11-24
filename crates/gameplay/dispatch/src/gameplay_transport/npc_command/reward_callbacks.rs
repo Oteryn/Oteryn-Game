@@ -331,7 +331,7 @@ pub(super) fn prepare(
                     && matching.next().is_none()
                     && let Some(terminal) = [callback, other].into_iter().find(|c| c.completes)
                 {
-                    return refusal(&terminal.failure_reply);
+                    return refusal(&terminal.failure_reply, None);
                 }
                 return None;
             }

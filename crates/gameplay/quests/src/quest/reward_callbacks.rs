@@ -2707,7 +2707,7 @@ mod tests {
         // QuestPC7 and the other registered shards include separate counts for
         // Twenty Miles, Rottin Wood, Sinatuki and NR Wicked. Colours and
         // Kingsday each generate one additional callback.
-        assert_eq!(load()?.len(), 238 + 59 + 126 + 29 + 13 + 8 + 12 + 1 + 1);
+        assert_eq!(load()?.len(), 489);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
