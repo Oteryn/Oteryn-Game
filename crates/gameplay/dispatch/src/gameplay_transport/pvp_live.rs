@@ -249,7 +249,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             modes,
         )
         .await
-        .is_some()
+        .is_ok_and(|result| result.is_some())
     }
 
     /// A source-fenced transaction is also used for target selection: no receipt or damage there.
@@ -265,13 +265,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: ExactActorRef,
         command: CommandRef,
         modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
-    ) -> Option<bool> {
-        let Ok(Some(fence)) = self.current_quest_fence(command.game_session_id()).await else {
-            return None;
+    ) -> Result<Option<bool>, DurabilityError> {
+        let Some(fence) = self
+            .current_quest_fence_durable(command.game_session_id())
+            .await?
+        else {
+            return Ok(None);
         };
-        let Ok(pass) = self.root.try_issue_semantic_pass() else {
-            return None;
-        };
+        let pass = self.root.try_issue_semantic_pass()?;
         let mut context = (self, runtime, states, objects);
         pass.run_with_context(&mut context, move |holder, deadline, ctx| {
             Box::pin(async move {
@@ -301,8 +302,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
         })
         .await
-        .ok()
-        .flatten()
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -318,32 +317,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
         expected_black: bool,
         damage: crate::spell::cast::PreparedWheelAttackHit,
-    ) -> bool {
+    ) -> Result<bool, DurabilityError> {
         let Some(effect) = batch.effects.first() else {
-            return false;
+            return Ok(false);
         };
         let target = effect.target;
         let Some((_, target_session, _)) = states.actors.iter().find(|(a, _, _)| *a == target)
         else {
-            return false;
+            return Ok(false);
         };
         let Ok(lease) = runtime.bound_attacker_lease(target, *target_session) else {
-            return false;
+            return Ok(false);
         };
+        // A busy holder happens before there is a physical reservation or an unresolved write.
+        // Leave the target held so its next due swing can ask again.
+        #[cfg(test)]
+        if faults::take(faults::Point::SwingHolderBusy) {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        let Some(fence) = self
+            .current_quest_fence_durable(batch.command.game_session_id())
+            .await?
+        else {
+            return Ok(false);
+        };
+        let pass = self.root.try_issue_semantic_pass()?;
         let target_character = *lease.character_id().as_bytes();
-        let Ok(mut physical) = runtime.stage_spell_batch(&batch) else {
-            return false;
+        let effect_ordinal = effect.sub_ordinal;
+        let Ok(mut physical) = runtime.stage_pvp_swing_batch(&batch, ordinal) else {
+            return Ok(false);
         };
+        if !physical.will_apply() {
+            return Ok(false);
+        }
         let Ok(player) =
             super::actor_spell::stage_player_batch_with_attack(runtime, states, &batch, &damage)
         else {
-            return false;
+            return Ok(false);
         };
         if states.deaths.try_reserve(batch.effects.len()).is_err()
             || states.pvp_locks.try_reserve(2).is_err()
             || runtime.reserve_spell_batch(&mut physical).is_err()
         {
-            return false;
+            return Ok(false);
         }
         let binding: [u8; 32] = Sha256::digest(format!("{batch:?}").as_bytes()).into();
         let hit = PendingPvpHit {
@@ -357,15 +373,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut window = permit.open_commit_window(hit, park);
         // Even cancellation before COMMIT retains enough state to prove rollback and release.
         window.mark_already_committed();
-        let Ok(Some(fence)) = self
-            .current_quest_fence(window.attempt().batch.command.game_session_id())
-            .await
-        else {
-            return false;
-        };
-        let Ok(pass) = self.root.try_issue_semantic_pass() else {
-            return false;
-        };
         let mut context = (self, &mut *runtime, &mut *states, objects, &mut window);
         let result = pass
             .run_with_context(&mut context, move |holder, deadline, ctx| {
@@ -424,7 +431,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     use crate::foundation::runtime_actor_spell_types::PlayerBatchProof;
                     let damage = hit
                         .player
-                        .health_receipt(target, ordinal)
+                        .health_receipt(target, effect_ordinal)
                         .ok_or(DurabilityError::Unavailable)?;
                     let damage = u32::try_from(damage.health_before - damage.health_after)
                         .map_err(|_| DurabilityError::Unavailable)?;
@@ -448,11 +455,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .await;
         if result.is_err() {
-            return false;
+            return Ok(false);
         }
         #[cfg(test)]
         if faults::take(faults::Point::AfterCommit) {
-            return false;
+            return Ok(false);
         }
         let Ok(checked) = check_owner_batch(
             runtime,
@@ -460,10 +467,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &window.attempt().physical,
             Some(&window.attempt().player),
         ) else {
-            return false;
+            return Ok(false);
         };
         let hit = window.install();
-        install_owner_batch(runtime, states, hit.physical, Some(hit.player), checked).applied
+        Ok(install_owner_batch(runtime, states, hit.physical, Some(hit.player), checked).applied)
     }
 
     pub(super) async fn resolve_pvp_hit(&self, permit: &mut SpellLanePermit, hit: PendingPvpHit) {
@@ -656,6 +663,7 @@ pub(super) mod faults {
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub(in crate::gameplay_transport) enum Point {
+        SwingHolderBusy,
         BeforeCommit,
         AfterCommit,
     }

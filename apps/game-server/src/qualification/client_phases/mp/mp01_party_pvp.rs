@@ -789,6 +789,45 @@ async fn latest_death(bot: &Bot<'_, '_>) -> TestResult<Option<DeathReceipt>> {
         .transpose()
 }
 
+async fn remove_victim_equipment(bots: &mut [Bot<'_, '_>]) -> TestResult {
+    use oteryn_dev_client::client_runtime::inventory::MoveRequest;
+    use oteryn_dev_client::{ItemMoveDestination, ItemMoveOutcome};
+
+    let equipment = bots[1]
+        .client()?
+        .inventory()
+        .ok_or("MP01 victim has no inventory view")?
+        .equipment
+        .clone();
+    for entry in equipment {
+        let moved = bots[1]
+            .client()?
+            .session_mut()
+            .move_item_counted(MoveRequest {
+                source: entry.item.handle,
+                destination: ItemMoveDestination::MainBackpack,
+                count: None,
+            })
+            .await?;
+        if moved.outcome != ItemMoveOutcome::Moved {
+            return Err(format!("MP01 victim could not stow {:?}: {moved:?}", entry.slot).into());
+        }
+    }
+    bots::wait_observation(
+        bots,
+        tokio::time::Instant::now() + Duration::from_secs(5),
+        "MP01 victim equipment is empty",
+        |bots, _| {
+            Ok(bots[1]
+                .session
+                .as_ref()
+                .and_then(|client| client.inventory())
+                .is_some_and(|inventory| inventory.equipment.is_empty()))
+        },
+    )
+    .await
+}
+
 /// A's attack, B's damage, death and temple respawn, the durable death receipt, A's frag
 /// points and white skull, checked in both clients and PostgreSQL.
 async fn pvp_journey(
@@ -797,6 +836,10 @@ async fn pvp_journey(
     towns: &oteryn_world_bundle::subarea::Table,
     cells: &crate::content::NativeEntryMovementCells,
 ) -> TestResult {
+    // The durable PvP admission rule gives the attacker ten seconds after login.
+    // Starting the clock after the joined profile is stronger than the server's
+    // authorization-decision timestamp and requires no synthetic clock advance.
+    let attack_ready_at = tokio::time::Instant::now() + Duration::from_secs(10);
     let mut database = sqlx::PgConnection::connect(bots[1].pair.url).await?;
     let home: Option<i32> = sqlx::query_scalar(
         "SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid",
@@ -828,66 +871,11 @@ async fn pvp_journey(
     let old_death = latest_death(&bots[1]).await?;
     let old_kills = history(&mut bots[0], character::CharacterTab::RecentPvpKills).await?;
     let old_deaths = history(&mut bots[1], character::CharacterTab::RecentDeaths).await?;
-    // Equip through A's own protocol. MP provisioning (bots.rs provision_current) only mints the
-    // axe into the backpack; it does not wield it, so an axe already worn is the only skip.
-    let definitions = provisioning::item_index()?;
-    let axe = provisioning::item_reference(&definitions, 3276)?;
-    let wielded = bots[0].client()?.inventory().is_some_and(|inventory| {
-        inventory
-            .equipment
-            .iter()
-            .any(|entry| entry.item.item_definition_ref == axe)
-    });
-    if !wielded {
-        let carried = bots[0].client()?.inventory().is_some_and(|inventory| {
-            inventory
-                .entries
-                .iter()
-                .any(|entry| entry.item_definition_ref == axe)
-        });
-        if !carried {
-            return Err("Open PvP knight provisioning did not publish a carried axe".into());
-        }
-        let equipped = bots[0]
-            .client()?
-            .session_mut()
-            .equip_item_definition(axe)
-            .await?;
-        if equipped.status != CommandStatus::Accepted
-            || equipped.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
-        {
-            let detail = bots[0].client()?.session_mut().last_refusal_detail();
-            let observed = bots[0].client()?.inventory().map(|inventory| {
-                let carried = inventory
-                    .entries
-                    .iter()
-                    .filter(|entry| entry.item_definition_ref == axe)
-                    .map(|entry| entry.count.get())
-                    .collect::<Vec<_>>();
-                format!(
-                    "equipment={:?};backpack={:?};axe_ref={axe};axe_direct_counts={carried:?}",
-                    inventory.equipment, inventory.main_backpack,
-                )
-            });
-            return Err(format!(
-                "axe equip refused:{equipped:?};refusal_detail={detail:?};observed_inventory={observed:?};source:apps/game-server/src/qualification/client_phases/mp/bots.rs:197"
-            )
-            .into());
-        }
-        let published = bots[0].client()?.inventory().is_some_and(|inventory| {
-            inventory
-                .equipment
-                .iter()
-                .any(|entry| entry.item.item_definition_ref == axe)
-        });
-        if !published {
-            return Err(format!(
-                "axe command {} moved the axe without publishing equipment",
-                equipped.command_id
-            )
-            .into());
-        }
-    }
+    let axe = provisioning::item_reference(&provisioning::item_index()?, 3276)?;
+    bots::equip_axe(bots, 0, axe).await?;
+    // Direct live PvP currently qualifies an unarmoured target. Changing vocation
+    // for the fixture keeps the birth equipment, so stow it through ordinary MOVE.
+    remove_victim_equipment(bots).await?;
     let combat_tile = |at: TilePos| {
         cells
             .spell_tiles()
@@ -967,6 +955,16 @@ async fn pvp_journey(
         }
         Ok(false)
     }).await?;
+    if tokio::time::Instant::now() < attack_ready_at {
+        super::observations::while_servicing_liveness(
+            tokio::time::sleep_until(attack_ready_at),
+            async || {
+                bots::pump(bots).await?;
+                Ok(())
+            },
+        )
+        .await?;
+    }
     let victim_client = bots[1].client()?;
     let temple_position = spatial_basis::current(victim_client)?.position(temple);
     let after = victim_client.last_server_sequence();

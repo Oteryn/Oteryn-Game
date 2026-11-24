@@ -765,7 +765,7 @@ pub(in crate::gameplay_transport) fn tick_at(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    async fn drome_reward_request(
+    pub(super) async fn drome_reward_request(
         &self,
         command: CommandRef,
         claim_key: String,

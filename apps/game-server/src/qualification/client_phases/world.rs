@@ -819,32 +819,50 @@ async fn walk_with_landings(
     path: &[StepDirection],
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
 ) -> TestResult {
+    walk_with_landing_budget(client, path, landing, None).await
+}
+
+async fn walk_with_landing_budget(
+    client: &mut oteryn_dev_client::DevClientSession,
+    path: &[StepDirection],
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+    step_budget: Option<Duration>,
+) -> TestResult {
     let mut path = VecDeque::from(path.to_vec());
     let mut blocked = std::collections::BTreeSet::new();
     while let Some(direction) = path.pop_front() {
         let before = client.world_spatial().actor_position;
-        let mut outcome = client.step_retrying(direction).await?;
-        for attempt in 1..=6 {
-            if outcome.disposition != StepDisposition::Rejected
-                || client.world_spatial().actor_position != before
-            {
-                break;
+        let movement = async {
+            let mut outcome = client.step_retrying(direction).await?;
+            for attempt in 1..=6 {
+                if outcome.disposition != StepDisposition::Rejected
+                    || client.world_spatial().actor_position != before
+                {
+                    break;
+                }
+                evidence(&format!(
+                    "town_route step_rejected attempt={attempt} direction={direction:?} from={before:?} expected={:?} actual={:?}",
+                    landing(tile(before)?, direction),
+                    client.world_spatial().actor_position,
+                ));
+                let Some(delay) = town_route_retry_delay(
+                    outcome.disposition,
+                    client.world_spatial().actor_position == before,
+                    attempt,
+                ) else {
+                    break;
+                };
+                tokio::time::sleep(delay).await;
+                outcome = client.step_retrying(direction).await?;
             }
-            evidence(&format!(
-                "town_route step_rejected attempt={attempt} direction={direction:?} from={before:?} expected={:?} actual={:?}",
-                landing(tile(before)?, direction),
-                client.world_spatial().actor_position,
-            ));
-            let Some(delay) = town_route_retry_delay(
-                outcome.disposition,
-                client.world_spatial().actor_position == before,
-                attempt,
-            ) else {
-                break;
-            };
-            tokio::time::sleep(delay).await;
-            outcome = client.step_retrying(direction).await?;
-        }
+            TestResult::Ok(outcome)
+        };
+        let outcome = match step_budget {
+            Some(budget) => tokio::time::timeout(budget, movement).await.map_err(|_| {
+                format!("town route step deadline direction={direction:?} from={before:?}")
+            })?,
+            None => movement.await,
+        }?;
         let from = tile(before)?;
         let expected = landing(from, direction);
         if outcome.disposition == StepDisposition::Blocked
@@ -898,6 +916,13 @@ async fn walk_with_landings(
         client.take_events();
     }
     Ok(())
+}
+
+pub(super) fn is_logout_rest_tile(world: &BundleWorld, at: TilePos) -> bool {
+    world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .is_some_and(|tile| tile.protection_zone() && !tile.no_logout())
 }
 
 pub(super) async fn logout_retrying_busy(

@@ -145,6 +145,16 @@ impl SelectedCapabilities {
         self.as_slice().binary_search(&capability).is_ok()
     }
 
+    /// Omit one optional enrichment from an observation without changing session negotiation.
+    pub(super) fn without_projection(mut self, capability: u32) -> Self {
+        if let Ok(index) = self.as_slice().binary_search(&capability) {
+            self.ids.copy_within(index + 1..self.len, index);
+            self.len -= 1;
+            self.ids[self.len] = 0;
+        }
+        self
+    }
+
     /// Fresh admission: the client's `supported` capabilities that `offered` contains and whose
     /// `requires` are all selected, as a closure (a capability whose requirement drops out drops
     /// out too). Unknown and unoffered supported IDs are ignored. `None` when the result would
