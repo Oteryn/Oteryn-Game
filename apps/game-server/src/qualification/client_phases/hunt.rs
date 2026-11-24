@@ -42,8 +42,8 @@ pub(super) async fn hunt_with_loot(
         .collect();
     client.take_events();
     evidence(&format!(
-        "mechanic=hunt state=attack_pending target={:?}",
-        target.entity
+        "mechanic=hunt state=attack_pending attacker_at={position:?} target_at={:?} target={:?}",
+        target.position, target.entity
     ));
     let attack = client
         .session_mut()

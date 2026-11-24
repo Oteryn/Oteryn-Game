@@ -282,7 +282,8 @@ async fn approach_position(
     other: TilePos,
     world: &BundleWorld,
 ) -> TestResult {
-    f4_walk_to(client, world, "peer approach", |at| {
+    let purpose = format!("peer approach to a tile adjacent to {other:?}");
+    f4_walk_to(client, world, &purpose, |at| {
         at != other
             && at.floor == other.floor
             && at.x.abs_diff(other.x).max(at.y.abs_diff(other.y)) <= 1
@@ -573,20 +574,27 @@ async fn shop(row: &mut Row, client: &mut DevClientSession, actor: EntityRef) ->
     let definition = offer.item_definition_ref;
     let before = inventory_units(client)?;
     let quantity = if sell.is_some() { 2 } else { 1 };
-    let result = runtime::buy(
-        client.session_mut(),
-        &wire::NpcTradeIntent {
-            npc_actor: actor,
-            catalogue_revision: revision,
-            offer_index: u32::try_from(index)?,
-            side: offer.side,
-            quantity,
-            expected_unit_price: offer.unit_price,
-        },
-    )
-    .await?;
-    if result != wire::NpcIntentDisposition::Ok {
-        return Err(format!("buy: Sam refused {result:?} for {quantity} units at {}; need sufficient legitimately earned spendable gold; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:185", offer.unit_price).into());
+    let intent = wire::NpcTradeIntent {
+        npc_actor: actor,
+        catalogue_revision: revision,
+        offer_index: u32::try_from(index)?,
+        side: offer.side,
+        quantity,
+        expected_unit_price: offer.unit_price,
+    };
+    let payload = wire::encode_npc_trade_intent(&intent)
+        .map_err(|error| format!("buy intent encoding: {error:?}"))?;
+    let reply = client.session_mut().gated_command(
+        wire::CAPABILITY_NPC_SERVICE_V1,
+        wire::COMMAND_TYPE_NPC_TRADE_INTENT,
+        &payload,
+    ).await?;
+    let disposition = wire::decode_npc_intent_result(&reply.payload);
+    if reply.status != CommandStatus::Accepted || disposition != Ok(wire::NpcIntentDisposition::Ok) {
+        return Err(format!(
+            "buy: Sam refused status={:?} disposition={disposition:?} offer_index={index} definition={definition} quantity={quantity} unit_price={}",
+            reply.status, offer.unit_price
+        ).into());
     }
     let after_buy = wait_shop_delta(
         client,
