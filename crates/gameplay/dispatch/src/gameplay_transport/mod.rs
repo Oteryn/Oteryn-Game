@@ -1574,8 +1574,8 @@ impl<'r> AdmissionRetryBudget<'r> {
     }
 
     /// Whether a step that ended on `refusal` is retried. Only an unavailable outcome (such
-    /// as a busy durability holder) is transient: it waits at most one backoff, unless the
-    /// retry would start past the window, which fails closed at once. With a root, the attempt
+    /// as a busy durability holder) is transient. A queued owner can use the last partial
+    /// backoff while its deadline still permits a checkout. With a root, the attempt
     /// queues for the holder from its first retry on: a returned holder is its turn once every
     /// owner refused before it is served, and it then retries at once, ahead of later owners and
     /// of the background passes that poll the holder on their own cadence. A retrier woken
@@ -1584,7 +1584,10 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// [`HOLDER_RETRY_FLOOR`].
     async fn retries_unavailable(&self, refusal: AdmissionRefusal) -> bool {
         let now = tokio::time::Instant::now();
-        if refusal != AdmissionRefusal::Unavailable || now + self.backoff >= self.deadline {
+        if refusal != AdmissionRefusal::Unavailable
+            || now >= self.deadline
+            || (self.root.is_none() && now + self.backoff >= self.deadline)
+        {
             // A given-up owner holds no later owner back.
             if let Some(Some(waiter)) = self.waiter.get() {
                 waiter.stop_waiting();
@@ -1595,7 +1598,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             Some(root) => {
                 let _ = self.waiter.get_or_init(|| root.holder_waiter());
                 let earliest = now + HOLDER_RETRY_FLOOR;
-                let latest = now + self.backoff;
+                let latest = (now + self.backoff).min(self.deadline);
                 if !root.wait_holder_turn(earliest, latest).await {
                     // A retired holder cannot emit a return notification. Service
                     // real readiness within this same retry window, then retry on
@@ -1611,7 +1614,13 @@ impl<'r> AdmissionRetryBudget<'r> {
             }
             None => tokio::time::sleep(self.backoff).await,
         }
-        true
+        if tokio::time::Instant::now() < self.deadline {
+            return true;
+        }
+        if let Some(Some(waiter)) = self.waiter.get() {
+            waiter.stop_waiting();
+        }
+        false
     }
 
     /// Runs one durable `step` of the attempt, retrying an unavailable outcome (such as a
