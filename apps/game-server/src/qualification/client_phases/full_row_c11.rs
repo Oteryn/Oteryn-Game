@@ -558,7 +558,7 @@ async fn choose_monk(
 ) -> TestResult<u32> {
     use oteryn_protocol_oteryn::world_object::UseDisposition;
     const ORESSA: TilePos = TilePos { x: 32064, y: 31892, floor: -6 };
-    const MANOP: TilePos = TilePos { x: 32058, y: 31898, floor: -4 };
+    const MANOP: TilePos = TilePos { x: 32057, y: 31898, floor: -4 };
     const BLUE_VALLEY: TilePos = TilePos { x: 33614, y: 31494, floor: -7 };
     for (key, at) in [("oteryn:npc.oressa", ORESSA), ("oteryn:npc.ambassador_manop", MANOP)] {
         if !npcs.npcs.iter().any(|npc| npc.key == key
