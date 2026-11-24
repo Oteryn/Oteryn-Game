@@ -10,11 +10,27 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
     let (session, profile) = text.strip_prefix("qualify ")?.split_once(' ')?;
     let session = parse_operation_id(session.as_bytes())?;
-    matches!(
-        profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
-    )
-    .then_some((session, profile))
+    qualification_profile(profile)?;
+    Some((session, profile))
+}
+
+fn qualification_profile(profile: &str) -> Option<(&str, u32)> {
+    match profile {
+        "knight-underlevel" => Some(("knight", 66)),
+        "explorer" => Some(("knight", 100)),
+        "knight" | "paladin" | "sorcerer" | "druid" | "monk" => Some((profile, 100)),
+        _ if cfg!(feature = "qualification-spawn") => {
+            let ("knight", level) = profile.split_once('@')? else {
+                return None;
+            };
+            if level.starts_with('0') || !level.bytes().all(|b| b.is_ascii_digit()) {
+                return None;
+            }
+            let level = level.parse().ok()?;
+            (1..=1000).contains(&level).then_some(("knight", level))
+        }
+        _ => None,
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -680,11 +696,8 @@ async fn prepare_build(
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
-    let (vocation, level) = match profile {
-        "knight-underlevel" => ("knight", 66),
-        "explorer" => ("knight", 100),
-        _ => (profile, 100),
-    };
+    let (vocation, level) =
+        qualification_profile(profile).ok_or("invalid qualification profile")?;
     let occurrence_profile = if level == 100 { vocation } else { profile };
     qualification_build::prepare_character_with_policy_until(
         root,
@@ -706,7 +719,18 @@ async fn prepare_build(
         deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    let gear = if profile.contains('@') {
+        [
+            qualification_build::BOSS_FIXTURE_WEAPON,
+            3003,
+            3457,
+            qualification_build::BOSS_FIXTURE_HEALING,
+        ]
+        .as_slice()
+    } else {
+        &[3276, 3003, 3457]
+    };
+    prepare_items(root, authority, proof, &current, native, (gear, deadline)).await
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -736,7 +760,7 @@ async fn prepare_items(
         crate::foundation::AuthenticatedTransportRefV1,
     >,
     native: &NativeGameplayState,
-    deadline: tokio::time::Instant,
+    (gear, deadline): (&[u32], tokio::time::Instant),
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -811,7 +835,7 @@ async fn prepare_items(
         .ok_or("qualification Item index missing")?;
     // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
     // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    for (ordinal, id) in gear.iter().copied().enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),

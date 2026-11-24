@@ -312,7 +312,7 @@ fn loot_tables(root: &Path) -> TestResult<BTreeMap<String, Vec<LootEntry>>> {
 /// `plan` limits its box to 160 tiles and two floors around the start, but the authored spawns can
 /// lie beyond it, so this plans over the same production collision facts (`destination`) across
 /// the whole map. Err carries every tile the search reached.
-fn far_route(
+pub(super) fn far_route(
     world: &BundleWorld,
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,

@@ -63,12 +63,18 @@ struct Lever {
     after_kill_seconds: Option<u32>,
 }
 
+struct HeldSpawn {
+    at: TilePos,
+    respawn: Duration,
+}
+
 struct Entry {
     key: String,
     source: String,
     creature: Option<String>,
     lever: Option<usize>,
     gap: &'static str,
+    held: Option<HeldSpawn>,
 }
 
 struct Catalogue {
@@ -102,6 +108,7 @@ fn census(root: &Path) -> TestResult<Catalogue> {
             creature: lever.creature_key.clone(),
             lever: Some(index),
             gap: "",
+            held: None,
         });
     }
     let directory = root.join("content/encounters/definitions");
@@ -126,19 +133,14 @@ fn census(root: &Path) -> TestResult<Catalogue> {
             let creature = details["participants"][0]["creatures"][0]["key"]
                 .as_str()
                 .filter(|creature| short(creature) == short(key));
-            let mut matches = levers.iter().enumerate().filter(|(_, lever)| {
-                creature.is_some() && lever.creature_key.as_deref() == creature
-            });
-            let lever = matches
-                .next()
-                .map(|(index, _)| index)
-                .filter(|_| matches.next().is_none());
+            let (lever, donor) = resolve_lever(&levers, creature);
             entries.push(Entry {
                 key: format!("{}.encounter", short(key)),
-                source: format!("{source}:1"),
+                source: donor.map_or_else(|| format!("{source}:1"), str::to_owned),
                 creature: creature.map(str::to_owned),
                 lever,
                 gap: "encounter-has-no-unambiguous-lever-binding",
+                held: None,
             });
         }
     }
@@ -151,7 +153,8 @@ fn census(root: &Path) -> TestResult<Catalogue> {
             source: format!("{ARENAS}:1"),
             creature: Some(creature.to_owned()),
             lever: None,
-            gap: "offline-arena-catalogue-has-no-player-entry;owner:docs/architecture/reviews/OTERYN_GAME_ARENA1_DECISION_2026-10-15.md:19",
+            gap: "not reachable in game;owner:docs/architecture/reviews/OTERYN_GAME_ARENA1_DECISION_2026-10-15.md:19",
+            held: None,
         });
     }
     let held: Vec<serde_json::Value> = serde_json::from_value(read(HELD)?["records"].take())?;
@@ -174,7 +177,15 @@ fn census(root: &Path) -> TestResult<Catalogue> {
             source: format!("{HELD}:1"),
             creature: Some(creature.to_owned()),
             lever: None,
-            gap: "held-spawn-has-no-player-entry-binding;owner:tools/world-bundle-compiler/convert_spawns.py:230",
+            gap: "",
+            held: Some(HeldSpawn {
+                at: cell([x, y, floor])?,
+                respawn: Duration::from_millis(
+                    point["respawn_ms"]
+                        .as_u64()
+                        .ok_or("held spawn missing respawn")?,
+                ),
+            }),
         });
     }
     entries.sort_unstable_by(|left, right| left.key.cmp(&right.key));
@@ -182,6 +193,61 @@ fn census(root: &Path) -> TestResult<Catalogue> {
         return Err("duplicate boss sweep entry key".into());
     }
     Ok(Catalogue { entries, levers })
+}
+
+fn resolve_lever(
+    levers: &[Lever],
+    creature: Option<&str>,
+) -> (Option<usize>, Option<&'static str>) {
+    let Some(creature) = creature else {
+        return (None, None);
+    };
+    // Crystal 201189f8 registers the Dreamscar action by position. Its weekday
+    // table names Alptramun explicitly and the captured layout has no fixed creature.
+    if creature == "oteryn:creature.alptramun" {
+        let index = levers.iter().position(|lever| {
+            lever.path == "data-global/scripts/quests/the_dream_courts/actions_dreamscar_levers.lua"
+                && lever.creature_key.is_none()
+                && lever.lever_positions.first() == Some(&[32208, 32021, 13])
+        });
+        if index.is_some() {
+            return (
+                index,
+                Some(
+                    "Crystal201189f8:data-global/scripts/quests/the_dream_courts/actions_dreamscar_levers.lua:74",
+                ),
+            );
+        }
+    }
+    let mut matching = levers
+        .iter()
+        .enumerate()
+        .filter(|(_, lever)| lever.creature_key.as_deref() == Some(creature));
+    let Some((index, _)) = matching.next() else {
+        return (None, None);
+    };
+    if matching.next().is_none() {
+        (Some(index), None)
+    } else {
+        // Scarlett's action 40003 exists in both donor trees. Only the Global
+        // registration has the absolute Cobra Bastion map coordinates.
+        if creature == "oteryn:creature.scarlett_etzel" {
+            let index = levers.iter().position(|lever| {
+                lever.path
+                    == "data-global/scripts/quests/grave_danger/cobra_bastion/actions_scarlett.lua"
+                    && lever.lever_positions.first() == Some(&[33395, 32661, 6])
+            });
+            if index.is_some() {
+                return (
+                    index,
+                    Some(
+                        "Crystal201189f8:data-global/scripts/quests/grave_danger/cobra_bastion/actions_scarlett.lua:100",
+                    ),
+                );
+            }
+        }
+        (None, None)
+    }
 }
 
 fn short(key: &str) -> &str {
@@ -196,6 +262,7 @@ struct Tally {
 
 struct Rows<'a> {
     entry: &'a Entry,
+    steps: &'static [&'static str],
     next: usize,
     lap: std::time::Instant,
     counts: &'a mut Tally,
@@ -203,7 +270,7 @@ struct Rows<'a> {
 
 impl Rows<'_> {
     fn emit(&mut self, cause: Option<&str>, detail: &str) {
-        let step = STEPS[self.next];
+        let step = self.steps[self.next];
         self.next += 1;
         let seconds = self.lap.elapsed().as_secs_f64();
         self.lap = std::time::Instant::now();
@@ -224,9 +291,9 @@ impl Rows<'_> {
     }
 
     fn abort(&mut self, cause: &str, detail: &str) {
-        let root = STEPS[self.next];
+        let root = self.steps[self.next];
         self.emit(Some(cause), detail);
-        while self.next < STEPS.len() {
+        while self.next < self.steps.len() {
             self.emit(Some("blocked"), &format!("blocked-by-{root}"));
         }
     }
@@ -268,34 +335,90 @@ pub(super) async fn run(
         selected.len()
     ));
     let definitions = creature_sweep::definitions(&root)?;
+    // The fixture owner commits a build once per character. Reuse the highest
+    // applicable authored threshold across this batch so a later entry cannot
+    // require rewriting an already established progression receipt.
+    let build_level = selected
+        .iter()
+        .filter_map(|entry| {
+            let authored = levers.get(entry.lever?)?;
+            Some(required_level(
+                authored,
+                entry.creature.as_deref().unwrap_or_default(),
+            ))
+        })
+        .max()
+        .unwrap_or(1)
+        .max(200);
+    evidence(&format!(
+        "boss_sweep build mode=seeded vocation=knight level={build_level} gear=i7388 supplies=rope,shovel,i7643"
+    ));
     let mut tally = Tally::default();
-    for entry in selected {
+    for (offset, entry) in selected.iter().enumerate() {
+        let leader_index = offset % clients.accounts.len();
         verdict::Harness::global().progress("boss-sweep-entry");
         let mut rows = Rows {
             entry,
+            steps: if entry.held.is_some() {
+                &["route", "spawn", "kill", "reward"]
+            } else if entry.key.ends_with(".arena") && entry.lever.is_none() {
+                &["entry"]
+            } else {
+                &STEPS
+            },
             next: 0,
             lap: std::time::Instant::now(),
             counts: &mut tally,
         };
-        let Some(lever) = entry.lever.map(|index| &levers[index]) else {
-            rows.abort("entry_binding_missing", entry.gap);
-            continue;
-        };
         let mut party = Vec::new();
-        let result = tokio::time::timeout(
-            Duration::from_secs(240),
-            journey(
-                clients,
-                world,
-                lever,
-                &definitions,
-                rewards,
-                &mut party,
-                &mut rows,
-            ),
-        )
-        .await
-        .unwrap_or_else(|_| Err(failure("deadline", "entry journey exceeded 240s")));
+        let work = async {
+            if let Some(held) = &entry.held {
+                held_journey(
+                    clients,
+                    world,
+                    held,
+                    &definitions,
+                    rewards,
+                    (leader_index, build_level),
+                    &mut party,
+                    &mut rows,
+                )
+                .await
+            } else if let Some(lever) = entry.lever.map(|index| &levers[index]) {
+                journey(
+                    clients,
+                    world,
+                    lever,
+                    &definitions,
+                    rewards,
+                    (leader_index, build_level),
+                    &mut party,
+                    &mut rows,
+                )
+                .await
+            } else {
+                let cause = if entry.key.ends_with(".arena") {
+                    "arena_unreachable"
+                } else {
+                    "entry_binding_missing"
+                };
+                Err(failure(cause, entry.gap))
+            }
+        };
+        let budget = entry
+            .held
+            .as_ref()
+            .map_or(Duration::from_secs(240), |held| {
+                Duration::from_secs(240) + held.respawn.min(Duration::from_secs(120))
+            });
+        let result = tokio::time::timeout(budget, work)
+            .await
+            .unwrap_or_else(|_| {
+                Err(failure(
+                    "deadline",
+                    format!("entry journey exceeded {}s", budget.as_secs()),
+                ))
+            });
         if let Err(error) = result {
             rows.abort(error.cause, &error.detail);
         }
@@ -407,8 +530,8 @@ async fn walk_to(
     target: TilePos,
 ) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| at == target)
-        .ok_or_else(|| format!("no player route from {from:?} to authored lever {target:?}"))?;
+    let path = creature_sweep::far_route(world, from, |at| at == target)
+        .map_err(|_| format!("no player route from {from:?} to authored lever {target:?}"))?;
     walk(client, world, &path).await?;
     if tile(client.world_spatial().actor_position)? != target {
         return Err("walk did not finish on its authored lever cell".into());
@@ -496,8 +619,9 @@ async fn observe_boss(
     client: &mut DevClientSession,
     name: &str,
     position: TilePos,
+    wait: Duration,
 ) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    let deadline = tokio::time::Instant::now() + wait;
     loop {
         if let Some(target) = client.world_entities().and_then(|entities| {
             entities
@@ -760,12 +884,135 @@ async fn reward(
 
 type Definitions = BTreeMap<String, (creature_sweep::Definition, Option<String>)>;
 
+fn required_level(authored: &Lever, creature: &str) -> u32 {
+    use oteryn_gameplay_quests::quest::soul_war::{MINIMUM_LEVEL, SoulWarBoss};
+
+    let soul_war = SoulWarBoss::from_creature(creature).map(|_| MINIMUM_LEVEL);
+    authored
+        .minimum_level
+        .into_iter()
+        .chain(rotten_blood_minimum(creature))
+        .chain(soul_war)
+        .max()
+        .unwrap_or(1)
+}
+
+async fn seeded_knight(
+    client: DevClientSession,
+    clients: &SeamClients<'_>,
+    index: usize,
+    level: u32,
+) -> TestResult<DevClientSession> {
+    provisioning::provision_profile(client, clients, index, level, &format!("knight@{level}")).await
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "shared world, fixture, reward, and row owners"
+)]
+async fn held_journey(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    held: &HeldSpawn,
+    definitions: &Definitions,
+    rewards: &crate::content::creature_reward::CreatureRewardTable,
+    (leader_index, build_level): (usize, u32),
+    party: &mut Vec<DevClientSession>,
+    rows: &mut Rows<'_>,
+) -> Result<(), Failure> {
+    let creature = rows
+        .entry
+        .creature
+        .as_deref()
+        .ok_or_else(|| failure("content", "missing held creature"))?;
+    let (definition, _) = definitions
+        .get(creature)
+        .ok_or_else(|| failure("content", "missing held creature definition"))?;
+    let mut player = connect_character(clients, 0xb4, leader_index)
+        .await
+        .map_err(|error| failure("fixture", error))?;
+    let from =
+        tile(player.world_spatial().actor_position).map_err(|error| failure("fixture", error))?;
+    let target = held.at;
+    if world
+        .base()
+        .tile(target.x, target.y, target.floor)
+        .is_none()
+    {
+        party.push(player);
+        return Err(failure(
+            "world_route",
+            format!("held spawn {target:?} lies outside the loaded world bundle"),
+        ));
+    }
+    let path = creature_sweep::far_route(world, from, |at| {
+        at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) == 1
+    });
+    let path = match path {
+        Ok(path) => path,
+        Err(_) => {
+            party.push(player);
+            return Err(failure(
+                "world_route",
+                format!("no native route from {from:?} to held spawn {target:?}"),
+            ));
+        }
+    };
+    player = seeded_knight(player, clients, leader_index, build_level)
+        .await
+        .map_err(|error| failure("fixture", error))?;
+    party.push(player);
+    let player = &mut party[0];
+    walk(player, world, &path)
+        .await
+        .map_err(|error| failure("world_route", error))?;
+    rows.emit(None, "walked-to-authored-world-spawn");
+    let wait = held.respawn.min(Duration::from_secs(120));
+    let target = observe_boss(player, &definition.name, target, wait)
+        .await
+        .map_err(|error| {
+            failure(
+                "world_spawn",
+                format!(
+                    "{error}; observed {}ms of authored {}ms respawn",
+                    wait.as_millis(),
+                    held.respawn.as_millis()
+                ),
+            )
+        })?;
+    rows.emit(None, &format!("world-spawn={:?}", target.entity));
+    let existing = player
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|entity| entity.kind == EntityKind::Corpse)
+        .map(|entity| entity.entity)
+        .collect();
+    let position = fight(player, target)
+        .await
+        .map_err(|error| failure("combat", error))?;
+    let content = rewards
+        .row(creature)
+        .map_err(|error| failure("reward_content", format!("{error:?}")))?;
+    let loot = physical_loot(player, &content, position, &existing)
+        .await
+        .map_err(|error| failure("corpse_unconfirmed", error))?;
+    rows.emit(None, "target-removed-with-new-pinned-corpse");
+    rows.emit(None, &loot);
+    Ok(())
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "shared world, fixture, reward, and row owners"
+)]
 async fn journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     authored: &Lever,
     definitions: &Definitions,
     rewards: &crate::content::creature_reward::CreatureRewardTable,
+    (leader_index, build_level): (usize, u32),
     party: &mut Vec<DevClientSession>,
     rows: &mut Rows<'_>,
 ) -> Result<(), Failure> {
@@ -782,7 +1029,7 @@ async fn journey(
         return Err(failure("content", "missing authored creature definition"));
     };
     party.push(
-        connect_character(clients, 0xb4, 0)
+        connect_character(clients, 0xb4, leader_index)
             .await
             .map_err(|error| failure("fixture", error))?,
     );
@@ -844,24 +1091,22 @@ async fn journey(
             format!("requires {minimum} distinct lever occupants"),
         ));
     }
-    let minimum_level = authored
-        .minimum_level
-        .ok_or_else(|| failure("content", "no minimum level"))?
-        .max(quest_minimum.unwrap_or_default());
+    let minimum_level = required_level(authored, creature);
     let leader = party
         .pop()
         .ok_or_else(|| failure("fixture", "no admitted leader"))?;
     party.push(
-        provisioning::provision_fixture(leader, clients, 0, 100)
+        seeded_knight(leader, clients, leader_index, build_level)
             .await
             .map_err(|error| failure("fixture", error))?,
     );
-    for index in 1..minimum {
+    for offset in 1..minimum {
+        let index = (leader_index + offset) % clients.accounts.len();
         let member = connect_character(clients, 0xb5, index)
             .await
             .map_err(|error| failure("fixture", error))?;
         party.push(
-            provisioning::provision_fixture(member, clients, index, 100)
+            seeded_knight(member, clients, index, build_level)
                 .await
                 .map_err(|error| failure("fixture", error))?,
         );
@@ -955,7 +1200,7 @@ async fn journey(
         .boss_position
         .ok_or_else(|| failure("content", "missing authored boss tile"))?;
     let boss_at = cell(boss_at).map_err(|error| failure("content", error))?;
-    let target = observe_boss(leader, &definition.name, boss_at)
+    let target = observe_boss(leader, &definition.name, boss_at, Duration::from_secs(15))
         .await
         .map_err(|error| failure("spawn_absent", error))?;
     rows.emit(

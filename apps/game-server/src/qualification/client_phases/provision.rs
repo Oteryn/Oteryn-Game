@@ -27,7 +27,7 @@ pub(in crate::qualification) async fn provision_profile(
     profile: &str,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
-    let vocation = if profile == "explorer" {
+    let vocation = if profile == "explorer" || profile.starts_with("knight@") {
         "knight"
     } else {
         profile
@@ -42,6 +42,7 @@ pub(in crate::qualification) async fn provision_profile(
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
+    let profile_is_boss = profile.starts_with("knight@");
     let profile = profile.to_owned();
     let status = tokio::task::spawn_blocking(move || {
         crate::qualification::provision_python()
@@ -72,7 +73,16 @@ pub(in crate::qualification) async fn provision_profile(
         return Err("fresh admission did not load the provisioned build and mana".into());
     }
     let definitions = item_index()?;
-    for id in [3276, 3003, 3457] {
+    let weapon = if profile_is_boss {
+        crate::qualification_spell_character::BOSS_FIXTURE_WEAPON
+    } else {
+        3276
+    };
+    let mut gear = vec![weapon, 3003, 3457];
+    if profile_is_boss {
+        gear.push(crate::qualification_spell_character::BOSS_FIXTURE_HEALING);
+    }
+    for id in gear {
         let reference = item_reference(&definitions, id)?;
         if !client.inventory().is_some_and(|inventory| {
             inventory
@@ -84,7 +94,7 @@ pub(in crate::qualification) async fn provision_profile(
             return Err(format!("fresh admission missing provisioned Item {id}").into());
         }
     }
-    let reference = item_reference(&definitions, 3276)?;
+    let reference = item_reference(&definitions, weapon)?;
     // Fenced provisioning installs an unforged copy; the session owns selected 485 encoding.
     if !client.inventory().is_some_and(|inventory| {
         inventory
