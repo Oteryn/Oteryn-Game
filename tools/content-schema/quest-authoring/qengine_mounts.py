@@ -84,6 +84,16 @@ def populate(root, inputs, looks, source, item_packet):
     catalogue_rows = {row.get('name'): row.attrib for row in ET.fromstring(raw)}
     for name in ('Jaracal', 'Radiant Nimbus'):
         mounts.append(definition(catalogue_rows[name], identities.get(name_key(name)), catalogue_source))
+    # TibiaWiki revisions 403830 and 383246 identify these older declarations by
+    # their exact Gnomadness and horse-rental routes. Crystal gives the native
+    # appearances its own display names. Retain the legacy keys for saved looks.
+    for legacy, name, line in (
+        ('ripptor', 'Noxious Ripptor', 231),
+        ('rented_horse_marrom_escuro', 'Rented Horse', 51),
+    ):
+        citation = {**catalogue_source, 'reference':
+                    f'https://github.com/zimbadev/crystalserver/blob/{CATALOGUE_REVISION}/{MOUNTS_XML}#L{line}'}
+        mounts.append(definition(catalogue_rows[name], f'oteryn:content.mount.{legacy}', citation))
     # Legacy wiki declarations and active taming rules can name the same mount
     # with different keys. Bind them through the exact Crystal mount row so a
     # taming receipt grants both appearances without changing its stored key.

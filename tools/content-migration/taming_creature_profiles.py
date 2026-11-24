@@ -61,6 +61,8 @@ def capture(canary, crystal):
         if key != f"oteryn:creature.{name}":
             raise ValueError(f"Unexpected taming creature identity: {key}")
         owner = stage.records["Creature", key]
+        if owner["loot"] is not None:
+            raise ValueError(f"Unexpected loot table on taming creature: {key}")
         creature = stage.profiles["Creature", key]
         creature["data"]["profile"]["details"].setdefault("reference_level", None)
         behavior = stage.profiles["Behavior", owner["behavior"]["key"]]
@@ -99,6 +101,30 @@ def apply_native(root, generated, encode):
         generated[path] = encode(document)
         manifest[pin]["sha256"] = digest(generated[path])
     generated[MANIFEST] = encode(manifest)
+
+
+def prey_model_inputs(root, records, loot):
+    """Keep the Prey cohort stable for the exact profiles and empty loot bindings."""
+    capture = json.loads((root / SOURCE).read_bytes())["records"]
+    excluded = {row["creature"]["profile"]["target"]["key"]: row["creature"]
+                for row in capture}
+    cohort = []
+    for record in records:
+        key = record["profile"]["target"]["key"]
+        if key not in excluded:
+            cohort.append(record)
+            continue
+        if record != excluded[key] or "bestiary" in record["profile"]["data"]["profile"]:
+            raise ValueError(f"Taming creature is outside the qualified Prey exclusion: {key}")
+    bindings = []
+    for binding in loot:
+        key = binding["creature"]["key"]
+        if key not in excluded:
+            bindings.append(binding)
+        elif (binding["creature"] != excluded[key]["profile"]["target"]
+              or binding["loot"] is not None):
+            raise ValueError(f"Taming creature has a different Prey loot binding: {key}")
+    return cohort, bindings
 
 
 if __name__ == "__main__":

@@ -214,6 +214,13 @@ def model_input(root, profiles=None):
                                           if row["profile"]["target"]["key"] not in phase_keys]}
     loot_bytes = (root / LOOT).read_bytes()
     loot = json.loads(loot_bytes)
+    from taming_creature_profiles import prey_model_inputs
+    cohort, bindings = prey_model_inputs(root, profiles["records"], loot["creature_loot"])
+    profiles = {**profiles, "records": cohort}
+    if bindings != loot["creature_loot"]:
+        from import_spell_families import canonical_bytes
+        loot["creature_loot"] = bindings
+        loot_bytes = canonical_bytes(loot)
     isolated_loot = [row for row in loot["creature_loot"] if row["creature"]["key"] in phase_keys]
     if isolated_loot:
         hard_loot = {"family": "Loot", "key": HARD_LOOT, "revision": "definition-r1"}

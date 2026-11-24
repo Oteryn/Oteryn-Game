@@ -3250,6 +3250,11 @@ mod tests {
             [1; 32],
         )
         .unwrap();
+        crate::content::creature_reward::LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &serde_json::from_slice(creature_bytes).unwrap(),
+        )
+        .unwrap();
         let taming: serde_json::Value = serde_json::from_slice(include_bytes!(
             "../../../../../content/cosmetics/taming-native.json"
         ))
