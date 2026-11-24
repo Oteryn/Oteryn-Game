@@ -109,7 +109,7 @@ fn earned_group<'a>(
     })
 }
 
-async fn approach_chest(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+pub(super) async fn approach_chest(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
     const CHEST: &str = "oteryn:item.tibia.i19250";
     const OWNER: &str = "crates/gameplay/dispatch/src/gameplay_transport/boss_rewards/physical.rs:10";
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;

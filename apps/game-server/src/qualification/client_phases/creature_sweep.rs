@@ -74,7 +74,7 @@ fn batch_from_env() -> TestResult<(usize, usize)> {
 }
 
 /// Report-safe evidence text: no whitespace and no `=`-pairs a reader could mistake for a field.
-fn token(text: &str) -> String {
+pub(super) fn token(text: &str) -> String {
     text.chars()
         .take(400)
         .map(|character| {
@@ -197,10 +197,10 @@ fn failure(step: &'static str, cause: &'static str, detail: impl std::fmt::Displ
     }
 }
 
-struct Definition {
-    name: String,
-    experience: u64,
-    reward_boss: bool,
+pub(super) struct Definition {
+    pub(super) name: String,
+    pub(super) experience: u64,
+    pub(super) reward_boss: bool,
 }
 
 struct LootEntry {
@@ -248,7 +248,9 @@ fn read_shards(directory: &Path, prefix: &str) -> TestResult<Vec<serde_json::Val
 }
 
 /// Per creature key: its definition and the loot table key it binds (`null` binds none).
-fn definitions(root: &Path) -> TestResult<BTreeMap<String, (Definition, Option<String>)>> {
+pub(super) fn definitions(
+    root: &Path,
+) -> TestResult<BTreeMap<String, (Definition, Option<String>)>> {
     let mut found = BTreeMap::new();
     for record in read_shards(&root.join("content/creatures/definitions"), "creatures-")? {
         let Some(key) = record["definition"]["identity"]["key"].as_str() else {
@@ -591,7 +593,7 @@ async fn leave_protection_zone(client: &mut DevClientSession, world: &BundleWorl
     walk(client, world, &path).await
 }
 
-fn creature_named(entry: &oteryn_dev_client::WorldSpatialEntity, name: &str) -> bool {
+pub(super) fn creature_named(entry: &oteryn_dev_client::WorldSpatialEntity, name: &str) -> bool {
     entry.kind == EntityKind::Creature
         && matches!(
             entry.detail,
@@ -1135,7 +1137,7 @@ fn boosted_loot_table(
 // Each entry can miss, or contribute any count in its own interval. Merge the
 // reachable intervals after each entry so gaps are preserved without expanding
 // individual stack counts.
-fn possible_loot_count(entries: &[(u64, u64)], observed: u64) -> bool {
+pub(super) fn possible_loot_count(entries: &[(u64, u64)], observed: u64) -> bool {
     let mut reachable = vec![(0_u64, 0_u64)];
     for &(minimum, maximum) in entries {
         let mut next = reachable.clone();
@@ -1274,7 +1276,7 @@ fn judge_loot(
     );
 }
 
-async fn open_corpse(
+pub(super) async fn open_corpse(
     client: &mut DevClientSession,
     handle: oteryn_protocol_oteryn::item_view::ItemHandle,
 ) -> TestResult<BTreeMap<std::num::NonZeroU32, u64>> {
@@ -1368,7 +1370,9 @@ async fn prepare_player(
 }
 
 /// Experience and level from the Cyclopedia GeneralStats tab (the same panel MP09 reads).
-async fn read_stats(client: &mut DevClientSession) -> TestResult<(u64, u32, Option<u8>)> {
+pub(super) async fn read_stats(
+    client: &mut DevClientSession,
+) -> TestResult<(u64, u32, Option<u8>)> {
     let mut view = panel::CyclopediaCharacterPanel {
         selected: true,
         limit: 50,

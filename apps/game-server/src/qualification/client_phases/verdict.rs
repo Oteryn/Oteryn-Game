@@ -763,6 +763,7 @@ impl Row {
 /// state it starts from. No group currently consumes another group's state:
 /// each row owns its admissions and cleanup.
 const GROUPS: &[(&str, &[&str])] = &[
+    ("boss_sweep", &[]),
     ("core", &[]),
     ("creature_sweep", &[]),
     ("f4", &[]),

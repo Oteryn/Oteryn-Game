@@ -138,9 +138,18 @@ Docker and the exact pinned Platform checkout are required. Set
 Pass multiple groups as separate arguments, for example
 `tools/qualification/node_boot/cloud_run.sh core f6`. The Cloud runner uses
 the bundled environment, runs every group sequentially in the same checkout
-and inherits `OTERYN_E2E_CREATURE_BATCH` for `creature_sweep`. It prints a
+and inherits `OTERYN_E2E_BOSS_SWEEP_BATCH` for `boss_sweep` and
+`OTERYN_E2E_CREATURE_BATCH` for `creature_sweep`. It prints a
 summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
 at the path reported on stderr. It exits nonzero if any group fails.
+
+`boss_sweep` is opt-in through `NODE_BOOT_E2E_ONLY=boss_sweep`. Its
+`OTERYN_E2E_BOSS_SWEEP_BATCH=start:len` selects from the sorted content census
+and defaults to `0:3`. The sweep reports each entry, spawn, combat, reward and
+cooldown step as a `BS.*` row. The census includes encounter definitions, lever
+candidates, arena creature references and held world spawn points. Records
+without a player-facing entry binding produce failures alongside any observed
+wire failures. The fenced level-100 build is declared as `mode=seeded`.
 
 ## Parallel stacks, the single-row loop and diagnostics
 

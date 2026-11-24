@@ -5,6 +5,9 @@ use crate::map::overlay::TilePos;
 use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
 
+#[path = "boss_sweep.rs"]
+mod boss_sweep;
+
 #[path = "full_e2ef3.rs"]
 mod full_e2ef3;
 
@@ -3196,8 +3199,25 @@ pub(super) async fn journeys(
     let mp_selected = groups.runs("mp");
     let sweep_selected = groups.runs("creature_sweep")
         && std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty());
-    if mp_selected || sweep_selected {
+    let boss_selected = groups.runs("boss_sweep")
+        && std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty());
+    if boss_selected || mp_selected || sweep_selected {
         let [mp_first, mp_second, sweep] = extra_world_fixtures(clients, packet_clients).await?;
+        if boss_selected {
+            // The largest authored minimum needs more than one fixture pair.
+            let pairs = [&sweep, &mp_first, &mp_second];
+            let accounts: Vec<_> = pairs
+                .iter()
+                .flat_map(|pair| pair.accounts.iter().cloned())
+                .collect();
+            let characters: Vec<_> = pairs.iter().flat_map(|pair| pair.characters).collect();
+            let boss_clients = SeamClients {
+                accounts: &accounts,
+                characters: &characters,
+                ..*clients
+            };
+            boss_sweep::run(&boss_clients, world, &generation.rewards).await?;
+        }
         if sweep_selected {
             creature_sweep::run(&sweep.clients(clients), world, &generation.rewards).await?;
         }
