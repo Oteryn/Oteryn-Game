@@ -67,6 +67,40 @@ impl AccountUnlocks<String> for Owned {
 }
 
 #[test]
+fn item_mount_receipts_resolve_to_the_authored_target_when_a_look_has_aliases()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_gameplay_content::content::native_gameplay::{
+        NativeGameplayInput, test_support::cosmetics_fixture::decode_cosmetics,
+    };
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../content/spells.manifest.json");
+    let input = NativeGameplayInput::from_manifest(&path)?;
+    let native = decode_cosmetics(&input.cosmetics.bytes)?;
+    let catalogue = catalogue().ok_or("catalogue")?;
+    for (id, target) in [
+        (29, "ironblight"),
+        (30, "magma_crawler"),
+        (31, "dragonling"),
+        (32, "gnarlhound"),
+        (35, "water_buffalo"),
+        (40, "noble_lion"),
+        (42, "shock_head"),
+        (43, "walker"),
+    ] {
+        let key = format!("oteryn:item-grant.mount.{id}");
+        let source = catalogue
+            .grants
+            .iter()
+            .find(|r| r.key == key)
+            .ok_or("grant")?;
+        assert!(native.mount_look(source.look_type.ok_or("look")?).is_none());
+        let grant = resolve(catalogue, &native, &key).map_err(|e| format!("{key}: {e:?}"))?;
+        assert_eq!(grant.cosmetic_key, format!("oteryn:content.mount.{target}"));
+    }
+    Ok(())
+}
+
+#[test]
 fn source_catalogue_keeps_every_item_family_and_numeric_mount_identity() -> Result<(), &'static str>
 {
     let c = catalogue().ok_or("catalogue")?;

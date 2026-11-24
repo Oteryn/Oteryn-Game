@@ -266,6 +266,9 @@ pub trait SourceCosmetics: AppearanceContent<String> {
         self.outfit_pair(looks)
     }
     fn mount_look(&self, look: u32) -> Option<String>;
+    fn mount_for_grant(&self, look: u32, _grant_key: &str) -> Option<String> {
+        self.mount_look(look)
+    }
 }
 
 impl SourceCosmetics for NativeCosmeticsView {
@@ -305,6 +308,14 @@ impl SourceCosmetics for NativeCosmeticsView {
             return None;
         }
         Some(key.to_owned())
+    }
+    fn mount_for_grant(&self, look: u32, grant_key: &str) -> Option<String> {
+        let EarnedCosmetic::Mount(key) = self.authored_grant_target(grant_key)? else {
+            return None;
+        };
+        self.mount_metadata(key)
+            .is_some_and(|(actual, _, _)| actual == look)
+            .then(|| key.to_owned())
     }
 }
 
@@ -364,7 +375,7 @@ pub fn resolve(
         .ok_or(Refusal::ContentUnavailable)?;
     let cosmetic_key = match source.kind {
         GrantKind::Mount => {
-            content.mount_look(source.look_type.ok_or(Refusal::ContentUnavailable)?)
+            content.mount_for_grant(source.look_type.ok_or(Refusal::ContentUnavailable)?, key)
         }
         GrantKind::Outfit | GrantKind::Addon => {
             content.outfit_for_grant(&source.look_types, &source.key)
