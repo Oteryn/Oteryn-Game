@@ -414,3 +414,10 @@ cleanup rows was blocked by seed. At this checkpoint 705 of the original
 
 There were 724 verified seed keys and 679 pending keys out of the original
 1,403 after this replay. The results distinguish the server revisions.
+
+The environment stopped the `898:463` replay after 7 seed PASS and 71
+seed FAIL. The subsequent 121-key runner stopped in compilation with
+zero seed verdicts. Neither emitted a `NODE_BOOT_RESULT`. The executor
+reported `write_stdin failed: Unknown process id 89986` and
+`write_stdin failed: Unknown process id 73571`. Completed seed rows
+remain in the ledger history and the fresh batch is retried in full.

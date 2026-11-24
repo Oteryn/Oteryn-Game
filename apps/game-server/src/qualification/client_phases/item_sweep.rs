@@ -1793,6 +1793,33 @@ fn restrictions(item: &Item) -> Vec<(&'static str, &'static str, &Value, Action)
     checks
 }
 
+fn seed_failure(error: &(dyn std::error::Error + 'static)) -> String {
+    let diagnostic = error.to_string();
+    if diagnostic.starts_with("fixture-") {
+        return diagnostic;
+    }
+    if error
+        .downcast_ref::<std::io::Error>()
+        .is_some_and(|error| error.kind() == std::io::ErrorKind::NotFound)
+    {
+        return "fixture-launcher-not-found".to_owned();
+    }
+    match verdict::classify(error) {
+        verdict::Cause::Transport {
+            code: Some(code), ..
+        } => {
+            format!("fixture-session-closed-E{code}")
+        }
+        verdict::Cause::Transport { .. } => "fixture-transport-failed".to_owned(),
+        verdict::Cause::ServerRefused { code } => format!("fixture-admission-refused-E{code}"),
+        verdict::Cause::BlockedBy { .. } | verdict::Cause::Precondition { .. } => {
+            "fixture-release-blocked".to_owned()
+        }
+        verdict::Cause::Deadline { phase } => format!("fixture-deadline-{phase}"),
+        _ => "fixture-seed-or-admission-failed".to_owned(),
+    }
+}
+
 async fn sweep_item(
     fixtures: &mut Fixtures<'_>,
     world: &'static BundleWorld,
@@ -1899,21 +1926,7 @@ async fn sweep_item(
         Err(error) => {
             // System errors may contain external transport detail. Report the classified
             // fixture failure and keep process diagnostics in the private node log.
-            let message = if error
-                .downcast_ref::<std::io::Error>()
-                .is_some_and(|error| error.kind() == std::io::ErrorKind::NotFound)
-            {
-                "fixture-launcher-not-found"
-            } else {
-                "fixture-seed-or-admission-failed"
-            };
-            let diagnostic = error.to_string();
-            let message = if diagnostic.starts_with("fixture-") {
-                diagnostic.as_str()
-            } else {
-                message
-            };
-            rows.emit("seed", Err(message.to_owned().into()));
+            rows.emit("seed", Err(seed_failure(error.as_ref()).into()));
             rows.blocked("seed");
             return;
         }
@@ -2186,6 +2199,22 @@ mod tests {
             assert!(batch(Some(invalid)).is_err(), "{invalid}");
         }
         Ok(())
+    }
+
+    #[test]
+    fn seed_failures_keep_the_transport_code_and_fixture_dependency() {
+        let server = oteryn_dev_client::SessionError::ServerProtocolError {
+            code: 1200,
+            connection_trace: Some([1; 16]),
+        };
+        assert_eq!(seed_failure(&server), "fixture-session-closed-E1200");
+        let release = verdict::HarnessError::boxed(
+            verdict::Cause::BlockedBy {
+                root: "fixture0-released".into(),
+            },
+            "fixture 0 release blocked",
+        );
+        assert_eq!(seed_failure(release.as_ref()), "fixture-release-blocked");
     }
 
     #[test]
