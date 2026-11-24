@@ -883,19 +883,26 @@ async fn pvp_journey(
             )
             .into());
         }
-        let published = bots[0].client()?.inventory().is_some_and(|inventory| {
-            inventory
-                .equipment
-                .iter()
-                .any(|entry| entry.item.item_definition_ref == axe)
-        });
-        if !published {
-            return Err(format!(
-                "axe command {} moved the axe without publishing equipment",
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        bots::wait_observation(bots, deadline, "PvP axe equipment delta", |bots, _| {
+            let inventory = bots[0]
+                .session
+                .as_ref()
+                .and_then(|client| client.inventory());
+            Ok(inventory.is_some_and(|inventory| {
+                inventory
+                    .equipment
+                    .iter()
+                    .any(|entry| entry.item.item_definition_ref == axe)
+            }))
+        })
+        .await
+        .map_err(|error| {
+            format!(
+                "axe command {} moved the axe without publishing equipment: {error}",
                 equipped.command_id
             )
-            .into());
-        }
+        })?;
     }
     let combat_tile = |at: TilePos| {
         cells

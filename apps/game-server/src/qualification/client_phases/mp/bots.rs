@@ -281,7 +281,11 @@ pub(super) async fn with_peer_liveness<'p, 'a, T>(
     let (before, rest) = bots.split_at_mut_checked(actor).ok_or("MP actor missing")?;
     let (active, after) = rest.split_first_mut().ok_or("MP actor missing")?;
     let result = while_servicing_liveness(operation(active), async || {
-        for peer in before.iter_mut().chain(after.iter_mut()) {
+        for peer in before
+            .iter_mut()
+            .chain(after.iter_mut())
+            .filter(|bot| bot.session.is_some())
+        {
             let result = async {
                 peer.client()?
                     .service_liveness(Duration::from_millis(20))
@@ -679,21 +683,13 @@ async fn logout(bot: &mut Bot<'_, '_>) -> TestResult {
 
 async fn logout_all(bots: &mut [Bot<'_, '_>]) -> TestResult {
     let mut failures = Vec::new();
-    let mut pending = Vec::new();
-    for bot in bots.iter_mut().filter(|bot| bot.session.is_some()) {
-        pending.push(Box::pin(logout_at(bot, "logout-all")));
-    }
-    while !pending.is_empty() {
-        let result = std::future::poll_fn(|cx| {
-            for index in 0..pending.len() {
-                if let std::task::Poll::Ready(result) = pending[index].as_mut().poll(cx) {
-                    drop(pending.remove(index));
-                    return std::task::Poll::Ready(result);
-                }
-            }
-            std::task::Poll::Pending
-        })
-        .await;
+    // Each logout settles through the same World durability holder.
+    for index in 0..bots.len() {
+        if bots[index].session.is_none() {
+            continue;
+        }
+        let result =
+            with_peer_liveness(bots, index, async |bot| logout_at(bot, "logout-all").await).await;
         if let Err(error) = result {
             failures.push(error.to_string());
         }
