@@ -443,9 +443,9 @@ async fn open_castle_entrance(client: &mut DevClientSession, world: &BundleWorld
         .keys()
         .find(|&key| {
             crate::map::view::placement_of(key).is_some_and(|(at, _)| at == entrance)
-                && doors.authored_closed(key) == Some(AuthoredClosedDoor::Plain)
+                && doors.authored_closed(key) == Some(AuthoredClosedDoor::KeyUnlocked)
         })
-        .ok_or("King Tibianus route requires the authored plain castle door")?;
+        .ok_or("King Tibianus route requires the authored unlocked castle door")?;
     let start = tile(client.world_spatial().actor_position)?;
     let path = route(world, start, |at| at == outside)
         .ok_or_else(|| format!("no player walk route from {start:?} to castle door {entrance:?}"))?;
