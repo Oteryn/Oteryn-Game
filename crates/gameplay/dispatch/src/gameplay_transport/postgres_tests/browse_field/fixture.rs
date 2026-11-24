@@ -127,7 +127,12 @@ pub(super) fn scenario(case: Case) -> TestResult {
             .bind(generation.identity().server_artifact_digest().as_slice())
             .bind(generation.identity().client_artifact_digest().as_slice())
             .bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        item_look_fixtures::seed_main_backpack(&harness, &[(COIN, 7), (BAG, 1)]).await?;
+        let entries = if case == Case::CarriedUse {
+            [("oteryn:item.tibia.i10326", 1), ("oteryn:item.tibia.i10346", 1)]
+        } else {
+            [(COIN, 7), (BAG, 1)]
+        };
+        item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -135,6 +140,25 @@ pub(super) fn scenario(case: Case) -> TestResult {
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             owner.offered_capabilities(), &[4, 6, 12, 14, 18, CAPABILITY_BROWSE_FIELD_V1],
         ).ok_or("browse capability selectable")?;
+        if case == Case::CarriedUse {
+            use std::{future::Future, task::Poll};
+            use crate::gameplay_transport::container_view::ContainerObservation;
+            use crate::gameplay_transport::item_view::ItemKey;
+
+            for item in [id(71), id(72)] {
+                let held = harness.root.try_issue_background_semantic_pass()?;
+                let read = crate::durability::DurabilityRoot::with_holder_owner(
+                    owner.observe_container_with_house_capacity(
+                        deps.actor, Some(fence), ItemKey::Instance(item), false,
+                    ),
+                );
+                let mut read = std::pin::pin!(read);
+                let first = std::future::poll_fn(|context| Poll::Ready(read.as_mut().poll(context))).await;
+                held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                assert!(first.is_pending(), "busy custody read {first:?}");
+                assert!(matches!(read.await, Some(ContainerObservation::Container { capacity: 20, .. })));
+            }
+        }
         if case == Case::Backpack {
             use crate::gameplay_transport::container_view::ContainerObservation;
             use crate::gameplay_transport::item_view::ItemKey;

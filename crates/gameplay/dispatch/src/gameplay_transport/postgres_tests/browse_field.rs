@@ -23,6 +23,12 @@ enum Case {
     Navigation,
     Paging,
     Autowalk,
+    CarriedUse,
+}
+
+#[test]
+fn carried_container_use_preserves_the_view_when_the_holder_is_busy() -> TestResult {
+    run_case(Case::CarriedUse)
 }
 
 #[test]

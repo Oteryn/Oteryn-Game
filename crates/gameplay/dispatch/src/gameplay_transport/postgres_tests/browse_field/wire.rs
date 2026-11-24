@@ -59,6 +59,24 @@ pub(super) async fn exercise(
                 autowalk(&mut client, harness).await?;
                 None
             }
+            Case::CarriedUse => {
+                use protocol::world_object::{
+                    COMMAND_TYPE_USE_INTENT, UseDisposition, decode_use_result, encode_use_item_intent,
+                };
+                assert_eq!(inventory.entries.len(), 2);
+                for (index, entry) in inventory.entries.iter().enumerate() {
+                    let command = u64::try_from(index)? + 1;
+                    let intent = encode_use_item_intent(entry.handle);
+                    send(&mut client, command, COMMAND_TYPE_USE_INTENT, &intent).await?;
+                    let payload = result(&mut client, command).await?;
+                    assert_eq!(decode_use_result(&payload).map_err(debug)?, UseDisposition::Committed);
+                    let open = views(&mut client).await?;
+                    assert!(open.views.iter().any(|view| {
+                        view.container_handle == entry.handle && view.capacity == 20
+                    }));
+                }
+                None
+            }
         };
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(replay)

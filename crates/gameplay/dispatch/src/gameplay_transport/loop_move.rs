@@ -1530,9 +1530,15 @@ async fn observe_container_with_house_capacity_inner(
         admission.active_generation,
     )?;
     let native = admission.active_generation?.native_gameplay()?;
-    let carried = admission
-        .root
-        .read_item_loop_container(admission.character, fence.character_id, container)
+    // A busy holder does not establish that the target is unobservable. USE would
+    // otherwise fall through to the carried-item action and refuse an ordinary bag.
+    let carried = super::AdmissionRetryBudget::for_command(admission.root)
+        .retry_command_guard(async || {
+            admission
+                .root
+                .read_item_loop_container(admission.character, fence.character_id, container)
+                .await
+        })
         .await
         .ok()?;
     let is_carried = carried.is_some();
