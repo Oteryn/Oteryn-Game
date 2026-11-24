@@ -1025,6 +1025,27 @@ async fn extra_world_fixtures(
         .map_err(|_| "dedicated World fixture count".into())
 }
 
+async fn run_boss_sweep(
+    clients: &SeamClients<'_>,
+    fixtures: &[WorldFixturePair; 3],
+    generation: &QualificationWorld,
+) -> TestResult {
+    let [mp_first, mp_second, sweep] = fixtures;
+    // The largest authored minimum needs more than one fixture pair.
+    let pairs = [sweep, mp_first, mp_second];
+    let accounts: Vec<_> = pairs
+        .iter()
+        .flat_map(|pair| pair.accounts.iter().cloned())
+        .collect();
+    let characters: Vec<_> = pairs.iter().flat_map(|pair| pair.characters).collect();
+    let boss_clients = SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
+    boss_sweep::run(&boss_clients, &generation.bundle, &generation.rewards).await
+}
+
 pub(super) async fn journeys(
     clients: &SeamClients<'_>,
     packet_clients: &SeamClients<'_>,
@@ -1046,6 +1067,11 @@ pub(super) async fn journeys(
         started.elapsed().as_millis()
     ));
     let groups = verdict::Groups::from_env()?;
+    // The isolated sweep uses dedicated accounts and performs its own admission.
+    if groups.only("boss_sweep") {
+        let fixtures = extra_world_fixtures(clients, packet_clients).await?;
+        return run_boss_sweep(clients, &fixtures, generation).await;
+    }
     // The required core keeps its ordinary pair; packet journeys own a separate pair.
     let mut client = connect_world(clients, 0x70).await?;
     let entered_at = tile(client.world_spatial().actor_position)?;
@@ -3202,22 +3228,11 @@ pub(super) async fn journeys(
     let boss_selected = groups.runs("boss_sweep")
         && std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty());
     if boss_selected || mp_selected || sweep_selected {
-        let [mp_first, mp_second, sweep] = extra_world_fixtures(clients, packet_clients).await?;
+        let fixtures = extra_world_fixtures(clients, packet_clients).await?;
         if boss_selected {
-            // The largest authored minimum needs more than one fixture pair.
-            let pairs = [&sweep, &mp_first, &mp_second];
-            let accounts: Vec<_> = pairs
-                .iter()
-                .flat_map(|pair| pair.accounts.iter().cloned())
-                .collect();
-            let characters: Vec<_> = pairs.iter().flat_map(|pair| pair.characters).collect();
-            let boss_clients = SeamClients {
-                accounts: &accounts,
-                characters: &characters,
-                ..*clients
-            };
-            boss_sweep::run(&boss_clients, world, &generation.rewards).await?;
+            run_boss_sweep(clients, &fixtures, generation).await?;
         }
+        let [mp_first, mp_second, sweep] = fixtures;
         if sweep_selected {
             creature_sweep::run(&sweep.clients(clients), world, &generation.rewards).await?;
         }
