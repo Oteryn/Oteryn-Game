@@ -192,7 +192,9 @@ pub(super) async fn run(
     row!("S03", S03, guild);
     row!("S09", S09, logout, clients, world, spawns);
     row!("S18", S18, speech, clients, world);
-    if let Err(error) = recover_primary(client, clients, &mut previous_session, "lifecycle").await {
+    if crate::node::qualification_operator_uid().is_some()
+        && let Err(error) = recover_primary(client, clients, &mut previous_session, "lifecycle").await
+    {
         evidence(&format!("E2EF4_GAP lifecycle recovery admission: {error}"));
         return;
     }
@@ -222,6 +224,9 @@ async fn recover_primary(
     row: &str,
 ) -> TestResult {
     if client.is_none() {
+        if crate::node::qualification_operator_uid().is_none() {
+            return Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into());
+        }
         let predecessor = previous.ok_or("F4 recovery has no predecessor session")?;
         let fresh = connect_world(clients, 0x89).await?;
         let session = fresh.join_snapshot().game_session_id;
@@ -696,9 +701,17 @@ async fn coins(
     let gold = backpack_coins(client, refs)?[0];
     e03_timing(started, "inventory", client, gold);
     if gold < 100 {
+        // In the Cloud town bundle, the nearest reachable Rat takes 217 steps and
+        // crosses wolf spawns. The 64-step Cave Rat route also supplies native gold loot.
+        let creature = if crate::node::qualification_operator_uid().is_some() {
+            "oteryn:creature.cave_rat"
+        } else {
+            "oteryn:creature.rat"
+        };
         let hunt: TestResult = async {
-            e03_timing(started, "route-to-rat-start", client, gold);
-            travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
+            evidence(&format!("E2EF4_OBSERVATION E03 acquisition_target={creature}"));
+            e03_timing(started, "route-to-creature-start", client, gold);
+            travel_to_spawn(client, world, spawns, creature).await?;
             e03_timing(started, "hunt-start", client, gold);
             client_hunt::hunt(client).await
         }
