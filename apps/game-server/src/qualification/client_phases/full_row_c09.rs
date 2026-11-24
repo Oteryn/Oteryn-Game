@@ -1,6 +1,6 @@
 //! C09 full-row player scenario, derived from the matrix, Crystal re-audit, and the native
 //! food item-use and periodic-vitals owners:
-//! 1. Buy meat from the authored seller and verify the exact purchased stack increase.
+//! 1. Open the tavern door, buy meat from Frodo, and verify the exact stack increase.
 //! 2. Walk to a compiled poison-spider spawn and use ordinary ATTACK/combat until health is
 //!    below maximum; cast an available mana-cost spell and require its Cast reply and mana debit.
 //! 3. Send USE for the bought meat handle; require `Committed`, an inventory delta, and an exact
@@ -49,8 +49,6 @@ impl Row {
         evidence(&format!("C09_CHECK {step} PASS observed={observed:?}"));
     }
     fn finish(self, result: TestResult) {
-        let result: TestResult =
-            result.and(Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into()));
         for step in STEPS {
             if !self.passed.contains(step) {
                 evidence(&format!("C09_CHECK {step} FAIL assertion-not-completed"));
@@ -216,12 +214,131 @@ fn visible_frodo(
     candidates.next().is_none().then_some(first.entity)
 }
 
+async fn walk_to_frodo(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    here: TilePos,
+    within_talk_range: impl Fn(TilePos) -> bool,
+) -> TestResult<BundleWorld> {
+    use crate::map::door::{AuthoredClosedDoor, DoorUse};
+    use crate::map::view::{MapFacts, placement_of};
+    use oteryn_protocol_oteryn::world_map::MapOrigin;
+
+    let door = TilePos {
+        x: 32357,
+        y: 32206,
+        floor: -7,
+    };
+    let oracle = world
+        .fresh_channel_for_test()
+        .map_err(|error| format!("tavern map: {error:?}"))?;
+    let doors = oracle.facts().doors();
+    let (key, ordinal) = doors
+        .keys()
+        .find_map(|key| {
+            let (at, ordinal) = placement_of(key)?;
+            (at == door
+                && matches!(
+                    doors.authored_closed(key),
+                    Some(AuthoredClosedDoor::Plain | AuthoredClosedDoor::KeyUnlocked)
+                )
+                && oracle.facts().opening_door_enterable(oracle.base(), key))
+            .then_some((key, ordinal))
+        })
+        .ok_or("Frodo's tavern door is absent or lacks an enterable open state")?;
+    let path = route(world, here, |at| {
+        at.floor == door.floor && at.x.abs_diff(door.x).saturating_add(at.y.abs_diff(door.y)) == 1
+    })
+    .ok_or("no STEP route to Frodo's tavern door")?;
+    walk(client, world, &path).await?;
+
+    let tile = oracle
+        .base()
+        .tile(door.x, door.y, door.floor)
+        .ok_or("tavern door tile absent")?;
+    let id = tile
+        .ids()
+        .iter()
+        .zip(tile.depths())
+        .filter_map(|(&id, &depth)| (depth == 0).then_some(id))
+        .nth(usize::from(ordinal))
+        .ok_or("tavern door ordinal absent")?;
+    // Compute the expected face in an isolated map. The route uses this state only
+    // after the native command and its map delta prove the live door opened.
+    if doors.toggle(key, 0, false, 1, false)
+        != Some(DoorUse::Toggled {
+            revision: 1,
+            open: true,
+        })
+    {
+        return Err("authored tavern door does not open at level one".into());
+    }
+    let open = oracle
+        .facts()
+        .base_entry(door, ordinal, id)
+        .ok_or("open tavern door face absent")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    client.take_events();
+    let used = client.use_object(&placement, 0).await?;
+    if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {
+        return Err(format!("tavern door USE reply={used:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let position = ActorPosition {
+        x: i32::from(door.x),
+        y: i32::from(door.y),
+        floor: -i16::from(door.floor),
+    };
+    loop {
+        let opened = client.take_events().into_iter().any(|event| {
+            matches!(event, SessionEvent::WorldMap(delta)
+                if delta.server_sequence > used.result_server_sequence
+                    && delta.value.tiles.iter().any(|tile| tile.position == position
+                        && tile.items.iter().any(|item| item.definition == open.definition
+                            && item.appearance_id == open.appearance_id
+                            && item.origin == MapOrigin::BaseOrdinal { ordinal, object_revision: 1 })))
+        });
+        if opened {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(
+                "committed tavern door USE did not publish the open face at revision 1".into(),
+            );
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+    evidence(&format!(
+        "C09_TAVERN_DOOR placement={door:?} revision=1 disposition=Committed"
+    ));
+    let path = route(
+        &oracle,
+        super::tile(client.world_spatial().actor_position)?,
+        within_talk_range,
+    )
+    .ok_or("no STEP route to Frodo within talk range after opening the tavern door")?;
+    walk(client, &oracle, &path).await?;
+    Ok(oracle)
+}
+
 pub(super) async fn buy_meat(
     client: &mut DevClientSession,
     world: &BundleWorld,
     reference: NonZeroU32,
     units: u32,
 ) -> TestResult {
+    buy_meat_from_frodo(client, world, reference, units, false).await?;
+    Ok(())
+}
+
+async fn buy_meat_from_frodo(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    reference: NonZeroU32,
+    units: u32,
+    require_door: bool,
+) -> TestResult<Option<BundleWorld>> {
     use oteryn_dev_client::client_runtime::npc_shop as runtime;
     use oteryn_protocol_oteryn::npc_service as wire;
     let metadata = oteryn_world_bundle::bundle::visit(
@@ -236,13 +353,19 @@ pub(super) async fn buy_meat(
         .find(|npc| npc.key == "oteryn:npc.frodo")
         .ok_or("Frodo absent from compiled World bundle")?;
     let approach = wire::TALK_RANGE_TILES - u32::from(FRODO_WANDER_RADIUS);
-    let path = route(world, here, |at| {
+    let within_talk_range = |at: TilePos| {
         npc.placements.iter().any(|p| {
             p.floor == at.floor && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
         })
-    })
-    .ok_or("no walk route to Frodo within talk range")?;
-    walk(client, world, &path).await?;
+    };
+    let open_world = if require_door {
+        Some(walk_to_frodo(client, world, here, within_talk_range).await?)
+    } else {
+        let path = route(world, here, within_talk_range)
+            .ok_or("no walk route to Frodo within talk range")?;
+        walk(client, world, &path).await?;
+        None
+    };
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let actor = loop {
         if let Some(actor) = visible_frodo(client, &npc.placements) {
@@ -306,7 +429,8 @@ pub(super) async fn buy_meat(
         reference,
         before + u64::from(units) * u64::from(offer.count),
     )
-    .await
+    .await?;
+    Ok(open_world)
 }
 
 async fn damage_and_spend_mana(
@@ -519,7 +643,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let meat = provisioning::item_reference(&provisioning::item_index()?, 3577)?;
-    let mut client = connect_world(clients, 0xc9).await?;
+    character_prep::declare_seeded("C09", "character", "dedicated Platform bootstrap");
+    let identity = character_prep::bootstrap_row_character(
+        clients,
+        "01934f10-7c00-7000-8000-000000000020",
+        "01934f10-7c04-7020-805b-3b1122334420",
+        "Tavern Food Buyer",
+    )
+    .await?;
+    let clients = &identity.clients(clients);
+    let mut client = character_prep::connect_row_character(clients).await?;
     // Seven meats can fill the 20-minute stomach. Keep an additional unit
     // available to exercise the refusal after allowing the regeneration ticks.
     const MEATS: u32 = 8;
@@ -528,7 +661,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .await
         .map_err(|error| format!("fund-Frodo-trade: {error}"))?;
     let initial = quantity(&client, meat)?;
-    buy_meat(&mut client, world, meat, MEATS).await?;
+    let tavern_open = buy_meat_from_frodo(&mut client, world, meat, MEATS, true)
+        .await?
+        .ok_or("C09 purchase lacks the observed open tavern map")?;
     if quantity(&client, meat)? != initial + u64::from(MEATS) {
         return Err(format!(
             "purchase delta expected={MEATS} observed={}",
@@ -539,7 +674,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("food-purchase", (initial, initial + u64::from(MEATS)));
     row.pass(
         "damage-and-mana-debit",
-        damage_and_spend_mana(&mut client, world).await?,
+        damage_and_spend_mana(&mut client, &tavern_open).await?,
     );
     let handle = client
         .inventory()
@@ -589,7 +724,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let old_session = client.join_snapshot().game_session_id;
     accepted_logout(&mut client).await?;
     drop(client);
-    let mut client = connect_world(clients, 0xd9).await?;
+    let mut client = character_prep::connect_row_character(clients).await?;
     let fed_after = food_remaining(&mut client, None).await?;
     if fed_after <= 0 {
         return Err(format!("fresh admission lost timed food: remaining={fed_after}ms").into());

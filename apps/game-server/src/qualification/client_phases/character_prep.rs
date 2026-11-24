@@ -213,3 +213,116 @@ pub(super) async fn reload(
     }
     Ok(())
 }
+
+/// Bootstrap a row-owned character through the disposable Platform and node
+/// control socket. No gameplay state is granted by this preparation.
+pub(super) async fn bootstrap_row_character(
+    scope: &SeamClients<'_>,
+    account: &str,
+    operation: &str,
+    name: &str,
+) -> TestResult<DedicatedCharacter> {
+    let work = required("NODE_BOOT_PLATFORM_GRANT_DIR")?;
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let world = uuid_text(&scope.world);
+    let account_id = account.to_owned();
+    let operation = operation.to_owned();
+    let name = name.to_owned();
+    let output = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("python3")
+            .args([
+                "-B",
+                "-c",
+                r#"
+import json, os, secrets, subprocess, sys, tempfile
+from pathlib import Path
+
+source, work, socket, account, world, operation, name = sys.argv[1:]
+work, socket = Path(work), Path(socket)
+sys.path.insert(0, str(Path(source) / 'tools/qualification/game_platform'))
+from composition import bootstrap
+
+stage = 'fixture inputs'
+try:
+    node = socket.parent.parent
+    env = json.loads((work / 'portal/secrets/env.json').read_text())
+    binary = json.loads((work / 'identity.json').read_text())['portal_binary']
+    roster = work / 'row-accounts.json'
+    accounts = json.loads(roster.read_text())
+    if account in accounts:
+        raise ValueError('row account already exists')
+    credentials = dict(email=f'nb-{account}@example.invalid', password=secrets.token_urlsafe(48))
+    stage = 'Platform account'
+    subprocess.run([binary, 'seed', 'account', json.dumps(dict(accountId=account, **credentials))],
+                   env=env, capture_output=True, timeout=20, check=True)
+    stage = 'Platform character intent'
+    bootstrap(work, account, world, operation,
+              ['nb-profile-1', 'nb-ruleset-1', 's3b-content-1', 'newhaven-starter-r1'],
+              name, 'Sorcerer')
+    stage = 'node character bootstrap'
+    operator = [] if os.environ.get('NODE_BOOT_UNPRIVILEGED') == '1' else ['sudo', '-n']
+    subprocess.run([*operator, node / 'bin/oteryn-game-ops', '--config', node / 'ops/ops.toml',
+                    'character', 'bootstrap', '--socket', socket, '--operation-id', operation],
+                   capture_output=True, timeout=20, check=True)
+    stage = 'Platform grant credentials'
+    accounts[account] = credentials
+    with tempfile.NamedTemporaryFile(mode='w', dir=work, delete=False) as updated:
+        json.dump(accounts, updated)
+    os.replace(updated.name, roster)
+except (OSError, KeyError, ValueError, subprocess.SubprocessError):
+    print(stage)
+    sys.exit(1)
+"#,
+                concat!(env!("CARGO_MANIFEST_DIR"), "/../.."),
+            ])
+            .args([work, socket, account_id, world, operation, name])
+            .output()
+    })
+    .await??;
+    if !output.status.success() {
+        let stage = String::from_utf8_lossy(&output.stdout);
+        return Err(format!(
+            "dedicated row character bootstrap failed at {}",
+            stage.trim()
+        )
+        .into());
+    }
+    let mut database = sqlx::PgConnection::connect(scope.url).await?;
+    let rows: Vec<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(character_id) FROM game_character_roots
+         WHERE account_id=$1::uuid AND world_id=encode($2,'hex')::uuid LIMIT 2",
+    )
+    .bind(account)
+    .bind(scope.world.as_slice())
+    .fetch_all(&mut database)
+    .await?;
+    database.close().await?;
+    let [character] = rows.as_slice() else {
+        return Err("dedicated row account must have exactly one character".into());
+    };
+    Ok(DedicatedCharacter {
+        accounts: [account.to_owned()],
+        characters: [character.as_slice().try_into()?],
+    })
+}
+
+/// Admit a row-owned character with an actual Platform grant on every entry.
+pub(super) async fn connect_row_character(
+    clients: &SeamClients<'_>,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    wait_character_released(clients, 0).await?;
+    let token = platform_row_grant(clients, 0).await?;
+    let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
+        address: clients.address,
+        server_name: "localhost",
+        root_certificate: clients.certificate,
+        schema_revision: 1,
+        character_id: crate::foundation::CharacterId::decode(&clients.characters[0])?,
+        admission_material: token.as_bytes(),
+        client_build_id: "oteryn-dev-client/world-qualification",
+        deadline: Duration::from_secs(20),
+    })
+    .await?;
+    verdict::Harness::global().progress("admission");
+    Ok(client)
+}

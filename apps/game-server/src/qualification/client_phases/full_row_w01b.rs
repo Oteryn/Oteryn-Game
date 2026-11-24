@@ -17,6 +17,9 @@ use oteryn_dev_client::{
     DevClientSession, EntityDetail, EntityKind, EntityRef, WorldSpatialEntity,
 };
 
+use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
+use std::collections::BTreeSet;
+
 const ROW: &str = "W01b";
 
 struct Progress {
@@ -126,6 +129,34 @@ fn visible_rat_at(client: &DevClientSession, at: TilePos) -> Option<EntityRef> {
         .and_then(|entities| rat_at(entities.iter().copied(), at))
 }
 
+async fn walk_observing_spawn(
+    client: &mut DevClientSession,
+    path: &[StepDirection],
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+    spawn: TilePos,
+) -> TestResult<Option<EntityRef>> {
+    let mut at = tile(client.world_spatial().actor_position)?;
+    let mut observed = visible_rat_at(client, spawn);
+    let mut split = 0;
+    // The shared walker drains its event queue after every step. Read the
+    // applied entity view while entering interest, before the rat can chase.
+    while observed.is_none() && split < path.len() {
+        let step = path[split];
+        at = landing(at, step).ok_or("planned rat approach lost its landing")?;
+        split += 1;
+        if distance(at, spawn) <= 6 {
+            break;
+        }
+    }
+    walk_with_landings(client, &path[..split], &landing).await?;
+    observed = observed.or_else(|| visible_rat_at(client, spawn));
+    walk_with_landings(client, &path[split..], landing).await?;
+    let live = |actor: &EntityRef| {
+        client.world_entities().is_some_and(|entities| entities.get(actor).is_some())
+    };
+    Ok(visible_rat_at(client, spawn).or_else(|| observed.filter(live)))
+}
+
 async fn pump(client: &mut DevClientSession) -> TestResult<Vec<oteryn_dev_client::SessionEvent>> {
     client.service_liveness(Duration::from_millis(100)).await?;
     Ok(client.take_events())
@@ -164,39 +195,135 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         ChannelId::decode(&clients.channel)?,
     )?;
     progress.begin("admission");
-    let mut client = connect_world(clients, 0xb1).await?;
-    progress.begin("initial-spawn");
-    travel_to_spawn(
-        &mut client,
-        world,
-        &metadata.spawns,
-        "oteryn:creature.rat",
+    character_prep::declare_seeded(ROW, "character", "dedicated Platform bootstrap");
+    let identity = character_prep::bootstrap_row_character(
+        clients,
+        "01934f10-7c00-7000-8000-000000000021",
+        "01934f10-7c04-7021-805b-3b1122334421",
+        "Sewer Rat Hunter",
     )
     .await?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities
-                .iter()
-                .filter(|entity| is_rat(entity))
-                .min_by_key(|entity| {
-                    tile(entity.position)
-                        .map_or(u16::MAX, |position| distance(position, here))
-                })
+    let clients = &identity.clients(clients);
+    let mut client = character_prep::connect_row_character(clients).await?;
+    progress.begin("initial-spawn");
+    let from = tile(client.world_spatial().actor_position)?;
+    // Restrict travel to the streets and sewers around the Thais temple.
+    // Leave six tiles around other authored creature sites.
+    const SITE_RADIUS: u16 = 32;
+    const ROUTE_RADIUS: u16 = 56;
+    const CREATURE_BUFFER: i16 = 6;
+    let town_distance = |at: TilePos| at.x.abs_diff(TOWN.x).max(at.y.abs_diff(TOWN.y));
+    let mut unsafe_tiles = BTreeSet::new();
+    for source in &metadata.spawns.sources {
+        if !matches!(source.floor, -7 | -8) {
+            continue;
+        }
+        for point in &source.points {
+            let at = TilePos {
+                x: point.x,
+                y: point.y,
+                floor: source.floor,
+            };
+            if town_distance(at) > ROUTE_RADIUS + CREATURE_BUFFER.unsigned_abs()
+                || metadata.spawns.creatures[point.creature as usize].key == "oteryn:creature.rat"
+            {
+                continue;
+            }
+            for dx in -CREATURE_BUFFER..=CREATURE_BUFFER {
+                for dy in -CREATURE_BUFFER..=CREATURE_BUFFER {
+                    if let Some((x, y)) =
+                        at.x.checked_add_signed(dx).zip(at.y.checked_add_signed(dy))
+                    {
+                        unsafe_tiles.insert(TilePos {
+                            x,
+                            y,
+                            floor: at.floor,
+                        });
+                    }
+                }
+            }
+        }
+    }
+    let safe = |at: TilePos| {
+        matches!(at.floor, -7 | -8)
+            && town_distance(at) <= ROUTE_RADIUS
+            && !unsafe_tiles.contains(&at)
+    };
+    let landing = |at, direction| destination(world, at, direction).filter(|&next| safe(next));
+    let plan =
+        |from, goal: &dyn Fn(TilePos) -> bool| route_with_landings(from, goal, |_| true, landing);
+    let authored_rats: Vec<_> = rat_points(&metadata.spawns).collect();
+    let mut sites: Vec<_> = authored_rats
+        .iter()
+        .copied()
+        .filter(|(at, _)| {
+            at.floor == -8
+                && town_distance(*at) <= SITE_RADIUS
+                && safe(*at)
+                && authored_rats
+                    .iter()
+                    .all(|(other, _)| other == at || distance(*other, *at) > 8)
         })
-        .ok_or("step=initial-spawn no live creature reached by rat route")?;
-    let target_at = tile(target.position)?;
-    let target = target.entity;
-    let (spawn, respawn_ms) = rat_points(&metadata.spawns)
-        .filter(|(point, _)| distance(*point, target_at) <= 8)
-        .min_by_key(|(point, _)| distance(*point, here))
-        .ok_or("step=initial-spawn live routed creature has no nearby authored rat point")?;
+        .collect();
+    sites.sort_by_key(|(at, interval)| {
+        (at.x.abs_diff(from.x).max(at.y.abs_diff(from.y)), *interval)
+    });
+    let (spawn, respawn_ms, approach, stand, retreat) = sites
+        .into_iter()
+        .find_map(|(spawn, respawn_ms)| {
+            let approach = plan(from, &|at| {
+                distance(at, spawn) == 1
+                    && world
+                        .base()
+                        .tile(at.x, at.y, at.floor)
+                        .is_some_and(|tile| !tile.protection_zone())
+            })?;
+            let stand = approach
+                .iter()
+                .try_fold(from, |at, &step| landing(at, step))?;
+            let away = plan(stand, &|at| {
+                at.x.abs_diff(spawn.x).max(at.y.abs_diff(spawn.y)) >= 20
+            })?;
+            let retreat = away.iter().try_fold(stand, |at, &step| landing(at, step))?;
+            plan(retreat, &|at| at == stand)?;
+            Some((spawn, respawn_ms, approach, stand, retreat))
+        })
+        .ok_or("no safe round-trip STEP route to an authored Thais sewer rat")?;
+    let target = walk_observing_spawn(&mut client, &approach, landing, spawn)
+        .await?
+        .ok_or("step=initial-spawn no live exact rat observed at the authored spawn")?;
     progress.pass("initial-spawn", (spawn, respawn_ms, target));
 
+    let mut last = tile(
+        client
+            .world_entities()
+            .and_then(|entities| entities.get(&target))
+            .ok_or("authored rat vanished before attack")?
+            .position,
+    )?;
+    let existing_corpses: BTreeSet<_> = client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|entity| entity.kind == EntityKind::Corpse)
+        .map(|entity| entity.entity)
+        .collect();
+    client.take_events();
     progress.begin("kill-command");
+    let modes = client
+        .session_mut()
+        .set_fight_modes(&FightModes {
+            fight_mode: FightMode::Offensive,
+            chase: ChaseMode::Chase,
+            secure: true,
+        })
+        .await?;
+    if modes.status != CommandStatus::Accepted || modes.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("rat chase mode reply={modes:?}").into());
+    }
     let attack = client.session_mut().attack_target(Some(&target)).await?;
-    if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+    if attack.status != CommandStatus::Accepted || attack.disposition != AttackIntentDisposition::Ok
+    {
         return Err(format!("ATTACK_TARGET reply={attack:?}").into());
     }
     progress.pass("kill-command", attack);
@@ -204,11 +331,27 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut damaged = false;
-    let mut last = spawn;
     let corpse = loop {
-        for event in pump(&mut client).await? {
+        let events = pump(&mut client).await;
+        if client
+            .actor_vitals()
+            .is_some_and(|vitals| vitals.health == 0)
+        {
+            return Err(format!("player died before confirming rat kill target={target:?}").into());
+        }
+        for event in events? {
+            if matches!(&event, oteryn_dev_client::SessionEvent::ActorVitals(delta) if delta.value.health == 0)
+            {
+                return Err(
+                    format!("player died before confirming rat kill target={target:?}").into(),
+                );
+            }
             if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event
-                && let Some(entity) = delta.value.update.iter().find(|entry| entry.entity == target)
+                && let Some(entity) = delta
+                    .value
+                    .update
+                    .iter()
+                    .find(|entry| entry.entity == target)
             {
                 last = tile(entity.position)?;
                 damaged |= matches!(entity.detail, EntityDetail::Actor { health_percent, .. } if health_percent < 100);
@@ -217,6 +360,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         let corpse = client.world_entities().and_then(|entities| {
             entities.iter().find(|entity| {
                 entity.kind == EntityKind::Corpse
+                    && !existing_corpses.contains(&entity.entity)
                     && tile(entity.position).is_ok_and(|position| position == last)
             })
         });
@@ -237,8 +381,8 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.pass("kill-deltas", (target, corpse, last));
 
     progress.begin("nearby-refusal");
-    let blocked_until = tokio::time::Instant::now()
-        + Duration::from_millis(u64::from(respawn_ms) + 1_000);
+    let blocked_until =
+        tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms) + 1_000);
     verdict::Harness::global().bounded_wait(blocked_until, "bounded-observation");
     while tokio::time::Instant::now() < blocked_until {
         pump(&mut client).await?;
@@ -250,10 +394,13 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
 
     progress.begin("leave-interest");
     let from = tile(client.world_spatial().actor_position)?;
-    let away = route(world, from, |at| distance(at, spawn) >= 20)
-        .ok_or("no legitimate walking route outside spawn interest")?;
-    walk(&mut client, world, &away).await?;
-    progress.pass("leave-interest", tile(client.world_spatial().actor_position)?);
+    let away = plan(from, &|at| at == retreat)
+        .ok_or("no safe walking route outside spawn interest from the kill site")?;
+    walk_with_landings(&mut client, &away, landing).await?;
+    progress.pass(
+        "leave-interest",
+        tile(client.world_spatial().actor_position)?,
+    );
     // Keep answering liveness while the interval runs out; a bare sleep lets
     // the server drop the session as unresponsive.
     let until = tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms) + 1_000);
@@ -262,33 +409,41 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         client.service_liveness(Duration::from_millis(500)).await?;
     }
     progress.begin("return-to-spawn");
-    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        distance(at, spawn) <= 1
+    let back = plan(tile(client.world_spatial().actor_position)?, &|at| {
+        at == stand
     })
     .ok_or("no legitimate return route to rat spawn")?;
-    walk(&mut client, world, &back).await?;
+    let observed = walk_observing_spawn(&mut client, &back, landing, spawn).await?;
     progress.begin("replacement-delta");
+    let mut replacement = observed;
     wait_until(
         &mut client,
         tokio::time::Instant::now() + Duration::from_secs(10),
-        |client| visible_rat_at(client, spawn).is_some_and(|entity| entity != target),
-    )
-    .await?;
-    let replacement = visible_rat_at(&client, spawn).ok_or("replacement disappeared")?;
+        |client| {
+            replacement = visible_rat_at(client, spawn).or(replacement);
+            replacement.is_some_and(|actor| actor != target
+                && client.world_entities().is_some_and(|entities| entities.get(&actor).is_some()))
+        },
+    ).await?;
+    let replacement = replacement.ok_or("replacement disappeared")?;
     progress.pass("replacement-delta", replacement);
 
     progress.begin("logout");
+    let previous_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     progress.pass("logout", "Accepted");
     drop(client);
     progress.begin("fresh-admission");
-    let mut fresh = connect_world(clients, 0xb2).await?;
+    let mut fresh = character_prep::connect_row_character(clients).await?;
+    if fresh.join_snapshot().game_session_id == previous_session {
+        return Err("fresh W01b admission reused the original session".into());
+    }
     progress.begin("fresh-admission-route");
-    let path = route(world, tile(fresh.world_spatial().actor_position)?, |at| {
-        distance(at, spawn) <= 1
+    let path = plan(tile(fresh.world_spatial().actor_position)?, &|at| {
+        at == stand
     })
     .ok_or("fresh admission cannot route to rat spawn")?;
-    walk(&mut fresh, world, &path).await?;
+    walk_with_landings(&mut fresh, &path, landing).await?;
     progress.begin("fresh-admission-state");
     wait_until(
         &mut fresh,
