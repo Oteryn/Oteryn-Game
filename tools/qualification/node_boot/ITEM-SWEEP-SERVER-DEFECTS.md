@@ -337,3 +337,12 @@ for ammunition and selects an eligible vocation from the authored rune
 definition. 2493 and 5964 failed during transport or session durability
 before custody was established. These results do not verify their item
 effect or turn those fixture failures into item-server defects.
+
+| Reseed batch | Seed PASS | Seed FAIL | Terminal result |
+| --- | ---: | ---: | --- |
+| Pending-key manifest `0:1361` | 556 | 343 | Interrupted after 899 seed verdicts |
+| Pending-key manifest `898:463` | Pending | Pending | Restarted at `tibia.i37783` |
+
+The interrupted run left no `NODE_BOOT_RESULT` and its process exited.
+The restart repeats the last observed key. The ledger has 792 entries
+remaining from the original 1,403, with 611 distinct seeds verified.
