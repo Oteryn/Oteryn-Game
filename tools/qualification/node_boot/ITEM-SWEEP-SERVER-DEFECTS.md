@@ -325,3 +325,15 @@ multiple gear grants sharing one reward cause, looking up a rune by its
 wire reference instead of its source item ID, and routing a known corpse
 through portable seeding when its definition lacks a Ground-only profile.
 The 2493 bed journey still ended during transport before custody.
+
+| Full driver retry | Seed PASS | Seed FAIL | Terminal result |
+| --- | ---: | ---: | --- |
+| 15793, 2493, 3156, 5964 | 2 | 2 | `NODE_BOOT_FAIL` |
+
+15793 seeded with separately admitted gear, then the live Rat search
+timed out. 3156 seeded and sent the targeted rune request, which returned
+`RequirementNotMet`. The follow-up harness spawns an exact combat fixture
+for ammunition and selects an eligible vocation from the authored rune
+definition. 2493 and 5964 failed during transport or session durability
+before custody was established. These results do not verify their item
+effect or turn those fixture failures into item-server defects.
