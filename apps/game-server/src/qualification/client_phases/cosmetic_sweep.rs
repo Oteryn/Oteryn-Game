@@ -496,7 +496,11 @@ pub(super) async fn run(
             )
             .await;
             let release = release_pair(clients).await;
-            if let Err(error) = &release {
+            let position_error = result
+                .as_ref()
+                .err()
+                .filter(|error| error.to_string().starts_with("harness-fixture-position:"));
+            if let Some(error) = release.as_ref().err().or(position_error) {
                 evidence(&format!(
                     "cosmetic_sweep fixture=retired pair={fixture_index} error={error}"
                 ));
@@ -869,6 +873,40 @@ async fn set_fixture_position(
         return Err("harness-fixture-position: disposable character has no saved position".into());
     }
     Ok(())
+}
+
+// Admission can consume a pending respawn and choose a different spawn from
+// the saved position. Establish the location on the wire before the test.
+async fn connect_at_anchor(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+) -> TestResult<DevClientSession> {
+    let mut client = connect_character(clients, tag, index).await?;
+    let at_anchor = |client: &DevClientSession| {
+        tile(client.world_spatial().actor_position).is_ok_and(|at| {
+            at.floor == TOWN.floor && at.x.abs_diff(TOWN.x).max(at.y.abs_diff(TOWN.y)) <= 2
+        })
+    };
+    if at_anchor(&client) {
+        return Ok(client);
+    }
+    let restore = async {
+        logout(&mut client).await?;
+        wait_character_released(clients, index).await?;
+        let mut db = sqlx::PgConnection::connect(clients.url).await?;
+        set_fixture_position(&mut db, clients, index, TOWN).await?;
+        client = connect_character(clients, tag, index).await?;
+        if !at_anchor(&client) {
+            let position = client.world_spatial().actor_position;
+            let _ = logout(&mut client).await;
+            return Err(format!("admission still returned {position:?} after re-anchoring").into());
+        }
+        Ok::<_, Box<dyn std::error::Error>>(())
+    }
+    .await;
+    restore.map_err(|error| format!("harness-fixture-position: {error}"))?;
+    Ok(client)
 }
 
 fn reversible_step(world: &BundleWorld, at: TilePos, direction: StepDirection) -> Option<TilePos> {
@@ -1534,7 +1572,7 @@ async fn journey(
     };
     let (mode, actions) =
         prepare(clients, content, outfit, addon, mount, obtain, npcs, items).await?;
-    let mut client = connect_character(clients, 0xc9, 0).await?;
+    let mut client = connect_at_anchor(clients, 0xc9, 0).await?;
     let mut observer = None;
     let result = async {
         let mut state = snapshot(&mut client)?;
@@ -1645,7 +1683,7 @@ async fn exercise(
     let mount_key = mount.map(|(mount, _)| mount.key.as_str());
     let addons = addon_mask(addon);
     rows.pass(mode);
-    let peer = connect_character(clients, 0xca, 1).await?;
+    let peer = connect_at_anchor(clients, 0xca, 1).await?;
     let peer_home = tile(peer.world_spatial().actor_position)?;
     *observer = Some(peer);
     let observer = observer.as_mut().ok_or("observer fixture missing")?;
