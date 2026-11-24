@@ -1,4 +1,5 @@
 //! Pure ordinary and native cast geometry; tile permission comes from the dispatch owners.
+use oteryn_gameplay_combat_rules::chain::{CHAIN_PATH_SEARCH_TILES, ChainShape, ChainSpec};
 use oteryn_gameplay_content::content::spell_data::executable_catalog::AbilityProfile;
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
@@ -104,20 +105,88 @@ pub fn attack_target_origin(
         Ok((target, None))
     }
 }
-/// Add the tiles required around a possible chain target.
-pub fn add_chain_search_tiles(
+fn add_chain_path_tiles(
     tiles: &mut BTreeSet<TilePosition>,
-    actor_position: TilePosition,
-    chaining: bool,
+    from: TilePosition,
 ) -> Result<(), PlanRejected> {
-    if chaining {
-        for dx in -9..=9 {
-            for dy in -9..=9 {
-                tiles.insert(offset(actor_position, dx, dy)?);
-            }
+    let radius = i32::try_from(CHAIN_PATH_SEARCH_TILES).map_err(|_| PlanRejected)?;
+    for dx in -radius..=radius {
+        for dy in -radius..=radius {
+            tiles.insert(offset(from, dx, dy)?);
         }
     }
     Ok(())
+}
+
+#[derive(Debug, Default)]
+pub struct ChainSearch {
+    pub tiles: BTreeSet<TilePosition>,
+    pub sight: BTreeSet<(TilePosition, TilePosition)>,
+}
+
+/// Crystal 201189f8 combat.cpp:1881 searches around the current bounce, and
+/// :1329–1344 searches for the visual path only from the origin of a jump.
+pub fn ordinary_chain_search(
+    spec: Option<&ChainSpec>,
+    caster: TilePosition,
+    explicit: Option<(TilePosition, u32)>,
+    targets: BTreeSet<TilePosition>,
+) -> Result<ChainSearch, PlanRejected> {
+    let Some(spec) = spec else {
+        return Ok(ChainSearch::default());
+    };
+    let within = |a: TilePosition, b: TilePosition, radius| {
+        a.2 == b.2 && a.0.abs_diff(b.0) <= radius && a.1.abs_diff(b.1) <= radius
+    };
+    let mut frontier = targets
+        .iter()
+        .copied()
+        .filter(|&p| match explicit {
+            Some((target, range)) => p == target && within(caster, p, range),
+            None => within(caster, p, spec.initial_range_tiles),
+        })
+        .collect::<BTreeSet<_>>();
+    let mut result = ChainSearch {
+        tiles: frontier.clone(),
+        sight: frontier.iter().map(|&to| (caster, to)).collect(),
+    };
+    let depth = match spec.shape {
+        ChainShape::Sequential => spec.max_targets,
+        ChainShape::Fork => spec.max_targets.min(1),
+    };
+    let mut expanded = BTreeSet::new();
+    for _ in 0..depth {
+        if frontier.is_empty() {
+            break;
+        }
+        let mut next = BTreeSet::new();
+        for from in frontier {
+            if !expanded.insert(from) {
+                continue;
+            }
+            for &to in &targets {
+                if from != to && within(from, to, spec.range_tiles) {
+                    result.sight.insert((from, to));
+                    result.tiles.insert(to);
+                    if !expanded.contains(&to) {
+                        next.insert(to);
+                    }
+                }
+            }
+        }
+        frontier = next;
+    }
+    if spec.asset_binding.is_some() {
+        let origins = result
+            .sight
+            .iter()
+            .map(|&(from, _)| from)
+            .collect::<BTreeSet<_>>();
+        for from in origins {
+            add_chain_path_tiles(&mut result.tiles, from)?;
+        }
+    }
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -130,13 +199,44 @@ mod chain_search_tests {
         let target = (32357, 32197, 7);
         let unrelated = (32356, 32196, 7);
         let mut cast_tiles = BTreeSet::from([caster, target]);
+        let search = ordinary_chain_search(None, caster, None, BTreeSet::from([unrelated]))?;
 
-        add_chain_search_tiles(&mut cast_tiles, unrelated, false)?;
+        cast_tiles.extend(search.tiles);
         assert_eq!(cast_tiles, BTreeSet::from([caster, target]));
+        assert!(search.sight.is_empty());
+        Ok(())
+    }
 
-        add_chain_search_tiles(&mut cast_tiles, unrelated, true)?;
-        assert!(cast_tiles.contains(&unrelated));
-        assert!(cast_tiles.contains(&(unrelated.0 + 9, unrelated.1, unrelated.2)));
+    #[test]
+    fn ordinary_chain_search_keeps_only_the_authored_bounces_and_visual_paths()
+    -> Result<(), PlanRejected> {
+        let spec = ChainSpec {
+            max_targets: 3,
+            range_tiles: 7,
+            initial_range_tiles: 7,
+            shape: oteryn_gameplay_combat_rules::chain::ChainShape::Fork,
+            damage_step_percent: 0,
+            asset_binding: Some(String::from("chain")),
+        };
+        let caster = (100, 100, 7);
+        let first = (107, 100, 7);
+        let bounce = (114, 100, 7);
+        let beyond_fork = (121, 100, 7);
+        let spectator = (135, 140, 7);
+        let search = ordinary_chain_search(
+            Some(&spec),
+            caster,
+            Some((first, 7)),
+            BTreeSet::from([first, bounce, beyond_fork, spectator]),
+        )?;
+        assert_eq!(
+            search.sight,
+            BTreeSet::from([(caster, first), (first, bounce)])
+        );
+        assert!(search.tiles.contains(&(91, 100, 7)));
+        assert!(search.tiles.contains(&(116, 100, 7)));
+        assert!(!search.tiles.contains(&beyond_fork));
+        assert!(!search.tiles.contains(&spectator));
         Ok(())
     }
 }

@@ -311,6 +311,7 @@ pub(super) async fn prepare_inner(
         attack_target,
         legacy.and_then(|use_intent| use_intent.creature),
         &roster,
+        &creatures,
         states,
         now,
     )
@@ -407,6 +408,7 @@ async fn prepare_spatial(
         MovementPositionSnapshot,
         Option<GameSessionId>,
     )],
+    creatures: &[crate::foundation::CompanionSnapshot],
     states: &ChannelSpellStates,
     now: SemanticTimeMicros,
 ) -> Result<SpatialPhase, SpellCastDisposition> {
@@ -538,7 +540,6 @@ async fn prepare_spatial(
     .transpose()?;
     let mut bindings = Vec::new();
     let mut chain_creatures = Vec::new();
-    let mut chain_tiles = BTreeSet::new();
     for (a, p, _) in roster {
         let p = tile(p.position());
         if p.floor != caster_position.floor
@@ -568,10 +569,7 @@ async fn prepare_spatial(
         if Some(p) == fallback_front {
             candidates.insert(p);
         }
-        plans::add_chain_search_tiles(&mut chain_tiles, plan_position(p), spell.chain.is_some())
-            .map_err(|_| SpellCastDisposition::Rejected)?;
     }
-    candidates.extend(chain_tiles.into_iter().map(cast_position));
     if bindings.len() > crate::spell::combat_batch::MAX_EFFECTS {
         return reject();
     }
@@ -595,25 +593,46 @@ async fn prepare_spatial(
         );
         candidates.insert(target);
     }
-    if spell.chain.is_some() {
-        for a in chain_creatures
+    let explicit_chain_target = match intent.target {
+        SpellTarget::AttackTarget => attack_target_tile,
+        SpellTarget::Position(_) => Some(origin),
+        _ => None,
+    }
+    .filter(|_| spell.takes_target());
+    if let Some(chain) = spell
+        .chain
+        .as_ref()
+        .filter(|_| spell.chains(explicit_chain_target.is_some()))
+    {
+        // Aggressive chains use the same creature admission as the target phase.
+        let eligible = creatures
             .iter()
-            .chain(std::iter::once(&ChainCreature {
-                id: u64::from(actor.actor_local_id()),
-                actor: String::new(),
-                position: caster_position,
-            }))
-        {
-            for c in &chain_creatures {
-                if a.position.x.abs_diff(c.position.x) <= 9
-                    && a.position.y.abs_diff(c.position.y) <= 9
-                {
-                    paths.insert(
-                        (a.position, c.position),
-                        sight_steps(a.position, c.position)?,
-                    );
-                }
-            }
+            .filter(|c| c.health > 0 && c.state.master.is_none() && c.state.policy.flags.attackable)
+            .map(|c| u64::from(c.actor.actor_local_id()))
+            .collect::<BTreeSet<_>>();
+        let caster_id = u64::from(actor.actor_local_id());
+        let possible = chain_creatures
+            .iter()
+            .filter(|c| c.id != caster_id && (!spell.aggressive || eligible.contains(&c.id)))
+            .map(|c| plan_position(c.position))
+            .collect();
+        let explicit = explicit_chain_target.map(|p| {
+            (
+                plan_position(p),
+                spell.range_tiles.unwrap_or(chain.initial_range_tiles),
+            )
+        });
+        let search = plans::ordinary_chain_search(
+            Some(chain),
+            plan_position(caster_position),
+            explicit,
+            possible,
+        )
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+        candidates.extend(search.tiles.into_iter().map(cast_position));
+        for (from, to) in search.sight {
+            let (from, to) = (cast_position(from), cast_position(to));
+            paths.insert((from, to), sight_steps(from, to)?);
         }
     }
     for steps in paths.values() {
