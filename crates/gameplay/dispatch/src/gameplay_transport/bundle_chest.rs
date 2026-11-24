@@ -51,20 +51,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(result) = self.use_falcon_chest(actor, command, map, target).await {
             return Some(result);
         }
-        // A supplied item fence must remain current even when an unbound
-        // source falls through without reserving or minting a reward.
-        if let Some(expected) = command.item_fence
-            && !matches!(
-                tokio::time::timeout(
-                    std::time::Duration::from_secs(10),
-                    self.current_quest_fence(command.game_session_id),
-                )
-                .await,
-                Ok(Ok(Some(current))) if current.item_fence() == expected
-            )
-        {
-            return Some(outcome(UseDisposition::Rejected));
-        }
         #[cfg(test)]
         if let Some(shards) = self.states.quest_callbacks.reward_claims_fixture.get() {
             return self
@@ -140,6 +126,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
         .ok()?;
         let (claim, bound) = resolved.canonical?;
+        // Only a bound reward claim needs a durable item fence. Unbound targets
+        // keep their own USE admission even while item durability is busy.
+        if let Some(expected) = command.item_fence
+            && !matches!(
+                tokio::time::timeout(
+                    std::time::Duration::from_secs(10),
+                    self.current_quest_fence(command.game_session_id),
+                )
+                .await,
+                Ok(Ok(Some(current))) if current.item_fence() == expected
+            )
+        {
+            return Some(outcome(UseDisposition::Rejected));
+        }
         // The tower's authored final USE owns this same once claim and its progress.
         if claim.key.as_str()
             == oteryn_gameplay_quests::quest::world_callbacks::SERPENTINE_PEARL_CLAIM
