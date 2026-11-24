@@ -205,8 +205,10 @@ fn require(condition: bool, reason: impl Into<String>) -> TestResult {
     }
 }
 
+const BASE_VOCATIONS: [&str; 5] = ["sorcerer", "druid", "knight", "paladin", "monk"];
+
 fn profile(spell: &SpellDefinition) -> TestResult<(usize, &'static str)> {
-    ["sorcerer", "druid", "knight", "paladin", "monk"]
+    BASE_VOCATIONS
         .into_iter()
         .enumerate()
         .find(|(_, profile)| {
@@ -224,10 +226,7 @@ async fn sweep(
     spell: &SpellDefinition,
     rows: &mut Rows<'_>,
 ) {
-    rows.record(
-        "ineligible",
-        ineligible(&clients[2], world, index, spell).await,
-    );
+    rows.record("ineligible", ineligible(clients, world, index, spell).await);
     let pvp_fixture = if spell.key == "candidate:spell/bruise_bane" {
         full_row_s02::pvp_world().await.map(Some)
     } else {
@@ -558,23 +557,43 @@ fn rune_targets_own_tile(spell: &SpellDefinition) -> bool {
 }
 
 async fn ineligible(
-    clients: &SeamClients<'_>,
+    clients: &[SeamClients<'_>; 3],
     world: &BundleWorld,
     index: NonZeroU32,
     spell: &SpellDefinition,
 ) -> TestResult {
-    let mut client = connect_character(clients, 0x81, 1).await?;
+    // The level-one fixture cannot test a level-zero or level-one gate.
+    // Use a reserved vocation slot whose authored vocation is ineligible.
+    let alternate = (spell.level <= 1 && !spell.vocations.is_empty())
+        .then(|| {
+            BASE_VOCATIONS.into_iter().enumerate().find(|(_, profile)| {
+                Vocation::from_key(profile)
+                    .is_some_and(|vocation| !spell.vocations.contains(&vocation))
+            })
+        })
+        .flatten();
+    let (pair, character_index, mut client) = if let Some((slot, profile)) = alternate {
+        let pair = &clients[slot / 2];
+        let character_index = slot % 2;
+        let client = prepare_character(pair, character_index, profile, index).await?;
+        (pair, character_index, client)
+    } else {
+        let pair = &clients[2];
+        (pair, 1, connect_character(pair, 0x81, 1).await?)
+    };
     let rune = if let Carrier::Rune { item, .. } = spell.carrier {
         let reference = provisioning::item_reference(&provisioning::item_index()?, item)?;
-        let seeded = request_fixture_control(
-            uuid_text(client.join_snapshot().game_session_id.as_bytes()),
-            "--profile",
-            format!("spell-sweep-rune:{index}"),
-        )
-        .await;
-        let released = release_fixture(&mut client, world).await;
-        combine(seeded.map(|_| ()).map_err(Into::into), released)?;
-        client = connect_character(clients, 0x81, 1).await?;
+        if alternate.is_none() {
+            let seeded = request_fixture_control(
+                uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+                "--profile",
+                format!("spell-sweep-rune:{index}"),
+            )
+            .await;
+            let released = release_fixture(&mut client, world).await;
+            combine(seeded.map(|_| ()).map_err(Into::into), released)?;
+            client = connect_character(pair, 0x81, character_index).await?;
+        }
         Some(reference)
     } else {
         None
@@ -626,7 +645,7 @@ fn eligibility_refusal(reply: &Reply, underlevel: bool, wrong_vocation: bool) ->
     match reply {
         Reply::Spell(SpellCastDisposition::LevelTooLow, false) => underlevel,
         Reply::Spell(SpellCastDisposition::NotAvailable, false) => wrong_vocation,
-        Reply::Rune(UseDisposition::RequirementNotMet) => underlevel,
+        Reply::Rune(UseDisposition::RequirementNotMet) => underlevel || wrong_vocation,
         _ => false,
     }
 }
@@ -1377,10 +1396,15 @@ mod tests {
             true,
             true
         ));
-        assert!(!eligibility_refusal(
+        assert!(eligibility_refusal(
             &Reply::Rune(UseDisposition::RequirementNotMet),
             false,
             true
+        ));
+        assert!(!eligibility_refusal(
+            &Reply::Rune(UseDisposition::RequirementNotMet),
+            false,
+            false
         ));
     }
 
