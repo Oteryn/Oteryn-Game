@@ -1288,20 +1288,28 @@ async fn observe_conjure_inventory(
     reference: NonZeroU32,
     expected: u64,
 ) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop {
-        let observed = full_e2ef5::rune_quantity(client, reference)?;
-        if observed == expected {
-            return Ok(());
-        }
-        require(
-            tokio::time::Instant::now() < deadline,
-            format!(
-                "authored conjure inventory output mismatch: item={reference} expected={expected} observed={observed}"
-            ),
-        )?;
-        client.service_liveness(Duration::from_millis(50)).await?;
+    let projected = full_e2ef5::rune_quantity(client, reference)?;
+    if projected == expected {
+        return Ok(());
     }
+    // A normal container Open re-reads the backpack from the owner. A spell
+    // result can arrive before its direct-inventory projection catches up.
+    let view = full_e2ef3::read_backpack_view(client).await?;
+    let observed = view
+        .entries
+        .iter()
+        .filter(|item| item.item_definition_ref == reference)
+        .map(|item| u64::from(item.count.get()))
+        .sum::<u64>();
+    evidence(&format!(
+        "spell_sweep conjure_backpack item={reference} projected={projected} observed={observed} expected={expected}"
+    ));
+    require(
+        observed == expected,
+        format!(
+            "authored conjure backpack output mismatch: item={reference} expected={expected} observed={observed}"
+        ),
+    )
 }
 
 async fn damage_observed(

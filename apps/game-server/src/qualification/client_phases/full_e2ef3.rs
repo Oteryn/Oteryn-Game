@@ -266,7 +266,9 @@ async fn backpack_inspection(
     Ok(item)
 }
 
-async fn open_backpack(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
+pub(super) async fn read_backpack_view(
+    client: &mut oteryn_dev_client::DevClientSession,
+) -> TestResult<tree::ContainerView> {
     let backpack = client
         .inventory()
         .and_then(|inventory| inventory.main_backpack)
@@ -300,11 +302,15 @@ async fn open_backpack(client: &mut oteryn_dev_client::DevClientSession) -> Test
         .await?;
     let views = selected_container_views(client.selected_capabilities(), &delta.payload)
         .map_err(|error| format!("container delta: {error:?}"))?;
-    let view = views
+    views
         .views
-        .iter()
+        .into_iter()
         .find(|view| view.container_handle == backpack.handle)
-        .ok_or("E2EF3 opened backpack not projected")?;
+        .ok_or_else(|| "E2EF3 opened backpack not projected".into())
+}
+
+async fn open_backpack(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
+    let view = read_backpack_view(client).await?;
     let inventory = client.inventory().ok_or("E2EF3 inventory")?;
     if view.capacity == 0 || view.entries != inventory.entries || view.parent_handle.is_some() {
         return Err("E2EF3 root container capacity/entries/parent mismatch".into());
