@@ -34,7 +34,7 @@ def ground_item(root, palette_index):
     return palette_index in ground_item.cache
 
 
-def choose_cell(root, actual_source, choice, occupied):
+def choose_cell(root, actual_source, choice, occupied, *, require_walkable=False):
     if set(choice) != {"source", "target", "reason"}:
         raise ValueError("chosen placement requires source, target and reason")
 
@@ -92,7 +92,7 @@ def choose_cell(root, actual_source, choice, occupied):
             raise ValueError(
                 "chosen placement must adjoin its exact retained source cell"
             )
-    if not clear((x, y)):
+    if not clear((x, y), walkable=require_walkable):
         raise ValueError("chosen placement target is not clear native ground")
     return after, {
         "origin": "oteryn",

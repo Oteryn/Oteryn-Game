@@ -11,7 +11,9 @@ Optional block_solid_contacts admits only source-backed solid-object contacts;
 the compiler still checks walls, floor changes and other terrain hazards.
 Explicit placement_adjustments choose adjacent clear native ground while retaining
 the donor cell. Pinned placement overrides preserve their own evidence and replace
-only a scoped candidate's placement hypothesis. The source is OTS_HYPOTHESIS_ONLY
+only a scoped candidate's placement hypothesis. The Global map import adds
+source-backed NPCs outside the hand-authored scope without replacing its cells.
+The source is OTS_HYPOTHESIS_ONLY
 migration evidence: only normalized facts are written. Unadmitted keys and
 out-of-range positions fail closed.
 
@@ -199,7 +201,60 @@ def provenance(candidate: dict, placement: dict) -> list[dict]:
     return rows
 
 
-def convert() -> dict[str, str]:
+def add_map_placements(records: dict, packet: dict, admitted: set[str]) -> None:
+    source = packet["source"]
+    repository, _, source_key = SOURCES["crystal"]
+    if (source["path"] != "data-global/world/world-npc.xml"
+            or not re.fullmatch(r"[0-9a-f]{40}", source["revision"])
+            or not re.fullmatch(r"[0-9a-f]{64}", source["sha256"])):
+        raise ValueError("Global NPC map source must be immutable")
+    proof = {
+        "origin": "crystal",
+        "repository": repository,
+        "revision": source["revision"],
+        "source_key": source_key,
+        "source_row": source["path"],
+        "source_sha256": source["sha256"],
+        "url": f"https://github.com/{repository}/blob/{source['revision']}/{source['path']}",
+    }
+    occupied = {tuple(r["declaration"]["cell"][axis] for axis in ("x", "y", "floor"))
+                for r in records.values()}
+    already_placed = {r["declaration"]["npc"] for r in records.values()}
+    donor_cells = {cell_of(row["position"]) for rows in packet["npcs"].values() for row in rows}
+    for npc, rows in sorted(packet["npcs"].items()):
+        if npc in already_placed or npc not in admitted:
+            raise ValueError(f"{npc}: map import must add an admitted NPC without a placement")
+        for placement in rows:
+            x, y, z = cell = cell_of(placement["position"])
+            direction = placement["direction"].lower()
+            if cell in occupied or direction not in {"north", "east", "south", "west"}:
+                raise ValueError(f"{npc}: invalid or occupied map placement {cell}")
+            evidence = []
+            if "adjustment" in placement:
+                (x, y, z), choice_proof = choose_cell(
+                    ROOT, cell, placement["adjustment"], occupied | donor_cells,
+                    require_walkable=True,
+                )
+                occupied.add((x, y, z))
+                evidence.append(choice_proof)
+            occupied.add(cell)
+            key = f"oteryn:npc_placement.{local_name(npc)}.x{x}_y{y}_z{z}"
+            records[key] = {"declaration": {
+                "cell": {"floor": z, "x": x, "y": y},
+                "direction": direction,
+                "identity": {"key": key, "revision": "definition-r1"},
+                "npc": npc,
+                "provenance": [{
+                    **proof,
+                    "spawn_name": placement["name"],
+                    "spawn_radius": placement["spawn_radius"],
+                    "spawn_interval_s": placement["spawn_interval_s"],
+                    "wiki_comparison": placement["wiki_comparison"],
+                }, *evidence],
+            }}
+
+
+def convert(*, include_map_import: bool = True) -> dict[str, str]:
     report = json.loads(CANDIDATES.read_text())
     candidates = {c["identity"]["key"]: c for c in report["candidates"]}
     scope = json.loads(SCOPE.read_text())
@@ -315,16 +370,25 @@ def convert() -> dict[str, str]:
     assert all(h["reason"] in REASONS for h in held)
     held.sort(key=dump)
 
-    ordered = [records[k] for k in sorted(records)]
+    authored = [records[key] for key in sorted(records)]
+    imported = []
+    if include_map_import and "crystal_global_map" in scope:
+        authored_keys = set(records)
+        add_map_placements(records, scope["crystal_global_map"], admitted)
+        imported = [records[key] for key in sorted(records.keys() - authored_keys)]
+        placed = {r["declaration"]["npc"] for r in records.values()}
+
     files, shards = {}, []
-    for start in range(0, len(ordered), SHARD_SIZE):
-        part = ordered[start : start + SHARD_SIZE]
-        name = f"placements-{start:05d}-{start + len(part) - 1:05d}.json"
-        if start == 0:
-            # Keep Main's published shard path as admitted placements grow.
-            name = "placements-00000-00055.json"
-        shards.append(f"content/world/npc-placements/{name}")
-        files[name] = dump({"coordinate_frame": FRAME, "family": "Npc.Placement", "records": part})
+    for group, offset in ((authored, 0), (imported, len(authored))):
+        for start in range(0, len(group), SHARD_SIZE):
+            part = group[start : start + SHARD_SIZE]
+            first = start + offset
+            name = f"placements-{first:05d}-{first + len(part) - 1:05d}.json"
+            if first == 0:
+                # Preserve the published authored shard for embedded fixture readers.
+                name = "placements-00000-00055.json"
+            shards.append(f"content/world/npc-placements/{name}")
+            files[name] = dump({"coordinate_frame": FRAME, "family": "Npc.Placement", "records": part})
     held_text = dump({"coordinate_frame": FRAME, "family": "Npc.Placement", "held": held, "schema": "OTERYN_NPC_PLACEMENT_HELD/v1"})
     files["held.json"] = held_text
     files["index.json"] = dump(
@@ -345,7 +409,7 @@ def convert() -> dict[str, str]:
             },
             "npc_count": len(placed),
             "population_state": "POPULATED",
-            "record_count": len(ordered),
+            "record_count": len(records),
             "schema": "OTERYN_FAMILY_INDEX/v1",
             "shard_size": SHARD_SIZE,
             "shards": shards,

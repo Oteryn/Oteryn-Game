@@ -52,7 +52,10 @@ class ConvertPlacementsTest(unittest.TestCase):
                   if r['declaration']['npc'] == 'oteryn:npc.a_swan']
         self.assertEqual(len(actual), 1)
         self.assertEqual(actual[0]['cell'], {'x': 33185, 'y': 31732, 'floor': 7})
-        self.assertIn('placements-00000-00055.json', self.files)
+        self.assertEqual(
+            self.files["placements-00000-00055.json"],
+            cp.convert(include_map_import=False)["placements-00000-00055.json"],
+        )
         candidate = next(c for c in json.loads(cp.CANDIDATES.read_text())['candidates']
                          if c['identity']['key'] == 'oteryn:npc.a_swan')
         self.assertEqual(candidate['movement']['walk_interval_ms'], 0)
@@ -103,9 +106,40 @@ class ConvertPlacementsTest(unittest.TestCase):
                            for p in actual[0]['provenance']))
 
     def test_only_scoped_admitted_npcs(self):
-        scope = set(json.loads(cp.SCOPE.read_text())["npcs"])
+        document = json.loads(cp.SCOPE.read_text())
+        scope = set(document["npcs"]) | document.get("crystal_global_map", {}).get("npcs", {}).keys()
         self.assertEqual({r["declaration"]["npc"] for r in self.records}, scope - {h["npc"] for h in self.held})
         self.assertLessEqual(scope, cp.admitted_keys())
+
+    def test_crystal_global_map_thais_sample_keeps_exact_source_anchors(self):
+        expected = {
+            "baxter": (32322, 32189),
+            "benjamin": (32349, 32219),
+            "bozo": (32313, 32183),
+            "donald_mcronald": (32389, 32229),
+            "gorn": (32377, 32200),
+            "naji": (32342, 32229),
+            "oswald": (32381, 32220),
+            "quero": (32390, 32219),
+            "towncryer": (32329, 32216),
+            "walter_jaeger": (32379, 32207),
+        }
+        actual = {r["declaration"]["npc"]: r["declaration"] for r in self.records}
+        for name, (x, y) in expected.items():
+            row = actual.get(f"oteryn:npc.{name}")
+            self.assertIsNotNone(row, name)
+            self.assertEqual(row["cell"], {"x": x, "y": y, "floor": 7})
+            source = row["provenance"][0]
+            self.assertEqual(source["revision"], "201189f871d23597b82caf88fd611454a2ddefb8")
+            self.assertEqual(source["source_row"], "data-global/world/world-npc.xml")
+            self.assertGreaterEqual(source["spawn_radius"], 0)
+            self.assertIn("wiki_comparison", source)
+
+    def test_crystal_global_map_does_not_admit_winterlight_overlay_npcs(self):
+        scope = json.loads(cp.SCOPE.read_text())
+        imported = scope["crystal_global_map"]["npcs"]
+        for name in ("frosty", "bright_percht_sleigh", "cold_percht_sleigh", "dark_percht_sleigh"):
+            self.assertNotIn(f"oteryn:npc.{name}", imported)
 
     def test_monk_pilgrimage_npcs_use_the_reviewed_crystal_cells(self):
         expected = {
@@ -128,7 +162,11 @@ class ConvertPlacementsTest(unittest.TestCase):
 
     def test_records_sorted_unique_and_keyed_by_cell(self):
         keys = [r["declaration"]["identity"]["key"] for r in self.records]
-        self.assertEqual(keys, sorted(set(keys)))
+        self.assertEqual(len(keys), len(set(keys)))
+        for name, text in self.files.items():
+            if name.startswith("placements-"):
+                shard_keys = [r["declaration"]["identity"]["key"] for r in json.loads(text)["records"]]
+                self.assertEqual(shard_keys, sorted(shard_keys))
         for r in self.records:
             d = r["declaration"]
             c = d["cell"]

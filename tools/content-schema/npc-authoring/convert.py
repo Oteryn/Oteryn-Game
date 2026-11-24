@@ -86,6 +86,25 @@ def sha256(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def read_placement_xml(xml_path, relative):
+    rows = []
+    for spawn in ET.parse(xml_path).getroot().findall('npc'):
+        center = (int(spawn.get('centerx')), int(spawn.get('centery')), int(spawn.get('centerz')))
+        radius = int(spawn.get('radius')) if spawn.get('radius') is not None else -1
+        for child in spawn.findall('npc'):
+            if child.get('name') is None:
+                continue
+            direction = int(child.get('direction')) if child.get('direction') is not None else 0
+            interval = int(child.get('spawntime', 0))
+            rows.append({'name': child.get('name'),
+                         'position': {'x': center[0] + int(child.get('x', 0)), 'y': center[1] + int(child.get('y', 0)),
+                                      'z': center[2]},
+                         'direction': DIRECTIONS.get(direction, direction), 'spawn_interval_s': interval,
+                         'engine_spawns': SPAWN_INTERVAL_S[0] <= interval <= SPAWN_INTERVAL_S[1],
+                         'spawn_radius': radius, 'placement_file': relative})
+    return rows
+
+
 class Converter:
     def __init__(self, source, checkout, include_text=False):
         self.source = source
@@ -251,24 +270,11 @@ class Converter:
     # -- placements ---------------------------------------------------------------------------------
     def placements(self):
         world = self.checkout / self.meta['world_dir']
-        rows = []
-        for xml_path in sorted(world.rglob('*npc*.xml')):
-            relative = str(xml_path.relative_to(self.checkout))
-            for spawn in ET.parse(xml_path).getroot().findall('npc'):
-                center = (int(spawn.get('centerx')), int(spawn.get('centery')), int(spawn.get('centerz')))
-                radius = int(spawn.get('radius')) if spawn.get('radius') is not None else -1
-                for child in spawn.findall('npc'):
-                    if child.get('name') is None:
-                        continue
-                    direction = int(child.get('direction')) if child.get('direction') is not None else 0
-                    interval = int(child.get('spawntime', 0))
-                    rows.append({'name': child.get('name'),
-                                 'position': {'x': center[0] + int(child.get('x', 0)), 'y': center[1] + int(child.get('y', 0)),
-                                              'z': center[2]},
-                                 'direction': DIRECTIONS.get(direction, direction), 'spawn_interval_s': interval,
-                                 'engine_spawns': SPAWN_INTERVAL_S[0] <= interval <= SPAWN_INTERVAL_S[1],
-                                 'spawn_radius': radius, 'placement_file': relative})
-        return rows
+        return [
+            row
+            for path in sorted(world.rglob('*npc*.xml'))
+            for row in read_placement_xml(path, str(path.relative_to(self.checkout)))
+        ]
 
     # -- bundle -------------------------------------------------------------------------------------
     def bundle(self, lua_path, placements_by_name):
