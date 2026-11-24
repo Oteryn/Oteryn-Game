@@ -15,6 +15,8 @@ mod general_stats;
 mod creature_sweep;
 #[path = "mp/mount.rs"]
 mod mp;
+#[path = "progress_sweep.rs"]
+mod progress_sweep;
 pub(in crate::qualification) use mp::legacy_d150;
 
 include!("character_core.rs");
@@ -3196,10 +3198,14 @@ pub(super) async fn journeys(
     let mp_selected = groups.runs("mp");
     let sweep_selected = groups.runs("creature_sweep")
         && std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty());
-    if mp_selected || sweep_selected {
+    let progress_selected = groups.explicitly_runs("progress_sweep");
+    if mp_selected || sweep_selected || progress_selected {
         let [mp_first, mp_second, sweep] = extra_world_fixtures(clients, packet_clients).await?;
         if sweep_selected {
             creature_sweep::run(&sweep.clients(clients), world, &generation.rewards).await?;
+        }
+        if progress_selected {
+            progress_sweep::run(&sweep.clients(clients), world).await?;
         }
         if mp_selected {
             mp::run(

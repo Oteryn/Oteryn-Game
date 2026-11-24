@@ -1467,7 +1467,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   fi
   # Row selection, fail-fast and the no-progress watchdog belong to the seam harness.
   local knob
-  for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
+  for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S OTERYN_E2E_PROGRESS_SWEEP_BATCH; do
     [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
   done
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"

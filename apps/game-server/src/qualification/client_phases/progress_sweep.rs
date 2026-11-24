@@ -1,0 +1,1280 @@
+//! Opt-in content census and real-wire progression journeys.
+//! Select with NODE_BOOT_E2E_ONLY=progress_sweep and OTERYN_E2E_PROGRESS_SWEEP_BATCH=start:len.
+use super::*;
+use oteryn_dev_client::DevClientSession;
+use oteryn_protocol_oteryn::logout::LogoutResult;
+use serde_json::Value;
+use std::num::NonZeroU32;
+
+const BATCH: &str = "OTERYN_E2E_PROGRESS_SWEEP_BATCH";
+
+#[derive(Clone, Copy)]
+enum Family {
+    Achievement,
+    Charm,
+    Craft,
+    Proficiency,
+}
+
+impl Family {
+    fn steps(self) -> &'static [&'static str] {
+        match self {
+            Self::Achievement => &["trigger", "grant", "once"],
+            Self::Charm => &["unlock", "assign", "effect"],
+            Self::Craft => &["use", "inputs", "output"],
+            Self::Proficiency => &["progress", "perks"],
+        }
+    }
+}
+
+struct Entry {
+    family: Family,
+    key: String,
+    content: Value,
+}
+
+fn batch(value: Option<&str>) -> TestResult<(usize, usize)> {
+    let Some(value) = value else {
+        return Ok((0, 3));
+    };
+    let parse = |part: &str| {
+        if part.bytes().all(|byte| byte.is_ascii_digit()) {
+            part.parse::<usize>().ok()
+        } else {
+            None
+        }
+    };
+    value
+        .split_once(':')
+        .and_then(|(start, len)| Some((parse(start)?, parse(len)?)))
+        .filter(|(_, len)| *len > 0)
+        .ok_or_else(|| format!("invalid {BATCH}={value:?}: expected start:len with len > 0").into())
+}
+
+fn document(path: &Path) -> TestResult<Value> {
+    Ok(serde_json::from_slice(&std::fs::read(path)?)?)
+}
+
+fn census(root: &Path) -> TestResult<Vec<Entry>> {
+    let mut entries = Vec::new();
+    for (family, directory, prefix) in [
+        (Family::Achievement, "achievements", "achievements-"),
+        (Family::Charm, "charms", "charms-"),
+        (Family::Craft, "craft", "recipes.json"),
+        (Family::Proficiency, "proficiencies", "proficiencies-"),
+    ] {
+        let mut shards = std::fs::read_dir(root.join(directory))?
+            .map(|entry| entry.map(|entry| entry.path()))
+            .collect::<Result<Vec<_>, _>>()?;
+        shards.sort();
+        let mut ordinal = 0;
+        for shard in shards.iter().filter(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.starts_with(prefix) && name.ends_with(".json"))
+        }) {
+            let source = document(shard)?;
+            for record in list(&source["records"])? {
+                let content = record.get("definition").unwrap_or(record);
+                let key = string(&content["identity"]["key"])?;
+                entries.push(Entry {
+                    family,
+                    key: key.to_owned(),
+                    content: content.clone(),
+                });
+                ordinal += 1;
+            }
+        }
+        if ordinal == 0 {
+            return Err(format!("empty progress sweep family {directory}").into());
+        }
+        evidence(&format!(
+            "progress_sweep census family={directory} entries={ordinal}"
+        ));
+    }
+    entries.sort_unstable_by(|a, b| a.key.cmp(&b.key));
+    if entries.windows(2).any(|pair| pair[0].key == pair[1].key) {
+        return Err("duplicate progress sweep key".into());
+    }
+    Ok(entries)
+}
+
+fn string(value: &Value) -> TestResult<&str> {
+    value
+        .as_str()
+        .ok_or_else(|| "missing content string".into())
+}
+
+fn number(value: &Value) -> TestResult<u32> {
+    Ok(u32::try_from(
+        value.as_u64().ok_or("missing content integer")?,
+    )?)
+}
+
+fn list(value: &Value) -> TestResult<&[Value]> {
+    value
+        .as_array()
+        .map(Vec::as_slice)
+        .ok_or_else(|| "missing content array".into())
+}
+
+fn token(value: &str) -> String {
+    value
+        .chars()
+        .take(300)
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || "._:/-".contains(c) {
+                c
+            } else {
+                '-'
+            }
+        })
+        .collect()
+}
+
+struct Rows<'a> {
+    entry: &'a Entry,
+    passed: usize,
+    started: std::time::Instant,
+}
+
+impl Rows<'_> {
+    fn emit(&self, step: &str, status: &str, detail: &str) {
+        evidence(&format!(
+            "e2e_all scenario=PS.{}.{step}.full status={status} seconds={:.3} mode=seeded evidence={}",
+            self.entry
+                .key
+                .strip_prefix("oteryn:")
+                .unwrap_or(&self.entry.key)
+                .replace('/', "."),
+            self.started.elapsed().as_secs_f64(),
+            token(detail),
+        ));
+    }
+
+    fn pass(&mut self, detail: &str) {
+        self.emit(self.entry.family.steps()[self.passed], "PASS", detail);
+        self.passed += 1;
+    }
+}
+
+pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
+    let setting = match std::env::var(BATCH) {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(error) => return Err(error.into()),
+    };
+    let (start, len) = batch(setting.as_deref())?;
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content");
+    let entries = census(&root)?;
+    let end = start.saturating_add(len).min(entries.len());
+    if start >= end {
+        return Err(format!("{BATCH} start {start} outside {} entries", entries.len()).into());
+    }
+    evidence(&format!(
+        "progress_sweep batch total={} start={start} len={len} selected={}",
+        entries.len(),
+        end - start
+    ));
+
+    let mut pass = 0;
+    let mut fail = 0;
+    let mut session = None;
+    for entry in &entries[start..end] {
+        verdict::Harness::global().progress("progress-sweep-entry");
+        let mut rows = Rows {
+            entry,
+            passed: 0,
+            started: std::time::Instant::now(),
+        };
+        let outcome = verdict::indexed_timeout(
+            Duration::from_secs(150),
+            Box::pin(async {
+                if session.is_none() {
+                    session = Some(connect_character(clients, 0x70, 1).await?);
+                }
+                let client = session.as_mut().ok_or("fixture admission missing")?;
+                match entry.family {
+                    Family::Achievement => achievement(client, world, &mut rows).await,
+                    Family::Charm => charm(client, world, &mut rows).await,
+                    Family::Craft => craft(client, world, &mut rows).await,
+                    Family::Proficiency => proficiency(client, world, &root, &mut rows).await,
+                }
+            }),
+        )
+        .await;
+        let reason = match outcome {
+            Ok(Ok(())) => "missing-step-evidence".to_owned(),
+            Ok(Err(error)) => error.to_string(),
+            Err(_) => {
+                drop(session.take());
+                "entry-deadline".to_owned()
+            }
+        };
+        let remaining = &entry.family.steps()[rows.passed..];
+        for (index, step) in remaining.iter().enumerate() {
+            let blocked = format!("blocked-by-{}", remaining[0]);
+            rows.emit(step, "FAIL", if index == 0 { &reason } else { &blocked });
+        }
+        pass += rows.passed;
+        fail += remaining.len();
+    }
+    let mut release_failed = false;
+    if let Some(mut client) = session {
+        match logout_retrying_busy(&mut client).await {
+            Ok((Some(LogoutResult::Accepted), _, _, _)) => {}
+            _ => {
+                release_failed = true;
+                evidence("progress_sweep release_failed");
+            }
+        }
+    }
+    evidence(&format!(
+        "progress_sweep summary total={} entries={} rows_pass={pass} rows_fail={fail} mode=seeded",
+        entries.len(),
+        end - start
+    ));
+    if fail != 0 || release_failed {
+        return Err(
+            format!("progress sweep: {fail} FAIL rows, release_failed={release_failed}").into(),
+        );
+    }
+    Ok(())
+}
+
+// Bound authored reward chests provide a real trigger when the selected world serves one.
+// crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:332
+async fn achievement(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    rows: &mut Rows<'_>,
+) -> TestResult {
+    let index = provisioning::item_index()?;
+    let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
+        world.base().as_ref(),
+        &|item| {
+            item_id(item.key().as_str())
+                .is_ok_and(|id| provisioning::item_reference(&index, id).is_ok())
+        },
+    )?;
+    let here = tile(client.world_spatial().actor_position)?;
+    let (placement, path) = report
+        .served
+        .into_iter()
+        .flat_map(|claim| claim.placements)
+        .filter(|placement| {
+            placement.placement.achievement.as_deref() == Some(rows.entry.key.as_str())
+        })
+        .filter_map(|placement| {
+            let cell = placement.cell;
+            let target = TilePos {
+                x: cell.x,
+                y: cell.y,
+                floor: cell.floor,
+            };
+            route(world, here, |at| adjacent(at, target))
+                .map(|path| (placement.bundle_placement_key, path))
+        })
+        .min_by_key(|(_, path)| path.len())
+        .ok_or("no-reachable-authored-achievement-chest-driver")?;
+    let points = number(&rows.entry.content["points"])?;
+    let placement = placement_bytes(world, placement);
+    walk(client, world, &path).await?;
+    let (before, initial) = achievement_facts(client, &rows.entry.key).await?;
+    if !initial.is_empty() {
+        return Err("achievement-already-earned".into());
+    }
+    let response = client.session_mut().use_object(&placement, 0).await?;
+    if response.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
+        return Err(format!("achievement-trigger-refused-{:?}", response.disposition).into());
+    }
+    rows.pass("authored-chest-committed");
+    let (after, facts) = achievement_facts(client, &rows.entry.key).await?;
+    if !granted_once(before, after, points, &facts) {
+        return Err(format!(
+            "achievement-grant-mismatch-expected-points-{points}-observed-{facts:?}"
+        )
+        .into());
+    }
+    rows.pass(&format!("points-{points}"));
+    client.session_mut().use_object(&placement, 0).await?;
+    if achievement_facts(client, &rows.entry.key).await? != (after, facts) {
+        return Err("repeated-trigger-changed-achievement-facts".into());
+    }
+    rows.pass("repeated-trigger-preserved-single-grant");
+    Ok(())
+}
+
+fn granted_once(before: (u32, u32), after: (u32, u32), points: u32, facts: &[u32]) -> bool {
+    facts == [points]
+        && before.0.checked_add(1) == Some(after.0)
+        && before.1.checked_add(points) == Some(after.1)
+}
+
+async fn achievement_facts(
+    client: &mut DevClientSession,
+    key: &str,
+) -> TestResult<((u32, u32), Vec<u32>)> {
+    use oteryn_dev_client::client_runtime::account_achievements::Response;
+    let mut facts = Vec::new();
+    let mut totals = None;
+    let max_pages = 128;
+    for page in 0..max_pages {
+        let Response::Page(result) = client.session_mut().account_achievements(page).await? else {
+            return Err("achievement-page-refused".into());
+        };
+        let observed = (result.fact_count, result.total_points);
+        if result.page != page
+            || totals
+                .replace(observed)
+                .is_some_and(|previous| previous != observed)
+        {
+            return Err("achievement-pagination-inconsistent".into());
+        }
+        facts.extend(
+            result
+                .rows
+                .into_iter()
+                .filter(|row| row.key == key)
+                .map(|row| row.points),
+        );
+        if !result.has_more {
+            return Ok((observed, facts));
+        }
+    }
+    Err("achievement-page-limit".into())
+}
+
+fn adjacent(at: TilePos, target: TilePos) -> bool {
+    at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
+}
+
+fn placement_bytes(world: &BundleWorld, key: u64) -> Vec<u8> {
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    placement
+}
+
+fn item_id(key: &str) -> TestResult<u32> {
+    Ok(key
+        .strip_prefix("oteryn:item.tibia.i")
+        .ok_or("non-native-item-key")?
+        .parse()?)
+}
+
+async fn accepted(
+    client: &mut DevClientSession,
+    capability: u32,
+    command: u32,
+    bytes: &[u8],
+) -> TestResult<Vec<u8>> {
+    let reply = client
+        .session_mut()
+        .gated_command(capability, command, bytes)
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("command-{command}-refused-{:?}", reply.status).into());
+    }
+    Ok(reply.payload)
+}
+
+async fn charm_command(
+    client: &mut DevClientSession,
+    action: oteryn_protocol_oteryn::charm_progression::CharmProgressionAction,
+) -> TestResult<oteryn_protocol_oteryn::charm_progression::CharmProgressionReply> {
+    use oteryn_protocol_oteryn::charm_progression as wire;
+    let request = wire::encode_charm_progression_request(&action).map_err(|e| format!("{e:?}"))?;
+    let reply = accepted(
+        client,
+        wire::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1,
+        wire::COMMAND_TYPE_CHARM_PROGRESSION,
+        &request,
+    )
+    .await?;
+    wire::decode_charm_progression_reply(&reply).map_err(|e| format!("{e:?}").into())
+}
+
+fn charm_balance(view: &oteryn_protocol_oteryn::charm::CharmView, minor: bool) -> u32 {
+    if minor {
+        view.minor_charm_echoes_available
+    } else {
+        view.charm_points_available
+    }
+}
+
+fn charm_state(
+    reply: &oteryn_protocol_oteryn::charm_progression::CharmProgressionReply,
+    id: NonZeroU32,
+) -> TestResult<&oteryn_protocol_oteryn::charm::CharmState> {
+    reply
+        .charms
+        .charms
+        .iter()
+        .find(|state| state.charm == id)
+        .ok_or_else(|| format!("charm-{id}-missing-from-wire-view").into())
+}
+
+fn world_bytes() -> TestResult<Vec<u8>> {
+    Ok(std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?)
+}
+
+// The content adapter preserves stage costs and assigns IDs in source order
+// (crates/gameplay/content/src/content/charm_source.rs:181).
+async fn charm(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    rows: &mut Rows<'_>,
+) -> TestResult {
+    use oteryn_protocol_oteryn::charm::{
+        CharmAssignDisposition, CharmKind, CharmUnlockDisposition,
+    };
+    use oteryn_protocol_oteryn::charm_progression::{
+        CharmProgressionAction as Action, CharmProgressionOutcome as Outcome,
+    };
+
+    let content = &rows.entry.content;
+    let minor = match string(&content["cost_currency"])? {
+        "minor_charm_echoes" => true,
+        "charm_points" => false,
+        other => return Err(format!("unknown-charm-currency-{other}").into()),
+    };
+    let cost = number(&content["stages"][0]["cost"])?;
+    let catalogue = crate::content::charm_source::CanonicalCharmCatalogue::embedded()?;
+    let ordinal = catalogue
+        .catalogue()
+        .definitions()
+        .position(|definition| definition.key.as_str() == rows.entry.key)
+        .ok_or("charm-key-unavailable-in-owner-catalogue")?;
+    let id = NonZeroU32::new(u32::try_from(ordinal + 1)?).ok_or("zero-charm-id")?;
+    let mut before = charm_command(client, Action::Query).await?;
+    let state = charm_state(&before, id)?;
+    let kind = if minor {
+        CharmKind::Minor
+    } else {
+        CharmKind::Major
+    };
+    if before.outcome != Outcome::Query
+        || state.kind != kind
+        || state.unlocked_stage != 0
+        || state.next_stage_cost != cost
+    {
+        return Err(format!(
+            "charm-stage-cost-mismatch-expected-{kind:?}-{cost}-observed-{state:?}"
+        )
+        .into());
+    }
+    let bytes = world_bytes()?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let races = full_row_p05::canonical_races()?;
+    let here = tile(client.world_spatial().actor_position)?;
+    let mut plan = Vec::new();
+    for (ordinal, (definition, points)) in races.iter().enumerate() {
+        let race = NonZeroU32::new(u32::try_from(ordinal + 1)?).ok_or("zero-race-id")?;
+        let kills = before
+            .bestiary
+            .iter()
+            .find(|row| row.race == race)
+            .map_or(0, |row| row.kill_count);
+        let remaining = definition.final_kill_threshold().saturating_sub(kills);
+        if remaining != 0
+            && *points != 0
+            && full_row_p05::has_reachable_spawn(world, here, &metadata.spawns, definition.key())
+        {
+            plan.push((remaining, race, definition.key()));
+        }
+    }
+    plan.sort_unstable();
+    let mut hunt_budget = 24;
+    for (remaining, race, key) in plan {
+        if charm_balance(&before.charms, minor) >= cost {
+            break;
+        }
+        if remaining > hunt_budget {
+            continue;
+        }
+        for _ in 0..remaining {
+            let kill = full_row_p05::hunt_for_race(client, world, &metadata.spawns, key).await?;
+            if kill.race != race {
+                return Err("charm-funding-kill-credited-to-wrong-race".into());
+            }
+            hunt_budget -= 1;
+        }
+        before = charm_command(client, Action::Query).await?;
+    }
+    let balance = charm_balance(&before.charms, minor);
+    if balance < cost {
+        return Err(format!("charm-currency-prerequisite-needed-{cost}-observed-{balance}").into());
+    }
+    let unlocked = charm_command(
+        client,
+        Action::Unlock {
+            charm: id,
+            expected_stage: 0,
+        },
+    )
+    .await?;
+    if unlocked.outcome != Outcome::Unlock(CharmUnlockDisposition::Unlocked)
+        || charm_state(&unlocked, id)?.unlocked_stage != 1
+        || balance.checked_sub(cost) != Some(charm_balance(&unlocked.charms, minor))
+        || charm_balance(&before.charms, !minor) != charm_balance(&unlocked.charms, !minor)
+    {
+        return Err(format!("charm-unlock-mismatch-{:?}", unlocked.outcome).into());
+    }
+    rows.pass(&format!("stage-one-debit-{cost}"));
+
+    let here = tile(client.world_spatial().actor_position)?;
+    let (race, species) = races
+        .iter()
+        .enumerate()
+        .filter_map(|(ordinal, (definition, _))| {
+            let id = NonZeroU32::new(u32::try_from(ordinal + 1).ok()?)?;
+            let mastered = unlocked
+                .bestiary
+                .iter()
+                .any(|row| row.race == id && row.kill_count >= definition.final_kill_threshold());
+            (mastered
+                && full_row_p05::has_reachable_spawn(
+                    world,
+                    here,
+                    &metadata.spawns,
+                    definition.key(),
+                ))
+            .then_some((id, definition.key()))
+        })
+        .next()
+        .ok_or("charm-no-reachable-mastered-creature")?;
+    let assigned = charm_command(client, Action::Assign { charm: id, race }).await?;
+    let observed = charm_state(&assigned, id)?;
+    if assigned.outcome != Outcome::Assign(CharmAssignDisposition::Assigned)
+        || observed.assigned_race != Some(race)
+    {
+        return Err(format!("charm-assignment-mismatch-{:?}", assigned.outcome).into());
+    }
+    rows.pass(&format!("assigned-{species}"));
+    let effect = string(&rows.entry.content["effect"]["type"])?;
+    if !observed.effect_active {
+        return Err(format!("charm-content-effect-inactive-{effect}").into());
+    }
+    if rows.entry.content["effect"]["element"] != "fire" || effect != "attack_proc_damage" {
+        return Err(format!("charm-wire-effect-driver-missing-{effect}").into());
+    }
+    // P01's combat sample observes attributed outgoing fire damage on an unarmed hunt.
+    if client.inventory().is_none_or(|inventory| {
+        inventory.equipment.iter().any(|item| {
+            use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+            matches!(
+                item.slot,
+                EquipmentSlot::LeftHand | EquipmentSlot::RightHand
+            )
+        })
+    }) {
+        return Err("charm-fire-probe-needs-unarmed-baseline".into());
+    }
+    for _ in 0..12 {
+        if full_row_p05::hunt_for_race(client, world, &metadata.spawns, species)
+            .await?
+            .fire_damage
+        {
+            rows.pass("attributed-fire-proc");
+            return Ok(());
+        }
+    }
+    Err("charm-fire-proc-unobserved-within-hunt-budget".into())
+}
+
+type Quantities = BTreeMap<NonZeroU32, i64>;
+type ItemIndex = crate::content::item_ref::ItemDefinitionIndex;
+
+fn reference(index: &ItemIndex, item: &Value) -> TestResult<NonZeroU32> {
+    provisioning::item_reference(index, item_id(string(&item["key"])?)?)
+}
+
+fn inventory(client: &DevClientSession) -> TestResult<Quantities> {
+    let mut counts = BTreeMap::new();
+    let view = client.inventory().ok_or("inventory-snapshot-missing")?;
+    for item in view
+        .entries
+        .iter()
+        .chain(view.equipment.iter().map(|slot| &slot.item))
+    {
+        *counts.entry(item.item_definition_ref).or_default() += i64::from(item.count.get());
+    }
+    Ok(counts)
+}
+
+fn quantity(counts: &Quantities, item: NonZeroU32) -> i64 {
+    counts.get(&item).copied().unwrap_or_default()
+}
+
+fn handle(
+    client: &DevClientSession,
+    item: NonZeroU32,
+) -> TestResult<oteryn_protocol_oteryn::item_view::ItemHandle> {
+    client
+        .inventory()
+        .and_then(|view| {
+            view.entries
+                .iter()
+                .find(|entry| entry.item_definition_ref == item)
+        })
+        .map(|entry| entry.handle)
+        .ok_or_else(|| format!("no-carried-item-handle-{item}").into())
+}
+
+// The craft owner resolves the carried source and map/carried target from wire USE,
+// then applies the operands through the item authority
+// (crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs:26,154).
+#[derive(Default)]
+struct CraftPlan {
+    inputs: Quantities,
+    outputs: Vec<Quantities>,
+    map_inputs: Quantities,
+    map_outputs: Quantities,
+}
+
+fn map_operand(recipe: &Value, operand: &Value) -> bool {
+    operand["role"] == "TARGET" && recipe["target"]["kind"] != "carried"
+}
+
+fn craft_oracle(recipe: &Value, index: &ItemIndex) -> TestResult<CraftPlan> {
+    let mut plan = CraftPlan::default();
+    let mut transformed = BTreeMap::new();
+    for operand in list(&recipe["operands"])? {
+        let (inputs, transformed) = if map_operand(recipe, operand) {
+            (&mut plan.map_inputs, &mut plan.map_outputs)
+        } else {
+            (&mut plan.inputs, &mut transformed)
+        };
+        let item = reference(index, &operand["item_id"])?;
+        let count = i64::from(number(&operand["count"])?);
+        match string(&operand["effect"])? {
+            "KEEP" => {
+                inputs.entry(item).or_insert(0);
+            }
+            "TRANSFORM_TO" | "CONSUME" => {
+                *inputs.entry(item).or_default() -= count;
+                if operand["effect"] == "TRANSFORM_TO" {
+                    *transformed
+                        .entry(reference(index, &operand["output_item_id"])?)
+                        .or_default() += count;
+                }
+            }
+            other => return Err(format!("unknown-craft-operand-effect-{other}").into()),
+        }
+    }
+    let outputs = &recipe["outputs"];
+    let alternatives = match string(&outputs["kind"])? {
+        "fixed" => std::slice::from_ref(outputs),
+        "weighted" => list(&outputs["alternatives"])?,
+        other => return Err(format!("unknown-craft-output-kind-{other}").into()),
+    };
+    plan.outputs = alternatives
+        .iter()
+        .map(|alternative| {
+            let mut delta = transformed.clone();
+            for output in list(&alternative["entries"])? {
+                *delta
+                    .entry(reference(index, &output["item_id"])?)
+                    .or_default() += i64::from(number(&output["count"])?);
+            }
+            Ok(delta)
+        })
+        .collect::<TestResult<Vec<_>>>()?;
+    Ok(plan)
+}
+
+fn output_matches(
+    before: &Quantities,
+    after: &Quantities,
+    inputs: &Quantities,
+    outputs: &[Quantities],
+) -> bool {
+    outputs.iter().any(|choice| {
+        before
+            .keys()
+            .chain(after.keys())
+            .chain(inputs.keys())
+            .chain(choice.keys())
+            .all(|&item| {
+                quantity(after, item) - quantity(before, item)
+                    == quantity(inputs, item) + quantity(choice, item)
+            })
+    })
+}
+
+async fn craft(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    rows: &mut Rows<'_>,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::{
+        self as wire, MapUseTarget, UseIntent, UseTarget, WorldObjectTarget,
+    };
+    let recipe = &rows.entry.content["recipe"];
+    let index = provisioning::item_index()?;
+    let plan = craft_oracle(recipe, &index)?;
+    let source = reference(&index, &recipe["input_item"])?;
+    for operand in list(&recipe["operands"])? {
+        if map_operand(recipe, operand) {
+            continue;
+        }
+        let item = reference(&index, &operand["item_id"])?;
+        let count = number(&operand["count"])?;
+        let existing = quantity(&inventory(client)?, item);
+        if existing < i64::from(count) {
+            full_row_i14::acquire(
+                client,
+                world,
+                item_id(string(&operand["item_id"]["key"])?)?,
+                u32::try_from(i64::from(count) - existing)?,
+            )
+            .await?;
+        }
+    }
+    let target = &recipe["target"];
+    let mut map_before = None;
+    let map_item = match string(&target["kind"])? {
+        "carried" => list(&recipe["operands"])?
+            .iter()
+            .find(|operand| operand["role"] == "TARGET")
+            .map(|operand| -> TestResult<_> {
+                Ok(MapUseTarget::Item(handle(
+                    client,
+                    reference(&index, &operand["item_id"])?,
+                )?))
+            })
+            .transpose()?,
+        "map_item" | "tile_kind" => {
+            let (at, ordinal, path) =
+                station(world, client, string(&target["definition"]["key"])?)?;
+            walk(client, world, &path).await?;
+            let key = crate::map::view::placement_key(at, ordinal)
+                .ok_or("craft-station-placement-missing")?;
+            let (tile, counts) = map_tile(client, at)?;
+            let expected = reference(&index, &target["definition"])?;
+            let revision = tile
+                .items
+                .iter()
+                .find_map(|item| match item.origin {
+                    oteryn_protocol_oteryn::world_map::MapOrigin::BaseOrdinal {
+                        ordinal: seen,
+                        object_revision,
+                    } if seen == ordinal
+                        && item.definition
+                            == oteryn_protocol_oteryn::world_map::MapDefinition::Item(expected) =>
+                    {
+                        Some(object_revision)
+                    }
+                    _ => None,
+                })
+                .ok_or("craft-station-source-ordinal-missing")?;
+            if !plan.map_inputs.is_empty() {
+                map_before = Some((at, counts));
+            }
+            Some(MapUseTarget::Object(WorldObjectTarget {
+                placement: placement_bytes(world, key),
+                expected_revision: revision,
+            }))
+        }
+        other => return Err(format!("unknown-craft-target-{other}").into()),
+    };
+    let before = inventory(client)?;
+    let payload = wire::encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(handle(client, source)?),
+        use_with: None,
+        use_with_map_item: map_item,
+        use_with_position: None,
+    })
+    .map_err(|e| format!("craft-intent-encode-{e:?}"))?;
+    let reply = client.session_mut().world_context_use(&payload).await?;
+    let disposition =
+        wire::decode_use_result(&reply.payload).map_err(|e| format!("craft-reply-decode-{e:?}"))?;
+    if reply.status != CommandStatus::Accepted || disposition != wire::UseDisposition::Committed {
+        return Err(format!("craft-use-{:?}-{disposition:?}", reply.status).into());
+    }
+    rows.pass("content-use-committed");
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let (after, map_after) = loop {
+        let observed = inventory(client)?;
+        let map_after = map_before
+            .as_ref()
+            .map(|(at, _)| map_tile(client, *at).map(|(_, counts)| counts))
+            .transpose()?;
+        let map_matches =
+            map_before
+                .as_ref()
+                .zip(map_after.as_ref())
+                .is_none_or(|((_, before), after)| {
+                    output_matches(
+                        before,
+                        after,
+                        &plan.map_inputs,
+                        std::slice::from_ref(&plan.map_outputs),
+                    )
+                });
+        if (map_matches && output_matches(&before, &observed, &plan.inputs, &plan.outputs))
+            || tokio::time::Instant::now() >= deadline
+        {
+            break (observed, map_after);
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    };
+    if plan.inputs.iter().any(|(&item, &delta)| {
+        !plan.outputs.iter().any(|choice| {
+            quantity(&after, item) - quantity(&before, item) == delta + quantity(choice, item)
+        })
+    }) {
+        return Err("craft-content-input-delta-mismatch".into());
+    }
+    if let Some(((_, map_before), map_after)) = map_before.as_ref().zip(map_after.as_ref())
+        && plan.map_inputs.iter().any(|(&item, &delta)| {
+            quantity(map_after, item) - quantity(map_before, item)
+                != delta + quantity(&plan.map_outputs, item)
+        })
+    {
+        return Err("craft-map-input-delta-mismatch".into());
+    }
+    rows.pass("content-input-deltas");
+    if !output_matches(&before, &after, &plan.inputs, &plan.outputs) {
+        return Err("craft-content-output-delta-mismatch".into());
+    }
+    if let Some(((_, map_before), map_after)) = map_before.as_ref().zip(map_after.as_ref())
+        && !output_matches(
+            map_before,
+            map_after,
+            &plan.map_inputs,
+            std::slice::from_ref(&plan.map_outputs),
+        )
+    {
+        return Err("craft-map-output-delta-mismatch".into());
+    }
+    rows.pass("exact-content-output-deltas");
+    Ok(())
+}
+
+fn map_tile(
+    client: &mut DevClientSession,
+    at: TilePos,
+) -> TestResult<(oteryn_protocol_oteryn::world_map::MapTile, Quantities)> {
+    use oteryn_protocol_oteryn::world_map::MapDefinition;
+    let view = client
+        .session_mut()
+        .world_map_snapshot()
+        .ok_or("craft-map-snapshot-missing")?;
+    let station = view
+        .tiles
+        .into_iter()
+        .find(|entry| tile(entry.position).ok() == Some(at))
+        .ok_or("craft-station-not-in-wire-map")?;
+    if station.more {
+        return Err("craft-station-stack-truncated-on-wire".into());
+    }
+    let mut counts = Quantities::new();
+    for item in &station.items {
+        if let MapDefinition::Item(reference) = item.definition {
+            *counts.entry(reference).or_default() += i64::from(item.count);
+        }
+    }
+    Ok((station, counts))
+}
+
+fn station(
+    world: &BundleWorld,
+    client: &DevClientSession,
+    key: &str,
+) -> TestResult<(TilePos, u8, Vec<StepDirection>)> {
+    let here = tile(client.world_spatial().actor_position)?;
+    let mut stations = BTreeMap::new();
+    oteryn_world_bundle::bundle::visit(&world_bytes()?, |manifest, sector| {
+        for tile in sector.tiles {
+            if here.x.abs_diff(tile.x) > 161 || here.y.abs_diff(tile.y) > 161 {
+                continue;
+            }
+            for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
+                if manifest.palette[item.palette as usize].key == key
+                    && let Ok(ordinal) = u8::try_from(ordinal)
+                {
+                    stations
+                        .entry(TilePos {
+                            x: tile.x,
+                            y: tile.y,
+                            floor: sector.floor,
+                        })
+                        .or_insert(ordinal);
+                }
+            }
+        }
+        Ok(())
+    })?;
+    let (at, path) = route(world, here, |at| {
+        stations.keys().any(|&target| adjacent(at, target))
+    })
+    .and_then(|path| {
+        let end = path
+            .iter()
+            .try_fold(here, |at, &step| destination(world, at, step))?;
+        stations
+            .keys()
+            .find(|&&target| adjacent(end, target))
+            .map(|&target| (target, path))
+    })
+    .ok_or_else(|| format!("no-reachable-craft-station-{key}"))?;
+    Ok((at, stations[&at], path))
+}
+
+async fn weapon_entry(
+    client: &mut DevClientSession,
+    key: &str,
+    offset: u32,
+) -> TestResult<oteryn_protocol_oteryn::weapon_proficiency::ProficiencyCatalogueEntry> {
+    use oteryn_protocol_oteryn::weapon_proficiency as wire;
+    let reply = accepted(
+        client,
+        wire::CAPABILITY_WEAPON_PROFICIENCY_V1,
+        wire::COMMAND_TYPE_PROFICIENCY_CATALOGUE,
+        &offset.to_be_bytes(),
+    )
+    .await?;
+    let page =
+        wire::ProficiencyCataloguePage::decode(&reply).ok_or("proficiency-catalogue-decode")?;
+    if page.offset != offset {
+        return Err("proficiency-catalogue-offset-mismatch".into());
+    }
+    page.entries
+        .into_iter()
+        .find(|entry| entry.weapon == key)
+        .ok_or_else(|| format!("proficiency-weapon-not-served-{key}").into())
+}
+
+// The wire catalogue formats exact source ratios as numerator/denominator
+// (crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency.rs:472).
+fn perk_label(value: &Value) -> String {
+    match value {
+        Value::Object(fields) => {
+            if let (Some(numerator), Some(denominator)) =
+                (fields.get("numerator"), fields.get("denominator"))
+            {
+                return format!("{numerator}/{denominator}");
+            }
+            let details = fields
+                .iter()
+                .filter(|(key, _)| key.as_str() != "kind")
+                .map(|(key, value)| format!("{}: {}", key.replace('_', " "), perk_label(value)))
+                .collect::<Vec<_>>()
+                .join(", ");
+            if let Some(kind) = fields.get("kind").and_then(Value::as_str) {
+                format!("{} ({details})", kind.replace('_', " "))
+            } else {
+                details
+            }
+        }
+        Value::String(text) => text.replace('_', " "),
+        other => other.to_string(),
+    }
+}
+
+// The death owner varies credit with forge influence and the daily double-XP draw
+// (crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:4472,4482).
+fn kill_credit_matches(
+    shape: crate::domain::weapon_proficiency::ProficiencyTrackShape,
+    difficulty: crate::domain::weapon_proficiency::CreatureDifficulty,
+    before: u32,
+    after: u32,
+) -> bool {
+    use crate::domain::weapon_proficiency::{CreatureInfluence, creature_points};
+    (0..=5)
+        .map(CreatureInfluence::Stacks)
+        .chain([CreatureInfluence::Fiendish])
+        .any(|influence| {
+            creature_points(difficulty, influence).is_ok_and(|points| {
+                after > before
+                    && [points, points * 2]
+                        .into_iter()
+                        .any(|credit| shape.credited(before, credit) == after)
+            })
+        })
+}
+
+// Catalogue enumeration, progress and selections use the bound weapon's committed track
+// (crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency.rs:235).
+async fn proficiency(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    root: &Path,
+    rows: &mut Rows<'_>,
+) -> TestResult {
+    use crate::content::{ImportedWeaponProficiencyData, import_committed_weapon_proficiency_data};
+    use crate::domain::weapon_proficiency::{
+        CreatureDifficulty, ProficiencyThresholdClass, ProficiencyTrackShape,
+    };
+    use oteryn_protocol_oteryn::weapon_proficiency as wire;
+    static SOURCE: std::sync::LazyLock<Result<ImportedWeaponProficiencyData, String>> =
+        std::sync::LazyLock::new(|| {
+            import_committed_weapon_proficiency_data().map_err(|e| e.to_string())
+        });
+    let source = SOURCE.as_ref().map_err(String::as_str)?;
+    let definition = source
+        .definitions()
+        .get(&rows.entry.key)
+        .ok_or("proficiency-profile-not-imported")?;
+    let (offset, (key, weapon)) = source
+        .bindings()
+        .iter()
+        .enumerate()
+        .find(|(_, (_, binding))| binding.profile_binding.key == rows.entry.key)
+        .ok_or("proficiency-profile-has-no-content-weapon-binding")?;
+    let offset = u32::try_from(offset)?;
+    let class_key = serde_json::to_value(weapon.threshold_class)?;
+    let class = ProficiencyThresholdClass::ALL
+        .into_iter()
+        .find(|class| class_key == class.as_str())
+        .ok_or("proficiency-threshold-class-unknown")?;
+    let shape = ProficiencyTrackShape::new(class, u8::try_from(definition.levels.len())?)?;
+    let index = provisioning::item_index()?;
+    let reference = provisioning::item_reference(&index, item_id(key)?)?;
+    let before = weapon_entry(client, key, offset).await?;
+    if before.definition != reference.get()
+        || before.name != definition.name
+        || before.thresholds != *class.thresholds()
+    {
+        return Err("proficiency-content-binding-mismatch".into());
+    }
+    if quantity(&inventory(client)?, reference) == 0 {
+        full_row_i14::acquire(client, world, item_id(key)?, 1).await?;
+    }
+    if !client.inventory().is_some_and(|inventory| {
+        inventory
+            .equipment
+            .iter()
+            .any(|slot| slot.item.item_definition_ref == reference)
+    }) {
+        let equipped = client
+            .session_mut()
+            .equip_item_definition(reference)
+            .await?;
+        if equipped.status != CommandStatus::Accepted
+            || equipped.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
+        {
+            return Err("proficiency-content-weapon-equip-refused".into());
+        }
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while !client.inventory().is_some_and(|inventory| {
+        inventory
+            .equipment
+            .iter()
+            .any(|slot| slot.item.item_definition_ref == reference)
+    }) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("proficiency-content-weapon-equip-delta-missing".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+    let bytes = world_bytes()?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let hunt =
+        full_row_p05::hunt_for_race(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    let rats = document(&root.join("creatures/definitions/creatures-01000-01499.json"))?;
+    let rat = list(&rats["records"])?
+        .iter()
+        .find(|record| record["definition"]["identity"]["key"] == "oteryn:creature.rat")
+        .ok_or("proficiency-rat-content-missing")?;
+    let difficulty_key = string(&rat["authoring"]["profile"]["bestiary"]["difficulty"])?;
+    let difficulty = CreatureDifficulty::ALL
+        .into_iter()
+        .find(|difficulty| difficulty.as_str() == difficulty_key)
+        .ok_or("proficiency-rat-difficulty-unknown")?;
+    let after = weapon_entry(client, key, offset).await?;
+    if hunt.raw_xp == 0
+        || !kill_credit_matches(shape, difficulty, before.experience, after.experience)
+    {
+        return Err(format!(
+            "proficiency-kill-credit-mismatch-{}-to-{}",
+            before.experience, after.experience
+        )
+        .into());
+    }
+    rows.pass(&format!(
+        "weapon-experience-{}-to-{}",
+        before.experience, after.experience
+    ));
+
+    if after.levels.len() != definition.levels.len() {
+        return Err("proficiency-content-level-count-mismatch".into());
+    }
+    for (ordinal, level) in definition.levels.iter().enumerate() {
+        let level_number = level.level;
+        let labels = level
+            .perks
+            .iter()
+            .map(|perk| serde_json::to_value(perk).map(|value| perk_label(&value)))
+            .collect::<Result<Vec<_>, _>>()?;
+        if after.levels[ordinal].perks != labels {
+            return Err(format!("proficiency-content-perks-mismatch-level-{level_number}").into());
+        }
+        if level_number > shape.unlocked_perk_levels(after.experience) {
+            return Err(format!(
+                "proficiency-perk-level-{level_number}-needs-{}-has-{}",
+                class.thresholds()[ordinal],
+                after.experience
+            )
+            .into());
+        }
+        for (perk, _) in level.perks.iter().enumerate() {
+            let perk = u8::try_from(perk)?;
+            let request = wire::SelectPerkRequest {
+                definition: reference,
+                level: u8::try_from(ordinal)?,
+                perk: Some(perk),
+            };
+            let reply = accepted(
+                client,
+                wire::CAPABILITY_WEAPON_PROFICIENCY_V1,
+                wire::COMMAND_TYPE_PROFICIENCY_SELECT_PERK,
+                &request.encode(),
+            )
+            .await?;
+            let reply =
+                wire::SelectPerkReply::decode(&reply).ok_or("proficiency-perk-reply-decode")?;
+            if reply.result != wire::SelectPerkResult::Accepted
+                || reply.selections.get(ordinal) != Some(&Some(perk))
+            {
+                return Err(format!(
+                    "proficiency-perk-selection-level-{level_number}-perk-{perk}-{:?}",
+                    reply.result
+                )
+                .into());
+            }
+            let selected = weapon_entry(client, key, offset).await?;
+            if selected.levels.get(ordinal).and_then(|slot| slot.selected) != Some(perk) {
+                return Err(format!(
+                    "proficiency-perk-selection-not-visible-level-{level_number}-perk-{perk}"
+                )
+                .into());
+            }
+        }
+    }
+    Err("proficiency-selected-perk-runtime-effect-unverified".into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn progress_sweep_batch_defaults_and_rejects_invalid_slices() -> TestResult {
+        assert_eq!(batch(None)?, (0, 3));
+        assert_eq!(batch(Some("20:5"))?, (20, 5));
+        for invalid in [
+            "",
+            "1",
+            "0:0",
+            "0:-1",
+            "1:2:3",
+            " 1:2",
+            "+1:2",
+            "1:999999999999999999999999",
+        ] {
+            assert!(batch(Some(invalid)).is_err(), "{invalid}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn progress_sweep_content_census_is_strictly_sorted_and_includes_every_family() -> TestResult {
+        let entries = census(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content"))?;
+        assert!(entries.windows(2).all(|pair| pair[0].key < pair[1].key));
+        for prefix in ["achievement/", "charm.", "item-conversion.", "proficiency."] {
+            assert!(
+                entries
+                    .iter()
+                    .any(|entry| entry.key.starts_with(&format!("oteryn:{prefix}")))
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn progress_sweep_grant_requires_one_fact_and_exact_authored_points() {
+        assert!(granted_once((2, 9), (3, 16), 7, &[7]));
+        assert!(!granted_once((2, 9), (3, 15), 7, &[7]));
+        assert!(!granted_once((2, 9), (3, 16), 7, &[7, 7]));
+        assert!(!granted_once((2, 9), (4, 16), 7, &[7]));
+    }
+
+    #[test]
+    fn progress_sweep_kill_credit_uses_owner_table_and_saturation() -> TestResult {
+        use crate::domain::weapon_proficiency::{
+            CreatureDifficulty, ProficiencyThresholdClass, ProficiencyTrackShape,
+        };
+        let shape = ProficiencyTrackShape::new(ProficiencyThresholdClass::Standard, 7)?;
+        assert!(kill_credit_matches(
+            shape,
+            CreatureDifficulty::Trivial,
+            10,
+            40
+        ));
+        assert!(kill_credit_matches(
+            shape,
+            CreatureDifficulty::Trivial,
+            10,
+            160
+        ));
+        assert!(!kill_credit_matches(
+            shape,
+            CreatureDifficulty::Trivial,
+            10,
+            41
+        ));
+        let cap = shape.final_progress();
+        assert!(kill_credit_matches(
+            shape,
+            CreatureDifficulty::Trivial,
+            cap - 1,
+            cap
+        ));
+        assert!(!kill_credit_matches(
+            shape,
+            CreatureDifficulty::Trivial,
+            cap - 1,
+            cap + 1
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn progress_sweep_craft_requires_exact_inputs_and_one_complete_output_choice() -> TestResult {
+        let input = NonZeroU32::new(1).ok_or("input")?;
+        let a = NonZeroU32::new(2).ok_or("output a")?;
+        let b = NonZeroU32::new(3).ok_or("output b")?;
+        let before = BTreeMap::from([(input, 3), (a, 1)]);
+        let inputs = BTreeMap::from([(input, -2)]);
+        let outputs = [BTreeMap::from([(a, 1)]), BTreeMap::from([(b, 1)])];
+        assert!(output_matches(
+            &before,
+            &BTreeMap::from([(input, 1), (a, 2)]),
+            &inputs,
+            &outputs
+        ));
+        assert!(output_matches(
+            &before,
+            &BTreeMap::from([(input, 1), (a, 1), (b, 1)]),
+            &inputs,
+            &outputs
+        ));
+        assert!(!output_matches(
+            &before,
+            &BTreeMap::from([(input, 1), (a, 2), (b, 1)]),
+            &inputs,
+            &outputs
+        ));
+        assert!(!output_matches(
+            &before,
+            &BTreeMap::from([(input, 2), (a, 2)]),
+            &inputs,
+            &outputs
+        ));
+        Ok(())
+    }
+}

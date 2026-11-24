@@ -774,6 +774,7 @@ const GROUPS: &[(&str, &[&str])] = &[
     ("f7forge", &[]),
     ("f7run", &[]),
     ("mp", &[]),
+    ("progress_sweep", &[]),
     ("rows", &[]),
 ];
 
@@ -813,6 +814,12 @@ impl Groups {
             }
         }
         Ok(Self(Some(selected)))
+    }
+
+    pub(super) fn explicitly_runs(&self, group: &str) -> bool {
+        self.0
+            .as_ref()
+            .is_some_and(|selected| selected.contains(group))
     }
 
     pub(super) fn runs(&self, group: &str) -> bool {
