@@ -114,7 +114,7 @@ fn hotkey_equip_coalesces_burst_to_latest_command_with_ordered_results()
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| {
-            run(async {
+            let scenario = async {
                 tokio::time::pause();
                 let start = tokio::time::Instant::now();
                 let authority = EquipAuthority {
@@ -172,8 +172,18 @@ fn hotkey_equip_coalesces_burst_to_latest_command_with_ordered_results()
                     ]
                 );
                 Ok(())
-            })
-            .map_err(|e| e.to_string())
+            };
+            let mut result = Ok(());
+            let lines = oteryn_error_codes::capture(|| result = run(scenario));
+            result.map_err(|e| e.to_string())?;
+            for id in [1, 2] {
+                assert!(lines.iter().any(|line| {
+                    line.contains("event=hotkey_equip_rejected")
+                        && line.contains("stage=superseded")
+                        && line.contains(&format!("command_id={id}"))
+                }));
+            }
+            Ok::<_, String>(())
         })
         .map_err(|e| e.to_string())?
         .join()

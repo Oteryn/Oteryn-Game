@@ -23,7 +23,7 @@ where
 {
     if matches!(
         next,
-        Next::Serene | Next::QuestLog | Next::Chat | Next::Visibility | Next::Combat | Next::Npc
+        Next::Serene | Next::QuestLog | Next::Chat | Next::Combat | Next::Npc
     ) {
         crate::durability::DurabilityRoot::with_background_holder(
             authority.background_operation(receive_inner(stream, authority, session, next)),
@@ -198,6 +198,9 @@ where
                 )
                 .await
                 .ok_or(ServeEnd::Disconnected)?;
+                super::party_membership::refresh(stream, authority, session)
+                    .await
+                    .ok_or(ServeEnd::Disconnected)?;
                 super::native_cues::refresh(stream, authority, session).await?;
                 achievement_notices::refresh(stream, authority, session).await
             };

@@ -11,6 +11,8 @@ use crate::durability::character_progression::CharacterProgressionError;
 use crate::foundation::{CharacterId, CommandStatus, MovementLocalPosition, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+mod staged_room_admission;
+
 pub(super) type BossActivityResult = Option<(CommandStatus, Vec<u8>)>;
 
 impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
@@ -198,6 +200,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         else {
             return refusal(ActivityRefusal::ContentUnavailable);
         };
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && !staged_room_admission::matches_source_policy(&definition)
+        {
+            return refusal(ActivityRefusal::ContentChanged);
+        }
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
             && !difficulty_start
             && (oteryn_protocol_oteryn::boss_difficulty::boss_maximum(&definition.boss_key)

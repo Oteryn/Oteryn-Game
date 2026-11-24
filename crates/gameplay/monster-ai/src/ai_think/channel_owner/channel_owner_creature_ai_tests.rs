@@ -203,14 +203,7 @@ impl Channel {
         walkable: bool,
     ) -> Vec<(ExactActorRef, crate::ai_think::ThinkReport)> {
         self.advance_movement(now_us, walkable);
-        let players = [TargetCandidate {
-            actor: self.player,
-            position: self.position(self.player),
-            eligible: true,
-            invisible: false,
-            health: 100,
-            damage: 0,
-        }];
+        let players = [self.player_candidate()];
         let reports = self.table.run_due_thinks(
             &mut self.runtime,
             now_us,
@@ -220,6 +213,17 @@ impl Channel {
         );
         self.advance_movement(now_us, walkable);
         reports
+    }
+
+    fn player_candidate(&self) -> TargetCandidate {
+        TargetCandidate {
+            actor: self.player,
+            position: self.position(self.player),
+            eligible: true,
+            invisible: false,
+            health: 100,
+            damage: 0,
+        }
     }
 
     /// The profile's melee swing for `creature`, owned by the melee owner.

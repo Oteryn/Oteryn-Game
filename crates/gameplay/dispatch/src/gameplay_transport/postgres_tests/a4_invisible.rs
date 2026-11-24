@@ -1,5 +1,7 @@
 //! A4/C17b: production spell completion under real Character and Content fences.
-use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
+use super::death_ml_loss_composed_fixtures::{
+    current_fence, production_generation_with_cosmetics, production_generation_with_source,
+};
 use super::fixture::{Harness, debug, id, run};
 use super::item_look_fixtures::large_stack;
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -54,52 +56,11 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                 "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
             );
             let (controller, pin) = if WITH_OBSERVER {
-                use crate::content::native_gameplay::{NativeGameplayInput, PinnedGameplayBytes};
-                use crate::content::{
-                    ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,
-                    activate_native_entry_room_with_gameplay,
-                };
-                use sha2::Digest;
-                let mut supplied = NativeGameplayInput::from_manifest(
-                    &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                        .join("../../../content/spells.manifest.json"),
-                )
-                .map_err(debug)?;
                 let mut cosmetics = crate::content::native_gameplay::test_support::cosmetics_fixture::cosmetics_test_packet();
                 cosmetics["authoring"]["document"]["content_revision"] = "content-1".into();
-                let pinned = |bytes: Vec<u8>| PinnedGameplayBytes {
-                    sha256: sha2::Sha256::digest(&bytes)
-                        .iter()
-                        .map(|byte| format!("{byte:02x}"))
-                        .collect(),
-                    bytes,
-                };
-                supplied.cosmetics = pinned(serde_json::to_vec(&cosmetics)?);
-                supplied.source_world = Some(pinned(source.to_vec()));
-                supplied
-                    .build_training
-                    .as_mut()
-                    .ok_or("build training")?
-                    .content_revision = "content-1".into();
-                let room = crate::content::qualify_selected_native_gameplay_room(world, &supplied)
-                    .map_err(debug)?;
-                let issuance = NativeEntryActivationIssuance {
-                    world_id: world,
-                    activation_sequence: 1,
-                    server_artifact_digest: room.compiled().server_digest(),
-                    client_artifact_digest: room.compiled().client_digest(),
-                    frame_binding_digest: room.frame_binding().digest(),
-                };
-                let mut controller = ContentActivationController::new();
-                let pin = activate_native_entry_room_with_gameplay(
-                    &mut controller,
-                    &NodeBootQuiescence::before_channel_runtime(),
-                    world,
-                    &issuance,
-                    &supplied,
-                )
-                .map_err(debug)?;
-                (controller, pin)
+                production_generation_with_cosmetics(
+                    world, "content-1", Some(source), serde_json::to_vec(&cosmetics)?,
+                )?
             } else {
                 production_generation_with_source(world, "content-1", Some(source))?
             };
@@ -234,6 +195,41 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             } else {
                 None
             };
+            let status_view = if let Some(observer) = observer {
+                use crate::gameplay_transport::{
+                    capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities},
+                    connection::{prime_player_status_clock, regression_player_status},
+                    world_spatial::{EntityRef, SessionVisibility},
+                };
+                use oteryn_protocol_oteryn::zones_nologout::{PlayerPresence, PlayerStatus};
+
+                prime_player_status_clock(&owner, deps.admitted);
+                let mut reader = deps.admitted;
+                reader.runtime_actor = Some(observer);
+                reader.game_session_id = GameSessionId::decode(&id(110)).map_err(debug)?;
+                reader.continuity.selected_capabilities =
+                    SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[6, 600])
+                        .ok_or("player status capability")?;
+                let target = EntityRef {
+                    identity: actor.placement_identity(),
+                    generation: actor.actor_local_generation(),
+                };
+                let channel = owner
+                    .observe_visible_entities(observer)
+                    .await
+                    .ok_or("visible caster")?;
+                let mut view = SessionVisibility::default();
+                view.snapshot(&channel, &mut |_| Ok(())).map_err(debug)?;
+                let visible = regression_player_status(&owner, reader, target, &view)
+                    .await
+                    .and_then(|bytes| PlayerStatus::decode(&bytes))
+                    .ok_or("visible player status")?;
+                assert_eq!(visible.presence, PlayerPresence::Online);
+                assert!(!visible.no_logout, "the pinned caster tile permits logout");
+                Some((reader, target, view))
+            } else {
+                None
+            };
             let outcome = owner
                 .cast_spell_completion(
                     actor,
@@ -266,6 +262,16 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             assert!(!conditions.invisible_at(start + 200_000_000));
             drop(states);
             drop(runtime);
+            if let Some((reader, target, view)) = status_view {
+                assert!(
+                    crate::gameplay_transport::connection::regression_player_status(
+                        &owner, reader, target, &view,
+                    )
+                    .await
+                    .is_none(),
+                    "a published incarnation cannot reveal a newly invisible player's status",
+                );
+            }
             if let Some(observer) = observer {
                 // SRV6 owner difference: unlike Crystal player.cpp:1383-1396,
                 // another player must receive no invisible player entity.

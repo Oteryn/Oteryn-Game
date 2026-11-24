@@ -1,4 +1,5 @@
 syntax = "proto3";
+// Named report extensions are specified in rule-violation-v1.md.
 package oteryn.protocol.v1;
 // Capability 76, command 93 (PARITY-REPORT-1). Strict bounded codec: every field explicitly
 // present, duplicate/unknown fields refused, at most 1088 request bytes.

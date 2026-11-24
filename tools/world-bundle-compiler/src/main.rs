@@ -109,6 +109,7 @@ fn run_compile(
     out: &Path,
     class: &str,
     regions: Option<&[(u16, u16)]>,
+    town_qualification: bool,
 ) -> Result<Value, Error> {
     let build_class = match class {
         "production" => BuildClass::Production,
@@ -123,6 +124,9 @@ fn run_compile(
         ));
     }
     let project = match regions {
+        Some(regions) if town_qualification => {
+            oteryn_world_bundle_compiler::source::project_town_qualification(root, regions)?
+        }
         Some(regions) => oteryn_world_bundle_compiler::source::project_regions(root, regions)?,
         None => project(root)?,
     };
@@ -520,8 +524,14 @@ fn main() -> ExitCode {
             Path::new(out),
             class,
             None,
+            false,
         ),
-        [_, command, root, identity, out, regions] if command == "compile-regions" => {
+        [_, command, root, identity, out, regions]
+            if matches!(
+                command.as_str(),
+                "compile-regions" | "compile-town-qualification"
+            ) =>
+        {
             let parsed = regions
                 .split(';')
                 .map(|entry| {
@@ -543,6 +553,7 @@ fn main() -> ExitCode {
                     Path::new(out),
                     "non-production",
                     Some(&regions),
+                    command == "compile-town-qualification",
                 )
             })
         }
@@ -567,6 +578,8 @@ fn main() -> ExitCode {
                 "usage: oteryn-world-bundle-compiler parity <repository root>\n       \
                  oteryn-world-bundle-compiler compile <repository root> <identity.json> <out> \
                  <production|non-production>\n       \
+                 oteryn-world-bundle-compiler compile-town-qualification <repository root> \
+                 <identity.json> <out> <regions>\n       \
                  oteryn-world-bundle-compiler derive-identity <repository root> <world slug>\n       \
                  oteryn-world-bundle-compiler pin-check <repository root> <out directory>\n       \
                  oteryn-world-bundle-compiler pin-refresh <repository root>"

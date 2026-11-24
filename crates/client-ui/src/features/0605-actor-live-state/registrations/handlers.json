@@ -1,0 +1,19 @@
+{
+  "mechanic": "0605-actor-live-state",
+  "kind": "handlers",
+  "id": "0605-actor-live-state-unsupported",
+  "status": "unsupported",
+  "reason": "The battle list and vitals panel have no handler for the negotiated follow target and remaining shield queries.",
+  "commands": [
+    6371,
+    6372
+  ],
+  "not_applicable": {
+    "state": "The client has no model for server-owned follow route and finite mana shield capacity.",
+    "protocol": "The client has no negotiated handler for this capability.",
+    "view": "The native panel consumes the existing capabilities.",
+    "input": "The native panel uses the existing commands.",
+    "settings": "This capability does not introduce a client setting."
+  },
+  "direction": "client_to_server"
+}

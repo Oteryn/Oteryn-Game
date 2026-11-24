@@ -12,6 +12,7 @@ pub(crate) enum NoticeKind {
     Hotkey,
     OfflineTraining,
     Private,
+    System,
     Store,
 }
 #[cfg(bevy_shell)]
@@ -22,6 +23,7 @@ impl NoticeKind {
             Self::Boosted => p.boosted_messages,
             Self::Hotkey => p.hotkey_messages,
             Self::OfflineTraining => p.offline_training_messages,
+            Self::System => true,
             Self::Private => p.private_messages,
             Self::Store => p.store_messages,
         }

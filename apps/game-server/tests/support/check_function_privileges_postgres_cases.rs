@@ -173,3 +173,39 @@ fn runtime_role_executes_every_check_function() -> TestResult {
             outcome
         })
 }
+
+#[test]
+fn fresh_migration_chain_installs_runtime_stash_placement_proof() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            // Database::create applies the embedded chain, including the 3058
+            // rewrites of both the completion and item-instance guards.
+            let database = Database::create(admin).await?;
+            let outcome = async {
+                let mut connection = sqlx::PgConnection::connect(&database.url).await?;
+                sqlx::query("SET ROLE oteryn_game_runtime")
+                    .execute(&mut connection)
+                    .await?;
+                let placed: bool = sqlx::query_scalar(
+                    "SELECT game_stash_carried_placement(
+                        '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000002',
+                        1, '00000000-0000-7000-8000-000000000003', '00000000-0000-7000-8000-000000000004'
+                    )",
+                )
+                .fetch_one(&mut connection)
+                .await?;
+                if placed {
+                    return Err("an absent item must have no carried placement proof".into());
+                }
+                Ok::<_, Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            outcome
+        })
+}

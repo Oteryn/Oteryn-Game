@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MetricsResult",
+  "type": "object",
+  "properties": {
+    "metric": {
+      "$ref": "#/$defs/Metric"
+    },
+    "points": {
+      "$ref": "#/$defs/AnalyticsRows"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "metric",
+    "points"
+  ],
+  "$defs": {
+    "AnalyticsRows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MetricPoint"
+      },
+      "maxItems": 10000
+    },
+    "Metric": {
+      "type": "string",
+      "enum": [
+        "tick_time_ms",
+        "players_online",
+        "cpu_percent",
+        "memory_bytes",
+        "disk_used_bytes",
+        "pg_pool_wait_ms",
+        "queue_depth",
+        "error_rate_per_second"
+      ]
+    },
+    "MetricPoint": {
+      "type": "object",
+      "properties": {
+        "at": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "at"
+      ]
+    }
+  }
+}

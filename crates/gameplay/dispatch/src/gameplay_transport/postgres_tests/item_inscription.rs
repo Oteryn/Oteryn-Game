@@ -1,14 +1,18 @@
 //! ITEM_INSCRIPTION_READ_V1 through the real composed owner on PostgreSQL: the carried item's
 //! stored text under the session's item fence, refusals for anything outside that custody.
-use super::fixture::{Harness,debug,id,run};
-use super::{Dependencies,TestResult,prepare_current_session};
-use crate::gameplay_transport::{capabilities::SelectedCapabilities,connection::FreshAdmissionAuthority,item_view::ItemKey};
+use super::fixture::{Harness, debug, id, run};
+use super::{Dependencies, TestResult, prepare_current_session};
+use crate::gameplay_transport::{
+    capabilities::SelectedCapabilities, connection::FreshAdmissionAuthority, item_view::ItemKey,
+};
 use oteryn_protocol_oteryn::item_inscription::Reply;
-use oteryn_protocol_oteryn::mail::{MailIntent,MailOutcome,encode_intent};
+use oteryn_protocol_oteryn::mail::{MailIntent, MailOutcome, encode_intent};
 
 #[test]
-fn item_inscription_read_returns_carried_text_and_refuses_foreign_items_postgres()->TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none(){return Ok(());}
+fn item_inscription_read_returns_carried_text_and_refuses_foreign_items_postgres() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
     std::thread::Builder::new().stack_size(64<<20).spawn(|| {
         run(async |admin| {
             let h=Harness::create_with_admission_seed(admin,"item_inscription",true,false).await?;
@@ -36,17 +40,17 @@ fn item_inscription_read_returns_carried_text_and_refuses_foreign_items_postgres
             super::item_look_fixtures::seed_main_backpack(&h,&[("oteryn:item.tibia.i2818",1),("oteryn:item.tibia.i3505",1)]).await?;
             let mut admitted=deps.admitted;
             admitted.item_fence=Some(fence);
-            let read=async |admitted:crate::gameplay_transport::connection::AdmittedSession,item:[u8;16]| owner.item_inscription_read(admitted,Some(ItemKey::Instance(item))).await.map(|bytes| Reply::decode(&bytes));
+            let read=async |admitted:crate::gameplay_transport::connection::AdmittedSession,item:[u8;16]| owner.item_inscription_read(admitted,Some(ItemKey::Instance(item)),false).await.map(|bytes| Reply::decode(&bytes));
             admitted.continuity.selected_capabilities=SelectedCapabilities::select(owner.offered_capabilities(),&[4,6,115]).ok_or("mail offer")?;
             assert_eq!(read(admitted,id(72)).await,None,"unselected capability is refused");
             // This direct owner has entry-room movement; 511 is offered only on bundle Worlds.
             // Model that negotiated offer explicitly instead of silently dropping 511.
             admitted.continuity.selected_capabilities=SelectedCapabilities::select(crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,&[4,6,115,511]).ok_or("inscription offer")?;
             assert!(admitted.continuity.selected_capabilities.contains(511));
-            assert_eq!(read(admitted,id(72)).await,Some(Some(Reply{text:String::new(),max_length:1_999,writable:true})));
+            assert_eq!(read(admitted,id(72)).await,Some(Some(Reply{text:String::new(),max_length:1_999,writable:true,writer_name:None,written_at_unix_ms:None})));
             let payload=encode_intent(&MailIntent::WriteText{item_handle:1,text:"One inscription: żółw 🐢".into()}).map_err(debug)?;
             assert_eq!(owner.mail_command(deps.actor,admitted,1,&payload,Some(ItemKey::Instance(id(72))),None).await,Some(MailOutcome::TextWritten));
-            assert_eq!(read(admitted,id(72)).await,Some(Some(Reply{text:"One inscription: żółw 🐢".into(),max_length:1_999,writable:true})),"the owned item's stored text");
+            assert_eq!(read(admitted,id(72)).await,Some(Some(Reply{text:"One inscription: żółw 🐢".into(),max_length:1_999,writable:true,writer_name:None,written_at_unix_ms:None})),"the owned item's stored text");
             assert_eq!(owner.mail_command(deps.actor,admitted,2,&payload,Some(ItemKey::Instance(id(71))),None).await,Some(MailOutcome::TextWritten));
             let sealed=read(admitted,id(71)).await.flatten().ok_or("sealed document")?;
             assert_eq!(sealed.text,"One inscription: żółw 🐢");
@@ -59,7 +63,7 @@ fn item_inscription_read_returns_carried_text_and_refuses_foreign_items_postgres
             assert_eq!(read(admitted,id(99)).await,None,"another character owns the letter");
             assert_eq!(read(admitted,id(100)).await,None);
             assert_eq!(read(admitted,id(70)).await,None);
-            assert_eq!(owner.item_inscription_read(admitted,Some(ItemKey::MapBase{bundle_digest:[0;32],placement_key:1,reset_epoch:0})).await,None);
+            assert_eq!(owner.item_inscription_read(admitted,Some(ItemKey::MapBase{bundle_digest:[0;32],placement_key:1,reset_epoch:0}),false).await,None);
             admitted.item_fence=None;
             assert_eq!(read(admitted,id(72)).await,None,"an unfenced session is refused");
             drop(owner);drop(authority);drop(seal);h.cleanup().await?;

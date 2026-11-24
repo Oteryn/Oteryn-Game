@@ -1,0 +1,15 @@
+{
+  "mechanic": "0576-party-membership-notices",
+  "kind": "handlers",
+  "id": "0576-party-membership-notices-push",
+  "status": "unsupported",
+  "commands": [],
+  "reason": "This branch delivers the server and protocol support. The native client integration is maintained separately.",
+  "not_applicable": {
+    "state": "The existing feature continues to own its client state.",
+    "protocol": "Join and leave deltas carrying an opaque Party member handle.",
+    "view": "Display is owned by the native client integration.",
+    "input": "This capability carries unsolicited server output.",
+    "settings": "The capability has no client setting."
+  }
+}

@@ -11,14 +11,14 @@ use crate::durability::house_scope_handoff::{
 };
 use crate::durability::runtime_scope_assignment::{ControlActor, OperationKey};
 use crate::foundation::{
-    ChannelContentPin, CharacterId, CharacterLease, MessageType, MovementLocalPosition,
-    decode_wire_envelope,
+    AuthenticatedTransportRefV1, ChannelContentPin, CharacterId, CharacterLease, MessageType,
+    MovementLocalPosition, decode_wire_envelope,
 };
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
-    serve_admitted,
+    AdmittedSession, ConnectionEnd, ControlLossResult, FirstEntryOutcome, FreshAdmissionAuthority,
+    IDLE_LIVENESS, ResumeAttempt, serve_admitted,
 };
 use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
 use oteryn_protocol_oteryn::world_spatial::{
@@ -45,6 +45,8 @@ enum Case {
     CancelWalk,
     Malformed,
     Unavailable,
+    GuardBusy(u32),
+    GuardBusyResume,
     NoPath,
 }
 
@@ -100,6 +102,27 @@ fn house_podium_dispatch_unavailable_target_sends_no_result() -> TestResult {
 }
 
 #[test]
+fn house_podium_dispatch_busy_guard_sends_no_result() -> TestResult {
+    postgres_case(
+        "house_podium_guard_busy",
+        Case::GuardBusy(wire::COMMAND_QUERY),
+    )
+}
+
+#[test]
+fn house_podium_dispatch_busy_guard_sends_no_projection_result() -> TestResult {
+    postgres_case(
+        "house_podium_projection_guard_busy",
+        Case::GuardBusy(wire::COMMAND_PROJECTION),
+    )
+}
+
+#[test]
+fn house_podium_dispatch_busy_guard_allows_same_session_resume() -> TestResult {
+    postgres_case("house_podium_guard_resume", Case::GuardBusyResume)
+}
+
+#[test]
 fn house_podium_dispatch_valid_query_without_path_rejects() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -116,10 +139,16 @@ fn postgres_case(name: &'static str, case: Case) -> TestResult {
         .stack_size(256 << 20)
         .spawn(move || {
             run(async |admin| {
+                let started = std::time::Instant::now();
                 let h = Harness::create_with_admission_seed(admin, name, true, false).await?;
                 let result = scenario(&h, case).await;
                 h.cleanup().await?;
-                result
+                result?;
+                eprintln!(
+                    "POSTGRES_CASE_COMPLETED {name} elapsed={:?}",
+                    started.elapsed()
+                );
+                Ok::<_, Box<dyn std::error::Error>>(())
             })
             .map_err(|error| error.to_string())
         })?
@@ -139,7 +168,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .await
         .map_err(debug)?;
     let base = Dependencies::new()?;
-    let walks = matches!(case, Case::Walk | Case::CancelWalk);
+    let walks = matches!(case, Case::Walk | Case::CancelWalk | Case::GuardBusyResume);
     let world = if walks {
         super::house_wrap_fixtures::walkable_house_bundle(
             base.admitted.world_id,
@@ -351,6 +380,26 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .execute(&h.pool).await?;
     }
     let item = id(71);
+    if matches!(case, Case::GuardBusyResume) {
+        let command = admitted.continuity.next_command_id;
+        let (status, _) = exchange(
+            &owner,
+            &mut admitted,
+            command,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            &encode_step_intent(StepDirection::East),
+        )
+        .await?
+        .ok_or("establishing House step result")?;
+        assert_eq!(status, CommandStatus::Accepted);
+        let actor = admitted.runtime_actor.ok_or("established House actor")?;
+        assert!(
+            owner
+                .validate_house_resume(actor, admitted.game_session_id)
+                .await,
+            "the fixture must qualify House placement before the guard outage"
+        );
+    }
     let payload = if matches!(case, Case::Malformed) {
         &item[..15]
     } else {
@@ -361,9 +410,13 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         &owner,
         &mut admitted,
         command,
-        wire::COMMAND_QUERY,
+        match case {
+            Case::GuardBusy(command_type) => command_type,
+            _ => wire::COMMAND_QUERY,
+        },
         payload,
         matches!(case, Case::CancelWalk),
+        matches!(case, Case::GuardBusy(_) | Case::GuardBusyResume).then_some(h),
     )
     .await?;
     match case {
@@ -379,13 +432,42 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             assert!(result.replies.is_empty());
             return Ok(());
         }
-        Case::Unavailable => {
+        Case::Unavailable | Case::GuardBusy(_) | Case::GuardBusyResume => {
             assert!(matches!(
                 result.end,
                 ConnectionEnd::AdmittedThenDisconnected(_)
             ));
             assert!(!result.protocol_error);
             assert!(result.replies.is_empty());
+            if matches!(case, Case::GuardBusyResume) {
+                let session = admitted.game_session_id;
+                let generation = admitted.continuity.connection_generation;
+                assert_eq!(
+                    owner.lose_control(admitted, Duration::ZERO, None).await,
+                    ControlLossResult::Recorded
+                );
+                let token = RecoverySource::token(94)?;
+                let resumed = owner
+                    .resume(ResumeAttempt {
+                        game_session_id: session,
+                        recovery_material: token.as_bytes(),
+                        transport: AuthenticatedTransportRefV1::decode(&[94; 16]).map_err(debug)?,
+                        last_applied_server_sequence: admitted.continuity.server_sequence,
+                        supported_capabilities: selected,
+                    })
+                    .await
+                    .map_err(|error| {
+                        let streams = &owner.states.command_ingress;
+                        let mut recovered = admitted;
+                        let can_resume_commands =
+                            streams.recover_trade_continuity(&mut recovered).is_some()
+                                && streams.resumable(&recovered);
+                        format!("same-session resume {error:?}, command continuity ready: {can_resume_commands}")
+                    })?;
+                assert_eq!(resumed.game_session_id, session);
+                assert_eq!(resumed.continuity.connection_generation, generation + 1);
+                assert_eq!(resumed.continuity.next_command_id, command + 1);
+            }
             return Ok(());
         }
         Case::NoPath => {
@@ -522,13 +604,19 @@ async fn exchange(
     command_type: u32,
     payload: &[u8],
 ) -> TestResult<Option<(CommandStatus, Vec<u8>)>> {
-    Ok(
-        conversation(owner, admitted, command_id, command_type, payload, false)
-            .await?
-            .replies
-            .pop()
-            .map(|(_, status, payload)| (status, payload)),
+    Ok(conversation(
+        owner,
+        admitted,
+        command_id,
+        command_type,
+        payload,
+        false,
+        None,
     )
+    .await?
+    .replies
+    .pop()
+    .map(|(_, status, payload)| (status, payload)))
 }
 
 #[derive(Debug)]
@@ -547,6 +635,7 @@ async fn conversation(
     command_type: u32,
     payload: &[u8],
     interrupt: bool,
+    guard_fixture: Option<&Harness>,
 ) -> TestResult<Conversation> {
     let generation = admitted.continuity.connection_generation;
     let frame = encode_client_command(
@@ -559,8 +648,12 @@ async fn conversation(
     )
     .map_err(debug)?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    write_frame(&mut client, &frame).await?;
+    if guard_fixture.is_none() {
+        write_frame(&mut client, &frame).await?;
+    }
     let receive = async move {
+        let mut guard_fixture = guard_fixture;
+        let mut guard_lock = None;
         let mut replies = Vec::new();
         let mut steps = 0;
         let mut protocol_error = false;
@@ -574,6 +667,19 @@ async fn conversation(
             };
             let envelope = decode_wire_envelope(&raw).map_err(debug)?;
             match envelope.message_type() {
+                MessageType::SnapshotCommit if guard_fixture.is_some() => {
+                    let h = guard_fixture.take().ok_or("guard fixture")?;
+                    // The House must finish admission before the command guard
+                    // encounters contention on the same durable relation.
+                    let mut tx = h.pool.begin().await?;
+                    sqlx::query(
+                        "LOCK TABLE game_durability_admission_lifecycle_receipts IN ROW SHARE MODE",
+                    )
+                    .execute(&mut *tx)
+                    .await?;
+                    guard_lock = Some(tx);
+                    write_frame(&mut client, &frame).await?;
+                }
                 MessageType::LivenessProbe => {
                     let probe = oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())
                         .map_err(debug)?;
@@ -623,6 +729,13 @@ async fn conversation(
                 }
                 _ => {}
             }
+        }
+        assert!(
+            guard_fixture.is_none(),
+            "the House must finish its initial snapshot"
+        );
+        if let Some(tx) = guard_lock {
+            tx.rollback().await?;
         }
         Ok::<_, Box<dyn std::error::Error>>((replies, steps, protocol_error, post_move_probe))
     };

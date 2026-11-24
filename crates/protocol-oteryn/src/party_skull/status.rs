@@ -1,9 +1,12 @@
 //! Own PvP observation on command 155's explicit view=1 query. Empty queries retain icons.
 use super::*;
-#[derive(Debug, Clone, PartialEq, Eq)]
+pub const CAPABILITY_PVP_SITUATION_ID_V1: u32 = 616;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PvpSituation {
     pub incoming: bool,
     pub remaining_ms: u64,
+    pub situation_id: Option<u64>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PvpStatus {
@@ -46,6 +49,12 @@ impl PvpStatus {
             let mut entry = Vec::new();
             push_varint_field(&mut entry, 1, u64::from(situation.incoming));
             push_varint_field(&mut entry, 2, situation.remaining_ms);
+            if let Some(id) = situation.situation_id {
+                if id == 0 {
+                    return Err(PartyWireError::Malformed);
+                }
+                push_varint_field(&mut entry, 3, id);
+            }
             push_message_field(&mut body, 12, &entry);
         }
         let mut out = Vec::new();
@@ -86,12 +95,21 @@ impl PvpStatus {
                     return Err(PartyWireError::Malformed);
                 }
                 let remaining_ms = read_varint(entry, &mut pos)?;
+                let situation_id = if pos == entry.len() {
+                    None
+                } else {
+                    if read_varint(entry, &mut pos)? != 24 {
+                        return Err(PartyWireError::Malformed);
+                    }
+                    Some(read_varint(entry, &mut pos)?)
+                };
                 if pos != entry.len() {
                     return Err(PartyWireError::Malformed);
                 }
                 situations.push(PvpSituation {
                     incoming: incoming == 1,
                     remaining_ms,
+                    situation_id,
                 });
             } else if tag & 7 == 0 && (1..=11).contains(&(tag >> 3)) {
                 let slot = &mut values[((tag >> 3) - 1) as usize];
@@ -132,6 +150,7 @@ mod tests {
             situations: vec![PvpSituation {
                 incoming: false,
                 remaining_ms: 2000,
+                situation_id: Some(42),
             }],
         };
         let bytes = status.encode()?;
@@ -146,7 +165,8 @@ mod tests {
         status.situations = vec![
             PvpSituation {
                 incoming: true,
-                remaining_ms: 1
+                remaining_ms: 1,
+                situation_id: None,
             };
             65
         ];

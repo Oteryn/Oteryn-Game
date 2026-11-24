@@ -1,5 +1,5 @@
 name=item_inscription
-commands=6246
+commands=6246,6356
 transport=item_inscription
 composed=item_inscription
 authority=item_inscription

@@ -110,7 +110,7 @@ impl PlayView {
             .battle
             .combat
             .and_then(|combat| combat.target);
-        self.party_summons = super::mailbox::lock(&link.mailbox).party_summons();
+        self.party_summons = super::mailbox::lock(&link.mailbox).party_summons.clone();
         self.sync_spell_words(link);
         self.project_presentation(std::time::Instant::now())
             .map_err(|_| UNAVAILABLE)?;
@@ -161,6 +161,7 @@ impl PlayView {
                     }
                 }
                 Input::Logout => link.request_logout(),
+                Input::Arrow(_) if link.death_reset_pending() => break,
                 Input::Arrow(_) => match self.send_step().map_err(|_error| UNAVAILABLE)? {
                     Some(direction) => {
                         self.cancel_chase_for_walk(link);

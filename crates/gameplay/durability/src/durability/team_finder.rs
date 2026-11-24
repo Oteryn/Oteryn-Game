@@ -46,6 +46,7 @@ pub struct MutationOutcome {
     pub replayed: bool,
     /// Only a newly committed command may emit its donor notification.
     pub notify_session: Option<GameSessionId>,
+    pub changed: bool,
 }
 
 fn reject(reason: &'static str) -> SpellItemError {
@@ -238,6 +239,7 @@ async fn replay(
             accepted: matches && row.try_get("accepted")?,
             replayed: true,
             notify_session: None,
+            changed: false,
         })
     })
     .transpose()
@@ -265,6 +267,7 @@ pub async fn replay_in_transaction(
             accepted: matches && row.try_get("accepted")?,
             replayed: true,
             notify_session: None,
+            changed: false,
         })
     })
     .transpose()
@@ -291,6 +294,7 @@ async fn record(
         accepted,
         replayed: false,
         notify_session,
+        changed: false,
     })
 }
 
@@ -363,11 +367,15 @@ pub async fn apply_member_in_transaction(
             sqlx::query("INSERT INTO game_team_finder_members(leader_character_id,world_id,channel_id,member_character_id,status) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1)")
                 .bind(target.character.as_slice()).bind(scope.0.as_slice()).bind(scope.1.as_slice()).bind(actor.as_slice()).execute(&mut **tx).await?;
         }
-        record(tx, authority, &binding, true, Some(target.session)).await
+        let mut receipt = record(tx, authority, &binding, true, Some(target.session)).await?;
+        receipt.changed = existing.is_none();
+        Ok(receipt)
     } else {
-        sqlx::query("DELETE FROM game_team_finder_members WHERE leader_character_id=encode($1,'hex')::uuid AND member_character_id=encode($2,'hex')::uuid")
+        let removed = sqlx::query("DELETE FROM game_team_finder_members WHERE leader_character_id=encode($1,'hex')::uuid AND member_character_id=encode($2,'hex')::uuid")
             .bind(target.character.as_slice()).bind(actor.as_slice()).execute(&mut **tx).await?;
-        record(tx, authority, &binding, true, None).await
+        let mut receipt = record(tx, authority, &binding, true, None).await?;
+        receipt.changed = removed.rows_affected() != 0;
+        Ok(receipt)
     }
 }
 
@@ -437,14 +445,16 @@ pub async fn apply_leader_member_in_transaction(
     }
     sqlx::query("UPDATE game_team_finder_members SET status=$3 WHERE leader_character_id=encode($1,'hex')::uuid AND member_character_id=encode($2,'hex')::uuid")
         .bind(actor.as_slice()).bind(target.character.as_slice()).bind(i16::from(desired as u8)).execute(&mut **tx).await?;
-    record(tx, authority, &binding, true, Some(target.session)).await
+    let mut receipt = record(tx, authority, &binding, true, Some(target.session)).await?;
+    receipt.changed = previous != Some(i16::from(desired as u8));
+    Ok(receipt)
 }
 
 #[path = "team_finder/listing.rs"]
 mod listing;
 #[path = "team_finder/query.rs"]
 mod query;
-pub use listing::apply_leader_listing_in_transaction;
+pub use listing::{ListingOutcome, apply_leader_listing_in_transaction};
 pub use query::{applicants_in_transaction, browse_in_transaction};
 
 #[cfg(test)]

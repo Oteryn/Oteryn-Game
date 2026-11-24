@@ -44,8 +44,7 @@ pub(in crate::qualification) async fn provision_profile(
         .join("../../tools/qualification/node_boot/provision.py");
     let profile = profile.to_owned();
     let status = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
+        crate::qualification::provision_python()
             .arg(script)
             .args([
                 "--socket",

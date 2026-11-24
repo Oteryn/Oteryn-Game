@@ -1,4 +1,4 @@
-//! Read-only market projections under the existing recovery/session/depot fence.
+//! Read-only market projections under the current recovery and session fence.
 use super::*;
 use crate::durability::{
     DurabilityRoot,
@@ -23,14 +23,17 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         definition: Option<String>,
-        town: u16,
+        town: Option<u16>,
         page: Option<u32>,
     ) -> Result<Projection> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        if page.is_some_and(|p| p > 21) {
+        // Only the item statistics projection can run without depot admission.
+        if page.is_some_and(|p| p > 21)
+            || (town.is_none() && (definition.is_none() || page.is_some()))
+        {
             return Err(invalid());
         }
         self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
@@ -51,7 +54,7 @@ impl DurabilityRoot {
                     minimum:optional(&format!("{prefix}_minimum"))?,maximum:optional(&format!("{prefix}_maximum"))?,average:optional(&format!("{prefix}_average"))?
                 })};
                 result.statistics=Statistics{buy:summary("buy")?,sell:summary("sell")?,definition:0,as_of_us:row.try_get("now_us")?,since_us:row.try_get("since_us")?,trades:number("trades")?,units:number("units")?,minimum:optional("minimum")?,maximum:optional("maximum")?,average:optional("average")?};
-            } else {
+            } else if let Some(town)=town {
                 // Catalogue possession filter only; placement requalifies instances atomically.
                 let rows=sqlx::query("SELECT i.definition_production_key, sum(i.quantity)::text AS units FROM game_item_instances i JOIN game_item_character_depot_locations d USING(item_instance_id,world_id) WHERE d.world_id=encode($1,'hex')::uuid AND d.character_id=encode($2,'hex')::uuid AND d.town_id=$3 AND i.lifecycle=1 GROUP BY i.definition_production_key ORDER BY i.definition_production_key LIMIT 65536")
                     .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(i32::from(town)).fetch_all(&mut *tx).await?;

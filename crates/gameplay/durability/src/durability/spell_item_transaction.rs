@@ -3824,7 +3824,13 @@ pub async fn read_creature_empty_tiles_in_transaction(
     // An opaque live placement invalidates emptiness everywhere, just as in
     // locked_tile_rows_for_scope. With <=256 distinct requested addresses,
     // LIMIT 257 cannot hide an opaque address behind requested cells.
-    Ok(sqlx::query_scalar("WITH occupied AS MATERIALIZED (SELECT DISTINCT g.spatial_position FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR g.spatial_position=ANY($3::bytea[])) LIMIT 257) SELECT p FROM unnest($3::bytea[]) AS requested(p) WHERE NOT EXISTS(SELECT 1 FROM occupied WHERE octet_length(spatial_position)<>10 OR spatial_position=p)")
+    // Plan for the actual scope. A cached generic plan can scan both tables
+    // when channel and instance populations are uneven.
+    Ok(sqlx::query_scalar("WITH occupied AS MATERIALIZED (SELECT DISTINCT g.spatial_position FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid
+                  AND (($4=1 AND g.scope_kind=1 AND g.channel_id=encode($2,'hex')::uuid AND g.instance_id IS NULL)
+                    OR ($4=2 AND g.scope_kind=2 AND g.instance_id=encode($5,'hex')::uuid AND g.channel_id IS NULL))
+                  AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR g.spatial_position=ANY($3::bytea[])) LIMIT 257) SELECT p FROM unnest($3::bytea[]) AS requested(p) WHERE NOT EXISTS(SELECT 1 FROM occupied WHERE octet_length(spatial_position)<>10 OR spatial_position=p)")
+        .persistent(false)
         .bind(authority.world.as_slice())
         .bind(channel.map(|id| id.to_vec()))
         .bind(positions)
