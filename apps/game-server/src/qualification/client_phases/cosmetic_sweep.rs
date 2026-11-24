@@ -449,6 +449,7 @@ struct NpcReward {
     topic: u32,
     next_topic: u32,
     quest: Option<String>,
+    creation_sex: Option<String>,
     #[serde(default)]
     take: Vec<RequiredItem>,
     outfit: Option<RewardOutfit>,
@@ -476,7 +477,15 @@ struct ObtainContent {
 
 impl ObtainContent {
     fn load(root: &Path) -> TestResult<Self> {
-        let mut callbacks = Vec::new();
+        let shared: serde_json::Value = serde_json::from_slice(&std::fs::read(
+            root.join("content/quests/shared-reward-callbacks.json"),
+        )?)?;
+        let mut callbacks = shared["callbacks"]
+            .as_array()
+            .ok_or("shared quest reward callbacks missing")?
+            .iter()
+            .filter_map(Self::npc_callback)
+            .collect::<Vec<_>>();
         for directory in ["npc-callbacks", "authored-bindings"] {
             let mut files = std::fs::read_dir(root.join("content/quests").join(directory))?
                 .collect::<Result<Vec<_>, _>>()?;
@@ -500,14 +509,7 @@ impl ObtainContent {
                     .flat_map(|quest| quest["stages"].as_array().into_iter().flatten())
                     .map(|stage| &stage["trigger"]["callback"])
                     .filter(|callback| callback.is_object());
-                for callback in direct.chain(staged) {
-                    if callback["npc"].is_string()
-                        && callback["keywords"].is_array()
-                        && let Ok(callback) = serde_json::from_value(callback.clone())
-                    {
-                        callbacks.push(callback);
-                    }
-                }
+                callbacks.extend(direct.chain(staged).filter_map(Self::npc_callback));
             }
         }
         let item_rules = serde_json::from_slice(&std::fs::read(
@@ -519,27 +521,59 @@ impl ObtainContent {
         })
     }
 
-    fn npc_route(&self, target: &Target) -> TestResult<Option<Vec<&NpcReward>>> {
-        let Some(reward) = self.callbacks.iter().find(|callback| {
-            callback
-                .outfit
-                .iter()
-                .chain(&callback.outfits)
-                .any(|reward| {
-                    reward
-                        .sex
-                        .as_deref()
-                        .is_none_or(|sex| sex.eq_ignore_ascii_case("female"))
-                        && match target {
-                            Target::Outfit { outfit_key } => outfit_key == &reward.outfit,
-                            Target::Addon { outfit_key, addon } => {
-                                outfit_key == &reward.outfit
-                                    && reward.addons & addon_mask(*addon) != 0
+    fn npc_callback(value: &serde_json::Value) -> Option<NpcReward> {
+        let callback: NpcReward = serde_json::from_value(value.clone()).ok()?;
+        (!callback.keywords.is_empty()
+            && callback
+                .creation_sex
+                .as_deref()
+                .is_none_or(|sex| sex == "female"))
+        .then_some(callback)
+    }
+
+    fn npc_route(
+        &self,
+        target: &Target,
+        npcs: &oteryn_world_bundle::npc::Table,
+    ) -> TestResult<Option<Vec<&NpcReward>>> {
+        let Some(reward) = self
+            .callbacks
+            .iter()
+            .filter(|callback| {
+                npcs.npcs
+                    .iter()
+                    .any(|npc| npc.key == callback.npc && !npc.placements.is_empty())
+            })
+            .filter(|callback| {
+                callback
+                    .outfit
+                    .iter()
+                    .chain(&callback.outfits)
+                    .any(|reward| {
+                        reward
+                            .sex
+                            .as_deref()
+                            .is_none_or(|sex| sex.eq_ignore_ascii_case("female"))
+                            && match target {
+                                Target::Outfit { outfit_key } => outfit_key == &reward.outfit,
+                                Target::Addon { outfit_key, addon } => {
+                                    outfit_key == &reward.outfit
+                                        && reward.addons & addon_mask(*addon) != 0
+                                }
+                                Target::Mount { .. } => false,
                             }
-                            Target::Mount { .. } => false,
-                        }
-                })
-        }) else {
+                    })
+            })
+            .min_by_key(|callback| {
+                callback
+                    .outfit
+                    .iter()
+                    .chain(&callback.outfits)
+                    .map(|outfit| outfit.addons.count_ones())
+                    .min()
+                    .unwrap_or(0)
+            })
+        else {
             return Ok(None);
         };
         let mut steps = vec![reward];
@@ -712,6 +746,7 @@ async fn obtain_npc(
     return_to(client, world, home).await
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn prepare<'a>(
     clients: &SeamClients<'_>,
     content: &Content,
@@ -719,6 +754,7 @@ async fn prepare<'a>(
     addon: u8,
     mount: Option<(&Mount, Option<&'a Taming>)>,
     obtain: &'a ObtainContent,
+    npcs: &oteryn_world_bundle::npc::Table,
     items: &mut Vec<Vec<u8>>,
 ) -> TestResult<(String, Vec<ObtainAction<'a>>)> {
     wait_character_released(clients, 0).await?;
@@ -737,7 +773,7 @@ async fn prepare<'a>(
     let mut seeded = Vec::new();
     let mut actions = Vec::new();
     for target in targets {
-        if let Some(steps) = obtain.npc_route(&target)? {
+        if let Some(steps) = obtain.npc_route(&target, npcs)? {
             for item in steps.iter().flat_map(|step| &step.take) {
                 seed_item(clients, &item.item, item.count, items).await?;
             }
@@ -767,21 +803,23 @@ async fn prepare<'a>(
         }
         let (key, provenance) = grant(content, &target, None)
             .ok_or("content cosmetic has no authored grant mapping")?;
-        if key.contains("/quest-grant") || key.contains("/npc-grant") || key.contains("/quest/") {
-            return Err(format!("harness-obtain-path: quest/NPC journey missing for {key}").into());
-        }
+        let reason = if key.contains("/quest-grant")
+            || key.contains("/npc-grant")
+            || key.contains("/quest/")
+        {
+            "quest-journey-unavailable-in-fixture"
+        } else {
+            "no-supported-direct-obtain-path"
+        };
         seed(clients, key, provenance).await?;
-        seeded.push(key);
+        seeded.push(format!("{key}[{reason}]"));
     }
     if let Some((_, Some(binding))) = mount {
         seed_taming_prerequisites(clients, binding, items).await?;
         actions.push(ObtainAction::Tame(binding));
     }
     let mode = if !seeded.is_empty() {
-        format!(
-            "mode=seeded reason=no-supported-direct-obtain-path grants:{}",
-            seeded.join(",")
-        )
+        format!("mode=seeded grants:{}", seeded.join(","))
     } else if actions.is_empty() {
         "mode=starter".into()
     } else {
@@ -866,7 +904,46 @@ async fn seed_taming_prerequisites(
     }
     if let Some(key) = &binding.required_equipment {
         seed_item(clients, key, 1, items).await?;
+        if key == "oteryn:item.tibia.i31369" {
+            let item = items
+                .last()
+                .ok_or("harness-taming-fixture: gryphon mask missing")?;
+            seed_gryphon_mask_slot(clients, item).await?;
+        }
     }
+    Ok(())
+}
+
+// The reference gryphon mask has a head slot but is not materializable through
+// live equip. Set up the wearing prerequisite only on the disposable actor.
+async fn seed_gryphon_mask_slot(clients: &SeamClients<'_>, item: &[u8]) -> TestResult {
+    use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let mut tx = sqlx::Connection::begin(&mut db).await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    let placed = sqlx::query(
+        "WITH mask AS (
+            DELETE FROM game_item_container_entries
+            WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid
+            RETURNING character_id, world_id, item_instance_id, placed_transaction_id
+        )
+        INSERT INTO game_character_equipment_slots
+            (character_id, world_id, item_instance_id, placed_transaction_id, slot)
+        SELECT character_id, world_id, item_instance_id, placed_transaction_id, $3 FROM mask",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(item)
+    .bind(EquipmentSlot::Head as i16)
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
+    if placed != 1 {
+        return Err("harness-taming-fixture: gryphon mask did not enter head slot".into());
+    }
+    tx.commit().await?;
     Ok(())
 }
 
@@ -969,7 +1046,11 @@ async fn obtain_taming(
             if result.status != CommandStatus::Accepted
                 || result.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
             {
-                return Err("harness-taming-equipment: prerequisite equip refused".into());
+                return Err(format!(
+                    "harness-taming-equipment: {key} equip returned {:?}/{:?}",
+                    result.status, result.outcome
+                )
+                .into());
             }
         }
     }
@@ -1105,7 +1186,8 @@ async fn journey(
             return Err("no admitted appearance definition for this content key".into());
         }
     };
-    let (mode, actions) = prepare(clients, content, outfit, addon, mount, obtain, items).await?;
+    let (mode, actions) =
+        prepare(clients, content, outfit, addon, mount, obtain, npcs, items).await?;
     let mut client = connect_character(clients, 0xc9, 0).await?;
     let home = tile(client.world_spatial().actor_position)?;
     let mut observer = None;
@@ -1433,6 +1515,35 @@ fn check_speed(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn assassin_journey_uses_shared_reward_and_requires_npc_placement() -> TestResult {
+        use oteryn_world_bundle::npc::{Direction, Npc, Placement, Table};
+
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let obtain = ObtainContent::load(&root)?;
+        let target = Target::Outfit {
+            outfit_key: "oteryn:outfit.assassin".into(),
+        };
+        assert!(obtain.npc_route(&target, &Table::default())?.is_none());
+        let npcs = Table {
+            npcs: vec![Npc {
+                key: "oteryn:npc.vescu".into(),
+                placements: vec![Placement {
+                    floor: 7,
+                    x: 1,
+                    y: 1,
+                    direction: Direction::North,
+                }],
+            }],
+        };
+        let steps = obtain
+            .npc_route(&target, &npcs)?
+            .ok_or("missing Vescu reward route")?;
+        assert_eq!(steps.len(), 1);
+        assert_eq!(steps[0].keywords, ["secret"]);
+        Ok(())
+    }
 
     #[test]
     fn batch_requires_nonempty_decimal_slice() -> TestResult {
