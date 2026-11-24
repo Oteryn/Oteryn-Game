@@ -147,9 +147,9 @@ jobs:
                           log, re.MULTILINE | re.ASCII,
                       ):
                           failures[f"PostgreSQL / {binary} {test}"] = verdict
-              if passed == 36 and len(jobs) == 36:
+              if passed == 55 and len(jobs) == 55:
                   passes.add("PostgreSQL / all partitions")
-              return f"Run {run['id']} ({run['conclusion']}). {passed}/36 partitions passed."
+              return f"Run {run['id']} ({run['conclusion']}). {passed}/55 partitions passed."
 
           def read_evidence(label, collect):
               try:

@@ -382,7 +382,8 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/item_craft/dispenser.rs", 2),
             ("gameplay_transport/item_craft/planting.rs", 1),
             ("gameplay_transport/novelty_ground_use.rs", 1),
-            ("gameplay_transport/reward_bag_use.rs", 1),
+            // The SP04 deferral check and the Blue Present drop tile both need the ground proof.
+            ("gameplay_transport/reward_bag_use.rs", 2),
         ],
     },
     // The durable custody of the map's Items; on a bundle World that is its Ground persistence.
