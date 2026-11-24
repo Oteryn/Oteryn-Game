@@ -250,6 +250,29 @@ WORK=.
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
 
+    def test_house_bidder_retries_only_ambiguous_bootstrap_with_same_operation(self):
+        retry = section('bootstrap_house_bidder() {', 'character_bootstrap() {')
+        setup = r'''set -Eeuo pipefail
+BASE=/fixture
+attempts=0
+evidence() { :; }
+sleep() { :; }
+ops() {
+  [[ "$*" == 'character bootstrap --socket /fixture/run/control.sock --operation-id exact-id' ]]
+  attempts=$((attempts + 1))
+  (( attempts > 1 )) || return "$FIRST"
+}
+'''
+        for first, expected in [('7', '0 2'), ('6', '6 1')]:
+            with self.subTest(first=first):
+                result = bash(setup + retry + r'''
+code=0
+bootstrap_house_bidder exact-id || code=$?
+printf '%s %s\n' "$code" "$attempts"
+''', {'FIRST': first})
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(result.stdout.strip(), expected)
+
     def test_house_sweep_readiness_window_scales_with_regions(self):
         readiness_setup = section('NODE_READY_WAIT_SECONDS=60', '# A kept or reused stack')
         script = ('set -Eeuo pipefail\n' + readiness_setup

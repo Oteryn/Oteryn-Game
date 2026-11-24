@@ -1433,6 +1433,22 @@ PY
   evidence "control_socket service_user_peer=closed"
 }
 
+bootstrap_house_bidder() {
+  local operation=$1 delay code
+  for delay in 1 2 4 8; do
+    if ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation"; then
+      return 0
+    else
+      code=$?
+    fi
+    # Exit 7 is an ambiguous outcome. The immutable operation ID makes retry safe.
+    (( code == 7 )) || return "$code"
+    evidence "house_sweep_bootstrap retry=ambiguous operation=$operation delay_seconds=$delay"
+    sleep "$delay"
+  done
+  ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation"
+}
+
 character_bootstrap() { # §4.5 Characters from real Platform intents
   local index=0 account operation name requested_vocation failed=0 vocation="${NODE_BOOT_PROFILE^}"
   [[ "$NODE_BOOT_PROFILE" != explorer ]] || vocation=Knight
@@ -1453,9 +1469,13 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
       failed=1
       continue
     fi
-    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || { failed=1; continue; }
-    # An exact retry of the same operation id is idempotent.
-    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || failed=1
+    if [[ "$account" == 01934f10-7c00-7000-8001-* ]]; then
+      bootstrap_house_bidder "$operation" || { failed=1; continue; }
+      bootstrap_house_bidder "$operation" || failed=1
+    else
+      ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || { failed=1; continue; }
+      ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || failed=1
+    fi
   done
   [[ $failed == 0 ]] || fail "Character bootstrap"
   evidence "characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent"
