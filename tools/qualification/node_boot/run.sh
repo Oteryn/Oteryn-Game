@@ -837,7 +837,7 @@ PY_WORLD
     # The pinned Platform fixture does not issue a T94 producer identity. The
     # selected player journeys do not exercise Platform World Event export.
     case "${NODE_BOOT_E2E_ONLY:-}" in
-      rows|f7add|f7forge|p16)
+      rows|f6|f7cont|f7add|f7forge|p16)
         cat >> "$WORK/node.toml" <<'TOML'
 [platform.world_event_outcomes]
 enabled = false
