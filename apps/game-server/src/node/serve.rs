@@ -3028,10 +3028,7 @@ async fn control_loop(
                 ),
                 #[cfg(any(test, feature = "qualification-spawn"))]
                 Some(request) if request.starts_with(b"place-sweep-player ") => (
-                    qualification_fixture::place_sweep_player(config, spawn, &request)
-                        .await
-                        .unwrap_or("rejected reason=placement_unavailable")
-                        .to_owned(),
+                    qualification_fixture::place_sweep_player(config, spawn, &request).await,
                     "character_bootstrap",
                 ),
                 Some(request) if request.starts_with(b"spawn ") => (

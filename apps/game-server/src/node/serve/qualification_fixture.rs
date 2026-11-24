@@ -161,31 +161,48 @@ pub(super) async fn place_sweep_player(
     config: &NodeConfig,
     owners: Option<SpawnOwners<'_>>,
     request: &[u8],
-) -> Option<&'static str> {
-    if !config.qualification_fixture {
-        return None;
+) -> String {
+    let result = async {
+        if !config.qualification_fixture {
+            return Err("not_qualification");
+        }
+        let session = request
+            .strip_prefix(b"place-sweep-player ")
+            .and_then(parse_operation_id)
+            .ok_or("malformed_request")?;
+        let session =
+            crate::foundation::GameSessionId::decode(&session).map_err(|_| "malformed_request")?;
+        let owners = owners.ok_or("native_unavailable")?;
+        let mut runtime = owners.runtime.lock().await;
+        let pin = runtime.content_pin();
+        if owners.room.compiled().server_digest() != pin.server_artifact_digest()
+            || owners.room.frame_binding().digest() != pin.frame_binding_digest()
+            || owners.room.map_revision_digest() != pin.map_revision_digest()
+        {
+            return Err("placement_content_mismatch");
+        }
+        let (actor, snapshot) = runtime
+            .positioned_player_for_session(session)
+            .map_err(|_| "placement_actor_conflict")?
+            .ok_or("session_unknown")?;
+        let target = wild_spawn::SWEEP_HUNT_POSITION;
+        wild_spawn::static_cell_refusal(owners.room, target)
+            .map_err(|_| "placement_tile_refused")?;
+        if snapshot.position() != target {
+            if !runtime.native_summon_cell_free(target) {
+                return Err("placement_tile_occupied");
+            }
+            runtime
+                .relocate_arena_player(actor, session, snapshot, target)
+                .map_err(|_| "placement_actor_fence")?;
+        }
+        Ok("placed")
     }
-    let session = parse_operation_id(request.strip_prefix(b"place-sweep-player ")?)?;
-    let session = crate::foundation::GameSessionId::decode(&session).ok()?;
-    let owners = owners?;
-    let mut runtime = owners.runtime.lock().await;
-    let pin = runtime.content_pin();
-    if owners.room.compiled().server_digest() != pin.server_artifact_digest()
-        || owners.room.frame_binding().digest() != pin.frame_binding_digest()
-        || owners.room.map_revision_digest() != pin.map_revision_digest()
-    {
-        return None;
+    .await;
+    match result {
+        Ok(placed) => placed.to_owned(),
+        Err(reason) => spawn_rejected(reason),
     }
-    let (actor, snapshot) = runtime.positioned_player_for_session(session).ok()??;
-    let target = wild_spawn::SWEEP_HUNT_POSITION;
-    wild_spawn::static_cell_refusal(owners.room, target).ok()?;
-    if runtime.position_occupied_by_other(actor, target).ok()? {
-        return None;
-    }
-    runtime
-        .relocate_arena_player(actor, session, snapshot, target)
-        .ok()?;
-    Some("placed")
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
