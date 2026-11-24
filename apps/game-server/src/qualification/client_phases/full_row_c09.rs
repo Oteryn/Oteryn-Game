@@ -352,7 +352,13 @@ async fn buy_meat_from_frodo(
         .iter()
         .find(|npc| npc.key == "oteryn:npc.frodo")
         .ok_or("Frodo absent from compiled World bundle")?;
-    let approach = wire::TALK_RANGE_TILES - u32::from(FRODO_WANDER_RADIUS);
+    let approach = if require_door {
+        // Enter the tavern interior before looking for Frodo. The first tile
+        // within nominal talk range can still be at the doorway.
+        1
+    } else {
+        wire::TALK_RANGE_TILES - u32::from(FRODO_WANDER_RADIUS)
+    };
     let within_talk_range = |at: TilePos| {
         npc.placements.iter().any(|p| {
             p.floor == at.floor && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
@@ -372,8 +378,16 @@ async fn buy_meat_from_frodo(
             break actor;
         }
         if tokio::time::Instant::now() >= deadline {
+            let visible_npcs: Vec<_> = client
+                .world_entities()
+                .into_iter()
+                .flat_map(|entities| entities.iter())
+                .filter(|entry| entry.kind == oteryn_dev_client::EntityKind::Npc)
+                .take(8)
+                .map(|entry| (entry.position, entry.display_name))
+                .collect();
             return Err(format!(
-                "need=unique-visible-Frodo-within-talk-range;observed=none-or-ambiguous;position={:?};last-frame={}",
+                "need=unique-visible-Frodo-within-talk-range;observed=none-or-ambiguous;visible-npcs={visible_npcs:?};position={:?};last-frame={}",
                 client.world_spatial().actor_position, client.last_server_sequence()
             ).into());
         }
