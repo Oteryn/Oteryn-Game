@@ -15,7 +15,10 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
         "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
     )
     .then_some((session, profile))
-    .or_else(|| sweep_vocation(profile).map(|_| (session, profile)))
+    .or_else(|| {
+        (profile == "spell-sweep-premium" || sweep_vocation(profile).is_some())
+            .then_some((session, profile))
+    })
 }
 
 fn sweep_vocation(profile: &str) -> Option<&str> {
@@ -694,6 +697,45 @@ async fn prepare_build(
         *current.current_character_lease().character_id().as_bytes(),
     )
     .map_err(|error| format!("qualification character: {error:?}"))?;
+    #[cfg(feature = "qualification-spawn")]
+    if profile == "spell-sweep-premium" {
+        if !config
+            .premium_activation
+            .as_ref()
+            .is_some_and(|activation| activation.activation_id == "node-boot-spell-sweep")
+        {
+            return Err("spell sweep Premium activation absent".into());
+        }
+        if current.session_state() != crate::foundation::GameSessionState::Active
+            || current.current_transport().is_none()
+        {
+            return Err("spell sweep requires an active admission".into());
+        }
+        let record = qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            qualification_build::authority_busy,
+            async || root.read_current_character(authority, character).await,
+        )
+        .await
+        .map_err(qualification_build::debug)?;
+        let account = uuid_text(record.account_id.as_bytes());
+        if !matches!(
+            account.as_str(),
+            "01934f10-7c00-7000-8000-000000000007"
+                | "01934f10-7c00-7000-8000-000000000008"
+                | "01934f10-7c00-7000-8000-000000000009"
+                | "01934f10-7c00-7000-8000-00000000000a"
+                | "01934f10-7c00-7000-8000-00000000000b"
+        ) {
+            return Err("spell sweep Premium requires a dedicated positive account".into());
+        }
+        return grant_premium(root, premium, *record.account_id.as_bytes(), deadline).await;
+    }
+    #[cfg(not(feature = "qualification-spawn"))]
+    if profile == "spell-sweep-premium" {
+        return Err("spell sweep Premium requires the qualification fixture build".into());
+    }
     let interpretation = qualification_build::retry_holder(
         Some(root),
         deadline,
@@ -742,39 +784,6 @@ async fn prepare_build(
         deadline,
     )
     .await?;
-    #[cfg(feature = "qualification-spawn")]
-    if sweep_vocation(profile).is_some()
-        && config
-            .premium_activation
-            .as_ref()
-            .is_some_and(|activation| activation.activation_id == "node-boot-spell-sweep")
-    {
-        if current.session_state() != crate::foundation::GameSessionState::Active
-            || current.current_transport().is_none()
-        {
-            return Err("spell sweep requires an active admission".into());
-        }
-        let record = qualification_build::retry_holder(
-            Some(root),
-            deadline,
-            qualification_build::authority_busy,
-            async || root.read_current_character(authority, character).await,
-        )
-        .await
-        .map_err(qualification_build::debug)?;
-        let account = uuid_text(record.account_id.as_bytes());
-        if !matches!(
-            account.as_str(),
-            "01934f10-7c00-7000-8000-000000000007"
-                | "01934f10-7c00-7000-8000-000000000008"
-                | "01934f10-7c00-7000-8000-000000000009"
-                | "01934f10-7c00-7000-8000-00000000000a"
-                | "01934f10-7c00-7000-8000-00000000000b"
-        ) {
-            return Err("spell sweep Premium requires a dedicated positive account".into());
-        }
-        grant_premium(root, premium, *record.account_id.as_bytes(), deadline).await?;
-    }
     let supply = if sweep_vocation(profile).is_some() {
         profile
             .split_once(':')

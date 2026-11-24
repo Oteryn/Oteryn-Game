@@ -300,6 +300,12 @@ async fn prepare(
             creature_sweep::leave_protection_zone(&mut client, world).await?;
         }
         if spell.premium {
+            request_fixture_control(
+                uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+                "--profile",
+                "spell-sweep-premium".into(),
+            )
+            .await?;
             full_e2ef7::require_current_light_premium(&mut client).await?;
         }
         Ok::<_, Box<dyn std::error::Error>>(rune)

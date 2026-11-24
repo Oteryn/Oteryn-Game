@@ -38,7 +38,7 @@ def _request(socket_path, line, limit):
 
 def valid_profile(profile):
     base, separator, index = profile.partition(":")
-    return base in PROFILES and (
+    return profile == "spell-sweep-premium" or base in PROFILES and (
         not separator or (base.startswith("spell-sweep-") and re.fullmatch(r"[1-9][0-9]{0,9}", index))
     )
 
