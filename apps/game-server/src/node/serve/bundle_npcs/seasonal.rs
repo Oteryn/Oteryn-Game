@@ -58,6 +58,26 @@ fn key(index: usize) -> &'static str {
     }
 }
 
+fn adjacent(position: TilePos) -> impl Iterator<Item = TilePos> {
+    [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        .into_iter()
+        .filter_map(move |(dx, dy)| {
+            Some(TilePos {
+                x: position.x.checked_add_signed(dx)?,
+                y: position.y.checked_add_signed(dy)?,
+                floor: position.floor,
+            })
+        })
+}
+
+fn santa_cell(anchor: TilePos, enterable: &impl Fn(TilePos) -> bool) -> Option<TilePos> {
+    // Some retained anchors lie on an obstacle in the captured map.
+    // Keep the source cell when possible and remain within one step otherwise.
+    std::iter::once(anchor)
+        .chain(adjacent(anchor))
+        .find(|&cell| enterable(cell))
+}
+
 #[derive(Debug, Clone, Copy)]
 pub(super) struct SeasonalNpcSpawns {
     brutus_admitted: bool,
@@ -97,25 +117,23 @@ impl SeasonalNpcSpawns {
             {
                 return None;
             }
-            if npc == MESSENGER {
-                // TibiaWiki BR Messenger Of Santa rev416417 marks the same
-                // town locations as Santa and describes the merchant beside him.
-                // Select an adjacent standing tile without occupying his anchor.
-                let (x, y, z) = SOURCE_POSITIONS[index - SOURCE_POSITIONS.len()];
-                return [(1, 0), (-1, 0), (0, 1), (0, -1)]
-                    .into_iter()
-                    .filter_map(|(dx, dy)| {
-                        Some(TilePos {
-                            x: x.checked_add_signed(dx)?,
-                            y: y.checked_add_signed(dy)?,
-                            floor: -z,
-                        })
-                    })
-                    .find(|&position| enterable(position));
+            let source = if npc == MESSENGER {
+                index - SOURCE_POSITIONS.len()
+            } else {
+                index
+            };
+            let (x, y, z) = SOURCE_POSITIONS[source];
+            let anchor = TilePos { x, y, floor: -z };
+            match npc {
+                SANTA => santa_cell(anchor, &enterable),
+                // The retained TibiaWiki BR Messenger Of Santa rev416417
+                // describes the merchant beside Santa in the same towns.
+                MESSENGER => {
+                    let santa = santa_cell(anchor, &enterable)?;
+                    adjacent(santa).find(|&cell| enterable(cell))
+                }
+                _ => enterable(anchor).then_some(anchor),
             }
-            let (x, y, z) = SOURCE_POSITIONS[index];
-            let position = TilePos { x, y, floor: -z };
-            enterable(position).then_some(position)
         });
         let (x, y, z) = BRUTUS_POSITION;
         Self {

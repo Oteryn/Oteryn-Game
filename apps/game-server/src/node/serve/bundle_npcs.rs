@@ -1011,6 +1011,31 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn w19a_uses_an_enterable_pair_beside_a_blocked_santa_anchor() {
+        let santa = "oteryn:npc.santa_claus";
+        let messenger = "oteryn:npc.messenger_of_santa";
+        let boot = timed_boot(&[santa, messenger]);
+        let mut runtime = channel_runtime_with(32);
+        let mut seasonal =
+            seasonal::SeasonalNpcSpawns::admit(Some(&boot), &["christmas".into()], |cell| {
+                cell.floor == -8 && cell.y == 31665 && (32653..=32654).contains(&cell.x)
+            });
+        seasonal.tick(&mut runtime).expect("Christmas pair");
+        let placed: BTreeSet<_> = runtime
+            .visible_entities()
+            .npcs
+            .into_iter()
+            .map(|npc| {
+                (
+                    runtime.npc_key(npc.actor).expect("placed NPC key"),
+                    npc.position.x,
+                )
+            })
+            .collect();
+        assert_eq!(placed, BTreeSet::from([(santa, 32654), (messenger, 32653)]));
+    }
+
+    #[test]
     fn w05d_santa_placements_require_active_calendar_catalogue_and_real_tiles() {
         let santa = "oteryn:npc.santa_claus";
         let boot = timed_boot(&[santa]);
