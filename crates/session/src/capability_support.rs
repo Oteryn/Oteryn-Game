@@ -107,6 +107,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1,
     property_services::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
     boss_rewards::CAPABILITY_BOSS_REWARDS_V1,
+    oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_V1,
     // CL26s2: native player typing command and CHAT delta support.
     oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1,
     oteryn_protocol_oteryn::team_finder_members::CAPABILITY_TEAM_FINDER_MEMBERS_V1,
