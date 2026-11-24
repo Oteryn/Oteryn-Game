@@ -136,6 +136,7 @@ CHECKS = (
     ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/arena_completion.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
+    ["python3", "tools/content-schema/world-object-authoring/alawar_static.py", "--check"],
     [
         "python3",
         "tools/content-schema/world-object-authoring/feroxa_static.py",
@@ -1151,6 +1152,7 @@ def main() -> int:
             "--refresh-native-pin",
         ]
     )
+    run(["python3", "tools/content-schema/world-object-authoring/alawar_static.py"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
     run(["python3", "tools/content-schema/world-authoring/quest_startup_bindings.py", "--apply"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
@@ -1221,6 +1223,8 @@ def main() -> int:
     refresh_world_metadata()
     # The palette refresh can change the placement index after the scenery pass.
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
+    # Reward callback citations include the final placement index.
+    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     # Room provenance includes the native Item provider, including NPC inputs.
     # Refresh after all native/map producers, before freshness checks and staging.
     run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])

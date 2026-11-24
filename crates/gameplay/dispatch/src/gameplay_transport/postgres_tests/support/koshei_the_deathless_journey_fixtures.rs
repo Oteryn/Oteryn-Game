@@ -569,8 +569,11 @@ pub(super) async fn exercise(
             .into_iter()
             .find(|creature| {
                 runtime
-                    .creature_spawn_cell(creature.actor)
-                    .is_some_and(|p| (p.x, p.y, p.floor) == (33271, 32406, 12))
+                    .matches_live_creature_identity(creature.actor, CREATURE.as_bytes())
+                    && runtime.read_actor_position(creature.actor).is_ok_and(|snapshot| {
+                        let p = snapshot.position();
+                        (p.x, p.y, p.floor) == (33271, 32406, 12)
+                    })
             })
             .ok_or(CREATURE)?
     };

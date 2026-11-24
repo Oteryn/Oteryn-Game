@@ -962,6 +962,8 @@ fn scenario_case(
                 } else {
                     target.clone()
                 };
+            let premium =
+                super::source_quest_rewards_fixtures::reward_premium(&harness, claim).await?;
             let mut first_root = None;
             // One live stream starts at 1. Replay its retained result before
             // command 2 replaces the single terminal-record slot. A new owner
@@ -969,6 +971,7 @@ fn scenario_case(
             // without an in-memory command-result cache.
             for cold_replay in [false, true] {
                 let mut owner = deps.owner(&harness, &authority);
+                owner.premium_coordinator = premium.as_ref();
                 if let Some(shard) = &authored_shard {
                     assert!(
                         owner
@@ -985,6 +988,8 @@ fn scenario_case(
                 owner.admit_progression_session(&mut admitted).await;
                 owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;
+                super::source_quest_rewards_fixtures::admit_reward_character(&owner, &admitted, claim)
+                    .await?;
                 phase("owner_admission");
                 if cold_replay {
                     assert_eq!(

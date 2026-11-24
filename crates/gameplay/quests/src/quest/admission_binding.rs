@@ -153,12 +153,7 @@ pub fn validate_for_catalogue(
     world_context: bool,
 ) -> Result<(), String> {
     let global = registry()?;
-    if global.owners.contains_key(&transition.key)
-        || transition
-            .effects
-            .iter()
-            .any(|effect| global.protected_tracks.contains(&effect.track))
-    {
+    if global.owners.contains_key(&transition.key) {
         return validate(transition, world_context);
     }
     let mut protected = BTreeSet::new();
@@ -168,7 +163,7 @@ pub fn validate_for_catalogue(
                 if stage.is_native_encounter() {
                     continue;
                 }
-                if let Some(expected) = stage
+                if let Some(mut expected) = stage
                     .transitions(&quest.quest)?
                     .into_iter()
                     .find(|expected| expected.key == transition.key)
@@ -188,6 +183,16 @@ pub fn validate_for_catalogue(
                             }),
                         _ => false,
                     };
+                    if let Some(occurrence) = &quest.occurrence {
+                        occurrence.qualify(&mut expected);
+                    }
+                    if transition.effects.iter().any(|effect| {
+                        changes(effect.effect)
+                            && global.protected_tracks.contains(&effect.track)
+                            && !shares_published_world_track(&transition.key, &effect.track)
+                    }) {
+                        return Err("authored operation changes a published owner's track".into());
+                    }
                     return if world == world_context && transition == &expected {
                         Ok(())
                     } else {
@@ -206,6 +211,23 @@ pub fn validate_for_catalogue(
         return Err("unregistered write to authored bound track".into());
     }
     validate(transition, world_context)
+}
+
+fn shares_published_world_track(transition: &str, track: &str) -> bool {
+    // These two authored routes reach the same physical puzzles as their
+    // published counterparts. Both still require the exact callback and World fence.
+    match transition {
+        "oteryn:quest-callback/alawars-vault-cross-open-magic-wall" => {
+            track == "oteryn:quest-progress/alawars-vault/lever"
+        }
+        "oteryn:quest-callback/paradox-tower/native-skulls" => matches!(
+            track,
+            "oteryn:quest-progress/first_paradox_access"
+                | "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo"
+                | "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics"
+        ),
+        _ => false,
+    }
 }
 
 #[cfg(test)]

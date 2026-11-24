@@ -202,15 +202,12 @@ pub(super) fn compiled_regions(
         },
         &registry,
     )?;
-    assert!(
-        compiled
-            .diagnostics
-            .iter()
-            .all(|d| !(minimum.floor..=maximum.floor).contains(&d.floor)
-                || !(minimum.x..=maximum.x).contains(&d.x)
-                || !(minimum.y..=maximum.y).contains(&d.y)),
-        "unresolved source quest geometry"
-    );
+    let unresolved = compiled.diagnostics.iter().find(|diagnostic| {
+        (minimum.floor..=maximum.floor).contains(&diagnostic.floor)
+            && (minimum.x..=maximum.x).contains(&diagnostic.x)
+            && (minimum.y..=maximum.y).contains(&diagnostic.y)
+    });
+    assert!(unresolved.is_none(), "unresolved source quest geometry: {unresolved:?}");
     let pins = crate::map::BundlePins {
         digest: compiled.digest,
         ..pins

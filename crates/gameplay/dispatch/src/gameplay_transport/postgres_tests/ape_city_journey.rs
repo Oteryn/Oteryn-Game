@@ -29,7 +29,9 @@ const TRACK: &str = "oteryn:quest-progress/chosen/ape-city/";
 const CONTACT: TilePos = tile(32826, 32574, -6);
 const START: TilePos = tile(32826, 32575, -6);
 const BANANA: (TilePos, u8) = (tile(31983, 32193, -5), 2);
+const MOSS_DOOR: (TilePos, u8) = (tile(32781, 32910, -8), 1);
 const MOSS: (TilePos, u8) = (tile(32782, 32910, -8), 1);
+const PARCHMENT_DOOR: (TilePos, u8) = (tile(32934, 32886, -7), 1);
 const PARCHMENT: (TilePos, u8) = (tile(32935, 32886, -7), 1);
 const SIGNS: TilePos = tile(33305, 32861, -13);
 const HAIR: (TilePos, u8) = (tile(32933, 32495, -7), 1);
@@ -565,6 +567,7 @@ impl Journey<'_, '_, '_, '_> {
         self.check(0, [0; 5]).await?;
         self.say("mission").await?;
         self.check(1, [0; 5]).await?;
+        self.use_object(MOSS_DOOR, Committed).await?;
         self.use_object(MOSS, Committed).await?;
         self.check(1, [0, 1, 0, 0, 0]).await?;
         self.use_object(BANANA, Committed).await?;
@@ -573,6 +576,7 @@ impl Journey<'_, '_, '_, '_> {
         self.check(3, [0, 1, 0, 0, 0]).await?;
         self.say("mission").await?;
         self.check(4, [0, 1, 0, 0, 0]).await?;
+        self.use_object(PARCHMENT_DOOR, Committed).await?;
         self.use_object(PARCHMENT, Committed).await?;
         self.check(5, [0, 1, 1, 0, 0]).await?;
         self.say("parchment").await?;

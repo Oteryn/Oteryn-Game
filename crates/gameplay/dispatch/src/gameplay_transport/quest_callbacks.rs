@@ -180,7 +180,25 @@ fn unique_eligible<'a>(
         })
     });
     let selected = eligible.next()?;
-    eligible.next().is_none().then_some(selected)
+    let Some(other) = eligible.next() else {
+        return Some(selected);
+    };
+    if eligible.next().is_some() {
+        return None;
+    }
+    // These are two source bindings for the same skull sacrifice. The authored
+    // route adds its story proof once eligible. Earlier players keep the old route.
+    match (selected.key.as_str(), other.key.as_str()) {
+        (
+            "oteryn:quest-callback/paradox-skulls",
+            "oteryn:quest-callback/paradox-tower/native-skulls",
+        ) => Some(other),
+        (
+            "oteryn:quest-callback/paradox-tower/native-skulls",
+            "oteryn:quest-callback/paradox-skulls",
+        ) => Some(selected),
+        _ => None,
+    }
 }
 
 fn tile(p: Position) -> TilePos {

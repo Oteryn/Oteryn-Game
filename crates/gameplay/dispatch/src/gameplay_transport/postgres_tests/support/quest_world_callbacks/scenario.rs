@@ -73,6 +73,9 @@ fn scenario_case(
     let mead = name == "l6/waterskin-of-mead";
     let spirit = name == "qengine-rewards-questpc4-spirit";
     let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
+    let paradox_source_probe = native_tower
+        || name == "paradox-skulls"
+        || name.starts_with("qengine-rewards-questpc4-admission-");
     let native_switch = name.starts_with("l6-tomb-switch-native-");
     let paradox_journey = name == super::super::paradox_tower_journey_fixtures::NAME;
     let native_upper = name.starts_with("qengine-rewards-questpc4-paradox-upper-");
@@ -1450,6 +1453,7 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
+            _ if paradox_source_probe => Some(30),
             _ => None,
         };
         if let Some(initial_level) = initial_level {
@@ -1647,6 +1651,7 @@ fn scenario_case(
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let premium = if koshei || name.starts_with("authored-")
+            || paradox_source_probe
             || name == "nx6-wayfarer"
             || name == "m07-carrot-premium"
             || m03_use
@@ -1953,6 +1958,7 @@ fn scenario_case(
         }
         if explorer
             || koshei
+            || paradox_source_probe
             || name == "nx6-wayfarer"
             || qm03
             || m07_too_hot

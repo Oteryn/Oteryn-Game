@@ -202,6 +202,10 @@ def _requested_inputs(root, extra_keys=()):
     # Hairycles exchange and Holy Ape Hair footprint. Use the existing
     # exact-identity custody qualification, without granting other item behavior.
     authored_keys = {'oteryn:item.tibia.i4832', 'oteryn:item.tibia.i4835'}
+    # The pinned Shattered Isles and New Frontier bindings use these portable
+    # Items for the ring, poem, pillow and bait exchanges and the rake action.
+    authored_keys.update(f'oteryn:item.tibia.i{number}'
+                         for number in (3452, 6093, 6105, 6119, 9843))
     keys.update(authored_keys)
     authored_callbacks = []
     # Executable authored callbacks use the same exact canonical/native Item

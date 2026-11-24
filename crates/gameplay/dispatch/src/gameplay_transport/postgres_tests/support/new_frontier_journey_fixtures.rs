@@ -216,7 +216,7 @@ pub(super) async fn exercise(
             .is_some()
     );
     let mut selected = a.continuity.selected_capabilities.as_slice().to_vec();
-    selected.extend([3, 4, 6, 11, 13, 15, 16, 17, 18, 25]);
+    selected.extend([3, 4, 6, 11, 13, 15, 16, 17, 18]);
     selected.sort_unstable();
     selected.dedup();
     let offered = crate::gameplay_transport::appearance_change::offer::offered(

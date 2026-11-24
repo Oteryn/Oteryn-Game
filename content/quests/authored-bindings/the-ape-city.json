@@ -10,6 +10,18 @@
       },
       "tracks": [
         {
+          "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/dworc_door",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/chor_door",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
           "key": "oteryn:quest-progress/chosen/ape-city/stage",
           "initial": 0,
           "minimum": 0,
@@ -115,6 +127,12 @@
                   "minimum": 0,
                   "maximum": 0,
                   "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/dworc_door",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
                 }
               ],
               "requires_premium": true,
@@ -127,7 +145,8 @@
               ],
               "sources": [
                 "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
-                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:80-89"
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:80-89",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:249-259"
               ]
             }
           }
@@ -222,6 +241,12 @@
                   "minimum": 3,
                   "maximum": 3,
                   "set": 4
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/chor_door",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
                 }
               ],
               "requires_premium": true,
@@ -234,7 +259,8 @@
               ],
               "sources": [
                 "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/16/definition/oteryn_recipe/payload/recipe:sha256:5d10091a31f17316f608855990e52c7d588419b23533a5b870c19e1e94688781",
-                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:100-120"
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:100-120",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:309-314"
               ]
             }
           }
