@@ -1193,7 +1193,7 @@ fn target_ordinal(world: &BundleWorld, at: TilePos, selector: &Value) -> TestRes
 
 // Fresh-state inputs from quest/classic_talk.rs:218, :338, :381, :400 and :452.
 fn classic_input(npc: &str, branch: &str) -> Option<&'static [&'static str]> {
-    use oteryn_gameplay_quests::quest::classic_talk::{JEROM, MORRIS, QUEEN, ROTTIN, WOBLIN};
+    use oteryn_gameplay_quests::quest::classic_talk::{JEROM, MORRIS, QUEEN, WOBLIN};
     Some(match (npc, branch) {
         (MORRIS, "line-79") => &["amulet"],
         (MORRIS, "line-98") => &["log book"],
@@ -1214,10 +1214,6 @@ fn classic_input(npc: &str, branch: &str) -> Option<&'static [&'static str]> {
         (JEROM, "line-82") => &["mission", "yes"],
         (QUEEN, "line-63") => &["seventh seal"],
         (QUEEN, "line-172") => &["seventh seal", "no"],
-        (ROTTIN, "line-91") => &["mission"],
-        (ROTTIN, "line-149") => &["mission", "yes"],
-        (ROTTIN, "line-297") => &["mission", "no"],
-        (ROTTIN, "line-336") => &["task"],
         _ => return None,
     })
 }
@@ -1227,7 +1223,10 @@ fn classic_seeded_input(
     npc: &str,
     branch: &str,
 ) -> Option<(Vec<&'static str>, BTreeMap<String, i64>)> {
-    use oteryn_gameplay_quests::quest::classic_talk::QUEEN;
+    use oteryn_gameplay_quests::quest::classic_talk::{QUEEN, ROTTIN};
+    if npc == ROTTIN {
+        return rottin_seeded_input(branch);
+    }
     if npc != QUEEN {
         return None;
     }
@@ -1259,6 +1258,37 @@ fn classic_seeded_input(
     messages.push("kiss");
     if branch == "line-174" {
         messages.push("no");
+    }
+    Some((messages, tracks))
+}
+
+// quest/classic_talk.rs:452 owns the Rottin topic and insufficient-progress replies.
+fn rottin_seeded_input(branch: &str) -> Option<(Vec<&'static str>, BTreeMap<String, i64>)> {
+    use oteryn_gameplay_quests::quest::classic_talk::{ROTTIN_STATE, ROTTIN_WALLCOUNT};
+    let (questline, messages) = match branch {
+        "line-91" => (0, vec!["mission"]),
+        "line-94" => (1, vec!["mission"]),
+        "line-98" => (2, vec!["mission"]),
+        "line-107" => (3, vec!["mission"]),
+        "line-111" => (4, vec!["mission"]),
+        "line-141" => (6, vec!["mission"]),
+        "line-149" => (0, vec!["mission", "yes"]),
+        "line-175" => (2, vec!["mission", "yes"]),
+        "line-192" => (3, vec!["mission", "yes"]),
+        "line-197" => (4, vec!["mission", "yes"]),
+        "line-297" => (0, vec!["mission", "no"]),
+        "line-304" => (1, vec!["mission", "no"]),
+        "line-307" => (2, vec!["mission", "no"]),
+        "line-310" => (3, vec!["mission", "no"]),
+        "line-313" => (4, vec!["mission", "no"]),
+        "line-330" => (4, vec!["task"]),
+        "line-333" => (2, vec!["task"]),
+        "line-336" => (0, vec!["task"]),
+        _ => return None,
+    };
+    let mut tracks = BTreeMap::from([(format!("{ROTTIN_STATE}questline"), questline)]);
+    if branch == "line-192" {
+        tracks.insert(ROTTIN_WALLCOUNT.to_owned(), 0);
     }
     Some((messages, tracks))
 }
@@ -1903,11 +1933,17 @@ mod tests {
 
     #[test]
     fn seeded_classic_routes_reach_the_authored_stateful_branches() -> TestResult {
-        use oteryn_gameplay_quests::quest::classic_talk::{QUEEN, choose};
+        use oteryn_gameplay_quests::quest::classic_talk::{QUEEN, ROTTIN, choose};
 
         let lowered = load_embedded_quest_state(SERVED_CONTENT_REVISION)
             .map_err(|error| format!("quest state catalogue: {error:?}"))?;
-        for (npc, branch) in [(QUEEN, "line-134"), (QUEEN, "line-174")] {
+        for (npc, branch) in [
+            (QUEEN, "line-134"),
+            (QUEEN, "line-174"),
+            (ROTTIN, "line-175"),
+            (ROTTIN, "line-192"),
+            (ROTTIN, "line-313"),
+        ] {
             let (messages, tracks) =
                 classic_seeded_input(npc, branch).ok_or("missing classic route")?;
             for (key, value) in &tracks {
