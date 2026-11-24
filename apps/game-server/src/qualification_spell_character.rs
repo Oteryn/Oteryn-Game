@@ -116,10 +116,10 @@ pub(crate) struct QualificationBuildSpec<'a> {
     pub build_occurrence: [u8; 16],
 }
 
-#[cfg(test)]
 pub(crate) const BOSS_FIXTURE_WEAPON: u32 = 7388;
 pub(crate) const BOSS_FIXTURE_HEALING: u32 = 7643;
 
+#[cfg(test)]
 const QUALIFICATION_LEVELS: usize = 1000;
 pub(super) const PLAYABLE_VOCATIONS: [&str; 5] = ["sorcerer", "druid", "paladin", "knight", "monk"];
 
