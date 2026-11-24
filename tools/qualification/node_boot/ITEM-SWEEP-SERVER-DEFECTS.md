@@ -189,3 +189,14 @@ terminal marker. These are the persisted step counts at interruption.
 
 Each resume starts at the last entry observed in its interrupted run. This
 replays one entry per batch to cover any partial verdict at the interruption.
+
+### Readable items use a different command in Oteryn
+
+Keys 2821, 2822, 2824, 2825, 2826 and 2829 returned `NothingToUse` to
+command 2 with a carried handle. Crystal's default USE sends a text window
+for readable items (`data/items/items.xml:5821–5838`,
+`src/lua/creature/actions.cpp:538–551`). Oteryn's carried inscription
+owner uses command 6246 with an item handle
+(`crates/protocol-oteryn/src/item_inscription.rs:6`,
+`gameplay_transport/item_inscription.rs:59–101`). The sweep did not send
+that command, so these rows leave the text behavior unverified.
