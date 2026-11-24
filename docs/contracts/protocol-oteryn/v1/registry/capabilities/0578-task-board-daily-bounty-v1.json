@@ -1,0 +1,15 @@
+{
+  "id": 578,
+  "name": "TASK_BOARD_DAILY_BOUNTY_V1",
+  "owner_decision": "2026-11-22 server and protocol parity task",
+  "owner": "Fenced Task Board owner",
+  "requires": [
+    72
+  ],
+  "command_types": [
+    6319
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; the Task Board catalogue and durable Character/session fence remain mandatory."
+}

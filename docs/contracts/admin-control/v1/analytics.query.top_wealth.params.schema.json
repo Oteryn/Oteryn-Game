@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TopWealthParams",
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string"
+    },
+    "grain": {
+      "$ref": "#/$defs/Grain"
+    },
+    "params": {
+      "$ref": "#/$defs/TopWealthFilters"
+    },
+    "query_id": {
+      "$ref": "#/$defs/TopWealthId"
+    },
+    "to": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "query_id",
+    "params",
+    "from",
+    "to",
+    "grain"
+  ],
+  "$defs": {
+    "Grain": {
+      "type": "string",
+      "enum": [
+        "minute",
+        "hour",
+        "day"
+      ]
+    },
+    "PageLimit": {
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 100,
+      "minimum": 1
+    },
+    "TopWealthFilters": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "$ref": "#/$defs/PageLimit"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "limit"
+      ]
+    },
+    "TopWealthId": {
+      "type": "string",
+      "enum": [
+        "top_wealth"
+      ]
+    }
+  }
+}

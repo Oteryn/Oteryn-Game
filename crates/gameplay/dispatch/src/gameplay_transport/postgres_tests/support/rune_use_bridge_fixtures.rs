@@ -28,7 +28,9 @@ use crate::gameplay_transport::connection::{
 
 use crate::gameplay_transport::rune_use_bridge::test_faults::{self, Point};
 
-use crate::gameplay_transport::{ComposedFreshAdmission, SeamRooms, item_fence_of};
+use crate::gameplay_transport::{
+    AdmissionRetryBudget, ComposedFreshAdmission, SeamRooms, item_fence_of,
+};
 
 use crate::spell::cast::CharacterCastFacts;
 
@@ -789,6 +791,16 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+    if case == Case::Replay {
+        // This direct fixture has no Channel maintenance loop. Finish the real
+        // map owner setup before its vitals timer competes with rune commands.
+        assert!(
+            AdmissionRetryBudget::for_root(&session, &harness.root)
+                .retry_until(async || owner.ensure_source_map_initialized().await)
+                .await,
+            "source map is ready before serving rune commands"
+        );
+    }
     if case == Case::EngencTraining {
         super::engenc_ordinary_hits_fixtures::prepare_rune(&mut owner, session).await?;
         tokio::time::timeout(

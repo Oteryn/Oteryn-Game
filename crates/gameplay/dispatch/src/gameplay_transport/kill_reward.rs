@@ -550,6 +550,7 @@ pub struct KillSettlementQueue(
     pub(super) Arc<Mutex<super::grizzly_kills::GrizzlyCaptureCache>>,
     Arc<super::public_kill_statistics::CaptureQueue>,
     pub(super) Arc<Mutex<super::quest_kill_objectives::ObjectiveCaptureCache>>,
+    Arc<std::sync::OnceLock<std::sync::Weak<super::raid_notices::ServerMessageHub>>>,
 );
 
 #[derive(Debug, Clone)]
@@ -569,6 +570,41 @@ struct FrozenProficiencyDeath {
 }
 
 impl KillSettlementQueue {
+    pub(super) fn bind_kill_notices(&self, hub: &Arc<super::raid_notices::ServerMessageHub>) {
+        self.4.get_or_init(|| Arc::downgrade(hub));
+    }
+
+    fn publish_boss_defeat(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        lethal: CapturedRewardPrincipal,
+        creature: String,
+    ) {
+        let Some(hub) = self.4.get().and_then(std::sync::Weak::upgrade) else {
+            return;
+        };
+        if !runtime
+            .bound_attacker_lease(lethal.actor, lethal.session)
+            .is_ok_and(|lease| {
+                lease.character_id() == lethal.character
+                    && lease.generation() == lethal.lease_generation
+            })
+        {
+            return;
+        }
+        let receipts = self.analyser_receipts(runtime, target);
+        if let Ok(mut receipts) = receipts.lock()
+            && !receipts.boss_defeated
+        {
+            receipts.boss_defeated = true;
+            hub.send_current(
+                lethal.session,
+                oteryn_protocol_oteryn::zones_nologout::ServerMessage::BossDefeated(creature),
+            );
+        }
+    }
+
     pub(super) fn statistics(&self) -> &super::public_kill_statistics::CaptureQueue {
         &self.2
     }
@@ -1880,19 +1916,18 @@ pub fn record_creature_kill(
     // Physical statistics precede every reward/principal/Bestiary admission.
     // The owner-issued lethal receipt proves death even for a no-corpse arena
     // or Instance; projections and rewards retain their existing independent rules.
-    if let Ok(snapshot) = runtime.companion_snapshot_including_dead(target) {
+    let snapshot = runtime.companion_snapshot_including_dead(target);
+    let soulpit = runtime.soulpit_variant(target);
+    let mut defeated = None;
+    if let Ok(snapshot) = &snapshot {
         if snapshot.state.master.is_none()
             && !snapshot.state.policy.is_familiar
-            && !runtime
-                .soulpit_variant(target)
-                .is_some_and(|tag| tag.is_summon)
+            && !soulpit.is_some_and(|tag| tag.is_summon)
         {
-            let creature = snapshot.state.policy.definition_key.clone();
+            let creature = &snapshot.state.policy.definition_key;
             let boss = snapshot.state.policy.reward_boss == Some(true)
-                || sink.rewards.boss(&creature).is_some()
-                || runtime
-                    .soulpit_variant(target)
-                    .is_some_and(|tag| tag.boss.is_some());
+                || sink.rewards.boss(creature).is_some()
+                || soulpit.is_some_and(|tag| tag.boss.is_some());
             if let Ok(receipt) = runtime
                 .borrow_combat_death()
                 .committed_lethal_receipt(target)
@@ -1902,10 +1937,21 @@ pub fn record_creature_kill(
                     runtime,
                     target,
                     death,
-                    &creature,
+                    creature,
                     boss,
                     super::npc_trade_command::unix_ms_now(),
                 );
+                if (boss
+                    || runtime.is_raid_boss(target)
+                    || runtime
+                        .boss_spawns()
+                        .iter()
+                        .any(|spawn| spawn.actor == Some(target)))
+                    && soulpit
+                        .is_none_or(|tag| tag.stack == crate::domain::soulpit::SoulpitStack::Boss)
+                {
+                    defeated = Some(creature.clone());
+                }
             }
         }
     } else {
@@ -1921,18 +1967,23 @@ pub fn record_creature_kill(
     if super::raid_live::continue_feroxa_death(runtime, target) {
         return;
     }
-    if runtime.is_tibiadrome(target) {
-        let _ = crate::combat::project_fixed_one_creature_death(
-            &mut runtime.borrow_combat_death(),
-            target,
-        );
-        return;
-    }
-    // Instance Soulpit deaths belong to its lifecycle/XP adapter. They never enter the
-    // ordinary corpse, Bestiary, Task Board, proficiency, Forge or Echo reward pipeline.
-    if runtime.soulpit_variant(target).is_some() {
-        record_soulpit_kill(runtime, sink, target, lethal, now_ms, observed_at);
-
+    let tibiadrome = runtime.is_tibiadrome(target);
+    if tibiadrome || soulpit.is_some() {
+        if (tibiadrome || defeated.is_some())
+            && crate::combat::project_fixed_one_creature_death(
+                &mut runtime.borrow_combat_death(),
+                target,
+            )
+            .is_ok()
+            && let Some(boss) = defeated
+        {
+            sink.queue
+                .publish_boss_defeat(runtime, target, lethal, boss);
+        }
+        if !tibiadrome {
+            // Soulpit owns its lifecycle and XP, separately from ordinary kill settlement.
+            record_soulpit_kill(runtime, sink, target, lethal, now_ms, observed_at);
+        }
         return;
     }
     let snapshot = runtime.companion_snapshot_including_dead(target);
@@ -1970,6 +2021,10 @@ pub fn record_creature_kill(
         .is_err()
     {
         return;
+    }
+    if let Some(boss) = defeated {
+        sink.queue
+            .publish_boss_defeat(runtime, target, lethal, boss);
     }
     if let Some(states) = sink.prey {
         states
@@ -3155,6 +3210,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         receipts: impl Iterator<Item = &'r CombatBatchReceipt>,
     ) {
         let activity = attack.shared_experience_cells();
+        attack
+            .kills()
+            .bind_kill_notices(&self.states.server_messages);
         let sink = KillSink {
             prey: Some(states),
             activity: &activity,
@@ -4131,6 +4189,25 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         };
         let bestiary = CreatureDeathBestiaryInput {
             race: row.race.clone(),
+            corpse_source: if entry.creature == "oteryn:creature.koshei_the_deathless" {
+                // The donor amulet samples this corpse even though Koshei has no Bestiary race.
+                admission.active_generation.and_then(|generation| {
+                    generation
+                        .native_gameplay()?
+                        .creature_profiles()
+                        .records
+                        .iter()
+                        .map(|record| &record.profile.target)
+                        .find(|target| target.key == entry.creature)
+                        .map(|target| crate::durability::item_mint::TypedDefinitionRef {
+                            family: "Creature".into(),
+                            production_key: target.key.clone(),
+                            revision_ref: target.revision.clone(),
+                        })
+                })
+            } else {
+                None
+            },
             boss: row.boss.clone(),
             talisman: entry.talisman.get().cloned(),
         };

@@ -1,0 +1,7 @@
+name=bestiary_animus_xp
+commands=6389
+[route]
+match routing::charm_progression::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

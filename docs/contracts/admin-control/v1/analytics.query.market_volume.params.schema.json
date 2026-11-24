@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MarketVolumeParams",
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string"
+    },
+    "grain": {
+      "$ref": "#/$defs/Grain"
+    },
+    "params": {
+      "$ref": "#/$defs/MarketVolumeFilters"
+    },
+    "query_id": {
+      "$ref": "#/$defs/MarketVolumeId"
+    },
+    "to": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "query_id",
+    "params",
+    "from",
+    "to",
+    "grain"
+  ],
+  "$defs": {
+    "Grain": {
+      "type": "string",
+      "enum": [
+        "minute",
+        "hour",
+        "day"
+      ]
+    },
+    "MarketVolumeFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "MarketVolumeId": {
+      "type": "string",
+      "enum": [
+        "market_volume"
+      ]
+    }
+  }
+}

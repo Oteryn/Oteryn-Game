@@ -78,6 +78,80 @@ pub fn decode_catalogue(bytes: &[u8]) -> Result<Vec<Entry>, Error> {
     }
     Ok(entries)
 }
+pub const CAPABILITY_BATTLEYE: u32 = 583;
+pub const COMMAND_BATTLEYE_CATALOGUE: u32 = 6329;
+pub const MAX_BATTLEYE_REPLY_BYTES: usize = 2 + 18 * MAX_WORLDS;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum BattlEyeStatus {
+    Unknown = 0,
+    Unprotected = 1,
+    Protected = 2,
+    ProtectedSinceLaunch = 3,
+}
+
+impl BattlEyeStatus {
+    pub fn from_id(id: u8) -> Option<Self> {
+        match id {
+            0 => Some(Self::Unknown),
+            1 => Some(Self::Unprotected),
+            2 => Some(Self::Protected),
+            3 => Some(Self::ProtectedSinceLaunch),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BattlEyeEntry {
+    pub entry: Entry,
+    pub battleye: BattlEyeStatus,
+}
+
+pub fn encode_battleye_catalogue(entries: &[BattlEyeEntry]) -> Result<Vec<u8>, Error> {
+    if entries.len() > MAX_WORLDS
+        || entries
+            .windows(2)
+            .any(|pair| pair[0].entry.world.as_bytes() >= pair[1].entry.world.as_bytes())
+    {
+        return Err(Error::Malformed);
+    }
+    let mut out = (entries.len() as u16).to_le_bytes().to_vec();
+    for row in entries {
+        out.extend(row.entry.world.as_bytes());
+        out.push(row.entry.world_type as u8);
+        out.push(row.battleye as u8);
+    }
+    Ok(out)
+}
+
+pub fn decode_battleye_catalogue(bytes: &[u8]) -> Result<Vec<BattlEyeEntry>, Error> {
+    let (header, rows) = bytes.split_at_checked(2).ok_or(Error::Malformed)?;
+    let count = usize::from(u16::from_le_bytes([header[0], header[1]]));
+    if count > MAX_WORLDS || rows.len() != 18 * count {
+        return Err(Error::Malformed);
+    }
+    let entries = rows
+        .as_chunks::<18>()
+        .0
+        .iter()
+        .map(|row| {
+            Ok(BattlEyeEntry {
+                entry: Entry {
+                    world: WorldId::decode(&row[..16]).map_err(|_| Error::Malformed)?,
+                    world_type: WorldType::from_id(row[16]).ok_or(Error::Malformed)?,
+                },
+                battleye: BattlEyeStatus::from_id(row[17]).ok_or(Error::Malformed)?,
+            })
+        })
+        .collect::<Result<Vec<_>, Error>>()?;
+    if encode_battleye_catalogue(&entries)? != bytes {
+        return Err(Error::Malformed);
+    }
+    Ok(entries)
+}
+
 pub fn encode_query(
     query: HighscoresQuery,
     world_type: Option<WorldType>,
@@ -94,4 +168,36 @@ pub fn decode_query(bytes: &[u8]) -> Result<(HighscoresQuery, Option<WorldType>)
         Some(WorldType::from_id(id).ok_or(Error::Malformed)?)
     };
     Ok((highscores::decode_highscores_query(rest)?, kind))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn battleye_catalogue_preserves_published_and_unknown_status() -> Result<(), Error> {
+        let entry = |tag, battleye| -> Result<BattlEyeEntry, Error> {
+            let world =
+                WorldId::decode(&[1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag])
+                    .map_err(|_| Error::Malformed)?;
+            Ok(BattlEyeEntry {
+                entry: Entry {
+                    world,
+                    world_type: WorldType::Open,
+                },
+                battleye,
+            })
+        };
+        let entries = [
+            entry(1, BattlEyeStatus::Unknown)?,
+            entry(2, BattlEyeStatus::ProtectedSinceLaunch)?,
+        ];
+        let mut encoded = encode_battleye_catalogue(&entries)?;
+        assert_eq!(decode_battleye_catalogue(&encoded)?, entries);
+        assert!(decode_catalogue(&encoded).is_err());
+        assert!(encode_battleye_catalogue(&[entries[1], entries[0]]).is_err());
+        encoded[19] = 4;
+        assert!(decode_battleye_catalogue(&encoded).is_err());
+        Ok(())
+    }
 }

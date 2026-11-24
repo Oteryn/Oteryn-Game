@@ -1,0 +1,77 @@
+{
+  "canonical_signed_utf8": "{\"actor\":{\"admin_id\":\"a-17\",\"ip_hash\":\"test-hash\",\"mfa_at\":\"2026-11-05T11:59:00Z\",\"permission\":\"game.player.moderate\",\"roles\":[\"fixture\"],\"session_ref\":\"test-session\",\"step_up_at\":null},\"admin_operation_id\":\"019a5620-0000-7000-8001-000000000029\",\"approvals\":[],\"contract\":\"oteryn.admin-control.v1\",\"dry_run\":false,\"expires_at\":\"2026-11-05T12:01:00Z\",\"issued_at\":\"2026-11-05T12:00:00Z\",\"kind\":\"command\",\"nonce\":\"HR0dHR0dHR0dHR0dHR0dHQ\",\"operation\":\"player.message\",\"operation_version\":1,\"params\":{\"text\":\"Please contact support.\"},\"reason\":{\"code\":\"TEST\",\"text\":\"Conformance vector.\",\"ticket_ref\":null},\"request_id\":\"019a5620-0000-7000-8000-000000000029\",\"risk_class\":\"R2\",\"signer_key_id\":\"platform-admin-signer-1\",\"target\":{\"account_ref\":null,\"character_id\":\"019a0000-0000-7000-8000-000000000301\",\"node_id\":null,\"world_id\":\"w-antica\"}}",
+  "clock": 1793880000,
+  "expected_error": null,
+  "expected_result_valid": true,
+  "nonce_seen": false,
+  "policy": {
+    "operations": [
+      {
+        "allowed_permissions": [
+          "game.player.moderate"
+        ],
+        "min_risk_class": "R2",
+        "operation": "player.message",
+        "worlds": [
+          "w-antica"
+        ]
+      }
+    ]
+  },
+  "precondition_error": null,
+  "preview_digest": null,
+  "prior_params_digest": null,
+  "prior_result": null,
+  "request": {
+    "actor": {
+      "admin_id": "a-17",
+      "ip_hash": "test-hash",
+      "mfa_at": "2026-11-05T11:59:00Z",
+      "permission": "game.player.moderate",
+      "roles": [
+        "fixture"
+      ],
+      "session_ref": "test-session",
+      "step_up_at": null
+    },
+    "admin_operation_id": "019a5620-0000-7000-8001-000000000029",
+    "approvals": [],
+    "contract": "oteryn.admin-control.v1",
+    "dry_run": false,
+    "expires_at": "2026-11-05T12:01:00Z",
+    "issued_at": "2026-11-05T12:00:00Z",
+    "kind": "command",
+    "nonce": "HR0dHR0dHR0dHR0dHR0dHQ",
+    "operation": "player.message",
+    "operation_version": 1,
+    "params": {
+      "text": "Please contact support."
+    },
+    "reason": {
+      "code": "TEST",
+      "text": "Conformance vector.",
+      "ticket_ref": null
+    },
+    "request_id": "019a5620-0000-7000-8000-000000000029",
+    "risk_class": "R2",
+    "signature": "rfq6r0KWcxGZjJdA1Uy39U8qsiBD9_iTbpd-lzzSJEMqLzrXs6gkOoYBaZ9z_iFFJXPDi5IUPN9La9thoT39BA",
+    "signer_key_id": "platform-admin-signer-1",
+    "target": {
+      "account_ref": null,
+      "character_id": "019a0000-0000-7000-8000-000000000301",
+      "node_id": null,
+      "world_id": "w-antica"
+    }
+  },
+  "result": {
+    "delivered": true
+  },
+  "trusted_signers": [
+    {
+      "key_id": "platform-admin-signer-1",
+      "not_after": "2027-01-01T00:00:00Z",
+      "not_before": "2026-01-01T00:00:00Z",
+      "public_key": "6kpsY-KcUgq-9VB7Ey7F-ZVHdq6-vnuSQh7qaRRG0iw"
+    }
+  ]
+}

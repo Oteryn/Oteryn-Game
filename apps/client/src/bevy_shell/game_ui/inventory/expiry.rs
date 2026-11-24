@@ -92,22 +92,22 @@ pub(super) fn project(
             .into_iter()
             .filter(|(h, _)| {
                 samples.checked.get(h).is_none_or(|sample| {
-                    sample.reply.is_none()
-                        && now.saturating_sub(sample.requested) >= Duration::from_secs(60)
+                    now.saturating_sub(sample.requested) >= Duration::from_secs(60)
                 })
             })
             .min_by_key(|(h, _)| samples.checked.get(h).map(|v| v.requested))
         && play.link.inspect_slot_expiry(handle)
     {
-        samples.checked.insert(
-            handle,
-            Sample {
+        samples
+            .checked
+            .entry(handle)
+            .and_modify(|sample| sample.requested = now)
+            .or_insert(Sample {
                 item,
                 location,
                 requested: now,
                 reply: None,
-            },
-        );
+            });
         samples.last = Some(now);
     }
     let text_for = |h: &ItemHandle| {

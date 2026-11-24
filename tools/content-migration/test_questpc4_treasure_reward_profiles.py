@@ -124,42 +124,21 @@ class TreasureRewardTests(unittest.TestCase):
 
         import build_questpc4_treasure_reward_profiles as producer
         import refresh_equipment_profile_pin as cli
-        from test_refresh_equipment_profile_pin import EquipmentPinTests, document
+        from key_door_item_profiles import PATH as KEY_DOOR_PROOF
+        from qengine_reward_item_profiles import PROOF as QENGINE_PROOF
 
-        source = EquipmentPinTests.SOURCE.replace(
-            '&[("QNPCFX", 1)];',
-            '&[("QNPCFX", 1),\n    ("QUESTPC4-STAG-ITEMS", 1),\n];',
-        ).replace("            + npc_additions.len()\n", "")
-        packet = {
-            "schema": producer.SCHEMA,
-            "producer": producer.PRODUCER,
-            "records": [
-                {"production_definition": {"production_key": f"oteryn:item.tibia.i{i}"}}
-                for i in scoped.IDS
-            ],
-        }
-        files = {
-            "content/items/definitions/spell-native-profiles.json": document(
-                0, 1, 2, 3, "stag", *(f"oteryn:item.tibia.i{i}" for i in scoped.IDS)
-            ),
-            "content/items/definitions/srx1-item-updates.json": document(4),
-            "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json": document(
-                0
-            ),
-            "tools/content-schema/native-gameplay/qnpcfx-item-profiles.json": document(
-                1
-            ),
-            "content/items/definitions/starting-loadout-profiles.json": document(),
-            producer.PROOF: packet,
-        }
+        published = cli.TEST.read_text()
+        cohort = f'    ("QUESTPC4-TREASURE-REWARDS", {len(scoped.IDS)}),\n'
+        self.assertEqual(published.count(cohort), 1)
+        source = published.replace(cohort, "")
         with tempfile.TemporaryDirectory() as tmp:
             root = fixtures.ROOT.__class__(tmp)
             target = root / "pin.rs"
             target.write_text(source)
-            for name, value in files.items():
+            for name in (KEY_DOOR_PROOF, producer.PROOF, QENGINE_PROOF):
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(json.dumps(value))
+                path.write_bytes((fixtures.ROOT / name).read_bytes())
             with (
                 patch.object(cli, "ROOT", root),
                 patch.object(cli, "TEST", target),

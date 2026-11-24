@@ -116,7 +116,7 @@ pub(super) async fn scenario(
     Ok(())
 }
 
-async fn fight(
+pub(super) async fn fight(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     member: &mut AdmittedSession,
     target: crate::foundation::ExactActorRef,

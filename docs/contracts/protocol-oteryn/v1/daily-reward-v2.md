@@ -42,6 +42,29 @@ Protobuf varint field 1 disposition (1..7), bytes field 2 UUIDv7 only for
 CLAIMED (1). Other dispositions retain DAILY_REWARD_V1 result meanings.
 Maximum 20 bytes. No new snapshot domain is introduced.
 
+## remote query
+
+Command 6322 requires capability 580 `DAILY_REWARD_ACCESS_V1`,
+which depends on capability 182. The request is empty. The reply is the wall with explicit
+varints 7 (`remote_eligible`, bool) and 8 (`instant_access_tokens`, u32).
+Eligibility requires a current playable session, an unclaimed day, at
+least one token, and no unsettled spell or trade commit. Field 5 still describes the shrine path. Command 355 sends
+the original wall. A missing provisioned balance reads as zero.
+
+## remote claim
+
+Command 6321 (capability 580) is empty and uses the original claim result.
+It selects the remote path without requiring an open or reachable shrine.
+Game checks current control, and spends one character Instant Reward Access
+token under the same session-generation fence and in the same transaction
+as the daily receipt and delivery. Disposition 4 also means no remote token
+on this command. A retry of a retained remote claim never spends again.
+Game control provisions entitlements in `game_character_daily_reward_access`.
+The command does not sell or grant tokens. Command 354 remains the shrine claim.
+
+Collection and debit follow Crystal 201189f8, [daily reward handler](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/modules/scripts/daily_reward/daily_reward.lua#L405-L422).
+The historical Instant Reward Access path is documented by [TibiaWiki](https://www.tibiawiki.com.br/wiki/Daily_Reward_System).
+
 ## details
 
 T144 adds read-only command 738 to the existing capability 182. Empty request;
@@ -56,7 +79,15 @@ temple scrolls, XP percent, XP minutes, bounty tokens; since WU26-07 only days 1
 carry the cycle and days 8..30 are all zero); history count u8 (0..30);
 then each receipt: epoch u64 LE, reset day i64 LE, lane day u8, streak u32 LE,
 jokers spent u8, own-character boolean u8. Records are newest first. No trailing
-bytes. Maximum 1104 bytes. The claim remains empty and server-owned.
+bytes. Maximum 1104 bytes.
+
+Command 6323 requires capability 580 and uses an empty request. Its `DRD2` result
+has the same layout after the magic bytes, with mandatory `next_reset_at`
+appended as i64 LE Unix milliseconds. This is the 06:00 Europe/Berlin
+boundary following the committed reset day, including DST transitions. If
+activation is delayed, the scheduled boundary can already have passed. It
+does not authorize a claim. Maximum 1112 bytes. Command 738 continues to
+return `DRD1` for older clients.
 
 ## item picker (T144, owner decision B 2026-11-09), retired
 
@@ -65,7 +96,7 @@ choice of runes, potions or exercise weapons). Commands 6122 and 6123 left capab
 182 and the registry: no capability owns them, Dispatch routes them nowhere and refuses
 them as unregistered (`Rejected`, empty payload) without reading their bytes. Both
 numbers stay retired and are never reused. The one-click claim is the
-only daily claim; its request binding is unchanged. No picked item is minted and
+daily claim at the time of that decision; its shrine request binding is unchanged. No picked item is minted and
 `game_daily_reward_picks` (migration 1711) is history only. The rules below describe
 the retired behaviour.
 

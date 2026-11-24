@@ -37,20 +37,21 @@ const GENERAL_STATS_SQL: &str = "SELECT p.level,p.total_experience,b.magic_level
  FROM game_character_progression_state p JOIN game_character_build_state b ON b.character_id=p.character_id \
  LEFT JOIN game_character_last_positions l ON l.character_id=p.character_id WHERE p.character_id=encode($1,'hex')::uuid";
 
-/// Deaths in the history window, newest first, with the Character killers the PvP owners
-/// recorded for the same death (unjustified points and guild war frags). `killer` is the
-/// public final-blow killer (ordinal 0 when its kind matches the death classification), empty
-/// when the final blow is unknown; `unjustified` is true when the death awarded unjustified
-/// points to any killer.
+/// Deaths in the history window, newest first. `killer` is the captured final blow (ordinal 0
+/// when its kind matches the death classification), and `most_damage` is the captured top damage
+/// dealer. Unjustified points and guild war frags supply the name-ordered PvP cause list.
 const DEATHS_SQL: &str = "SELECT d.committed_at,d.level_before, \
- COALESCE((SELECT k.name FROM game_public_death_killers k JOIN game_public_death_classifications c ON c.death_occurrence_id=k.death_occurrence_id \
-   WHERE k.death_occurrence_id=d.death_occurrence_id AND k.ordinal=0 AND ((k.kind='creature' AND c.killer_key=k.creature_key) OR (k.kind='player' AND c.killer_key='player'))),'') AS killer, \
- COALESCE((SELECT k.name FROM game_public_death_killers k JOIN game_public_death_classifications c ON c.death_occurrence_id=k.death_occurrence_id AND c.most_damage_ordinal=k.ordinal \
-   WHERE k.death_occurrence_id=d.death_occurrence_id),'') AS most_damage, \
+ COALESCE(k.name,'') AS killer, COALESCE(m.name,'') AS most_damage, \
+ COALESCE(k.ordinal=m.ordinal,false) AS same_source, \
  EXISTS(SELECT 1 FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id) AS unjustified, \
  ARRAY(SELECT r.name FROM (SELECT u.character_id AS killer FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id \
    UNION SELECT f.killer_character_id FROM game_guild_war_frags f WHERE f.death_occurrence_id=d.death_occurrence_id) k JOIN game_character_roots r ON r.character_id=k.killer ORDER BY r.name) AS killers \
- FROM game_character_death_receipts d WHERE d.character_id=encode($1,'hex')::uuid AND d.committed_at BETWEEN $2 AND $3 ORDER BY d.committed_at DESC,d.death_occurrence_id DESC OFFSET $4 LIMIT $5";
+ FROM game_character_death_receipts d \
+ LEFT JOIN game_public_death_classifications c ON c.death_occurrence_id=d.death_occurrence_id \
+ LEFT JOIN game_public_death_killers k ON k.death_occurrence_id=c.death_occurrence_id AND k.ordinal=0 \
+   AND ((k.kind='creature' AND c.killer_key=k.creature_key) OR (k.kind='player' AND c.killer_key='player')) \
+ LEFT JOIN game_public_death_killers m ON m.death_occurrence_id=c.death_occurrence_id AND m.ordinal=c.most_damage_ordinal \
+ WHERE d.character_id=encode($1,'hex')::uuid AND d.committed_at BETWEEN $2 AND $3 ORDER BY d.committed_at DESC,d.death_occurrence_id DESC OFFSET $4 LIMIT $5";
 
 /// PvP kills in the history window, newest first. A guild war frag wins over unjustified
 /// points for the same death (Crystal reports one status per kill).
@@ -79,6 +80,57 @@ fn narrow<T: TryFrom<i64>>(value: i64) -> Result<T, sqlx::Error> {
 }
 
 impl DurabilityRoot {
+    /// Self-only credit history under the current session fence, ordered by death commit.
+    pub async fn read_player_kill_credits(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        page: PageRequest,
+    ) -> Result<Vec<oteryn_protocol_oteryn::cyclopedia_character::kill_credits::PlayerKillCredit>,
+                CharacterAuthorityError> {
+        use oteryn_protocol_oteryn::cyclopedia_character::kill_credits::PlayerKillCredit;
+        let Some(page) = PageRequest::new(page.offset, page.limit) else {
+            return Err(CharacterAuthorityError::Rejected);
+        };
+        let recovery = authority.record_for(self)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if super::character_progression::assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            }
+            let rows = sqlx::query(
+                "SELECT uuid_send(k.death_occurrence_id) AS occurrence,
+                        uuid_send(d.character_id) AS victim, k.committed_at, k.final_blow
+                 FROM game_character_player_kill_credits k
+                 JOIN game_character_death_receipts d USING (death_occurrence_id)
+                 WHERE k.character_id=encode($1,'hex')::uuid
+                   AND k.committed_at >= floor(extract(epoch FROM statement_timestamp())*1000)::bigint-$2
+                 ORDER BY k.committed_at DESC,k.death_occurrence_id DESC OFFSET $3 LIMIT $4",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(HISTORY_WINDOW_MS)
+            .bind(i64::from(page.offset))
+            .bind(i64::from(page.limit))
+            .fetch_all(&mut *tx).await?;
+            let credits = rows.into_iter().map(|row| {
+                let occurrence: Vec<u8> = row.try_get("occurrence")?;
+                let victim: Vec<u8> = row.try_get("victim")?;
+                Ok(PlayerKillCredit {
+                    occurrence: occurrence.try_into().map_err(|_| super::DurabilityError::InvalidStoredState)?,
+                    victim: victim.try_into().map_err(|_| super::DurabilityError::InvalidStoredState)?,
+                    at_unix_ms: row.try_get("committed_at")?,
+                    final_blow: row.try_get("final_blow")?,
+                })
+            }).collect::<Result<Vec<_>, super::DurabilityError>>()?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(credits))
+        })).await?
+    }
+
     /// PAR-P12c (Crystal `ProtocolGame::sendCyclopediaCharacter*`, `protocolgame.cpp:4372-4817`):
     /// one tab of `target`'s character window as `viewer` may see it.
     #[allow(
@@ -174,10 +226,7 @@ impl DurabilityRoot {
                     let mut details = Vec::with_capacity(rows.len());
                     for row in rows {
                         let level: i64 = row.try_get("level_before")?;
-                        let killers: Vec<String> = row.try_get("killers")?;
-                        entries.push((row.try_get("committed_at")?, death_cause(narrow(level)?, &killers)));
                         let killer: String = row.try_get("killer")?;
-                        // The death owner's captured most-damage row; empty when unknown.
                         let most_damage: String = row.try_get("most_damage")?;
                         details.push(DeathDetails {
                             level: narrow(level)?,
@@ -185,6 +234,16 @@ impl DurabilityRoot {
                             most_damage: bounded_death_name(&most_damage),
                             unjustified: row.try_get("unjustified")?,
                         });
+                        let mut killers: Vec<String> = row.try_get("killers")?;
+                        if killers.is_empty() {
+                            if !killer.is_empty() {
+                                killers.push(killer);
+                            }
+                            if !most_damage.is_empty() && !row.try_get::<bool, _>("same_source")? {
+                                killers.push(most_damage);
+                            }
+                        }
+                        entries.push((row.try_get("committed_at")?, death_cause(narrow(level)?, &killers)));
                     }
                     extension.deaths = Some(details);
                     TabView::RecentDeaths(entries)

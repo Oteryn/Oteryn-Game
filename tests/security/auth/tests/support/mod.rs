@@ -237,7 +237,18 @@ impl Browser {
     }
     pub async fn csrf(&mut self, path: &str) -> TestResult<String> {
         let response = self.request(path, None).await?;
-        check(response.status() == 200, "form_handler_missing_or_refused")?;
+        if response.status() != 200 {
+            let form = match response.url().path() {
+                "/en/login" => "login",
+                "/oauth/authorize" => "oauth_authorize",
+                _ => "other",
+            };
+            return Err(format!(
+                "form_handler_missing_or_refused:{form}:expected_200:observed_{}",
+                response.status().as_u16()
+            )
+            .into());
+        }
         let body = response.text().await.map_err(|_| "form_read_failed")?;
         let token = body
             .split("name=\"_csrf\" value=\"")

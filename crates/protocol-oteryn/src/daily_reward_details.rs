@@ -1,6 +1,8 @@
 //! Read-only reward catalogue and latest thirty durable account/World claims.
 pub const COMMAND_TYPE: u32 = 738;
 pub const MAX_BYTES: usize = 1104;
+pub const COMMAND_TYPE_WITH_RESET: u32 = 6323;
+pub const MAX_BYTES_WITH_RESET: usize = MAX_BYTES + 8;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Tier {
     pub cosmetic_tokens: u8,
@@ -27,6 +29,7 @@ pub struct Receipt {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Details {
     pub epoch: u64,
+    pub next_reset_at: Option<i64>,
     pub days: [Day; 30],
     pub history: [Option<Receipt>; 30],
 }
@@ -34,6 +37,7 @@ impl Details {
     pub fn empty(epoch: u64) -> Self {
         Self {
             epoch,
+            next_reset_at: None,
             days: [Day::default(); 30],
             history: [None; 30],
         }
@@ -42,7 +46,12 @@ impl Details {
         if self.epoch == 0 {
             return Err("invalid epoch");
         }
-        let mut out = b"DRD1".to_vec();
+        let mut out = if self.next_reset_at.is_some() {
+            b"DRD2"
+        } else {
+            b"DRD1"
+        }
+        .to_vec();
         out.extend(self.epoch.to_le_bytes());
         for day in self.days {
             for t in [day.free, day.premium] {
@@ -91,10 +100,22 @@ impl Details {
                 }
             }
         }
+        if let Some(next_reset_at) = self.next_reset_at {
+            if next_reset_at <= 0 {
+                return Err("invalid reset boundary");
+            }
+            out.extend(next_reset_at.to_le_bytes());
+        }
         Ok(out)
     }
     pub fn decode(bytes: &[u8]) -> Result<Self, &'static str> {
-        if bytes.len() > MAX_BYTES || !bytes.starts_with(b"DRD1") {
+        let with_reset = bytes.starts_with(b"DRD2");
+        let max = if with_reset {
+            MAX_BYTES_WITH_RESET
+        } else {
+            MAX_BYTES
+        };
+        if bytes.len() > max || !(with_reset || bytes.starts_with(b"DRD1")) {
             return Err("invalid details");
         }
         let mut at = 4;
@@ -149,6 +170,9 @@ impl Details {
                 jokers_spent,
                 own_character: own == 1,
             });
+        }
+        if with_reset {
+            value.next_reset_at = Some(i64::from_le_bytes(take(bytes, &mut at)?));
         }
         if at != bytes.len() {
             return Err("trailing details");

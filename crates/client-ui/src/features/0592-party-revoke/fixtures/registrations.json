@@ -1,0 +1,18 @@
+[
+  {
+    "mechanic": "0592-party-revoke",
+    "kind": "handlers",
+    "id": "0592-party-revoke-wire",
+    "status": "unsupported",
+    "commands": [],
+    "direction": "server_to_client",
+    "reason": "Party action 6 uses the existing Party command and awaits client wiring.",
+    "not_applicable": {
+      "state": "The server owns the command outcome and any durable consequences.",
+      "protocol": "Party action 6 uses the existing Party command and awaits client wiring.",
+      "view": "The client lane owns presentation of this capability.",
+      "input": "The client lane owns input handling for this capability.",
+      "settings": "This capability introduces no client setting."
+    }
+  }
+]

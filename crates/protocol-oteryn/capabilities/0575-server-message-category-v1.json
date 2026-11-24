@@ -1,0 +1,17 @@
+{
+  "id": 575,
+  "name": "SERVER_MESSAGE_CATEGORY_V1",
+  "constant": "zones_nologout::CAPABILITY_SERVER_MESSAGE_CATEGORY_V1",
+  "requires": [
+    92
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}
