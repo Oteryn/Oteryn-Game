@@ -507,7 +507,7 @@ async fn open_castle_entrance(client: &mut DevClientSession, world: &BundleWorld
     ));
     // The immutable route model still has the authored closed pose. Check this
     // single step against the door cell before resuming normal floor routing.
-    walk_with_landings(client, &[StepDirection::North], |at, direction| {
+    walk_with_landings(client, &[StepDirection::North], move |at, direction| {
         (at == outside && direction == StepDirection::North).then_some(entrance)
     })
     .await
