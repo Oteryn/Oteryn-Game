@@ -1,12 +1,12 @@
 // Route over the loaded qualification crop. A route may need to leave the
 // normal local town window to get around a wall or use a return staircase.
-async fn qualification_hunt_route(
-    client: &mut DevClientSession,
+pub(super) fn qualification_hunt_plan(
+    client: &DevClientSession,
     world: &BundleWorld,
     target: Option<TilePos>,
     return_to: Option<TilePos>,
     deadline: tokio::time::Instant,
-) -> TestResult<TilePos> {
+) -> TestResult<Vec<StepDirection>> {
     if tokio::time::Instant::now() >= deadline {
         return Err("qualification_hunt_route expired before travel".into());
     }
@@ -74,7 +74,7 @@ async fn qualification_hunt_route(
             .is_some_and(|tile| tile.walkable() && !tile.protection_zone())
             && !rat_approaches.contains(&at)
     };
-    let path = if let Some(target) = target {
+    if let Some(target) = target {
         find_route(start, |at| at == target && returnable(at), landing)
     } else {
         let approached_live = (!live_rats.is_empty()).then(|| find_route(start, |at| {
@@ -94,8 +94,19 @@ async fn qualification_hunt_route(
         }
     }
     .map_err(|visited| {
-        format!("qualification_hunt_route from {start:?} has no approach and return after {visited} tiles")
-    })?;
+        format!("qualification_hunt_route from {start:?} has no approach and return after {visited} tiles").into()
+    })
+}
+
+async fn qualification_hunt_route(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    target: Option<TilePos>,
+    return_to: Option<TilePos>,
+    deadline: tokio::time::Instant,
+) -> TestResult<TilePos> {
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = qualification_hunt_plan(client, world, target, return_to, deadline)?;
     let endpoint = path
         .iter()
         .try_fold(start, |at, &direction| destination(world, at, direction))

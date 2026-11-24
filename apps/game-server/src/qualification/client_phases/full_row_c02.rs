@@ -25,6 +25,11 @@ use oteryn_protocol_oteryn::{
 };
 use std::{collections::BTreeSet, num::NonZeroU32};
 
+mod hunt_route {
+    use super::*;
+    include!("qualification_hunt_route.rs");
+}
+
 const BOW: u32 = 3350;
 const ARROW: u32 = 3447;
 const WAND: u32 = 3074;
@@ -173,7 +178,6 @@ fn carried_gold(client: &DevClientSession, gold: &[(NonZeroU32, u64); 3]) -> Tes
 pub(super) async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
     needed: u64,
 ) -> TestResult {
     let gold = coin_references()?;
@@ -193,7 +197,7 @@ pub(super) async fn earn_gold(
     Ok(())
 }
 
-const HUNT_ROUTE_RADIUS: u16 = 160;
+const TOWN_ROUTE_RADIUS: u16 = 160;
 const RANGED_SELLER_RADIUS: u16 = 1024;
 const MAX_ROUTE_RECOVERIES: usize = 8;
 
@@ -201,16 +205,17 @@ fn c02_route(
     world: &BundleWorld,
     from: TilePos,
     origin: TilePos,
-    radius: u16,
+    radius: Option<u16>,
     goal: impl Fn(TilePos) -> bool,
     available: impl Fn(TilePos) -> bool,
 ) -> Option<Vec<StepDirection>> {
     find_route(from, goal, |at, direction| {
         let next = destination(world, at, direction)?;
-        (next.x.abs_diff(origin.x) <= radius
-            && next.y.abs_diff(origin.y) <= radius
-            && next.floor.abs_diff(origin.floor) <= 2
-            && available(next))
+        (radius.is_none_or(|radius| {
+            next.x.abs_diff(origin.x) <= radius
+                && next.y.abs_diff(origin.y) <= radius
+                && next.floor.abs_diff(origin.floor) <= 2
+        }) && available(next))
         .then_some(next)
     })
     .ok()
@@ -220,7 +225,7 @@ async fn c02_walk(
     client: &mut DevClientSession,
     world: &BundleWorld,
     path: Vec<StepDirection>,
-    radius: u16,
+    radius: Option<u16>,
     deadline: Option<tokio::time::Instant>,
 ) -> TestResult {
     let origin = tile(client.world_spatial().actor_position)?;
@@ -284,7 +289,11 @@ async fn c02_walk(
                     origin,
                     radius,
                     |at| at == goal,
-                    |at| at != expected && !occupied.contains(&at),
+                    |at| {
+                        deadline.is_none_or(|until| tokio::time::Instant::now() < until)
+                            && at != expected
+                            && !occupied.contains(&at)
+                    },
                 );
                 if let Some(detour) = route {
                     evidence(&format!(
@@ -322,48 +331,15 @@ async fn c02_walk(
 async fn approach_funding_rat(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
     deadline: tokio::time::Instant,
 ) -> TestResult {
     let origin = tile(client.world_spatial().actor_position)?;
-    let rat_spawns: BTreeSet<_> = spawns
-        .sources
-        .iter()
-        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
-        .filter(|(_, point)| {
-            spawns
-                .creatures
-                .get(point.creature as usize)
-                .is_some_and(|entry| entry.key == "oteryn:creature.rat")
-        })
-        .map(|(floor, point)| TilePos {
-            x: point.x,
-            y: point.y,
-            floor,
-        })
-        .collect();
-    let path = c02_route(
-        world,
-        origin,
-        origin,
-        HUNT_ROUTE_RADIUS,
-        |at| {
-            world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|tile| !tile.protection_zone())
-                && rat_spawns.iter().any(|rat| {
-                    rat.floor == at.floor && rat.x.abs_diff(at.x).max(rat.y.abs_diff(at.y)) <= 1
-                })
-        },
-        |_| true,
-    )
-    .ok_or("C02 funding has no reachable unprotected Rat spawn")?;
+    let path = hunt_route::qualification_hunt_plan(client, world, None, Some(origin), deadline)?;
     evidence(&format!(
         "C02_FUNDING_ROUTE origin={origin:?} steps={}",
         path.len()
     ));
-    c02_walk(client, world, path, HUNT_ROUTE_RADIUS, Some(deadline)).await
+    c02_walk(client, world, path, None, Some(deadline)).await
 }
 
 async fn hunt_with_damage_receipt(
@@ -425,7 +401,7 @@ async fn fund_ranged_purchase(
     while carried < needed {
         let hunt_deadline = deadline.min(tokio::time::Instant::now() + Duration::from_secs(150));
         let hunt = tokio::time::timeout_at(hunt_deadline, async {
-            approach_funding_rat(client, world, spawns, hunt_deadline).await?;
+            approach_funding_rat(client, world, hunt_deadline).await?;
             let reply = client
                 .session_mut()
                 .gated_command(
@@ -503,7 +479,7 @@ async fn buy(
     let radius = if matches!(id, BOW | ARROW) {
         RANGED_SELLER_RADIUS
     } else {
-        HUNT_ROUTE_RADIUS
+        TOWN_ROUTE_RADIUS
     };
     let (seller, path) = npcs
         .npcs
@@ -515,7 +491,7 @@ async fn buy(
                 world,
                 here,
                 here,
-                radius,
+                Some(radius),
                 |at| {
                     n.placements.iter().any(|p| {
                         p.floor == at.floor
@@ -533,7 +509,7 @@ async fn buy(
         seller.key,
         path.len()
     ));
-    c02_walk(client, world, path, radius, None).await?;
+    c02_walk(client, world, path, Some(radius), None).await?;
     let player = client.world_spatial().actor_position;
     let actor = client
         .world_entities()
@@ -889,7 +865,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     .connect(&ranged_clients, 0xc2, 0)
     .await?;
-    fund_ranged_purchase(&mut client, world, &metadata.spawns, 930)
+    fund_ranged_purchase(&mut client, world, 930)
         .await
         .map_err(|error| format!("fund-ranged-kit: {error}"))?;
     let mut purchase_sequences = Vec::new();
@@ -990,7 +966,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     .connect(&druid_clients, 0xc4, 0)
     .await?;
     require_eligible_druid(&mut client).await?;
-    fund_ranged_purchase(&mut client, world, &metadata.spawns, 500)
+    fund_ranged_purchase(&mut client, world, 500)
         .await
         .map_err(|error| format!("fund-rod: {error}"))?;
     buy(&mut client, world, &metadata.npcs, ROD, 1).await?;
