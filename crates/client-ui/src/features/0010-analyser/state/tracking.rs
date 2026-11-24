@@ -27,6 +27,13 @@ pub fn select(panel: &mut Panel, value: &str, tracked: bool) -> bool {
     }
     panel.pending_drop_values.remove(&item);
     panel.auto_tracked.remove(&item);
+    select_confirmed(panel, item, tracked)
+}
+/// Update the tracker for an item resolved by a confirmed catalogue or drop reply.
+pub fn select_confirmed(panel: &mut Panel, item: u32, tracked: bool) -> bool {
+    if item == 0 {
+        return false;
+    }
     if tracked {
         if panel.loot_tracked.len() >= MAX_TRACKED && !panel.loot_tracked.contains(&item) {
             panel.feedback = Some(tr!("Track up to 128 item types"));

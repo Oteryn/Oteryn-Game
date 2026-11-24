@@ -87,7 +87,8 @@ pub(super) async fn request(
             quest_clear_gate: None,
             ticket: None,
             return_origin: None,
-            world_change: None,
+            world_changes: Vec::new(),
+            partial_quest_callback: None,
         },
         fee: FeeBurnRequest {
             cause: FeeBurnCause::NpcTravel {

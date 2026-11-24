@@ -118,15 +118,15 @@ pub(super) fn admit(
         {
             return Err(invalid("authored constructor binding or qualification"));
         }
-        // Existing constructor receipts encode unknown field conditions as null.
-        // A composed Item document can omit that same optional field.
+        // Existing constructor receipts encode unknown field attributes as null.
+        // A composed Item document can omit those optional fields.
         let mut row = rows[index].clone();
         let attributes = row["attributes"]
             .as_object_mut()
             .ok_or_else(|| invalid("authored constructor raw attributes"))?;
-        attributes
-            .entry("field_condition")
-            .or_insert(serde_json::Value::Null);
+        for field in ["field_condition", "field_replaceable", "rune_consumption"] {
+            attributes.entry(field).or_insert(serde_json::Value::Null);
+        }
         let mut bytes = Vec::new();
         canonical(&row, &mut bytes)?;
         if hex(sha256(&bytes)) != matches[0].profile_sha256 {

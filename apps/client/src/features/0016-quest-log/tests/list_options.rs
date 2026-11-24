@@ -4,7 +4,9 @@ use oteryn_client_ui::quest_log::{QuestSort, quest_row_query, quest_rows};
 #[test]
 fn sorted_filtered_quest_selection_sends_the_displayed_server_id() -> Result<(), String> {
     let (link, mut commands, outbox) = play_channel();
-    let visible = QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::Line(QuestLine {
+    let visible = QuestLog {
+        map_marks: Vec::new(),
+        view: Some(QuestLogView::Line(QuestLine {
             quest_index: 1,
             completed: false,
             missions: vec![],
@@ -23,7 +25,9 @@ fn sorted_filtered_quest_selection_sends_the_displayed_server_id() -> Result<(),
         command_id: 1,
         status: oteryn_client_runtime::CommandStatus::Accepted,
         server_sequence: 1,
-        payload: encode_quest_log(&QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::List(vec![
+        payload: encode_quest_log(&QuestLog {
+            map_marks: Vec::new(),
+            view: Some(QuestLogView::List(vec![
                 QuestListEntry {
                     quest_index: 1,
                     completed: false,
@@ -81,7 +85,9 @@ fn journal_search_and_sort_use_confirmed_mission_text_and_keep_server_cursor() -
         revision: Some(0),
         ..Default::default()
     });
-    let log = QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::List(vec![
+    let log = QuestLog {
+        map_marks: Vec::new(),
+        view: Some(QuestLogView::List(vec![
             QuestListEntry {
                 quest_index: 1,
                 completed: false,
@@ -142,19 +148,99 @@ fn journal_search_and_sort_use_confirmed_mission_text_and_keep_server_cursor() -
 #[test]
 fn review14_list_only_accepts_personal_map_marks() -> Result<(), String> {
     let (link, mut commands, outbox) = play_channel();
-    outbox.quest_initialize(QuestState { selected: true, revision: Some(0), ..Default::default() });
+    outbox.quest_initialize(QuestState {
+        selected: true,
+        revision: Some(0),
+        ..Default::default()
+    });
     link.quest_request(&QuestLogQuery::ListOnly);
     assert!(matches!(commands.try_recv(), Ok(PlayCommand::QuestLog(_))));
-    let list = vec![QuestListEntry { quest_index: 2, completed: false }];
+    let list = vec![QuestListEntry {
+        quest_index: 2,
+        completed: false,
+    }];
     outbox.quest_result(&oteryn_session::GatedCommandResult {
-        command_id: 1, status: oteryn_client_runtime::CommandStatus::Accepted, server_sequence: 1,
+        command_id: 1,
+        status: oteryn_client_runtime::CommandStatus::Accepted,
+        server_sequence: 1,
         payload: encode_quest_log(&QuestLog {
-            map_marks: vec![oteryn_client_runtime::quest_log::QuestMapMark { x: 100, y: 100, floor: 7, text: "Treasure".into() }],
-            view: Some(QuestLogView::List(list.clone())), tracked: vec![],
-        }).map_err(|error| format!("{error:?}"))?,
+            map_marks: vec![oteryn_client_runtime::quest_log::QuestMapMark {
+                x: 100,
+                y: 100,
+                floor: 7,
+                text: "Treasure".into(),
+            }],
+            view: Some(QuestLogView::List(list.clone())),
+            tracked: vec![],
+        })
+        .map_err(|error| format!("{error:?}"))?,
     });
     let panel = link.quest_panel();
     assert_eq!(panel.state.refusal, None);
     assert_eq!(panel.state.list, list);
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+#[test]
+fn list_only_announces_progress_once_while_viewing_a_quest_line() -> Result<(), String> {
+    let (link, mut commands, outbox) = play_channel();
+    outbox.quest_initialize(QuestState {
+        selected: true,
+        revision: Some(0),
+        ..Default::default()
+    });
+    let update = |completed| QuestLog {
+        map_marks: vec![],
+        view: Some(QuestLogView::List(vec![QuestListEntry {
+            quest_index: 2,
+            completed,
+        }])),
+        tracked: vec![],
+    };
+    for log in [
+        update(false),
+        QuestLog {
+            map_marks: vec![],
+            view: Some(QuestLogView::Line(QuestLine {
+                quest_index: 2,
+                completed: false,
+                missions: vec![],
+            })),
+            tracked: vec![],
+        },
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let base = log.0 as u64;
+        outbox.push(vec![oteryn_session::SessionEvent::QuestLog(
+            oteryn_session::AppliedDelta {
+                server_sequence: base + 1,
+                base_revision: base,
+                new_revision: base + 1,
+                value: log.1,
+            },
+        )]);
+    }
+    for (seq, expected) in [(3, 1), (4, 0)] {
+        link.quest_request(&QuestLogQuery::ListOnly);
+        assert!(matches!(commands.try_recv(), Ok(PlayCommand::QuestLog(_))));
+        outbox.quest_result(&oteryn_session::GatedCommandResult {
+            command_id: seq,
+            status: oteryn_client_runtime::CommandStatus::Accepted,
+            server_sequence: seq,
+            payload: encode_quest_log(&update(true)).map_err(|e| format!("{e:?}"))?,
+        });
+        let mut mailbox = mailbox::lock(&outbox.0);
+        assert_eq!(
+            mailbox
+                .achievement_banners
+                .drain(..)
+                .filter(|text| text.starts_with("Quest completed"))
+                .count(),
+            expected
+        );
+    }
     Ok(())
 }

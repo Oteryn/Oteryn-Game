@@ -53,7 +53,7 @@ message NpcTalkIntentV1 {
 
 // ClientCommand.payload of command type 8. side and quantity are required and non-zero;
 // offer_index is below 1024 (NPC0-RL-03) and indexes the projected offers of domain 8. At most
-// 62 bytes.
+// 62 bytes (64 with capability 589).
 message NpcTradeIntentV1 {
   oteryn.protocol.v1.world_spatial.EntityRefV1 npc_actor = 1;
   uint64 catalogue_revision = 2;
@@ -61,6 +61,7 @@ message NpcTradeIntentV1 {
   NpcTradeSide side = 4;
   uint32 quantity = 5;
   uint32 expected_unit_price = 6;
+  optional bool pack_in_backpacks = 7; // Capability 589 only. Canonical true when present.
 }
 
 // CommandResult.payload of command types 7 and 8. At most 2 bytes.

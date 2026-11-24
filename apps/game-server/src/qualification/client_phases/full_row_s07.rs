@@ -111,16 +111,17 @@ async fn travel(client: &mut DevClientSession, step: &str) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     if client.world_spatial().actor_position == APPROACH {
-        return Err(
-            format!("{step}:walk-observed-already-at-approach-no-required-command-ran").into(),
-        );
+        return Err(format!(
+            "{step}:walk-observed-already-at-approach-need-lawful-house-entry-with-active-bed-pair"
+        )
+        .into());
     }
     let reply = send(client.session_mut(), APPROACH).await?;
     if reply.status != CommandStatus::Accepted
         || reply.disposition != Some(WalkDisposition::Accepted)
     {
         return Err(format!(
-            "{step}:walk-to-bed-observed-status-{:?}-disposition-{:?}-need-house-route-and-ACL",
+            "{step}:walk-to-bed-observed-status-{:?}-disposition-{:?}-need-lawful-house-entry-with-active-bed-pair",
             reply.status, reply.disposition
         )
         .into());
@@ -155,7 +156,7 @@ fn bed_handle(client: &mut DevClientSession, step: &str) -> TestResult<ItemHandl
                 _ => None,
             })
         })
-        .ok_or_else(|| format!("{step}:authored-bed-published-no-live-item-handle").into())
+        .ok_or_else(|| format!("{step}:no-active-bed-pair-handle-in-house-scope").into())
 }
 
 async fn sleep(
@@ -195,6 +196,13 @@ async fn logout(client: &mut DevClientSession, step: &str) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn walk_and_map_lookup_use_the_surface_wire_floor() -> TestResult {
+        assert_eq!(tile(BED)?.floor, -7);
+        assert_eq!(tile(APPROACH)?.floor, tile(BED)?.floor);
+        Ok(())
+    }
 
     #[test]
     fn bed_payload_round_trips_through_the_native_decoder() -> TestResult {

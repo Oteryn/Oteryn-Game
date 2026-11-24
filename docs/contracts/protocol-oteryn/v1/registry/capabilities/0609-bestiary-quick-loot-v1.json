@@ -1,0 +1,14 @@
+{
+  "id": 609,
+  "name": "BESTIARY_QUICK_LOOT_V1",
+  "owner_decision": "Server Bestiary drop-list Quick Loot",
+  "owner": "Active creature loot catalogue and Character Quick Loot filters",
+  "requires": [
+    67,
+    98
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Offered with the admitted Bestiary catalogue and Item definition index when Quick Loot is offered. Capability 609 gates the ff 04 selector of command 84."
+}

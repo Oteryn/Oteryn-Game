@@ -804,6 +804,41 @@ async fn nested_death_snapshot(h: &Harness, selected: [u8; 16]) -> TestResult<Ne
     Ok(NestedDeathSnapshot { items, placements })
 }
 
+async fn reject_unrecorded_slot_removal(h: &Harness, backpack: [u8; 16]) -> TestResult {
+    for (statement, bound, code) in [
+        (
+            "DELETE FROM game_item_container_slots WHERE item_instance_id=encode($1,'hex')::uuid",
+            backpack,
+            "42501",
+        ),
+        (
+            "SELECT game_player_death_container_slot_remove(encode($1,'hex')::uuid)",
+            id(199),
+            "23514",
+        ),
+    ] {
+        let mut raw = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *raw)
+            .await?;
+        let error = sqlx::query(statement)
+            .bind(bound.as_slice())
+            .execute(&mut *raw)
+            .await
+            .err()
+            .ok_or("unrecorded slot removal was admitted")?;
+        assert_eq!(
+            error
+                .as_database_error()
+                .and_then(|error| error.code())
+                .as_deref(),
+            Some(code)
+        );
+        raw.rollback().await?;
+    }
+    Ok(())
+}
+
 async fn run_nested_death_regression(admin: String, direct_bag: bool, reset: bool) -> TestResult {
     use crate::durability::character_build::{
         BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
@@ -934,8 +969,19 @@ async fn run_nested_death_regression(admin: String, direct_bag: bool, reset: boo
 
     // Reopen the real durable root and reconcile independently before resuming
     // the saved selection; no actor or in-memory request supplies new authority.
-    let reopened = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+    // The production role proves its own grants: it removes the main-backpack slot
+    // without table DELETE, and only through its same-transaction death record.
+    // The reset variants also retire the World, which keeps the harness role.
+    let reopened = if reset {
+        DurabilityRoot::connect_test_runtime(&h.database.url)?
+    } else {
+        DurabilityRoot::connect_test_runtime(&format!(
+            "{}?options=-c%20role%3Doteryn_game_runtime",
+            h.database.url
+        ))?
+    };
     assert!(reopened.maintain_ready_once().await?);
+    reject_unrecorded_slot_removal(&h, items[0]).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = reopened
         .open_character_authority(&seal)

@@ -47,6 +47,32 @@ impl crate::play::PlayView {
         Some((target, attacking))
     }
 
+    #[cfg(bevy_shell)]
+    pub(crate) fn row_attack_target(
+        &self,
+        target: oteryn_session::EntityRef,
+        link: &PlayLink,
+    ) -> Option<(oteryn_session::ActorPosition, bool)> {
+        let position = self.context_creature_position(target)?;
+        let mailbox = lock(&link.mailbox);
+        if Some(target.identity) == self.scene.own_identity()
+            || !mailbox
+                .battle
+                .rows
+                .iter()
+                .any(|actor| actor.entity == target && actor.position == position)
+        {
+            return None;
+        }
+        Some((
+            position,
+            mailbox
+                .battle
+                .combat
+                .is_some_and(|combat| combat.target == Some(target)),
+        ))
+    }
+
     /// Alt+click on an opponent: stops the attack when it is the current target, else attacks it.
     pub fn attack_toggle_click(&self, tile: TileCoord, link: &PlayLink) -> bool {
         // Same guard as `PlayView::click`: no world input while dead or under a server modal.
@@ -65,8 +91,22 @@ impl PlayLink {
         target: oteryn_session::EntityRef,
         attacking: bool,
     ) -> bool {
+        self.request_positioned_combat(target, attacking, None)
+    }
+    pub(crate) fn request_positioned_combat(
+        &self,
+        target: oteryn_session::EntityRef,
+        attacking: bool,
+        position: Option<oteryn_session::ActorPosition>,
+    ) -> bool {
         let mut mailbox = lock(&self.mailbox);
-        if mailbox.world_input_blocked()
+        if position.is_some_and(|position| {
+            !mailbox
+                .battle
+                .rows
+                .iter()
+                .any(|row| row.entity == target && row.position == position)
+        }) || mailbox.world_input_blocked()
             || mailbox
                 .battle
                 .combat

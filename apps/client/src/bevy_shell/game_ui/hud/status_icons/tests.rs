@@ -423,3 +423,46 @@ fn status_icons_follow_only_the_status_bar_column_for_every_condition() -> TestR
     );
     Ok(())
 }
+
+#[test]
+fn review_hud_conditions_follow_independent_visibility() -> TestResult {
+    let (mut app, _commands, _outbox) = super::super::tests::app()?;
+    publish(&app, conditions(&[(1, 0)]), default(), default(), default())?;
+    for enabled in [true, false, true] {
+        let mut host = app.world_mut().non_send_mut::<HostOwner>();
+        let play = host.play.as_mut().ok_or("play")?;
+        let mut prefs = play.view.preferences().clone();
+        prefs.conditions_hud_enabled = enabled;
+        play.view.set_preferences(prefs)?;
+        app.update();
+        let hud = app
+            .world_mut()
+            .query::<(Entity, &Name)>()
+            .iter(app.world())
+            .find(|(_, name)| name.as_str() == "HUD condition icons")
+            .ok_or("missing HUD condition icons")?
+            .0;
+        assert_eq!(
+            app.world()
+                .get::<Children>(hud)
+                .into_iter()
+                .flatten()
+                .count(),
+            usize::from(enabled)
+        );
+        assert_eq!(keys(&mut app)?, ["Poison"]);
+    }
+    let mut excluded = conditions(&[(1, 0)]);
+    excluded.hidden.push(1);
+    publish(&app, excluded, default(), default(), default())?;
+    app.update();
+    assert!(keys(&mut app)?.is_empty());
+    let hud = app
+        .world_mut()
+        .query::<(&Name, &Children)>()
+        .iter(app.world())
+        .find(|(name, _)| name.as_str() == "HUD condition icons")
+        .ok_or("HUD row lost its condition")?;
+    assert_eq!(hud.1.len(), 1);
+    Ok(())
+}

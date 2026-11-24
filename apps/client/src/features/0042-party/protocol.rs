@@ -17,6 +17,7 @@ impl Outbox {
         panel.awaiting_shared_feedback = false;
         panel.server_feedback = None;
         panel.feedback = None;
+        mailbox.refresh_party_summons();
     }
 
     pub(in crate::play) fn party_result(&self, response: &PartyResponse) {
@@ -31,8 +32,16 @@ impl Outbox {
             })
         };
         let before = members(&mailbox.party);
-        oteryn_client_ui::party_list::apply_result(&mut mailbox.party, response);
+        if oteryn_client_ui::party_list::apply_result(&mut mailbox.party, response) {
+            mailbox.refresh_party_summons();
+        }
         let after = members(&mailbox.party);
+        if let (Some(old), Some(new)) = (&before, &after)
+            && old != new
+            && mailbox.ui_sounds.len() < 32
+        {
+            mailbox.ui_sounds.push(crate::play::UiSound::Party);
+        }
         let shown: std::collections::BTreeSet<_> = mailbox
             .analyser
             .party

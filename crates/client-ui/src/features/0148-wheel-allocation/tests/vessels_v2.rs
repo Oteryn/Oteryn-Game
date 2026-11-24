@@ -195,3 +195,20 @@ fn locked_revealed_gem_cannot_stage_or_confirm_reshape() -> Result<(), Error> {
     assert_eq!(panel.feedback, Some("The gem must be unlocked first"));
     Ok(())
 }
+
+#[test]
+fn load_preset_while_target_vessel_is_closed() -> Result<(), Error> {
+    let mut panel = synced(true, true)?;
+    let board = panel.vessel_board.as_mut().ok_or("board")?;
+    board.slots[8].gem = Some([17; 16]);
+    let code = panel.named_build_code();
+    let slot = &mut panel.vessel_board.as_mut().ok_or("board")?.slots[8];
+    slot.open = false;
+    slot.gem = None;
+    panel.load_named_build(&code)?;
+    assert_eq!(
+        panel.preset_vessels.as_ref().ok_or("targets")?[8],
+        Some([17; 16])
+    );
+    Ok(())
+}

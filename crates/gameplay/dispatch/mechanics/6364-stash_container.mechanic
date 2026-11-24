@@ -1,0 +1,10 @@
+name=stash_container
+commands=6364
+transport=stash_container
+composed=stash_container
+authority=stash_container
+[route]
+match routing::stash_container::route(authority, session.admitted, command, session.item_view.as_ref(), &mut session.stash_container_pending).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

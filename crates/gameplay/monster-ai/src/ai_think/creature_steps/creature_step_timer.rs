@@ -1,6 +1,9 @@
 //! DEADLINE_STATE steps: one pending deadline per exact actor, cancelled on idle/refusal.
 use super::*;
 
+use crate::ai_think::behaviour_profile::CreatureBehaviourProfile;
+use crate::ai_think::targeting::{self, TargetCandidate};
+
 use crate::foundation::owner_timer::{
     CatchUpPolicy, FamilyPolicy, SemanticTimeMicros, VirtualOwnerClock,
 };
@@ -9,31 +12,6 @@ use crate::movement::speed::creature_step_duration;
 use crate::movement::{MovementEngineeringSelection, step_cardinal};
 
 impl CreatureAiTable {
-    #[allow(clippy::too_many_arguments)]
-    pub(super) fn fire_steps(
-        &mut self,
-        runtime: &mut ChannelRuntimeV1,
-        cells: &NativeEntryMovementCells,
-        blocking: &dyn CellBlocker,
-        current_map: Option<&crate::movement::monster_map::MonsterMap>,
-        source: &dyn CurrentCreatureSpeedReader,
-        ground: &dyn GroundSpeedSource,
-        root: &GameplayDecisionRoot,
-        now: u64,
-    ) {
-        self.fire_steps_through(
-            runtime,
-            cells,
-            blocking,
-            current_map,
-            source,
-            ground,
-            root,
-            now,
-            now,
-        );
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub(in crate::ai_think) fn fire_steps_through(
         &mut self,
@@ -44,6 +22,7 @@ impl CreatureAiTable {
         source: &dyn CurrentCreatureSpeedReader,
         ground: &dyn GroundSpeedSource,
         root: &GameplayDecisionRoot,
+        players: &[TargetCandidate],
         through_us: u64,
         now: u64,
     ) {
@@ -127,6 +106,20 @@ impl CreatureAiTable {
                 motion.stop();
                 continue;
             }
+            // Crystal monster.cpp:1604-1612 checks for returning players on every
+            // walk-back step. The movement cadence can fire between two thinks.
+            if matches!(motion.goal, MovementGoal::WalkBack { .. })
+                && walk_back_player_in_view(
+                    runtime,
+                    &entry.state.profile,
+                    snapshot.position(),
+                    players,
+                )
+            {
+                motion.stop();
+                entry.due_us = Some(entry.due_us.map_or(now, |due| due.min(now)));
+                continue;
+            }
             // Preflight the next cadence before publishing a position at an exhausted clock.
             let duration =
                 creature_step_duration(runtime, actor, source, ground, cell(next), cadence_now);
@@ -169,9 +162,13 @@ impl CreatureAiTable {
                 motion.cursor += 1;
             }
             motion.step_sequence = motion.step_sequence.saturating_add(1);
-            if matches!(motion.goal, MovementGoal::WalkBack { spawn } if spawn == next) {
+            if let MovementGoal::WalkBack { spawn } = motion.goal
+                && (walk_back_player_in_view(runtime, &entry.state.profile, next, players)
+                    || spawn == next)
+            {
                 motion.stop();
-                entry.due_us = None;
+                // The next think owns the idle transition and its damage reset.
+                entry.due_us = Some(entry.due_us.map_or(now, |due| due.min(now)));
             }
         }
         for entry in self.entries.values_mut() {
@@ -301,4 +298,19 @@ impl CreatureAiTable {
         }
         self.step_timers = Some(timers);
     }
+}
+
+fn walk_back_player_in_view(
+    runtime: &ChannelRuntimeV1,
+    profile: &CreatureBehaviourProfile,
+    at: MovementLocalPosition,
+    players: &[TargetCandidate],
+) -> bool {
+    players.iter().any(|player| {
+        runtime
+            .read_actor_position(player.actor)
+            .is_ok_and(|position| {
+                targeting::perceives(profile.is_native(), at, position.position())
+            })
+    })
 }

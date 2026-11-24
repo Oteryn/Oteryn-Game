@@ -61,6 +61,8 @@ pub(super) async fn load(
     let tokens: Option<i64> = sqlx::query_scalar("SELECT balance FROM game_character_bounty_reroll_tokens WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid FOR UPDATE")
         .bind(character).bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     Ok(TaskBoardView {
+        daily_reroll_at: 0,
+        delivery_definition_refs: BTreeMap::new(),
         balances: balances(&tracks),
         data,
         tracks,
@@ -71,6 +73,51 @@ pub(super) async fn load(
             .map_err(|_| DurabilityError::InvalidStoredState)?,
         delivery_available: BTreeMap::new(),
     })
+}
+
+pub(super) struct DailyReset {
+    pub day: i64,
+    pub started_at: u64,
+    pub next_at: u64,
+}
+
+impl DailyReset {
+    pub fn claim_at(&self, data: &TaskBoardData) -> u64 {
+        if data
+            .daily_bounty_claim_day
+            .is_some_and(|day| day >= self.day)
+        {
+            self.next_at
+        } else {
+            self.started_at
+        }
+    }
+}
+
+/// The weekly period read already holds the active reset row FOR SHARE.
+pub(super) async fn daily_reset(
+    tx: &mut sqlx::PgConnection,
+    fence: CurrentCharacterGameplayFence,
+) -> Result<Option<DailyReset>, DurabilityError> {
+    let row: Option<(i64, i64, i64)> = sqlx::query_as(
+        "SELECT (day - DATE '1970-01-01')::bigint,
+                extract(epoch FROM ((day + time '06:00') AT TIME ZONE 'Europe/Berlin'))::bigint,
+                extract(epoch FROM (((day + 1) + time '06:00') AT TIME ZONE 'Europe/Berlin'))::bigint
+           FROM (SELECT game_task_board_reset_day(encode($1,'hex')::uuid) AS day) d
+          WHERE day IS NOT NULL",
+    )
+    .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+    .fetch_optional(tx)
+    .await?;
+    row.map(|(day, started_at, next_at)| {
+        Ok(DailyReset {
+            day,
+            started_at: u64::try_from(started_at)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+            next_at: u64::try_from(next_at).map_err(|_| DurabilityError::InvalidStoredState)?,
+        })
+    })
+    .transpose()
 }
 
 pub(super) fn inactive(data: &TaskBoardData) -> bool {

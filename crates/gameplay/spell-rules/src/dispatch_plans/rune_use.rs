@@ -1,8 +1,17 @@
 //! Pure carrier eligibility for the gated legacy USE qualification.
 use super::ordinary_combat::has_world_geometry;
+use oteryn_gameplay_content::content::spell_data::target::AllowedTargets;
 use oteryn_gameplay_content::content::spell_data::{
     Carrier, Execution, SpellDefinition, SpellEffect,
 };
+
+/// The CrystalServer 3152 script limits ordinary healing to the caster.
+pub fn target_rule(spell: &SpellDefinition) -> AllowedTargets {
+    match spell.carrier {
+        Carrier::Rune { item: 3152, .. } => AllowedTargets::SelfOnly,
+        _ => spell.allowed_targets,
+    }
+}
 
 /// Rune families implemented by the admitted USE adapter. Geometry, source Item
 /// policy, World policy and payment remain qualified by the existing cast owner.
@@ -20,6 +29,21 @@ pub fn direct_rune(spell: &SpellDefinition) -> bool {
                     (&spell.carrier, behavior["parameters"]["source"].as_str()),
                     (Carrier::Rune { item: 3177, .. }, Some("target_creature"))
                         | (Carrier::Rune { item: 3203, .. }, Some("corpse_tile"))
+                )
+        }
+        (Carrier::Rune { item: 3152, .. }, Execution::Effects(effects)) => {
+            !spell.aggressive
+                && spell.needs_target
+                // Accept the existing authored shape, then apply the narrower cast rule.
+                && matches!(
+                    spell.allowed_targets,
+                    AllowedTargets::SelfOnly | AllowedTargets::SelfOrOwnSummons
+                )
+                && !has_world_geometry(spell)
+                && matches!(
+                    effects.as_slice(),
+                    [SpellEffect::Heal { .. }, SpellEffect::RemoveCondition { condition }]
+                        if condition == "paralyze"
                 )
         }
         (Carrier::Rune { item: 3165, .. }, Execution::Effects(effects)) => {
@@ -104,6 +128,36 @@ pub fn direct_rune(spell: &SpellDefinition) -> bool {
 mod tests {
     use super::*;
     use crate::dispatch_plans::ordinary_combat::test_source;
+
+    #[test]
+    fn intense_healing_is_admitted_as_a_direct_rune() {
+        let mut spell = test_source("candidate:spell/rune/intense_healing_rune");
+        assert!(direct_rune(&spell));
+        spell.allowed_targets = AllowedTargets::Any;
+        assert!(!direct_rune(&spell));
+    }
+
+    #[test]
+    fn intense_healing_rejects_owned_summons_and_other_players() {
+        use crate::target::{AllowedTargetsExt, CastTarget};
+
+        let spell = test_source("candidate:spell/rune/intense_healing_rune");
+        let rule = target_rule(&spell);
+        let mut target = CastTarget {
+            caster: 1,
+            creature: 2,
+            actor: String::new(),
+            master: Some(1),
+        };
+        assert!(
+            !rule.allows(&target),
+            "Intense Healing admitted an owned summon"
+        );
+        target.master = None;
+        assert!(!rule.allows(&target));
+        target.creature = target.caster;
+        assert!(rule.allows(&target));
+    }
 
     #[test]
     fn engenc_training_missile_is_direct_only_with_qualified_damage_effects() {

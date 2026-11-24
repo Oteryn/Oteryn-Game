@@ -581,7 +581,27 @@ where
     A: FreshAdmissionAuthority,
 {
     let mut step = "sounds";
-    let result = Box::pin(visibility_inner(stream, authority, session, &mut step)).await;
+    let result =
+        crate::durability::DurabilityRoot::with_background_holder(authority.background_operation(
+            Box::pin(visibility_inner(stream, authority, session, &mut step)),
+        ))
+        .await;
+    // A return can retire the source during its map read. Release the
+    // background grant before settling that handoff and let the serve loop
+    // write the barrier for the exact pending successor.
+    if matches!(&result, Err(ServeEnd::Disconnected)) && step == "world_map" {
+        let source = session.admitted;
+        if Box::pin(authority.settle_activity_connection(source))
+            .await
+            .is_ok_and(|current| current.game_session_id != source.game_session_id)
+            && authority
+                .pending_activity_switch(source)
+                .await
+                .is_ok_and(|switch| switch.is_some())
+        {
+            return Ok(());
+        }
+    }
     if result.is_err() {
         operator_event(&format!("event=visibility_refresh_refused step={step}"));
     }
@@ -689,8 +709,8 @@ where
                 view,
                 &channel,
                 session.item_view.as_mut(),
-                session.sequence,
-                session.revision,
+                (session.sequence, session.revision),
+                false,
             ))
             .await
         }
@@ -725,6 +745,7 @@ where
                     return Err(ServeEnd::Disconnected);
                 };
                 if let Some((next_sequence, frames)) = update {
+                    *step = "world_map_write";
                     session.sequence = next_sequence;
                     session.admitted.continuity.server_sequence = session.sequence;
                     session.admitted.continuity.world_map_revision = view.revision();

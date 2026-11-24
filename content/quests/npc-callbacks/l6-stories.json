@@ -104,6 +104,18 @@
           "minimum": -1,
           "maximum": 0,
           "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/quest_line",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
         }
       ],
       "take": [],
@@ -132,6 +144,12 @@
         {
           "track": "oteryn:quest-progress/l6/paradox/story",
           "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+          "minimum": 0,
           "maximum": 1,
           "set": 2
         }
@@ -165,6 +183,12 @@
           "minimum": 2,
           "maximum": 2,
           "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 3
         }
       ],
       "take": [],
@@ -194,6 +218,12 @@
         {
           "track": "oteryn:quest-progress/l6/paradox/story",
           "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+          "minimum": 0,
           "maximum": 3,
           "set": 4
         }
@@ -227,6 +257,12 @@
           "minimum": 4,
           "maximum": 4,
           "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
         }
       ],
       "take": [],

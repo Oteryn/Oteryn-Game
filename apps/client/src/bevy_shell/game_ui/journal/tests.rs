@@ -715,6 +715,7 @@ fn questlog_track_toggle() -> Result {
         },
         &values
     ));
+    let mut snapshot = Default::default();
     for tracked in [true, false] {
         assert!(actions::perform(
             &mut host,
@@ -749,7 +750,9 @@ fn questlog_track_toggle() -> Result {
         }
         outbox.bevy_journal_quest_state(next);
         let link = &host.play.as_ref().ok_or("play")?.link;
-        let projection = model::quests(&link.quest_panel(), 0, false);
+        assert!(link.update_quest_snapshot(&mut snapshot));
+        assert!(!link.update_quest_snapshot(&mut snapshot));
+        let projection = model::quests(&snapshot, 0, false);
         assert_eq!(projection.tracker.contains("Find the guide"), tracked);
     }
     Ok(())
@@ -973,3 +976,5 @@ fn spell_detail_fields() -> Result {
     }
     Ok(())
 }
+
+mod parity;

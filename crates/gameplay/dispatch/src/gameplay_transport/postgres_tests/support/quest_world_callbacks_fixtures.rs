@@ -88,7 +88,7 @@ pub(super) async fn input_item(
         item_mint::{
             GroundPlacement, ItemMintCause, ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
         },
-        item_transfer::{ItemTransferDestination, ItemTransferRequest},
+        item_transfer::{ItemTransferDestination, ItemTransferOutcome, ItemTransferRequest},
     };
     use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts};
     let native = owner
@@ -205,7 +205,7 @@ pub(super) async fn input_item(
         )
         .await
         .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
-    owner
+    let transfer_outcome = owner
         .root
         .commit_item_transfer(
             &permit,
@@ -220,35 +220,48 @@ pub(super) async fn input_item(
     if carried {
         return Ok(());
     }
-    let moved = owner
-        .root
-        .commit_item_loop_move(
-            &permit,
-            owner.character,
-            owner.holder,
-            &fence,
-            command(1)?,
-            &NativeItemWeights(native),
-            LoopMoveRequest {
-                item: item.item_instance_id,
-                count: None,
-                pickup_cell: None,
-                destination: LoopDestination::Ground(LoopGround {
-                    spatial_position:
-                        crate::durability::map_item_mint_audit::map_item_spatial_position(
-                            offering.position.x,
-                            offering.position.y,
-                            offering.position.floor,
-                        ),
-                    map_revision: crate::map::overlay::map_revision(map.overlay.base()),
-                    content_revision: revision,
-                    placement_context: frame.to_vec(),
-                }),
-            },
+    let (ItemTransferOutcome::Committed(receipt) | ItemTransferOutcome::AlreadyCommitted(receipt)) =
+        transfer_outcome;
+    // A full stack merge retires the mint. Drop just the newly added units
+    // from the receiver and any remainder that still has the original identity.
+    let merged = receipt.receiver.map(|receiver| {
+        (
+            receiver.item_instance_id,
+            Some(receiver.quantity_after - receiver.quantity_before),
         )
-        .await
-        .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
-    assert!(moved.is_ok(), "drop: {moved:?}");
+    });
+    let remainder = (receipt.source_quantity_after != 0).then_some((item.item_instance_id, None));
+    let ground = LoopGround {
+        spatial_position: crate::durability::map_item_mint_audit::map_item_spatial_position(
+            offering.position.x,
+            offering.position.y,
+            offering.position.floor,
+        ),
+        map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+        content_revision: revision,
+        placement_context: frame.to_vec(),
+    };
+    for (index, (item, count)) in merged.into_iter().chain(remainder).enumerate() {
+        let moved = owner
+            .root
+            .commit_item_loop_move(
+                &permit,
+                owner.character,
+                owner.holder,
+                &fence,
+                command(u64::try_from(index)? + 1)?,
+                &NativeItemWeights(native),
+                LoopMoveRequest {
+                    item,
+                    count,
+                    pickup_cell: None,
+                    destination: LoopDestination::Ground(ground.clone()),
+                },
+            )
+            .await
+            .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
+        assert!(moved.is_ok(), "drop {}: {moved:?}", offering.item);
+    }
     Ok(())
 }
 
@@ -1127,7 +1140,7 @@ pub(super) async fn wire(
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     let frame = oteryn_protocol_oteryn::encode_client_command(
-        1,
+        admitted.continuity.connection_generation,
         &oteryn_protocol_oteryn::ClientCommandValue {
             command_id: id,
             command_type: kind,

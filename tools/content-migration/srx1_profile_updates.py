@@ -80,6 +80,20 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
         ):
             row["attributes"].pop("field_condition", None)
     base = canonical(original_document)
+    if len(base) > 16 * 1024 * 1024:  # native_gameplay::MAX_ITEM_PROFILES
+        # Preserve the exact profiles while omitting absent optional fields on
+        # the same Ground decoration cohort.
+        for row in original_document["records"]:
+            if (
+                row["production_definition"]["production_key"] in decoration_keys
+                and row["admission"]["legal_destinations"] == ["Ground"]
+            ):
+                for field in ("field_replaceable", "rune_consumption"):
+                    if row["attributes"].get(field) is None:
+                        row["attributes"].pop(field, None)
+                if row.get("production_binding_qualification") is None:
+                    row.pop("production_binding_qualification", None)
+        base = canonical(original_document)
     generated[profile_path] = base
     data = (
         '{\n  "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",\n'

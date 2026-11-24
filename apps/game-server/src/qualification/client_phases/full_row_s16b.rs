@@ -73,15 +73,17 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct Stats {
+pub(super) struct Stats {
     xp: u64,
     level: u32,
     magic: u16,
     skills: [u16; 7],
+    vocation: Option<u8>,
 }
 
 fn decode_stats(payload: &[u8], vocation_selected: bool) -> TestResult<Stats> {
-    if general_stats::validate(payload, vocation_selected).is_err() || payload[0] != 1 || payload[33] > 1 {
+    let vocation = general_stats::validate(payload, vocation_selected)?;
+    if payload[0] != 1 || payload[33] > 1 {
         return Err(format!("GeneralStats malformed: len={} tab={:?}", payload.len(), payload.first()).into());
     }
     Ok(Stats {
@@ -89,6 +91,7 @@ fn decode_stats(payload: &[u8], vocation_selected: bool) -> TestResult<Stats> {
         level: u32::from_le_bytes(payload[9..13].try_into()?),
         magic: u16::from_le_bytes(payload[13..15].try_into()?),
         skills: std::array::from_fn(|i| u16::from_le_bytes([payload[15 + i * 2], payload[16 + i * 2]])),
+        vocation,
     })
 }
 
@@ -182,7 +185,7 @@ async fn approach(
     })).map(|entry| entry.entity).ok_or_else(|| "step approach: Oressa actor not visible after walking".into())
 }
 
-async fn earn_level_eight(
+pub(super) async fn earn_level_eight(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
@@ -245,6 +248,10 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn is_fresh_session(initial: [u8; 16], prior: [u8; 16], fresh: [u8; 16]) -> bool {
+    fresh != initial && fresh != prior
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -254,6 +261,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_character(clients, 0xb0, 0).await?;
     let initial_session = client.join_snapshot().game_session_id;
     let initial = stats(&mut client).await?;
+    let none = oteryn_protocol_oteryn::cyclopedia_character::vocation_id("none")
+        .ok_or("canonical no-vocation id missing")?;
+    if initial.vocation != Some(none) {
+        return Err(format!("step=pre-choice-vocation observed=general-stats-{:?} need=unvocationed-starter source=tools/qualification/node_boot/run.sh:1266", initial.vocation).into());
+    }
     let initial_skills = trained(&mut client).await?;
     assert_consistent(&initial, &initial_skills)?;
     if initial.level >= 8 { return Err(format!("step initial prerequisite already level {}", initial.level).into()); }
@@ -275,12 +287,26 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("player-earned-level-eight", &earned);
     let before = stats(&mut client).await?;
     let before_skills = trained(&mut client).await?;
+    if before_skills == initial_skills {
+        return Err(
+            "step=conversion need=skill-or-magic-training-earned-before-vocation-choice".into(),
+        );
+    }
     assert_consistent(&before, &before_skills)?;
     let npc = approach(&mut client, world, &metadata.npcs).await?;
     talk(&mut client, npc, "hi", NpcIntentDisposition::Ok, "Welcome. Ask about a vocation when you are ready to choose.").await?;
     talk(&mut client, npc, "knight", NpcIntentDisposition::Ok, "Do you wish to become a knight? Say yes to confirm, or no to reconsider.").await?;
     talk(&mut client, npc, "yes", NpcIntentDisposition::Ok, "Your vocation is now knight.").await?;
     let after = stats(&mut client).await?;
+    let knight = oteryn_protocol_oteryn::cyclopedia_character::vocation_id("knight")
+        .ok_or("canonical knight vocation id missing")?;
+    if after.vocation != Some(knight) {
+        return Err(format!(
+            "step=confirmed-conversion observed=general-stats-vocation-{:?} need=knight-{knight}",
+            after.vocation
+        )
+        .into());
+    }
     let after_skills = trained(&mut client).await?;
     assert_consistent(&after, &after_skills)?;
     if !before_skills.skills.iter().any(|skill| skill.progress > 0)
@@ -303,11 +329,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step second-choice refusal changed committed frames".into());
     }
     row.pass("second-choice-refusal", "Rejected + unchanged frames");
+    let prior_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_character(clients, 0xb2, 0).await?;
-    if fresh.join_snapshot().game_session_id == initial_session
-        || stats(&mut fresh).await? != after
+    if !is_fresh_session(
+        *initial_session.as_bytes(),
+        *prior_session.as_bytes(),
+        *fresh.join_snapshot().game_session_id.as_bytes(),
+    ) || stats(&mut fresh).await? != after
         || trained(&mut fresh).await? != after_skills
         || fresh.actor_vitals() != Some(&vitals)
     {
@@ -322,14 +352,32 @@ mod tests {
     use super::*;
 
     #[test]
+    fn conversion_must_reload_in_a_new_session_after_the_commit() {
+        assert!(!is_fresh_session([1; 16], [2; 16], [2; 16]));
+        assert!(!is_fresh_session([1; 16], [2; 16], [1; 16]));
+        assert!(is_fresh_session([1; 16], [2; 16], [3; 16]));
+    }
+
+    #[test]
     fn stats_decoder_reads_magic_and_all_seven_skills() -> TestResult {
         let mut payload = vec![0; 42];
         payload[0] = 1;
         payload[1..9].copy_from_slice(&123u64.to_le_bytes());
         payload[9..13].copy_from_slice(&8u32.to_le_bytes());
         payload[13..15].copy_from_slice(&4u16.to_le_bytes());
-        for i in 0..7 { payload[15 + i * 2..17 + i * 2].copy_from_slice(&(10 + i as u16).to_le_bytes()); }
-        assert_eq!(decode_stats(&payload, false)?, Stats { xp: 123, level: 8, magic: 4, skills: [10, 11, 12, 13, 14, 15, 16] });
+        for i in 0..7 {
+            payload[15 + i * 2..17 + i * 2].copy_from_slice(&(10 + i as u16).to_le_bytes());
+        }
+        assert_eq!(
+            decode_stats(&payload, false)?,
+            Stats {
+                xp: 123,
+                level: 8,
+                magic: 4,
+                skills: [10, 11, 12, 13, 14, 15, 16],
+                vocation: None
+            }
+        );
         assert!(decode_stats(&payload[..41], false).is_err());
         Ok(())
     }

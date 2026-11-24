@@ -6,9 +6,27 @@ pub struct Catalogue {
     pub names: std::collections::BTreeMap<u16, String>,
     pub page: Page,
     pub detail: String,
+    pub search: Option<CreatureSearch>,
+    pub cursor: u16,
+    pub previous: Vec<u16>,
     pub category: u8,
     pub next_loot: Option<u16>,
     pub pending: Option<Request>,
+}
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct CreatureSearch {
+    pub name: String,
+    pub previous_race: String,
+    pub eligible: Option<std::collections::BTreeSet<u16>>,
+    pub cards: Vec<oteryn_client_runtime::charm_progression::catalogue::Card>,
+    pub next: Option<u16>,
+}
+impl Catalogue {
+    pub fn visible_cards(&self) -> &[oteryn_client_runtime::charm_progression::catalogue::Card] {
+        self.search
+            .as_ref()
+            .map_or(&self.page.cards, |search| &search.cards)
+    }
 }
 pub fn text(panel: &super::Panel) -> String {
     use std::fmt::Write;
@@ -87,6 +105,10 @@ impl Catalogue {
         self.detail_card
             .as_ref()
             .filter(|c| c.race.to_string() == race)
-            .or_else(|| self.page.cards.iter().find(|c| c.race.to_string() == race))
+            .or_else(|| {
+                self.visible_cards()
+                    .iter()
+                    .find(|c| c.race.to_string() == race)
+            })
     }
 }

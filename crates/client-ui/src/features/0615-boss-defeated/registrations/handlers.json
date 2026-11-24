@@ -1,0 +1,22 @@
+{
+  "mechanic": "0615-boss-defeated",
+  "kind": "handlers",
+  "id": "0615-boss-defeated-observe",
+  "status": "supported",
+  "commands": [],
+  "direction": "server_to_client",
+  "not_applicable": {
+    "state": "Personal boss defeat domain revisions trigger the screenshot preference.",
+    "protocol": "Selected independently through capability negotiation.",
+    "view": "Personal boss defeat domain revisions trigger the screenshot preference.",
+    "input": "This extension adds no new client input.",
+    "settings": "No new setting is defined by the wire extension."
+  },
+  "capability": 615,
+  "entry": "protocol.rs::advanced",
+  "push_messages": [
+    "ServerMessage::BossDefeated"
+  ],
+  "reducer": "protocol.rs::advanced",
+  "test": "protocol.rs::observations"
+}

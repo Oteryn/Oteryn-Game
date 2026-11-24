@@ -138,3 +138,13 @@ message ActorVitalsV1 {
   // SPELL-D8: the monk is Serene; always false for another vocation.
   bool serene = 7;
 }
+
+// Capability 605 ACTOR_LIVE_STATE_V1, command 6372 MANA_SHIELD_REMAINING.
+// Empty request; accepted reply is exactly one little-endian uint32 giving
+// the own actor's live, damage-depletable mana shield capacity.
+// Zero means no active finite shield, including expiry or an equipment-only
+// mana shield. The amount is independent of the actor's current mana pool.
+// Unavailable owner state, unselected capability and nonempty requests are
+// rejected with no payload. No target can be supplied. ActorVitalsV1 and its
+// snapshot and delta encodings are unchanged. Crystal peer: protocolgame.cpp
+// AddPlayerStats, lines 9375–9376 at 201189f8.

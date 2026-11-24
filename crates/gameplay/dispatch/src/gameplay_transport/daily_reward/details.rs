@@ -4,6 +4,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         command: UseCommand,
+        kind: u32,
     ) -> Option<Vec<u8>> {
         let (_, content) = self.daily_content()?;
         let fence = command.item_fence?;
@@ -27,6 +28,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .ok()?;
         let mut details = wire::details::Details::empty(view.epoch);
+        if kind == wire::details::COMMAND_TYPE_WITH_RESET {
+            details.next_reset_at = Some(view.next_reset_at);
+        }
         for (index, day) in content.days.iter().enumerate() {
             let tier = |t: crate::content::daily_reward::DailyRewardTier| wire::details::Tier {
                 cosmetic_tokens: t.cosmetic_tokens,

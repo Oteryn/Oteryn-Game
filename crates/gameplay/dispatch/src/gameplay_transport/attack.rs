@@ -1324,19 +1324,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
-        let now = now.unwrap_or_else(|| self.owner_now());
+        let requested_at = now.unwrap_or_else(|| self.owner_now());
         let digest = self
             .runtime
             .lock()
             .await
             .content_pin()
             .server_artifact_digest();
-        let Some(epoch) = self
-            .states
-            .attack
-            .lock()
-            .await
-            .weapon_read_due(actor, session, &digest, now)
+        let Some(epoch) =
+            self.states
+                .attack
+                .lock()
+                .await
+                .weapon_read_due(actor, session, &digest, requested_at)
         else {
             return;
         };
@@ -1344,6 +1344,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
+        let read_at = now.unwrap_or_else(|| self.owner_now());
         if equipment.content_digest != digest || content.source_digest() != digest {
             return;
         }
@@ -1443,7 +1444,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 item_key,
                 ranged,
                 content_digest: digest,
-                read_at: now,
+                read_at,
             },
         );
         let _ = self.refresh_cyclopedia_combat(actor, session, None).await;
@@ -1580,6 +1581,11 @@ mod weapon_tests {
         assert_eq!(weapon_of(&[(6, 3412)]), Some(SwingWeapon::Fists));
         assert_eq!(weapon_of(&[(5, 3277)]), Some(SwingWeapon::Fists));
         assert_eq!(weapon_of(&[(5, 25760)]), Some(SwingWeapon::Fists));
+        assert_eq!(
+            weapon_of(&[(6, 3059), (5, 3074)]),
+            Some(SwingWeapon::Fists),
+            "the starter spellbook must let the main-hand wand reach ranged resolution"
+        );
         assert_eq!(
             weapon_of(&[(6, 3447), (5, 3264)]),
             Some(SwingWeapon::Melee {

@@ -66,12 +66,31 @@ pub fn tracker_rows(
         .collect();
     rows.sort_by(|a, b| {
         let order = match sort {
+            TrackerSort::Completion => {
+                let ratio = |entry: &oteryn_client_runtime::cyclopedia_tracker::TrackerEntry| {
+                    let goal = entry.thresholds[2];
+                    (
+                        if goal == 0 {
+                            0
+                        } else {
+                            u64::from(entry.kill_count)
+                        },
+                        u64::from(goal.max(1)),
+                    )
+                };
+                let (left, left_goal) = ratio(a);
+                let (right, right_goal) = ratio(b);
+                (left * right_goal).cmp(&(right * left_goal))
+            }
             TrackerSort::Name => std::cmp::Ordering::Equal,
             TrackerSort::Kills => b.kill_count.cmp(&a.kill_count),
             TrackerSort::Remaining => remaining_to_stage(a).cmp(&remaining_to_stage(b)),
         };
         order.then_with(|| a.creature_key.cmp(&b.creature_key))
     });
+    if panel.reversed[usize::from(boss)] {
+        rows.reverse();
+    }
     rows
 }
 

@@ -699,7 +699,7 @@ async fn apply_resolved_equipment_in_transaction(
 
                 for old in &actual.items {
                     let oldpolicy = content
-                        .equipment_policy(
+                        .worn_equipment_policy(
                             &old.definition.production_key,
                             &old.definition.revision_ref,
                         )

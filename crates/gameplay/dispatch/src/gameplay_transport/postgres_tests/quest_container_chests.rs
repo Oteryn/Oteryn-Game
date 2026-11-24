@@ -5,6 +5,12 @@ use super::quest_container_chests_fixtures::{Case, ForgemasterAccessPolicy, exec
 use super::TestResult;
 
 #[test]
+fn treasure_found_reports_durable_reward_occurrence_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    execute(Case::TreasureOccurrence, "TREASURE_FOUND_OCCURRENCE")
+}
+
+#[test]
 fn quest_authored_placement_without_legacy_uid_mints_once_and_replays() -> TestResult {
     execute(Case::Authored, "QUESTPC8_AUTHORED_PLACEMENT")
 }

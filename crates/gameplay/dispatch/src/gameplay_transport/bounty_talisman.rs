@@ -2,6 +2,7 @@
 //! comments 6542770501 and 6542842489. Damage and life leech have independent
 //! 15%/10% activation draws; retries use the original physical occurrence.
 
+use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::task_board::BountyTalismanSnapshot;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use crate::gameplay_transport::ComposedFreshAdmission;
@@ -25,15 +26,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn bounty_talisman_for_session(
         &self,
         session: GameSessionId,
-    ) -> Result<BountyTalismanSnapshot, ()> {
-        let Some(fence) = self.current_quest_fence(session).await.map_err(|_| ())? else {
+    ) -> Result<BountyTalismanSnapshot, CharacterProgressionError> {
+        let Some(fence) = self.current_quest_fence_durable(session).await? else {
             return Ok(BountyTalismanSnapshot::default());
         };
         let snapshot = self
             .root
             .read_bounty_talisman(self.character, self.holder, fence)
-            .await
-            .map_err(|_| ())?;
+            .await?;
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         states.set_elite_bounty(&runtime, session, snapshot.elite_race());

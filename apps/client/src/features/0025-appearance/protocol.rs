@@ -76,12 +76,14 @@ pub(in crate::play) fn apply(
     if !panel.pending || panel.pending_kind != command.kind {
         return;
     }
+    let riding = panel.riding_after_apply.take();
     panel.pending = false;
     panel.feedback = if !accepted(result) {
         tr!("The server refused the appearance request").into()
     } else {
         match wire::ChangeResult::decode(&result.payload) {
             Ok(wire::ChangeResult::Committed(revision)) => {
+                panel.committed_riding = riding;
                 lfmt!(
                     "Appearance committed at revision {revision}; catalogue updates follow",
                     revision = revision

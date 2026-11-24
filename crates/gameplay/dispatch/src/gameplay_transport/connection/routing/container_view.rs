@@ -5,7 +5,7 @@ use super::super::{
     SessionItemView, decode_container_view_intent,
 };
 use super::Dispatch;
-use oteryn_protocol_oteryn::ClientCommandView;
+use oteryn_protocol_oteryn::{ClientCommandView, CommandStatus, container_tree as wire};
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -27,6 +27,16 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             }
             _ => false,
         };
+        if command.command_type == wire::COMMAND_TYPE_CONTAINER_VIEW_SEEK {
+            let (Some(views), Some(items), Some(seek)) = (
+                container_views.as_mut().filter(|_| admitted_rate),
+                item_view.as_mut(),
+                wire::ContainerSeek::decode(command.payload),
+            ) else {
+                return Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new()));
+            };
+            return seek_page(authority, actor, admitted, views, items, seek).await;
+        }
         match (
             container_views.as_mut().filter(|_| admitted_rate),
             item_view.as_mut(),
@@ -52,4 +62,38 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             _ => Dispatch::Unregistered,
         }
     })
+}
+
+async fn seek_page<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    admitted: &mut AdmittedSession,
+    views: &mut ContainerViewState,
+    item_view: &mut SessionItemView,
+    seek: wire::ContainerSeek,
+) -> Option<Dispatch> {
+    let rejected = || Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new()));
+    let Some(key) = views.ordinary_page_container(seek.view_id) else {
+        return rejected();
+    };
+    let Some(observation) = authority
+        .observe_container_with_house_capacity(
+            actor,
+            admitted.item_fence,
+            key,
+            admitted
+                .continuity
+                .selected_capabilities
+                .contains(wire::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2),
+        )
+        .await
+    else {
+        return rejected();
+    };
+    let result = views.apply_page(item_view, seek, observation).ok()?;
+    admitted.continuity.item_view = item_view.continuity();
+    match result {
+        Some((page, delta)) => Some(Dispatch::ContainerPage(page, delta)),
+        None => rejected(),
+    }
 }

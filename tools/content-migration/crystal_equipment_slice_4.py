@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import subprocess
 import xml.etree.ElementTree as ET
+from collections import Counter
 from pathlib import Path
 
 import quest_batch3_item_profiles as crystal
@@ -14,7 +16,7 @@ import ranged_item_profiles as ranged
 from build_activity_source_world import source_top_orders
 from grizzly_shop_profiles import accepted_first
 from imbuement_item_profiles import apply_equipment_audit
-from import_cyclopedia_global import apply_profile_weights
+from import_cyclopedia_global import apply_profile_weights, apply_stats, load_capture
 from item_spell_augments import parse_item_spell_augments
 from lower_elemental_magic_modifier_packet import native_order
 from nrwicked_profiles import REWARD_IDS
@@ -478,6 +480,7 @@ def apply(root, document, order):
         row["production_definition"]["production_key"]: row
         for row in document["records"]
     }
+    details = load_capture(root)
     for identifier, record in zip(ids, records, strict=True):
         key = item_key(identifier)
         prior = by_key.get(key)
@@ -491,7 +494,16 @@ def apply(root, document, order):
             if prior is None:
                 raise ValueError(f"Missing prior Arbaziloth equipment: {identifier}")
             composed = complete_arbaziloth_policy(prior, record)
-            if composed != record:
+            expected = record
+            if identifier in (49524, 49526, 49530):
+                # The canonical Global defence supersedes the donor's bonus.
+                expected = copy.deepcopy(record)
+                apply_stats(
+                    expected,
+                    {"Defence": details[identifier]["basic"]["Defence"]},
+                    Counter(),
+                )
+            if composed != expected:
                 raise ValueError(
                     f"Crystal equipment Arbaziloth policy drift: {identifier}"
                 )

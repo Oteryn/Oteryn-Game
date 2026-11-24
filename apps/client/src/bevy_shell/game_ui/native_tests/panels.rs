@@ -101,11 +101,13 @@ pub(super) fn configure(
                 trade_id: Some([3; 16]),
                 partner: Some(npc),
                 own: Some(Offer {
+                    appearance_id: None,
                     definition: 3,
                     count: 3,
                     sub_type: 0,
                 }),
                 counter: Some(Offer {
+                    appearance_id: None,
                     definition: 4,
                     count: 2,
                     sub_type: 0,
@@ -143,6 +145,7 @@ fn market(link: &PlayLink, outbox: &Outbox) -> Result<(), Box<dyn std::error::Er
                 level: Some(30),
                 forge_class: Some(2),
                 depot_units: 4,
+                appearance: None,
             }],
             categories: vec!["Swords".into(), "Shields".into()],
             page: 0,

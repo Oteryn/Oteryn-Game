@@ -168,6 +168,19 @@ pub fn render(receipt: &Receipt) -> String {
         s.push_str(&format!(" ({reason})"));
     }
     s.push_str(&lfmt!("\nBonus: {}", receipt.bonus));
+    let explanation = match receipt.bonus {
+        1 => "No dust consumed",
+        2 => "No exalted cores consumed",
+        3 => "No gold consumed",
+        4 => "Second item retained with a tier reduced by one, down to tier zero",
+        5 => "Second item retained at its original tier",
+        6 => "Second item retained at the upgraded tier",
+        7 => "Extra tier increase, subject to the item’s tier limit",
+        8 => "Failed fusion protected against tier loss",
+        _ => "No bonus",
+    };
+    s.push_str(" — ");
+    s.push_str(explanation);
     if let Some(r) = &receipt.resources {
         s.push_str(&lfmt!("\nTiers: {:?} / {:?}\nDust: {} / {}\nSpent: {} gold, {} cores, {} slivers\nCreated: {} slivers, {} cores",r.first_tier,r.second_tier,r.dust,r.dust_limit,r.gold_spent,r.cores_spent,r.slivers_spent,r.slivers_created,r.cores_created));
     }

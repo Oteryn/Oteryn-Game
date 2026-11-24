@@ -2917,8 +2917,8 @@ impl ChannelSpellStates {
                 }
             }
             if next.vitals().health == 0 {
-                public_cause = tick.provenance.historical_source.as_ref().map(
-                    crate::durability::character_death::PublicDeathCause::from_historical_source,
+                public_cause = crate::durability::character_death::PublicDeathCause::from_condition(
+                    &tick.provenance,
                 );
             }
         }
@@ -3378,7 +3378,10 @@ impl ChannelSpellStates {
                 actor,
                 session,
                 PlayerDeath {
-                    public_cause: None,
+                    public_cause: matches!(contact.origin, NonPlayerFieldOrigin::Creature)
+                        .then_some(
+                        crate::durability::character_death::PublicDeathCause::UnidentifiedCreature,
+                    ),
                     occurrence,
                     cell: result.0.position(),
                 },

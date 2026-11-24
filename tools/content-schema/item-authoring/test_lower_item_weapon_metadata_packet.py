@@ -3,6 +3,7 @@ import json
 import unittest
 from pathlib import Path
 
+from check_tibiawiki165_historical_context import historical_context, weapon_owner_scope
 from jsonschema import Draft202012Validator
 from lower_item_weapon_metadata_packet import (
     FIELDS,
@@ -61,7 +62,9 @@ class WeaponMetadata(unittest.TestCase):
         self.assertNotIn("hit_mod", FIELDS)
 
     def test_closed103_source_and_preserved_native_unknown_names(self):
-        packet = build()
+        weapon_owner_scope(ROOT)
+        with historical_context(ROOT, weapon=True) as root:
+            packet = build(root)
         self.assertEqual(
             packet["counts"],
             {
@@ -258,8 +261,11 @@ class WeaponMetadata(unittest.TestCase):
 
         lane.pre_overlay_definitions = drifted
         try:
-            with self.assertRaisesRegex(ValueError, "class/admission/projection drift"):
-                lane.build()
+            with (
+                historical_context(ROOT, weapon=True) as root,
+                self.assertRaisesRegex(ValueError, "class/admission/projection drift"),
+            ):
+                lane.build(root)
         finally:
             lane.pre_overlay_definitions = original
 

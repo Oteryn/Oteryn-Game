@@ -6,8 +6,11 @@
 
 pub const CAPABILITY_DAILY_REWARD_V1: u32 = 32;
 pub const CAPABILITY_DAILY_REWARD_V2: u32 = 182;
+pub const CAPABILITY_DAILY_REWARD_ACCESS_V1: u32 = 580;
 pub const COMMAND_TYPE_DAILY_REWARD_CLAIM: u32 = 354;
 pub const COMMAND_TYPE_DAILY_REWARD_QUERY: u32 = 355;
+pub const COMMAND_TYPE_DAILY_REWARD_REMOTE_CLAIM: u32 = 6321;
+pub const COMMAND_TYPE_DAILY_REWARD_REMOTE_QUERY: u32 = 6322;
 pub const STATE_DOMAIN_DAILY_REWARD: u32 = 24;
 pub const MAX_DAILY_REWARD_CLAIM_BYTES: usize = 0;
 pub const MAX_DAILY_REWARD_VIEW_BYTES: usize = 128;
@@ -64,6 +67,17 @@ pub struct DailyRewardWall {
 }
 
 impl DailyRewardWall {
+    pub fn encode_remote(
+        self,
+        remote_eligible: bool,
+        instant_access_tokens: u32,
+    ) -> WireResult<Vec<u8>> {
+        let mut bytes = self.encode()?;
+        push_varint_field(&mut bytes, 7, u64::from(remote_eligible));
+        push_varint_field(&mut bytes, 8, u64::from(instant_access_tokens));
+        Ok(bytes)
+    }
+
     /// V2 claim status; tier and reward amounts are resolved by the server.
     pub fn encode(self) -> WireResult<Vec<u8>> {
         if !(1..=30).contains(&self.lane_day) || self.streak > 100_000 || self.jokers > 3 {

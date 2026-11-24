@@ -1,8 +1,9 @@
 """Replay qualified Item Details facts after native profile admission."""
 
 import json
+from collections import Counter
 
-from import_cyclopedia_global import load_weights
+from import_cyclopedia_global import apply_stats, item_id, load_weights
 
 WEIGHT_IDS = (
     43501,
@@ -17,6 +18,7 @@ WEIGHT_IDS = (
     44048,
     44727,
     44728,
+    50255,
 )
 WEIGHT_FACTS = "tools/content-schema/native-gameplay/item-detail-weight-facts.json"
 GLOBAL_MODIFIER_PROMOTIONS = (
@@ -83,12 +85,23 @@ def load_weight_facts(root, generated):
 
 def apply_weight(record, identifier, weights):
     # These donor overlays can encode the loader's default zero as weight.
-    # The verified Global capture has positive measurements for every entry.
+    # Canary's Galthen capture instead carries 1280.00 oz for Item 50255.
     value = weights[identifier]
+    donor_weight = 128_000 if identifier == 50255 else 0
     physical = record["semantics"]["physical"]["value"]
-    if value <= 0 or physical["weight"] not in (known(0), known(value)):
+    if value <= 0 or physical["weight"] not in (known(donor_weight), known(value)):
         raise ValueError(f"ITEM_DETAILS_WEIGHT_SOURCE_CONFLICT:{identifier}")
     physical["weight"] = known(value)
+
+
+def apply_capture_stats(profiles, capture):
+    counts = Counter()
+    for record in profiles["records"]:
+        identity = record["production_binding"]["target"]
+        if identity["key"] != record["production_definition"]["production_key"]:
+            raise ValueError("ITEM_DETAILS_PRODUCTION_IDENTITY")
+        if row := capture.get(item_id(identity)):
+            apply_stats(record, row["basic"], counts)
 
 
 def apply(root, profiles, weights):

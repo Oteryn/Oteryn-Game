@@ -1,0 +1,9 @@
+# Spawn terrain reconciliation, slice 2
+
+The capture covers the middle 547 of 1,641 affected spawn groups sorted by key on Oteryn base `3e09916423181c795c829eca5e5414dde3f29a3e`. The World bundle compiler's `parity` report supplied the rejected points. Crystal `world-monster.xml` at the recorded revision independently confirms every creature and anchor.
+
+`ground` identifies an existing, matching top-level ground in both maps. Crystal's appearance bank and item overrides confirm its movement speed and passability. The admitted 15.30 client appearance confirms the same ground, speed and projection. Only the listed cells receive the Terrain palette entry.
+
+`destination` is a content placement derived from Crystal `world.otbm`. These original anchors have no eligible ground or are in a protection zone. The destination already has walkable ground on both maps and stays on the same floor. Selection preferred a free tile inside the donor group's radius, then the nearest compatible cell, using squared distance, existing ground admission and coordinates to break ties. Ten replacements extend beyond their donor group's radius by the minimum distance required by the selection. The original group, creature, direction and respawn delay are preserved.
+
+`blocked_aquatic` identifies a donor anchor on solid underwater terrain with no suitable relocation in the local habitat. Crystal can force placement on a blocked tile at respawn. Oteryn's static placement gate rejects these two points. Their authored points are retained. [Crystal spawn calls](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/monsters/spawns/spawn_monster.cpp#L273-L286) · [Crystal map placement](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/map/map.cpp#L234-L254)

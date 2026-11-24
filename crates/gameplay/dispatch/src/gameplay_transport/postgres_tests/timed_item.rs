@@ -155,11 +155,20 @@ async fn exchange_kind(
 
 #[test]
 fn timed_item_postgres_wire_charges_replay_repair_and_owner_expiry() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(|| scenario().map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "timed item thread")??;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED timed_item_wire elapsed={:?}",
+        started.elapsed()
+    );
     Ok(())
 }
 fn scenario() -> TestResult {
@@ -301,6 +310,9 @@ fn scenario() -> TestResult {
             TimedDisposition::Stale
         );
         owner.clock_origin -= std::time::Duration::from_secs(1);
+        let receipts_before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_timed_commands")
+            .fetch_one(&h.pool)
+            .await?;
         let inspected = exchange(
             &owner,
             admitted,
@@ -315,6 +327,10 @@ fn scenario() -> TestResult {
         .await?;
         assert_eq!(result_value(&inspected[0])?.charges, Some(4));
         assert_eq!(result_value(&inspected[0])?.revision, 1);
+        let receipts_after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_timed_commands")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(receipts_after, receipts_before, "Inspect leaves no timed command receipt");
         // Exhaust the remaining charges through command bytes, including the final durable burn.
         let commands = (1..=4)
             .map(|revision| {

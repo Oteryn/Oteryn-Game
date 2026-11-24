@@ -6,7 +6,9 @@ import shutil
 import sys
 import tempfile
 import unittest
-from contextlib import ExitStack, contextmanager
+from collections import Counter
+from contextlib import ExitStack, contextmanager, redirect_stderr
+from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -18,12 +20,7 @@ import ranged_item_profiles as ranged
 TOOL = Path(__file__).with_name("world_project_v2_to_tree.py")
 spec = importlib.util.spec_from_file_location("item_bootstrap_converter", TOOL)
 converter = importlib.util.module_from_spec(spec)
-# Taxonomy belongs to the later, non-Item portion of the full converter.
-with patch.dict(
-    sys.modules,
-    {"item_taxonomy": SimpleNamespace(build_taxonomy=None, taxonomy_inputs=None)},
-):
-    spec.loader.exec_module(converter)
+spec.loader.exec_module(converter)
 
 
 def write(root, relative, value):
@@ -209,6 +206,8 @@ def input_helpers(root, *, real_conditional=False):
         stack.enter_context(
             patch.object(converter, "item_alias_targets", return_value={})
         )
+        stack.enter_context(patch.object(converter, "taxonomy_inputs", return_value=()))
+        stack.enter_context(patch.object(converter, "build_taxonomy", return_value=[]))
         stack.enter_context(
             patch.object(
                 ranged,
@@ -268,7 +267,7 @@ class ItemBootstrapTests(unittest.TestCase):
                     index["attached_source_bindings"],
                     index["attached_authoring_entries"],
                 ),
-                (1, 2, 1),
+                (1, 2, 133),
             )
             rows = [
                 row
@@ -310,13 +309,33 @@ class ItemBootstrapTests(unittest.TestCase):
             after = files(root)
             removed = "content/items/definitions/items-00002-00004.json"
             self.assertEqual(set(before) - set(after), {removed})
-            allowed = {
-                "content/items/index.json",
-                ranged.RANGED_PROFILES,
-                *expected_shards,
-            }
+            taxonomy = "content/items/taxonomy/items.json"
+            relations = "content/items/relations/items.json"
+            lock = "content/content.lock.json"
+            added = {taxonomy, relations, ranged.RANGED_PROFILES, *expected_shards}
+            allowed = added | {"content/items/index.json", lock}
+            self.assertEqual(set(after) - set(before), added)
+            self.assertEqual(json.loads(after[taxonomy])["records"], [])
+            relation_rows = json.loads(after[relations])["records"]
+            self.assertEqual(len(relation_rows), 144)
             self.assertEqual(
-                set(after) - set(before), allowed - {"content/items/index.json"}
+                Counter(
+                    entry["basis"]
+                    for row in relation_rows
+                    for entry in row["relations"]
+                ),
+                {"forge": 132, "imbuement.slot_count>=1": 93},
+            )
+            self.assertEqual(
+                json.loads(after[lock]),
+                {
+                    **json.loads(before[lock]),
+                    "item_authoring_counts": {
+                        "authoring": 133,
+                        "taxonomy": 0,
+                        "relation_sources": 144,
+                    },
+                },
             )
             for path in before.keys() & after.keys() - allowed:
                 self.assertEqual(after[path], before[path], path)
@@ -389,9 +408,13 @@ class ItemBootstrapTests(unittest.TestCase):
             patch.object(converter, "main") as full,
             patch.object(converter, "refresh_bestiary_inventory") as bestiary,
         ):
-            with self.assertRaises(SystemExit) as error:
+            diagnostic = StringIO()
+            with redirect_stderr(diagnostic), self.assertRaises(SystemExit) as error:
                 converter.cli(["--items-only", "--refresh-bestiary-inventory"])
             self.assertEqual(error.exception.code, 2)
+            self.assertIn(
+                "not allowed with argument --items-only", diagnostic.getvalue()
+            )
             full.assert_not_called()
             bestiary.assert_not_called()
 
