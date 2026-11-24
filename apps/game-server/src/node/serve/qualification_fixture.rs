@@ -932,6 +932,10 @@ async fn prepare_items(
         }
         let item = generation_item_facts(native, &definition)
             .map_err(|error| format!("qualification Item {key}: {error:?}"))?;
+        // The ordinary weighted reward owner admits container rewards and pins the
+        // entire carried load to the active item generation.
+        let weighted = sweep_key.is_some() && item.container_capacity.is_some();
+        let weights = FixtureItemContent(native);
         let request = RewardClaimMintRequest {
             backpack_outputs: false,
             additional_items: Vec::new(),
@@ -953,7 +957,18 @@ async fn prepare_items(
             root_fluid_subtype: None,
             root_charges_remaining: None,
             backpack: backpack.clone(),
-            content_revision: inventory.content_revision.clone(),
+            content_revision: if weighted {
+                format!(
+                    "sha256:{}",
+                    native
+                        .source_digest()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>()
+                )
+            } else {
+                inventory.content_revision.clone()
+            },
             ruleset_revision: inventory.ruleset_revision.clone(),
             sim_revision: "qualification-v1".into(),
             achievement: None,
@@ -973,16 +988,39 @@ async fn prepare_items(
                 )
             },
             async || {
-                root.freeze_reward_claim_mint(authority, proof, fence, request.clone())
+                if weighted {
+                    root.freeze_reward_claim_mint_weighted(
+                        authority,
+                        proof,
+                        fence,
+                        request.clone(),
+                        &weights,
+                    )
                     .await
+                } else {
+                    root.freeze_reward_claim_mint(authority, proof, fence, request.clone())
+                        .await
+                }
             },
         )
         .await
         .map_err(|error| format!("qualification Item reserve: {error:?}"))?;
-        let outcome = root
-            .commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
+        let outcome = if weighted {
+            root.commit_reward_claim_mint_weighted_noticed(
+                authority,
+                proof,
+                fence,
+                &mut candidate,
+                None,
+                &weights,
+            )
             .await
-            .map_err(|error| format!("qualification Item commit: {error:?}"))?;
+            .map(|(outcome, _)| outcome)
+        } else {
+            root.commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
+                .await
+        }
+        .map_err(|error| format!("qualification Item commit: {error:?}"))?;
         fixture_item_committed(outcome)?;
     }
     Ok(())

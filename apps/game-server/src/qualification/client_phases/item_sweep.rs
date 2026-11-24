@@ -7,7 +7,7 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{
     cyclopedia_character::{CharacterTab, combat::CombatStat as Stat},
     item_view::{
-        EquipmentSlot, ItemEntry, ItemHandle, ItemMoveDestination as Destination, ItemMoveIntent,
+        EquipmentSlot, ItemEntry, ItemHandle, ItemMoveDestination as Destination,
         ItemMoveOutcome as Move, WorldTilePosition,
     },
     world_object::UseDisposition as Use,
@@ -304,22 +304,32 @@ impl Fixtures<'_> {
                 ])
                 .status()
         })
-        .await??;
-        if !status.success() {
+        .await;
+        // Release even after fixture refusal. Dropping an admitted socket instead
+        // would park the Character in reconnect grace and block the next item.
+        let released = release(&mut client).await;
+        if !status??.success() {
             return Err("fixture-item-preparation-refused".into());
         }
-        release(&mut client).await?;
+        released?;
+        drop(client);
         let mut client = connect_character(scope, 0x72, index % 2).await?;
-        let (_, level, vocation) = super::creature_sweep::read_stats(&mut client).await?;
-        if level != build.level
-            || vocation
-                != oteryn_protocol_oteryn::cyclopedia_character::vocation_id(
-                    VOCATIONS[build.vocation],
-                )
-        {
-            return Err(
-                format!("fixture-build-observed-level-{level}-vocation-{vocation:?}").into(),
-            );
+        let facts = super::creature_sweep::read_stats(&mut client).await;
+        let verification = facts.and_then(|(_, level, vocation)| {
+            if level == build.level
+                && vocation
+                    == oteryn_protocol_oteryn::cyclopedia_character::vocation_id(
+                        VOCATIONS[build.vocation],
+                    )
+            {
+                Ok(())
+            } else {
+                Err(format!("fixture-build-observed-level-{level}-vocation-{vocation:?}").into())
+            }
+        });
+        if let Err(error) = verification {
+            let _ = release(&mut client).await;
+            return Err(error);
         }
         self.prepared[index] = true;
         Ok(client)
@@ -368,20 +378,30 @@ async fn move_item(
     expected: Move,
 ) -> TestResult {
     let reply = client
-        .move_item(&ItemMoveIntent {
+        .session_mut()
+        .move_item_counted(oteryn_dev_client::client_runtime::inventory::MoveRequest {
             source,
             destination,
+            count: None,
         })
         .await?;
-    if reply.outcome != expected
-        || (expected == Move::Moved && reply.status != CommandStatus::Accepted)
-    {
+    if reply.outcome != expected {
         return Err(format!("ITEM_MOVE-expected-{expected:?}-observed-{reply:?}").into());
     }
     Ok(())
 }
 
 async fn drop_carried(client: &mut DevClientSession, reference: NonZeroU32) -> TestResult {
+    if let Some(worn) = client.inventory().and_then(|inventory| {
+        inventory
+            .equipment
+            .iter()
+            .find(|worn| worn.item.item_definition_ref == reference)
+            .map(|worn| worn.item.handle)
+    }) {
+        move_item(client, worn, Destination::MainBackpack, Move::Moved).await?;
+        observe(client, |client| carried(client, reference)).await?;
+    }
     if let Some(item) = carried(client, reference) {
         let at = client.world_spatial().actor_position;
         move_item(
