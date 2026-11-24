@@ -71,8 +71,12 @@ jobs:
           docker push "$IMAGE"
 
   pg_partition:
-    name: Codex runner PoC / PostgreSQL e2e partition 2 of 5
+    name: Codex runner PoC / PostgreSQL e2e partition ${{ matrix.index }} of 5
     needs: relay
+    strategy:
+      fail-fast: false
+      matrix:
+        index: [0, 1, 2, 3, 4]
     permissions:
       contents: read
       packages: read
@@ -82,7 +86,7 @@ jobs:
       # Head and partition of the hosted source run (hosted test step: 5m42s on 4 CPUs).
       SOURCE_SHA: 2b9bfde7e898dd7b28d017f2d172a08cf689ceb1
       BUILD_WORKSPACE: /home/runner/work/Oteryn-Game/Oteryn-Game
-      ARCHIVE_INDEX: "1"
+      ARCHIVE_INDEX: ${{ matrix.index }}
       ARCHIVE_TOTAL: "5"
       CI_IMAGE: ghcr.io/oteryn/oteryn-game-ci-runner:pr-3469
     services:
