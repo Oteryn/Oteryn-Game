@@ -83,3 +83,20 @@ The fallback command 348, definition reference 430, lost its transport before
 a typed reply. The equipped elemental-bond inspection was therefore blocked
 for that entry. Crystal's Energy bond is declared in
 `data/items/items.xml:27362–27368`.
+
+## Native map custody replay
+
+The opt-in town bundle places both immovable racks on ordinary adjacent map
+cells. Each rack contains one captured rope so the live map projection exposes
+the fixed container as an item handle. The probe joins afresh for each rack
+and sends USE as its first command. It bypasses Browse Field, SQL-seeded
+ground rows, and the projection invalidation marker used by the earlier probe.
+
+| Cause | Keys | Oteryn owner | Crystal 201189f8 | Request, expected and observed |
+| --- | --- | --- | --- | --- |
+| Native map container refuses the server's fresh handle | 10210, 10211 | `gameplay_transport/connection/routing/use_item.rs:498–574`, `gameplay_transport/loop_move/map_sources.rs:4–103` | `src/game/game.cpp:4178–4227`, `src/lua/creature/actions.cpp:461–467,525–535`, `data/items/items.xml:26689–26698` | Actor at (32369,32238,7). The world map published handle 17 for rack 10210 at (32370,32238,7) and handle 16 for rack 10211 at (32368,32238,7). Command type 2 field 2 encoded the fresh handle as `12 02 08 11` and `12 02 08 10` respectively. Crystal opens these reachable, 25-slot containers. Both Oteryn sessions replied `Accepted/StaleState` to command 1 and published no capacity. This reproduces the rejection through native map custody and establishes a server failure for this class. The reply does not reveal which observation guard failed. |
+
+The base-map capacity observer also passes the 20-entry limit to
+`captured_source_capacity` (`map_sources.rs:95–103`,
+`crates/protocol-oteryn/src/container_tree.rs:109–113`). The rack run
+did not reach a published view, so it measures the stale rejection only.
