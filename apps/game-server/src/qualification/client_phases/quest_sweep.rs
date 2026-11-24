@@ -288,6 +288,7 @@ struct Journey<'a, 'scope> {
     catalogue: &'a QuestStateCatalogue,
     items: &'a crate::content::item_ref::ItemDefinitionIndex,
     client: &'a mut DevClientSession,
+    reconnect: bool,
 }
 
 type Receipt = (bool, Vec<String>, Vec<i64>, Vec<i64>, i64);
@@ -1097,12 +1098,45 @@ fn row_key(key: &str) -> String {
         .collect()
 }
 
-async fn bounded(work: impl Future<Output = TestResult>) -> Result<(), String> {
-    match tokio::time::timeout(Duration::from_secs(30), work).await {
-        Ok(result) => {
-            result.map_err(|error| row_key(&error.to_string()).chars().take(240).collect())
+struct StepFailure {
+    reason: String,
+    reconnect: bool,
+}
+
+impl StepFailure {
+    fn blocked(reason: &'static str) -> Self {
+        Self {
+            reason: reason.to_owned(),
+            reconnect: false,
         }
-        Err(_) => Err("wire-step-deadline".to_owned()),
+    }
+
+    fn from_error(error: &(dyn std::error::Error + 'static)) -> Self {
+        let mut source = Some(error);
+        let mut reconnect = false;
+        while let Some(error) = source {
+            if error.is::<oteryn_dev_client::SessionError>()
+                || error.is::<oteryn_dev_client::DevClientError>()
+            {
+                reconnect = true;
+                break;
+            }
+            source = error.source();
+        }
+        Self {
+            reason: row_key(&error.to_string()).chars().take(240).collect(),
+            reconnect,
+        }
+    }
+}
+
+async fn bounded(work: impl Future<Output = TestResult>) -> Result<(), StepFailure> {
+    match tokio::time::timeout(Duration::from_secs(30), work).await {
+        Ok(result) => result.map_err(|error| StepFailure::from_error(error.as_ref())),
+        Err(_) => Err(StepFailure {
+            reason: "wire-step-deadline".into(),
+            reconnect: true,
+        }),
     }
 }
 
@@ -1152,11 +1186,15 @@ pub(super) async fn run(
     let mut tally = Tally::default();
     let client = connect_character(clients, 0x71, CHARACTER).await?;
     evidence("quest_sweep preparation mode=seeded level=100 owner=qualification_fixture.rs:50");
-    let mut client =
-        provisioning::provision_fixture(client, clients, CHARACTER, SEED_LEVEL).await?;
+    let mut session =
+        Some(provisioning::provision_fixture(client, clients, CHARACTER, SEED_LEVEL).await?);
     for (key, entry) in entries.iter().skip(start).take(selected) {
         verdict::Harness::global().progress("quest-sweep-entry");
         let short = row_key(key.strip_prefix("oteryn:").unwrap_or(key));
+        if session.is_none() {
+            session = Some(connect_character(clients, 0x73, CHARACTER).await?);
+            evidence("quest_sweep recovery fresh_admission=accepted");
+        }
         let mut journey = Journey {
             clients,
             world,
@@ -1167,7 +1205,8 @@ pub(super) async fn run(
             log: &log,
             catalogue: lowered.catalogue(),
             items: &items,
-            client: &mut client,
+            client: session.as_mut().ok_or("quest sweep session absent")?,
+            reconnect: false,
         };
         let scenario = Box::leak(format!("QS.{short}.full").into_boxed_str());
         verdict::indexed(
@@ -1182,17 +1221,26 @@ pub(super) async fn run(
             )),
         )
         .await;
+        if journey.reconnect {
+            // An abandoned exchange can leave its reply on the connection.
+            // Close it before the next quest so the next admission starts at command one.
+            drop(session.take());
+        }
     }
-    let cleanup = logout_retrying_busy(&mut client).await;
-    if !matches!(
-        cleanup,
-        Ok((
-            Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
-            _,
-            _,
-            _
-        ))
-    ) {
+    let released = if let Some(mut client) = session {
+        matches!(
+            logout_retrying_busy(&mut client).await,
+            Ok((
+                Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
+                _,
+                _,
+                _
+            ))
+        )
+    } else {
+        wait_character_released(clients, CHARACTER).await.is_ok()
+    };
+    if !released {
         tally.row("session", "release", Err("logout-refused"), 0.0);
     }
     evidence(&format!(
@@ -1221,10 +1269,14 @@ async fn run_entry(
             tally.row(
                 short,
                 "dialogue",
-                result.as_ref().map(|_| ()).map_err(String::as_str),
+                result
+                    .as_ref()
+                    .map(|_| ())
+                    .map_err(|failure| failure.reason.as_str()),
                 entered.elapsed().as_secs_f64(),
             );
-            first_failure = result.err();
+            journey.reconnect |= result.as_ref().is_err_and(|failure| failure.reconnect);
+            first_failure = result.err().map(|failure| failure.reason);
         }
         Entry::Quest(quest) => {
             let mut blocked = false;
@@ -1248,7 +1300,9 @@ async fn run_entry(
                 } else {
                     None
                 };
-                let result = if let (Some(index), Action::Stage(stage, callback)) =
+                let result = if journey.reconnect && dependency {
+                    Err(StepFailure::blocked("blocked-by-wire-recovery"))
+                } else if let (Some(index), Action::Stage(stage, callback)) =
                     (seeded_final, &check.action)
                 {
                     bounded(async {
@@ -1259,7 +1313,7 @@ async fn run_entry(
                     })
                     .await
                 } else if blocked && dependency {
-                    Err("blocked-by-earlier-step".to_owned())
+                    Err(StepFailure::blocked("blocked-by-earlier-step"))
                 } else {
                     bounded(async {
                         match check.action {
@@ -1275,19 +1329,23 @@ async fn run_entry(
                     })
                     .await
                 };
-                if result.is_err() {
+                if let Err(failure) = &result {
                     blocked |= advances;
+                    journey.reconnect |= failure.reconnect;
                 } else if seeded_final.is_some() {
                     blocked = false;
                 }
                 tally.row(
                     short,
                     &check.name,
-                    result.as_ref().map(|_| ()).map_err(String::as_str),
+                    result
+                        .as_ref()
+                        .map(|_| ())
+                        .map_err(|failure| failure.reason.as_str()),
                     started.elapsed().as_secs_f64(),
                 );
                 if first_failure.is_none() {
-                    first_failure = result.err();
+                    first_failure = result.err().map(|failure| failure.reason);
                 }
             }
         }
@@ -1385,6 +1443,16 @@ mod tests {
             &BTreeMap::new()
         ));
         Ok(())
+    }
+
+    #[test]
+    fn session_failures_require_fresh_admission() {
+        let error = oteryn_dev_client::DevClientError::from(
+            oteryn_dev_client::SessionError::SessionUnusable,
+        );
+        let failure = StepFailure::from_error(&error);
+        assert!(failure.reconnect);
+        assert!(!StepFailure::blocked("missing-content").reconnect);
     }
 
     #[test]
