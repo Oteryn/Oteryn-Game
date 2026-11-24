@@ -115,7 +115,7 @@ class ParallelChecks(unittest.TestCase):
             "test_world_change_item_profiles.py", "quest_reward_item_semantics.py",
             "test_reward_claim_authoring.py", "test_reward_claim_variant_authoring.py",
             "test_starter_kit_authoring.py", "test_item_taxonomy.py",
-            "test_item_official_navigation.py",
+            "test_item_official_navigation.py", "forge_sql_admission.py",
         }
         self.assertEqual(set(names), expected_internal | expected_external)
         self.assertEqual(len(names), len(set(names)))

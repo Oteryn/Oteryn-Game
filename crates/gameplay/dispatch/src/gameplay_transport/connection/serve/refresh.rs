@@ -709,8 +709,8 @@ where
                 view,
                 &channel,
                 session.item_view.as_mut(),
-                session.sequence,
-                session.revision,
+                (session.sequence, session.revision),
+                false,
             ))
             .await
         }

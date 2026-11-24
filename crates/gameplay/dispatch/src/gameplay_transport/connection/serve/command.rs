@@ -354,14 +354,7 @@ where
         // Pacing waits must not hold shutdown's player-input permit. The walk takes one
         // permit per actual step, and the original action reacquires one before its retry.
         drop(input_permit.take());
-        let walked = Box::pin(autowalk::walk(
-            stream,
-            authority,
-            session,
-            command.command_id,
-            target,
-        ))
-        .await?;
+        let walked = Box::pin(autowalk::walk(stream, authority, session, command, target)).await?;
         input_permit = authority
             .enter_input(session.admitted.game_session_id)
             .await;
