@@ -48,7 +48,7 @@ impl Queue {
             }
         };
         let dispatch = match reply {
-            LogoutReply::NoLogout => Dispatch::NoLogout,
+            LogoutReply::NoLogout => Dispatch::Logout(LogoutResult::NoLogout),
             LogoutReply::Result(result) => Dispatch::Logout(result),
             LogoutReply::Unknown => return Err(ServeEnd::Disconnected),
         };

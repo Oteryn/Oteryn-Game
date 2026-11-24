@@ -303,8 +303,8 @@ impl State {
             self.invalidate_capacity();
         }
         match dispatch {
-            Dispatch::NoLogout | Dispatch::Logout(LogoutResult::InFight { .. }) => {
-                let text = if matches!(dispatch, Dispatch::NoLogout) {
+            Dispatch::Logout(LogoutResult::NoLogout | LogoutResult::InFight { .. }) => {
+                let text = if matches!(dispatch, Dispatch::Logout(LogoutResult::NoLogout)) {
                     oteryn_protocol_oteryn::zones_nologout::NO_LOGOUT_MESSAGE
                 } else {
                     oteryn_protocol_oteryn::zones_nologout::IN_FIGHT_MESSAGE

@@ -70,7 +70,9 @@ where
             // Keep the expired timer armed. A NOLOGOUT tile, fight lock or busy release is
             // retried at the next cadence, without repeating the warning.
             LogoutReply::NoLogout
-            | LogoutReply::Result(LogoutResult::InFight { .. } | LogoutResult::Busy) => {}
+            | LogoutReply::Result(
+                LogoutResult::InFight { .. } | LogoutResult::Busy | LogoutResult::NoLogout,
+            ) => {}
             LogoutReply::Unknown => return Err(ServeEnd::Disconnected),
         }
     }

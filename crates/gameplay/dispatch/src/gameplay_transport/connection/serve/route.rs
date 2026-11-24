@@ -144,7 +144,7 @@ where
                 }
             };
             match reply {
-                LogoutReply::NoLogout => Dispatch::NoLogout,
+                LogoutReply::NoLogout => Dispatch::Logout(LogoutResult::NoLogout),
                 LogoutReply::Result(result) => Dispatch::Logout(result),
                 // §1.6 unknown outcome: no result; the loss lifecycle reconciles the row.
                 LogoutReply::Unknown => {

@@ -304,7 +304,7 @@ fn nologout_refusals_keep_playing_and_send_the_global_message_only_with_92()
             (
                 LogoutReply::NoLogout,
                 "You can not logout here.",
-                LogoutResult::Busy,
+                LogoutResult::NoLogout,
             ),
             (
                 LogoutReply::Result(LogoutResult::InFight {

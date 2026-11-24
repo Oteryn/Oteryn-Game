@@ -131,7 +131,7 @@ where
     {
         return Ok(());
     }
-    if matches!(dispatch, Dispatch::Logout(_) | Dispatch::NoLogout) {
+    if matches!(dispatch, Dispatch::Logout(_)) {
         if outcome.second_logout {
             return Err(close(
                 stream,
@@ -183,9 +183,9 @@ where
             | Dispatch::Reply(crate::foundation::CommandStatus::Accepted, _)
     );
     match dispatch {
-        Dispatch::NoLogout | Dispatch::Logout(LogoutResult::InFight { .. }) => {
+        Dispatch::Logout(LogoutResult::NoLogout | LogoutResult::InFight { .. }) => {
             use oteryn_protocol_oteryn::zones_nologout::{IN_FIGHT_MESSAGE, NO_LOGOUT_MESSAGE};
-            let text = if matches!(dispatch, Dispatch::NoLogout) {
+            let text = if matches!(dispatch, Dispatch::Logout(LogoutResult::NoLogout)) {
                 NO_LOGOUT_MESSAGE
             } else {
                 IN_FIGHT_MESSAGE

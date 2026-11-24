@@ -29,7 +29,9 @@ pub(super) fn logout_lock(reply: LogoutReply) -> Option<SwitchLock> {
         LogoutReply::Result(LogoutResult::Accepted) | LogoutReply::Unknown => None,
         LogoutReply::Result(LogoutResult::InFight { .. }) => Some(SwitchLock::Combat),
         LogoutReply::Result(LogoutResult::Busy) => Some(SwitchLock::Checkpoint),
-        LogoutReply::NoLogout => Some(SwitchLock::NoLogout),
+        LogoutReply::NoLogout | LogoutReply::Result(LogoutResult::NoLogout) => {
+            Some(SwitchLock::NoLogout)
+        }
     }
 }
 

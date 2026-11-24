@@ -28,10 +28,6 @@ pub(in super::super) fn result(
             },
             encode_logout_result(*result).map_err(|_| ServeEnd::Disconnected)?,
         ),
-        Dispatch::NoLogout => (
-            CommandStatus::Rejected,
-            encode_logout_result(LogoutResult::Busy).map_err(|_| ServeEnd::Disconnected)?,
-        ),
         Dispatch::Step(outcome, wait) => (
             if matches!(
                 outcome.disposition,
