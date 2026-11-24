@@ -94,6 +94,7 @@ impl Row {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    character_prep::declare_seeded("C11", "unassigned-level-8,premium-knight,wheel-fee-gold", "Oressa choice and Wheel mechanics");
     let mut row = Row::new();
     let terminal = match verdict::indexed_timeout(
         Duration::from_secs(300), verdict::observe(async {

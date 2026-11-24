@@ -322,24 +322,7 @@ impl Hunt<'_> {
                     }));
                 }
             }
-            // The item handle can arrive in a later entity projection, or be
-            // present in the live view after the stream coalesces an enter.
-            if removed {
-                for corpse in client
-                    .world_entities()
-                    .into_iter()
-                    .flat_map(|view| view.others())
-                    .filter(|entry| {
-                        entry.kind == EntityKind::Corpse
-                            && entry.position == position
-                            && !prior_corpses.contains(&entry.entity.identity)
-                    })
-                {
-                    if !corpses.iter().any(|seen| seen.entity == corpse.entity) {
-                        corpses.push(*corpse);
-                    }
-                }
-            }
+            // Resolve a later item handle only for a corpse observed entering.
             if removed
                 && let Some((corpse, handle)) = corpses
                     .iter()

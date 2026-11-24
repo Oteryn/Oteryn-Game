@@ -358,7 +358,12 @@ async fn prepare_ranking_cut(
     let published = root
         .refresh_highscore_world_within(world, catalogues, CutLimits::REGISTERED)
         .await
-        .map_err(|error| format!("ranking fixture cut publication failed: {error:?}"))?;
+        .map_err(|error| {
+            evidence(&format!(
+                "E2EF7_SETUP S11 fixture-prepared-cut FAIL served_snapshot_id={served_achievement_cut} publication_error={error:?}"
+            ));
+            format!("Ranking fixture cut publication failed: {error:?}")
+        })?;
     let snapshot = published
         .iter()
         .find(|snapshot| snapshot.category == 10)
@@ -1553,6 +1558,16 @@ struct JourneyRow {
 }
 impl JourneyRow {
     fn new(id: &'static str, required: &'static [&'static str]) -> Self {
+        let seeded = match id {
+            "S08" => Some(("knight-and-sorcerer-builds,pvp-eligible-levels", "combat and protection")),
+            "S13a" | "S13b" => Some(("level-32-premium-caster,clean-peer", "party spell gates and cost")),
+            "W20b" => Some(("sorcerer-level-26,premium", "light casts, relog and expiry")),
+            "P21" => Some(("protective-charms,strike-capable-target,fee-gold-if-needed", "Basic Strike application and persistence")),
+            _ => None,
+        };
+        if let Some((prerequisites, reason)) = seeded {
+            character_prep::declare_seeded(id, prerequisites, reason);
+        }
         Self {
             actions: verdict::Row::new("E2EF7", id, required).gap_lines(),
         }
@@ -1740,11 +1755,8 @@ async fn additional_rows(clients: &SeamClients<'_>) {
     row.finish(&result);
 
     let mut gate = JourneyRow::new("S13a", PARTY_GATE_ACTIONS);
-    let mut cost = JourneyRow {
-        actions: verdict::Row::new("E2EF7", "S13b", PARTY_COST_ACTIONS)
-            .gap_lines()
-            .sharing(&gate.actions),
-    };
+    let mut cost = JourneyRow::new("S13b", PARTY_COST_ACTIONS);
+    cost.actions = cost.actions.sharing(&gate.actions);
     let mut pair = [None, None];
     let world = qualification_world(clients);
     let watch = gate.actions.watch();
@@ -2148,7 +2160,6 @@ impl LightClient {
             .ok_or("personal-light vitals snapshot absent")?;
         let vitals = casts::decode_actor_vitals(vitals.payload)
             .map_err(|e| format!("personal-light vitals snapshot: {e:?}"))?;
-        request_fixture_control(uuid_text(accepted.game_session_id.as_bytes()), "--profile", "premium".into()).await?;
         Ok(Self {
             stream,
             generation: accepted.connection_generation,
@@ -3507,7 +3518,7 @@ use native::item_view::{ItemEntry, ItemHandle};
 use native::{attack as attacks, cyclopedia_character as character, imbuement as imbues};
 
 const PVP_ACTIONS: &[&str] = &[
-    "earned-levels",
+    "eligible-levels",
     "two-admissions",
     "expert-modes",
     "secure-refusal",
@@ -4166,19 +4177,25 @@ async fn pvp_journey(
             profile,
             reason: "Open PvP tests combat and protection with two eligible players",
         };
-        let mut player = prep.connect_at(clients, 0xf2 + u8::try_from(index)?, index, "NODE_BOOT_PVP_CONTROL_SOCKET")
-            .await.map_err(|error| format!("S08 participant {index} {profile} Open PvP preparation: {error}"))?;
-        let level = player_level(&mut player).await?;
-        if level < oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL {
-            return Err(format!("S08 seeded participant {index} is ineligible at level {level}").into());
-        }
+        let budget = Duration::from_secs(150);
+        let deadline = tokio::time::Instant::now() + budget;
+        verdict::Harness::global().bounded_wait(deadline, "S08-eligible-build");
+        let player = tokio::time::timeout_at(deadline, async {
+            let mut player = prep.connect_at(clients, 0xf2 + u8::try_from(index)?, index, "NODE_BOOT_PVP_CONTROL_SOCKET").await?;
+            let level = player_level(&mut player).await?;
+            if level < oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL {
+                return Err(format!("S08 seeded participant {index} is ineligible at level {level}").into());
+            }
+            Ok::<_, Box<dyn std::error::Error>>(player)
+        }).await.map_err(|_| format!("S08 participant {index} preparation exceeded {budget:?}"))?
+            .map_err(|error| format!("S08 participant {index} {profile} Open PvP preparation: {error}"))?;
         pair[index] = Some(player);
         if index == 0 {
             release_when_unlocked(pair[0].as_mut().ok_or("first admission")?, Duration::from_secs(70)).await?;
             pair[0] = None;
         }
     }
-    row.pass("earned-levels");
+    row.pass("eligible-levels");
     release_when_unlocked(
         pair[1].as_mut().ok_or("second admission")?,
         Duration::from_secs(70),

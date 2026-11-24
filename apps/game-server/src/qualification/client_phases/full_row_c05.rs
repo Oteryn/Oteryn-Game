@@ -26,6 +26,7 @@ const PREPARATION: character_prep::Seeded = character_prep::Seeded {
 const ACTIONS: &[&str] = &["allow", "locate", "deny", "refusal", "fresh-admission"];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    character_prep::declare_seeded("C05", "level-8-exiva-build", "learn and cast Exiva");
     let started = std::time::Instant::now();
     let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let result = match result {

@@ -111,6 +111,7 @@ fn token(value: &str) -> String {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    character_prep::declare_seeded("C12", "level-20-monk,premium,item-50271,mana-potions-if-needed", "exori nia augment attribution");
     let mut row = Row::new();
     let result = match verdict::indexed_timeout(Duration::from_secs(480), verdict::observe(journey(&mut row, clients))).await {
         Ok(result) => result,
@@ -627,7 +628,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == old_session || !equipped_right(&fresh, definition) {
         return Err("fresh admission lost the right-hand item".into());
     }
-    character_prep::grant_premium(&fresh).await?;
     let fresh_spell_index = spell(&mut fresh).await?;
     let replay = samples(&hunt, &mut fresh, fresh_spell_index, augment).await?;
     row.record_cast("fresh-admission", &replay, weapon(&fresh)?);

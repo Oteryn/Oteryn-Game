@@ -288,10 +288,9 @@ pub(super) async fn acquire_bundles(client: &mut DevClientSession, clients: &Sea
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    character_prep::declare_seeded("W19a", "two-red-christmas-bundles", "random bundle conversion");
+    evidence("W19a messenger_purchase=deferred reason=donor-tile-coincides-with-santa-claus");
     let mut client = connect_world(clients, 0xa9).await?;
-    const PREPARATION: &str = "Seeded: the row tests random red Christmas bundle conversion";
-    const MESSENGER: &str = "Journey-deferred: the Messenger donor tile coincides with Santa Claus";
-    evidence(&format!("W19A preparation={PREPARATION}; purchase={MESSENGER}"));
     let reference = bag_reference()?;
     let before = quantities(&client)?.get(&reference.get()).copied().unwrap_or(0);
     character_prep::grant_item(&client, BAG_ID, 2).await?;

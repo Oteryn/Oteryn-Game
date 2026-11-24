@@ -21,6 +21,21 @@ const ILLUSION_ACTIONS: &[&str] = &[
 struct Row(verdict::Row);
 impl Row {
     fn new(id: &'static str, required: &'static [&'static str]) -> Self {
+        let prerequisites = match id {
+            "C13" => Some(("sorcerer-level-200", "companion custody and lifecycle")),
+            "C17a" => Some(("sorcerer-build,level-20,premium", "haste speed, cooldown and expiry")),
+            "C17c" => Some(("sorcerer-level-23", "illusion appearance and expiry")),
+            "C17d" => Some(("knight-build,level-20,premium", "Challenge aggro")),
+            "C18a" => Some(("sorcerer-level-1", "directional cast")),
+            "C16a" => Some(("purchase-gold,rune-3180-if-unreachable,rune-3156-if-unreachable", "barrier blocking and expiry")),
+            "C16b" => Some(("purchase-gold,rune-3165-if-unreachable", "Paralyze speed and persistence")),
+            "C16c" => Some(("purchase-gold,runes-3177-and-3203-if-unreachable", "companion rune effects")),
+            "C16d" => Some(("purchase-gold,runes-3178-and-3197-if-unreachable", "tile rune effects")),
+            _ => None,
+        };
+        if let Some((items, reason)) = prerequisites {
+            character_prep::declare_seeded(id, items, reason);
+        }
         Self(verdict::Row::new("E2EF5", id, required).evidence(
             "observed-all-required-actions",
             "required-actions-unproven-see-E2EF5_GAP",
@@ -446,7 +461,6 @@ async fn illusion(
         .ok_or("C17c own vitals absent")?;
     client.take_events();
     let cast_started = tokio::time::Instant::now();
-    let last_before_cast = client.last_server_sequence();
     let cast = say(client, words).await?;
     if cast.status != CommandStatus::Accepted || cast.disposition != ChatDisposition::Ok {
         return Err(format!("C17c legitimate player cast refused: status={:?} disposition={:?}; observed_level={player_level} required_level={} observed_mana={} required_mana={mana} required_vocations={:?}; source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/spells.rs:225", cast.status, cast.disposition, spell.level, before.mana, spell.vocations).into());
@@ -462,12 +476,12 @@ async fn illusion(
         if client.actor_vitals().is_some_and(|after| {
             before.mana.checked_sub(mana) == Some(after.mana) && after.soul == before.soul
         }) && own_reference(client)? != binding.appearance_ref
-            && appearance_sequence > last_before_cast
+            && appearance_sequence > cast.result_server_sequence
         {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("C17c cast command={} lacks exact mana debit and rat appearance frames: appearance_sequence={appearance_sequence} before_sequence={last_before_cast} before={before:?} after={:?}", cast.command_id, client.actor_vitals()).into());
+            return Err(format!("C17c cast command={} lacks exact mana debit and rat appearance frames: appearance_sequence={appearance_sequence} result_sequence={} before={before:?} after={:?}", cast.command_id, cast.result_server_sequence, client.actor_vitals()).into());
         }
         pump(client, &mut appearance_sequence, &mut messages).await?;
     }
@@ -638,64 +652,90 @@ fn corridor(world: &BundleWorld, from: TilePos) -> Option<Vec<TilePos>> {
     None
 }
 
-// Read the server's committed motion duration on each accepted STEP. Socket
-// delivery time is independent of the movement owner's pacing decision.
+// Time actual server STEP deltas of automatic walking. Client retries/sleeps
+// never determine the cadence. Every intermediate tile must arrive in order.
 async fn cadence_leg(client: &mut DevClientSession, cells: &[TilePos]) -> TestResult<Duration> {
-    fn own_motion(client: &DevClientSession) -> TestResult<oteryn_protocol_oteryn::actor_motion::ActorMotion> {
-        let own = own_entity(client)?;
-        client.world_entities().and_then(|view| view.iter().find(|entry| entry.entity == own))
-            .and_then(|entry| entry.motion)
-            .ok_or_else(|| "C17a own actor motion absent".into())
-    }
-
-    if cells.first() != Some(&tile(client.world_spatial().actor_position)?) {
+    let basis = spatial_basis::current(client)?;
+    let (&from, rest) = cells.split_first().ok_or("C17a empty speed corridor")?;
+    let &to = rest.last().ok_or("C17a speed corridor has no steps")?;
+    if tile(client.world_spatial().actor_position)? != from {
         return Err("C17a speed trial starts on wrong tile".into());
     }
-    let mut duration = None;
-    for pair in cells.windows(2) {
-        let [from, to] = [pair[0], pair[1]];
-        let direction = match (i32::from(to.x) - i32::from(from.x), i32::from(to.y) - i32::from(from.y)) {
-            (0, -1) => StepDirection::North,
-            (1, 0) => StepDirection::East,
-            (0, 1) => StepDirection::South,
-            (-1, 0) => StepDirection::West,
-            _ => return Err("C17a corridor has a noncardinal step".into()),
-        };
-        let before = own_motion(client)?;
-        let receipt = client.step(direction).await?;
-        let motion = own_motion(client)?;
-        if receipt.disposition != StepDisposition::Moved
-            || receipt.world_spatial_delta.is_none()
-            || tile(client.world_spatial().actor_position)? != to
-            || motion.translation_revision <= before.translation_revision
-            || motion.step_duration_ms == 0
-            || duration.is_some_and(|value| value != motion.step_duration_ms)
-        {
-            return Err(format!("C17a inconsistent committed step: {receipt:?}; motion={motion:?}").into());
-        }
-        duration = Some(motion.step_duration_ms);
-        client.take_events();
+    client.take_events();
+    let result = client
+        .session_mut()
+        .target_walk(ActorPosition {
+            x: i32::from(to.x),
+            y: i32::from(to.y),
+            floor: basis.floor(to.floor),
+        })
+        .await?;
+    if result.status != CommandStatus::Accepted || result.payload != [8, 1] {
+        return Err("C17a native automatic walk refused".into());
     }
-    Ok(Duration::from_millis(u64::from(duration.ok_or("C17a corridor has no steps")?)))
+    let mut positions = rest.iter();
+    let mut previous = from;
+    let mut times = Vec::new();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    loop {
+        for event in client.take_events() {
+            let observed = match event {
+                SessionEvent::WorldSpatial(delta) => Some(delta.value.actor_position),
+                SessionEvent::WorldSpatialEntities(delta) => Some(delta.value.actor_position),
+                _ => None,
+            };
+            if let Some(position) = observed {
+                let at = tile(position)?;
+                if at == previous {
+                    continue;
+                }
+                if positions.next() != Some(&at) {
+                    return Err("C17a automatic walk deviated from fixed corridor".into());
+                }
+                previous = at;
+                times.push(tokio::time::Instant::now());
+            }
+        }
+        if previous == to {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C17a missing automatic walk position frames".into());
+        }
+        client.service_liveness(Duration::from_millis(5)).await?;
+    }
+    // Ignore command-to-first-step latency. Reject batched/jittery observations
+    // instead of interpreting socket scheduling as an increase in player speed.
+    let mut intervals: Vec<_> = times
+        .windows(2)
+        .map(|pair| pair[1].duration_since(pair[0]))
+        .collect();
+    intervals.sort();
+    let first = *intervals.first().ok_or("C17a too few movement frames")?;
+    let last = *intervals.last().ok_or("C17a too few movement frames")?;
+    if first < Duration::from_millis(50) || last.saturating_sub(first) > Duration::from_millis(25) {
+        return Err("C17a network jitter/batched frames prevent a speed assertion".into());
+    }
+    Ok(intervals[intervals.len() / 2])
 }
 async fn cadence(client: &mut DevClientSession, cells: &[TilePos]) -> TestResult<Duration> {
     let outward = cadence_leg(client, cells).await?;
     let reverse: Vec<_> = cells.iter().rev().copied().collect();
     let inward = cadence_leg(client, &reverse).await?;
-    if outward != inward {
+    if outward.abs_diff(inward) > Duration::from_millis(25) {
         return Err("C17a forward/reverse speed measurements disagree".into());
     }
-    Ok(outward)
+    Ok((outward + inward) / 2)
 }
 fn same_cadence(a: Duration, b: Duration) -> bool {
-    a == b
+    a.abs_diff(b) <= Duration::from_millis(25)
 }
 fn faster(a: Duration, baseline: Duration) -> bool {
     a + Duration::from_millis(25) < baseline
 }
 
 // Expected values come from the pinned spell plan and production movement table;
-// only separately observed committed motion frames can satisfy the row actions.
+// only the separately observed position frames can satisfy the row actions.
 fn expected_cadence(
     spell: Option<&crate::spell::SpellDefinition>,
     level: u32,
@@ -824,6 +864,7 @@ async fn haste(
                 .ok_or("C17a invalid speed condition duration")?;
         Ok(Duration::from_millis(ms))
     };
+    character_prep::grant_premium(client).await?;
     let player_level = prepare_spell_access(client, haste).await?;
     let haste_duration = duration(haste)?;
     let strong_duration = duration(strong)?;
@@ -886,7 +927,6 @@ async fn haste(
     row.pass("haste-fresh-admission", client.last_server_sequence());
     expire_speed(client, &cells, baseline, started, haste_duration).await?;
     row.pass("haste-expiry", client.last_server_sequence());
-    character_prep::grant_premium(client).await?;
     prepare_spell_access(client, strong)
         .await
         .map_err(|error| format!("basic Haste lifecycle completed at level {player_level}; Strong Haste access: {error}"))?;
@@ -1012,7 +1052,7 @@ mod tests {
     #[test]
     fn speed_comparisons_do_not_pass_for_equal_or_jitter_only_cadence() {
         let ms = Duration::from_millis;
-        assert!(!same_cadence(ms(300), ms(320)));
+        assert!(same_cadence(ms(300), ms(320)));
         assert!(!faster(ms(300), ms(320)));
         assert!(!faster(ms(300), ms(300)));
         assert!(faster(ms(250), ms(300)));
@@ -1138,23 +1178,13 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
 }
 
 pub(super) async fn rune_cleanup(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    let travel: TestResult = async {
-        let from = tile(client.world_spatial().actor_position)?;
-        let path = route(world, from, |at| at == TOWN).or_else(|| {
-            route(world, from, |at| world.base().tile(at.x, at.y, at.floor)
-                .is_some_and(|tile| tile.protection_zone()))
-        });
-        if let Some(path) = path {
-            walk(client, world, &path).await?;
-        } else {
-            evidence(&format!("E2EF5 cleanup from={from:?} no protected landing, attempting ordinary logout in place"));
-        }
-        Ok(())
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == TOWN)
+        .ok_or("rune journey return route unavailable")?;
+    walk(client, world, &path).await?;
+    if tile(client.world_spatial().actor_position)? != TOWN {
+        return Err("rune cleanup did not reach TOWN".into());
     }
-    .await;
-    let close = player_logout(client).await;
-    travel?;
-    close
+    player_logout(client).await
 }
 
 // An independently admitted observer must answer native liveness while the
@@ -1242,7 +1272,7 @@ pub(super) async fn acquire_rune(
     world: &BundleWorld,
     id: u32,
 ) -> TestResult<(std::num::NonZeroU32, u64)> {
-    acquire_rune_from(client, world, id, None).await
+    acquire_rune_from(client, world, id, &rune_sellers(id)?).await
 }
 
 async fn seeded_rune(
@@ -1251,6 +1281,40 @@ async fn seeded_rune(
     world: &BundleWorld,
     id: u32,
 ) -> TestResult<(std::num::NonZeroU32, u64)> {
+    let sellers = rune_sellers(id)?;
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let here = tile(client.world_spatial().actor_position)?;
+    let placements: BTreeSet<_> = metadata.npcs.npcs.iter()
+        .filter(|npc| sellers.contains(&npc.key))
+        .flat_map(|npc| &npc.placements)
+        .flat_map(|p| {
+            (p.x.saturating_sub(3)..=p.x.saturating_add(3)).flat_map(move |x| {
+                (p.y.saturating_sub(3)..=p.y.saturating_add(3))
+                    .map(move |y| (p.floor, x, y))
+            })
+        })
+        .collect();
+    if route(world, here, |at| placements.contains(&(at.floor, at.x, at.y))).is_some() {
+        return acquire_rune_from(client, world, id, &sellers).await;
+    }
+
+    let reference = provisioning::item_reference(&provisioning::item_index()?, id)?;
+    let expected = rune_quantity(client, reference)?.checked_add(2).ok_or("rune quantity overflow")?;
+    character_prep::grant_item(client, id, 2).await?;
+    character_prep::reload(client, clients).await?;
+    // Admission returns a complete authoritative inventory snapshot. A seed
+    // written before logout creates no inventory delta in the new session.
+    let observed = rune_quantity(client, reference)?;
+    if observed != expected {
+        return Err(format!("seeded rune inventory snapshot mismatch: definition={reference} expected={expected} observed={observed}").into());
+    }
+    let sequence = client.last_server_sequence();
+    evidence(&format!("E2EF5 rune={id} source=seeded reason=no-reachable-authored-seller-placement-in-served-bundle sellers={sellers:?}"));
+    Ok((reference, sequence))
+}
+
+fn rune_sellers(id: u32) -> TestResult<BTreeSet<String>> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
         root.join("content/services/trade/trade-00000-00323.json"),
@@ -1273,43 +1337,14 @@ async fn seeded_rune(
     if sellers.is_empty() {
         return Err(format!("rune {id} has no authored seller evidence").into());
     }
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let placements: BTreeSet<_> = metadata.npcs.npcs.iter()
-        .filter(|npc| sellers.contains(&npc.key))
-        .flat_map(|npc| &npc.placements)
-        .flat_map(|p| {
-            (p.x.saturating_sub(3)..=p.x.saturating_add(3)).flat_map(move |x| {
-                (p.y.saturating_sub(3)..=p.y.saturating_add(3))
-                    .map(move |y| (p.floor, x, y))
-            })
-        })
-        .collect();
-    if route(world, here, |at| placements.contains(&(at.floor, at.x, at.y))).is_some() {
-        return acquire_rune_from(client, world, id, Some(&sellers)).await;
-    }
-
-    let reference = provisioning::item_reference(&provisioning::item_index()?, id)?;
-    let expected = rune_quantity(client, reference)?.checked_add(2).ok_or("rune quantity overflow")?;
-    character_prep::grant_item(client, id, 2).await?;
-    character_prep::reload(client, clients).await?;
-    // Admission returns a complete authoritative inventory snapshot. A seed
-    // written before logout creates no inventory delta in the new session.
-    let observed = rune_quantity(client, reference)?;
-    if observed != expected {
-        return Err(format!("seeded rune inventory snapshot mismatch: definition={reference} expected={expected} observed={observed}").into());
-    }
-    let sequence = client.last_server_sequence();
-    evidence(&format!("E2EF5 rune={id} source=seeded reason=no-reachable-authored-seller-placement-in-served-bundle sellers={sellers:?}"));
-    Ok((reference, sequence))
+    Ok(sellers)
 }
 
 async fn acquire_rune_from(
     client: &mut DevClientSession,
     world: &BundleWorld,
     id: u32,
-    sellers: Option<&BTreeSet<String>>,
+    sellers: &BTreeSet<String>,
 ) -> TestResult<(std::num::NonZeroU32, u64)> {
     let basis = spatial_basis::current(client)?;
     use oteryn_dev_client::client_runtime::npc_shop as runtime;
@@ -1318,106 +1353,82 @@ async fn acquire_rune_from(
     let reference = provisioning::item_reference(&index, id)?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    // The bundle records placements. Only a live shop window can establish what they sell.
-    let mut candidates = std::collections::BTreeMap::<_, Vec<_>>::new();
-    for npc in &metadata.npcs.npcs {
-        if sellers.is_some_and(|sellers| !sellers.contains(&npc.key)) {
-            continue;
-        }
-        for placement in &npc.placements {
-            for x in placement.x.saturating_sub(3)..=placement.x.saturating_add(3) {
-                for y in placement.y.saturating_sub(3)..=placement.y.saturating_add(3) {
-                    candidates
-                        .entry(TilePos {
-                            x,
-                            y,
-                            floor: placement.floor,
-                        })
-                        .or_default()
-                        .push((&npc.key, placement));
-                }
-            }
-        }
-    }
+    let here = tile(client.world_spatial().actor_position)?;
+    let selected = metadata
+        .npcs
+        .npcs
+        .iter()
+        .filter(|npc| sellers.contains(&npc.key))
+        .filter_map(|npc| {
+            route(world, here, |at| {
+                npc.placements
+                    .iter()
+                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
+            })
+            .map(|path| (npc, path))
+        })
+        .min_by_key(|(_, path)| path.len());
+    let Some((npc, _)) = selected else {
+        let balances = runtime::balances(client.session_mut()).await?;
+        return Err(format!("rune {id} acquisition blocked: no player-walk route within the admitted town window to a compiled-world seller; eligible_sellers={sellers:?}; observed_balances={balances:?}; carried_quantity={}; no item mint or remote vendor interaction; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", rune_quantity(client, reference)?).into());
+    };
     let deadline = tokio::time::Instant::now() + Duration::from_secs(125);
-    let mut tried = BTreeSet::new();
     loop {
         if tokio::time::Instant::now() >= deadline {
-            return Err(
-                format!("rune {id}: live seller search or funding budget exhausted").into(),
-            );
+            return Err(format!("rune {id}: purchase deadline exhausted for {}", npc.key).into());
         }
-        let here = tile(client.world_spatial().actor_position)?;
-        let eligible =
-            |placement: &oteryn_world_bundle::npc::Placement| !tried.contains(&placement.order());
-        let path = route(world, here, |at| {
-            candidates
-                .get(&at)
-                .is_some_and(|entries| entries.iter().any(|(_, p)| eligible(p)))
-        })
-        .ok_or_else(|| {
-            format!(
-                "rune {id}: no reachable live seller in served bundle; probed placements={tried:?}"
-            )
-        })?;
-        walk(client, world, &path).await?;
-        let at = tile(client.world_spatial().actor_position)?;
-        let (npc_key, placement) = candidates
-            .get(&at)
-            .and_then(|entries| entries.iter().find(|(_, p)| eligible(p)))
-            .ok_or("rune vendor walk ended outside the planned talk range")?;
-        let Some(actor) = client
+        let vendor_route = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            npc.placements.iter().any(|placement| {
+                placement.floor == at.floor
+                    && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+            })
+        }).ok_or_else(|| format!("rune {id}: return walking route to {} unavailable", npc.key))?;
+        walk(client, world, &vendor_route).await?;
+        let actor = client
             .world_entities()
             .and_then(|entities| {
                 entities.iter().find(|entity| {
                     entity.kind == oteryn_dev_client::EntityKind::Npc
-                        && entity.position.x == i32::from(placement.x)
-                        && entity.position.y == i32::from(placement.y)
-                        && entity.position.floor == basis.floor(placement.floor)
+                        && npc.placements.iter().any(|p| {
+                            entity.position.x == i32::from(p.x)
+                                && entity.position.y == i32::from(p.y)
+                                && entity.position.floor == basis.floor(p.floor)
+                        })
                 })
             })
             .map(|entry| entry.entity)
-        else {
-            tried.insert(placement.order());
-            continue;
-        };
-        let talk = |text: &str| wire::NpcTalkIntent {
-            npc_actor: actor,
-            text: text.into(),
-        };
-        if rune_vendor_talk(client, &talk("hi"), deadline).await? != wire::NpcIntentDisposition::Ok
-        {
-            tried.insert(placement.order());
-            continue;
+            .ok_or("rune vendor not visible at compiled placement")?;
+        for text in ["hi", "trade"] {
+            let reply = runtime::talk(
+                client.session_mut(),
+                &wire::NpcTalkIntent {
+                    npc_actor: actor,
+                    text: text.into(),
+                },
+            )
+            .await?;
+            if reply != wire::NpcIntentDisposition::Ok {
+                return Err(format!("rune {id} vendor {} {text} refused: {reply:?}", npc.key).into());
+            }
         }
-        client.take_events();
-        let disposition = rune_vendor_talk(client, &talk("trade"), deadline).await?;
-        // The NPC delta follows its command result. A subsequent command drains it without
-        // blocking on a window that a non-shop NPC never sends.
-        level(client).await?;
-        let window = client
-            .take_events()
-            .into_iter()
-            .rev()
-            .find_map(|event| match event {
-                SessionEvent::NpcTradeWindow(delta) => Some(delta.value),
-                _ => None,
-            });
-        let quote = window
-            .filter(|_| disposition == wire::NpcIntentDisposition::Ok)
-            .and_then(|window| {
-                let (_, revision) = window.open.filter(|(owner, _)| *owner == actor)?;
-                let (index, offer) = window.offers.into_iter().enumerate().find(|(_, offer)| {
-                    offer.side == wire::NpcTradeSide::Buy
-                        && offer.item_definition_ref == reference.get()
-                })?;
-                Some((revision, index, offer))
-            });
-        let Some((revision, offer_index, offer)) = quote else {
-            rune_vendor_talk(client, &talk("bye"), deadline).await?;
-            tried.insert(placement.order());
-            continue;
-        };
+        let delta = client
+            .session_mut()
+            .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
+            .await?;
+        let window = wire::decode_npc_trade_window(&delta.payload)
+            .map_err(|error| format!("rune shop decode: {error:?}"))?;
+        let (window_owner, revision) = window.open.ok_or("rune shop closed")?;
+        if window_owner != actor {
+            return Err(format!("rune {id}: shop window belongs to another NPC, expected {}", npc.key).into());
+        }
+        let (offer_index, offer) = window
+            .offers
+            .iter()
+            .enumerate()
+            .find(|(_, offer)| {
+                offer.side == wire::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()
+            })
+            .ok_or_else(|| format!("rune {id} not offered by live vendor {}", npc.key))?;
         let before = rune_quantity(client, reference)?;
         let balances = runtime::balances(client.session_mut()).await?;
         client.take_events();
@@ -1436,10 +1447,8 @@ async fn acquire_rune_from(
         if reply != wire::NpcIntentDisposition::Ok {
             let price = u64::from(offer.unit_price) * 2;
             if reply == wire::NpcIntentDisposition::Rejected
-                && balances
-                    .is_some_and(|gold| gold.carried_gold.saturating_add(gold.bank_gold) < price)
+                && balances.is_some_and(|gold| gold.carried_gold.saturating_add(gold.bank_gold) < price)
             {
-                rune_vendor_talk(client, &talk("bye"), deadline).await?;
                 verdict::Harness::global().bounded_wait(deadline, "rune-purchase-funds");
                 let hunt = async {
                     let (corpse, _) = player_corpse(client, world, &[]).await?;
@@ -1448,44 +1457,20 @@ async fn acquire_rune_from(
                 match tokio::time::timeout_at(deadline, hunt).await {
                     Ok(Ok(())) => continue,
                     Ok(Err(error)) => {
-                        return Err(format!("rune {id} funds: real hunt/loot failed: {error}; vendor={} price={price} observed_balances={balances:?}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:385", npc_key).into());
+                        return Err(format!("rune {id} funds: real hunt/loot failed: {error}; vendor={} price={price} observed_balances={balances:?}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:385", npc.key).into());
                     }
                     Err(_) => {
-                        return Err(format!("rune {id} funds: hunt budget exhausted; vendor={} price={price} observed_balances={balances:?}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:385", npc_key).into());
+                        return Err(format!("rune {id} funds: hunt budget exhausted; vendor={} price={price} observed_balances={balances:?}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:385", npc.key).into());
                     }
                 }
             }
-            return Err(format!("rune {id} player purchase refused by {}: {reply:?}; quantity=2 unit_price={} observed_balances={balances:?} carried_quantity={before}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", npc_key, offer.unit_price).into());
+            return Err(format!("rune {id} player purchase refused by {}: {reply:?}; quantity=2 unit_price={} observed_balances={balances:?} carried_quantity={before}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", npc.key, offer.unit_price).into());
         }
         let expected = before
             .checked_add(u64::from(offer.count) * 2)
             .ok_or("rune quantity overflow")?;
         let sequence = inventory_quantity(client, reference, expected).await?;
-        rune_vendor_talk(client, &talk("bye"), deadline).await?;
         return Ok((reference, sequence));
-    }
-}
-
-async fn rune_vendor_talk(
-    client: &mut DevClientSession,
-    intent: &oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
-    deadline: tokio::time::Instant,
-) -> TestResult<oteryn_protocol_oteryn::npc_service::NpcIntentDisposition> {
-    use oteryn_dev_client::client_runtime::npc_shop;
-    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
-
-    loop {
-        let reply = npc_shop::talk(client.session_mut(), intent).await?;
-        if reply != NpcIntentDisposition::RateLimited {
-            return Ok(reply);
-        }
-        let retry = tokio::time::Instant::now() + Duration::from_secs(1);
-        if retry >= deadline {
-            return Err("rune vendor talk rate limit exhausted acquisition budget".into());
-        }
-        client
-            .service_liveness(retry.saturating_duration_since(tokio::time::Instant::now()))
-            .await?;
     }
 }
 
@@ -2683,9 +2668,6 @@ async fn combat_rejoin(
         );
     }
     row.pass("fresh-admission-costs", client.last_server_sequence());
-    if row.0.id == "C17d" {
-        character_prep::grant_premium(client).await?;
-    }
     // In particular, any first vocation obtained from Oressa must survive.
     // Recast directly; reacquiring it here would hide a persistence defect.
     let book = native_spell_book()?;

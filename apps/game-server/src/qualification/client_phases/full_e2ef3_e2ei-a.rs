@@ -127,6 +127,11 @@ pub(super) async fn run(
     };
     report(I01, step, started, &result);
 
+    character_prep::declare_seeded(
+        I16,
+        "protective-charms,target-sword-if-missing",
+        "Basic Strike conversion and persistence",
+    );
     let mut step = "reach-imbuement-shrine";
     let started = std::time::Instant::now();
     let result = match &world {
@@ -554,9 +559,6 @@ async fn imbuement_journey(
     let index = provisioning::item_index()?;
     // Check the physical shrine route before granting materials or earning gold.
     full_e2ef7::shrine(client, world).await?;
-    const PREPARATION: &str =
-        "Seeded: inspection tests the Basic Strike conversion and persistence";
-    evidence(&format!("I16 preparation={PREPARATION}"));
     *step = "seed-basic-strike-materials-and-sword";
     let recipe = oteryn_gameplay_items::imbuement::imbuement_recipe(1, 1)
         .ok_or("Basic Strike recipe absent")?;

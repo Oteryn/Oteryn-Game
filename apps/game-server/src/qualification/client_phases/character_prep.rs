@@ -2,6 +2,12 @@
 //! re-admit to read the durable state through the ordinary player path.
 use super::*;
 
+pub(super) fn declare_seeded(row: &str, prerequisites: &str, reason: &str) {
+    evidence(&format!(
+        "row={row} mode=seeded prerequisites={prerequisites} reason={reason:?}"
+    ));
+}
+
 pub(super) struct Seeded {
     pub(super) profile: &'static str,
     pub(super) reason: &'static str,

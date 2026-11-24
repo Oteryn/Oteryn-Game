@@ -58,6 +58,13 @@ pub(super) async fn run(
     covet: bool,
     starter_seconds: f64,
 ) -> TestResult<DevClientSession> {
+    const SEEDED_BAGS: [(&str, u32, &str, &str); 2] = [
+        (I08, 39546, "PRIMAL_BAG", "primal-bag"),
+        (I13, 43895, "BAG_YOU_COVET", "bag-you-covet"),
+    ];
+    for (row, _, _, prerequisite) in SEEDED_BAGS {
+        character_prep::declare_seeded(row, prerequisite, "bag conversion and persistence");
+    }
     let mut mining = Check::new(I12, "obtain-pick-and-shiny-stone");
     let mut ring = Check::new(I15, "obtain-energy-ring");
     let mut client = match observations {
@@ -82,14 +89,7 @@ pub(super) async fn run(
             }
         },
     };
-    const I08_SEEDED: &str = "Seeded: Primal Bag use tests conversion of a bag already in custody";
-    const I13_SEEDED: &str =
-        "Seeded: Bag You Covet use tests conversion of a bag already in custody";
-    for (row, used, id, constant, mode) in [
-        (I08, primal, 39546, "PRIMAL_BAG", I08_SEEDED),
-        (I13, covet, 43895, "BAG_YOU_COVET", I13_SEEDED),
-    ] {
-        evidence(&format!("E2EF3 preparation row={row} {mode}"));
+    for ((row, id, constant, _), used) in SEEDED_BAGS.into_iter().zip([primal, covet]) {
         if used {
             evidence(&format!(
                 "e2e_all scenario={row}.full status=PASS seconds={starter_seconds:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities"
