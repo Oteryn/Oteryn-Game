@@ -7,7 +7,8 @@ use crate::content::native_gameplay::{
     PinnedGameplayBytes, compile_native_gameplay, decode,
 };
 use crate::durability::character_build::DurableBuildState;
-use crate::durability::character_equipment::EquipmentSnapshot;
+use crate::durability::character_equipment::{CombatMode, EquipmentSnapshot, EquippedItem};
+use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{ExactActorRef, GameSessionId};
 use crate::spell::cast::CharacterCastFacts;
 use crate::spell::chain::TilePosition;
@@ -16,6 +17,7 @@ use crate::spell::owned_cast_facts::{
 };
 use crate::spell::{OperationalCastFacts, Vocation};
 use oteryn_protocol_oteryn::{ChannelId, WorldId};
+use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 const NOW: u64 = 1_000;
@@ -32,6 +34,10 @@ fn id(last: u8) -> [u8; 16] {
 }
 
 fn content() -> Result<NativeGameplayState, String> {
+    content_with_item_profiles(br#"{"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","records":[]}"#)
+}
+
+fn content_with_item_profiles(item_profiles: &[u8]) -> Result<NativeGameplayState, String> {
     let pinned = |bytes: &[u8]| PinnedGameplayBytes {
         bytes: bytes.to_vec(),
         sha256: Sha256::digest(bytes)
@@ -55,9 +61,7 @@ fn content() -> Result<NativeGameplayState, String> {
         source_selection: sample!("spell-authoring/samples/executable-spell-source-selection.json"),
         creature_profiles: sample!("native-gameplay/creature_profiles.json"),
         presentation_profiles: sample!("native-gameplay/presentation_profiles.json"),
-        item_profiles: Some(pinned(
-            br#"{"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","records":[]}"#,
-        )),
+        item_profiles: Some(pinned(item_profiles)),
         spell_appearances: Some(sample!("native-gameplay/spell_appearances.json")),
         build_training: Some(NativeTrainingInput {
             profile: sample!("native-gameplay/build-training.json"),
@@ -100,6 +104,17 @@ fn owner(
     spell: &SpellDefinition,
     loyalty: u32,
     proficiency: u32,
+) -> Result<(PlayerSpellState, OwnedCastFacts), String> {
+    owner_with_equipment(content, spell, loyalty, proficiency, None, Vec::new())
+}
+
+fn owner_with_equipment(
+    content: &NativeGameplayState,
+    spell: &SpellDefinition,
+    loyalty: u32,
+    proficiency: u32,
+    combat_mode: Option<CombatMode>,
+    items: Vec<EquippedItem>,
 ) -> Result<(PlayerSpellState, OwnedCastFacts), String> {
     let (vocation, key) = match spell.name.as_str() {
         "Food" | "Heal Friend" | "Druid familiar" => (Vocation::Druid, "druid"),
@@ -145,8 +160,8 @@ fn owner(
         content_digest: binding.content_digest,
         character_revision: binding.character_revision,
         revision: binding.equipment_revision,
-        combat_mode: None,
-        items: vec![],
+        combat_mode,
+        items,
     };
     let mut access = AccessProjections {
         loyalty_points: loyalty,
@@ -441,5 +456,77 @@ fn familiar_engine_admission_reports_cooldown_before_summon() -> Result<(), Stri
             .mana_spent,
         3000
     );
+    Ok(())
+}
+
+fn equipped_spell_fixture() -> Result<(NativeGameplayState, Vec<EquippedItem>), String> {
+    let record = |document: &[u8], key: &str| -> Result<Value, String> {
+        let profiles: Value =
+            serde_json::from_slice(document).map_err(|error| error.to_string())?;
+        profiles["records"]
+            .as_array()
+            .and_then(|records| {
+                records
+                    .iter()
+                    .find(|record| record["production_definition"]["production_key"] == key)
+            })
+            .cloned()
+            .ok_or_else(|| format!("missing pinned item profile {key}"))
+    };
+    let hatchet = "oteryn:item.tibia.i3276";
+    let spellbook = "oteryn:item.tibia.i21400";
+    let weapon = record(
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/items/definitions/spell-native-profiles.json"
+        )),
+        hatchet,
+    )?;
+    let offhand = record(
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/items/definitions/starting-loadout-profiles.json"
+        )),
+        spellbook,
+    )?;
+    assert_eq!(offhand["semantics"]["weapon"]["state"], "UNKNOWN");
+    let profiles = serde_json::to_vec(&json!({
+        "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
+        "records": [offhand, weapon],
+    }))
+    .map_err(|error| error.to_string())?;
+    let items = [(5, hatchet), (6, spellbook)]
+        .map(|(slot, key)| EquippedItem {
+            tier: 0,
+            slot,
+            item_instance_id: id(slot),
+            definition: TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: key.into(),
+                revision_ref: "definition-r1".into(),
+            },
+            quantity: 1,
+            state_revision: 1,
+        })
+        .to_vec();
+    Ok((content_with_item_profiles(&profiles)?, items))
+}
+
+#[test]
+fn attack_spell_reads_the_weapon_without_qualifying_unneeded_shield_facts() -> Result<(), String> {
+    let (content, items) = equipped_spell_fixture()?;
+    let mut spell = spell(&content, "Chained Penance")?;
+    let (state, owned) =
+        owner_with_equipment(&content, &spell, 0, 0, Some(CombatMode::Attack), items)?;
+    let caster = owned
+        .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
+        .map_err(|error| format!("attack-only caster: {error:?}"))?;
+    assert_eq!(caster.attack_value, 15);
+    assert_eq!(caster.attack_factor, 1.0);
+    spell.needs_shield = true;
+    assert!(matches!(
+        owned.caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW),
+        Err(OwnedFactsError::UnavailableEquipment)
+    ));
     Ok(())
 }

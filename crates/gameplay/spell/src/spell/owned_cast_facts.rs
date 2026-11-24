@@ -313,8 +313,10 @@ impl OwnedCastFacts {
         let mut shield = None;
         // Source-defined first shield is left hand then right. The snapshot is the actual owner.
         for slot in [6_u8, 5] {
-            if !needs_attack && !spell.needs_shield {
-                break;
+            let reads_weapon = needs_attack && slot == 5;
+            let reads_shield = spell.needs_shield && shield.is_none();
+            if !reads_weapon && !reads_shield {
+                continue;
             }
             if let Some(item) = self.equipment.items.iter().find(|i| i.slot == slot) {
                 let policy = content
@@ -332,7 +334,7 @@ impl OwnedCastFacts {
                     return Err(OwnedFactsError::UnavailableEquipment);
                 };
                 if kind == ReferenceWeaponType::Shield {
-                    if shield.is_none() {
+                    if reads_shield {
                         let ReferenceItemField::Known(defense) = weapon.defense else {
                             return Err(OwnedFactsError::UnavailableEquipment);
                         };
@@ -341,7 +343,7 @@ impl OwnedCastFacts {
                                 .map_err(|_| OwnedFactsError::UnavailableEquipment)?,
                         );
                     }
-                } else if slot == 5 {
+                } else if reads_weapon {
                     let skill = match kind {
                         ReferenceWeaponType::Fist => Some(0),
                         ReferenceWeaponType::Club => Some(1),
