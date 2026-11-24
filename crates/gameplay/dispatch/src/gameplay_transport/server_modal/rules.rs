@@ -1,8 +1,9 @@
 //! Server rules retain exact callback inputs; answers never supply gameplay authority.
-use super::{ComposedFreshAdmission, ServerModalOutcome, actor_is_current, owner::Root};
-use crate::durability::bed_sleep::{BedUseOutcome, BedUsePlacement};
+use super::{BedUseError, ComposedFreshAdmission, ServerModalOutcome, actor_is_current, owner::Root};
+use crate::durability::bed_sleep::{BedAccessEvidence, BedReservation, BedUseOutcome, BedUsePlacement};
 use crate::durability::consume_transform::HouseActionContext;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1};
 use crate::gameplay_transport::{
     AdmissionRetryBudget,
     connection::{AdmittedSession, UseCommand, UseOutcome},
@@ -11,7 +12,7 @@ use crate::gameplay_transport::{
         DecoratedFacts, MapTargetRefusal, MapViewSource, resolve_map_handle, resolve_map_target,
     },
 };
-use crate::map::view::MapFacts as _;
+use crate::map::{overlay::TilePos, view::placement_of};
 use oteryn_protocol_oteryn::{
     server_modal::{Answer, CAPABILITY_SERVER_MODAL_V1, Dialog, Reply},
     world_object::{CAPABILITY_WORLD_INTERACTION_V1, UseDisposition, UseTarget},
@@ -29,14 +30,41 @@ pub(super) enum Selection {
 #[derive(Clone, PartialEq, Eq)]
 pub(super) struct BedSelection {
     target: ItemKey,
-    revision: u64,
+    placement: BedUsePlacement,
     fence: CurrentCharacterItemFence,
+    actor: ExactActorRef,
+    access: BedAccessEvidence,
+}
+
+impl BedSelection {
+    pub(super) fn key(&self) -> Option<(RuntimeScopeRefV1, TilePos)> {
+        let (head, _) = placement_of(self.placement.head.placement_key)?;
+        Some((self.fence.runtime_scope, head))
+    }
+
+    pub(super) fn reachable(&self, runtime: &ChannelRuntimeV1) -> bool {
+        let session = self.fence.game_session_id;
+        let ItemKey::MapBase { placement_key, .. } = self.target else {
+            return false;
+        };
+        let Some((part, _)) = placement_of(placement_key) else {
+            return false;
+        };
+        runtime.house_actor_state(self.actor, session).is_ok_and(|state| {
+            state.scope == self.fence.runtime_scope
+                && state.generation == self.fence.scope_ownership_generation
+                && state.lease.generation() == self.fence.character_lease_generation
+                && state.lease.character_id().as_bytes() == self.fence.character_id.as_bytes()
+                && super::super::bed_sleep_production::bed_part_reachable(state.position, part)
+        }) && runtime.house_player_control_facts(self.actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+    }
 }
 
 struct PreparedBedUse {
     context: HouseActionContext,
     placement: BedUsePlacement,
-    selection: BedSelection,
+    target: ItemKey,
 }
 
 /// Crystal 201189f game.cpp:261-272,10912-10990: native bed skill choice.
@@ -79,7 +107,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         target: UseTarget,
         resolved: Option<ItemKey>,
-    ) -> Result<Option<UseOutcome>, crate::durability::DurabilityError> {
+    ) -> Result<Option<UseOutcome>, BedUseError> {
         let budget = AdmissionRetryBudget::for_command(self.root);
         let resolved = tokio::time::timeout_at(
             budget.deadline,
@@ -89,10 +117,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let PreparedBedUse {
             context,
             placement,
-            selection,
+            target,
         } = match resolved {
             Ok(Ok(Some(prepared))) => prepared,
-            Ok(Err(disposition)) => {
+            Ok(Err(MapTargetRefusal::StateRevisionMismatch)) => return Err(BedUseError::Resync),
+            Ok(Err(MapTargetRefusal::Use(disposition))) => {
                 return Ok(Some(UseOutcome {
                     disposition,
                     ..UseOutcome::rejected()
@@ -112,6 +141,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ..UseOutcome::rejected()
             }));
         }
+        // Sleep and House movement already use this lane. Keep the vacancy
+        // observation and the modal claim in the same turn as those writers.
+        let Ok(Some(_lane)) =
+            tokio::time::timeout_at(budget.deadline, self.spell_lane_permit()).await
+        else {
+            return Ok(Some(UseOutcome {
+                disposition: UseDisposition::Exhausted,
+                ..UseOutcome::rejected()
+            }));
+        };
+        let fence = context.fence();
         // Crystal 201189f bed.cpp:162-175,221-259: occupied USE ends at refusal or wake.
         let decision =
             Box::pin(self.production_bed_use(admitted, command_id, context, placement, &budget))
@@ -124,7 +164,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             BedUseOutcome::CheckoutUnavailable | BedUseOutcome::RolledBack => {
                 UseDisposition::Exhausted
             }
-            BedUseOutcome::Vacant => self.offer_vacant_bed(admitted, selection).await,
+            BedUseOutcome::Vacant(access) => {
+                self.offer_vacant_bed(admitted, target, placement, fence, access).await
+            }
         };
         Ok(Some(UseOutcome {
             disposition,
@@ -135,7 +177,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     async fn offer_vacant_bed(
         &self,
         admitted: AdmittedSession,
-        selection: BedSelection,
+        target: ItemKey,
+        placement: BedUsePlacement,
+        fence: CurrentCharacterItemFence,
+        access: BedAccessEvidence,
     ) -> UseDisposition {
         if !admitted
             .continuity
@@ -151,7 +196,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return UseDisposition::Rejected;
         };
+        let Some(actor) = admitted.runtime_actor else {
+            return UseDisposition::Rejected;
+        };
+        let selection = BedSelection { target, placement, fence, actor, access };
+        self.states.server_modals.release_unreachable_beds(&runtime, fence.runtime_scope);
         if actor_is_current(&runtime, admitted)
+            && selection.reachable(&runtime)
             && self.states.server_modals.accepts_terminal_reply(root)
             && self
                 .states
@@ -171,7 +222,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: UseTarget,
         resolved: Option<ItemKey>,
         budget: &AdmissionRetryBudget<'_>,
-    ) -> Result<Option<PreparedBedUse>, UseDisposition> {
+    ) -> Result<Option<PreparedBedUse>, MapTargetRefusal> {
         if !admitted
             .continuity
             .selected_capabilities
@@ -230,7 +281,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Some(key) = resolved else {
                     return Ok(None);
                 };
-                resolve_map_handle(&source, key)?;
+                resolve_map_handle(&source, key).map_err(MapTargetRefusal::Use)?;
                 key
             }
             UseTarget::WorldObject(target) => {
@@ -240,19 +291,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         placement_key: key.placement_key,
                         reset_epoch: self.reset_epoch,
                     },
-                    Err(MapTargetRefusal::StateRevisionMismatch) => {
-                        return Err(UseDisposition::StaleState);
-                    }
                     Err(MapTargetRefusal::Use(UseDisposition::NothingToUse)) => return Ok(None),
-                    Err(MapTargetRefusal::Use(disposition)) => return Err(disposition),
+                    Err(refusal) => return Err(refusal),
                 }
             }
             _ => return Ok(None),
         };
-        let ItemKey::MapBase { placement_key, .. } = target else {
-            return Ok(None);
-        };
-        let Some(placement) = self.bed_use_placement(&runtime, admitted, target, &changes)? else {
+        let Some(placement) = self
+            .bed_use_placement(&runtime, admitted, target, &changes)
+            .map_err(MapTargetRefusal::Use)? else {
             return Ok(None);
         };
         if !self
@@ -261,16 +308,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()))
         {
-            return Err(UseDisposition::Exhausted);
+            return Err(MapTargetRefusal::Use(UseDisposition::Exhausted));
         }
         Ok(Some(PreparedBedUse {
             context,
             placement,
-            selection: BedSelection {
-                target,
-                revision: facts.object_revision(placement_key),
-                fence,
-            },
+            target,
         }))
     }
 }
@@ -326,7 +369,7 @@ async fn complete(
         },
         answer.choice_id?,
         selection.target,
-        Some(selection.revision),
+        Some(BedReservation { placement: selection.placement, access: selection.access }),
     ))
     .await;
     match outcome {
@@ -338,6 +381,10 @@ async fn complete(
                 .server_modals
                 .finish_terminal_rule(root, answer);
             Some(ServerModalOutcome::LoggedOut(acknowledgement))
+        }
+        Ok(outcome) if outcome.disposition == UseDisposition::StaleState => {
+            owner.states.server_modals.release_bed(root);
+            None
         }
         Ok(_) => {
             owner.states.server_modals.refused_rule(root, answer)?;

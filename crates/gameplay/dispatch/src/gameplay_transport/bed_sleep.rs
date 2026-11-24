@@ -41,7 +41,7 @@ pub(super) async fn finish_owner_with_house_position(
         String,
     )>,
 ) -> Result<UseOutcome, crate::durability::DurabilityError> {
-    finish_skill_with_house_position(command, intent.skill, owner, house).await
+    finish_skill_with_house_position(command, intent.skill, owner, house, None).await
 }
 
 pub(super) async fn finish_skill_with_house_position(
@@ -52,6 +52,7 @@ pub(super) async fn finish_skill_with_house_position(
         crate::durability::character_last_position::HouseLastPosition,
         String,
     )>,
+    reservation: Option<crate::durability::bed_sleep::BedReservation>,
 ) -> Result<UseOutcome, crate::durability::DurabilityError> {
     if command.item_fence != Some(owner.request.fence)
         || command.game_session_id != owner.request.fence.game_session_id
@@ -60,7 +61,11 @@ pub(super) async fn finish_skill_with_house_position(
     {
         return Ok(UseOutcome::rejected());
     }
-    let disposition = bed_sleep_disposition(owner.commit_with_house_position(house).await?);
+    let disposition = bed_sleep_disposition(
+        owner
+            .commit_with_house_reservation(house, reservation)
+            .await?,
+    );
     Ok(UseOutcome {
         disposition,
         ..UseOutcome::rejected()

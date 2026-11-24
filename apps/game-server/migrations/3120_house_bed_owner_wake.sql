@@ -1,3 +1,89 @@
+-- Capture the grant used to reserve a bed. Guild ownership and guild lists
+-- both depend on live Guild state. Lock the two possible Guilds in UUID order
+-- before the existing access owner locks the property.
+CREATE FUNCTION game_house_bed_access(
+    p_world UUID, p_house TEXT, p_character UUID
+) RETURNS TABLE(role TEXT, acl_revision NUMERIC(20,0), guild_revisions JSONB)
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+    owner_guild UUID;
+    member_guild UUID;
+    locked_member UUID;
+    member_revision NUMERIC;
+BEGIN
+    SELECT p.owner_guild_id INTO owner_guild
+        FROM game_house_properties p WHERE p.world_id=p_world AND p.house_key=p_house;
+    SELECT m.guild_id INTO member_guild FROM game_guild_members m
+        WHERE m.character_id=p_character;
+    PERFORM g.guild_id FROM game_guilds g
+        WHERE g.world_id=p_world AND g.guild_id IN (owner_guild,member_guild)
+        ORDER BY g.guild_id FOR SHARE;
+    SELECT m.guild_id, g.revision INTO locked_member, member_revision
+        FROM game_guild_members m JOIN game_guilds g USING(guild_id)
+        WHERE m.character_id=p_character AND m.guild_id=member_guild
+          AND g.world_id=p_world AND g.state IN (1,2) FOR SHARE OF m;
+    RETURN QUERY
+        SELECT a.role, a.acl_revision, COALESCE(a.guild_revisions,
+            CASE WHEN locked_member IS NOT NULL AND a.role <> 'OWNER'
+                 THEN jsonb_build_object(locked_member::text,member_revision::text) END)
+        FROM game_house_access(p_world,p_house,p_character) a
+        WHERE a.content_fenced IS FALSE AND (
+            a.role = 'OWNER'
+            OR locked_member IS NOT NULL
+            OR EXISTS (SELECT 1 FROM game_house_acl_entries e
+                WHERE e.world_id=p_world AND e.house_key=p_house
+                  AND e.character_id=p_character AND e.list_key=lower(a.role))
+        );
+END $$;
+
+-- Use the same predecessor check for owner wake and the reserved sleep.
+CREATE FUNCTION game_house_bed_placement_current(
+    p_world UUID, p_house TEXT, p_bundle BYTEA,
+    p_head NUMERIC, p_head_revision NUMERIC, p_foot NUMERIC, p_foot_revision NUMERIC
+) RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+    PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:house-base:'||p_world::text||':'||p_house,0));
+    RETURN COALESCE((SELECT d.revision FROM game_house_base_decorations d
+            WHERE d.world_id=p_world AND d.house_key=p_house AND d.bundle_digest=p_bundle
+              AND d.placement_key=p_head),0) = p_head_revision
+       AND COALESCE((SELECT d.revision FROM game_house_base_decorations d
+            WHERE d.world_id=p_world AND d.house_key=p_house AND d.bundle_digest=p_bundle
+              AND d.placement_key=p_foot),0) = p_foot_revision;
+END $$;
+DO $$ BEGIN
+    EXECUTE format('ALTER FUNCTION game_house_bed_access(UUID,TEXT,UUID) SET search_path = pg_catalog, %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_house_bed_placement_current(UUID,TEXT,BYTEA,NUMERIC,NUMERIC,NUMERIC,NUMERIC) SET search_path = pg_catalog, %I, pg_temp', current_schema());
+END $$;
+REVOKE ALL ON FUNCTION game_house_bed_access(UUID,TEXT,UUID),
+    game_house_bed_placement_current(UUID,TEXT,BYTEA,NUMERIC,NUMERIC,NUMERIC,NUMERIC)
+    FROM PUBLIC, oteryn_game_runtime, oteryn_game_control;
+GRANT EXECUTE ON FUNCTION game_house_bed_access(UUID,TEXT,UUID),
+    game_house_bed_placement_current(UUID,TEXT,BYTEA,NUMERIC,NUMERIC,NUMERIC,NUMERIC)
+    TO oteryn_game_runtime;
+
+-- Recognize the native House grant when the existing writer settles the
+-- reservation, retaining the older spell-list grant for its legacy callers.
+DO $migration$
+DECLARE
+    body TEXT;
+    before TEXT := $old$    SELECT world_id,house_key INTO old_world,old_house FROM game_house_bed_sleepers$old$;
+    after TEXT := $new$    SELECT EXISTS (SELECT FROM game_house_bed_access(p_world,p_house,p_character))
+        INTO native_access;
+    SELECT world_id,house_key INTO old_world,old_house FROM game_house_bed_sleepers$new$;
+    owner_decl TEXT := '    owner_id UUID;';
+    owner_guard TEXT := 'IF owner_id IS DISTINCT FROM p_character THEN';
+BEGIN
+    body := pg_get_functiondef('game_house_bed_sleep(uuid,uuid,uuid,text,numeric,numeric,numeric,bytea,numeric,integer,integer,integer,text,integer,uuid,numeric)'::regprocedure);
+    IF length(body) - length(replace(body,before,'')) <> length(before)
+       OR length(body) - length(replace(body,owner_decl,'')) <> length(owner_decl)
+       OR length(body) - length(replace(body,owner_guard,'')) <> length(owner_guard) THEN
+        RAISE EXCEPTION 'expected one bed sleep access check';
+    END IF;
+    body := replace(body,owner_decl,'    owner_id UUID; native_access BOOLEAN;');
+    body := replace(body,before,after);
+    EXECUTE replace(body,owner_guard,'IF owner_id IS DISTINCT FROM p_character AND NOT native_access THEN');
+END $migration$;
+
 -- A USE occurrence is decided once, even if the bed was vacant on first use.
 -- The canonical bed head identifies the whole pair, including foot USE.
 CREATE TABLE game_house_bed_use_receipts (
@@ -89,20 +175,13 @@ BEGIN
 
     -- Native ACL locks current guild (where applicable) and property. Keep
     -- the bed writers' order of ownership anchor -> bed revision -> sleeper.
-    SELECT role INTO access_role FROM game_house_access(p_world,p_house,p_character)
-        WHERE content_fenced IS FALSE;
+    SELECT role INTO access_role FROM game_house_bed_access(p_world,p_house,p_character);
     IF NOT FOUND THEN RETURN 'denied'; END IF;
     -- Bed kits replace both parts under this lock. A revision of zero
     -- denotes a placement with no durable decoration yet.
-    PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:house-base:'||p_world::text||':'||p_house,0));
-    IF COALESCE((SELECT d.revision FROM game_house_base_decorations d
-            WHERE d.world_id=p_world AND d.house_key=p_house AND d.bundle_digest=p_bundle
-              AND d.placement_key=p_head),0) <> p_head_revision
-       OR COALESCE((SELECT d.revision FROM game_house_base_decorations d
-            WHERE d.world_id=p_world AND d.house_key=p_house AND d.bundle_digest=p_bundle
-              AND d.placement_key=p_foot),0) <> p_foot_revision THEN
-        RETURN 'stale';
-    END IF;
+    IF NOT game_house_bed_placement_current(
+        p_world,p_house,p_bundle,p_head,p_head_revision,p_foot,p_foot_revision
+    ) THEN RETURN 'stale'; END IF;
 
     PERFORM 1 FROM game_house_ownership WHERE world_id=p_world AND house_key=p_house FOR SHARE;
     PERFORM 1 FROM game_house_bed_revisions

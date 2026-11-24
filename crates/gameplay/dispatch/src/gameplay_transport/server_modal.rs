@@ -19,6 +19,19 @@ pub enum ServerModalOutcome {
     Unavailable,
 }
 
+/// A bundle binding failure requires a wire resync before another command can run.
+#[derive(Debug)]
+pub enum BedUseError {
+    Resync,
+    Unavailable,
+}
+
+impl From<crate::durability::DurabilityError> for BedUseError {
+    fn from(_: crate::durability::DurabilityError) -> Self {
+        Self::Unavailable
+    }
+}
+
 fn actor_is_current(
     runtime: &crate::foundation::ChannelRuntimeV1,
     admitted: AdmittedSession,
@@ -67,6 +80,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         if !actor_is_current(&runtime, admitted) {
             return None;
+        }
+        if let Some(fence) = admitted.item_fence {
+            self.states.server_modals.release_unreachable_beds(&runtime, fence.runtime_scope);
         }
         let root = self.states.server_messages.connection_root(
             admitted.game_session_id,
@@ -156,7 +172,7 @@ macro_rules! authority_methods {
         ) -> impl std::future::Future<
             Output = Result<
                 Option<$crate::gameplay_transport::connection::UseOutcome>,
-                $crate::durability::DurabilityError,
+                $crate::gameplay_transport::server_modal::BedUseError,
             >,
         > {
             async { Ok(None) }
@@ -187,7 +203,7 @@ macro_rules! composed_methods {
             command_id: u64,
             target: oteryn_protocol_oteryn::world_object::UseTarget,
             resolved: Option<$crate::gameplay_transport::item_view::ItemKey>,
-        ) -> Result<Option<connection::UseOutcome>, $crate::durability::DurabilityError> {
+        ) -> Result<Option<connection::UseOutcome>, server_modal::BedUseError> {
             self.offer_bed_modal(admitted, command_id, target, resolved).await
         }
     };

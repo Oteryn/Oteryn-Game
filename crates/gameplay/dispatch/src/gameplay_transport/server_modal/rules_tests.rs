@@ -13,27 +13,38 @@ fn root() -> Result<Root, String> {
 }
 
 fn bed(placement_key: u64) -> Result<Selection, String> {
+    bed_for(root()?, placement_key, placement_key)
+}
+
+fn bed_for(root: Root, placement_key: u64, target: u64) -> Result<Selection, String> {
     use crate::foundation::{
         ChannelId, ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
     };
-    let session = root()?.0;
+    use crate::durability::bed_sleep::BedUsePart;
+    let session = root.0;
+    let scope_fixture = self::root()?.0;
+    let world = WorldId::decode(scope_fixture.as_bytes()).map_err(|e| format!("{e:?}"))?;
+    let channel = ChannelId::decode(scope_fixture.as_bytes()).map_err(|e| format!("{e:?}"))?;
     Ok(Selection::Bed(BedSelection {
         target: ItemKey::MapBase {
             bundle_digest: [7; 32],
-            placement_key,
+            placement_key: target,
             reset_epoch: 1,
         },
-        revision: 0,
+        placement: BedUsePlacement {
+            bundle_digest: [7; 32],
+            head: BedUsePart { placement_key, revision: 0 },
+            foot: BedUsePart { placement_key: placement_key + (1 << 32), revision: 0 },
+        },
+        access: BedAccessEvidence { acl_revision: 1, guild_revisions: None },
+        actor: ExactActorRef::transport_fixture(world, channel),
         fence: CurrentCharacterItemFence {
             character_id: crate::domain::CharacterId::from_bytes(*session.as_bytes())
                 .map_err(|e| format!("{e:?}"))?,
             game_session_id: session,
             connection_generation: ConnectionGeneration::new(1).map_err(|e| format!("{e:?}"))?,
             character_lease_generation: 1,
-            runtime_scope: RuntimeScopeRefV1::channel(
-                WorldId::decode(session.as_bytes()).map_err(|e| format!("{e:?}"))?,
-                ChannelId::decode(session.as_bytes()).map_err(|e| format!("{e:?}"))?,
-            ),
+            runtime_scope: RuntimeScopeRefV1::channel(world, channel),
             scope_ownership_generation: ScopeOwnershipGeneration::new(1)
                 .map_err(|e| format!("{e:?}"))?,
         },
@@ -55,6 +66,59 @@ fn offered(hub: &ModalHub, root: Root, selection: Selection) -> Result<Dialog, S
         return Err("missing dialog".into());
     };
     Ok(dialog)
+}
+
+#[tokio::test(start_paused = true)]
+async fn vacant_bed_modal_reserves_pair_for_one_session() -> Result<(), String> {
+    let hub = ModalHub::default();
+    let first = root()?;
+    let mut guest = *first.0.as_bytes();
+    guest[15] = 2;
+    let second = (GameSessionId::decode(&guest).map_err(|err| format!("{err:?}"))?, 1);
+    let head = bed_for(first, 1, 1)?;
+    let foot = bed_for(second, 1, 1 + (1 << 32))?;
+    let dialog = offered(&hub, first, head.clone())?;
+    hub.execute(
+        second,
+        COMMAND_TYPE_SERVER_MODAL_QUERY,
+        oteryn_protocol_oteryn::server_modal::QUERY_WITH_TERMINAL_REPLY,
+        None,
+    )
+    .ok_or("guest terminal opt-in")?;
+    assert!(
+        hub.offer_rule(second, bed_dialog(), foot.clone()).is_none(),
+        "a second session must not receive a skill choice for a reserved bed"
+    );
+    hub.finish_rule(
+        first,
+        Answer {
+            dialog_id: dialog.id,
+            button_id: 2,
+            choice_id: None,
+        },
+    )
+    .ok_or("cancel reservation")?;
+    let dialog = offered(&hub, second, foot.clone())?;
+    tokio::time::advance(std::time::Duration::from_secs(59)).await;
+    assert_eq!(offered(&hub, second, foot.clone())?, dialog);
+    assert!(hub.offer_rule(first, bed_dialog(), head.clone()).is_none());
+    tokio::time::advance(std::time::Duration::from_secs(1)).await;
+    assert!(
+        hub.rule_selection(
+            second,
+            Answer {
+                dialog_id: dialog.id,
+                button_id: 1,
+                choice_id: Some(6)
+            }
+        )
+        .is_none(),
+        "the original deadline is unchanged by a repeated offer"
+    );
+    offered(&hub, first, head.clone())?;
+    hub.leave(first);
+    assert!(hub.offer_rule(second, bed_dialog(), foot).is_some());
+    Ok(())
 }
 
 #[test]
@@ -134,7 +198,7 @@ fn server_modal_bed_rules_keep_exact_source_and_require_listed_skill() -> Result
             .is_none()
     );
     changed.fence.character_lease_generation -= 1;
-    changed.revision += 1;
+    changed.placement.head.revision += 1;
     assert!(
         hub.offer_rule(root, bed_dialog(), Selection::Bed(changed))
             .is_none()

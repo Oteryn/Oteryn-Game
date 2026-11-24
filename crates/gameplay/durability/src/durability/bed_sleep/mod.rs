@@ -68,14 +68,14 @@ pub struct BedUseRequest {
     pub placement: BedUsePlacement,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BedUsePlacement {
     pub bundle_digest: [u8; 32],
     pub head: BedUsePart,
     pub foot: BedUsePart,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BedUsePart {
     pub placement_key: u64,
     pub revision: u64,
@@ -92,7 +92,7 @@ pub enum BedUseReceipt {
 }
 
 pub enum BedUseOutcome {
-    Vacant,
+    Vacant(BedAccessEvidence),
     Occupied,
     Woken,
     Denied,
@@ -101,15 +101,43 @@ pub enum BedUseOutcome {
     RolledBack,
 }
 
-impl BedUseOutcome {
-    fn from_receipt(value: &str) -> Option<Self> {
-        match value {
-            "vacant" => Some(Self::Vacant),
-            "occupied" => Some(Self::Occupied),
-            "woken" => Some(Self::Woken),
-            _ => None,
-        }
-    }
+/// The native grant used to open a bed dialog. Skill selection checks it again
+/// under the current session and ACL locks before committing a sleep.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BedAccessEvidence {
+    pub acl_revision: u64,
+    pub guild_revisions: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BedReservation {
+    pub placement: BedUsePlacement,
+    pub access: BedAccessEvidence,
+}
+
+async fn read_bed_access(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    house: &HouseId,
+    fence: CurrentCharacterItemFence,
+) -> Result<Option<BedAccessEvidence>, DurabilityError> {
+    let row: Option<(String, Option<serde_json::Value>)> = sqlx::query_as(
+        "SELECT acl_revision::text,guild_revisions FROM game_house_bed_access(\
+         encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid)",
+    )
+    .bind(house.world_id().as_bytes().as_slice())
+    .bind(house.house_key())
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    row.map(|(revision, guild_revisions)| {
+        Ok(BedAccessEvidence {
+            acl_revision: revision
+                .parse()
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+            guild_revisions,
+        })
+    })
+    .transpose()
 }
 
 impl DurabilityRoot {
@@ -181,13 +209,18 @@ impl DurabilityRoot {
                     let outcome = match value.as_str() {
                         "denied" => BedUseOutcome::Denied,
                         "stale" => BedUseOutcome::Stale,
-                        receipt => {
-                            let outcome = BedUseOutcome::from_receipt(receipt)
-                                .ok_or(DurabilityError::InvalidStoredState)?;
-                            *commit_started = true;
-                            outcome
-                        }
+                        "vacant" => match read_bed_access(&mut tx, house, fence).await? {
+                            Some(access) => BedUseOutcome::Vacant(access),
+                            None => BedUseOutcome::Denied,
+                        },
+                        "occupied" => BedUseOutcome::Occupied,
+                        "woken" => BedUseOutcome::Woken,
+                        _ => return Err(DurabilityError::InvalidStoredState),
                     };
+                    *commit_started = matches!(
+                        outcome,
+                        BedUseOutcome::Vacant(_) | BedUseOutcome::Occupied | BedUseOutcome::Woken
+                    );
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(outcome)
                 })
@@ -255,6 +288,14 @@ impl BedSleepOwner<'_, '_, '_> {
         self,
         final_house: Option<(HouseLastPosition, String)>,
     ) -> Result<BedSleepOutcome, DurabilityError> {
+        self.commit_with_house_reservation(final_house, None).await
+    }
+
+    pub async fn commit_with_house_reservation(
+        self,
+        final_house: Option<(HouseLastPosition, String)>,
+        reservation: Option<BedReservation>,
+    ) -> Result<BedSleepOutcome, DurabilityError> {
         let (final_house, account) = match final_house {
             Some((house, account)) => (Some(house), Some(account)),
             None => (None, None),
@@ -287,6 +328,7 @@ impl BedSleepOwner<'_, '_, '_> {
             recovery,
             node,
             final_house,
+            reservation,
         };
         if let Some(account) = account {
             let store = super::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
@@ -327,6 +369,7 @@ pub(in crate::durability) struct BedSleepPlan {
     recovery: crate::character_recovery_fence::CharacterRecoveryFenceV1,
     node: NodeIncarnationProof,
     final_house: Option<HouseLastPosition>,
+    reservation: Option<BedReservation>,
 }
 impl BedSleepPlan {
     pub(in crate::durability) async fn apply(
@@ -359,6 +402,53 @@ impl BedSleepPlan {
                 != Some(&request.house)
         {
             return Ok(BedSleepOutcome::Stale);
+        }
+        if !replayed && let Some(reserved) = self.reservation {
+            let revoked: bool =
+                sqlx::query_scalar("SELECT game_security_session_revoked(encode($1,'hex')::uuid)")
+                    .bind(request.fence.game_session_id.as_bytes().as_slice())
+                    .fetch_one(&mut **tx)
+                    .await?;
+            if revoked {
+                return Ok(BedSleepOutcome::Stale);
+            }
+            // The native owner authorizes the current revision, including
+            // grants that changed after USE but still admit this character.
+            let Some(current) = read_bed_access(tx, &request.house, request.fence).await? else {
+                return Ok(BedSleepOutcome::Stale);
+            };
+            if current != reserved.access {
+                use oteryn_error_codes::{FieldValue, Level, Line, emit};
+                emit(
+                    "oteryn-game-server",
+                    &Line::new(Level::Debug, "durability", "bed_access_revalidated")
+                        .field(
+                            "reserved_acl_revision",
+                            FieldValue::U64(reserved.access.acl_revision),
+                        )
+                        .field(
+                            "current_acl_revision",
+                            FieldValue::U64(current.acl_revision),
+                        ),
+                );
+            }
+            let placement = reserved.placement;
+            let current_placement: bool = sqlx::query_scalar(
+                "SELECT game_house_bed_placement_current(encode($1,'hex')::uuid,\
+                 $2,$3,$4::text::numeric,$5::text::numeric,$6::text::numeric,$7::text::numeric)",
+            )
+            .bind(request.house.world_id().as_bytes().as_slice())
+            .bind(request.house.house_key())
+            .bind(placement.bundle_digest.as_slice())
+            .bind(placement.head.placement_key.to_string())
+            .bind(placement.head.revision.to_string())
+            .bind(placement.foot.placement_key.to_string())
+            .bind(placement.foot.revision.to_string())
+            .fetch_one(&mut **tx)
+            .await?;
+            if !current_placement {
+                return Ok(BedSleepOutcome::Stale);
+            }
         }
         let fact = node.fact();
         let value: String = sqlx::query_scalar(

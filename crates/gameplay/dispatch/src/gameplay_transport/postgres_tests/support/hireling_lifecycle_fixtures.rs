@@ -239,6 +239,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         base.admitted.world_id,
         base.admitted.channel_id,
         bed_index.map(|i| i.as_ref()),
+        matches!(case, Case::BedOwnerWake(super::bed_owner_wake_fixtures::Case::ReservationMove)),
     )?;
     let cells = world.movement_cells(room.movement_cells()).map_err(debug)?;
     use sha2::Digest as _;
@@ -1468,6 +1469,7 @@ fn hireling_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
     bed_index: Option<&crate::content::item_ref::ItemDefinitionIndex>,
+    bed_reservation_walk: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use crate::map::boot::{self, tests as fixture};
     use oteryn_world_bundle::bundle;
@@ -1498,6 +1500,14 @@ fn hireling_bundle(
     furniture_cell.y = 32804;
     furniture_cell.house = 3437;
     furniture_cell.items.truncate(1);
+    if bed_reservation_walk {
+        for y in [32802, 32803] {
+            let mut tile = furniture_cell.clone();
+            tile.x = 32310;
+            tile.y = y;
+            sector.tiles.push(tile);
+        }
+    }
     sector.tiles.push(furniture_cell);
     if let Some(index) = bed_index {
         for (key, x) in [
@@ -1529,6 +1539,7 @@ fn hireling_bundle(
     entrance.x = 32309;
     entrance.y = 32805;
     sector.tiles.push(entrance);
+    sector.tiles.sort_unstable_by_key(|tile| (tile.y, tile.x));
     sector.sx = 1009;
     sector.sy = 1025;
     data.manifest.world.min_x = 32288;

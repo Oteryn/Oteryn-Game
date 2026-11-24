@@ -70,3 +70,13 @@ fn bed_owner_use_preserves_stale_static_revision_postgres() -> TestResult {
 fn bed_owner_use_preserves_map_handle_and_static_reach_refusals_postgres() -> TestResult {
     run(Case::TooFar)
 }
+
+#[test]
+fn bed_owner_use_resyncs_static_bundle_mismatch_postgres() -> TestResult {
+    run(Case::BundleMismatch)
+}
+
+#[test]
+fn bed_reservation_releases_after_native_house_step_postgres() -> TestResult {
+    run(Case::ReservationMove)
+}

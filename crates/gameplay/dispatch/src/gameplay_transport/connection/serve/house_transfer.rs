@@ -465,10 +465,43 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         }
                     }
                 } else {
-                    services
-                        .route(authority, &mut admitted, command)
+                    use crate::gameplay_transport::server_modal::BedUseError;
+                    match services
+                        .route_static_bed(authority, admitted, command)
                         .await
-                        .ok_or(ServeEnd::Disconnected)?
+                    {
+                        Ok(Some(dispatch)) => dispatch,
+                        Ok(None) => services
+                            .route(authority, &mut admitted, command)
+                            .await
+                            .ok_or(ServeEnd::Disconnected)?,
+                        Err(BedUseError::Unavailable) => return Err(ServeEnd::Disconnected),
+                        Err(BedUseError::Resync) => {
+                            // The bundle check refused before the writer ran.
+                            let rejected = encode_use_result(UseDisposition::Rejected)
+                                .map_err(|_| ServeEnd::Disconnected)?;
+                            commands
+                                .cancel_undispatched(
+                                    command.command_id,
+                                    generation,
+                                    admitted.continuity.server_sequence,
+                                    &rejected,
+                                )
+                                .ok_or(ServeEnd::Disconnected)?;
+                            admitted.continuity.next_command_id = commands.next_command_id();
+                            drop(permit.take());
+                            let error = FoundationProtocolError::StateRevisionMismatch;
+                            let frame = encode_command_protocol_error(
+                                error,
+                                generation,
+                                command.command_id,
+                                0,
+                            )
+                            .map_err(|_| ServeEnd::Disconnected)?;
+                            let _ = write_frame(stream, &frame).await;
+                            return Err(ServeEnd::Closed(error));
+                        }
+                    }
                 };
                 integrity.observe(&dispatch);
                 let (status, payload) = house_hireling::result(selected, &dispatch)?;

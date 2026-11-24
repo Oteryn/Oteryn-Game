@@ -1,4 +1,5 @@
-use crate::foundation::GameSessionId;
+use crate::foundation::{ChannelRuntimeV1, GameSessionId, RuntimeScopeRefV1};
+use crate::map::overlay::TilePos;
 use oteryn_protocol_oteryn::server_modal::input::{
     DialogInput, InputAnswer, InputValue, encode_dialog_with_input,
 };
@@ -6,7 +7,13 @@ use oteryn_protocol_oteryn::server_modal::{
     Answer, COMMAND_TYPE_SERVER_MODAL_ANSWER, COMMAND_TYPE_SERVER_MODAL_QUERY, Dialog, Reply,
 };
 use sha2::{Digest, Sha256};
-use std::{collections::HashMap, sync::Mutex};
+use std::{collections::HashMap, sync::Mutex, time::Duration};
+use tokio::time::Instant;
+
+use super::rules::Selection;
+
+// BED0-RL-01. An exact replay of an offer keeps the original deadline.
+const BED_RESERVATION_WINDOW: Duration = Duration::from_secs(60);
 pub(super) type Root = (GameSessionId, u64);
 #[derive(Default)]
 struct Entry {
@@ -15,7 +22,8 @@ struct Entry {
     answered: Option<Answer>,
     answered_terminal: bool,
     terminal_replies: bool,
-    selection: Option<super::rules::Selection>,
+    selection: Option<Selection>,
+    bed_deadline: Option<Instant>,
     notification: Option<Dialog>,
     submitted: Option<Answer>,
     /// Capability 490: dialog replies carry their input block on this connection.
@@ -32,6 +40,15 @@ struct Entry {
 pub(super) type AnswerInput = (Option<InputValue>, bool);
 
 impl Entry {
+    fn clear_rule(&mut self) {
+        self.pending = None;
+        self.selection = None;
+        self.bed_deadline = None;
+        self.submitted = None;
+        self.input = None;
+        self.answer_input = None;
+    }
+
     /// The pending dialog as this connection receives it.
     fn dialog_reply(&self, dialog: &Dialog) -> Option<Vec<u8>> {
         let mut dialog = dialog.clone();
@@ -50,6 +67,25 @@ struct State {
     next: u32,
     entries: HashMap<Root, Entry>,
 }
+impl State {
+    fn expire_beds(&mut self, now: Instant) {
+        for entry in self.entries.values_mut() {
+            // An answer submitted before expiry holds the pair through its
+            // fenced writer turn. Its completion, refusal or close settles it.
+            if entry.submitted.is_none() && entry.bed_deadline.is_some_and(|end| now >= end) {
+                entry.clear_rule();
+            }
+        }
+    }
+
+    fn bed_claimant(&self, key: (RuntimeScopeRefV1, TilePos)) -> Option<Root> {
+        self.entries.iter().find_map(|(root, entry)| match &entry.selection {
+            Some(Selection::Bed(bed)) if bed.key() == Some(key) => Some(*root),
+            _ => None,
+        })
+    }
+}
+
 #[derive(Default)]
 pub(in crate::gameplay_transport) struct ModalHub {
     state: Mutex<State>,
@@ -59,7 +95,7 @@ impl ModalHub {
         &self,
         root: Root,
         dialog: Dialog,
-        selection: super::rules::Selection,
+        selection: Selection,
     ) -> Option<Vec<u8>> {
         self.offer_rule_with_input(root, dialog, None, selection)
     }
@@ -72,17 +108,17 @@ impl ModalHub {
         root: Root,
         mut dialog: Dialog,
         input: Option<DialogInput>,
-        selection: super::rules::Selection,
+        selection: Selection,
     ) -> Option<Vec<u8>> {
         if root.1 == 0 || !dialog.valid() || input.as_ref().is_some_and(|input| !input.valid()) {
             return None;
         }
         let mut state = self.state.lock().ok()?;
-        if matches!(&selection, super::rules::Selection::Bed(_))
-            && !state
-                .entries
-                .get(&root)
-                .is_some_and(|entry| entry.terminal_replies)
+        let now = Instant::now();
+        state.expire_beds(now);
+        if let Selection::Bed(bed) = &selection
+            && (!state.entries.get(&root).is_some_and(|entry| entry.terminal_replies)
+                || state.bed_claimant(bed.key()?).is_some_and(|claimant| claimant != root))
         {
             return None;
         }
@@ -107,6 +143,8 @@ impl ModalHub {
             return None;
         };
         entry.pending = Some(dialog);
+        entry.bed_deadline = matches!(selection, Selection::Bed(_))
+            .then(|| now + BED_RESERVATION_WINDOW);
         entry.selection = Some(selection);
         entry.answered = None;
         entry.answered_terminal = false;
@@ -188,6 +226,7 @@ impl ModalHub {
         answer: Answer,
     ) -> Option<(super::rules::Selection, Option<InputValue>, bool)> {
         let mut state = self.state.lock().ok()?;
+        state.expire_beds(Instant::now());
         let entry = state.entries.get_mut(&root)?;
         if !entry.pending.as_ref()?.accepts(answer)
             || entry.submitted.is_some_and(|sent| sent != answer)
@@ -225,10 +264,9 @@ impl ModalHub {
         {
             return None;
         }
-        entry.pending = None;
-        entry.selection = None;
-        entry.submitted = None;
-        entry.input = None;
+        let answer_input = entry.answer_input.take();
+        entry.clear_rule();
+        entry.answer_input = answer_input;
         entry.answered = Some(answer);
         entry.answered_terminal = terminal;
         accepted(answer, terminal).encode().ok()
@@ -252,6 +290,7 @@ impl ModalHub {
         }
         entry.submitted = None;
         entry.answer_input = None;
+        state.expire_beds(Instant::now());
         Some(())
     }
 
@@ -260,6 +299,45 @@ impl ModalHub {
         state.entries.get_mut(&root)?.notification = Some(dialog);
         Some(())
     }
+    pub(in crate::gameplay_transport) fn release_unreachable_beds(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        scope: RuntimeScopeRefV1,
+    ) {
+        if let Ok(mut state) = self.state.lock() {
+            for entry in state.entries.values_mut() {
+                if let Some(Selection::Bed(bed)) = &entry.selection
+                    && bed.key().is_some_and(|(reserved, _)| reserved == scope)
+                    && entry.submitted.is_none()
+                    && !bed.reachable(runtime)
+                {
+                    entry.clear_rule();
+                }
+            }
+        }
+    }
+
+    pub(super) fn release_bed(&self, root: Root) {
+        if let Ok(mut state) = self.state.lock()
+            && let Some(entry) = state.entries.get_mut(&root)
+            && matches!(entry.selection, Some(Selection::Bed(_)))
+        {
+            entry.clear_rule();
+        }
+    }
+
+    /// The existing direct skill ingress may not bypass a pending modal claim.
+    pub(in crate::gameplay_transport) fn bed_reserved(
+        &self,
+        scope: RuntimeScopeRefV1,
+        head: TilePos,
+    ) -> bool {
+        self.state.lock().map_or(true, |mut state| {
+            state.expire_beds(Instant::now());
+            state.bed_claimant((scope, head)).is_some()
+        })
+    }
+
     pub(in crate::gameplay_transport) fn leave(&self, root: Root) {
         if let Ok(mut state) = self.state.lock() {
             state.entries.remove(&root);
@@ -276,6 +354,7 @@ impl ModalHub {
             return None;
         }
         let mut state = self.state.lock().ok()?;
+        state.expire_beds(Instant::now());
         let reply = match kind {
             COMMAND_TYPE_SERVER_MODAL_QUERY => {
                 if oteryn_protocol_oteryn::server_modal::decode_query(payload).ok()? {

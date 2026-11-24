@@ -355,6 +355,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 intent.exit,
             )
             .ok()?;
+        if intent.exit {
+            self.states
+                .server_modals
+                .release_unreachable_beds(&runtime, fence.runtime_scope);
+        }
         // Publish the existing actor data only after its native custody commit.
         // The prepared token verifies the real successor lease and new scope;
         // remaining clocks and pending authority are never reset or retargeted.

@@ -2,8 +2,8 @@
 use super::*;
 use crate::content::LogicalCell;
 use crate::durability::bed_sleep::{
-    BedSleepOwner, BedSleepRequest, BedUseOutcome, BedUsePart, BedUsePlacement, BedUseReceipt,
-    BedUseRequest,
+    BedReservation, BedSleepOwner, BedSleepRequest, BedUseOutcome, BedUsePart, BedUsePlacement,
+    BedUseReceipt, BedUseRequest,
 };
 use crate::durability::character_last_position::{HouseLastPosition, LastPositionCell};
 use crate::durability::consume_transform::HouseActionContext;
@@ -35,7 +35,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         skill: u8,
         target: ItemKey,
-        expected_revision: Option<u64>,
+        reservation: Option<BedReservation>,
     ) -> Result<UseOutcome, crate::durability::DurabilityError> {
         if !self
             .session_premium_gate(command.game_session_id)
@@ -53,12 +53,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(UseOutcome::rejected());
             }
         }
-        let ItemKey::MapBase {
-            reset_epoch,
-            placement_key,
-            ..
-        } = target
-        else {
+        let ItemKey::MapBase { reset_epoch, .. } = target else {
             return Ok(UseOutcome::rejected());
         };
         let Some(current) =
@@ -69,7 +64,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if command.item_fence != Some(current.item_fence()) || reset_epoch != self.reset_epoch {
             return Ok(UseOutcome::rejected());
         }
-        let changes = if expected_revision.is_some() {
+        let changes = if reservation.is_some() {
             let context = {
                 let runtime = self.runtime.lock().await;
                 let Ok(context) =
@@ -142,17 +137,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ) else {
                 return Ok(UseOutcome::rejected());
             };
-            if let Some(revision) = expected_revision {
-                use crate::map::view::MapFacts as _;
-                let Some(map) = self.bundle_map() else {
+            if let Some(reservation) = &reservation {
+                let placement = reservation.placement;
+                let changes = changes.as_deref().unwrap_or_default();
+                let unchanged = [placement.head, placement.foot]
+                    .into_iter()
+                    .all(|part| bed_placement_part(changes, part.placement_key) == part);
+                if !unchanged {
+                    return Ok(UseOutcome {
+                        disposition: UseDisposition::StaleState,
+                        ..UseOutcome::rejected()
+                    });
+                }
+            } else {
+                let (Ok(x), Ok(y), Ok(floor)) = (
+                    u16::try_from(head.x),
+                    u16::try_from(head.y),
+                    i8::try_from(-head.z),
+                ) else {
                     return Ok(UseOutcome::rejected());
                 };
-                let base = map.facts.base_only();
-                let facts = super::world_map::DecoratedFacts {
-                    base: &base,
-                    changes: changes.as_deref().unwrap_or_default(),
-                };
-                if facts.object_revision(placement_key) != revision {
+                if self.states.server_modals.bed_reserved(
+                    current.runtime_scope,
+                    crate::map::overlay::TilePos { x, y, floor },
+                ) {
                     return Ok(UseOutcome::rejected());
                 }
             }
@@ -199,6 +207,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             skill,
             owner,
             Some((saved_house, super::canonical_uuid(&account))),
+            reservation,
         )
         .await
     }
@@ -344,17 +353,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !bed_part_reachable(state.position, pos) {
             return Err(UseDisposition::TooFar);
         }
-        let part = |placement_key| BedUsePart {
-            placement_key,
-            revision: changes
-                .binary_search_by_key(&placement_key, |change| change.placement_key)
-                .ok()
-                .map_or(0, |at| changes[at].revision),
-        };
         Ok(Some(BedUsePlacement {
             bundle_digest,
-            head: part(pair.head_placement),
-            foot: part(pair.foot_placement),
+            head: bed_placement_part(changes, pair.head_placement),
+            foot: bed_placement_part(changes, pair.foot_placement),
         }))
     }
 
@@ -494,7 +496,20 @@ fn bundle_bed_part<'a>(
     Some(bed)
 }
 
-fn bed_part_reachable(
+fn bed_placement_part(
+    changes: &[super::world_map::HouseBaseMapEntry],
+    placement_key: u64,
+) -> BedUsePart {
+    BedUsePart {
+        placement_key,
+        revision: changes
+            .binary_search_by_key(&placement_key, |change| change.placement_key)
+            .ok()
+            .map_or(0, |at| changes[at].revision),
+    }
+}
+
+pub(super) fn bed_part_reachable(
     position: crate::foundation::LocalPosition,
     part: crate::map::overlay::TilePos,
 ) -> bool {

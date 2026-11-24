@@ -33,6 +33,40 @@ pub(super) struct State {
 }
 
 impl State {
+    pub(super) async fn route_static_bed<A: FreshAdmissionAuthority>(
+        &mut self,
+        authority: &A,
+        admitted: AdmittedSession,
+        command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    ) -> Result<Option<Dispatch>, crate::gameplay_transport::server_modal::BedUseError> {
+        let selected = admitted.continuity.selected_capabilities;
+        if command.command_type != oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
+            || !selected.command_selected(command.command_type)
+            || !selected.contains(CAPABILITY_WORLD_INTERACTION_V1)
+            || !(self.enabled || self.items.is_some())
+        {
+            return Ok(None);
+        }
+        let Ok(intent) = decode_use_intent_target(selected.as_slice(), command.payload) else {
+            return Ok(None);
+        };
+        if !matches!(intent.target, UseTarget::WorldObject(_))
+            || intent.use_with.is_some()
+            || intent.use_with_map_item.is_some()
+            || intent.use_with_position.is_some()
+        {
+            return Ok(None);
+        }
+        // Only the bed rule is admitted for a static object in a House.
+        self.stash_rows = None;
+        let outcome = authority
+            .server_modal_offer_bed(admitted, command.command_id, intent.target, None)
+            .await?;
+        Ok(Some(Dispatch::Use(
+            outcome.unwrap_or_else(UseOutcome::rejected),
+        )))
+    }
+
     pub(super) async fn route<A: FreshAdmissionAuthority>(
         &mut self,
         authority: &A,
@@ -128,33 +162,6 @@ impl State {
         }
         match command.command_type {
             world_object::COMMAND_TYPE_USE_INTENT => {
-                if let Ok(intent) = decode_use_intent_target(
-                    admitted.continuity.selected_capabilities.as_slice(),
-                    command.payload,
-                ) && matches!(intent.target, UseTarget::WorldObject(_))
-                    && intent.use_with.is_none()
-                    && intent.use_with_map_item.is_none()
-                    && intent.use_with_position.is_none()
-                    && admitted
-                        .continuity
-                        .selected_capabilities
-                        .contains(CAPABILITY_WORLD_INTERACTION_V1)
-                {
-                    // Static beds have a base ordinal, not an inventory handle. Only
-                    // the bed rule is admitted here; other House world USE stays closed.
-                    return Some(Dispatch::Use(
-                        authority
-                            .server_modal_offer_bed(
-                                *admitted,
-                                command.command_id,
-                                intent.target,
-                                None,
-                            )
-                            .await
-                            .ok()?
-                            .unwrap_or_else(UseOutcome::rejected),
-                    ));
-                }
                 // The same item directory contains carried and actual House map handles.
                 // The House event owner classifies exact bed kits with native bed
                 // map targets; creature/rune and other map targets keep their owners.

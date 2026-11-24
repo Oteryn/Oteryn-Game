@@ -248,6 +248,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Native publication is known even if SQL cleanup or entry release failed.
         if outcome.0.disposition == StepDisposition::Moved {
             self.states.chat.close_out_of_range(&runtime, session);
+            self.states
+                .server_modals
+                .release_unreachable_beds(&runtime, fence.runtime_scope);
         }
         outcome
     }

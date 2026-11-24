@@ -37,6 +37,8 @@ pub(super) enum Case {
     Rollback,
     PlacementRace,
     StaleTarget,
+    BundleMismatch,
+    ReservationMove,
     TooFar,
 }
 
@@ -49,6 +51,9 @@ pub(super) async fn scenario(
     admitted: AdmittedSession,
     case: Case,
 ) -> TestResult {
+    if matches!(case, Case::ReservationMove) {
+        return reservation_movement(h, owner, admitted).await;
+    }
     // Only the historical sleepers are seeded. The USE actor's session, lease
     // and House custody come from genuine fresh admission and native handoff.
     let mut tx = h.pool.begin().await?;
@@ -72,12 +77,15 @@ pub(super) async fn scenario(
 
     match case {
         Case::Replay => {}
+        Case::ReservationMove => unreachable!("handled before seeding sleepers"),
         Case::Revoked => return revoked(h, owner, admitted).await,
         Case::Contended => return contended(h, owner, admitted).await,
         Case::Resume => return resume(h, owner, admitted, false).await,
         Case::Rollback => return resume(h, owner, admitted, true).await,
         Case::PlacementRace => return placement_race(h, owner, admitted).await,
-        Case::StaleTarget | Case::TooFar => return target_refusal(h, owner, admitted, case).await,
+        Case::StaleTarget | Case::BundleMismatch | Case::TooFar => {
+            return target_refusal(h, owner, admitted, case).await;
+        }
         Case::WorldOnly | Case::NonPremium | Case::Cooldown => {
             return wire_case(h, owner, admitted, case).await;
         }
@@ -555,7 +563,50 @@ async fn target_refusal(
     let playing = async move {
         let (head, foot) = bed_targets(&mut client).await?;
         let mut next = admitted.continuity.next_command_id;
-        if matches!(case, Case::StaleTarget) {
+        if matches!(case, Case::BundleMismatch) {
+            use crate::gameplay_transport::tcp_tls::write_frame;
+            use oteryn_protocol_oteryn::{
+                ClientCommandValue, FoundationProtocolError, ProtocolDisposition,
+                decode_protocol_error, encode_client_command,
+            };
+            let UseTarget::WorldObject(mut target) = head else {
+                return Err("static bed".into());
+            };
+            target.placement[0] ^= 1;
+            let payload = bed_use_payload(UseTarget::WorldObject(target))?;
+            let request = encode_client_command(
+                admitted.continuity.connection_generation,
+                &ClientCommandValue {
+                    command_id: next,
+                    command_type: COMMAND_TYPE_USE_INTENT,
+                    payload: &payload,
+                },
+            )
+            .map_err(debug)?;
+            write_frame(&mut client, &request).await?;
+            loop {
+                let frame = read_frame(&mut client).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                match envelope.message_type() {
+                    MessageType::CommandResult => {
+                        return Err("old bundle must trigger a wire resync".into());
+                    }
+                    MessageType::ProtocolError => {
+                        let reply = decode_protocol_error(envelope.payload()).map_err(debug)?;
+                        assert_eq!(
+                            (reply.error_code, reply.disposition, reply.related_command_id),
+                            (
+                                FoundationProtocolError::StateRevisionMismatch.code(),
+                                ProtocolDisposition::ResyncRequired,
+                                next
+                            )
+                        );
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        } else if matches!(case, Case::StaleTarget) {
             let UseTarget::WorldObject(mut target) = head else {
                 return Err("static bed".into());
             };
@@ -589,6 +640,78 @@ async fn target_refusal(
         super::fixture::join_two(serving, playing),
     )
     .await?;
+    result
+}
+
+async fn reservation_movement(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use oteryn_protocol_oteryn::server_modal::{Answer, COMMAND_TYPE_SERVER_MODAL_ANSWER};
+    use oteryn_protocol_oteryn::world_spatial::{
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
+        encode_step_intent,
+    };
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = async {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    };
+    let playing = async move {
+        let (_, foot) = bed_targets(&mut client).await?;
+        let mut next = admitted.continuity.next_command_id;
+        let (status, _) = command(
+            &mut client, admitted, &mut next, COMMAND_TYPE_SERVER_MODAL_QUERY, QUERY_WITH_TERMINAL_REPLY,
+        ).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(
+            use_bed(&mut client, admitted, &mut next, foot).await?,
+            (CommandStatus::Accepted, UseDisposition::BedChooseSkill)
+        );
+        let (_, shown) = command(
+            &mut client, admitted, &mut next, COMMAND_TYPE_SERVER_MODAL_QUERY, &[],
+        ).await?;
+        let Reply::Dialog(dialog) = Reply::decode(&shown).map_err(debug)? else {
+            return Err("bed reservation did not open a dialog".into());
+        };
+
+        let actor = admitted.runtime_actor.ok_or("native House actor")?;
+        let scope = admitted.item_fence.ok_or("native House fence")?.runtime_scope;
+        let head = TilePos { x: 32310, y: 32804, floor: -7 };
+        for (y, reserved) in [(32803, true), (32802, false)] {
+            let (status, bytes) = command(
+                &mut client, admitted, &mut next, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                &encode_step_intent(StepDirection::North),
+            ).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(decode_step_result(&bytes).map_err(debug)?, StepDisposition::Moved);
+            let moved = owner.runtime.lock().await.house_actor_state(actor, admitted.game_session_id)
+                .map_err(debug)?.position;
+            assert_eq!((moved.x, moved.y, moved.floor), (32310, y, 7));
+            assert_eq!(owner.states.server_modals.bed_reserved(scope, head), reserved,
+                "movement updates the claim at the reach boundary before a modal query");
+        }
+
+        let (_, shown) = command(
+            &mut client, admitted, &mut next, COMMAND_TYPE_SERVER_MODAL_QUERY, &[],
+        ).await?;
+        assert_eq!(Reply::decode(&shown).map_err(debug)?, Reply::None);
+        let answer = Answer { dialog_id: dialog.id, button_id: 1, choice_id: Some(6) };
+        let (status, _) = command(
+            &mut client, admitted, &mut next, COMMAND_TYPE_SERVER_MODAL_ANSWER,
+            &answer.encode().map_err(debug)?,
+        ).await?;
+        assert_eq!(status, CommandStatus::Rejected);
+        assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_house_bed_sleep_receipts")
+            .fetch_one(&h.pool).await?, 0);
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let (_, result) = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        super::fixture::join_two(serving, playing),
+    ).await?;
     result
 }
 
