@@ -311,3 +311,17 @@ admission owner (`crates/gameplay/items/src/item_ref_admission.rs:63–74`).
 The exact keys are 14248, 16244, 20057, 20355, 23512, 23525, 23738,
 24393, 25296, 28571 and 2871. The ledger removes the 37 successful seeds
 and retains the typed refusals.
+
+| Full driver sample | Seed PASS | Seed FAIL | Terminal result |
+| --- | ---: | ---: | --- |
+| 15793, 2493, 2821, 3156, 5964 | 2 | 3 | `NODE_BOOT_FAIL` |
+
+The 2821 inscription request was accepted and returned the authored
+1,023-character limit with `writable=false`; content declares it
+writeable. The inscription owner derives that field from the mail text
+policy (`gameplay_transport/item_inscription.rs:39–51`).
+The probe also exposed three harness choices that this follow-up corrects:
+multiple gear grants sharing one reward cause, looking up a rune by its
+wire reference instead of its source item ID, and routing a known corpse
+through portable seeding when its definition lacks a Ground-only profile.
+The 2493 bed journey still ended during transport before custody.

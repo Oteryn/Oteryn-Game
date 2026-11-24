@@ -302,20 +302,20 @@ impl Fixtures<'_> {
     ) -> TestResult<DevClientSession> {
         let index = build.vocation * 2 + usize::from(build.level == HIGH);
         let scope = self.scopes[index / 2];
-        let client = connect_character(scope, 0x71, index % 2).await?;
-        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-        let script = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tools/qualification/node_boot/provision.py");
-        let socket = self.socket.clone();
-        let mut keys: Vec<_> = std::iter::once(key)
-            .chain(gear.iter().copied())
-            .map(str::to_owned)
-            .collect();
-        let level = if self.prepared[index] { 0 } else { build.level };
-        let status = tokio::task::spawn_blocking(move || {
-            for (index, key) in keys.drain(..).enumerate() {
-                let status = crate::qualification::provision_python()
-                    .arg(&script)
+        let requested_level = if self.prepared[index] { 0 } else { build.level };
+        for (ordinal, key) in std::iter::once(key).chain(gear.iter().copied()).enumerate() {
+            // The qualification owner freezes one reward cause per admitted
+            // session. Distinct gear proposals need distinct sessions.
+            let client = connect_character(scope, 0x71, index % 2).await?;
+            let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+            let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../tools/qualification/node_boot/provision.py");
+            let socket = self.socket.clone();
+            let key = key.to_owned();
+            let level = if ordinal == 0 { requested_level } else { 0 };
+            let status = tokio::task::spawn_blocking(move || {
+                crate::qualification::provision_python()
+                    .arg(script)
                     .args([
                         "--socket",
                         &socket,
@@ -323,24 +323,18 @@ impl Fixtures<'_> {
                         &session,
                         "--item",
                         VOCATIONS[build.vocation],
-                        &(if index == 0 { level } else { 0 }).to_string(),
+                        &level.to_string(),
                         &key,
                     ])
-                    .status()?;
-                if !status.success() {
-                    return Ok::<_, std::io::Error>(false);
-                }
+                    .status()
+            })
+            .await;
+            let released = release_fixture(client, scope, index % 2).await;
+            if !status??.success() {
+                return Err("fixture-item-preparation-refused".into());
             }
-            Ok(true)
-        })
-        .await;
-        // Release even after fixture refusal. Dropping an admitted socket instead
-        // would park the Character in reconnect grace and block the next item.
-        let released = release_fixture(client, scope, index % 2).await;
-        if !status?? {
-            return Err("fixture-item-preparation-refused".into());
+            released?;
         }
-        released?;
         let mut client = connect_character(scope, 0x72, index % 2).await?;
         let facts = super::creature_sweep::read_stats(&mut client).await;
         let verification = facts.and_then(|(_, level, vocation)| {
@@ -1453,9 +1447,14 @@ async fn rune_probe(
     client: &mut DevClientSession,
     world: &BundleWorld,
     entry: ItemEntry,
+    key: &str,
 ) -> TestResult<(Use, u64)> {
+    let source_item = key
+        .strip_prefix("oteryn:item.tibia.i")
+        .ok_or("rune-source-item-identity-unavailable")?
+        .parse::<u32>()?;
     let spell = native_spell_book()?
-        .rune(entry.item_definition_ref.get())
+        .rune(source_item)
         .ok_or("rune-native-definition-unavailable")?;
     let from = tile(client.world_spatial().actor_position)?;
     let path = route(world, from, |at| {
@@ -1505,11 +1504,12 @@ async fn use_effect(
     client: &mut DevClientSession,
     world: &BundleWorld,
     entry: ItemEntry,
+    key: &str,
     item: &Item,
     index: &crate::content::item_ref::ItemDefinitionIndex,
 ) -> TestResult {
     if !item.attributes["rune_consumption"].is_null() {
-        let (disposition, _) = rune_probe(client, world, entry).await?;
+        let (disposition, _) = rune_probe(client, world, entry, key).await?;
         if disposition != Use::Committed {
             return Err(format!("targeted-rune-USE-{disposition:?}").into());
         }
@@ -1668,6 +1668,8 @@ fn restriction_builds(required: &Value) -> (Option<Build>, Option<Build>) {
 
 async fn restriction(
     fixtures: &mut Fixtures<'_>,
+    world: &BundleWorld,
+    item: &Item,
     key: &str,
     reference: NonZeroU32,
     build: Build,
@@ -1691,9 +1693,15 @@ async fn restriction(
                 .await?;
             }
             Action::Use => {
-                let reply = client.use_item(entry.handle).await?;
-                if reply.disposition != Use::RequirementNotMet {
-                    return Err(format!("use-expected-RequirementNotMet-observed-{reply:?}").into());
+                let disposition = if item.attributes["rune_consumption"].is_null() {
+                    client.use_item(entry.handle).await?.disposition
+                } else {
+                    rune_probe(&mut client, world, entry, key).await?.0
+                };
+                if disposition != Use::RequirementNotMet {
+                    return Err(
+                        format!("use-expected-RequirementNotMet-observed-{disposition:?}").into(),
+                    );
                 }
             }
         }
@@ -1772,7 +1780,7 @@ async fn sweep_item(
     }
     if let Some(creature) = corpse_sources
         .get(key)
-        .filter(|_| item.ground_only && item.capacity().is_some())
+        .filter(|_| item.capacity().is_some())
     {
         if let Err(error) = corpse(fixtures, world, index, creature, reference, item, rows).await {
             rows.emit("seed", Err(error));
@@ -1889,7 +1897,7 @@ async fn sweep_item(
         }
     } else if item.usable() {
         let result = match carried(&client, reference) {
-            Some(entry) => use_effect(&mut client, world, entry, item, index).await,
+            Some(entry) => use_effect(&mut client, world, entry, key, item, index).await,
             None => Err("use-blocked-by-item-custody".into()),
         };
         rows.emit("use", result);
@@ -1909,7 +1917,9 @@ async fn sweep_item(
         for (name, build) in [(level, low), (vocation, wrong)] {
             if rows.pending.contains(&name) {
                 let result = match build {
-                    Some(build) => restriction(fixtures, key, reference, build, action).await,
+                    Some(build) => {
+                        restriction(fixtures, world, item, key, reference, build, action).await
+                    }
                     None => Err("restriction-fixture-unavailable".into()),
                 };
                 rows.emit(name, result);
