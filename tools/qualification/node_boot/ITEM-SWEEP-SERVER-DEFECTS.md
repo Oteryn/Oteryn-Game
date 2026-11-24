@@ -301,3 +301,13 @@ deadline. The remaining ledger now contains 1,395 keys.
 
 All ten sweep-branch refusals from the `0:10` pilot seeded and cleaned
 successfully on fxi. This evidence applies to the detached server revision.
+
+| Detached replay | Seed PASS | Seed FAIL | Terminal result |
+| --- | ---: | ---: | --- |
+| 48 typed definition failures on fxi `cfdd0d690` | 37 | 11 | `NODE_BOOT_FAIL` |
+
+The remaining 11 returned `DefinitionNotFound` again at the live item
+admission owner (`crates/gameplay/items/src/item_ref_admission.rs:63–74`).
+The exact keys are 14248, 16244, 20057, 20355, 23512, 23525, 23738,
+24393, 25296, 28571 and 2871. The ledger removes the 37 successful seeds
+and retains the typed refusals.
