@@ -469,7 +469,6 @@ impl Journey<'_, '_> {
     }
 
     async fn use_terrain_tool(&mut self, placement: u64, tools: &[Value]) -> TestResult {
-        use oteryn_protocol_oteryn::world_object as wire;
         let inventory = self
             .client
             .inventory()
@@ -488,10 +487,20 @@ impl Journey<'_, '_> {
                 break;
             }
         }
+        self.use_carried_on_placement(placement, handle.ok_or("fixture-terrain-tool-missing")?)
+            .await
+    }
+
+    async fn use_carried_on_placement(
+        &mut self,
+        placement: u64,
+        handle: oteryn_protocol_oteryn::item_view::ItemHandle,
+    ) -> TestResult {
+        use oteryn_protocol_oteryn::world_object as wire;
         let mut key = self.world.base().digest().to_vec();
         key.extend_from_slice(&placement.to_be_bytes());
         let intent = wire::UseIntent {
-            target: wire::UseTarget::Item(handle.ok_or("fixture-terrain-tool-missing")?),
+            target: wire::UseTarget::Item(handle),
             use_with: None,
             use_with_map_item: Some(wire::MapUseTarget::Object(wire::WorldObjectTarget {
                 placement: key,
@@ -509,7 +518,7 @@ impl Journey<'_, '_> {
         let disposition =
             wire::decode_use_result(&result.payload).map_err(|error| format!("{error:?}"))?;
         if result.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
-            return Err(format!("terrain-tool-refused-{:?}-{disposition:?}", result.status).into());
+            return Err(format!("carried-use-refused-{:?}-{disposition:?}", result.status).into());
         }
         Ok(())
     }
@@ -697,6 +706,50 @@ impl Journey<'_, '_> {
                 if reply.refusal != 0 || !reply.weekly.started {
                     return Err(format!("task-board-weekly-refused-{}", reply.refusal).into());
                 }
+                None
+            }
+            "door_use" => {
+                let placement = callback["native_placement_key"]
+                    .as_u64()
+                    .ok_or("missing-door-placement")?;
+                let (target, _) =
+                    crate::map::view::placement_of(placement).ok_or("invalid-door-placement")?;
+                let number = i64::from(u16::try_from(
+                    callback["key_number"]
+                        .as_u64()
+                        .ok_or("missing-door-key-number")?,
+                )?);
+                let definitions: Vec<String> = sqlx::query_scalar(
+                    "SELECT i.definition_production_key
+                     FROM game_quest_callback_carried(encode($1, 'hex')::uuid, encode($2, 'hex')::uuid) c
+                     JOIN game_item_instances i ON i.item_instance_id = c.item
+                     JOIN game_item_keys k ON k.item_instance_id = c.item
+                     WHERE k.key_number = $3 AND i.lifecycle = 1 LIMIT 2",
+                )
+                .bind(self.character)
+                .bind(self.clients.world.as_slice())
+                .bind(number)
+                .fetch_all(&mut *self.db)
+                .await?;
+                let [key] = definitions.as_slice() else {
+                    return Err("fixture-door-key-missing-or-ambiguous".into());
+                };
+                let reference = provisioning::item_reference(self.items, item_id(key)?)?;
+                self.approach(target, 1).await?;
+                let inventory = self
+                    .client
+                    .inventory()
+                    .ok_or("missing-inventory-snapshot")?;
+                let mut matches = inventory
+                    .entries
+                    .iter()
+                    .chain(inventory.equipment.iter().map(|entry| &entry.item))
+                    .filter(|item| item.item_definition_ref == reference);
+                let handle = matches.next().ok_or("fixture-door-key-not-visible")?.handle;
+                if matches.next().is_some() {
+                    return Err("fixture-door-key-wire-handle-ambiguous".into());
+                }
+                self.use_carried_on_placement(placement, handle).await?;
                 None
             }
             "terrain_use" => {
