@@ -145,8 +145,10 @@ game_platform_start() {
   evidence "platform_roles=migrate,serve,worker,gateway platform_pg=18.6 game_pg=18.6 separate_database_roles=1 clients=16"
 }
 game_platform_config() {
-  python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" configure "$WORK" "$1" "$BASE" "$SERVICE_UID"
-
+  local -a mode=()
+  [[ "${NODE_BOOT_UNPRIVILEGED:-0}" != 1 ]] || mode=(--unprivileged)
+  python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" configure \
+    "$WORK" "$1" "$BASE" "$SERVICE_UID" "${mode[@]}"
 }
 game_platform_identity() {
   result=NODE_BOOT_IDENTITY_ONLY

@@ -39,10 +39,13 @@ node_identities = [{q(identity)}]
     return text, config
 
 
-def configure(work, node, base, uid):
+def configure(work, node, base, uid, unprivileged=False):
     report = json.loads((work / "portal-report.json").read_text())
+    operator = [] if unprivileged else ["sudo"]
+
     def install(source, destination, owner, mode):
-        subprocess.run(["sudo", "install", "-o", owner, "-m", mode, str(source), str(destination)],
+        ownership = [] if unprivileged else ["-o", owner]
+        subprocess.run([*operator, "install", *ownership, "-m", mode, str(source), str(destination)],
                        check=True, capture_output=True)
     for role in ["runtime-status", "lcfa", "bootstrap-intents"]:
         for key, ext in [("cert", "crt"), ("key", "key")]:
@@ -55,11 +58,11 @@ def configure(work, node, base, uid):
     # launch of the same run renders its configuration around the fence it created.
     fence = base / "run/lcfa-epoch-fence"
     initial_fence = work / "lcfa-epoch-fence"
-    subprocess.run(["sudo", "test", "!", "-L", str(fence)], check=True, capture_output=True)
+    subprocess.run([*operator, "test", "!", "-L", str(fence)], check=True, capture_output=True)
     if initial_fence.exists():
-        subprocess.run(["sudo", "test", "-f", str(fence)], check=True, capture_output=True)
+        subprocess.run([*operator, "test", "-f", str(fence)], check=True, capture_output=True)
     else:
-        subprocess.run(["sudo", "test", "!", "-e", str(fence)], check=True, capture_output=True)
+        subprocess.run([*operator, "test", "!", "-e", str(fence)], check=True, capture_output=True)
         initial_fence.write_text("0\n")
         install(initial_fence, fence, uid, "0600")
     text, config = node_documents(report, node.read_text(), base)
@@ -87,7 +90,8 @@ def bootstrap(work, account, world, operation, revisions, name="Qualification Tw
 if __name__ == "__main__":
     try:
         if sys.argv[1] == "configure":
-            configure(Path(sys.argv[2]), Path(sys.argv[3]), Path(sys.argv[4]), sys.argv[5])
+            configure(Path(sys.argv[2]), Path(sys.argv[3]), Path(sys.argv[4]), sys.argv[5],
+                      unprivileged=sys.argv[6:] == ["--unprivileged"])
         elif sys.argv[1] == "bootstrap":
             bootstrap(Path(sys.argv[2]), *sys.argv[3:6], sys.argv[6:10], *sys.argv[10:])
         else:
