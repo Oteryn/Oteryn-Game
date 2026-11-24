@@ -1718,6 +1718,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     from bind_monster_source_definitions import bind_definitions
 
     generated = bind_definitions(root, generated)
+    import taming_creature_profiles
+
+    taming_creature_profiles.apply_native(root, generated, spell_import.canonical_bytes)
     # W11 source callback outfits share the registered native appearance provider.
     import soul_war_appearance_profiles
 

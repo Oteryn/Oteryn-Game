@@ -1,0 +1,1548 @@
+{
+  "records": [
+    {
+      "source": {
+        "path": "data-global/monster/quests/rotten_blood_quest/foxmouse.lua",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "623d5a807ff90c4f9663f2c142e9e57d9775f8e82f4c556dfcc6281be5d53c5e",
+        "taming_action": "data-global/scripts/actions/mounts/mounts.lua:73"
+      },
+      "creature": {
+        "profile": {
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.foxmouse",
+            "revision": "definition-r1"
+          },
+          "data": {
+            "kind": "Creature",
+            "profile": {
+              "health": 1200,
+              "experience": 900,
+              "speed": 290,
+              "armor": 30,
+              "resistances": [
+                {
+                  "damage_type": "death",
+                  "percent": {
+                    "numerator": -5,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "damage_type": "energy",
+                  "percent": {
+                    "numerator": 100,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "damage_type": "fire",
+                  "percent": {
+                    "numerator": 20,
+                    "denominator": 1
+                  }
+                }
+              ],
+              "immunities": [],
+              "abilities": [
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.foxmouse.attack-1",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.foxmouse.attack-2",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.foxmouse.defense-1",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.foxmouse.defense-2",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.foxmouse.defense-3",
+                  "revision": "definition-r1"
+                }
+              ],
+              "details": {
+                "display_name": "Foxmouse",
+                "inspection": "a foxmouse",
+                "defense": 30,
+                "critical_chance_ppm": 0,
+                "reference_level": null,
+                "flags": {
+                  "attackable": true,
+                  "illusionable": false,
+                  "health_hidden": false
+                },
+                "summoning": {
+                  "summonable": false,
+                  "convinceable": false,
+                  "is_familiar": false
+                },
+                "system_eligibility": {
+                  "prey": true,
+                  "exclusive_prey": false,
+                  "forge": true,
+                  "reward_boss": false
+                },
+                "spawn_eligibility": {
+                  "period": "All",
+                  "ignore_period_underground": false,
+                  "blocked_by_nearby_players": false
+                },
+                "article": "a",
+                "condition_immunities": [
+                  "invisible",
+                  "paralyze"
+                ],
+                "death_residue": {
+                  "item": {
+                    "family": "Item",
+                    "key": "oteryn:item.tibia.i2886",
+                    "revision": "definition-r1"
+                  },
+                  "fluid_type": "blood"
+                }
+              }
+            }
+          }
+        },
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.creature.foxmouse",
+          "revision": "definition-r1"
+        },
+        "behavior": {
+          "target": {
+            "family": "Behavior",
+            "key": "oteryn:behavior.creature.foxmouse",
+            "revision": "definition-r1"
+          },
+          "data": {
+            "kind": "Behavior",
+            "profile": {
+              "movement": {
+                "can_walk": true,
+                "pass_through": false,
+                "pushable": false,
+                "push_items": true,
+                "push_creatures": true,
+                "walks_on_energy": true,
+                "walks_on_fire": false,
+                "walks_on_poison": false
+              },
+              "targeting": {
+                "hostile": true,
+                "can_target": true,
+                "sense_invisible": true,
+                "target_distance_tiles": 1,
+                "static_attack_chance_ppm": 800000,
+                "flee_health": 100,
+                "change_target": {
+                  "interval_ms": 4000,
+                  "chance_ppm": 100000
+                },
+                "strategy_weights": {
+                  "nearest": 100,
+                  "damage": 0,
+                  "health": 0,
+                  "random": 0
+                }
+              },
+              "attacks": [
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.foxmouse.attack-1",
+                    "revision": "definition-r1"
+                  },
+                  "interval_ms": 1500,
+                  "chance_ppm": 1000000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.foxmouse.attack-2",
+                    "revision": "definition-r1"
+                  },
+                  "interval_ms": 2000,
+                  "chance_ppm": 150000
+                }
+              ],
+              "defenses": [
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.foxmouse.defense-1",
+                    "revision": "definition-r1"
+                  },
+                  "interval_ms": 2000,
+                  "chance_ppm": 150000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.foxmouse.defense-2",
+                    "revision": "definition-r1"
+                  },
+                  "interval_ms": 2000,
+                  "chance_ppm": 150000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.foxmouse.defense-3",
+                    "revision": "definition-r1"
+                  },
+                  "interval_ms": 2000,
+                  "chance_ppm": 150000
+                }
+              ]
+            }
+          }
+        },
+        "attack_definitions": {
+          "records": [
+            {
+              "kind": "Ability",
+              "identity": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foxmouse.attack-1",
+                "revision": "definition-r1"
+              },
+              "effects": [
+                {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.foxmouse.attack-1",
+                  "revision": "definition-r1"
+                }
+              ]
+            },
+            {
+              "kind": "Ability",
+              "identity": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foxmouse.attack-2",
+                "revision": "definition-r1"
+              },
+              "effects": [
+                {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.foxmouse.attack-2",
+                  "revision": "definition-r1"
+                }
+              ]
+            },
+            {
+              "kind": "Ability",
+              "identity": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foxmouse.defense-1",
+                "revision": "definition-r1"
+              },
+              "effects": []
+            },
+            {
+              "kind": "Ability",
+              "identity": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foxmouse.defense-2",
+                "revision": "definition-r1"
+              },
+              "effects": [
+                {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.foxmouse.defense-2",
+                  "revision": "definition-r1"
+                }
+              ]
+            },
+            {
+              "kind": "Ability",
+              "identity": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foxmouse.defense-3",
+                "revision": "definition-r1"
+              },
+              "effects": []
+            },
+            {
+              "kind": "Generic",
+              "identity": {
+                "family": "Behavior",
+                "key": "oteryn:behavior.creature.foxmouse",
+                "revision": "definition-r1"
+              },
+              "client_projection": "ServerOnly"
+            },
+            {
+              "kind": "Creature",
+              "identity": {
+                "family": "Creature",
+                "key": "oteryn:creature.foxmouse",
+                "revision": "definition-r1"
+              },
+              "client_projection": "ClientSafe",
+              "presentation": {
+                "family": "Presentation",
+                "key": "oteryn:presentation.creature.foxmouse",
+                "revision": "definition-r1"
+              },
+              "behavior": {
+                "family": "Behavior",
+                "key": "oteryn:behavior.creature.foxmouse",
+                "revision": "definition-r1"
+              },
+              "loot": null
+            },
+            {
+              "kind": "Effect",
+              "identity": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.foxmouse.attack-1",
+                "revision": "definition-r1"
+              },
+              "client_projection": "ServerOnly",
+              "effect_family": "Damage",
+              "formula": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.foxmouse.attack-1-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "kind": "Effect",
+              "identity": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.foxmouse.attack-2",
+                "revision": "definition-r1"
+              },
+              "client_projection": "ServerOnly",
+              "effect_family": "Damage",
+              "formula": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.foxmouse.attack-2-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "kind": "Effect",
+              "identity": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.foxmouse.defense-2",
+                "revision": "definition-r1"
+              },
+              "client_projection": "ServerOnly",
+              "effect_family": "Heal",
+              "formula": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.foxmouse.defense-2-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "kind": "Formula",
+              "identity": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.foxmouse.attack-1-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "kind": "Formula",
+              "identity": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.foxmouse.attack-2-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "kind": "Formula",
+              "identity": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.foxmouse.defense-1-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "kind": "Formula",
+              "identity": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.foxmouse.defense-2-1",
+                "revision": "definition-r1"
+              }
+            }
+          ],
+          "profiles": [
+            {
+              "target": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foxmouse.attack-1",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Ability",
+                "profile": {
+                  "details": {
+                    "kind": "Melee",
+                    "range_tiles": 1,
+                    "needs_target": true,
+                    "needs_direction": false,
+                    "effects": [
+                      {
+                        "kind": "Executable",
+                        "effect": {
+                          "family": "Effect",
+                          "key": "oteryn:effect.creature.foxmouse.attack-1",
+                          "revision": "definition-r1"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foxmouse.attack-2",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Ability",
+                "profile": {
+                  "details": {
+                    "kind": "Spell",
+                    "range_tiles": 7,
+                    "needs_target": false,
+                    "needs_direction": false,
+                    "effects": [
+                      {
+                        "kind": "Executable",
+                        "effect": {
+                          "family": "Effect",
+                          "key": "oteryn:effect.creature.foxmouse.attack-2",
+                          "revision": "definition-r1"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foxmouse.defense-1",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Ability",
+                "profile": {
+                  "details": {
+                    "kind": "Spell",
+                    "range_tiles": 0,
+                    "needs_target": false,
+                    "needs_direction": false,
+                    "effects": [
+                      {
+                        "kind": "Inline",
+                        "effect": {
+                          "key": "oteryn:effect.creature.foxmouse.defense-1",
+                          "operation": {
+                            "operation": "Condition",
+                            "condition": {
+                              "condition_type": "haste",
+                              "lifetime": "FixedDuration",
+                              "speed_formula": {
+                                "family": "Formula",
+                                "key": "oteryn:formula.creature.foxmouse.defense-1-1",
+                                "revision": "definition-r1"
+                              }
+                            },
+                            "duration_ms": 5000
+                          },
+                          "presentation": {
+                            "impact_asset_binding": "canary.appearance:effect/magic_red"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foxmouse.defense-2",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Ability",
+                "profile": {
+                  "details": {
+                    "kind": "Spell",
+                    "range_tiles": 0,
+                    "needs_target": false,
+                    "needs_direction": false,
+                    "effects": [
+                      {
+                        "kind": "Executable",
+                        "effect": {
+                          "family": "Effect",
+                          "key": "oteryn:effect.creature.foxmouse.defense-2",
+                          "revision": "definition-r1"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foxmouse.defense-3",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Ability",
+                "profile": {
+                  "details": {
+                    "kind": "Spell",
+                    "range_tiles": 0,
+                    "needs_target": false,
+                    "needs_direction": false,
+                    "effects": [
+                      {
+                        "kind": "Inline",
+                        "effect": {
+                          "key": "oteryn:effect.creature.foxmouse.defense-3",
+                          "operation": {
+                            "operation": "Condition",
+                            "condition": {
+                              "condition_type": "invisible",
+                              "lifetime": "FixedDuration"
+                            },
+                            "duration_ms": 10000
+                          },
+                          "presentation": {
+                            "impact_asset_binding": "canary.appearance:effect/magic_blue"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Behavior",
+                "key": "oteryn:behavior.creature.foxmouse",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Behavior",
+                "profile": {
+                  "movement": {
+                    "can_walk": true,
+                    "pass_through": false,
+                    "pushable": false,
+                    "push_items": true,
+                    "push_creatures": true,
+                    "walks_on_energy": true,
+                    "walks_on_fire": false,
+                    "walks_on_poison": false
+                  },
+                  "targeting": {
+                    "hostile": true,
+                    "can_target": true,
+                    "sense_invisible": true,
+                    "target_distance_tiles": 1,
+                    "static_attack_chance_ppm": 800000,
+                    "flee_health": 100,
+                    "change_target": {
+                      "interval_ms": 4000,
+                      "chance_ppm": 100000
+                    },
+                    "strategy_weights": {
+                      "nearest": 100,
+                      "damage": 0,
+                      "health": 0,
+                      "random": 0
+                    }
+                  },
+                  "attacks": [
+                    {
+                      "ability": {
+                        "family": "Ability",
+                        "key": "oteryn:ability.creature.foxmouse.attack-1",
+                        "revision": "definition-r1"
+                      },
+                      "interval_ms": 1500,
+                      "chance_ppm": 1000000
+                    },
+                    {
+                      "ability": {
+                        "family": "Ability",
+                        "key": "oteryn:ability.creature.foxmouse.attack-2",
+                        "revision": "definition-r1"
+                      },
+                      "interval_ms": 2000,
+                      "chance_ppm": 150000
+                    }
+                  ],
+                  "defenses": [
+                    {
+                      "ability": {
+                        "family": "Ability",
+                        "key": "oteryn:ability.creature.foxmouse.defense-1",
+                        "revision": "definition-r1"
+                      },
+                      "interval_ms": 2000,
+                      "chance_ppm": 150000
+                    },
+                    {
+                      "ability": {
+                        "family": "Ability",
+                        "key": "oteryn:ability.creature.foxmouse.defense-2",
+                        "revision": "definition-r1"
+                      },
+                      "interval_ms": 2000,
+                      "chance_ppm": 150000
+                    },
+                    {
+                      "ability": {
+                        "family": "Ability",
+                        "key": "oteryn:ability.creature.foxmouse.defense-3",
+                        "revision": "definition-r1"
+                      },
+                      "interval_ms": 2000,
+                      "chance_ppm": 150000
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Creature",
+                "key": "oteryn:creature.foxmouse",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Creature",
+                "profile": {
+                  "health": 1200,
+                  "experience": 900,
+                  "speed": 290,
+                  "armor": 30,
+                  "resistances": [
+                    {
+                      "damage_type": "death",
+                      "percent": {
+                        "numerator": -5,
+                        "denominator": 1
+                      }
+                    },
+                    {
+                      "damage_type": "energy",
+                      "percent": {
+                        "numerator": 100,
+                        "denominator": 1
+                      }
+                    },
+                    {
+                      "damage_type": "fire",
+                      "percent": {
+                        "numerator": 20,
+                        "denominator": 1
+                      }
+                    }
+                  ],
+                  "immunities": [],
+                  "abilities": [
+                    {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.foxmouse.attack-1",
+                      "revision": "definition-r1"
+                    },
+                    {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.foxmouse.attack-2",
+                      "revision": "definition-r1"
+                    },
+                    {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.foxmouse.defense-1",
+                      "revision": "definition-r1"
+                    },
+                    {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.foxmouse.defense-2",
+                      "revision": "definition-r1"
+                    },
+                    {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.foxmouse.defense-3",
+                      "revision": "definition-r1"
+                    }
+                  ],
+                  "details": {
+                    "display_name": "Foxmouse",
+                    "inspection": "a foxmouse",
+                    "defense": 30,
+                    "critical_chance_ppm": 0,
+                    "reference_level": null,
+                    "flags": {
+                      "attackable": true,
+                      "illusionable": false,
+                      "health_hidden": false
+                    },
+                    "summoning": {
+                      "summonable": false,
+                      "convinceable": false,
+                      "is_familiar": false
+                    },
+                    "system_eligibility": {
+                      "prey": true,
+                      "exclusive_prey": false,
+                      "forge": true,
+                      "reward_boss": false
+                    },
+                    "spawn_eligibility": {
+                      "period": "All",
+                      "ignore_period_underground": false,
+                      "blocked_by_nearby_players": false
+                    },
+                    "article": "a",
+                    "condition_immunities": [
+                      "invisible",
+                      "paralyze"
+                    ],
+                    "death_residue": {
+                      "item": {
+                        "family": "Item",
+                        "key": "oteryn:item.tibia.i2886",
+                        "revision": "definition-r1"
+                      },
+                      "fluid_type": "blood"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.foxmouse.attack-1",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Effect",
+                "profile": {
+                  "damage_type": "physical",
+                  "mitigated_by": [
+                    "Armor",
+                    "Shield"
+                  ]
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.foxmouse.attack-2",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Effect",
+                "profile": {
+                  "damage_type": "energy",
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/energyarea",
+                    "projectile_asset_binding": "canary.appearance:missile/energy"
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.foxmouse.defense-2",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Effect",
+                "profile": {
+                  "damage_type": "healing",
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_blue"
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.foxmouse.attack-1-1",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Formula",
+                "profile": {
+                  "formula": "Range",
+                  "minimum": 0,
+                  "maximum": 90
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.foxmouse.attack-2-1",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Formula",
+                "profile": {
+                  "formula": "Range",
+                  "minimum": 75,
+                  "maximum": 215
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.foxmouse.defense-1-1",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Formula",
+                "profile": {
+                  "formula": "SpeedModifier",
+                  "minimum_multiplier": {
+                    "numerator": 137,
+                    "denominator": 200
+                  },
+                  "minimum_offset": 40,
+                  "maximum_multiplier": {
+                    "numerator": 137,
+                    "denominator": 100
+                  },
+                  "maximum_offset": 40
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.foxmouse.defense-2-1",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Formula",
+                "profile": {
+                  "formula": "Range",
+                  "minimum": 50,
+                  "maximum": 125
+                }
+              }
+            }
+          ]
+        }
+      },
+      "presentation": {
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.creature.foxmouse",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "light_level": 0,
+            "asset_binding": "canary.appearance:outfit/1632"
+          }
+        }
+      }
+    },
+    {
+      "source": {
+        "path": "data-global/monster/winter_update_2025/quests/tamed_frazzlemaw.lua",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "070c5547ee7d1ddf953f2af3d9318694101a09c46fd35b783eae71c77e88d29c",
+        "taming_action": "data-global/scripts/actions/mounts/mounts.lua:8"
+      },
+      "creature": {
+        "profile": {
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.battlefrazzle",
+            "revision": "definition-r1"
+          },
+          "data": {
+            "kind": "Creature",
+            "profile": {
+              "health": 1000,
+              "experience": 0,
+              "speed": 165,
+              "armor": 90,
+              "resistances": [],
+              "immunities": [],
+              "abilities": [
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-1",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-2",
+                  "revision": "definition-r1"
+                },
+                {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-3",
+                  "revision": "definition-r1"
+                }
+              ],
+              "mitigation": {
+                "numerator": 13,
+                "denominator": 5
+              },
+              "details": {
+                "display_name": "Tamed Frazzlemaw",
+                "inspection": "a tamed frazzlemaw",
+                "defense": 90,
+                "critical_chance_ppm": 0,
+                "reference_level": null,
+                "flags": {
+                  "attackable": true,
+                  "illusionable": false,
+                  "health_hidden": false
+                },
+                "summoning": {
+                  "summonable": false,
+                  "convinceable": false,
+                  "is_familiar": false
+                },
+                "system_eligibility": {
+                  "prey": true,
+                  "exclusive_prey": false,
+                  "forge": true,
+                  "reward_boss": false
+                },
+                "spawn_eligibility": {
+                  "period": "All",
+                  "ignore_period_underground": false,
+                  "blocked_by_nearby_players": false
+                },
+                "article": "a",
+                "condition_immunities": [
+                  "bleed",
+                  "invisible",
+                  "outfit",
+                  "paralyze"
+                ],
+                "death_residue": {
+                  "item": {
+                    "family": "Item",
+                    "key": "oteryn:item.tibia.i2886",
+                    "revision": "definition-r1"
+                  },
+                  "fluid_type": "blood"
+                }
+              }
+            }
+          }
+        },
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.creature.tamed_frazzlemaw",
+          "revision": "definition-r1"
+        },
+        "behavior": {
+          "target": {
+            "family": "Behavior",
+            "key": "oteryn:behavior.creature.tamed_frazzlemaw",
+            "revision": "definition-r1"
+          },
+          "data": {
+            "kind": "Behavior",
+            "profile": {
+              "movement": {
+                "can_walk": true,
+                "pass_through": false,
+                "pushable": false,
+                "push_items": false,
+                "push_creatures": false,
+                "walks_on_energy": true,
+                "walks_on_fire": true,
+                "walks_on_poison": true
+              },
+              "targeting": {
+                "hostile": false,
+                "can_target": true,
+                "sense_invisible": true,
+                "target_distance_tiles": 1,
+                "static_attack_chance_ppm": 900000,
+                "flee_health": 0,
+                "change_target": {
+                  "interval_ms": 4000,
+                  "chance_ppm": 100000
+                },
+                "strategy_weights": {
+                  "nearest": 70,
+                  "damage": 0,
+                  "health": 0,
+                  "random": 0
+                }
+              },
+              "attacks": [
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-1",
+                    "revision": "definition-r1"
+                  },
+                  "interval_ms": 2000,
+                  "chance_ppm": 1000000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-2",
+                    "revision": "definition-r1"
+                  },
+                  "interval_ms": 2000,
+                  "chance_ppm": 250000
+                },
+                {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-3",
+                    "revision": "definition-r1"
+                  },
+                  "interval_ms": 2000,
+                  "chance_ppm": 200000
+                }
+              ]
+            }
+          }
+        },
+        "attack_definitions": {
+          "records": [
+            {
+              "kind": "Ability",
+              "identity": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-1",
+                "revision": "definition-r1"
+              },
+              "effects": [
+                {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.tamed_frazzlemaw.attack-1",
+                  "revision": "definition-r1"
+                }
+              ]
+            },
+            {
+              "kind": "Ability",
+              "identity": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-2",
+                "revision": "definition-r1"
+              },
+              "effects": [
+                {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.tamed_frazzlemaw.attack-2",
+                  "revision": "definition-r1"
+                }
+              ]
+            },
+            {
+              "kind": "Ability",
+              "identity": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-3",
+                "revision": "definition-r1"
+              },
+              "effects": [
+                {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.tamed_frazzlemaw.attack-3",
+                  "revision": "definition-r1"
+                }
+              ]
+            },
+            {
+              "kind": "Generic",
+              "identity": {
+                "family": "Behavior",
+                "key": "oteryn:behavior.creature.tamed_frazzlemaw",
+                "revision": "definition-r1"
+              },
+              "client_projection": "ServerOnly"
+            },
+            {
+              "kind": "Creature",
+              "identity": {
+                "family": "Creature",
+                "key": "oteryn:creature.battlefrazzle",
+                "revision": "definition-r1"
+              },
+              "client_projection": "ClientSafe",
+              "presentation": {
+                "family": "Presentation",
+                "key": "oteryn:presentation.creature.tamed_frazzlemaw",
+                "revision": "definition-r1"
+              },
+              "behavior": {
+                "family": "Behavior",
+                "key": "oteryn:behavior.creature.tamed_frazzlemaw",
+                "revision": "definition-r1"
+              },
+              "loot": null
+            },
+            {
+              "kind": "Effect",
+              "identity": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.tamed_frazzlemaw.attack-1",
+                "revision": "definition-r1"
+              },
+              "client_projection": "ServerOnly",
+              "effect_family": "Damage",
+              "formula": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.tamed_frazzlemaw.attack-1-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "kind": "Effect",
+              "identity": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.tamed_frazzlemaw.attack-2",
+                "revision": "definition-r1"
+              },
+              "client_projection": "ServerOnly",
+              "effect_family": "Damage",
+              "formula": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.tamed_frazzlemaw.attack-2-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "kind": "Effect",
+              "identity": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.tamed_frazzlemaw.attack-3",
+                "revision": "definition-r1"
+              },
+              "client_projection": "ServerOnly",
+              "effect_family": "Damage",
+              "formula": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.tamed_frazzlemaw.attack-3-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "kind": "Formula",
+              "identity": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.tamed_frazzlemaw.attack-1-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "kind": "Formula",
+              "identity": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.tamed_frazzlemaw.attack-2-1",
+                "revision": "definition-r1"
+              }
+            },
+            {
+              "kind": "Formula",
+              "identity": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.tamed_frazzlemaw.attack-3-1",
+                "revision": "definition-r1"
+              }
+            }
+          ],
+          "profiles": [
+            {
+              "target": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-1",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Ability",
+                "profile": {
+                  "details": {
+                    "kind": "Melee",
+                    "range_tiles": 1,
+                    "needs_target": true,
+                    "needs_direction": false,
+                    "effects": [
+                      {
+                        "kind": "Executable",
+                        "effect": {
+                          "family": "Effect",
+                          "key": "oteryn:effect.creature.tamed_frazzlemaw.attack-1",
+                          "revision": "definition-r1"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-2",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Ability",
+                "profile": {
+                  "details": {
+                    "kind": "Spell",
+                    "range_tiles": 0,
+                    "needs_target": false,
+                    "needs_direction": false,
+                    "area": {
+                      "shape": "Circle",
+                      "radius_tiles": 4
+                    },
+                    "effects": [
+                      {
+                        "kind": "Executable",
+                        "effect": {
+                          "family": "Effect",
+                          "key": "oteryn:effect.creature.tamed_frazzlemaw.attack-2",
+                          "revision": "definition-r1"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-3",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Ability",
+                "profile": {
+                  "details": {
+                    "kind": "Spell",
+                    "range_tiles": 1,
+                    "needs_target": true,
+                    "needs_direction": false,
+                    "effects": [
+                      {
+                        "kind": "Executable",
+                        "effect": {
+                          "family": "Effect",
+                          "key": "oteryn:effect.creature.tamed_frazzlemaw.attack-3",
+                          "revision": "definition-r1"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Behavior",
+                "key": "oteryn:behavior.creature.tamed_frazzlemaw",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Behavior",
+                "profile": {
+                  "movement": {
+                    "can_walk": true,
+                    "pass_through": false,
+                    "pushable": false,
+                    "push_items": false,
+                    "push_creatures": false,
+                    "walks_on_energy": true,
+                    "walks_on_fire": true,
+                    "walks_on_poison": true
+                  },
+                  "targeting": {
+                    "hostile": false,
+                    "can_target": true,
+                    "sense_invisible": true,
+                    "target_distance_tiles": 1,
+                    "static_attack_chance_ppm": 900000,
+                    "flee_health": 0,
+                    "change_target": {
+                      "interval_ms": 4000,
+                      "chance_ppm": 100000
+                    },
+                    "strategy_weights": {
+                      "nearest": 70,
+                      "damage": 0,
+                      "health": 0,
+                      "random": 0
+                    }
+                  },
+                  "attacks": [
+                    {
+                      "ability": {
+                        "family": "Ability",
+                        "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-1",
+                        "revision": "definition-r1"
+                      },
+                      "interval_ms": 2000,
+                      "chance_ppm": 1000000
+                    },
+                    {
+                      "ability": {
+                        "family": "Ability",
+                        "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-2",
+                        "revision": "definition-r1"
+                      },
+                      "interval_ms": 2000,
+                      "chance_ppm": 250000
+                    },
+                    {
+                      "ability": {
+                        "family": "Ability",
+                        "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-3",
+                        "revision": "definition-r1"
+                      },
+                      "interval_ms": 2000,
+                      "chance_ppm": 200000
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Creature",
+                "key": "oteryn:creature.battlefrazzle",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Creature",
+                "profile": {
+                  "health": 1000,
+                  "experience": 0,
+                  "speed": 165,
+                  "armor": 90,
+                  "resistances": [],
+                  "immunities": [],
+                  "abilities": [
+                    {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-1",
+                      "revision": "definition-r1"
+                    },
+                    {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-2",
+                      "revision": "definition-r1"
+                    },
+                    {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.tamed_frazzlemaw.attack-3",
+                      "revision": "definition-r1"
+                    }
+                  ],
+                  "mitigation": {
+                    "numerator": 13,
+                    "denominator": 5
+                  },
+                  "details": {
+                    "display_name": "Tamed Frazzlemaw",
+                    "inspection": "a tamed frazzlemaw",
+                    "defense": 90,
+                    "critical_chance_ppm": 0,
+                    "reference_level": null,
+                    "flags": {
+                      "attackable": true,
+                      "illusionable": false,
+                      "health_hidden": false
+                    },
+                    "summoning": {
+                      "summonable": false,
+                      "convinceable": false,
+                      "is_familiar": false
+                    },
+                    "system_eligibility": {
+                      "prey": true,
+                      "exclusive_prey": false,
+                      "forge": true,
+                      "reward_boss": false
+                    },
+                    "spawn_eligibility": {
+                      "period": "All",
+                      "ignore_period_underground": false,
+                      "blocked_by_nearby_players": false
+                    },
+                    "article": "a",
+                    "condition_immunities": [
+                      "bleed",
+                      "invisible",
+                      "outfit",
+                      "paralyze"
+                    ],
+                    "death_residue": {
+                      "item": {
+                        "family": "Item",
+                        "key": "oteryn:item.tibia.i2886",
+                        "revision": "definition-r1"
+                      },
+                      "fluid_type": "blood"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.tamed_frazzlemaw.attack-1",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Effect",
+                "profile": {
+                  "damage_type": "physical",
+                  "mitigated_by": [
+                    "Armor",
+                    "Shield"
+                  ]
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.tamed_frazzlemaw.attack-2",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Effect",
+                "profile": {
+                  "damage_type": "physical",
+                  "mitigated_by": [
+                    "Armor"
+                  ],
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/hitarea"
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.tamed_frazzlemaw.attack-3",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Effect",
+                "profile": {
+                  "damage_type": "life_drain",
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/drawblood"
+                  }
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.tamed_frazzlemaw.attack-1-1",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Formula",
+                "profile": {
+                  "formula": "Range",
+                  "minimum": 0,
+                  "maximum": 800
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.tamed_frazzlemaw.attack-2-1",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Formula",
+                "profile": {
+                  "formula": "Range",
+                  "minimum": 500,
+                  "maximum": 900
+                }
+              }
+            },
+            {
+              "target": {
+                "family": "Formula",
+                "key": "oteryn:formula.creature.tamed_frazzlemaw.attack-3-1",
+                "revision": "definition-r1"
+              },
+              "data": {
+                "kind": "Formula",
+                "profile": {
+                  "formula": "Range",
+                  "minimum": 400,
+                  "maximum": 700
+                }
+              }
+            }
+          ]
+        }
+      },
+      "presentation": {
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.creature.tamed_frazzlemaw",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "light_level": 0,
+            "asset_binding": "canary.appearance:outfit/594"
+          }
+        }
+      }
+    }
+  ]
+}

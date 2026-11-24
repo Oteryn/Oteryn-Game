@@ -3237,6 +3237,43 @@ mod tests {
         );
     }
     #[test]
+    fn all_creature_taming_targets_have_an_exact_native_policy() {
+        let creature_bytes = include_bytes!(
+            "../../../../../content/creatures/definitions/spell-native-profiles.json"
+        );
+        let presentation_bytes = include_bytes!(
+            "../../../../../content/presentations/definitions/spell-native-profiles.json"
+        );
+        let policies = super::callback_source_native_test_policies(
+            creature_bytes,
+            presentation_bytes,
+            [1; 32],
+        )
+        .unwrap();
+        let taming: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../content/cosmetics/taming-native.json"
+        ))
+        .unwrap();
+        for rule in taming.as_array().unwrap() {
+            let key = rule["creature_key"].as_str().unwrap();
+            if !key.is_empty() {
+                assert!(
+                    policies.policies().iter().any(|p| p.definition_key == key),
+                    "missing creature policy for {key}"
+                );
+            }
+        }
+        for (key, look) in [("foxmouse", 1632), ("battlefrazzle", 594)] {
+            let policy = policies
+                .policies()
+                .iter()
+                .find(|p| p.definition_key == format!("oteryn:creature.{key}"))
+                .unwrap();
+            assert_eq!(policy.outfit_look_type, look);
+        }
+    }
+
+    #[test]
     fn actual_profile_policies_preserve_health_speed_look_cost_and_flags() {
         let input = input();
         let creatures: CreatureProfilesDocument =
