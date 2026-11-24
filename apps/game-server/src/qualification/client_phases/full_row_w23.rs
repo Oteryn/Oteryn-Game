@@ -407,6 +407,27 @@ async fn travel_to_svargrond(
     Ok(())
 }
 
+async fn prepare_svargrond_travel(client: &mut DevClientSession, price: u64) -> TestResult {
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let coins = u32::try_from(price.div_ceil(100))?;
+    let prepare = async move {
+        request_fixture_control(session.clone(), "--profile", "sorcerer".into())
+            .await
+            .map_err(|error| format!("step=levitate-eligibility {error}"))?;
+        request_fixture_control(session, "--profile", format!("item-3035-{coins}"))
+            .await
+            .map_err(|error| format!("step=boat-fare {error}"))?;
+        Ok(())
+    };
+    tokio::pin!(prepare);
+    loop {
+        tokio::select! {
+            result = &mut prepare => return result,
+            result = client.service_liveness(Duration::from_millis(100)) => { result?; }
+        }
+    }
+}
+
 async fn approach_svargrond_portal(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -506,13 +527,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .await?;
     let clients = &identity.clients(clients);
     let mut provisioned = connect_character(clients, 0xd8, 0).await?;
-    request_fixture_control(
-        uuid_text(provisioned.join_snapshot().game_session_id.as_bytes()),
-        "--profile",
-        "sorcerer".into(),
-    ).await?;
-    let coins = u32::try_from(boat.price.div_ceil(100))?;
-    character_prep::grant_item(&provisioned, 3035, coins).await?;
+    prepare_svargrond_travel(&mut provisioned, boat.price).await?;
     accepted_logout(&mut provisioned).await?;
     drop(provisioned);
     let mut client = connect_character(clients, 0xd9, 0).await?;
