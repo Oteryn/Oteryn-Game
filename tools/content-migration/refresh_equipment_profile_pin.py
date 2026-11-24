@@ -971,12 +971,15 @@ def main():
     from import_cyclopedia_global import load_capture
     from item_detail_source_facts import apply_capture_stats
     from ranged_item_profiles import apply_authoring
+    from weapon_equip_requirements import SLOT_FACTS, complete
 
     capture = load_capture(ROOT)
     forge_owners = owners(ROOT)
+    equipment_facts = json.loads((ROOT / SLOT_FACTS).read_bytes())
     for name, document, _ in srx3:
         apply_capture_stats(document, capture)
         project(document, forge_owners)
+        document["records"] = complete(document, equipment_facts, packet=True)["records"]
         if name == "M25-GALTHEN-YIELDS":
             apply_authoring(ROOT, document)
     generated, count = regenerate(

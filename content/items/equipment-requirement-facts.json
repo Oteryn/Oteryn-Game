@@ -4,7 +4,7 @@
     "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
     "path": "data/items/items.xml",
     "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
-    "rule": "Match each single native primary slot to the Crystal moveevent slot or the explicit backpack slotType. Omitted moveevent level and vocation use 0 and any vocation."
+    "rule": "Match each single native primary slot to the Crystal moveevent slot or the explicit backpack slotType. Omitted moveevent level and vocation use 0 and any vocation. Confirmed two-handed and torso patterns carry their Crystal slot reservations and an empty additional exclusion-group list."
   },
   "records": [
     {
@@ -252,6 +252,18 @@
       "slot": "CONTAINER",
       "level": 0,
       "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3342",
+      "slot": "WEAPON",
+      "level": 65,
+      "vocations": [
+        "KNIGHT"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
     },
     {
       "key": "oteryn:item.tibia.i3351",
@@ -698,6 +710,18 @@
       "vocations": []
     },
     {
+      "key": "oteryn:item.tibia.i7402",
+      "slot": "WEAPON",
+      "level": 45,
+      "vocations": [
+        "KNIGHT"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
       "key": "oteryn:item.tibia.i7457",
       "slot": "FEET",
       "level": 0,
@@ -1046,10 +1070,210 @@
       "vocations": []
     },
     {
+      "key": "oteryn:item.tibia.i34083",
+      "slot": "WEAPON",
+      "level": 400,
+      "vocations": [
+        "KNIGHT"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i34085",
+      "slot": "WEAPON",
+      "level": 400,
+      "vocations": [
+        "KNIGHT"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i34087",
+      "slot": "WEAPON",
+      "level": 400,
+      "vocations": [
+        "KNIGHT"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i34088",
+      "slot": "WEAPON",
+      "level": 400,
+      "vocations": [
+        "PALADIN"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i34089",
+      "slot": "WEAPON",
+      "level": 400,
+      "vocations": [
+        "PALADIN"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
       "key": "oteryn:item.tibia.i40531",
       "slot": "LEGS",
       "level": 0,
       "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i43870",
+      "slot": "WEAPON",
+      "level": 600,
+      "vocations": [
+        "KNIGHT"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i43871",
+      "slot": "WEAPON",
+      "level": 600,
+      "vocations": [
+        "KNIGHT"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i43872",
+      "slot": "WEAPON",
+      "level": 600,
+      "vocations": [
+        "KNIGHT"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i43873",
+      "slot": "WEAPON",
+      "level": 600,
+      "vocations": [
+        "KNIGHT"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i43874",
+      "slot": "WEAPON",
+      "level": 600,
+      "vocations": [
+        "KNIGHT"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i43875",
+      "slot": "WEAPON",
+      "level": 600,
+      "vocations": [
+        "KNIGHT"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i43877",
+      "slot": "WEAPON",
+      "level": 600,
+      "vocations": [
+        "PALADIN"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i43878",
+      "slot": "WEAPON",
+      "level": 600,
+      "vocations": [
+        "PALADIN"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i43879",
+      "slot": "WEAPON",
+      "level": 600,
+      "vocations": [
+        "PALADIN"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i43880",
+      "slot": "WEAPON",
+      "level": 600,
+      "vocations": [
+        "PALADIN"
+      ],
+      "reserved_slots": [
+        "SHIELD"
+      ],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i50254",
+      "slot": "TORSO",
+      "level": 400,
+      "vocations": [
+        "MONK"
+      ],
+      "reserved_slots": [],
+      "exclusion_groups": []
+    },
+    {
+      "key": "oteryn:item.tibia.i50255",
+      "slot": "TORSO",
+      "level": 250,
+      "vocations": [
+        "MONK"
+      ],
+      "reserved_slots": [],
+      "exclusion_groups": []
     }
   ]
 }

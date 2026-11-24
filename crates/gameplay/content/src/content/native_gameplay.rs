@@ -4875,6 +4875,49 @@ mod equipment_projection_tests {
     }
 
     #[test]
+    fn shipped_crystal_two_handed_weapons_project_claims_with_shield_reserved() {
+        use oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentBaseVocation::{
+            Knight, Paladin,
+        };
+        let profiles = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/items/definitions/spell-native-profiles.json");
+        let document: ItemProfilesDocument =
+            serde_json::from_slice(&std::fs::read(profiles).expect("native item profiles"))
+                .expect("native item profile JSON");
+        for (id, level, vocation) in [
+            (3342, 65, Knight),
+            (7402, 45, Knight),
+            (34083, 400, Knight),
+            (34085, 400, Knight),
+            (34087, 400, Knight),
+            (34088, 400, Paladin),
+            (34089, 400, Paladin),
+            (43870, 600, Knight),
+            (43871, 600, Knight),
+            (43872, 600, Knight),
+            (43873, 600, Knight),
+            (43874, 600, Knight),
+            (43875, 600, Knight),
+            (43877, 600, Paladin),
+            (43878, 600, Paladin),
+            (43879, 600, Paladin),
+            (43880, 600, Paladin),
+        ] {
+            let key = format!("oteryn:item.tibia.i{id}");
+            let record = document
+                .records
+                .iter()
+                .find(|record| record.production_definition.production_key == key)
+                .expect("active equipped item");
+            let claims = projected_equipment_claims(&record.semantics, 5, true).expect(&key);
+            assert_eq!(claims.slots, vec![5, 6], "{key}");
+            assert!(claims.groups.is_empty(), "{key}");
+            assert_eq!(claims.level, level, "{key}");
+            assert_eq!(claims.vocations, vec![vocation], "{key}");
+        }
+    }
+
+    #[test]
     fn producer_preserves_source_reservations_requirements_and_unknown_ambiguity() {
         use ReferenceItemField::{Known, Unknown};
         let mut semantics: ReferenceItemSemantics =

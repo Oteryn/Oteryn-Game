@@ -43,6 +43,16 @@ def complete(profiles, facts, packet=False):
         slot = fact.get('slot', 'WEAPON')
         if len(patterns) != 1 or patterns[0]['primary_slot'] != {'state': 'KNOWN', 'value': slot}:
             raise ValueError('WEAPON_EQUIP_PATTERN_SHAPE:' + fact['key'])
+        if 'exclusion_groups' in fact:
+            reserved = {'state': 'KNOWN', 'value': fact['reserved_slots']}
+            if patterns[0]['additional_reserved_slots'] != reserved:
+                raise ValueError('WEAPON_EQUIP_RESERVATION_CONFLICT:' + fact['key'])
+            wanted = {'state': 'KNOWN', 'value': fact['exclusion_groups']}
+            current = patterns[0]['mutually_exclusive_groups']
+            if current['state'] == 'UNKNOWN':
+                patterns[0]['mutually_exclusive_groups'] = wanted
+            elif current != wanted:
+                raise ValueError('WEAPON_EQUIP_GROUP_CONFLICT:' + fact['key'])
         for field, value in (('level', fact['level']), ('vocations', fact['vocations'])):
             wanted = {'state': 'KNOWN', 'value': value}
             current = patterns[0][field]
