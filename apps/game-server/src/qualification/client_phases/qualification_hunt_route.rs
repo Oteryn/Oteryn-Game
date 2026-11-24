@@ -215,20 +215,38 @@ pub(super) async fn qualification_character(
     }
     let binary = base.join("bin/oteryn-game-ops");
     let config = base.join("ops/ops.toml");
-    let created = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("timeout")
-            .arg("20s")
-            .arg(binary)
-            .arg("--config")
-            .arg(config)
-            .args(["character", "bootstrap", "--socket"])
-            .arg(socket)
-            .args(["--operation-id", &operation])
-            .output()
+    let (created, attempts) = tokio::task::spawn_blocking(move || {
+        let deadline = std::time::Instant::now() + Duration::from_secs(20);
+        let mut attempts = 0;
+        loop {
+            attempts += 1;
+            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+            let created = std::process::Command::new("timeout")
+                .arg(format!("{:.3}s", remaining.as_secs_f64().max(0.001)))
+                .arg(&binary)
+                .arg("--config")
+                .arg(&config)
+                .args(["character", "bootstrap", "--socket"])
+                .arg(&socket)
+                .args(["--operation-id", &operation])
+                .output()?;
+            // game-ops exit 7 is an ambiguous bootstrap result. Reconcile the
+            // same intent while the original deadline still permits a retry.
+            let backoff = Duration::from_millis(250);
+            if created.status.code() != Some(7)
+                || deadline.saturating_duration_since(std::time::Instant::now()) <= backoff
+            {
+                return Ok::<_, std::io::Error>((created.status, attempts));
+            }
+            std::thread::sleep(backoff);
+        }
     })
     .await??;
-    if !created.status.success() {
-        return Err(format!("Game bootstrap refused for {name}").into());
+    if !created.success() {
+        return Err(format!(
+            "Game bootstrap refused for {name} after {attempts} attempts: {created}"
+        )
+        .into());
     }
     let ids: Vec<Vec<u8>> = sqlx::query_scalar(
         "SELECT uuid_send(character_id) FROM game_character_roots
