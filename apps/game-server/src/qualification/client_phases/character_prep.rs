@@ -234,7 +234,7 @@ pub(super) async fn bootstrap_row_character(
                 "-B",
                 "-c",
                 r#"
-import json, os, secrets, subprocess, sys, tempfile
+import json, os, secrets, subprocess, sys, tempfile, time
 from pathlib import Path
 
 source, work, socket, account, world, operation, name = sys.argv[1:]
@@ -261,9 +261,26 @@ try:
               name, 'Sorcerer')
     stage = 'node character bootstrap'
     operator = [] if os.environ.get('NODE_BOOT_UNPRIVILEGED') == '1' else ['sudo', '-n']
-    subprocess.run([*operator, node / 'bin/oteryn-game-ops', '--config', node / 'ops/ops.toml',
-                    'character', 'bootstrap', '--socket', socket, '--operation-id', operation],
-                   capture_output=True, timeout=20, check=True)
+    command = [*operator, node / 'bin/oteryn-game-ops', '--config', node / 'ops/ops.toml',
+               'character', 'bootstrap', '--socket', socket, '--operation-id', operation]
+    deadline = time.monotonic() + 20
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            stage = 'node character bootstrap unavailable'
+            raise ValueError(stage)
+        result = subprocess.run(command, capture_output=True, timeout=remaining)
+        if result.returncode == 0:
+            break
+        output = result.stdout + result.stderr
+        if b'character_bootstrap=unavailable' not in output:
+            stage = ('node character bootstrap rejected' if b'character_bootstrap=rejected' in output
+                     else f'node character bootstrap operator exit {result.returncode}')
+            raise ValueError(stage)
+        if time.monotonic() >= deadline:
+            stage = 'node character bootstrap unavailable'
+            raise ValueError(stage)
+        time.sleep(min(0.1, max(0, deadline - time.monotonic())))
     stage = 'Platform grant credentials'
     accounts[account] = credentials
     with tempfile.NamedTemporaryFile(mode='w', dir=work, delete=False) as updated:
