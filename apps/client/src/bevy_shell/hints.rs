@@ -4,6 +4,7 @@ use crate::play::HoverTooltip;
 use bevy::prelude::*;
 use bevy::window::SystemCursorIcon;
 use oteryn_client_ui_bevy as source;
+mod cursor;
 pub(in crate::bevy_shell) mod projection;
 
 #[derive(Component)]
@@ -17,6 +18,7 @@ struct HintState {
     hover: HoverTooltip,
     generation: Option<u64>,
     pointer: Option<Vec2>,
+    highlight: Option<(Vec2, f32)>,
     label: Option<String>,
     fresh: bool,
     cursor: SystemCursorIcon,
@@ -27,6 +29,7 @@ impl Default for HintState {
             hover: HoverTooltip::default(),
             generation: None,
             pointer: None,
+            highlight: None,
             label: None,
             fresh: false,
             cursor: SystemCursorIcon::Default,
@@ -35,12 +38,18 @@ impl Default for HintState {
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<HintState>()
+        .add_systems(Startup, cursor::setup)
         .add_systems(Startup, setup.after(super::ui::setup))
         .add_systems(Update, projection::track_inputs)
         .add_systems(Update, lens_project.after(super::input::route))
         .add_systems(
             PostUpdate,
-            (projection::resolve, lens_cursor, projection::present)
+            (
+                projection::resolve,
+                lens_cursor,
+                cursor::present,
+                projection::present,
+            )
                 .chain()
                 .before(bevy::ui::UiSystems::Prepare),
         )

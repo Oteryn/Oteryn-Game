@@ -67,6 +67,7 @@ enum Case {
     Normal,
     Malformed,
     Restored,
+    Blessing,
     CrystalCharges,
     CrystalCapacity,
     OldQuote,
@@ -306,6 +307,15 @@ fn scenario_with_answer(case: Case) -> TestResult {
         owner.store = Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(Box::new(
             FakePlatform(ledger.clone()),
         ), "oteryn-game/store-consumer".into()))));
+
+        if matches!(case, Case::Blessing) {
+            super::journal_inventory::runtime_role(owner.root).await?;
+            store_blessing_holdings(&owner, &mut admitted, &ledger).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
 
         if matches!(case, Case::Restored) {
             owner.store_purchases = crate::gameplay_transport::StorePurchaseMode::DisabledRestoredBackup;
@@ -866,6 +876,70 @@ fn scenario_with_answer(case: Case) -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+#[test]
+fn fulfilled_store_blessing_copy_is_visible_through_holdings() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-blessing", || {
+        scenario_with_answer(Case::Blessing)
+    })
+}
+
+async fn store_blessing_holdings(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    ledger: &SyncMutex<Ledger>,
+) -> TestResult {
+    use crate::gameplay_transport::capabilities::OfferedCapability;
+    use oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::{
+        COMMAND_TYPE_BLESSINGS_HOLDINGS, decode_holdings,
+    };
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        owner.offered_capabilities(), &[wire::CAPABILITY_STORE_V1],
+    ).ok_or("Store selection")?;
+    let page = wire::encode_catalogue_request(&wire::StoreCatalogueRequest {
+        category: "consumables.blessings".into(),
+        page_cursor: String::new(),
+    }).map_err(debug)?;
+    let reply = serve(owner, admitted, &[(wire::COMMAND_TYPE_STORE_CATALOGUE_PAGE, page)]).await?;
+    assert_eq!(reply[0].0, CommandStatus::Accepted);
+    let page = wire::decode_catalogue_page(&reply[0].1).map_err(debug)?;
+    let offer = page.offers.iter().find(|offer| offer.offer_key == "store:blessing:twist_of_fate")
+        .ok_or("Twist of Fate Store offer")?;
+    assert_eq!(offer.price, 8);
+    let purchase_wire = wire::encode_purchase_request(&wire::StorePurchaseRequest {
+        purchase_request_id: id(79),
+        offer_key: offer.offer_key.clone(),
+        catalog_revision: page.catalog_revision,
+        price: offer.price,
+        currency: offer.currency.clone(),
+    }).map_err(debug)?;
+    for _ in 0..2 {
+        let result = purchase(owner, admitted, (wire::COMMAND_TYPE_STORE_PURCHASE, purchase_wire.clone())).await?;
+        assert_eq!(result.code, wire::StorePurchaseCode::Accepted);
+    }
+    {
+        let ledger = ledger.lock().expect("ledger");
+        assert_eq!(ledger.purchases, 1);
+        assert_eq!(ledger.receipts, 2, "the immutable delivery can be republished");
+    }
+    let offers = [
+        OfferedCapability { id: 199, requires: &[] },
+        OfferedCapability { id: 382, requires: &[] },
+        OfferedCapability { id: 503, requires: &[199] },
+        OfferedCapability { id: 584, requires: &[382, 503] },
+    ];
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(&offers, &[199, 382, 503, 584]).ok_or("holdings selection")?;
+    let reply = serve(owner, admitted, &[(COMMAND_TYPE_BLESSINGS_HOLDINGS, Vec::new())]).await?;
+    assert_eq!(reply[0].0, CommandStatus::Accepted);
+    let holdings = decode_holdings(&reply[0].1).ok_or("holdings reply")?;
+    let copy = holdings.iter().find(|row| row.key == "oteryn:blessing.twist_of_fate")
+        .ok_or("Twist of Fate holding")?;
+    assert_eq!((copy.held, copy.store_copies), (false, 1));
+    Ok(())
 }
 
 async fn verify_claim_discovery_yields(

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MotdParams",
+  "type": "object",
+  "properties": {
+    "preview_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "text": {
+      "$ref": "#/$defs/MotdText"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "text"
+  ],
+  "$defs": {
+    "MotdText": {
+      "type": "string",
+      "maxLength": 255,
+      "minLength": 0
+    }
+  }
+}

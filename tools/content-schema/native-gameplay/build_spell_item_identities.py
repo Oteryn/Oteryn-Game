@@ -43,9 +43,12 @@ def historical_binding_bytes(data: bytes, expected_sha: str) -> bytes:
     """
     if hashlib.sha256(data).hexdigest() == expected_sha:
         return data
-    document = json.loads(data)
+    try:
+        document = json.loads(data)
+    except ValueError as error:
+        raise ValueError('Item binding table digest mismatch') from error
     bindings = document.get('bindings') if isinstance(document, dict) else None
-    if not isinstance(bindings, list) or not all(isinstance(row, dict) for row in bindings):
+    if not isinstance(bindings, list) or any(not isinstance(row, dict) for row in bindings):
         raise ValueError('Item binding table digest mismatch')
     from event_item_identity import CRYSTAL, DECISION, evidence
     packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/cake-bridge-identity.json').read_bytes())

@@ -1,0 +1,7 @@
+name=wheel_gift_activation
+commands=6355
+transport=wheel_gift_activation
+composed=wheel_gift_activation
+authority=wheel_gift_activation
+[route]
+routing::wheel_gift_activation::route(authority, &session.admitted, command).await

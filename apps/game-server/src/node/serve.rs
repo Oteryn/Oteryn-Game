@@ -2966,7 +2966,11 @@ fn control_diagnose(request: &[u8]) -> Option<String> {
     .ok()
 }
 
-/// One request at a time, bounded size and deadline; only uid 0 is served.
+fn control_peer_allowed(peer_uid: u32, operator_uid: u32) -> bool {
+    peer_uid == operator_uid
+}
+
+/// One request at a time, bounded size and deadline, with kernel peer credentials.
 #[allow(clippy::too_many_arguments)]
 async fn control_loop(
     listener: &UnixListener,
@@ -2981,6 +2985,7 @@ async fn control_loop(
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
+    let operator_uid = super::qualification_operator_uid().unwrap_or(0);
     while let Some(accepted) = first(listener.accept(), stop.cancelled()).await {
         let Ok((mut stream, _)) = accepted else {
             tokio::time::sleep(Duration::from_millis(100)).await;
@@ -2989,7 +2994,7 @@ async fn control_loop(
         // The peer is checked before any byte is read.
         if !stream
             .peer_cred()
-            .is_ok_and(|credentials| credentials.uid() == 0)
+            .is_ok_and(|credentials| control_peer_allowed(credentials.uid(), operator_uid))
         {
             continue;
         }
@@ -4097,6 +4102,23 @@ mod future_stack_tests;
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
+
+    #[test]
+    fn unprivileged_qualification_control_peer_requires_feature_and_setting() {
+        use crate::node::qualification_operator_uid_for_setting;
+        use std::ffi::OsStr;
+
+        let current = 1000;
+        for setting in [None, Some(OsStr::new("0")), Some(OsStr::new("1"))] {
+            let enabled =
+                cfg!(feature = "qualification-unprivileged") && setting == Some(OsStr::new("1"));
+            let operator = qualification_operator_uid_for_setting(current, setting).unwrap_or(0);
+            assert_eq!(operator, if enabled { current } else { 0 });
+            assert_eq!(control_peer_allowed(0, operator), !enabled);
+            assert_eq!(control_peer_allowed(current, operator), enabled);
+            assert!(!control_peer_allowed(current + 1, operator));
+        }
+    }
 
     #[test]
     fn identity_checks_skip_disabled_optional_transports() {

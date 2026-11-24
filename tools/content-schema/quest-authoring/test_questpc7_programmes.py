@@ -602,28 +602,21 @@ class QuestPc7QuestRewards(unittest.TestCase):
         self.assertEqual(len(item_aliases), 210)
         aliases = [m for m in item_aliases if m["target"].get("outfit_key") in targets]
         self.assertEqual(len(aliases), 9)
-        self.assertEqual({m["target"]["outfit_key"] for m in aliases}, targets)
-        self.assertTrue(
-            all(
-                m["compatible_provenance"] == ["crystal-item-cosmetics-201189f-v1"]
-                for m in aliases
-            )
-        )
-        callbacks = {c["key"].split("/")[-1]: c for c in self.callbacks["callbacks"]}
-        for slug in ("fiend", "inquisition"):
-            self.assertEqual(
-                callbacks[f"questpc7-{slug}-second-token"]["requirements"][
-                    "owned_cosmetics"
-                ][0]["addons"],
-                1,
-            )
-            self.assertEqual(
-                callbacks[f"questpc7-{slug}-complete"]["requirements"][
-                    "owned_cosmetics"
-                ][0]["addons"],
-                3,
-            )
-            self.assertTrue(callbacks[f"questpc7-{slug}-complete"]["completes"])
+        self.assertEqual({m['target']['outfit_key'] for m in aliases}, targets)
+        self.assertTrue(all(m['compatible_provenance'] == ['crystal-item-cosmetics-201189f-v1'] for m in aliases))
+        callbacks = {c['key'].split('/')[-1]: c for c in self.callbacks['callbacks']}
+        for stage in ('commission', 'first-token', 'second-token', 'complete'):
+            fiend = callbacks[f'questpc7-fiend-{stage}']
+            self.assertNotIn('completed_quests', fiend['requirements'], stage)
+            self.assertEqual(fiend['requires'], [{
+                'track': 'oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/reward',
+                'minimum': 1,
+                'maximum': 1,
+            }], stage)
+        for slug in ('fiend', 'inquisition'):
+            self.assertEqual(callbacks[f'questpc7-{slug}-second-token']['requirements']['owned_cosmetics'][0]['addons'], 1)
+            self.assertEqual(callbacks[f'questpc7-{slug}-complete']['requirements']['owned_cosmetics'][0]['addons'], 3)
+            self.assertTrue(callbacks[f'questpc7-{slug}-complete']['completes'])
         bad = copy.deepcopy(self.callbacks)
         callback = next(
             c

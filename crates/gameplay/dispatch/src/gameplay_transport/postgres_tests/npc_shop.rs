@@ -56,3 +56,21 @@ fn npc_shop_postgres_buy_checks_capacity_before_debit_or_split_mints() -> TestRe
         scenario_for(ShopScenario::WeightLimit)
     })
 }
+
+#[test]
+fn npc_shop_postgres_packed_purchase_charges_and_places_nested_stacks() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("npc-packed-buy", || {
+        scenario_for(ShopScenario::PackedBuy)
+    })
+}
+
+#[test]
+fn npc_shop_postgres_sell_all_can_include_equipped_items() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("npc-equipped-sale", || {
+        scenario_for(ShopScenario::EquippedSale)
+    })
+}

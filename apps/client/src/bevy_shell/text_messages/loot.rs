@@ -36,6 +36,7 @@ pub(super) fn project(
         let scope = Some((owner.generation(), namespace));
         let receipt = play.link.loot_receipt();
         if state.scope != scope {
+            state.dismissals = dismissals;
             state.expires = Duration::ZERO;
             state.receipt = if state
                 .scope
@@ -63,7 +64,10 @@ pub(super) fn project(
             state.dismissals = dismissals;
             state.expires = Duration::ZERO;
         }
-        if owner.settings.preferences.game_window.loot_messages && clock.elapsed() < state.expires {
+        if owner.settings.preferences.game_window.messages
+            && owner.settings.preferences.game_window.loot_messages
+            && clock.elapsed() < state.expires
+        {
             if state.last_query.is_none_or(|last| {
                 clock.elapsed().saturating_sub(last) >= Duration::from_millis(500)
             }) {

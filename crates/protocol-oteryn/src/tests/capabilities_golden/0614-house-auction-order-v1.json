@@ -1,0 +1,19 @@
+{
+  "id": 614,
+  "name": "HOUSE_AUCTION_ORDER_V1",
+  "constant": "house::CAPABILITY_HOUSE_AUCTION_ORDER_V1",
+  "requires": [
+    49
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    6390
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

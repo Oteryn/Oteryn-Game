@@ -245,6 +245,29 @@ fn store_capability_requires_a_composed_platform_client() {
 }
 
 #[test]
+fn store_extensions_fit_full_bundle_admission_selection() -> Result<(), Box<dyn std::error::Error>>
+{
+    use super::super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
+    use super::super::world_required_capabilities::RequiredCapabilities;
+
+    let offered = with_store_offer(BUNDLE_WORLD_OFFERED_CAPABILITIES, true);
+    let supported: Vec<_> = offered.iter().map(|row| row.id).collect();
+    let required = RequiredCapabilities::for_boot(&[], &supported, offered, &[])
+        .map_err(|error| format!("{error:?}"))?;
+    let selected = required
+        .select_for_session(&supported, &[])
+        .map_err(|error| format!("{error:?}"))?;
+    for id in [
+        oteryn_protocol_oteryn::player_report::CAPABILITY_RULE_VIOLATION_V1,
+        wire::browse::CAPABILITY_HOME_V1,
+        wire::CAPABILITY_NAME_INPUT_V1,
+    ] {
+        assert!(selected.contains(id), "capability {id} was dropped");
+    }
+    Ok(())
+}
+
+#[test]
 fn store_catalogue_loads_every_crystal_default_charge_offer() -> Result<(), &'static str> {
     let catalogue = CATALOGUE.as_ref().ok_or("embedded catalogue")?;
     let crystal: serde_json::Value = serde_json::from_slice(include_bytes!(

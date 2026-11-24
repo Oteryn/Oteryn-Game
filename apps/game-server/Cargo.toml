@@ -25,6 +25,8 @@ qualification-clock = ["oteryn-gameplay-dispatch/qualification-clock", "oteryn-g
 # Disposable node-boot builds only: the root-only `spawn` control command reaches the
 # test-support owners that place a creature (`qualification_wild_spawn`); absent from production.
 qualification-spawn = ["oteryn-gameplay-durability/test-support", "oteryn-gameplay-entities/test-support"]
+# Disposable node-boot run without sudo, with an explicit runtime opt-in.
+qualification-unprivileged = ["qualification-spawn"]
 # Recognized by the remaining path-loaded integration fixtures.
 test-support = ["oteryn-gameplay-entities/test-support"]
 

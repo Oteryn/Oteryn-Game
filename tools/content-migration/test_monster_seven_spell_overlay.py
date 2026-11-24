@@ -1,45 +1,65 @@
 #!/usr/bin/env python3
 """Exact byte replay and fail-closed negatives for the accepted monster snapshot."""
+
 import copy
 import json
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+
 import elephant_corpse_profiles
+import galthen_boss_loot
 import import_spell_families as producer
 import item_detail_source_facts as item_details
 import monster_seven_spell_overlay as overlay
 import pegasus_feather_item_profile
+import qengine_reward_item_profiles as qengine
 import register_spell_families as registration
 import soul_war_appearance_profiles as source_appearances
-import qengine_reward_item_profiles as qengine
 
-ROOT=Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[2]
+
+
 class AcceptedOverlayTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Exercise real frozen-r25 verification; only the new replay stage is isolated.
-        with patch.object(overlay,'apply_overlay',side_effect=lambda root,generated:generated), patch('bind_monster_source_definitions.bind_definitions', side_effect=lambda root,generated:generated):
-            cls.base=producer.outputs(ROOT)
-        cls.receipt=json.loads((ROOT/overlay.PATCH_PATH).read_bytes())
+        with (
+            patch.object(
+                overlay, "apply_overlay", side_effect=lambda root, generated: generated
+            ),
+            patch(
+                "bind_monster_source_definitions.bind_definitions",
+                side_effect=lambda root, generated: generated,
+            ),
+        ):
+            cls.base = producer.outputs(ROOT)
+        cls.receipt = json.loads((ROOT / overlay.PATCH_PATH).read_bytes())
         # Replay every accepted successor once; bare overlay bytes precede
         # later canonical serialization and source-qualified owner stages.
-        cls.current=registration.outputs(ROOT)
+        cls.current = registration.outputs(ROOT)
+
     def test_replays_exact_current_four_outputs_without_mutating_base(self):
-        before={k:overlay.digest(v) for k,v in self.base.items()}
+        before = {k: overlay.digest(v) for k, v in self.base.items()}
         from bind_monster_source_definitions import bind_definitions
-        adopted=overlay.apply_overlay(ROOT,self.base)
+
+        adopted = overlay.apply_overlay(ROOT, self.base)
         for entry in self.receipt["files"]:
-            self.assertEqual(overlay.digest(adopted[entry["path"]]),entry["output_sha256"])
-        bound=bind_definitions(ROOT,adopted)
+            self.assertEqual(
+                overlay.digest(adopted[entry["path"]]), entry["output_sha256"]
+            )
+        bound = bind_definitions(ROOT, adopted)
         # Thaian is a separate source-qualified Creature/Presentation successor.
         import questpc7_thaian_native
+
         questpc7_thaian_native.apply(ROOT, bound, producer.canonical_bytes)
-        actual=dict(bound)
-        appearance_path=producer.PROVIDER_DESTINATIONS["spell_appearances"]
+        actual = dict(bound)
+        appearance_path = producer.PROVIDER_DESTINATIONS["spell_appearances"]
         # Match registration.outputs: the accepted Seven snapshot is followed
         # by the independently pinned W11 callback outfit provider.
-        source_appearances.admit(ROOT,actual,appearance_path,registration.NATIVE_MANIFEST)
+        source_appearances.admit(
+            ROOT, actual, appearance_path, registration.NATIVE_MANIFEST
+        )
         # This isolated outfit stage retains the preceding presentation definitions.
         # Current source composition and quest disguises run later; final bytes
         # are checked independently for every accepted output below.
@@ -47,26 +67,43 @@ class AcceptedOverlayTests(unittest.TestCase):
         self.assertEqual(actual[presentation_path], bound[presentation_path])
         # Independently replay the complete registered successor after every owner.
         for path in overlay.ALLOWED_PATHS:
-            self.assertEqual(self.current[path],(ROOT/path).read_bytes(),path)
-        self.assertEqual(before,{k:overlay.digest(v) for k,v in self.base.items()})
-        self.assertEqual(len(json.loads(actual['content/creatures/definitions/spell-native-profiles.json'])['records']),1871)
-        looks=json.loads(actual['content/presentations/bindings/spell-appearances.json'])
-        original_looks=json.loads(bound[appearance_path])
-        fragment=json.loads((ROOT/source_appearances.SOURCE).read_bytes())
-        self.assertEqual(len(original_looks['records']),334)
-        self.assertEqual(looks['records'],original_looks['records']+fragment['records'])
-        self.assertEqual(len(looks['records']),336)
-        self.assertEqual({r['look_type'] for r in fragment['records']},{242,286})
-        self.assertEqual(len(looks['item_appearances']),6)
-        for path in bound.keys()-{appearance_path,registration.NATIVE_MANIFEST}:
-            self.assertEqual(actual[path],bound[path],path)
-        manifest=json.loads(actual[registration.NATIVE_MANIFEST])
-        self.assertEqual(manifest['spell_appearances']['sha256'],overlay.digest(actual[appearance_path]))
-        replay=dict(actual)
-        source_appearances.admit(ROOT,replay,appearance_path,registration.NATIVE_MANIFEST)
-        self.assertEqual(replay,actual)
+            self.assertEqual(self.current[path], (ROOT / path).read_bytes(), path)
+        self.assertEqual(before, {k: overlay.digest(v) for k, v in self.base.items()})
+        self.assertEqual(
+            len(
+                json.loads(
+                    actual["content/creatures/definitions/spell-native-profiles.json"]
+                )["records"]
+            ),
+            1871,
+        )
+        looks = json.loads(
+            actual["content/presentations/bindings/spell-appearances.json"]
+        )
+        original_looks = json.loads(bound[appearance_path])
+        fragment = json.loads((ROOT / source_appearances.SOURCE).read_bytes())
+        self.assertEqual(len(original_looks["records"]), 334)
+        self.assertEqual(
+            looks["records"], original_looks["records"] + fragment["records"]
+        )
+        self.assertEqual(len(looks["records"]), 336)
+        self.assertEqual({r["look_type"] for r in fragment["records"]}, {242, 286})
+        self.assertEqual(len(looks["item_appearances"]), 6)
+        for path in bound.keys() - {appearance_path, registration.NATIVE_MANIFEST}:
+            self.assertEqual(actual[path], bound[path], path)
+        manifest = json.loads(actual[registration.NATIVE_MANIFEST])
+        self.assertEqual(
+            manifest["spell_appearances"]["sha256"],
+            overlay.digest(actual[appearance_path]),
+        )
+        replay = dict(actual)
+        source_appearances.admit(
+            ROOT, replay, appearance_path, registration.NATIVE_MANIFEST
+        )
+        self.assertEqual(replay, actual)
+
     def test_registration_replays_all_current_outputs(self):
-        actual=self.current
+        actual = self.current
         # PREY-DIFF registers the generated tier and slot-value tables below;
         # C1 registers the Newhaven starting-loadout item profiles; SRX-1
         # registers the pinned item-profile supplement. QENGINE2 adds its
@@ -80,101 +117,191 @@ class AcceptedOverlayTests(unittest.TestCase):
             "tools/content-schema/native-gameplay/questpc7-hot-corpse-profiles.json",
             "tools/content-schema/native-gameplay/questpc7-hot-fishburger-profile.json",
             item_details.WEIGHT_FACTS,
+            galthen_boss_loot.GLOBAL_DETAILS,
         }
         # source-qualified reward Item proof alongside the SEASON and quest constructor outputs.
         merged_outputs = {
-            'content/cosmetics/outfits/native-cosmetics.json',
-            *{f'tools/content-schema/native-gameplay/questpc7-{name}.json' for name in (
-                'marsh-corpse-profiles', 'slug-corpse-profiles',
-                'smith-corpse-profiles', 'smith-item-profile',
-                'hot-fishburger-profile', 'hot-corpse-profiles',
-            )},
+            "content/cosmetics/outfits/native-cosmetics.json",
+            *{
+                f"tools/content-schema/native-gameplay/questpc7-{name}.json"
+                for name in (
+                    "marsh-corpse-profiles",
+                    "slug-corpse-profiles",
+                    "smith-corpse-profiles",
+                    "smith-item-profile",
+                    "hot-fishburger-profile",
+                    "hot-corpse-profiles",
+                )
+            },
         }
-        print("NATIVE_REGISTRATION_OUTPUT_KEYSET=" + json.dumps({
-            "actual_keys": sorted(actual),
-            "actual_count": len(actual),
-            "qengine_proof": qengine.PROOF,
-            "successor_proofs": sorted(successor_proofs),
-            "successor_proof_count": len(successor_proofs),
-            "merged_outputs": sorted(merged_outputs),
-            "merged_output_count": len(merged_outputs),
-            "excluded_union": sorted(successor_proofs | merged_outputs),
-            "excluded_union_count": len(successor_proofs | merged_outputs),
-            "legacy_residual_keys": sorted(actual.keys() - {qengine.PROOF} - successor_proofs),
-            "legacy_residual_count": len(actual.keys() - {qengine.PROOF} - successor_proofs),
-            "union_residual_keys": sorted(
-                actual.keys() - {qengine.PROOF} - (successor_proofs | merged_outputs)),
-            "union_residual_count": len(
-                actual.keys() - {qengine.PROOF} - (successor_proofs | merged_outputs)),
-        }, sort_keys=True), flush=True)
+        print(
+            "NATIVE_REGISTRATION_OUTPUT_KEYSET="
+            + json.dumps(
+                {
+                    "actual_keys": sorted(actual),
+                    "actual_count": len(actual),
+                    "qengine_proof": qengine.PROOF,
+                    "successor_proofs": sorted(successor_proofs),
+                    "successor_proof_count": len(successor_proofs),
+                    "merged_outputs": sorted(merged_outputs),
+                    "merged_output_count": len(merged_outputs),
+                    "excluded_union": sorted(successor_proofs | merged_outputs),
+                    "excluded_union_count": len(successor_proofs | merged_outputs),
+                    "legacy_residual_keys": sorted(
+                        actual.keys() - {qengine.PROOF} - successor_proofs
+                    ),
+                    "legacy_residual_count": len(
+                        actual.keys() - {qengine.PROOF} - successor_proofs
+                    ),
+                    "union_residual_keys": sorted(
+                        actual.keys()
+                        - {qengine.PROOF}
+                        - (successor_proofs | merged_outputs)
+                    ),
+                    "union_residual_count": len(
+                        actual.keys()
+                        - {qengine.PROOF}
+                        - (successor_proofs | merged_outputs)
+                    ),
+                },
+                sort_keys=True,
+            ),
+            flush=True,
+        )
         self.assertTrue((successor_proofs | merged_outputs) <= actual.keys())
         # Require each named successor proof and retain the exact legacy residual.
-        self.assertEqual(len(actual.keys() - {qengine.PROOF} - (successor_proofs | merged_outputs)),45)
-        self.assertIn(qengine.PROOF,actual)
-        self.assertEqual(json.loads(actual[item_details.WEIGHT_FACTS]),
-                         {str(item): weight for item, weight in item_details.qualified_weights(ROOT).items()})
+        self.assertEqual(
+            len(actual.keys() - {qengine.PROOF} - (successor_proofs | merged_outputs)),
+            45,
+        )
+        self.assertIn(qengine.PROOF, actual)
+        self.assertEqual(
+            json.loads(actual[item_details.WEIGHT_FACTS]),
+            {
+                str(item): weight
+                for item, weight in item_details.qualified_weights(ROOT).items()
+            },
+        )
+        self.assertEqual(
+            actual[galthen_boss_loot.GLOBAL_DETAILS],
+            (ROOT / galthen_boss_loot.GLOBAL_DETAILS).read_bytes(),
+        )
         # Independently rebuild the packet from the producer's closed source IDs; a count
         # alone cannot authorize a missing, duplicate or substituted reward.
-        expected_packet=qengine.capture(ROOT)
-        expected_raw=(json.dumps(expected_packet,ensure_ascii=False,indent=2)+'\n').encode()
-        self.assertEqual(actual[qengine.PROOF],expected_raw)
-        packet=json.loads(actual[qengine.PROOF])
-        keys=[row['production_definition']['production_key'] for row in packet['records']]
-        self.assertEqual(len(keys),len(qengine.IDS))
-        self.assertEqual(len(set(keys)),len(qengine.IDS))
-        self.assertEqual(set(keys),{f'oteryn:item.tibia.i{item}' for item in qengine.IDS})
-        self.assertTrue({'oteryn:item.tibia.i21291', 'oteryn:item.tibia.i21504',
-                         'oteryn:item.tibia.i21505'}.issubset(keys))
-        native=json.loads(actual[producer.PROVIDER_DESTINATIONS['item_profiles']])
-        by_key={row['production_definition']['production_key']:row for row in native['records']}
-        for row in packet['records']:
-            key=row['production_definition']['production_key']
-            self.assertEqual(by_key[key]['production_definition'],row['production_definition'])
-            self.assertEqual(by_key[key]['production_binding'],row['production_binding'])
-            self.assertEqual(by_key[key]['semantics'],row['semantics'])
-            for field,value in row['attributes'].items():
-                self.assertEqual(by_key[key]['attributes'][field],value,(key,field))
-        self.assertIn('tools/content-schema/native-gameplay/loot-tables.json',actual)
-        self.assertIn('content/items/authored-static-admissions.json',actual)
-        for cohort in ('marsh', 'slug'):
-            self.assertIn(f'tools/content-schema/native-gameplay/questpc7-{cohort}-corpse-profiles.json', actual)
-        self.assertIn('tools/content-schema/native-gameplay/source-gate-item-profiles.json', actual)
-        self.assertIn('content/items/definitions/srx1-item-updates.json',actual)
-        self.assertIn('content/items/definitions/starting-loadout-profiles.json',actual)
-        self.assertIn('content/cosmetics/outfits/native-cosmetics.json',actual)
-        self.assertIn('content/creatures/prey-tiers.json',actual)
-        self.assertIn('content/creatures/prey-slot-values.json',actual)
-        self.assertIn('content/items/readable-profiles.json',actual)
-        self.assertIn('content/items/writable-profiles.json',actual)
-        for path,data in actual.items():
-            self.assertEqual(data,(ROOT/path).read_bytes(),path)
+        expected_packet = qengine.capture(ROOT)
+        expected_raw = (
+            json.dumps(expected_packet, ensure_ascii=False, indent=2) + "\n"
+        ).encode()
+        self.assertEqual(actual[qengine.PROOF], expected_raw)
+        packet = json.loads(actual[qengine.PROOF])
+        keys = [
+            row["production_definition"]["production_key"] for row in packet["records"]
+        ]
+        self.assertEqual(len(keys), len(qengine.IDS))
+        self.assertEqual(len(set(keys)), len(qengine.IDS))
+        self.assertEqual(
+            set(keys), {f"oteryn:item.tibia.i{item}" for item in qengine.IDS}
+        )
+        self.assertTrue(
+            {
+                "oteryn:item.tibia.i21291",
+                "oteryn:item.tibia.i21504",
+                "oteryn:item.tibia.i21505",
+            }.issubset(keys)
+        )
+        native = json.loads(actual[producer.PROVIDER_DESTINATIONS["item_profiles"]])
+        by_key = {
+            row["production_definition"]["production_key"]: row
+            for row in native["records"]
+        }
+        for row in packet["records"]:
+            key = row["production_definition"]["production_key"]
+            self.assertEqual(
+                by_key[key]["production_definition"], row["production_definition"]
+            )
+            self.assertEqual(
+                by_key[key]["production_binding"], row["production_binding"]
+            )
+            self.assertEqual(by_key[key]["semantics"], row["semantics"])
+            for field, value in row["attributes"].items():
+                self.assertEqual(by_key[key]["attributes"][field], value, (key, field))
+        self.assertIn("tools/content-schema/native-gameplay/loot-tables.json", actual)
+        self.assertIn("content/items/authored-static-admissions.json", actual)
+        for cohort in ("marsh", "slug"):
+            self.assertIn(
+                f"tools/content-schema/native-gameplay/questpc7-{cohort}-corpse-profiles.json",
+                actual,
+            )
+        self.assertIn(
+            "tools/content-schema/native-gameplay/source-gate-item-profiles.json",
+            actual,
+        )
+        self.assertIn("content/items/definitions/srx1-item-updates.json", actual)
+        self.assertIn(
+            "content/items/definitions/starting-loadout-profiles.json", actual
+        )
+        self.assertIn("content/cosmetics/outfits/native-cosmetics.json", actual)
+        self.assertIn("content/creatures/prey-tiers.json", actual)
+        self.assertIn("content/creatures/prey-slot-values.json", actual)
+        self.assertIn("content/items/readable-profiles.json", actual)
+        self.assertIn("content/items/writable-profiles.json", actual)
+        for path, data in actual.items():
+            self.assertEqual(data, (ROOT / path).read_bytes(), path)
+
     def test_consumable_overlay_carries_only_the_selected_source_fact(self):
         planned = dict(self.base)
         path = producer.PROVIDER_DESTINATIONS["item_profiles"]
         before = json.loads(planned[path])
         facts = json.loads((ROOT / registration.CONSUMPTION_FACTS).read_bytes())
-        fact = next(row for row in facts["rows"]
-                    if row["target"]["key"] == registration.CONSUMABLE_KEY)
-        self.assertEqual(fact["consumption"], {"kind": "FOOD", "value": {"regeneration_seconds": 180}})
+        fact = next(
+            row
+            for row in facts["rows"]
+            if row["target"]["key"] == registration.CONSUMABLE_KEY
+        )
+        self.assertEqual(
+            fact["consumption"],
+            {"kind": "FOOD", "value": {"regeneration_seconds": 180}},
+        )
         registration.admit_consumable_profiles(ROOT, planned)
         after = json.loads(planned[path])
-        retained = [r for r in after["records"]
-                    if r["production_definition"]["production_key"] not in registration.POTION_KEYS]
+        retained = [
+            r
+            for r in after["records"]
+            if r["production_definition"]["production_key"]
+            not in registration.POTION_KEYS
+        ]
         for old, new in zip(before["records"], retained, strict=True):
-            if old["production_definition"]["production_key"] == registration.CONSUMABLE_KEY:
-                self.assertEqual(new["semantics"].pop("consumption"),
-                                 {"state": "KNOWN", "value": fact["consumption"]})
+            if (
+                old["production_definition"]["production_key"]
+                == registration.CONSUMABLE_KEY
+            ):
+                self.assertEqual(
+                    new["semantics"].pop("consumption"),
+                    {"state": "KNOWN", "value": fact["consumption"]},
+                )
             self.assertEqual(new, old)
-        added = [r for r in after["records"]
-                 if r["production_definition"]["production_key"] in registration.POTION_KEYS]
+        added = [
+            r
+            for r in after["records"]
+            if r["production_definition"]["production_key"] in registration.POTION_KEYS
+        ]
         self.assertEqual(len(added), 18)
-        world = json.loads((ROOT / 'content/world/definitions/reference.json').read_bytes())
+        world = json.loads(
+            (ROOT / "content/world/definitions/reference.json").read_bytes()
+        )
         for record in added:
-            source = next(r for r in world["records"] if r["identity"] == record["authoring"]["item"])
+            source = next(
+                r
+                for r in world["records"]
+                if r["identity"] == record["authoring"]["item"]
+            )
             expected = copy.deepcopy(source["semantics"])
             key = source["identity"]["key"]
             if key == registration.CARROT_KEY:
-                expected["physical"]["value"]["movable"] = {"state": "KNOWN", "value": True}
+                expected["physical"]["value"]["movable"] = {
+                    "state": "KNOWN",
+                    "value": True,
+                }
             if key in registration.GLOBAL_POTION_RESTORES:
                 _, restores = registration.GLOBAL_POTION_RESTORES[key]
                 expected["consumption"]["value"]["value"]["restores"] = [
@@ -186,21 +313,37 @@ class AcceptedOverlayTests(unittest.TestCase):
             self.assertEqual(record["attributes"], {})
             self.assertEqual(record["admission"]["stack_class"], source["stack_class"])
         manifest = json.loads(planned[registration.NATIVE_MANIFEST])
-        self.assertEqual(manifest["item_profiles"]["sha256"], overlay.digest(planned[path]))
+        self.assertEqual(
+            manifest["item_profiles"]["sha256"], overlay.digest(planned[path])
+        )
         for unchanged in self.base.keys() - {path, registration.NATIVE_MANIFEST}:
             self.assertEqual(planned[unchanged], self.base[unchanged])
+
     def test_consumable_evidence_tamper_is_refused(self):
         actual_read = Path.read_bytes
         wanted = ROOT / registration.CONSUMPTION_FACTS
-        with patch.object(Path, 'read_bytes', lambda path: actual_read(path) + (b' ' if path == wanted else b'')):
-            with self.assertRaisesRegex(ValueError, 'CONSUMPTION_FACTS_DIGEST'):
-                registration.admit_consumable_profiles(ROOT, dict(self.base))
-    def test_consumable_missing_duplicate_revision_and_semantic_conflict_are_refused(self):
+        with (
+            patch.object(
+                Path,
+                "read_bytes",
+                lambda path: actual_read(path) + (b" " if path == wanted else b""),
+            ),
+            self.assertRaisesRegex(ValueError, "CONSUMPTION_FACTS_DIGEST"),
+        ):
+            registration.admit_consumable_profiles(ROOT, dict(self.base))
+
+    def test_consumable_missing_duplicate_revision_and_semantic_conflict_are_refused(
+        self,
+    ):
         path = producer.PROVIDER_DESTINATIONS["item_profiles"]
         for operator in ("missing", "duplicate", "revision", "semantics"):
             document = json.loads(self.base[path])
-            record = next(r for r in document["records"]
-                          if r["production_definition"]["production_key"] == registration.CONSUMABLE_KEY)
+            record = next(
+                r
+                for r in document["records"]
+                if r["production_definition"]["production_key"]
+                == registration.CONSUMABLE_KEY
+            )
             if operator == "missing":
                 document["records"].remove(record)
             elif operator == "duplicate":
@@ -211,21 +354,44 @@ class AcceptedOverlayTests(unittest.TestCase):
                 record["semantics"]["consumption"] = {"state": "UNKNOWN"}
             planned = self.base | {path: producer.canonical_bytes(document)}
             before = dict(planned)
-            with self.subTest(operator=operator), self.assertRaisesRegex(ValueError, 'CONSUMPTION_PROFILE_'):
+            with (
+                self.subTest(operator=operator),
+                self.assertRaisesRegex(ValueError, "CONSUMPTION_PROFILE_"),
+            ):
                 registration.admit_consumable_profiles(ROOT, planned)
             self.assertEqual(planned, before)
-    def test_world_potion_and_flask_identity_admission_and_consumption_conflicts_are_refused(self):
+
+    def test_world_potion_and_flask_identity_admission_and_consumption_conflicts_are_refused(
+        self,
+    ):
         actual_read = Path.read_bytes
-        world_path = ROOT / 'content/world/definitions/reference.json'
-        bindings_path = ROOT / 'imports/crystalserver/bindings/items.json'
-        sources = [r for r in json.loads(actual_read(world_path))["records"]
-                   if r["identity"]["key"] in registration.POTION_KEYS]
-        bindings = [b for b in json.loads(actual_read(bindings_path))["bindings"]
-                    if b["target"]["key"] in registration.POTION_KEYS]
-        for operator in ("missing", "duplicate", "binding", "physical", "carrot_immovable", "consumption"):
+        world_path = ROOT / "content/world/definitions/reference.json"
+        bindings_path = ROOT / "imports/crystalserver/bindings/items.json"
+        sources = [
+            r
+            for r in json.loads(actual_read(world_path))["records"]
+            if r["identity"]["key"] in registration.POTION_KEYS
+        ]
+        bindings = [
+            b
+            for b in json.loads(actual_read(bindings_path))["bindings"]
+            if b["target"]["key"] in registration.POTION_KEYS
+        ]
+        for operator in (
+            "missing",
+            "duplicate",
+            "binding",
+            "physical",
+            "carrot_immovable",
+            "consumption",
+        ):
             world = {"records": copy.deepcopy(sources)}
             admitted = {"bindings": copy.deepcopy(bindings)}
-            potion = next(r for r in world["records"] if r["identity"]["key"] == 'oteryn:item.tibia.i266')
+            potion = next(
+                r
+                for r in world["records"]
+                if r["identity"]["key"] == "oteryn:item.tibia.i266"
+            )
             if operator == "missing":
                 world["records"].remove(potion)
             elif operator == "duplicate":
@@ -233,82 +399,153 @@ class AcceptedOverlayTests(unittest.TestCase):
             elif operator == "binding":
                 admitted["bindings"][0]["target"]["revision"] = "unqualified"
             elif operator == "physical":
-                potion["semantics"]["physical"]["value"]["movable"] = {"state": "UNKNOWN"}
+                potion["semantics"]["physical"]["value"]["movable"] = {
+                    "state": "UNKNOWN"
+                }
             elif operator == "carrot_immovable":
-                carrot = next(r for r in world["records"] if r["identity"]["key"] == registration.CARROT_KEY)
-                carrot["semantics"]["physical"]["value"]["movable"] = {"state": "KNOWN", "value": False}
+                carrot = next(
+                    r
+                    for r in world["records"]
+                    if r["identity"]["key"] == registration.CARROT_KEY
+                )
+                carrot["semantics"]["physical"]["value"]["movable"] = {
+                    "state": "KNOWN",
+                    "value": False,
+                }
             else:
-                potion["semantics"]["consumption"]["value"]["value"]["restores"][0]["min"] = 1
-            replacements = {world_path: producer.canonical_bytes(world),
-                            bindings_path: producer.canonical_bytes(admitted)}
+                potion["semantics"]["consumption"]["value"]["value"]["restores"][0][
+                    "min"
+                ] = 1
+            replacements = {
+                world_path: producer.canonical_bytes(world),
+                bindings_path: producer.canonical_bytes(admitted),
+            }
             planned = dict(self.base)
-            with self.subTest(operator=operator), patch.object(
-                Path, 'read_bytes', lambda path: replacements[path] if path in replacements else actual_read(path)
-            ), self.assertRaisesRegex(ValueError, 'CONSUMPTION_PROFILE_'):
+            with (
+                self.subTest(operator=operator),
+                patch.object(
+                    Path,
+                    "read_bytes",
+                    lambda path, replacements=replacements: (
+                        replacements[path]
+                        if path in replacements
+                        else actual_read(path)
+                    ),
+                ),
+                self.assertRaisesRegex(ValueError, "CONSUMPTION_PROFILE_"),
+            ):
                 registration.admit_consumable_profiles(ROOT, planned)
             self.assertEqual(planned, self.base)
+
     def test_later_source_appearance_evidence_tamper_is_refused_without_mutation(self):
-        actual_read=Path.read_bytes
-        wanted=ROOT/source_appearances.SOURCE
-        planned=dict(self.base)
-        before=dict(planned)
-        with patch.object(Path,'read_bytes',lambda path: actual_read(path)+(b' ' if path==wanted else b'')):
-            with self.assertRaisesRegex(ValueError,'SOUL_WAR_CALLBACK_APPEARANCE_SOURCE_CHANGED'):
-                source_appearances.admit(ROOT,planned,producer.PROVIDER_DESTINATIONS["spell_appearances"],registration.NATIVE_MANIFEST)
-        self.assertEqual(planned,before)
+        actual_read = Path.read_bytes
+        wanted = ROOT / source_appearances.SOURCE
+        planned = dict(self.base)
+        before = dict(planned)
+        with (
+            patch.object(
+                Path,
+                "read_bytes",
+                lambda path: actual_read(path) + (b" " if path == wanted else b""),
+            ),
+            self.assertRaisesRegex(
+                ValueError, "SOUL_WAR_CALLBACK_APPEARANCE_SOURCE_CHANGED"
+            ),
+        ):
+            source_appearances.admit(
+                ROOT,
+                planned,
+                producer.PROVIDER_DESTINATIONS["spell_appearances"],
+                registration.NATIVE_MANIFEST,
+            )
+        self.assertEqual(planned, before)
+
     def test_later_source_appearance_conflict_is_refused_without_mutation(self):
-        path=producer.PROVIDER_DESTINATIONS["spell_appearances"]
-        expected=json.loads((ROOT/source_appearances.SOURCE).read_bytes())['records']
-        for operator in ('partial','changed'):
-            document=json.loads(self.base[path])
-            record=copy.deepcopy(expected[0])
-            if operator=='changed':
-                record['look_type']+=1
-            document['records'].append(record)
-            planned=self.base|{path:producer.canonical_bytes(document)}
-            before=dict(planned)
-            with self.subTest(operator=operator),self.assertRaisesRegex(ValueError,'SOUL_WAR_CALLBACK_APPEARANCE_CONFLICT'):
-                source_appearances.admit(ROOT,planned,path,registration.NATIVE_MANIFEST)
-            self.assertEqual(planned,before)
+        path = producer.PROVIDER_DESTINATIONS["spell_appearances"]
+        expected = json.loads((ROOT / source_appearances.SOURCE).read_bytes())[
+            "records"
+        ]
+        for operator in ("partial", "changed"):
+            document = json.loads(self.base[path])
+            record = copy.deepcopy(expected[0])
+            if operator == "changed":
+                record["look_type"] += 1
+            document["records"].append(record)
+            planned = self.base | {path: producer.canonical_bytes(document)}
+            before = dict(planned)
+            with (
+                self.subTest(operator=operator),
+                self.assertRaisesRegex(
+                    ValueError, "SOUL_WAR_CALLBACK_APPEARANCE_CONFLICT"
+                ),
+            ):
+                source_appearances.admit(
+                    ROOT, planned, path, registration.NATIVE_MANIFEST
+                )
+            self.assertEqual(planned, before)
+
     def test_adopted_qualification_tamper_is_refused(self):
-        actual_read=Path.read_bytes
-        wanted=ROOT/'imports/spells/monster-seven/adopted-qualification.json'
+        actual_read = Path.read_bytes
+        wanted = ROOT / "imports/spells/monster-seven/adopted-qualification.json"
+
         def changed_read(path):
-            raw=actual_read(path)
-            return raw+b' ' if path==wanted else raw
-        with patch.object(Path,'read_bytes',changed_read):
-            with self.assertRaisesRegex(ValueError,'OVERLAY_QUALIFICATION_DIGEST'):
-                overlay.apply_overlay(ROOT,self.base)
+            raw = actual_read(path)
+            return raw + b" " if path == wanted else raw
+
+        with (
+            patch.object(Path, "read_bytes", changed_read),
+            self.assertRaisesRegex(ValueError, "OVERLAY_QUALIFICATION_DIGEST"),
+        ):
+            overlay.apply_overlay(ROOT, self.base)
+
     def test_wrong_immutable_base_is_refused(self):
-        bad=dict(self.base);p=next(iter(overlay.ALLOWED_PATHS));bad[p]+=b' '
-        with self.assertRaisesRegex(ValueError,'OVERLAY_BASE_DIGEST'):
-            overlay.apply_overlay(ROOT,bad)
-    def reject_changed_receipt(self,receipt):
+        bad = dict(self.base)
+        p = next(iter(overlay.ALLOWED_PATHS))
+        bad[p] += b" "
+        with self.assertRaisesRegex(ValueError, "OVERLAY_BASE_DIGEST"):
+            overlay.apply_overlay(ROOT, bad)
+
+    def reject_changed_receipt(self, receipt):
         # Even a syntactically valid, self-consistent successor is not owner-accepted.
-        with self.assertRaisesRegex(ValueError,'OVERLAY_RECEIPT_DIGEST'):
-            overlay.apply_overlay(ROOT,self.base,receipt)
+        with self.assertRaisesRegex(ValueError, "OVERLAY_RECEIPT_DIGEST"):
+            overlay.apply_overlay(ROOT, self.base, receipt)
+
     def test_tampered_value_with_recomputed_output_hash_is_refused(self):
-        bad=copy.deepcopy(self.receipt)
-        f=next(f for f in bad['files'] if f['path'].startswith('content/creatures/'))
-        op=next(o for o in f['operations'] if o['op']=='replace' and type(o.get('value')) in (int,float))
-        op['value']+=1
-        altered=json.loads((ROOT/f['path']).read_bytes())
-        node,key=overlay.parent(altered,op['pointer'])
-        node[int(key) if isinstance(node,list) else key]=op['value']
-        f['output_sha256']=overlay.digest(overlay.encode(altered,f['encoding']))
+        bad = copy.deepcopy(self.receipt)
+        f = next(f for f in bad["files"] if f["path"].startswith("content/creatures/"))
+        op = next(
+            o
+            for o in f["operations"]
+            if o["op"] == "replace" and type(o.get("value")) in (int, float)
+        )
+        op["value"] += 1
+        altered = json.loads((ROOT / f["path"]).read_bytes())
+        node, key = overlay.parent(altered, op["pointer"])
+        node[int(key) if isinstance(node, list) else key] = op["value"]
+        f["output_sha256"] = overlay.digest(overlay.encode(altered, f["encoding"]))
         # Recomputing this receipt digest cannot change the independently code-pinned accepted digest.
-        self.assertNotEqual(overlay.digest(overlay.encode(bad,'PRETTY2')),overlay.PATCH_SHA256)
+        self.assertNotEqual(
+            overlay.digest(overlay.encode(bad, "PRETTY2")), overlay.PATCH_SHA256
+        )
         self.reject_changed_receipt(bad)
+
     def test_duplicate_pointer_is_refused(self):
-        bad=copy.deepcopy(self.receipt)
-        f=next(f for f in bad['files'] if f['operations'])
-        f['operations'].append(copy.deepcopy(f['operations'][0]))
+        bad = copy.deepcopy(self.receipt)
+        f = next(f for f in bad["files"] if f["operations"])
+        f["operations"].append(copy.deepcopy(f["operations"][0]))
         self.reject_changed_receipt(bad)
+
     def test_unknown_output_path_is_refused(self):
-        bad=copy.deepcopy(self.receipt);bad['files'][0]['path']='content/unauthorized.json'
+        bad = copy.deepcopy(self.receipt)
+        bad["files"][0]["path"] = "content/unauthorized.json"
         self.reject_changed_receipt(bad)
+
     def test_unknown_operation_is_refused(self):
-        bad=copy.deepcopy(self.receipt)
-        f=next(f for f in bad['files'] if f['operations']);f['operations'][0]['op']='merge_unbounded'
+        bad = copy.deepcopy(self.receipt)
+        f = next(f for f in bad["files"] if f["operations"])
+        f["operations"][0]["op"] = "merge_unbounded"
         self.reject_changed_receipt(bad)
-if __name__=='__main__':unittest.main()
+
+
+if __name__ == "__main__":
+    unittest.main()

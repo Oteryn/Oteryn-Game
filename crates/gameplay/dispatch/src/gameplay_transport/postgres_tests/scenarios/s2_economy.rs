@@ -1,6 +1,7 @@
 //! S2: sell retained loot, convert carried coin to bank gold, market to another Character,
 //! retrieve that delivery from Inbox and deposit it without changing total gold or items.
 use super::*;
+use crate::domain::currency::Coin;
 use crate::durability::bank::{
     BankCoinFacts, BankDepositRequest, BankOperationIdentity, BankOperationOccurrence,
     BankOperationOutcome, BankResult,
@@ -60,7 +61,7 @@ fn scenario() -> TestResult {
             140,
         )
         .await?;
-        let initial = gold(&ledger(&h).await?);
+        let initial = carried_coin_value(&ledger(&h).await?)?;
         let sell = NpcTradeIntent {
             npc_actor: npc,
             catalogue_revision: window.open.ok_or("window")?.1,
@@ -73,17 +74,14 @@ fn scenario() -> TestResult {
             owner.npc_trade(actor, command(admitted, 22), sell).await,
             NpcTradeStep::Traded
         ));
-        assert_eq!(
-            gold(&ledger(&h).await?),
-            initial + i64::from(offer.unit_price)
-        );
+        let amount = initial + u64::from(offer.unit_price);
+        assert_eq!(carried_coin_value(&ledger(&h).await?)?, amount);
         let sold = snapshot(&h).await?;
         assert!(matches!(
             owner.npc_trade(actor, command(admitted, 22), sell).await,
             NpcTradeStep::Traded
         ));
         assert_eq!(snapshot(&h).await?, sold);
-        let amount = u64::try_from(gold(&ledger(&h).await?))?;
         deposit_bank(&h, &owner, admitted, amount).await?;
         let (ware_definition, ware_reference, client_id) = market_ware(native)?;
         let ware = mint_carried(
@@ -314,6 +312,19 @@ pub(super) async fn seed_peer_bank_and_bag(h: &Harness, peer: AdmittedSession) -
     Ok(())
 }
 
+fn carried_coin_value(ledger: &Ledger) -> TestResult<u64> {
+    // Merchant payouts can include platinum and crystal coins.
+    ledger
+        .backpack
+        .iter()
+        .filter_map(|(key, quantity, _)| {
+            Coin::from_production_key(key).map(|coin| (coin, quantity))
+        })
+        .try_fold(0, |total, (coin, quantity)| {
+            Ok(total + coin.worth() * u64::try_from(*quantity)?)
+        })
+}
+
 pub(super) async fn deposit_bank(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -354,7 +365,7 @@ pub(super) async fn deposit_bank(
     assert!(
         matches!(h.root.bank_deposit(owner.character,owner.holder,admitted.item_fence.ok_or("fence")?,bank.clone()).await.map_err(debug)?,BankOperationOutcome::Committed(r) if r.result==BankResult::Ok)
     );
-    assert_eq!(gold(&ledger(h).await?), 0);
+    assert_eq!(carried_coin_value(&ledger(h).await?)?, 0);
     assert_eq!(
         count(
             h,

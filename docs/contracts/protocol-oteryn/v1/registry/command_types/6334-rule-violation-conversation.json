@@ -1,0 +1,10 @@
+{
+  "id": 6334,
+  "name": "RULE_VIOLATION_CONVERSATION",
+  "owner_decision": "Owner-assigned client report and Store protocol gaps, 2026-11-22",
+  "capability": 585,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/rule-violation-v1.md#conversation-request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/rule-violation-v1.md#conversation-result",
+  "max_payload_bytes": 1025,
+  "max_result_payload_bytes": 20
+}

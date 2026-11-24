@@ -1,0 +1,9 @@
+{
+  "id": 6326,
+  "name": "WORLD_LOGIN_INFO",
+  "owner_decision": "Selected World pre-admission login probe",
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/daily-boost-v1.md#selected-world-login-probe",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/daily-boost-v1.md#selected-world-login-probe",
+  "max_payload_bytes": 16,
+  "max_result_payload_bytes": 4096
+}

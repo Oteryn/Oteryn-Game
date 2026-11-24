@@ -1,0 +1,21 @@
+[
+  {
+    "mechanic": "0582-imbuement-affordability",
+    "kind": "handlers",
+    "id": "0582-imbuement-affordability-commands",
+    "status": "unsupported",
+    "commands": [
+      6327,
+      6328
+    ],
+    "direction": "client_to_server",
+    "reason": "The client imbuement lane has yet to select the new shrine capability.",
+    "not_applicable": {
+      "state": "The server wallet and admitted item provide the quote.",
+      "protocol": "The protocol registry defines the capability and its command schemas.",
+      "view": "The client shrine panel currently consumes the material quote from command 731.",
+      "input": "The native shrine panel uses command 85 for application.",
+      "settings": "The capability adds no client settings."
+    }
+  }
+]

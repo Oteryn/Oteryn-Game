@@ -396,3 +396,23 @@ fn sidebar_toggles_raised_bosstiary_closed() -> TestResult {
     assert_eq!(kills(&app), Some(0));
     Ok(())
 }
+
+#[test]
+fn chat_drag_lock_removes_and_restores_the_drag_target() -> TestResult {
+    use crate::bevy_shell::window_drag::DraggableDialog;
+    let mut app = floating_app("chat-lock")?;
+    let toggle = entity_with::<float::FloatToggle>(&mut app, |toggle| toggle.0 == float::CHAT)?;
+    activate(&mut app, toggle);
+    settle(&mut app);
+    let root = float_root(&mut app, float::CHAT)?;
+    for locked in [true, false] {
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences
+            .chat_drag_locked = locked;
+        settle(&mut app);
+        assert_eq!(app.world().get::<DraggableDialog>(root).is_none(), locked);
+    }
+    Ok(())
+}

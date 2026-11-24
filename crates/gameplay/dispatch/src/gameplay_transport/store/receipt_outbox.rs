@@ -272,16 +272,21 @@ async fn publish_claim(
     {
         return None;
     }
-    publish_at_current_generation(root, client, &receipt, |client, generation| {
-        client.claim_receipt(
-            &intent,
-            &receipt.character_id,
-            &receipt.world_id,
-            &unit,
-            generation,
-            &receipt.decided_at,
-        )
-    })
+    publish_at_current_generation(
+        root,
+        client,
+        &receipt.recovery_generation,
+        |client, generation| {
+            client.claim_receipt(
+                &intent,
+                &receipt.character_id,
+                &receipt.world_id,
+                &unit,
+                generation,
+                &receipt.decided_at,
+            )
+        },
+    )
     .await
     .ok()
 }

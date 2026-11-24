@@ -118,24 +118,24 @@ pub(in crate::bevy_shell) fn keyboard(
             KeyCode::ArrowUp => false,
             _ => continue,
         };
-        let selected = state
+        let position = state
             .selected
-            .unwrap_or(if forward { 0 } else { request.rows.len() });
+            .and_then(|current| state.order.iter().position(|&row| row == current));
         let next = if forward {
-            request
-                .rows
+            state
+                .order
                 .iter()
-                .enumerate()
-                .skip(state.selected.map_or(0, |index| index.saturating_add(1)))
-                .find_map(|(index, row)| row.available.then_some(index))
+                .skip(position.map_or(0, |i| i + 1))
+                .copied()
+                .find(|&i| request.rows[i].available)
         } else {
-            request
-                .rows
+            state
+                .order
                 .iter()
-                .enumerate()
-                .take(selected)
+                .take(position.unwrap_or(state.order.len()))
                 .rev()
-                .find_map(|(index, row)| row.available.then_some(index))
+                .copied()
+                .find(|&i| request.rows[i].available)
         };
         if let Some(next) = next {
             state.selected = Some(next);

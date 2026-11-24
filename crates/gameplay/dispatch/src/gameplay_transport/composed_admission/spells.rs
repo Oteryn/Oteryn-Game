@@ -48,6 +48,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         outcome
     }
 
+    pub(in crate::gameplay_transport) async fn complete_parameter_spell(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
+    ) -> Option<(
+        actor_spell::SpellCastOutcome,
+        Option<oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult>,
+    )> {
+        let mut result = None;
+        let outcome = self
+            .cast_spell_dispatch_with_parameter(
+                actor,
+                session,
+                command_id,
+                intent.intent,
+                Some(&intent),
+                Some(&mut result),
+            )
+            .await?;
+        self.settle_pacified_target(actor, session).await;
+        Some((outcome, result))
+    }
+
     pub(in crate::gameplay_transport) async fn cast_spell_dispatch(
         &self,
         actor: ExactActorRef,
@@ -55,8 +80,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         intent: actor_spell::SpellCastIntent,
     ) -> Option<actor_spell::SpellCastOutcome> {
-        self.cast_spell_dispatch_with_parameter(actor, game_session_id, command_id, intent, None)
-            .await
+        self.cast_spell_dispatch_with_parameter(
+            actor,
+            game_session_id,
+            command_id,
+            intent,
+            None,
+            None,
+        )
+        .await
     }
 
     async fn cast_spell_dispatch_with_parameter(
@@ -66,6 +98,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         intent: actor_spell::SpellCastIntent,
         parameter: Option<&oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent>,
+        wire_result: Option<
+            &mut Option<oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult>,
+        >,
     ) -> Option<actor_spell::SpellCastOutcome> {
         // Convert once before all ordinary, native combat and world-item consumers.
         let mut intent = intent;
@@ -175,7 +210,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     actor_spell::SpellCastOutcome::rejected()
                 }
             };
-            if let Some(feedback) = dispatch.result.and_then(|result| result.feedback)
+            if let Some(wire_result) = wire_result {
+                *wire_result = dispatch.result;
+            } else if let Some(feedback) = dispatch.result.and_then(|result| result.feedback)
                 && !feedback.text.is_empty()
             {
                 self.states
@@ -305,6 +342,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 command_id,
                 cast,
                 parameter.as_ref(),
+                None,
             )
             .await?;
         self.settle_pacified_target(actor, session).await;

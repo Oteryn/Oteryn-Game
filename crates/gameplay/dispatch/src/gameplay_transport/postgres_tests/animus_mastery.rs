@@ -248,7 +248,8 @@ fn animus_mastery_postgres_real_dispatch_pages_replay_and_current_fence() -> Tes
                         AnimusPage {
                             offset: 0,
                             limit: 0
-                        }
+                        },
+                        false,
                     )
                     .await
                     .is_none()
@@ -260,7 +261,8 @@ fn animus_mastery_postgres_real_dispatch_pages_replay_and_current_fence() -> Tes
                         AnimusPage {
                             offset: 0,
                             limit: 51
-                        }
+                        },
+                        false,
                     )
                     .await
                     .is_none()
@@ -269,7 +271,7 @@ fn animus_mastery_postgres_real_dispatch_pages_replay_and_current_fence() -> Tes
             missing_fence.item_fence = None;
             assert!(
                 owner
-                    .animus_mastery_query(missing_fence, query)
+                    .animus_mastery_query(missing_fence, query, false)
                     .await
                     .is_none()
             );
@@ -283,7 +285,12 @@ fn animus_mastery_postgres_real_dispatch_pages_replay_and_current_fence() -> Tes
                 .ok_or("item fence")?
                 .connection_generation =
                 crate::foundation::ConnectionGeneration::new(999).map_err(debug)?;
-            assert!(owner.animus_mastery_query(stale, query).await.is_none());
+            assert!(
+                owner
+                    .animus_mastery_query(stale, query, false)
+                    .await
+                    .is_none()
+            );
             let mut other_character = admitted;
             other_character
                 .item_fence
@@ -293,7 +300,7 @@ fn animus_mastery_postgres_real_dispatch_pages_replay_and_current_fence() -> Tes
                 crate::domain::CharacterId::from_bytes(super::fixture::id(99)).map_err(debug)?;
             assert!(
                 owner
-                    .animus_mastery_query(other_character, query)
+                    .animus_mastery_query(other_character, query, false)
                     .await
                     .is_none()
             );
@@ -303,7 +310,12 @@ fn animus_mastery_postgres_real_dispatch_pages_replay_and_current_fence() -> Tes
                 .as_mut()
                 .ok_or("item fence")?
                 .character_lease_generation += 1;
-            assert!(owner.animus_mastery_query(old_lease, query).await.is_none());
+            assert!(
+                owner
+                    .animus_mastery_query(old_lease, query, false)
+                    .await
+                    .is_none()
+            );
             let mut stale_scope = admitted;
             stale_scope
                 .item_fence
@@ -313,7 +325,7 @@ fn animus_mastery_postgres_real_dispatch_pages_replay_and_current_fence() -> Tes
                 crate::foundation::ScopeOwnershipGeneration::new(999).map_err(debug)?;
             assert!(
                 owner
-                    .animus_mastery_query(stale_scope, query)
+                    .animus_mastery_query(stale_scope, query, false)
                     .await
                     .is_none()
             );
@@ -327,7 +339,7 @@ fn animus_mastery_postgres_real_dispatch_pages_replay_and_current_fence() -> Tes
                 .game_session_id = absent_session.game_session_id;
             assert!(
                 owner
-                    .animus_mastery_query(absent_session, query)
+                    .animus_mastery_query(absent_session, query, false)
                     .await
                     .is_none()
             );
@@ -404,6 +416,23 @@ fn animus_mastery_postgres_real_dispatch_pages_replay_and_current_fence() -> Tes
                     .map_err(debug)?,
                 ordered
             );
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                &crate::gameplay_transport::animus_mastery::offered(
+                    owner.offered_capabilities(),
+                    true,
+                ),
+                &[CAPABILITY_ANIMUS_MASTERY_V1, 613],
+            )
+            .ok_or("Animus XP capability")?;
+            let (status, payload) =
+                support::exchange(&owner, &mut admitted, 12, 6388, &page).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(payload.get(..2).ok_or("XP prefix")?, &200_u16.to_le_bytes());
+            assert_eq!(
+                payload.get(2..).ok_or("XP page")?,
+                encode_page(5, &ordered[..2]).ok_or("legacy page")?
+            );
+
             eprintln!("ANIMUS_QUERY POSTGRES_CASE_COMPLETED");
             drop(owner);
             drop(authority);

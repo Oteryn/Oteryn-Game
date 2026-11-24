@@ -109,7 +109,7 @@ macro_rules! title_catalogue {
     };
 }
 
-pub const TITLE_COUNT: usize = 94;
+pub const TITLE_COUNT: usize = 95;
 
 title_catalogue! {
     AdeptArmorer = 1, "Adept Armorer", None, true, WeaponMastery,
@@ -300,6 +300,8 @@ title_catalogue! {
         "Won the complete Ancient Aucar outfit.";
     RobinsonCrusoe = 94, "Robinson Crusoe", None, true, SchrodingerVisit,
         "Visited Schrödinger's Island.";
+    BigBoss = 95, "Big Boss", None, false, WorldLead(12),
+        "Highest score of accumulated boss points on character's world.";
 }
 
 impl CharacterTitle {
@@ -512,7 +514,7 @@ pub enum TitleRule {
 /// unresolved difference between the donor catalogue and its implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NotAdmitted {
-    /// No World highscore category for the value (0129 publishes categories 1..11).
+    /// No published World highscore category for the required value.
     NoHighscore,
     /// No hunting-task point owner.
     TaskPoints,
@@ -527,11 +529,10 @@ pub enum NotAdmitted {
     DonorRule,
 }
 
-/// The 18 Global titles outside the catalogue, with the missing fact. Together with
+/// The 17 Global titles outside the catalogue, with the missing fact. Together with
 /// `CharacterTitle::ALL` they are the 112 titles of TibiaWiki revid 1197515.
-pub const NOT_ADMITTED_TITLES: [(&str, NotAdmitted); 18] = [
+pub const NOT_ADMITTED_TITLES: [(&str, NotAdmitted); 17] = [
     ("Armor Breaker", NotAdmitted::DonorRule),
-    ("Big Boss", NotAdmitted::NoHighscore),
     ("Bringer of Rain", NotAdmitted::Tibiadrome),
     ("Cleansing Conqueror", NotAdmitted::DonorRule),
     ("Djinn Dominator", NotAdmitted::DonorRule),

@@ -65,14 +65,25 @@ class WritableProfilesTests(unittest.TestCase):
         self.apply(generated)
         self.assertEqual(json.loads(generated["profiles"]), self.native)
         rows = {r["production_definition"]["production_key"]: r for r in self.native["records"]}
+        # An empty provider isolates the writable owner's admission decisions.
+        isolated = {"profiles": b'{"records":[]}', "manifest": b'{"item_profiles":{}}'}
+        self.apply(isolated)
+        owned = {r["production_definition"]["production_key"]: r
+                 for r in json.loads(isolated["profiles"])["records"]}
+        self.assertEqual(owned.keys(), {
+            profile["item"]["key"] for profile in self.profiles["records"]
+            if profile["qualification"] in {
+                "REWRITE_TEXT_SEMANTICS_ONLY", "WRITE_ONCE_TEXT_SEMANTICS_ONLY",
+                "FIXED_TEXT_SEMANTICS_ONLY", "UNRESOLVED_WRITE_ONCE_TARGET",
+            }
+        })
         sources = writing.reading.item_rows(writing.ROOT)
         for profile in self.profiles["records"]:
             key = profile["item"]["key"]
-            if key in rows:
-                self.assertEqual(rows[key]["admission"]["materializable"], sources[key]["materializable"])
+            if key in owned:
+                self.assertEqual(owned[key]["admission"]["materializable"], sources[key]["materializable"])
             if profile["qualification"] == "REWRITE_TEXT_SEMANTICS_ONLY":
                 row = rows[key]
-                self.assertEqual(row["admission"]["materializable"], sources[key]["materializable"])
                 self.assertEqual(row["semantics"]["readable_writeable"]["value"]["write_once_target"],
                                  {"state": "NOT_APPLICABLE"})
             elif profile["qualification"] == "WRITE_ONCE_TEXT_SEMANTICS_ONLY":
@@ -91,8 +102,6 @@ class WritableProfilesTests(unittest.TestCase):
                 self.assertEqual(text["writeable"], {"state": "UNKNOWN"})
                 self.assertEqual(text["write_once_target"], {"state": "UNKNOWN"})
                 self.assertEqual(text["max_text_length"], writing.known(profile["max_characters"]))
-            else:
-                self.assertNotIn(key, rows)
 
     def test_late_leaf_conflicts_or_stackable_text_fail_atomically(self):
         for failure in ("length", "stack_class", "stack_semantics", "group"):

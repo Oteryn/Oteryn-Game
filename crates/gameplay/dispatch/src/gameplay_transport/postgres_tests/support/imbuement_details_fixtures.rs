@@ -106,6 +106,32 @@ pub(super) async fn exercise(
         .await,
         ImbuementReply::Rejected
     ));
+    use oteryn_protocol_oteryn::imbuement::{ImbuementAction, ImbuementRequest, encode_imbuement_request};
+    use oteryn_protocol_oteryn::CommandStatus;
+    use super::imbuement_fixtures::exchange_raw;
+    let sword_ref = index.definition_ref("Item", "oteryn:item.tibia.i3264", "definition-r1").ok_or("sword definition")?;
+    let affordability = |item: Option<oteryn_protocol_oteryn::item_view::ItemHandle>| {
+        Ok(wire::encode_query(item.ok_or("carried item")?))
+    };
+    let (admitted, status, bytes) = exchange_raw(
+        owner, sword_ref, admitted, 1, wire::COMMAND_TYPE_IMBUEMENT_AFFORDABILITY, affordability,
+    ).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    let funds = wire::AffordabilityReply::decode(&bytes).map_err(debug)?;
+    for (tier, expected) in [(1, true), (2, false)] {
+        let row = funds.details.quotes.iter().position(|row| (row.family, row.tier) == (1, tier)).ok_or("strike quote")?;
+        assert_eq!(funds.affordable[row], expected);
+    }
+    let (_, status, bytes) = exchange_raw(
+        owner, sword_ref, admitted, 2, wire::COMMAND_TYPE_IMBUEMENT_PROTECTION, |item| {
+            encode_imbuement_request(&ImbuementRequest {
+                item: item.ok_or("carried item")?,
+                action: ImbuementAction::Apply { slot: 0, imbuement: 0 },
+            }).map_err(|error| format!("{error:?}").into())
+        },
+    ).await?;
+    assert_eq!(status, CommandStatus::Rejected);
+    assert_eq!(bytes, b"Sorry, not possible.");
     let after: (i64, i64) = sqlx::query_as("SELECT count(*)::bigint,COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1").fetch_one(&harness.pool).await?;
     assert_eq!(after, before);
     Ok(())

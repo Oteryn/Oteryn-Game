@@ -142,6 +142,21 @@ fn project(
         .observe(mouse::scroll)
         .id();
     commands.entity(viewport).add_child(image);
+    let clock = commands
+        .spawn((
+            Name::new("Minimap clock"),
+            ClockLabel,
+            source::text("", source::font(skins.font.clone(), true)),
+            Node {
+                position_type: PositionType::Absolute,
+                bottom: px(1.),
+                right: px(2.),
+                ..default()
+            },
+            BackgroundColor(Color::srgba(0., 0., 0., 0.7)),
+        ))
+        .id();
+    commands.entity(viewport).add_child(clock);
     let controls = commands
         .spawn(Node {
             width: px(ROSE),
@@ -428,10 +443,22 @@ fn shortcuts(
     }
 }
 /// Places the layer knob at the shown floor: the deepest (-15) left, the highest (0) right.
-fn camera_label(owner: NonSend<HostOwner>, mut knobs: Query<&mut Node, With<LayerKnob>>) {
+#[derive(Component)]
+struct ClockLabel;
+fn camera_label(
+    owner: NonSend<HostOwner>,
+    mut knobs: Query<&mut Node, With<LayerKnob>>,
+    mut clocks: Query<&mut Text, With<ClockLabel>>,
+) {
     let Some(play) = &owner.play else {
         return;
     };
+    for mut clock in &mut clocks {
+        let value = play.view.world_clock_text().unwrap_or_default();
+        if clock.0 != value {
+            clock.0 = value;
+        }
+    }
     let (_, _, floor, _, _) = play.view.minimap_camera();
     let left = px(f32::from((floor + 15).clamp(0, 15)) * (ROSE - 5.) / 15.);
     for mut node in &mut knobs {

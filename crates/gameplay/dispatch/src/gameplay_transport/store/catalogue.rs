@@ -1,5 +1,6 @@
 //! The admitted runtime Store catalogue (`rulesets/economy/store/catalogue.json`).
 //! `tools/content-schema/store-authoring/build_runtime_catalogue.py` projects the pinned offer sources.
+use crate::content::blessing_catalogue::BlessingCatalogue;
 use oteryn_gameplay_economy::store as rules;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -51,6 +52,13 @@ struct Item {
 
 pub(super) const PREY_EXPANSION_UNLOCK: &str = "prey-list-expansion";
 pub(super) const CHARM_EXPANSION_UNLOCK: &str = "charm-expansion";
+pub(super) const BLESSING_CATEGORY: &str = "consumables.blessings";
+pub(super) const BLESSING_OFFER_PREFIX: &str = "store:blessing:";
+const BLESSING_ENTITLEMENT_PREFIX: &str = "store-blessing:";
+
+pub(super) fn blessing_storage_key(entitlement: &str) -> Option<&str> {
+    entitlement.strip_prefix(BLESSING_ENTITLEMENT_PREFIX)
+}
 
 fn enabled_by_default() -> bool {
     true
@@ -73,6 +81,31 @@ pub(super) struct RuntimeCatalogue {
 }
 
 impl RuntimeCatalogue {
+    pub(super) fn from_blessings() -> Option<Self> {
+        let blessings = BlessingCatalogue::load().ok()?.blessings;
+        let offers = blessings
+            .iter()
+            .map(|blessing| {
+                let suffix = blessing.storage_key.strip_prefix("oteryn:blessing.")?;
+                Some(serde_json::json!({
+                    "key": format!("{BLESSING_OFFER_PREFIX}{suffix}"),
+                    "category": BLESSING_CATEGORY,
+                    "title": blessing.name,
+                    "price": blessing.store_tibia_coins,
+                    "currency": currency_text(rules::CurrencyKind::TibiaCoin),
+                    "unlock_key": format!("{BLESSING_ENTITLEMENT_PREFIX}{}", blessing.storage_key),
+                    "source_line": 0,
+                }))
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let document = serde_json::json!({
+            "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
+            "source": "rulesets/character/blessings/catalogue.json",
+            "offers": offers,
+        });
+        Self::from_json(&serde_json::to_vec(&document).ok()?)
+    }
+
     /// `None` for anything but a closed, non-empty v1 document of positive Tibia Coin prices.
     pub(super) fn from_json(bytes: &[u8]) -> Option<Self> {
         Self::from_json_with_revision(bytes, None)
@@ -222,6 +255,22 @@ impl RuntimeCatalogue {
                         },
                         rules::Eligibility::default(),
                     ),
+                    (None, Some(unlock_key))
+                        if offer.category == BLESSING_CATEGORY
+                            && blessing_storage_key(unlock_key)
+                                .and_then(|key| key.strip_prefix("oteryn:blessing."))
+                                .is_some_and(|suffix| {
+                                    offer.key.strip_prefix(BLESSING_OFFER_PREFIX) == Some(suffix)
+                                }) =>
+                    {
+                        (
+                            rules::OfferKind::Service,
+                            rules::DeliveryKind::Unlock {
+                                unlock_key: unlock_key.clone(),
+                            },
+                            rules::Eligibility::default(),
+                        )
+                    }
                     (None, Some(unlock_key))
                         if matches!(
                             unlock_key.as_str(),

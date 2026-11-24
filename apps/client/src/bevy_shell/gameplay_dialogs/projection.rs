@@ -159,7 +159,7 @@ pub(super) fn project(
         source::dialog_caption(&mut commands, window, tr!("Logout"), skin.font.clone());
         let text = commands
             .spawn(source::text(
-                "Log out of the game?",
+                if matches!(request.content, Content::StalledLogout(_)) { "The connection is not responding. Disconnect now? Your character may remain online." } else { "Log out of the game?" },
                 source::font(skin.font.clone(), false),
             ))
             .id();
@@ -170,7 +170,11 @@ pub(super) fn project(
             window,
             request.id,
             tr!("Ok"),
-            Choice::Logout,
+            if matches!(request.content, Content::StalledLogout(_)) {
+                Choice::ForceLogout
+            } else {
+                Choice::Logout
+            },
         );
     }
     let cancel = button(
@@ -244,8 +248,12 @@ pub(super) fn context_items(
     };
     let mut groups: Vec<Vec<(Item, Choice)>> = Vec::new();
     let mut first = Vec::new();
-    if let Some((_, (_, attacking))) = attack.as_deref() {
-        let label = if *attacking { "Stop Attack" } else { "Attack" };
+    if let Some(attack) = attack.as_deref() {
+        let label = if attack.attacking {
+            "Stop Attack"
+        } else {
+            "Attack"
+        };
         first.push((Item::shortcut(label, ATTACK), Choice::Attack));
     }
     if let Some(choice) = find(Action::Look) {

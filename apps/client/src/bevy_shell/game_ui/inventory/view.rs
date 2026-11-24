@@ -228,6 +228,7 @@ pub(super) fn project(
             slot,
             position,
             (snapshot.write, snapshot.timed),
+            slot.parent_container(&snapshot.containers),
         );
     }
     previous.0 = Some(snapshot);

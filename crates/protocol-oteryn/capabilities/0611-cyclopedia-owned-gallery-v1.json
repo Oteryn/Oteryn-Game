@@ -1,0 +1,17 @@
+{
+  "id": 611,
+  "name": "CYCLOPEDIA_OWNED_GALLERY_V1",
+  "constant": "cyclopedia_character::gallery::owned::CAPABILITY",
+  "requires": [
+    199
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}
