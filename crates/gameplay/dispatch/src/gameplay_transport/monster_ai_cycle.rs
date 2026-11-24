@@ -155,9 +155,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        if !Box::pin(self.drain_herald_floor_reset(&permit)).await {
+            return;
+        }
         let monster_room = self.rooms().gate_monster_ai();
-        if let Some(room) = monster_room {
-            Box::pin(self.drain_herald_fire_field_attack(&permit, room, now.get())).await;
+        if let Some(room) = monster_room
+            && !Box::pin(self.drain_herald_fire_field_attack(&permit, room, now.get())).await
+        {
+            return;
         }
         #[cfg(test)]
         trace.set("ai_step_due");

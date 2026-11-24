@@ -58,6 +58,67 @@ enum CallbackCase {
     FarPad,
     LostAcknowledgement,
     FireFields,
+    EnvironmentalLastHit,
+    FrozenDeadline,
+    FieldStep,
+    FieldProjection,
+    RedFloors,
+    StaleParty,
+}
+
+#[test]
+fn herald_environmental_last_hit_settles_player_damage() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "herald_environmental_last_hit_settles_player_damage",
+        || scenario(false, false, CallbackCase::EnvironmentalLastHit),
+    )
+}
+
+#[test]
+fn herald_deadline_millisecond_is_shared_by_victory_and_quest() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "herald_deadline_millisecond_is_shared_by_victory_and_quest",
+        || scenario(false, false, CallbackCase::FrozenDeadline),
+    )
+}
+
+#[test]
+fn herald_fields_apply_environmental_step_without_field_capability() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "herald_fields_apply_environmental_step_without_field_capability",
+        || scenario(false, false, CallbackCase::FieldStep),
+    )
+}
+
+#[test]
+fn herald_defers_a_due_poison_tick_until_ground_projects() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "herald_defers_a_due_poison_tick_until_ground_projects",
+        || scenario(false, false, CallbackCase::FieldProjection),
+    )
+}
+
+#[test]
+fn herald_three_red_floors_reset_and_clear_only_the_instance() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "herald_three_red_floors_reset_and_clear_only_the_instance",
+        || scenario(false, false, CallbackCase::RedFloors),
+    )
 }
 
 #[test]
@@ -107,6 +168,17 @@ fn herald_player_poison_settles_the_lethal_receipt() -> TestResult {
 #[test]
 fn herald_shared_party_settles_nondamaging_members() -> TestResult {
     super::srvenc_source_deaths_fixtures::scenario("herald_shared_party", "herald_of_fire")
+}
+
+#[test]
+fn herald_ignores_idle_peers_after_sharing_is_disabled() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "herald_ignores_idle_peers_after_sharing_is_disabled",
+        || scenario(false, false, CallbackCase::StaleParty),
+    )
 }
 
 #[test]
@@ -173,8 +245,12 @@ fn scenario(wrong_pad: bool, replay: bool, case: CallbackCase) -> TestResult {
             let room = source_room.bundle_view(
                 cells.clone(), bundle.frame_binding_digest(world_id), bundle.map_revision_digest(), start,
             ).ok_or("source bundle combat room")?;
-            let (templates, diagnostics) = controller.qualify_initial_activity_template(
+            let (mut templates, diagnostics) = controller.qualify_initial_activity_template(
                 &source_room, &room, "content-1", &candidates);
+            if matches!(case, CallbackCase::FrozenDeadline) {
+                templates.iter_mut().find(|room| room.boss_key() == BOSS)
+                    .ok_or("qualified Herald fixture")?.set_fixture_fight_seconds(2);
+            }
             let template = templates.iter().find(|room| room.boss_key() == BOSS)
                 .ok_or_else(|| format!("Herald boot qualification: {:?}", diagnostics.iter()
                     .find(|diagnostic| diagnostic.path == candidate.path)))?;
@@ -199,7 +275,7 @@ fn scenario(wrong_pad: bool, replay: bool, case: CallbackCase) -> TestResult {
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             owner.active_generation = Some(active);
-            if matches!(case, CallbackCase::PoisonDeath) {
+            if matches!(case, CallbackCase::PoisonDeath | CallbackCase::EnvironmentalLastHit | CallbackCase::FrozenDeadline | CallbackCase::StaleParty) {
                 let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
                 owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
             }
@@ -221,6 +297,11 @@ fn scenario(wrong_pad: bool, replay: bool, case: CallbackCase) -> TestResult {
             super::item_look_fixtures::seed_main_backpack(&h, items).await?;
             owner.register_current_runtime().await.map_err(|_| "register Channel runtime")?;
             owner.activity_runtimes.remember(admitted).map_err(|_| "register admitted session")?;
+            let peer = if matches!(case, CallbackCase::StaleParty) {
+                Some(Box::pin(prepare_herald_peer(&h, &owner, admitted)).await?)
+            } else {
+                None
+            };
             owner.activity_runtimes.register_template(template).map_err(|_| "register template")?;
             ActivityHandoffOwner::new(h.root.clone())
                 .publish_qualified_boss_rooms(&h.node, &templates).await?;
@@ -273,6 +354,15 @@ fn scenario(wrong_pad: bool, replay: bool, case: CallbackCase) -> TestResult {
             if !replay {
                 owner.activity_runtimes.finish_switch(admitted, switch.destination)
                     .map_err(|_| "finish source scope switch")?;
+                let peer = if let Some(peer) = peer {
+                    let switch = owner.activity_runtimes.pending_switch(peer).map_err(|_| "peer scope switch")?
+                        .ok_or("committed peer handoff")?;
+                    owner.activity_runtimes.finish_switch(peer, switch.destination)
+                        .map_err(|_| "finish peer scope switch")?;
+                    Some(switch.destination)
+                } else {
+                    None
+                };
                 let mut destination = owner.resolve_runtime_view(switch.destination).await
                     .map_err(|_| "resolve Herald Instance")?.ok_or("current Herald Instance")?;
                 match case {
@@ -281,11 +371,14 @@ fn scenario(wrong_pad: bool, replay: bool, case: CallbackCase) -> TestResult {
                         assert_durable_field_immunity(&destination, switch.destination).await?;
                         return Ok(());
                     }
-                    CallbackCase::UncreditedDeath => assert_periodic_exit(&h, &destination, switch.destination, false).await?,
-                    CallbackCase::PoisonDeath => assert_periodic_exit(&h, &destination, switch.destination, true).await?,
+                    CallbackCase::UncreditedDeath | CallbackCase::PoisonDeath
+                    | CallbackCase::EnvironmentalLastHit | CallbackCase::FrozenDeadline | CallbackCase::StaleParty => {
+                        Box::pin(assert_periodic_exit(&h, &destination, switch.destination, case, peer)).await?;
+                    }
                     CallbackCase::LostAcknowledgement => return Err("lost acknowledgement case delivered its switch".into()),
-                    CallbackCase::FireFields => {
-                        assert_fire_field_attack(&destination, switch.destination).await?;
+                    CallbackCase::FireFields | CallbackCase::FieldStep | CallbackCase::RedFloors
+                    | CallbackCase::FieldProjection => {
+                        Box::pin(assert_fire_field_attack(&destination, switch.destination, case)).await?;
                         return Ok(());
                     }
                     CallbackCase::FarPad => return Err("far pad allocated an Instance".into()),
@@ -713,11 +806,58 @@ impl crate::durability::item_loop_move::ItemLoopContent for HeraldFieldFixture {
     }
 }
 
+async fn prepare_herald_peer(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    leader: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult<crate::gameplay_transport::connection::AdmittedSession> {
+    use crate::gameplay_transport::connection::{AdmittedSession, ControllerBinding, FirstEntryOutcome, SessionContinuity};
+    use crate::world_party_runtime_postgres_cases::{FreshPlayerOwners, committed_fresh_player_from_source_owned};
+    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+        .fetch_one(&h.pool).await?;
+    let (current, operation) = committed_fresh_player_from_source_owned(
+        &FreshPlayerOwners { root: h.root.clone(), node: h.node.clone(), recovery: &h.recovery },
+        60, 63, 171, now, Some("platform-test"),
+    ).await?;
+    let fence = crate::gameplay_transport::item_fence_of(current).ok_or("actual peer fence")?;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(fence.game_session_id).map_err(debug)?;
+        runtime.commit_fresh_session(reservation).map_err(debug)?
+    };
+    let mut continuity = SessionContinuity::FRESH;
+    continuity.selected_capabilities = leader.continuity.selected_capabilities;
+    let mut peer = AdmittedSession {
+        game_session_id: fence.game_session_id, world_id: leader.world_id, channel_id: leader.channel_id,
+        runtime_actor: Some(actor), first_entry: FirstEntryOutcome::Positioned,
+        controller: Some(ControllerBinding {
+            transport: current.current_transport().ok_or("actual peer transport")?,
+            account_id: fixture::id(63),
+        }),
+        continuity, item_fence: Some(fence),
+    };
+    super::srx3_activity_source_fixture::prepare_player_with_operation(
+        h, owner, &mut peer, 12, "knight", &operation,
+    ).await?;
+    player_on(owner, actor, 32435, 32655).await?;
+    owner.activity_runtimes.remember(peer).map_err(|_| "remember Herald peer")?;
+    let leader = leader.item_fence.ok_or("actual leader fence")?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq,shared_xp_enabled) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,3,true)")
+        .bind(fixture::id(0xb9).as_slice()).bind(fixture::id(42).as_slice()).bind(leader.character_id.as_bytes().as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,1,1,encode($4,'hex')::uuid),(encode($2,'hex')::uuid,encode($3,'hex')::uuid,2,1,encode($4,'hex')::uuid)")
+        .bind(leader.character_id.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice())
+        .bind(fixture::id(0xb9).as_slice()).bind(fixture::id(43).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(peer)
+}
+
 async fn assert_periodic_exit(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
-    player_owned: bool,
+    case: CallbackCase,
+    peer: Option<crate::gameplay_transport::connection::AdmittedSession>,
 ) -> TestResult {
     use crate::foundation::condition::{ConditionDefinition, ConditionLineage, TickFacts};
     use crate::map::view::MapFacts;
@@ -745,7 +885,9 @@ async fn assert_periodic_exit(
         .item_fence
         .ok_or("Herald recipient fence")?
         .character_id;
-    let xp_before: i64 = if player_owned {
+    let player_owned = matches!(case, CallbackCase::PoisonDeath | CallbackCase::FrozenDeadline | CallbackCase::StaleParty);
+    let credited = !matches!(case, CallbackCase::UncreditedDeath);
+    let xp_before: i64 = if credited {
         super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
             h,
             owner,
@@ -764,6 +906,18 @@ async fn assert_periodic_exit(
     } else {
         0
     };
+    if let Some(peer) = peer {
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+            h, owner, &peer, &[(MISSION.into(), 1)], 0xb8,
+        ).await?;
+        owner.admit_quest_session(&peer).await;
+        owner.refresh_quest_session(peer.game_session_id, false).await;
+        assert!(owner.runtime.lock().await.cached_world_party(
+            admitted.runtime_actor.ok_or("Herald leader")?, admitted.game_session_id,
+        ).map_err(debug)?.is_some_and(|party| party.shared_xp_enabled));
+        sqlx::query("UPDATE game_parties SET revision=revision+1, shared_xp_enabled=false WHERE party_id=encode($1,'hex')::uuid")
+            .bind(fixture::id(0xb9).as_slice()).execute(&h.pool).await?;
+    }
     let boss = owner
         .runtime
         .lock()
@@ -773,10 +927,27 @@ async fn assert_periodic_exit(
         .first()
         .ok_or("Herald")?
         .actor;
-    assert_eq!(
-        commit_fixture_hit(owner, admitted, boss, 94, 125).await?,
-        (900, 775)
-    );
+    if credited {
+        assert_eq!(
+            commit_fixture_hit(owner, admitted, boss, 94, 125).await?,
+            (900, 775)
+        );
+    }
+    let frozen_at = if matches!(case, CallbackCase::FrozenDeadline) {
+        let deadline: i64 = sqlx::query_scalar(
+            "SELECT deadline FROM game_boss_room_activities WHERE boss_key=$1",
+        ).bind(BOSS).fetch_one(&h.pool).await?;
+        let database_now: i64 = sqlx::query_scalar(
+            "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+        ).fetch_one(&h.pool).await?;
+        if deadline >= database_now {
+            tokio::time::sleep(std::time::Duration::from_millis(u64::try_from(deadline - database_now)? + 2)).await;
+        }
+        owner.states.attack.lock().await.kills().seed_herald_death_clock(boss, deadline);
+        Some(deadline)
+    } else {
+        None
+    };
     let element = if player_owned {
         DotElement::Poison
     } else {
@@ -840,6 +1011,7 @@ async fn assert_periodic_exit(
         runtime
             .commit_creature_field_entry(boss, now.get(), Some(&field))
             .map_err(|error| format!("field entry: {error:?}"))?;
+        if peer.is_none() {
         let hit = spell_states
             .tick_source_creature_conditions(
                 &mut runtime,
@@ -857,9 +1029,14 @@ async fn assert_periodic_exit(
                 .iter()
                 .any(|impact| impact.source == source && impact.damage > 0)
         );
+        }
     }
-    owner.drain_monster_melee().await;
-    if player_owned {
+    if peer.is_some() {
+        owner.drain_monster_melee_at(now).await;
+    } else {
+        owner.drain_monster_melee().await;
+    }
+    if credited {
         assert!(
             owner
                 .states
@@ -868,8 +1045,15 @@ async fn assert_periodic_exit(
                 .await
                 .kills()
                 .has_session(admitted.game_session_id),
-            "a player-owned poison tick must enqueue the sealed death"
+            "a lethal tick after player damage must enqueue the sealed death"
         );
+        if let Some(deadline) = frozen_at {
+            assert_eq!(
+                owner.states.attack.lock().await.kills().herald_death_times(boss),
+                Some((deadline, u64::try_from(deadline)?)),
+                "the room and quest must use the same exact deadline millisecond",
+            );
+        }
         assert_eq!(
             owner.drain_kill_rewards(admitted.game_session_id).await,
             DrainOutcome::Drained
@@ -880,6 +1064,18 @@ async fn assert_periodic_exit(
                     (SELECT value FROM game_character_quest_tracks WHERE track_key=$1 AND character_id=encode($2,'hex')::uuid)",
         ).bind(MISSION).bind(character.as_bytes().as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(rewards, (xp_before + 1, 1, 3));
+        if let Some(peer) = peer {
+            let character = peer.item_fence.ok_or("Herald peer fence")?.character_id;
+            let value: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1 AND character_id=encode($2,'hex')::uuid"
+            ).bind(MISSION).bind(character.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(value, 1, "the idle peer's old roster must not grant Burning Heart credit");
+        }
+    } else {
+        let corpses: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION'",
+        ).fetch_one(&h.pool).await?;
+        assert_eq!(corpses, 0);
     }
     assert_eq!(count_portals(), 1);
     owner.drain_monster_melee().await;
@@ -890,6 +1086,7 @@ async fn assert_periodic_exit(
 async fn assert_fire_field_attack(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
+    case: CallbackCase,
 ) -> TestResult {
     use oteryn_simulation_determinism::SemanticTimeMicros;
     let map = owner.bundle_map().ok_or("Herald attack map")?;
@@ -911,7 +1108,11 @@ async fn assert_fire_field_attack(
             .collect::<Vec<_>>()
     };
     let start = owner.owner_now().get();
-    let at = |offset| SemanticTimeMicros::from_micros(start + offset);
+    let at = |offset| {
+        let now = start + offset;
+        owner.states.test_owner_time.store(now + 1, std::sync::atomic::Ordering::Relaxed);
+        SemanticTimeMicros::from_micros(now)
+    };
     owner.drain_monster_melee_at(at(0)).await;
     owner.drain_monster_melee_at(at(7_999_999)).await;
     assert!(telegraphs().is_empty());
@@ -930,6 +1131,9 @@ async fn assert_fire_field_attack(
             .await?
             .is_empty()
     );
+    if matches!(case, CallbackCase::FieldProjection) {
+        return assert_refresh_blocks_due_poison(owner, at(9_500_000)).await;
+    }
     owner.drain_monster_melee_at(at(9_500_000)).await;
     let cells = owner.root.read_item_loop_ground_for_scope(scope).await?;
     assert_eq!(cells.len(), 25);
@@ -938,6 +1142,12 @@ async fn assert_fire_field_attack(
             .iter()
             .all(|row| row.item.definition.production_key == "oteryn:item.tibia.i2118")
     );
+    if matches!(case, CallbackCase::FieldStep) {
+        return assert_field_step(owner, admitted).await;
+    }
+    if matches!(case, CallbackCase::RedFloors) {
+        return assert_red_floors(owner, admitted).await;
+    }
     owner.drain_monster_melee_at(at(16_000_000)).await;
     assert_eq!(telegraphs().len(), 50);
     owner.drain_monster_melee_at(at(17_500_000)).await;
@@ -965,4 +1175,142 @@ async fn lever_use(
         return Ok(outcome);
     }
     Ok(owner.use_world_object(actor, command, target).await)
+}
+
+async fn assert_refresh_blocks_due_poison(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    due: oteryn_simulation_determinism::SemanticTimeMicros,
+) -> TestResult {
+    use crate::foundation::condition::ConditionDefinition;
+    use oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement};
+    use oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntry;
+    use oteryn_simulation_determinism::DecisionOccurrenceId;
+
+    let boss = owner.runtime.lock().await.visible_entities().creatures[0].actor;
+    let poison = CreatureFieldEntry {
+        definition: ConditionDefinition::new(
+            "fixture.herald.pending_refresh_poison",
+            1,
+            ConditionValues::DamageOverTime {
+                element: DotElement::Poison,
+                total_min: 125,
+                total_max: 125,
+                per_tick: 125,
+                interval_ms: 1000,
+                delayed: false,
+            },
+        ).ok_or("poison condition")?,
+        source: None,
+        lineage: None,
+        occurrence: DecisionOccurrenceId::from_bytes([14; 16]),
+    };
+    crate::gameplay_transport::loop_move::fail_next_herald_projection(move |runtime| {
+        assert!(runtime.commit_creature_field_entry(boss, due.get(), Some(&poison)).is_ok());
+    });
+    assert_eq!(owner.states.spell_states.lock().await.herald_field_schedule.next_due(),
+        Some(due.get()), "the telegraphed refresh is due");
+    owner.drain_monster_melee_at(due).await;
+    let scope = owner.bundle_map().ok_or("Herald map")?.overlay.runtime_scope();
+    assert_eq!(owner.root.read_item_loop_ground_for_scope(scope).await?.len(), 25);
+    assert_eq!(
+        owner.states.spell_states.lock().await.herald_field_schedule.next_due(),
+        Some(due.get()),
+        "the committed occurrence stays pending until Ground is projected",
+    );
+    assert_eq!(owner.runtime.lock().await.live_creature_health(boss), Some(900),
+        "committed fire must protect Herald while its projection is unavailable");
+    owner.drain_monster_melee_at(due).await;
+    assert_eq!(owner.runtime.lock().await.live_creature_health(boss), Some(900));
+    Ok(())
+}
+
+async fn player_on(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    x: i32,
+    y: i32,
+) -> TestResult {
+    let mut runtime = owner.runtime.lock().await;
+    let mut movement = runtime.borrow_movement_position();
+    let mut current = movement.read(actor).map_err(debug)?;
+    while (current.position().x, current.position().y) != (x, y) {
+        let at = current.position();
+        let next = if at.x != x {
+            crate::foundation::MovementLocalPosition { x: at.x + (x - at.x).signum(), ..at }
+        } else {
+            crate::foundation::MovementLocalPosition { y: at.y + (y - at.y).signum(), ..at }
+        };
+        current = movement.commit_cardinal(current, next).map_err(debug)?;
+    }
+    Ok(())
+}
+
+async fn assert_field_step(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::StepDirection;
+    let actor = admitted.runtime_actor.ok_or("Herald participant")?;
+    let session = admitted.game_session_id;
+    assert!(owner.required_capabilities.effective().binary_search(&30).is_err());
+    let hp = {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        states.get(&runtime, actor, session).ok_or("initialized participant")?.vitals().health
+    };
+    player_on(owner, actor, 32493, 32660).await?;
+    let (outcome, _) = owner.paced_step(actor, session, StepDirection::East).await;
+    assert_eq!(outcome.disposition, StepDisposition::Moved);
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    let cast = states.get(&runtime, actor, session).ok_or("initialized participant")?;
+    assert!(cast.vitals().health < hp || !cast.owned_conditions().instances().is_empty(),
+        "an exact Herald fire field must apply environmental contact with capability 30 optional");
+    Ok(())
+}
+
+async fn assert_red_floors(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::StepDirection;
+    let actor = admitted.runtime_actor.ok_or("Herald participant")?;
+    let map = owner.bundle_map().ok_or("Herald map")?;
+    let scope = map.overlay.runtime_scope();
+    let plates = [(32496, 32649), (32503, 32656), (32496, 32663)];
+    let appearances = || plates.map(|(x, y)| {
+        let tile = TilePos { x, y, floor: -15 };
+        view::compose_tile(&map.overlay, &map.facts, tile).ok().flatten().and_then(|tile| {
+            tile.entries.into_iter().find_map(|entry| {
+                let id = entry.facts.appearance_id;
+                matches!(id, 53095..=53096).then_some(id)
+            })
+        })
+    });
+    assert_eq!(appearances(), [Some(53096); 3]);
+    for (i, (x, y)) in plates.into_iter().enumerate() {
+        let (from_y, direction) = if i == 0 {
+            (y + 1, StepDirection::North)
+        } else {
+            (y - 1, StepDirection::South)
+        };
+        player_on(owner, actor, i32::from(x), i32::from(from_y)).await?;
+        let (outcome, duration) = owner.paced_step(actor, admitted.game_session_id, direction).await;
+        assert_eq!(outcome.disposition, StepDisposition::Moved);
+        let expected = if i < 2 {
+            std::array::from_fn(|plate| Some(if plate <= i { 53095 } else { 53096 }))
+        } else {
+            [Some(53096); 3]
+        };
+        assert_eq!(appearances(), expected, "Crystal red-floor StepIn state");
+        assert_eq!(owner.root.read_item_loop_ground_for_scope(scope).await?.len(), if i == 2 { 0 } else { 25 });
+        if let Some(duration) = duration {
+            owner.states.test_owner_time.fetch_add(
+                u64::try_from(duration.as_micros())? + 1,
+                std::sync::atomic::Ordering::Relaxed,
+            );
+        }
+    }
+    assert!(owner.runtime.lock().await.activity_herald_is_alive());
+    Ok(())
 }

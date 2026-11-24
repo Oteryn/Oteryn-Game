@@ -53,3 +53,49 @@ impl QualifiedActivityRoomTemplate {
             .then_some(HeraldFireFieldAttack(()))
     }
 }
+
+/// Crystal 201189f8 movements_herald_red_floors.lua.
+#[derive(Clone, Copy, Debug)]
+pub struct HeraldRedFloors(());
+
+impl HeraldRedFloors {
+    pub const PLATES: [(u16, u16); 3] = [(32496, 32649), (32503, 32656), (32496, 32663)];
+    pub const UNSTEPPED: u16 = 53096;
+    pub const STEPPED: u16 = 53095;
+    pub const BODY: [u8; 32] = [
+        0xe0, 0x96, 0xce, 0x49, 0xef, 0xf3, 0x10, 0xb5, 0xdc, 0x37, 0x7f, 0x22, 0xf1, 0x98, 0xc6,
+        0x58, 0x39, 0x1b, 0xcc, 0xbc, 0xa5, 0x74, 0xc3, 0xc3, 0x0f, 0xd7, 0x1f, 0x59, 0xf4, 0x8f,
+        0xfb, 0xfd,
+    ];
+
+    pub fn contains_plate(position: LogicalCell) -> bool {
+        position.z == 15
+            && Self::PLATES
+                .into_iter()
+                .any(|(x, y)| (i32::from(x), i32::from(y)) == (position.x, position.y))
+    }
+
+    pub(super) fn qualify(room: &QualifiedNativeEntryRoom) -> Option<Self> {
+        Self::PLATES
+            .into_iter()
+            .all(|(x, y)| {
+                let cells = room.movement_cells();
+                let plate = LogicalCell {
+                    x: i32::from(x),
+                    y: i32::from(y),
+                    z: 15,
+                };
+                cells
+                    .spell_tiles()
+                    .lookup(cells.scope(), plate)
+                    .is_ok_and(|tile| tile.ground_source_id() == Some(u32::from(Self::UNSTEPPED)))
+            })
+            .then_some(Self(()))
+    }
+}
+
+impl QualifiedActivityRoomTemplate {
+    pub fn herald_red_floors(&self) -> Option<HeraldRedFloors> {
+        self.has_herald_callbacks().then_some(HeraldRedFloors(()))
+    }
+}

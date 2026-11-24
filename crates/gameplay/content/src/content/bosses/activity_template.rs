@@ -257,6 +257,12 @@ impl QualifiedActivityRoomTemplate {
     pub fn cooldown_seconds(&self) -> u32 {
         self.cooldown_seconds
     }
+    /// Keep the qualified donor layout while testing the live deadline writer.
+    #[cfg(feature = "test-support")]
+    pub fn set_fixture_fight_seconds(&mut self, seconds: u32) {
+        self.time_limit_seconds = seconds;
+    }
+
     pub fn time_limit_seconds(&self) -> u32 {
         self.time_limit_seconds
     }
@@ -835,6 +841,7 @@ impl ContentActivationController {
         if herald {
             herald::HeraldFireFieldAttack::qualify(&view, native)
                 .ok_or(R::SourceHookUnavailable)?;
+            herald::HeraldRedFloors::qualify(&view).ok_or(R::SourceHookUnavailable)?;
         }
         let suffix = creature
             .strip_prefix("oteryn:creature.")

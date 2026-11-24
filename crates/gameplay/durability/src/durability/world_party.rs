@@ -144,6 +144,27 @@ pub async fn read_world_party_views_for_scope_in_transaction(
     scope: &super::spell_item_transaction::SpellItemScopeAuthority,
     runtime: &crate::foundation::ChannelRuntimeV1,
 ) -> Result<Vec<PartySnapshot>> {
+    read_world_party_views(tx, root, scope, runtime, true).await
+}
+
+/// A disconnected body can remain positioned during an encounter. It cannot
+/// supply current party evidence or keep the encounter's damage turn blocked.
+pub async fn read_world_party_views_for_death_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &super::DurabilityRoot,
+    scope: &super::spell_item_transaction::SpellItemScopeAuthority,
+    runtime: &crate::foundation::ChannelRuntimeV1,
+) -> Result<Vec<PartySnapshot>> {
+    read_world_party_views(tx, root, scope, runtime, false).await
+}
+
+async fn read_world_party_views(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &super::DurabilityRoot,
+    scope: &super::spell_item_transaction::SpellItemScopeAuthority,
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    complete_census_required: bool,
+) -> Result<Vec<PartySnapshot>> {
     super::spell_item_transaction::check_scope_transaction(tx, scope).await?;
     if scope.runtime_scope() != runtime.binding().runtime_scope()
         || scope.generation() != runtime.binding().scope_generation().get()
@@ -157,8 +178,13 @@ pub async fn read_world_party_views_for_scope_in_transaction(
     for (actor, _, session) in census {
         let Some(session) = session else { continue };
         let character = super::admission_journal::party_target_binding::current_colocated_party_character_for_scope_in_transaction(
-            tx, root, scope, runtime, actor, session).await?
-            .ok_or(reject("party refresh current actor"))?;
+            tx, root, scope, runtime, actor, session).await?;
+        let Some(character) = character else {
+            if complete_census_required {
+                return Err(reject("party refresh current actor"));
+            }
+            continue;
+        };
         if !characters.insert(character) {
             return Err(reject("party refresh duplicate Character"));
         }

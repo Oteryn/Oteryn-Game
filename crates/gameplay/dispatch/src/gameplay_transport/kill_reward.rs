@@ -1195,6 +1195,31 @@ impl KillSettlementQueue {
         percent
     }
 
+    #[cfg(test)]
+    pub(super) fn seed_herald_death_clock(&self, actor: ExactActorRef, deadline: i64) {
+        self.state().death_clocks.push((
+            actor,
+            CapturedActivityDeath {
+                creature: "oteryn:creature.herald_of_fire".into(),
+                died_at_unix_ms: deadline,
+                observed_at: None,
+            },
+        ));
+    }
+
+    #[cfg(test)]
+    pub(super) fn herald_death_times(&self, actor: ExactActorRef) -> Option<(i64, u64)> {
+        let state = self.state();
+        let room = state
+            .death_clocks
+            .iter()
+            .find(|(boss, _)| *boss == actor)?
+            .1
+            .died_at_unix_ms;
+        let entry = state.queued.iter().find(|entry| entry.target == actor)?;
+        Some((room, entry.facts.died_at_unix_ms))
+    }
+
     fn freeze_death_clock(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -2047,7 +2072,7 @@ pub fn record_creature_kill(
         crate::foundation::RuntimeScopeRefV1::Instance { .. }
     );
     let overlord = oteryn_gameplay_quests::quest::source_deaths::overlord(&creature).is_some();
-    let (activity_death, overlord_death_at, observed_at) = if in_instance || overlord {
+    let (activity_death, frozen_death_at, observed_at) = if in_instance || overlord {
         let Some(frozen) = sink
             .queue
             .freeze_death_clock(runtime, target, &creature, observed_at)
@@ -2055,18 +2080,14 @@ pub fn record_creature_kill(
             refuse("death_clock_capture_unavailable", &creature);
             return;
         };
-        let overlord_death_at = overlord.then_some(frozen.died_at_unix_ms);
+        let frozen_death_at = Some(frozen.died_at_unix_ms);
         // The XP receipt binds the original activity time to this exact death.
         let observed_at = if overlord {
             frozen.observed_at
         } else {
             observed_at
         };
-        (
-            in_instance.then_some(frozen),
-            overlord_death_at,
-            observed_at,
-        )
+        (in_instance.then_some(frozen), frozen_death_at, observed_at)
     } else {
         (None, None, observed_at)
     };
@@ -2105,7 +2126,7 @@ pub fn record_creature_kill(
         return;
     };
     facts.died_at_unix_ms =
-        u64::try_from(overlord_death_at.unwrap_or_else(super::npc_trade_command::unix_ms_now))
+        u64::try_from(frozen_death_at.unwrap_or_else(super::npc_trade_command::unix_ms_now))
             .unwrap_or(0);
     if untracked {
         // The lethal hit is the untracked principal's own clocked damage.

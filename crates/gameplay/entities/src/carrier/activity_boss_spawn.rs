@@ -13,7 +13,7 @@ pub struct PeriodicDamageAttribution {
     pub actor: ExactActorRef,
 }
 
-/// Exact scoped settlement input of a player-owned lethal condition pulse.
+/// Exact scoped kill settlement input for a periodic death with a player contributor.
 pub struct HeraldPeriodicKill {
     pub target: ExactActorRef,
     pub death: CreatureDeathOccurrenceKey,
@@ -29,6 +29,58 @@ impl ChannelRuntimeV1 {
                  if spell_combat.herald_fire_field_map.is_some())
             .then_some(index)
         })
+    }
+
+    /// Called while the physical owner still holds the exact World party revision.
+    pub fn freeze_herald_periodic_parties(
+        &mut self,
+        views: Vec<super::runtime_actor_party::PartySnapshot>,
+    ) {
+        if let Some(index) = self.activity_herald_slot()
+            && let Slot::CreatureOccupied {
+                health: 0,
+                committed,
+                spell_combat,
+                ..
+            } = &mut self.carrier.slots[index]
+            && committed
+                .lethal()
+                .is_some_and(|hit| hit.origin.is_none() && hit.reflection.is_none())
+        {
+            spell_combat
+                .herald_periodic_party_at_death
+                .get_or_insert(views);
+        }
+    }
+
+    /// A periodic receipt without current World evidence admits no shared peers.
+    pub fn herald_periodic_parties(
+        &self,
+        actor: ExactActorRef,
+    ) -> Option<&[super::runtime_actor_party::PartySnapshot]> {
+        let index = self.carrier.validate_ref(&self.continuity, actor.0).ok()?;
+        let Slot::CreatureOccupied {
+            health: 0,
+            committed,
+            spell_combat,
+            ..
+        } = &self.carrier.slots[index]
+        else {
+            return None;
+        };
+        if spell_combat.herald_fire_field_map.is_none()
+            || committed
+                .lethal()
+                .is_none_or(|hit| hit.origin.is_some() || hit.reflection.is_some())
+        {
+            return None;
+        }
+        Some(
+            spell_combat
+                .herald_periodic_party_at_death
+                .as_deref()
+                .unwrap_or_default(),
+        )
     }
 
     pub fn activity_herald_is_alive(&self) -> bool {
@@ -54,9 +106,12 @@ impl ChannelRuntimeV1 {
         if spell_combat.herald_periodic_kill_queued {
             return Ok(None);
         }
-        let Some(principal) = committed.lethal_periodic_player else {
+        if committed
+            .lethal()
+            .is_none_or(|hit| hit.origin.is_some() || hit.reflection.is_some())
+        {
             return Ok(None);
-        };
+        }
         self.owner_fence()?;
         let target = ExactActorRef(ActorRef::from_scoped_owner_parts(
             self.binding.runtime_scope,
@@ -66,6 +121,21 @@ impl ChannelRuntimeV1 {
             ),
             ActorLocalGeneration(*generation),
         ));
+        let top = self
+            .carrier
+            .top_damage_contributor_inner(&self.continuity, target.0)?;
+        let principal = top
+            .present()
+            .map(|winner| PeriodicDamageAttribution {
+                character: winner.character,
+                lease_generation: winner.lease_generation,
+                session: winner.session,
+                actor: winner.actor,
+            })
+            .or(committed.lethal_periodic_player);
+        let Some(principal) = principal else {
+            return Ok(None);
+        };
         let receipt = self
             .carrier
             .committed_lethal_receipt_inner(&self.continuity, target.0)?;
@@ -86,21 +156,21 @@ impl ChannelRuntimeV1 {
         target: ExactActorRef,
     ) -> Result<(), CarrierError> {
         self.owner_fence()?;
+        if !self
+            .herald_periodic_kill()?
+            .is_some_and(|kill| kill.target == target)
+        {
+            return Err(CarrierError::CommittedLethalUnavailable);
+        }
         let index = self.carrier.validate_ref(&self.continuity, target.0)?;
         let Slot::CreatureOccupied {
             health: 0,
-            committed,
             spell_combat,
             ..
         } = &mut self.carrier.slots[index]
         else {
             return Err(CarrierError::NotCreature);
         };
-        if spell_combat.herald_fire_field_map.is_none()
-            || committed.lethal_periodic_player.is_none()
-        {
-            return Err(CarrierError::CommittedLethalUnavailable);
-        }
         spell_combat.herald_periodic_kill_queued = true;
         Ok(())
     }
@@ -129,7 +199,6 @@ impl ChannelRuntimeV1 {
         if self.herald_periodic_kill()?.is_some() {
             return Ok(None);
         }
-        // Earlier player damage does not make a later environment tick a player hit.
         if spell_combat.herald_uncredited_defeat_settled
             || spell_combat.herald_periodic_kill_queued
             || committed

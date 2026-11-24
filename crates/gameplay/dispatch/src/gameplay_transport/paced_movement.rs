@@ -79,11 +79,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Source-qualified blood callbacks also need this read without optional
         // field capability 30. This is only checkout routing; the locked owner
         // still proves the current runtime pin and exact scoped Ground custody.
+        let herald_room = self.herald_activity_room().await;
+        if herald_room.is_some() && !Box::pin(self.drain_herald_floor_reset(&permit)).await {
+            operator_event("event=step_rejected_herald_floor_reset");
+            return (StepOutcome::rejected(), None);
+        }
         let field_pass = if self
             .active_generation
             .and_then(|active| active.native_gameplay())
             .is_some_and(|native| {
                 self.bundle_map().is_none()
+                    || herald_room.is_some()
                     || self
                         .required_capabilities
                         .effective()
@@ -254,6 +260,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         });
         let outcome = if self.bundle_map().is_some()
             && !native_blood_listener
+            && !(herald_room.is_some() && field_step_room)
             && !(field_step_room
                 && origin.is_some_and(|origin| {
                     states.cloak_blood_ingress_needed(
@@ -367,8 +374,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     snapshot,
                 )
                 .is_ok();
+                let reset_herald_floors = herald_room
+                    .and_then(|room| room.herald_red_floors())
+                    .is_some_and(|source| {
+                        self.stage_herald_red_floor_step(
+                            &runtime,
+                            &mut states,
+                            source,
+                            actor,
+                            session,
+                            snapshot,
+                        )
+                    });
                 drop(states);
                 drop(runtime);
+                if reset_herald_floors {
+                    let _ = Box::pin(self.drain_herald_floor_reset(&permit)).await;
+                }
                 if !spite_staged || !self.resolve_spite_steps(&permit).await {
                     let runtime = self.runtime.lock().await;
                     return (
@@ -518,6 +540,7 @@ fn nbroute_step_rejections_have_closed_schema_operator_evidence() -> Result<(), 
         "dead",
         "lane",
         "pvp_locks",
+        "herald_floor_reset",
         "stale_position",
         "pending_spell",
         "drome",
@@ -536,7 +559,7 @@ fn nbroute_step_rejections_have_closed_schema_operator_evidence() -> Result<(), 
             .count(),
         1
     );
-    assert_eq!(body.matches("StepOutcome::rejected()").count(), 11);
-    assert_eq!(body.matches("operator_event(").count(), 11);
+    assert_eq!(body.matches("StepOutcome::rejected()").count(), 12);
+    assert_eq!(body.matches("operator_event(").count(), 12);
     Ok(())
 }

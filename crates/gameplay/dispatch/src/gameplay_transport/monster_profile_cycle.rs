@@ -740,9 +740,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     pending.finish_heals();
                 }
                 if !pending.fields_known() {
-                owner
-                    .tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
-                    .await?;
+                let herald_parties = if runtime.activity_herald_is_alive() {
+                    let (tx, authority) = map.scope_transaction();
+                    Some(crate::durability::world_party::read_world_party_views_for_death_in_transaction(
+                        tx, owner.root, authority, runtime,
+                    ).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?)
+                } else { None };
+                let tick = owner.tick_creature_fields(
+                    &mut map, runtime, states, native, now, native_health_names,
+                ).await;
+                if let Some(views) = herald_parties {
+                    runtime.freeze_herald_periodic_parties(views);
+                }
+                tick?;
                 owner.queue_herald_periodic_kill(runtime, states, attack)
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 pending.finish_fields();

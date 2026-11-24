@@ -162,14 +162,17 @@ impl StepIngressRead<'_, '_> {
                     }
                     // Receipt joins prove this exact native or scripted field; an
                     // absent caster alone cannot bypass player-field policy.
-                    // M49's 2126 has one entry hit and no residual DOT schedule.
+                    let environmental = match item.definition.production_key.as_str() {
+                        "oteryn:item.tibia.i2126" => item.native_map_origin || item.environment_field_origin,
+                        key => item.environment_field_origin
+                            && crate::content::bosses::activity_template::herald::HeraldFireFieldAttack::FIRE_ITEMS.contains(&key),
+                    };
                     if let Some(values) = values
                         && !tile.flags().protection_zone
-                        && (item.native_map_origin || item.environment_field_origin)
-                        && item.definition.production_key == "oteryn:item.tibia.i2126"
+                        && environmental
                     {
                         let definition = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
-                            "native.field.i2126", 1, values,
+                            &format!("native.field.{}", record.production_binding.external_id), 1, values,
                         ).ok_or(MovementError::NotQualified)?;
                         non_player_contact = Some(super::NonPlayerFieldContact {
                             origin: super::NonPlayerFieldOrigin::Environment,

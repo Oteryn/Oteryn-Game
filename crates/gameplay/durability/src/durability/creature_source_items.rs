@@ -38,7 +38,7 @@ use crate::durability::spell_item_transaction::{
     read_creature_scope_tile_in_transaction, reference, source_map_protection_tags, uuid, uuid_v7,
 };
 use crate::durability::spell_items_abi::*;
-pub use herald_fields::HeraldFieldRefresh;
+pub use herald_fields::{HeraldFieldClear, HeraldFieldRefresh};
 pub use primal_pod::{
     PrimalPodCallback, PrimalPodExpiry, PrimalPodPlayerStep, PrimalPodStepReceipt,
     drain_primal_pod_expiry_in_transaction, execute_primal_pod_callback_in_transaction,
@@ -72,6 +72,7 @@ enum CreatureEventRule {
     RottenFootprintTransform,
     RottenFootprintRemove,
     HeraldFieldRefresh,
+    HeraldFieldClear,
     GazMinionCreate,
     GazMinionExpire,
     CorruptedSoulCreate,
@@ -81,7 +82,7 @@ enum CreatureEventRule {
 impl CreatureEventRule {
     fn permits_source(self, parent: &str, scope_kind: i16) -> bool {
         match self {
-            Self::HeraldFieldRefresh => {
+            Self::HeraldFieldRefresh | Self::HeraldFieldClear => {
                 scope_kind == 2 && parent == "oteryn:creature.herald_of_fire"
             }
             Self::GazMinionCreate | Self::GazMinionExpire => {
@@ -112,6 +113,7 @@ impl CreatureEventRule {
             Self::RottenFootprintTransform => "rotten-blood.footprint.transform",
             Self::RottenFootprintRemove => "rotten-blood.footprint.remove",
             Self::HeraldFieldRefresh => "targuna.herald.fire-fields",
+            Self::HeraldFieldClear => "targuna.herald.red-floors",
             Self::GazMinionCreate => "w01.gaz-minion.create",
             Self::GazMinionExpire => "w01.gaz-minion.expire",
             Self::CorruptedSoulCreate => "w01.corrupted-soul.create",
@@ -136,7 +138,7 @@ impl CreatureEventRule {
         {
             return false;
         }
-        if self == Self::HeraldFieldRefresh {
+        if matches!(self, Self::HeraldFieldRefresh | Self::HeraldFieldClear) {
             return items.iter().map(|item| item.production_key.as_str()).eq(
                 crate::content::bosses::activity_template::herald::HeraldFireFieldAttack::FIRE_ITEMS,
             );
@@ -146,7 +148,7 @@ impl CreatureEventRule {
         };
         let key = item.production_key.as_str();
         match self {
-            Self::HeraldFieldRefresh => false,
+            Self::HeraldFieldRefresh | Self::HeraldFieldClear => false,
             Self::RottenPortalCreate | Self::RottenPortalExpire | Self::RottenPortalStep => {
                 key == "oteryn:item.tibia.i37000"
             }

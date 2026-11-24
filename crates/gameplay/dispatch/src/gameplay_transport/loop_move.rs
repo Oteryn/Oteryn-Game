@@ -619,6 +619,22 @@ where
     .flatten()
 }
 
+#[cfg(test)]
+type HeraldProjectionFault = Box<dyn FnOnce(&mut crate::foundation::ChannelRuntimeV1) + Send>;
+
+#[cfg(test)]
+thread_local! {
+    static FAIL_NEXT_HERALD_PROJECTION: std::cell::RefCell<Option<HeraldProjectionFault>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+#[cfg(test)]
+pub(super) fn fail_next_herald_projection(
+    fault: impl FnOnce(&mut crate::foundation::ChannelRuntimeV1) + Send + 'static,
+) {
+    FAIL_NEXT_HERALD_PROJECTION.replace(Some(Box::new(fault)));
+}
+
 /// Refresh the isolated Herald room's durable fire cells within the spell lane.
 pub(super) async fn refresh_herald_rune_fields(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -659,6 +675,16 @@ pub(super) async fn refresh_herald_rune_fields(
         |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
     )
     .await?;
+    // The lane's initial read must succeed. Inject only once the committed cast is visible.
+    #[cfg(test)]
+    if !rows.is_empty() {
+        let fault = FAIL_NEXT_HERALD_PROJECTION.take();
+        if let Some(inject) = fault {
+            let mut runtime = owner.runtime.lock().await;
+            inject(&mut runtime);
+            return None;
+        }
+    }
     let cells = rows
         .iter()
         .filter_map(|row| {

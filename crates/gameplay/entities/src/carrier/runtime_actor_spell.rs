@@ -124,6 +124,7 @@ pub struct ActorCombatState {
     pub(super) herald_uncredited_death_at: Option<i64>,
     pub(super) herald_uncredited_defeat_settled: bool,
     pub(super) herald_periodic_kill_queued: bool,
+    pub(super) herald_periodic_party_at_death: Option<Vec<super::runtime_actor_party::PartySnapshot>>,
     /// Literal absent-KV state differs from an explicitly reduced zero.
     pub(super) soul_war_cruelty_drain: Option<u64>,
     pub(super) soul_war_player_source: Option<Arc<super::soul_war_player_source::CurrentPlayerSource>>,

@@ -40,12 +40,19 @@ pub(super) fn capture(
     if runtime.binding().runtime_scope() != scope || runtime.owner_fence().is_err() {
         return Vec::new();
     }
+    let periodic_views = runtime.herald_periodic_parties(entry.target);
     let shared = (principal_present && entry.creature == "oteryn:creature.herald_of_fire")
         .then(|| {
-            runtime
-                .cached_world_party(principal.actor, principal.session)
-                .ok()
-                .flatten()
+            if let Some(views) = periodic_views {
+                views
+                    .iter()
+                    .find(|view| view.character == *principal.character.as_bytes())
+            } else {
+                runtime
+                    .cached_world_party(principal.actor, principal.session)
+                    .ok()
+                    .flatten()
+            }
         })
         .flatten()
         .filter(|party| {
@@ -88,7 +95,14 @@ pub(super) fn capture(
             && principal.character.as_bytes() == &snapshot.character
             && principal.lease_generation == snapshot.lease_generation;
         let shared_peer = shared.as_ref().filter(|party| {
-            !top && party
+            !top && periodic_views.is_none_or(|views| {
+                views.iter().any(|view| {
+                    view.character == snapshot.character
+                        && view.party_id == party.party_id
+                        && view.revision == party.revision
+                        && view.shared_xp_enabled
+                })
+            }) && party
                 .members
                 .iter()
                 .any(|member| member.character == snapshot.character)
