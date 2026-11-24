@@ -20,9 +20,17 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
             && (matches!(
                 profile,
                 "progress-baking" | "progress-charms" | "progress-charm-fee"
-            ) || mastery_species(profile).is_some()))
+            ) || mastery_species(profile).is_some()
+                || proficiency_item(profile).is_some()))
         .then_some((session, profile))
     })
+}
+
+fn proficiency_item(profile: &str) -> Option<u32> {
+    let item = profile.strip_prefix("progress-weapon:")?;
+    let id = item.parse::<u32>().ok()?;
+    (id != 0 && !item.starts_with('0') && item.bytes().all(|byte| byte.is_ascii_digit()))
+        .then_some(id)
 }
 
 fn mastery_species(profile: &str) -> Option<&str> {
@@ -705,6 +713,26 @@ async fn prepare_build(
             native,
             deadline,
             &[(3043, 3)],
+        )
+        .await;
+    }
+    if let Some(id) = proficiency_item(profile) {
+        let source = crate::content::import_committed_weapon_proficiency_data()
+            .map_err(|error| error.to_string())?;
+        if !source
+            .bindings()
+            .contains_key(&format!("oteryn:item.tibia.i{id}"))
+        {
+            return Err("qualification weapon has no committed proficiency binding".into());
+        }
+        return prepare_items(
+            root,
+            authority,
+            proof,
+            &current,
+            native,
+            deadline,
+            &[(id, 1)],
         )
         .await;
     }

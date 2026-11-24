@@ -231,7 +231,9 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
                         charm(client, world, &mut rows, &mut unsupported_mastery).await
                     }
                     Family::Craft => craft(client, clients, world, &mut rows).await,
-                    Family::Proficiency => proficiency(client, world, &root, &mut rows).await,
+                    Family::Proficiency => {
+                        proficiency(client, clients, world, &root, &mut rows).await
+                    }
                 }
             }),
         )
@@ -710,7 +712,7 @@ fn charm_unlock_balances_match(
         && other_after == Some(u64::from(charm_balance(after, !minor)))
 }
 
-async fn charm_fixture(
+async fn progress_fixture(
     client: &mut DevClientSession,
     profile: String,
 ) -> TestResult<Result<String, String>> {
@@ -737,7 +739,7 @@ async fn fund_major_points(
         if balance >= cost {
             break;
         }
-        let setup = charm_fixture(client, "progress-charms".into()).await?;
+        let setup = progress_fixture(client, "progress-charms".into()).await?;
         *view = charm_command(client, Action::Query).await?;
         if charm_balance(&view.charms, false) <= balance {
             return Err(format!("harness-charm-funding-no-currency-gain-{setup:?}").into());
@@ -947,7 +949,7 @@ async fn charm(
         let prior = prior.charm;
         let removed = charm_command(client, Action::Remove { charm: prior }).await?;
         unlocked = if removed.outcome == Outcome::Remove(CharmRemoveDisposition::NotEnoughGold) {
-            charm_fixture(client, "progress-charm-fee".into())
+            progress_fixture(client, "progress-charm-fee".into())
                 .await?
                 .map_err(|reason| format!("harness-charm-fee-fixture-refused-{reason}"))?;
             charm_command(client, Action::Remove { charm: prior }).await?
@@ -1001,7 +1003,7 @@ async fn charm(
         if remaining != 0 {
             let mut kills = threshold - remaining;
             for _ in 0..6 {
-                let setup = charm_fixture(client, format!("progress-mastery:{species}")).await?;
+                let setup = progress_fixture(client, format!("progress-mastery:{species}")).await?;
                 if setup
                     .as_ref()
                     .is_err_and(|reason| reason == "mastery_target_unavailable")
@@ -1316,31 +1318,17 @@ fn output_matches(
     })
 }
 
-async fn seed_baking_dough(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
-    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
-    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let provision = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../tools/qualification/node_boot/provision.py");
-    let status = tokio::task::spawn_blocking(move || {
-        crate::qualification::provision_python()
-            .arg(provision)
-            .args([
-                "--socket",
-                &socket,
-                "--session",
-                &session,
-                "--profile",
-                "progress-baking",
-            ])
-            .status()
-    })
-    .await??;
-    if !status.success() {
-        return Err("harness-baking-dough-fixture-refused".into());
-    }
+async fn seed_item_and_readmit(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    profile: String,
+) -> TestResult {
+    progress_fixture(client, profile)
+        .await?
+        .map_err(|reason| format!("harness-item-fixture-refused-{reason}"))?;
     let (result, ..) = logout_retrying_busy(client).await?;
     if result != Some(LogoutResult::Accepted) {
-        return Err("harness-baking-fixture-logout-refused".into());
+        return Err("harness-item-fixture-logout-refused".into());
     }
     *client = connect_character(clients, 0x70, 1).await?;
     Ok(())
@@ -1370,7 +1358,7 @@ async fn craft(
             let id = item_id(string(&operand["item_id"]["key"])?)?;
             let missing = u32::try_from(i64::from(count) - existing)?;
             if id == 3604 && missing == 1 {
-                seed_baking_dough(client, clients).await?;
+                seed_item_and_readmit(client, clients, "progress-baking".into()).await?;
                 if quantity(&inventory(client)?, item) < i64::from(count) {
                     return Err("harness-seeded-dough-missing-after-admission".into());
                 }
@@ -1648,6 +1636,7 @@ fn kill_credit_matches(
 // (crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency.rs:235).
 async fn proficiency(
     client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
     world: &BundleWorld,
     root: &Path,
     rows: &mut Rows<'_>,
@@ -1689,7 +1678,15 @@ async fn proficiency(
         return Err("proficiency-content-binding-mismatch".into());
     }
     if quantity(&inventory(client)?, reference) == 0 {
-        full_row_i14::acquire(client, world, item_id(key)?, 1).await?;
+        seed_item_and_readmit(
+            client,
+            clients,
+            format!("progress-weapon:{}", item_id(key)?),
+        )
+        .await?;
+        if quantity(&inventory(client)?, reference) == 0 {
+            return Err("harness-seeded-proficiency-weapon-missing".into());
+        }
     }
     if !client.inventory().is_some_and(|inventory| {
         inventory

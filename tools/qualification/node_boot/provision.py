@@ -34,7 +34,7 @@ def _request(socket_path, line, limit):
 
 def provision(socket_path, session, profile):
     identifier = uuid.UUID(session)
-    if identifier.version != 7 or str(identifier) != session or (profile not in PROFILES and not re.fullmatch(r"progress-mastery:oteryn:creature\.[a-z0-9_]{1,95}", profile)):
+    if identifier.version != 7 or str(identifier) != session or (profile not in PROFILES and not re.fullmatch(r"(?:progress-mastery:oteryn:creature\.[a-z0-9_]{1,95}|progress-weapon:[1-9][0-9]{0,9})", profile)):
         raise ValueError("invalid qualification request")
     answer = _request(socket_path, f"qualify {session} {profile}\n", 64)
     if answer != b"qualified\n":
