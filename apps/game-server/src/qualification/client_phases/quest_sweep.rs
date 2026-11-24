@@ -786,8 +786,7 @@ impl Journey<'_, '_> {
             }
             "map_use" | "step_in" => {
                 let selector = &callback["selector"];
-                let position = &selector["position"];
-                let target = authored_tile(position)?;
+                let target = callback_target(self.world, selector)?;
                 let arrival = if callback["teleport"].is_object() {
                     Some(authored_tile(&callback["teleport"])?)
                 } else {
@@ -1046,6 +1045,36 @@ fn authored_tile(position: &Value) -> TestResult<TilePos> {
     })
 }
 
+fn callback_target(world: &BundleWorld, selector: &Value) -> TestResult<TilePos> {
+    if let Some(position) = [&selector["position"], &selector["native"]["position"]]
+        .into_iter()
+        .find(|position| position.is_object())
+    {
+        return authored_tile(position);
+    }
+    let action = u16::try_from(
+        selector["action"]
+            .as_u64()
+            .ok_or("missing-target-selector")?,
+    )?;
+    // map/facts.rs:1013 resolves the action of each placement in the served bundle.
+    let mut targets = world.base().tiles().filter_map(|(floor, x, y, tile)| {
+        let at = TilePos { x, y, floor };
+        let top_level = tile.depths().iter().filter(|&&depth| depth == 0).count();
+        (0..top_level)
+            .filter_map(|ordinal| crate::map::view::placement_key(at, u8::try_from(ordinal).ok()?))
+            .any(|key| world.facts().action_at(key) == Some(action))
+            .then_some(at)
+    });
+    let target = targets
+        .next()
+        .ok_or("action-target-outside-served-bundle")?;
+    if targets.next().is_some() {
+        return Err("action-target-ambiguous-in-served-bundle".into());
+    }
+    Ok(target)
+}
+
 fn target_ordinal(world: &BundleWorld, at: TilePos, selector: &Value) -> TestResult<u8> {
     if let Some(ordinal) = selector["ordinal"]
         .as_u64()
@@ -1057,17 +1086,20 @@ fn target_ordinal(world: &BundleWorld, at: TilePos, selector: &Value) -> TestRes
         .base()
         .tile(at.x, at.y, at.floor)
         .ok_or("target-tile-outside-served-bundle")?;
-    let appearance = u16::try_from(
-        selector["appearance"]
-            .as_u64()
-            .ok_or("missing-target-appearance")?,
-    )?;
+    let appearance = selector["appearance"].as_u64();
     let unique = selector["unique"].as_u64();
+    let action = selector["action"].as_u64();
     let mut candidates = (0..=u8::MAX).filter(|&ordinal| {
-        tile.appearance(ordinal) == Some(appearance)
+        tile.appearance(ordinal)
+            .is_some_and(|actual| appearance.is_none_or(|expected| u64::from(actual) == expected))
             && unique.is_none_or(|expected| {
                 tile.unique(ordinal)
                     .is_some_and(|entry| u64::from(entry.unique) == expected)
+            })
+            && action.is_none_or(|expected| {
+                crate::map::view::placement_key(at, ordinal)
+                    .and_then(|key| world.facts().action_at(key))
+                    .is_some_and(|actual| u64::from(actual) == expected)
             })
     });
     let first = candidates.next().ok_or("target-placement-absent")?;
