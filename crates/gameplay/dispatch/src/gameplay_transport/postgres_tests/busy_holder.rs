@@ -160,6 +160,36 @@ fn a_step_lock_refresh_waits_for_a_busy_holder_postgres() -> TestResult {
 }
 
 #[test]
+fn quest_callback_resume_waits_for_the_grizzly_lookup_postgres() -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quest-callback-busy-holder", || {
+        run(async |admin| {
+            let h = Harness::create_with_admission_seed(
+                admin,
+                "quest_callback_busy_holder",
+                true,
+                false,
+            )
+            .await?;
+            prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let dependencies = Dependencies::new()?;
+            let owner = dependencies.owner(&h, &authority);
+            let mut admitted = dependencies.admitted;
+            let busy = hold_holder(&h.root, Duration::from_millis(1_250))?;
+
+            let playable = owner.prepare_quest_callback_resume(&mut admitted).await;
+
+            busy.await??;
+            assert!(playable, "a returning holder must allow the first Grizzly visit lookup");
+            drop(owner);
+            drop(seal);
+            h.cleanup().await
+        })
+    })
+}
+
+#[test]
 fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("activity-input-busy-holder", || {
         run(async |admin| {
