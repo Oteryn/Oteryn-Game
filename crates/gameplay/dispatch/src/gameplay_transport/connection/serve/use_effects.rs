@@ -106,8 +106,15 @@ where
         session.admitted.continuity.overlay_revision = entry.revision;
     }
     if outcome.refresh_taming {
-        refresh::visibility(stream, authority, session).await?;
-        refresh::chat(stream, authority, session).await?;
+        if session.visibility.is_some() {
+            refresh::visibility(stream, authority, session).await?;
+        }
+        if session
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::chat::CAPABILITY_CHAT_V1)
+        {
+            refresh::chat(stream, authority, session).await?;
+        }
     }
     achievement_notices::immediate(stream, authority, session, &outcome.earned).await?;
     // W09: queued item-use status text follows its result and inventory delta immediately,
