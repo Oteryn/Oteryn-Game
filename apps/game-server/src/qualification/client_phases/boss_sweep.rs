@@ -717,15 +717,20 @@ async fn walk_to(
     Ok(())
 }
 
-fn rotten_blood_minimum(creature: &str) -> Option<u32> {
-    use oteryn_gameplay_quests::quest::rotten_blood::{REQUIRED_LEVEL, RottenBloodBoss};
+fn quest_minimum(creature: &str) -> Option<u32> {
+    use oteryn_gameplay_quests::quest::{
+        rotten_blood::{REQUIRED_LEVEL, RottenBloodBoss},
+        soul_war::{MINIMUM_LEVEL, SoulWarBoss},
+    };
 
-    RottenBloodBoss::from_creature_key(creature).map(|_| REQUIRED_LEVEL)
+    RottenBloodBoss::from_creature_key(creature)
+        .map(|_| REQUIRED_LEVEL)
+        .or_else(|| SoulWarBoss::from_creature(creature).map(|_| MINIMUM_LEVEL))
 }
 
 fn off_lever_refusal(quest_minimum: Option<u32>, level: u32) -> BossActivityRefusal {
-    // rotten_blood_entry.rs:93 runs the quest level gate before the boss-room
-    // owner reaches its lever-roster check (boss_activity.rs:417).
+    // The generic endgame entry gate (endgame_entry.rs:55) checks level and
+    // quest access before boss_activity.rs:417 checks the lever roster.
     if quest_minimum.is_some_and(|required| level < required) {
         BossActivityRefusal::Level
     } else {
@@ -1098,14 +1103,10 @@ async fn reward(
 type Definitions = BTreeMap<String, (creature_sweep::Definition, Option<String>)>;
 
 fn required_level(authored: &Lever, creature: &str) -> u32 {
-    use oteryn_gameplay_quests::quest::soul_war::{MINIMUM_LEVEL, SoulWarBoss};
-
-    let soul_war = SoulWarBoss::from_creature(creature).map(|_| MINIMUM_LEVEL);
     authored
         .minimum_level
         .into_iter()
-        .chain(rotten_blood_minimum(creature))
-        .chain(soul_war)
+        .chain(quest_minimum(creature))
         .max()
         .unwrap_or(1)
 }
@@ -1123,7 +1124,7 @@ const KOSHEI_SWITCH: TilePos = TilePos {
 const KOSHEI_ENTRY_SOURCE: &str =
     "content/quests/authored-bindings/koshei_the_deathless_journey.json:62";
 
-async fn seed_quest_access(url: &str, character: &[u8; 16], entry: &Entry) -> TestResult {
+async fn write_quest_access(url: &str, character: &[u8; 16], entry: &Entry) -> TestResult {
     use oteryn_gameplay_quests::quest::{
         rotten_blood::{ACCESS_TRACK, RottenBloodBoss},
         soul_war::SoulWarBoss,
@@ -1216,6 +1217,15 @@ async fn seed_quest_access(url: &str, character: &[u8; 16], entry: &Entry) -> Te
     Ok(())
 }
 
+async fn seed_quest_access(clients: &SeamClients<'_>, index: usize, entry: &Entry) -> TestResult {
+    tokio::time::timeout(
+        Duration::from_secs(10),
+        write_quest_access(clients.url, &clients.characters[index], entry),
+    )
+    .await
+    .map_err(|_| "quest access fixture deadline")?
+}
+
 async fn walk_to_logout_tile(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let no_logout = |at: TilePos| {
@@ -1246,12 +1256,7 @@ async fn seeded_knight(
             .await?;
     // The owner has now committed progression. Quest tracks need a real
     // character revision >= 2 (0056_character_quest_state.sql:100).
-    tokio::time::timeout(
-        Duration::from_secs(10),
-        seed_quest_access(clients.url, &clients.characters[index], entry),
-    )
-    .await
-    .map_err(|_| "quest access fixture deadline")??;
+    seed_quest_access(clients, index, entry).await?;
     Ok(client)
 }
 
@@ -1453,12 +1458,16 @@ async fn journey(
     let (_, initial_cooldown, _) = cooldowns(leader, &boss_key)
         .await
         .map_err(|error| failure("protocol", error))?;
-    let quest_minimum = rotten_blood_minimum(creature);
-    let expected = if quest_minimum.is_some() {
+    let expected = if let Some(minimum) = quest_minimum(creature) {
         let (_, level, _) = creature_sweep::read_stats(leader)
             .await
             .map_err(|error| failure("protocol", error))?;
-        off_lever_refusal(quest_minimum, level)
+        if level >= minimum {
+            seed_quest_access(clients, leader_index, rows.entry)
+                .await
+                .map_err(|error| failure("fixture", format!("quest access seed: {error}")))?;
+        }
+        off_lever_refusal(Some(minimum), level)
     } else {
         BossActivityRefusal::Position
     };
@@ -1813,13 +1822,19 @@ mod tests {
     }
 
     #[test]
-    fn rotten_blood_checks_the_quest_level_before_position() {
-        let minimum = rotten_blood_minimum("oteryn:creature.chagorz");
-        assert_eq!(off_lever_refusal(minimum, 249), BossActivityRefusal::Level);
-        assert_eq!(
-            off_lever_refusal(minimum, 250),
-            BossActivityRefusal::Position
-        );
+    fn endgame_quests_check_level_before_position() {
+        for creature in [
+            "oteryn:creature.chagorz",
+            "oteryn:creature.goshnar_s_malice",
+        ] {
+            let minimum = quest_minimum(creature);
+            assert_eq!(minimum, Some(250), "{creature}");
+            assert_eq!(off_lever_refusal(minimum, 249), BossActivityRefusal::Level);
+            assert_eq!(
+                off_lever_refusal(minimum, 250),
+                BossActivityRefusal::Position
+            );
+        }
         assert_eq!(off_lever_refusal(None, 1), BossActivityRefusal::Position);
     }
 
