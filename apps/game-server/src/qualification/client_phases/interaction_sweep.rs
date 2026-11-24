@@ -1297,7 +1297,7 @@ fn document_frame(world: &BundleWorld, placement: Placement) -> TestResult<Strin
     };
     let (key, revision) = items
         .definition_at(reference)
-        .ok_or("document-oracle-missing: item definition reference")?;
+        .ok_or("document-profile-missing: placement reference has no native item definition")?;
     let record = profiles
         .records
         .iter()
@@ -1305,14 +1305,14 @@ fn document_frame(world: &BundleWorld, placement: Placement) -> TestResult<Strin
             entry.production_definition.production_key == key
                 && entry.production_definition.revision_ref == revision
         })
-        .ok_or("document-oracle-missing: pinned item profile")?;
+        .ok_or_else(|| format!("document-profile-missing: {key} {revision}"))?;
     let source_id = key
         .strip_prefix("oteryn:item.tibia.i")
         .and_then(|id| id.parse().ok());
     // item_look.rs:670 and items/src/look.rs:241 render authored text within
     // the description. The marker preserves the exact boundary even when a
     // portable book's weight or description follows its inscription.
-    oteryn_gameplay_items::look::item_text_with_reading(
+    let frame = oteryn_gameplay_items::look::item_text_with_reading(
         &record.semantics,
         NonZeroU32::new(facts.count).ok_or("document-oracle-missing: item count is zero")?,
         1,
@@ -1320,7 +1320,14 @@ fn document_frame(world: &BundleWorld, placement: Placement) -> TestResult<Strin
         LOOK_TEXT_MARKER,
         look::MAX_ITEM_LOOK_TEXT_BYTES,
     )
-    .ok_or_else(|| "document-oracle-missing: could not render source reading frame".into())
+    .ok_or("document-oracle-missing: could not render source reading frame")?;
+    if !frame.contains(LOOK_TEXT_MARKER) {
+        return Err(format!(
+            "document-profile-no-reading: {key} does not render a map inscription"
+        )
+        .into());
+    }
+    Ok(frame)
 }
 
 async fn read_document(
@@ -1333,9 +1340,19 @@ async fn read_document(
     approach(client, routes, placement.at).await?;
     rows.pass("adjacent-to-authored-inscription");
     let target = look::ItemLookTarget::WorldObject(placement.target(routes.world));
-    let served = request_document_text(client, target).await?;
+    let served = request_document_text(client, target).await;
+    let frame = document_frame(routes.world, placement);
+    let served = match served {
+        Ok(text) => text,
+        Err(wire) => {
+            return Err(match frame {
+                Ok(_) => wire,
+                Err(profile) => format!("{profile} wire={wire}").into(),
+            });
+        }
+    };
     rows.pass("accepted-item-look");
-    if !matches_document_frame(&served, expected, &document_frame(routes.world, placement)?) {
+    if !matches_document_frame(&served, expected, &frame?) {
         return Err("document-text-mismatch: complete authored text required".into());
     }
     rows.pass("byte-identical-authored-text");
