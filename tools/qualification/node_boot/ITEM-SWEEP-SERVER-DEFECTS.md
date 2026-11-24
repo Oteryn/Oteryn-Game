@@ -100,3 +100,10 @@ The base-map capacity observer also passes the 20-entry limit to
 `captured_source_capacity` (`map_sources.rs:95–103`,
 `crates/protocol-oteryn/src/container_tree.rs:109–113`). The rack run
 did not reach a published view, so it measures the stale rejection only.
+
+| Batch | Selected | PASS rows | FAIL rows | Terminal result |
+| --- | ---: | ---: | ---: | --- |
+| `0:3` native rack replay | 3 | 4 | 5 | `NODE_BOOT_FAIL` |
+
+The five failures are the two rack USE refusals and the previously recorded
+10219 fixture refusal with its two dependent steps.
