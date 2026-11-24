@@ -234,9 +234,15 @@ fn room_actor(key: &str) -> Option<(&'static str, &'static str)> {
     })
 }
 
+enum ScriptedTrigger {
+    Unique(u16),
+    Action(u16),
+    UseAt([i32; 3], u16),
+    StepAt([i32; 3]),
+}
+
 struct ScriptedRoom {
-    unique: Option<u16>,
-    action: Option<u16>,
+    trigger: ScriptedTrigger,
     roster: &'static [[i32; 3]],
     actor: &'static str,
     spawn: Option<[i32; 3]>,
@@ -246,16 +252,14 @@ struct ScriptedRoom {
 fn scripted_room(key: &str) -> Option<ScriptedRoom> {
     Some(match key {
         "azerus" => ScriptedRoom {
-            unique: Some(3086),
-            action: None,
+            trigger: ScriptedTrigger::Unique(3086),
             roster: &[],
             actor: "Azerus",
             spawn: None,
             step_landing: None,
         },
         "death_priest_shargon" => ScriptedRoom {
-            unique: Some(30002),
-            action: None,
+            trigger: ScriptedTrigger::Unique(30002),
             roster: &[
                 [33583, 31844, 10],
                 [33584, 31844, 10],
@@ -268,20 +272,39 @@ fn scripted_room(key: &str) -> Option<ScriptedRoom> {
             step_landing: None,
         },
         "drume" => ScriptedRoom {
-            unique: None,
-            action: Some(59601),
+            trigger: ScriptedTrigger::Action(59601),
             roster: &[[32457, 32508, 6]],
             actor: "Usurper Commander",
             spawn: Some([32444, 32516, 7]),
             step_landing: None,
         },
         "ferumbras_mortal_shell" => ScriptedRoom {
-            unique: None,
-            action: Some(24846),
+            trigger: ScriptedTrigger::Action(24846),
             roster: &[],
             actor: "Ferumbras Mortal Shell",
             spawn: None,
             step_landing: Some([33270, 31474, 14]),
+        },
+        "dragon_egg" => ScriptedRoom {
+            trigger: ScriptedTrigger::UseAt([32302, 31087, 14], 8911),
+            roster: &[[32302, 31088, 14]],
+            actor: "Dragon Egg",
+            spawn: Some([32269, 31084, 14]),
+            step_landing: None,
+        },
+        "essence_of_malice" => ScriptedRoom {
+            trigger: ScriptedTrigger::Action(5500),
+            roster: &[[33095, 31943, 15]],
+            actor: "Pillar of Summoning",
+            spawn: Some([33093, 31919, 15]),
+            step_landing: None,
+        },
+        "field_fill_cerebellum" => ScriptedRoom {
+            trigger: ScriptedTrigger::StepAt([31937, 32325, 10]),
+            roster: &[],
+            actor: "Cerebellum",
+            spawn: None,
+            step_landing: Some([31963, 32324, 10]),
         },
         _ => return None,
     })
@@ -644,7 +667,7 @@ pub(super) async fn run(
                     clients,
                     world,
                     scripted,
-                    leader_index,
+                    (leader_index, build_level),
                     &mut party,
                     &mut rows,
                 )
@@ -891,12 +914,31 @@ async fn scope(
     Ok(())
 }
 
-fn scripted_placement(world: &BundleWorld, room: &ScriptedRoom) -> TestResult<(TilePos, u64)> {
+fn scripted_placement(
+    world: &BundleWorld,
+    room: &ScriptedRoom,
+) -> TestResult<(TilePos, Option<u64>)> {
     use crate::map::view::{MapFacts, placement_key};
 
+    let (position, unique, action, appearance) = match room.trigger {
+        ScriptedTrigger::Unique(id) => (None, Some(id), None, None),
+        ScriptedTrigger::Action(id) => (None, None, Some(id), None),
+        ScriptedTrigger::UseAt(at, id) => (Some(cell(at)?), None, None, Some(id)),
+        ScriptedTrigger::StepAt(at) => {
+            let at = cell(at)?;
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .ok_or("authored step tile absent from bundle")?;
+            return Ok((at, None));
+        }
+    };
     let mut selected = None;
     for (floor, x, y, view) in world.base().tiles() {
         let at = TilePos { x, y, floor };
+        if position.is_some_and(|position| position != at) {
+            continue;
+        }
         for ordinal in 0..view.depths().iter().filter(|depth| **depth == 0).count() {
             let Some(key) = u8::try_from(ordinal)
                 .ok()
@@ -907,8 +949,8 @@ fn scripted_placement(world: &BundleWorld, room: &ScriptedRoom) -> TestResult<(T
             if !world.facts().base_hidden(key)
                 && world
                     .facts()
-                    .quest_callback_matches(key, room.unique, room.action, None)
-                && selected.replace((at, key)).is_some()
+                    .quest_callback_matches(key, unique, action, appearance)
+                && selected.replace((at, Some(key))).is_some()
             {
                 return Err("multiple published placements match donor room trigger".into());
             }
@@ -933,7 +975,7 @@ async fn scripted_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     room: ScriptedRoom,
-    leader_index: usize,
+    (leader_index, build_level): (usize, u32),
     party: &mut Vec<DevClientSession>,
     rows: &mut Rows<'_>,
 ) -> Result<(), Failure> {
@@ -949,11 +991,15 @@ async fn scripted_journey(
     }
     for offset in 0..room.roster.len().max(1) {
         let index = (leader_index + offset) % clients.accounts.len();
-        party.push(
-            connect_character(clients, 0xb4, index)
+        let mut client = connect_character(clients, 0xb4, index)
+            .await
+            .map_err(|error| failure("fixture", error))?;
+        if matches!(room.trigger, ScriptedTrigger::StepAt(_)) {
+            client = seeded_knight(client, clients, world, index, build_level, rows.entry)
                 .await
-                .map_err(|error| failure("fixture", error))?,
-        );
+                .map_err(|error| failure("fixture", error))?;
+        }
+        party.push(client);
     }
     for (client, &stand) in party.iter_mut().zip(room.roster) {
         walk_to(
@@ -1016,6 +1062,7 @@ async fn scripted_journey(
         .await
         .map_err(|error| failure("scripted_step", error))?;
     } else {
+        let key = key.ok_or_else(|| failure("content", "map-use trigger has no object"))?;
         let mut placement = world.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
         let reply = leader
