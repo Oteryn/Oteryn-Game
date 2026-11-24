@@ -610,9 +610,18 @@ async fn resting_bonuses(
         cleanup?;
         status
     };
-    let account =
-        character_prep::dedicated_character(clients, "NODE_BOOT_LIGHT_ACCOUNT_ID").await?;
-    let (accounts, characters) = account.replace_slot(clients, 1)?;
+    // The profile is authorized for the Light account. In the F6 matrix
+    // that account is already present, but the journey needs a fresh character.
+    let account = required("NODE_BOOT_LIGHT_ACCOUNT_ID")?;
+    let light_slot = clients
+        .accounts
+        .iter()
+        .position(|existing| existing == &account)
+        .ok_or("P10 Light account missing from the F6 matrix")?;
+    let mut accounts = clients.accounts.to_vec();
+    let mut characters = clients.characters.to_vec();
+    accounts.swap(1, light_slot);
+    characters.swap(1, light_slot);
     let clients = &SeamClients {
         accounts: &accounts,
         characters: &characters,
