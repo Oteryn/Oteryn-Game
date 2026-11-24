@@ -809,6 +809,8 @@ start_floor = 7''')
 PY_WORLD
     if [[ "${NODE_BOOT_E2E_ONLY:-}" == spell_sweep ]]; then
       cat >> "$WORK/node.toml" <<'TOML'
+[platform.world_event_outcomes]
+enabled = false
 [premium_activation]
 activation_id = "node-boot-spell-sweep"
 switch_over_us = 1
