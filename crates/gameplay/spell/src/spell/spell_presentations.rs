@@ -318,7 +318,7 @@ impl SpellPresentationOwner {
             && profile.spell()["execution"]["native_behavior"]["parameters"]["caster_effect"]
                 == "magic_green"
         {
-            allowed.insert("appearance:effect/magic_green");
+            allowed.insert(SOURCE_MAGIC_GREEN_CUE);
         }
         let acquisition = &profile.spell()["execution"]["native_behavior"];
         if acquisition["key"] == "acquire_summon"
@@ -631,6 +631,8 @@ impl SpellPresentationOwner {
         Ok(delivered)
     }
 }
+pub const SOURCE_MAGIC_GREEN_CUE: &str = "canary.appearance:effect/magic_green";
+
 fn collect_bindings<'a>(value: &'a serde_json::Value, into: &mut BTreeSet<&'a str>) {
     match value {
         serde_json::Value::Object(object) => {

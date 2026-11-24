@@ -1258,7 +1258,7 @@ async fn prepare_source_self_from_owners(
             && p.spell()["execution"]["native_behavior"]["parameters"]["caster_effect"]
                 == "magic_green"
         {
-            append("appearance:effect/magic_green");
+            append(crate::spell::spell_presentations::SOURCE_MAGIC_GREEN_CUE);
         }
         if let Some(effect) = p.spell()["execution"]["native_behavior"]["parameters"]
             ["presentation"]["effect_asset_binding"]
@@ -1469,7 +1469,7 @@ async fn prepare_source_self_from_owners(
             && p.spell()["execution"]["native_behavior"]["parameters"]["caster_effect"]
                 == "magic_green"
         {
-            selected_cues.insert("appearance:effect/magic_green");
+            selected_cues.insert(crate::spell::spell_presentations::SOURCE_MAGIC_GREEN_CUE);
         }
         if let Some(effect) = p.spell()["execution"]["native_behavior"]["parameters"]
             ["presentation"]["effect_asset_binding"]
