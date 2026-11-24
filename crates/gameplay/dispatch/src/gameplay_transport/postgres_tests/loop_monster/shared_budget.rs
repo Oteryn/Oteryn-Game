@@ -81,6 +81,7 @@ pub(super) async fn exercise(
             objects.collision_cells(),
             native,
             &root,
+            &[],
             0,
             reader.budget,
             false,
@@ -101,6 +102,7 @@ pub(super) async fn exercise(
             objects.collision_cells(),
             native,
             &root,
+            &[],
             50_000,
             reader.budget,
             false,
@@ -117,6 +119,7 @@ pub(super) async fn exercise(
             objects.collision_cells(),
             native,
             &root,
+            &[],
             due,
             reader.budget,
             false,
@@ -140,6 +143,7 @@ pub(super) async fn exercise(
             objects.collision_cells(),
             native,
             &root,
+            &[],
             home_due,
             reader.budget,
             false,
@@ -151,13 +155,37 @@ pub(super) async fn exercise(
         cell(4)
     );
     assert_eq!(
+        table.last_report_for_test(rat).ok_or("report")?.sequence,
+        sequence,
+        "walkback movement does not run a think"
+    );
+    assert_eq!(table.step_due_for_test(rat), None);
+    assert!(table.due(rat).is_some_and(|due| due <= home_due));
+    let mut reader =
+        NativeMonsterThinkRead::new(reader.map, native, reader.budget, home_due, false);
+    let reports = table
+        .run_due_current_thinks(
+            &mut runtime,
+            home_due,
+            &root,
+            &revisions,
+            &[],
+            &mut reader,
+            |runtime, table, actor, report, reader| {
+                monster_summons
+                    .consume_report(runtime, table, native, actor, report, reader, home_due)
+            },
+        )
+        .await;
+    let [(actor, report)] = reports.as_slice() else {
+        return Err("expected one think after walkback".into());
+    };
+    assert_eq!(*actor, rat);
+    assert!(report.idle);
+    assert_eq!(
         table.due(rat),
         None,
-        "the completed walkback idles until the real player admission wakes it"
-    );
-    assert_eq!(
-        table.last_report_for_test(rat).ok_or("report")?.sequence,
-        sequence
+        "the idle think stops scheduling until a real player admission wakes the rat"
     );
     drop(reader);
     tx.rollback().await?;

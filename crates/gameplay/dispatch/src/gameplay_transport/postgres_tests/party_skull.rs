@@ -3,11 +3,28 @@ use crate::bestiary_postgres_harness::TestResult;
 
 #[test]
 fn party_skull_real_dispatch_postgres_end_to_end() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
-    super::party_membership_fixtures::run(true)
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    super::party_membership_fixtures::run(true)?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED party_skull elapsed={:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
 
 #[test]
 fn party_skull_pvp_real_dispatch_attribution_counterfactual() -> TestResult {
-    super::item_look_fixtures::large_stack(|| super::pvp_live_fixtures::scenario(14))
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    super::item_look_fixtures::large_stack(|| super::pvp_live_fixtures::scenario(14))?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED party_skull_pvp elapsed={:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
