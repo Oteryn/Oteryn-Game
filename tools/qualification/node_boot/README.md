@@ -175,6 +175,10 @@ rows. It reproduced the capacity refusal at 99 live and one reconnectable
 session against a 100-player limit. Across the batch, 196 admissions returned
 channel-full and 185 failed during connection.
 
+The detached `917:78` run returned `NODE_BOOT_FAIL` with 35 PASS and 433 FAIL
+rows. Its one expired auction remained unsettled for more than 21 minutes with
+zero settlement receipts.
+
 For a verification checkout containing the fxh house catalogue activation (migration
 3078 and the UUID-binding fix in `669d7752`), apply this branch’s strict regression overlay with
 `git apply --unidiff-zero /path/to/house_catalogue_activation_fxh.patch`.
