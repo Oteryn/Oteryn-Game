@@ -1,0 +1,19 @@
+{
+  "id": 596,
+  "name": "ITEM_INSCRIPTION_ATTRIBUTION_V1",
+  "constant": "item_inscription::CAPABILITY_ITEM_INSCRIPTION_ATTRIBUTION_V1",
+  "requires": [
+    511
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    6356
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

@@ -155,6 +155,28 @@ where
     )
 }
 
+async fn training(
+    authority: &impl FreshAdmissionAuthority,
+    session: &mut ServeState,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+) -> Result<Dispatch, ServeEnd> {
+    let result = crate::gameplay_transport::loop_training::wire::dispatch(
+        authority,
+        session.admitted,
+        UseCommand {
+            game_session_id: session.admitted.game_session_id,
+            command_id: command.command_id,
+            item_fence: session.admitted.item_fence,
+        },
+        command.command_type,
+        command.payload,
+        session.item_view.as_ref(),
+    )
+    .await
+    .ok_or(ServeEnd::ControlLost("loop_training"))?;
+    Ok(Dispatch::Training(result))
+}
+
 include!(concat!(env!("OUT_DIR"), "/mechanic_routes.rs"));
 
 #[cfg(test)]

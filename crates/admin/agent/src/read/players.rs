@@ -1,31 +1,18 @@
 use super::*;
 use sqlx::{PgConnection, Row};
 
-// Durable connected presence needs matching character and account holders and lease generation.
-// A detached or replaced transport must not look like a live player.
-const ONLINE: &str = "
-    SELECT s.character_id, s.world_id
-    FROM game_durability_reconnect_sessions s
-    JOIN game_durability_admission_character_guards c ON c.character_id=s.character_id
-    JOIN game_durability_admission_account_guards a ON a.account_id=s.account_id
-    WHERE s.session_state=2 AND s.current_transport_ref IS NOT NULL
-      AND c.eligible AND c.world_id=s.world_id AND c.account_id=s.account_id
-      AND c.lease_generation=s.character_lease_generation AND c.holder_game_session_id=s.game_session_id
-      AND a.presence_character_id=s.character_id AND a.holder_game_session_id=s.game_session_id";
-
 pub(super) async fn online_count(conn: &mut PgConnection, worlds: &[Uuid]) -> Result<i64, E> {
-    sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
-        "SELECT count(*) FROM ({ONLINE}) online WHERE world_id=ANY($1)"
-    )))
-    .bind(worlds)
-    .fetch_one(conn)
-    .await
-    .map_err(db_error)
+    sqlx::query_scalar("SELECT count(*) FROM admin_read.online_characters WHERE world_id=ANY($1)")
+        .bind(worlds)
+        .fetch_one(conn)
+        .await
+        .map_err(db_error)
 }
 
 pub(super) async fn search(
     conn: &mut PgConnection,
     worlds: &[Uuid],
+    target: &Target,
     params: PlayerSearch,
 ) -> Result<PlayerPage, E> {
     if params.ip_hash.is_some() {
@@ -42,25 +29,29 @@ pub(super) async fn search(
             Ok(key)
         })
         .transpose()?;
-    let rows = sqlx::query_scalar::<_, Json<PlayerSummary>>(sqlx::AssertSqlSafe(format!(
+    let rows = sqlx::query_scalar::<_, Json<PlayerSummary>>(
         "WITH candidates AS MATERIALIZED (
-            SELECT r.character_id,r.world_id,r.name FROM game_character_roots r
-            WHERE r.world_id=ANY($1) AND r.lifecycle=1 AND NOT game_account_closure_detached(r.character_id)
+            SELECT r.character_id,r.world_id,r.name FROM admin_read.character_roots r
+            WHERE r.world_id=ANY($1)
               AND ($2::text IS NULL OR r.name_key LIKE $2 || '%')
               AND ($3::uuid IS NULL OR r.character_id=$3)
               AND ($4::uuid IS NULL OR r.account_id=$4)
-              AND ($5::uuid IS NULL OR r.character_id>$5)
-            ORDER BY r.character_id LIMIT $6
+              AND ($5::uuid IS NULL OR r.character_id=$5)
+              AND ($6::uuid IS NULL OR r.account_id=$6)
+              AND ($7::uuid IS NULL OR r.character_id>$7)
+            ORDER BY r.character_id LIMIT $8
          )
          SELECT jsonb_build_object('character_id',r.character_id,'world_id',r.world_id,
                   'name',r.name,'level',COALESCE(p.level,1),'online',online.character_id IS NOT NULL)
-         FROM candidates r LEFT JOIN game_character_progression_state p USING(character_id)
-         LEFT JOIN ({ONLINE}) online ON online.character_id=r.character_id AND online.world_id=r.world_id
+         FROM candidates r LEFT JOIN admin_read.character_progression p USING(character_id)
+         LEFT JOIN admin_read.online_characters online ON online.character_id=r.character_id AND online.world_id=r.world_id
          ORDER BY r.character_id"
-    )))
+    )
     .bind(worlds).bind(prefix)
     .bind(optional_uuid(params.character_id.as_deref())?)
     .bind(optional_uuid(params.account_ref.as_deref())?)
+    .bind(optional_uuid(target.character_id.as_deref())?)
+    .bind(optional_uuid(target.account_ref.as_deref())?)
     .bind(optional_uuid(params.cursor.as_deref())?)
     .bind(i64::from(params.limit)+1)
     .fetch_all(conn).await.map_err(db_error)?;
@@ -73,35 +64,33 @@ pub(super) async fn search(
     })
 }
 
-async fn offline_target(conn: &mut PgConnection, target: &Target) -> Result<(Uuid, Uuid), E> {
+pub(super) async fn check_offline_target(
+    conn: &mut PgConnection,
+    target: &Target,
+) -> Result<(), E> {
     let character = uuid(required(&target.character_id)?)?;
     let world = uuid(required(&target.world_id)?)?;
-    // Same guards as the Game's offline Character reads, in the same read-only snapshot
-    // as the data. Any nonterminal session or outstanding holder excludes the offline path.
+    // Check the current durable holders in the same snapshot as any new result.
     let busy: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s
-                       WHERE s.character_id=r.character_id AND s.session_state IN (1,2))
-             OR EXISTS(SELECT 1 FROM game_durability_admission_character_guards c
-                       WHERE c.character_id=r.character_id AND c.holder_game_session_id IS NOT NULL)
-             OR EXISTS(SELECT 1 FROM game_durability_admission_account_guards a
-                       WHERE a.account_id=r.account_id AND a.presence_character_id=r.character_id)
-         FROM game_character_roots r WHERE r.character_id=$1 AND r.world_id=$2
-           AND r.lifecycle=1 AND NOT game_account_closure_detached(r.character_id)",
+        "SELECT busy FROM admin_read.character_roots
+         WHERE character_id=$1 AND world_id=$2 AND ($3::uuid IS NULL OR account_id=$3)",
     )
     .bind(character)
     .bind(world)
+    .bind(optional_uuid(target.account_ref.as_deref())?)
     .fetch_optional(conn)
     .await
     .map_err(db_error)?
     .ok_or(E::AdmTargetNotFound)?;
     if busy {
-        return Err(E::AdmTargetUnavailable);
+        return Err(E::AdmPreconditionFailed);
     }
-    Ok((character, world))
+    Ok(())
 }
 
 pub(super) async fn character(conn: &mut PgConnection, target: &Target) -> Result<Character, E> {
-    let (id, world) = offline_target(conn, target).await?;
+    let id = uuid(required(&target.character_id)?)?;
+    let world = uuid(required(&target.world_id)?)?;
     let Json(mut character) = sqlx::query_scalar::<_, Json<Character>>(
         "SELECT jsonb_build_object(
            'character_id',r.character_id,'world_id',r.world_id,'name',r.name,
@@ -116,31 +105,31 @@ pub(super) async fn character(conn: &mut PgConnection, target: &Target) -> Resul
            'position',jsonb_build_object('x',l.tile_x,'y',l.tile_y,'z',l.tile_floor),
            'online',false,
            'premium',EXISTS(
-              SELECT 1 FROM game_premium_account_fence f
-              JOIN game_premium_evidence e USING(account_id,authority_revision)
+              SELECT 1 FROM admin_read.premium_account_fences f
+              JOIN admin_read.premium_evidence e USING(account_id,authority_revision)
               WHERE f.account_id=r.account_id AND f.conflict_authority_revision IS NULL
                 AND e.entitlement_state=1
                 AND EXTRACT(EPOCH FROM statement_timestamp())*1000000 >= greatest(e.effective_from_us,e.authority_issued_at_us)
                 AND EXTRACT(EPOCH FROM statement_timestamp())*1000000 < least(e.effective_until_us,e.authority_valid_until_us)
            ),
-           'guild',(SELECT g.name FROM game_guild_members m JOIN game_guilds g USING(guild_id)
+           'guild',(SELECT g.name FROM admin_read.guild_members m JOIN admin_read.guilds g USING(guild_id)
                     WHERE m.character_id=r.character_id AND g.world_id=r.world_id AND g.state<>4),
-           'house',(SELECT h.house_key FROM game_house_properties h
+           'house',(SELECT h.house_key FROM admin_read.house_properties h
                     WHERE h.world_id=r.world_id AND h.owner_character_id=r.character_id
                     ORDER BY h.house_key LIMIT 1),
            'bank_balance',COALESCE(bank.balance,0)::text,
            'sanctions','[]'::jsonb,
            'last_logins',ARRAY(SELECT to_timestamp(i.started_ms/1000.0)
-               FROM game_character_online_intervals i
+               FROM admin_read.online_intervals i
                WHERE i.character_id=r.character_id AND i.owner_account_id=r.account_id
                  AND i.world_id=r.world_id AND i.state=2 AND NOT i.withheld
                  AND i.expires_ms > EXTRACT(EPOCH FROM statement_timestamp()) * 1000
                ORDER BY i.started_ms DESC,i.statistics_id DESC LIMIT 20))
-         FROM game_character_roots r
-         JOIN game_character_last_positions l USING(character_id,world_id)
-         LEFT JOIN game_character_progression_state p USING(character_id)
-         LEFT JOIN game_character_build_state b USING(character_id)
-         LEFT JOIN game_account_bank_balances bank USING(account_id,world_id)
+         FROM admin_read.character_roots r
+         JOIN admin_read.character_positions l USING(character_id,world_id)
+         LEFT JOIN admin_read.character_progression p USING(character_id)
+         LEFT JOIN admin_read.character_build b USING(character_id)
+         LEFT JOIN admin_read.bank_balances bank USING(account_id,world_id)
          WHERE r.character_id=$1 AND r.world_id=$2",
     )
     .bind(id).bind(world)
@@ -149,7 +138,6 @@ pub(super) async fn character(conn: &mut PgConnection, target: &Target) -> Resul
         conn,
         target,
         &[world],
-        false,
         Page {
             limit: 100,
             cursor: None,
@@ -165,38 +153,52 @@ pub(super) async fn inventory(
     target: &Target,
     params: Page,
 ) -> Result<Inventory, E> {
-    let (id, world) = offline_target(conn, target).await?;
+    let id = uuid(required(&target.character_id)?)?;
+    let world = uuid(required(&target.world_id)?)?;
     // Same custody roots and edges as the Cyclopedia holdings projection, with
     // instance IDs retained. Stash balances have no item instance IDs.
-    let rows = sqlx::query(
-        "WITH RECURSIVE roots AS (
-            SELECT item_instance_id, 'backpack' AS location FROM game_item_container_slots
+    let stash_cursor = params
+        .cursor
+        .as_deref()
+        .and_then(|cursor| cursor.strip_prefix("stash/"));
+    let rows = if stash_cursor.is_some() {
+        vec![]
+    } else {
+        sqlx::query(
+            "WITH RECURSIVE roots AS (
+            SELECT item_instance_id, 'backpack' AS location FROM admin_read.container_slots
              WHERE character_id=$1 AND world_id=$2
-            UNION ALL SELECT item_instance_id, 'equipment:' || slot FROM game_character_equipment_slots
+            UNION ALL SELECT item_instance_id, 'equipment:' || slot FROM admin_read.equipment_slots
              WHERE character_id=$1 AND world_id=$2
-            UNION ALL SELECT item_instance_id, 'depot' FROM game_item_character_depot_locations
+            UNION ALL SELECT item_instance_id, 'depot' FROM admin_read.depot_locations
              WHERE character_id=$1 AND world_id=$2
-            UNION ALL SELECT item_instance_id, 'inbox' FROM game_item_character_inbox_locations
+            UNION ALL SELECT item_instance_id, 'inbox' FROM admin_read.inbox_locations
              WHERE character_id=$1 AND world_id=$2
          ), tree(item_instance_id,location,parent_id,depth) AS (
             SELECT item_instance_id,location,NULL::uuid,0 FROM roots
             UNION ALL
             SELECT e.item_instance_id,t.location,t.item_instance_id,t.depth+1 FROM tree t
              CROSS JOIN LATERAL (
-              SELECT item_instance_id FROM game_item_container_entries
+              SELECT item_instance_id FROM admin_read.container_entries
                WHERE world_id=$2 AND character_id=$1 AND parent_item_instance_id=t.item_instance_id
-              UNION ALL SELECT item_instance_id FROM game_item_nested_entries
+              UNION ALL SELECT item_instance_id FROM admin_read.nested_entries
                WHERE world_id=$2 AND parent_item_instance_id=t.item_instance_id
              ) e WHERE t.depth < 8
          )
          SELECT i.item_instance_id::text, i.definition_production_key,
                 i.quantity::text, t.location, t.parent_id::text
-         FROM tree t JOIN game_item_instances i USING(item_instance_id)
+         FROM tree t JOIN admin_read.item_instances i USING(item_instance_id)
          WHERE i.world_id=$2 AND i.lifecycle=1 AND ($3::uuid IS NULL OR i.item_instance_id>$3)
          ORDER BY i.item_instance_id LIMIT $4",
-    )
-    .bind(id).bind(world).bind(optional_uuid(params.cursor.as_deref())?).bind(i64::from(params.limit)+1)
-    .fetch_all(conn).await.map_err(db_error)?;
+        )
+        .bind(id)
+        .bind(world)
+        .bind(optional_uuid(params.cursor.as_deref())?)
+        .bind(i64::from(params.limit) + 1)
+        .fetch_all(&mut *conn)
+        .await
+        .map_err(db_error)?
+    };
     let items = rows
         .into_iter()
         .map(|row| {
@@ -215,46 +217,106 @@ pub(super) async fn inventory(
             })
         })
         .collect::<Result<Vec<_>, E>>()?;
-    let (items, next_cursor) = page(items, params.limit, |row| row.instance_id.clone());
-    Ok(Inventory { items, next_cursor })
+    let (items, mut next_cursor) = page(items, params.limit, |row| row.instance_id.clone());
+    let mut stash_balances = vec![];
+    if next_cursor.is_none() {
+        let remaining = params.limit - items.len() as u16;
+        let after = stash_cursor
+            .map(str::parse::<u32>)
+            .transpose()
+            .map_err(|_| E::AdmInvalidParams)?
+            .map(i64::from);
+        let rows = sqlx::query_scalar::<_, Json<StashBalance>>(
+            "SELECT jsonb_build_object('type_id',type_id,'count',sum(quantity)::text)
+             FROM admin_read.stash_balances
+             WHERE character_id=$1 AND world_id=$2 AND ($3::bigint IS NULL OR type_id>$3)
+             GROUP BY type_id ORDER BY type_id LIMIT $4",
+        )
+        .bind(id)
+        .bind(world)
+        .bind(after)
+        .bind(i64::from(remaining) + 1)
+        .fetch_all(conn)
+        .await
+        .map_err(db_error)?;
+        if remaining == 0 && !rows.is_empty() {
+            next_cursor = items.last().map(|item| item.instance_id.clone());
+        } else {
+            (stash_balances, next_cursor) = page(json_rows(rows), remaining, |row| {
+                format!("stash/{}", row.type_id)
+            });
+        }
+    }
+    Ok(Inventory {
+        items,
+        stash_balances,
+        next_cursor,
+    })
+}
+
+pub(super) async fn check_sanction_visibility(
+    conn: &mut PgConnection,
+    worlds: &[Uuid],
+    sanctions: &[Sanction],
+) -> Result<(), E> {
+    let characters = sanctions
+        .iter()
+        .map(|row| optional_uuid(row.character_id.as_deref()))
+        .collect::<Result<Vec<_>, _>>()?;
+    let accounts = sanctions
+        .iter()
+        .map(|row| optional_uuid(row.account_ref.as_deref()))
+        .collect::<Result<Vec<_>, _>>()?;
+    let visible: bool = sqlx::query_scalar(
+        "SELECT NOT EXISTS (
+            SELECT 1 FROM unnest($1::uuid[], $2::uuid[]) AS s(character_id,account_id)
+            WHERE NOT EXISTS (
+                SELECT 1 FROM admin_read.character_roots r
+                WHERE r.world_id=ANY($3) AND r.account_id=s.account_id
+                  AND (s.character_id IS NULL OR r.character_id=s.character_id)))",
+    )
+    .bind(characters)
+    .bind(accounts)
+    .bind(worlds)
+    .fetch_one(conn)
+    .await
+    .map_err(db_error)?;
+    if !visible {
+        return Err(E::AdmTargetNotFound);
+    }
+    Ok(())
 }
 
 pub(super) async fn sanctions(
     conn: &mut PgConnection,
     target: &Target,
     worlds: &[Uuid],
-    global: bool,
     params: Page,
 ) -> Result<SanctionPage, E> {
     let rows = sqlx::query_as::<_, (String, Json<Sanction>)>(
         "WITH records AS (
-           SELECT 'platform/' || p.sanction_stream_id AS key, p.sanction_stream_id AS id,
-                  p.character_id,p.account_id,
-                  (ARRAY['mute','jail','character_ban','account_ban','namelock','notation'])[p.kind] AS kind,
-                  p.starts_at_ms,p.ends_at_ms,p.revoked AS lifted
-           FROM game_account_sanction_projections p
-           LEFT JOIN game_character_roots r ON r.character_id=p.character_id AND r.account_id=p.account_id
-           WHERE ($1::uuid IS NULL OR p.character_id=$1)
-             AND ($2::uuid IS NULL OR p.account_id=$2)
-             AND (r.world_id=ANY($3) OR ($4 AND p.character_id IS NULL))
-           UNION ALL
-           SELECT 'staff/' || s.sanction_id || '/' || s.environment,s.sanction_id,
-                  s.character_id,r.account_id,'mute',s.starts_at_ms,s.ends_at_ms,s.lifted_at_ms IS NOT NULL
-           FROM game_character_sanctions s JOIN game_character_roots r USING(character_id)
-           WHERE ($1::uuid IS NULL OR s.character_id=$1)
-             AND ($2::uuid IS NULL OR r.account_id=$2) AND r.world_id=ANY($3)
+           SELECT s.key,s.id,s.character_id,s.account_id,s.kind,s.starts_at_ms,s.ends_at_ms,s.lifted
+           FROM admin_read.sanctions s
+           WHERE ($2::uuid IS NULL OR s.account_id=$2)
+             AND (
+               (s.world_id=ANY($3) AND ($1::uuid IS NULL OR s.character_id=$1))
+               OR (s.character_id IS NULL AND EXISTS (
+                   SELECT 1 FROM admin_read.character_roots r
+                   WHERE r.account_id=s.account_id AND r.world_id=ANY($3)
+                     AND ($1::uuid IS NULL OR r.character_id=$1)))
+             )
          )
          SELECT key, jsonb_build_object('sanction_id',id,'character_id',character_id,'account_ref',account_id,
                  'kind',kind,'starts_at',to_timestamp(starts_at_ms/1000.0),
                  'expires_at',to_timestamp(ends_at_ms/1000.0),
                  'active',NOT lifted AND kind<>'notation' AND starts_at_ms <= EXTRACT(EPOCH FROM statement_timestamp()) * 1000
                          AND (ends_at_ms IS NULL OR ends_at_ms > EXTRACT(EPOCH FROM statement_timestamp()) * 1000))
-         FROM records WHERE ($5::text IS NULL OR key COLLATE \"C\">$5)
-         ORDER BY key COLLATE \"C\" LIMIT $6",
+         FROM records WHERE ($4::text IS NULL OR key COLLATE \"C\">$4)
+         ORDER BY key COLLATE \"C\" LIMIT $5",
     )
     .bind(optional_uuid(target.character_id.as_deref())?)
     .bind(optional_uuid(target.account_ref.as_deref())?)
-    .bind(worlds).bind(global).bind(params.cursor).bind(i64::from(params.limit)+1)
+    .bind(worlds).bind(params.cursor).bind(i64::from(params.limit)+1)
     .fetch_all(conn).await.map_err(db_error)?;
     let (rows, next_cursor) = page(rows, params.limit, |(key, _)| key.clone());
     let sanctions = rows.into_iter().map(|(_, Json(row))| row).collect();

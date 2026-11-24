@@ -245,18 +245,51 @@ async fn heartbeat_continues_while_results_transport_is_blocked() -> Result<(), 
 
 #[test]
 fn phase_one_reads_are_advertised() {
-    let advertised = crate::channel::advertised();
-    for operation in Operation::ALL {
-        assert_eq!(
-            advertised.contains(operation.name()),
-            !matches!(
-                operation,
-                Operation::AdminAgentList | Operation::AnalyticsCatalog
-            ),
-            "{}",
-            operation.name()
-        );
-    }
+    assert_eq!(
+        crate::channel::advertised(),
+        [
+            "admin.ledger.query",
+            "admin.policy.get",
+            "db.migrations.list",
+            "db.status",
+            "node.get",
+            "node.list",
+            "ops.overview.get",
+            "player.character.get",
+            "player.inventory.get",
+            "player.search",
+            "sanction.list",
+            "world.get",
+            "world.list",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect()
+    );
+}
+
+#[tokio::test]
+async fn executor_rejection_is_not_retained() -> Result<(), WireError> {
+    let mut a = agent()?;
+    let mut r = request()?;
+    r.operation = Operation::DbStatus.name().into();
+    r.actor.permission = Operation::DbStatus.permission().into();
+    a.policy.operations.insert(
+        r.operation.clone(),
+        crate::policy::OperationPolicy {
+            min_risk_class: RiskClass::R0,
+            allowed_permissions: [r.actor.permission.clone()].into(),
+            worlds: Default::default(),
+        },
+    );
+    resign(&mut r)?;
+    let response = a.process(&r).await.map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        response.error.map(|e| e.code),
+        Some(E::AdmTargetUnavailable)
+    );
+    assert!(a.store.results.is_empty());
+    Ok(())
 }
 
 #[tokio::test]

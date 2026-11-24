@@ -173,37 +173,22 @@ impl Outbox {
             39 => {
                 let properties = &mut shared.properties;
                 #[cfg(bevy_shell)]
-                if let Some(target) = properties.expiry_pending
-                    && oteryn_client_runtime::timed_item::decode_timed_item_intent(&command.payload)
-                        .is_ok_and(|intent| {
-                            intent.action == oteryn_client_runtime::timed_item::TimedAction::Inspect
-                                && intent.target == target
-                        })
+                if let Ok(intent) =
+                    oteryn_client_runtime::timed_item::decode_timed_item_intent(&command.payload)
                 {
-                    properties.expiry_pending = None;
-                    properties.expiry_reply = Some((
-                        target,
-                        accepted(result)
-                            .then(|| {
-                                oteryn_client_runtime::timed_item::decode_timed_item_result(
-                                    &result.payload,
-                                )
-                                .ok()
-                            })
-                            .flatten(),
-                    ));
-                    return;
-                }
-                #[cfg(bevy_shell)]
-                if accepted(result)
-                    && let Ok(intent) = oteryn_client_runtime::timed_item::decode_timed_item_intent(
-                        &command.payload,
-                    )
-                    && let Ok(reply) =
-                        oteryn_client_runtime::timed_item::decode_timed_item_result(&result.payload)
-                    && reply.disposition == oteryn_client_runtime::timed_item::TimedDisposition::Ok
-                {
-                    properties.expiry_reply = Some((intent.target, Some(reply)));
+                    use oteryn_client_runtime::timed_item as wire;
+                    let reply = accepted(result)
+                        .then(|| wire::decode_timed_item_result(&result.payload).ok())
+                        .flatten();
+                    let inspect = intent.action == wire::TimedAction::Inspect;
+                    if inspect || reply.is_some_and(|r| r.disposition == wire::TimedDisposition::Ok)
+                    {
+                        properties.expiry_reply = Some((intent.target, reply));
+                    }
+                    if inspect && properties.expiry_pending == Some(intent.target) {
+                        properties.expiry_pending = None;
+                        return;
+                    }
                 }
                 super::super::feature_0039_timed_item::protocol::apply(
                     &mut properties.timed_item,

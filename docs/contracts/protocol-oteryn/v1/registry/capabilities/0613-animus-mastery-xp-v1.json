@@ -1,0 +1,16 @@
+{
+  "id": 613,
+  "name": "ANIMUS_MASTERY_XP_V1",
+  "owner_decision": "Client server gap allocation",
+  "owner": "Game Character Animus Mastery owner",
+  "requires": [
+    168
+  ],
+  "command_types": [
+    6388,
+    6389
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Follows the current-session-fenced Animus Mastery reader. Bestiary cards require an active native catalogue."
+}

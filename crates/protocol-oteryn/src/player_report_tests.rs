@@ -212,3 +212,48 @@ fn player_report_reply_codec_binds_code_number_and_wait() {
     assert!(decode_player_report_reply(&[8, 9, 16, 0, 24, 0]).is_err());
     assert!(decode_player_report_reply(&[8, 2, 16, 0, 24, 0, 24, 0]).is_err());
 }
+
+#[test]
+fn named_rule_violation_preserves_advisory_choices_and_rejects_invalid_evidence() {
+    for choice in [
+        SanctionSuggestion::None,
+        SanctionSuggestion::AccountBan,
+        SanctionSuggestion::Namelock,
+    ] {
+        let report = violation();
+        let mut encoded = encode_named_rule_violation(&report, choice).expect("report");
+        assert_eq!(decode_named_rule_violation(&encoded), Ok((report, choice)));
+        encoded[0] = 3;
+        assert_eq!(decode_named_rule_violation(&encoded), Err(Error::Malformed));
+    }
+    assert_eq!(
+        encode_named_rule_violation(&bug(), SanctionSuggestion::Namelock),
+        Err(Error::Malformed)
+    );
+    assert_eq!(
+        encode_named_rule_violation(
+            &PlayerReportRequest {
+                comment: "text\0text".into(),
+                ..violation()
+            },
+            SanctionSuggestion::Namelock,
+        ),
+        Err(Error::Malformed)
+    );
+}
+
+#[test]
+fn rule_violation_conversation_accepts_only_well_formed_refusal_intents() {
+    for intent in [b"\x01message".as_slice(), b"\x02"] {
+        assert_eq!(validate_report_conversation(intent), Ok(()));
+    }
+    for intent in [
+        b"\x01".as_slice(),
+        b"\x02x",
+        b"\x03",
+        b"\x01\xff",
+        b"\x01\0",
+    ] {
+        assert!(validate_report_conversation(intent).is_err());
+    }
+}

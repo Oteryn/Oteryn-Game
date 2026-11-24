@@ -26,25 +26,59 @@ use std::time::Duration;
 use tokio::{io::AsyncWriteExt, sync::Mutex};
 
 pub(super) fn run(partyskull: bool) -> TestResult {
-    run_case(partyskull, false, false, false)
+    run_case(partyskull, false, false, false, false, None)
 }
 
 pub(super) fn run_reference_level() -> TestResult {
-    run_case(false, true, false, false)
+    run_case(false, true, false, false, false, None)
 }
 
 pub(super) fn run_chat() -> TestResult {
-    run_case(false, false, true, false)
+    run_case(false, false, true, false, false, None)
 }
 
 pub(super) fn run_busy_holder() -> TestResult {
-    run_case(false, false, false, true)
+    run_case(false, false, false, true, false, None)
 }
 
-fn run_case(partyskull: bool, reference_level: bool, chat: bool, busy: bool) -> TestResult {
+pub(super) fn run_notices(admin: String) -> TestResult {
+    run_with_admin(admin, false, false, false, false, true, None)
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum HuntCase {
+    Reset,
+    Valuation,
+    NpcPrices,
+}
+
+pub(super) fn run_hunt(admin: String, case: HuntCase) -> TestResult {
+    run_with_admin(admin, false, false, false, false, false, Some(case))
+}
+
+fn run_case(
+    partyskull: bool,
+    reference_level: bool,
+    chat: bool,
+    busy: bool,
+    notices: bool,
+    hunt: Option<HuntCase>,
+) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
+    run_with_admin(admin, partyskull, reference_level, chat, busy, notices, hunt)
+}
+
+fn run_with_admin(
+    admin: String,
+    partyskull: bool,
+    reference_level: bool,
+    chat: bool,
+    busy: bool,
+    notices: bool,
+    hunt: Option<HuntCase>,
+) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -60,7 +94,7 @@ fn run_case(partyskull: bool, reference_level: bool, chat: bool, busy: bool) -> 
                 )
                 .await
                 .map_err(debug)?;
-                let result = scenario(&h, partyskull, reference_level, chat, busy)
+                let result = scenario(&h, partyskull, reference_level, chat, busy, notices, hunt)
                     .await
                     .map_err(|e| e.to_string());
                 h.cleanup().await.map_err(debug)?;
@@ -77,10 +111,12 @@ pub(super) enum Step {
     Query,
     Invite(EntityRef),
     Accept,
-    Pass(usize),
-    Kick(usize),
+    Revoke(EntityRef),
+    Pass([u8; 16]),
+    Kick([u8; 16]),
     Leave,
     Malformed,
+    Notice(PartyMembershipChange),
 }
 
 // These fixture peers implement the same live protocol as the native client.
@@ -113,7 +149,12 @@ pub(super) async fn roundtrip(
     let session = *admitted;
     let (mut server, mut client) = tokio::io::duplex(16_384);
     // Each peer owns its stream so an early return closes it and wakes the other peer.
-    let serving = async move { serve_admitted(&mut server, session, owner, IDLE_LIVENESS).await };
+    let policy = if session.continuity.selected_capabilities.contains(CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1) {
+        notice_policy()
+    } else {
+        IDLE_LIVENESS
+    };
+    let serving = async move { serve_admitted(&mut server, session, owner, policy).await };
     let driving = async move {
         loop {
             let frame =
@@ -125,9 +166,19 @@ pub(super) async fn roundtrip(
             }
         }
         let mut results: Vec<PartyResult> = Vec::new();
+        let mut notices = std::collections::VecDeque::new();
         for (offset, step) in steps.iter().enumerate() {
+            if let Step::Notice(change) = step {
+                let notice = if let Some(notice) = notices.pop_front() { notice } else {
+                    read_notice(&mut client, session.continuity.connection_generation).await?
+                };
+                assert_eq!(notice.change, *change);
+                assert_ne!(notice.member_handle, 0);
+                continue;
+            }
             let command_id = session.continuity.next_command_id + offset as u64;
             let intent = match step {
+                Step::Revoke(target) => Some(PartyIntent::Revoke(*target)),
                 Step::Invite(target) => Some(PartyIntent::Invite(*target)),
                 Step::Accept => Some(PartyIntent::Accept(
                     results
@@ -138,26 +189,26 @@ pub(super) async fn roundtrip(
                         .ok_or("invitation")?
                         .handle,
                 )),
-                Step::Pass(index) => Some(PartyIntent::PassLeadership(
-                    results
+                Step::Pass(target) | Step::Kick(target) => {
+                    let handle = crate::gameplay_transport::party_command::party_member_handle(
+                        session, *target,
+                    )
+                    .ok_or("member handle")?;
+                    let member = results
                         .last()
                         .ok_or("query first")?
                         .members
-                        .get(*index)
-                        .ok_or("member")?
-                        .handle,
-                )),
-                Step::Kick(index) => Some(PartyIntent::Kick(
-                    results
-                        .last()
-                        .ok_or("query first")?
-                        .members
-                        .get(*index)
-                        .ok_or("member")?
-                        .handle,
-                )),
+                        .iter()
+                        .find(|member| member.handle == handle)
+                        .ok_or("target missing from party query")?;
+                    Some(if matches!(step, Step::Pass(_)) {
+                        PartyIntent::PassLeadership(member.handle)
+                    } else {
+                        PartyIntent::Kick(member.handle)
+                    })
+                }
                 Step::Leave => Some(PartyIntent::Leave),
-                Step::Query | Step::Malformed => None,
+                Step::Query | Step::Malformed | Step::Notice(_) => None,
             };
             let payload = if matches!(step, Step::Malformed) {
                 vec![8, 0]
@@ -186,11 +237,15 @@ pub(super) async fn roundtrip(
                     read_live_frame(&mut client, session.continuity.connection_generation).await?;
                 let envelope = decode_wire_envelope(&frame).map_err(debug)?;
                 if envelope.message_type() != MessageType::CommandResult {
+                    if let Some(notice) = party_notice(&envelope)? {
+                        notices.push_back(notice);
+                    }
                     continue;
                 }
                 let result = decode_command_result(envelope.payload()).map_err(debug)?;
                 assert_eq!(result.command_id, command_id);
                 if matches!(step, Step::Malformed)
+                    || (matches!(step, Step::Revoke(_)) && !session.continuity.selected_capabilities.contains(CAPABILITY_PARTY_REVOKE_V1))
                     || !session
                         .continuity
                         .selected_capabilities
@@ -220,7 +275,118 @@ pub(super) async fn roundtrip(
     result
 }
 
-async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bool, busy: bool) -> TestResult {
+fn notice_policy() -> crate::gameplay_transport::connection::LivenessPolicy {
+    crate::gameplay_transport::connection::LivenessPolicy {
+        interval: Duration::from_millis(500),
+        missed_limit: 10,
+    }
+}
+
+fn party_notice(
+    envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
+) -> TestResult<Option<PartyMembershipNotice>> {
+    if envelope.message_type() == MessageType::StateDelta {
+        let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+        if delta.domain_id == oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES
+            && delta.delta_type == DELTA_TYPE_PARTY_MEMBERSHIP_NOTICE_V1
+        {
+            return Ok(Some(decode_party_membership_notice(delta.payload).map_err(debug)?));
+        }
+    }
+    Ok(None)
+}
+
+async fn read_notice(client: &mut tokio::io::DuplexStream, generation: u64) -> TestResult<PartyMembershipNotice> {
+    loop {
+        let frame = read_live_frame(client, generation).await?;
+        if let Some(notice) = party_notice(&decode_wire_envelope(&frame).map_err(debug)?)? {
+            return Ok(notice);
+        }
+    }
+}
+
+async fn check_notices(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut [AdmittedSession],
+) -> TestResult {
+    for peer in admitted.iter_mut().take(2) {
+        peer.continuity.selected_capabilities = SelectedCapabilities::select(
+            owner.offered_capabilities(), &[6, 21, 42, 92, CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1],
+        ).filter(|selected| selected.contains(CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1))
+        .ok_or("party membership notice offer")?;
+    }
+    let observer = admitted[0];
+    let generation = observer.continuity.connection_generation;
+    let member = &mut admitted[1];
+    let (mut server, mut client) = tokio::io::duplex(16_384);
+    let serving = async { serve_admitted(&mut server, observer, owner, notice_policy()).await };
+    let driving = async {
+        loop {
+            let frame = read_live_frame(&mut client, generation).await?;
+            if decode_wire_envelope(&frame).map_err(debug)?.message_type() == MessageType::SnapshotCommit {
+                break;
+            }
+        }
+
+        let (result, joined) = tokio::join!(
+            roundtrip(owner, member, &[Step::Query, Step::Accept, Step::Notice(PartyMembershipChange::Joined)]),
+            read_notice(&mut client, generation),
+        );
+        assert_eq!(result?[1].disposition, PartyDisposition::Ok);
+        let joined = joined?;
+        assert_eq!(joined.change, PartyMembershipChange::Joined);
+
+        let query = encode_client_command(
+            generation,
+            &ClientCommandValue {
+                command_id: observer.continuity.next_command_id,
+                command_type: COMMAND_TYPE_PARTY_QUERY,
+                payload: &[],
+            },
+        ).map_err(debug)?;
+        write_frame(&mut client, &query).await?;
+        loop {
+            let frame = read_live_frame(&mut client, generation).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                assert_eq!(result.status, CommandStatus::Accepted);
+                let roster = decode_party_result(result.payload).map_err(debug)?;
+                let member_row = roster.members.iter().find(|entry| !entry.leader)
+                    .ok_or("joined member in the roster")?;
+                assert_eq!(joined.member_handle, member_row.handle);
+                break;
+            }
+        }
+
+        let (result, left) = tokio::join!(
+            roundtrip(owner, member, &[Step::Leave, Step::Notice(PartyMembershipChange::Left)]),
+            read_notice(&mut client, generation),
+        );
+        assert_eq!(result?[0].disposition, PartyDisposition::Ok);
+        let left = left?;
+        assert_eq!(left.change, PartyMembershipChange::Left);
+        assert_eq!(left.member_handle, joined.member_handle);
+        client.shutdown().await?;
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let (end, result) = tokio::time::timeout(
+        Duration::from_secs(30), super::fixture::join_two(serving, driving),
+    ).await?;
+    result?;
+    assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+    Ok(())
+}
+
+async fn scenario(
+    h: &Harness,
+    partyskull: bool,
+    reference_level: bool,
+    chat: bool,
+    busy: bool,
+    notices: bool,
+    hunt: Option<HuntCase>,
+) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -244,6 +410,7 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
             .character_id()
             .as_bytes(),
     ];
+    let third_character = *currents[2].current_character_lease().character_id().as_bytes();
     let seal = h.recovery.seal_current().map_err(debug)?;
     let recovery = h
         .root
@@ -253,6 +420,22 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
     let room = crate::content::qualify_native_entry_room(world).map_err(debug)?;
+    let activation = hunt.map(|_| {
+        crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None)
+    });
+    let channel_pin = if let Some((_, pin)) = &activation {
+        ChannelContentPin::from_activation(
+            world,
+            pin.activation_sequence(),
+            pin.identity().server_artifact_digest(),
+            pin.identity().client_artifact_digest(),
+            pin.frame_binding().digest(),
+            room.map_revision_digest(),
+            (0, 0, 0),
+        )
+    } else {
+        ChannelContentPin::test(world)
+    };
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         world,
         channel,
@@ -262,7 +445,7 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
         1,
         "runtime-scope-assignment:1",
         5,
-        ChannelContentPin::test(world),
+        channel_pin,
     )
     .map_err(debug)?;
     let mut admitted = Vec::new();
@@ -343,8 +526,14 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
         return super::party_busy_holder_fixtures::check(&owner, &mut admitted, &targets, h).await;
     }
     if partyskull {
-        super::party_skull_fixtures::check(&owner, &mut admitted[0], &targets, &[0, 0, 0], &[0, 0, 0])
-            .await?;
+        super::party_skull_fixtures::check(
+            &owner,
+            &mut admitted[0],
+            &targets,
+            &[0, 0, 0],
+            &[0, 0, 0],
+        )
+        .await?;
         super::party_skull_fixtures::aggression(h, &targets, &characters, true).await?;
         super::party_skull_fixtures::check_situation_replacement(
             &owner, &mut admitted[1], h, &characters,
@@ -389,18 +578,56 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
     assert_eq!(refused[0].disposition, PartyDisposition::Rejected);
     // Carry the stale connection's ended continuity while keeping the current lease.
     admitted[2].continuity = stale.continuity;
+    if !partyskull && !reference_level && !chat {
+        // Re-invite the last invitee so the succession check still exercises the first.
+        let target = targets[2];
+        roundtrip(&owner, &mut admitted[0], &[Step::Revoke(target)]).await?;
+        let before = roundtrip(&owner, &mut admitted[2], &[Step::Query]).await?;
+        assert_eq!(before[0].invitations.len(), 1);
+        admitted[0].continuity.selected_capabilities =
+            SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42, CAPABILITY_PARTY_REVOKE_V1])
+                .ok_or("party revoke offer")?;
+        let results = roundtrip(
+            &owner,
+            &mut admitted[0],
+            &[Step::Revoke(target), Step::Revoke(target)],
+        ).await?;
+        assert_eq!(results[0].disposition, PartyDisposition::Ok);
+        assert_eq!(results[1].disposition, PartyDisposition::NotInvited);
+        let revoked = roundtrip(&owner, &mut admitted[2], &[Step::Query]).await?;
+        assert!(revoked[0].invitations.is_empty());
+        let unaffected = roundtrip(&owner, &mut admitted[1], &[Step::Query]).await?;
+        assert_eq!(unaffected[0].invitations.len(), 1);
+        let invited = roundtrip(&owner, &mut admitted[0], &[Step::Invite(target)]).await?;
+        assert_eq!(invited[0].disposition, PartyDisposition::Ok);
+    }
     if partyskull {
-        super::party_skull_fixtures::check(&owner, &mut admitted[0], &targets, &[4, 2, 2], &[2, 0, 0])
-            .await?;
+        super::party_skull_fixtures::check(
+            &owner,
+            &mut admitted[0],
+            &targets,
+            &[4, 2, 2],
+            &[2, 0, 0],
+        )
+        .await?;
         super::party_skull_fixtures::aggression(h, &targets, &characters, true).await?;
         let result = roundtrip(&owner, &mut admitted[1], &[Step::Query, Step::Accept]).await?;
         assert_eq!(result[1].disposition, PartyDisposition::Rejected);
         super::party_skull_fixtures::aggression(h, &targets, &characters, false).await?;
     }
+    if notices {
+        return check_notices(&owner, &mut admitted).await;
+    }
     for a in admitted.iter_mut().skip(1) {
         let results = roundtrip(&owner, a, &[Step::Query, Step::Accept]).await?;
         assert_eq!(results[0].invitations.len(), 1);
         assert_eq!(results[1].disposition, PartyDisposition::Ok);
+    }
+    if let Some(case) = hunt {
+        owner.active_generation = activation
+            .as_ref()
+            .and_then(|(controller, _)| controller.active());
+        return super::analyser_hunt_fixtures::check(h, &owner, &mut admitted, case).await;
     }
     let chat_line = if chat {
         Some(super::party_chat_fixtures::check(h, &owner, &mut admitted).await?)
@@ -409,14 +636,21 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
     };
     if partyskull {
         for observer in &mut admitted {
-            super::party_skull_fixtures::check(&owner, observer, &targets, &[4, 3, 3], &[2, 2, 2]).await?;
+            super::party_skull_fixtures::check(&owner, observer, &targets, &[4, 3, 3], &[2, 2, 2])
+                .await?;
         }
         // Existing shared-XP durable owner preference; no committed activity: every shield blinks.
         sqlx::query("UPDATE game_parties SET shared_xp_enabled=true,revision=revision+1")
             .execute(&h.pool)
             .await?;
-        super::party_skull_fixtures::check(&owner, &mut admitted[2], &targets, &[8, 7, 7], &[2, 2, 2])
-            .await?;
+        super::party_skull_fixtures::check(
+            &owner,
+            &mut admitted[2],
+            &targets,
+            &[8, 7, 7],
+            &[2, 2, 2],
+        )
+        .await?;
         sqlx::query("UPDATE game_parties SET shared_xp_enabled=false,revision=revision+1")
             .execute(&h.pool)
             .await?;
@@ -424,16 +658,22 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
     if reference_level {
         super::monster_reference_level_fixtures::check(&owner, &admitted).await?;
     }
-    let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Pass(1)]).await?;
+    let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Pass(characters[1])]).await?;
     assert_eq!(result[0].members.len(), 3);
     assert_eq!(result[1].disposition, PartyDisposition::Ok);
     if partyskull {
-        super::party_skull_fixtures::check(&owner, &mut admitted[2], &targets, &[3, 4, 3], &[2, 2, 2])
-            .await?;
+        super::party_skull_fixtures::check(
+            &owner,
+            &mut admitted[2],
+            &targets,
+            &[3, 4, 3],
+            &[2, 2, 2],
+        )
+        .await?;
     }
-    let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Kick(2)]).await?;
+    let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Kick(third_character)]).await?;
     assert_eq!(result[1].disposition, PartyDisposition::NotLeader);
-    let result = roundtrip(&owner, &mut admitted[1], &[Step::Query, Step::Pass(0)]).await?;
+    let result = roundtrip(&owner, &mut admitted[1], &[Step::Query, Step::Pass(characters[0])]).await?;
     assert_eq!(result[1].disposition, PartyDisposition::Ok);
     let result = roundtrip(&owner, &mut admitted[0], &[Step::Leave]).await?;
     assert_eq!(result[0].disposition, PartyDisposition::Ok);
@@ -455,21 +695,28 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bo
         .command_ingress = commands;
     let result = roundtrip(&owner, &mut admitted[1], &[Step::Query]).await?;
     assert_eq!(result[0].members.len(), 2);
-    assert!(
-        result[0].members[0].leader,
+    assert_eq!(
+        result[0].members.iter().find(|member| member.leader).map(|member| member.handle),
+        crate::gameplay_transport::party_command::party_member_handle(admitted[1], characters[1]),
         "earliest invited member succeeds"
     );
     // Re-form three members, then exercise the current leader's kick.
     let result = roundtrip(&owner, &mut admitted[1], &[Step::Invite(targets[0])]).await?;
     assert_eq!(result[0].disposition, PartyDisposition::Ok);
     roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Accept]).await?;
-    let result = roundtrip(&owner, &mut admitted[1], &[Step::Query, Step::Kick(1)]).await?;
+    let result = roundtrip(&owner, &mut admitted[1], &[Step::Query, Step::Kick(third_character)]).await?;
     assert_eq!(result[1].disposition, PartyDisposition::Ok);
     let result = roundtrip(&owner, &mut admitted[2], &[Step::Query]).await?;
     assert!(result[0].members.is_empty());
     if partyskull {
-        super::party_skull_fixtures::check(&owner, &mut admitted[2], &targets, &[11, 11, 0], &[0, 0, 0])
-            .await?;
+        super::party_skull_fixtures::check(
+            &owner,
+            &mut admitted[2],
+            &targets,
+            &[11, 11, 0],
+            &[0, 0, 0],
+        )
+        .await?;
     }
     let actor = admitted[1].runtime_actor.ok_or("actor")?;
     {

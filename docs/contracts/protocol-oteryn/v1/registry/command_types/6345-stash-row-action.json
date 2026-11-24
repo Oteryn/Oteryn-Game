@@ -1,0 +1,10 @@
+{
+  "id": 6345,
+  "name": "STASH_ROW_ACTION",
+  "owner_decision": "Server protocol gaps owner allocation 2026-11-22",
+  "capability": 591,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/stash_v1.proto#StashRowIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/stash_v1.proto#StashRowResultV1",
+  "max_payload_bytes": 20,
+  "max_result_payload_bytes": 6
+}

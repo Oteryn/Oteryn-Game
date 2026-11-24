@@ -18,11 +18,31 @@ fn server_message_framing_requires_the_domain_and_boss_event_capabilities()
         .enable_all()
         .build()?
         .block_on(async {
-            for (capabilities, server_messages, boss_defeats) in [
-                (&[][..], false, false),
-                (&[CAPABILITY_ZONES_NOLOGOUT_V1][..], true, false),
+            for (capabilities, server_messages, boss_defeats, categorized) in [
+                (&[][..], false, false, false),
+                (&[CAPABILITY_ZONES_NOLOGOUT_V1][..], true, false, false),
+                (
+                    &[
+                        CAPABILITY_ZONES_NOLOGOUT_V1,
+                        CAPABILITY_SERVER_MESSAGE_CATEGORY_V1,
+                    ][..],
+                    true,
+                    false,
+                    true,
+                ),
                 (
                     &[CAPABILITY_ZONES_NOLOGOUT_V1, CAPABILITY_BOSS_DEFEATED_V1][..],
+                    true,
+                    true,
+                    false,
+                ),
+                (
+                    &[
+                        CAPABILITY_ZONES_NOLOGOUT_V1,
+                        CAPABILITY_SERVER_MESSAGE_CATEGORY_V1,
+                        CAPABILITY_BOSS_DEFEATED_V1,
+                    ][..],
+                    true,
                     true,
                     true,
                 ),
@@ -53,7 +73,11 @@ fn server_message_framing_requires_the_domain_and_boss_event_capabilities()
                     admitted.continuity.server_sequence = 7;
                     let mut sequence = 7;
                     let (mut server, mut client) = tokio::io::duplex(1024);
-                    emit_message(&mut server, &mut admitted, &mut sequence, &message)
+                    let notice = ServerNotification {
+                        message: message.clone(),
+                        category: ServerMessageCategory::Raid,
+                    };
+                    emit_notification(&mut server, &mut admitted, &mut sequence, &notice)
                         .await
                         .ok_or("message")?;
                     drop(server);
@@ -72,10 +96,16 @@ fn server_message_framing_requires_the_domain_and_boss_event_capabilities()
                             (delta.domain_id, delta.base_revision, delta.new_revision),
                             (57, 4, 5)
                         );
+                        let decoded = decode_server_notification(delta.payload)
+                            .map_err(|error| format!("{error:?}"))?;
+                        assert_eq!(decoded.message, message);
                         assert_eq!(
-                            decode_server_message(delta.payload)
-                                .map_err(|error| format!("{error:?}"))?,
-                            message
+                            decoded.category,
+                            if categorized {
+                                ServerMessageCategory::Raid
+                            } else {
+                                ServerMessageCategory::Default
+                            }
                         );
                         assert_eq!(
                             (sequence, admitted.continuity.server_message_revision),

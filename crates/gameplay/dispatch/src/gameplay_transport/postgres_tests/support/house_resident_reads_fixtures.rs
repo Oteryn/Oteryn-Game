@@ -288,7 +288,7 @@ pub(super) async fn exchange(
         .await?;
     sqlx::query(
         "INSERT INTO game_item_texts \
-         VALUES(encode($1,'hex')::uuid,'House letter',encode($2,'hex')::uuid,now(),1)",
+         VALUES(encode($1,'hex')::uuid,'House letter',encode($2,'hex')::uuid,to_timestamp(1700000000),1)",
     )
     .bind(id(71).as_slice())
     .bind(id(41).as_slice())
@@ -323,16 +323,32 @@ pub(super) async fn exchange(
         use std::time::Duration;
         let mut writer = h.pool.begin().await?;
         sqlx::query("LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE")
-            .execute(&mut *writer).await?;
+            .execute(&mut *writer)
+            .await?;
         let (capacity, emblems) = tokio::time::timeout(Duration::from_secs(1), async {
             let cap = owner.observe_inventory_capacity(admitted).await;
             let emblems = owner.observe_guild_emblems(admitted).await;
             (cap, emblems)
-        }).await?;
+        })
+        .await?;
         assert!(capacity.is_some());
-        assert!(!emblems.ok_or("House emblems while writer is busy")?.is_empty());
+        assert!(
+            !emblems
+                .ok_or("House emblems while writer is busy")?
+                .is_empty()
+        );
         writer.rollback().await?;
     }
+    let writer_name: Option<String> = if case == Case::ResidentLetter {
+        Some(sqlx::query_scalar(
+            "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .fetch_one(&h.pool)
+        .await?)
+    } else {
+        None
+    };
     let shared = &*owner;
     let expiry = case == Case::ResidentExpiryTick;
     let policy = if expiry {
@@ -465,7 +481,8 @@ pub(super) async fn exchange(
                                 })
                                 .map_err(debug)?,
                             )
-                        } else if matches!(case, Case::ResidentEquip | Case::ResidentTimedEquip(_)) {
+                        } else if matches!(case, Case::ResidentEquip | Case::ResidentTimedEquip(_))
+                        {
                             (
                                 item_view::COMMAND_TYPE_ITEM_MOVE_INTENT,
                                 item_view::encode_item_move_intent_with_equip_drop(
@@ -530,30 +547,64 @@ pub(super) async fn exchange(
                 MessageType::CommandResult if case == Case::ResidentLetter => {
                     let reply = decode_command_result(envelope.payload()).map_err(debug)?;
                     assert_eq!(reply.status, CommandStatus::Accepted);
-                    if reply.command_id == 2 {
+                    if reply.command_id == 3 {
                         assert_eq!(reply.payload, [MailOutcome::TextWritten as u8]);
                         break;
                     }
+                    let handle = letter_handle.ok_or("letter handle missing")?.get();
+                    if reply.command_id == 1 {
+                        assert_eq!(
+                            item_inscription::LegacyReply::decode(reply.payload),
+                            Some(item_inscription::LegacyReply {
+                                text: "House letter".into(),
+                                writable: true,
+                                max_length: 1999,
+                            })
+                        );
+                        let payload = item_inscription::Request {
+                            item_handle: handle,
+                        }
+                        .encode()
+                        .ok_or("attributed request")?;
+                        let frame = encode_client_command(
+                            admitted.continuity.connection_generation,
+                            &ClientCommandValue {
+                                command_id: 2,
+                                command_type:
+                                    item_inscription::COMMAND_TYPE_ITEM_INSCRIPTION_ATTRIBUTION,
+                                payload: &payload,
+                            },
+                        )
+                        .map_err(debug)?;
+                        crate::gameplay_transport::tcp_tls::write_frame(&mut client, &frame)
+                            .await?;
+                        continue;
+                    }
+                    assert_eq!(reply.command_id, 2);
                     assert_eq!(
                         item_inscription::Reply::decode(reply.payload),
                         Some(item_inscription::Reply {
                             text: "House letter".into(),
                             writable: true,
-                            max_length: 1999
+                            max_length: 1999,
+                            writer_name: writer_name.clone(),
+                            written_at_unix_ms: Some(1_700_000_000_000),
                         })
                     );
                     let payload = mail::encode_intent(&MailIntent::WriteText {
                         item_handle: letter_handle.ok_or("letter handle missing")?.get(),
                         text: "Edited in the House".into(),
-                    }).map_err(debug)?;
+                    })
+                    .map_err(debug)?;
                     let frame = encode_client_command(
                         admitted.continuity.connection_generation,
                         &ClientCommandValue {
-                            command_id: 2,
+                            command_id: 3,
                             command_type: u32::from(mail::COMMAND_TYPE_MAIL),
                             payload: &payload,
                         },
-                    ).map_err(debug)?;
+                    )
+                    .map_err(debug)?;
                     client.write_u32(u32::try_from(frame.len())?).await?;
                     client.write_all(&frame).await?;
                 }
@@ -702,7 +753,8 @@ pub(super) async fn exchange(
                 admitted,
                 Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(
                     71
-                )))
+                ))),
+                false,
             )
             .await
             .is_none()

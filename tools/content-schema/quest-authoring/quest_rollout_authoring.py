@@ -109,7 +109,10 @@ def build(catalogue, bundle, definitions, source_specs, approximations=None):
             missing = [gap for gap in missing if gap['code'] != 'canonical_definition_missing']
             missing.extend({'code': 'definition_gap', 'canonical_key': recipe_definition['identity']['key'],
                             'detail': issue} for issue in recipe_definition['missing_data'])
-        ready = bool(keys) and len(canonical) == len(keys) and all(d['readiness'] == 'definition_ready' for d in canonical)
+        # The backlog tracks donor definition readiness. A live native projection
+        # can clear the last hold while its frozen SOURCE recipe is still chosen.
+        ready = (bool(keys) and not source_choices and len(canonical) == len(keys)
+                 and all(d['readiness'] == 'definition_ready' for d in canonical))
         records.append({
             'wiki_title': title, 'wiki_source': row['source'],
             'source_specification': {'proof_level': proof['proof_level'],

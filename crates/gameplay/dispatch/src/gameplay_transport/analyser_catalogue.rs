@@ -23,6 +23,27 @@ fn project(
     encode_reply(&rows).ok()
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn analyser_npc_prices_page(
+        &self,
+        admitted: AdmittedSession,
+        ids: &[u32],
+    ) -> Option<Vec<u8>> {
+        let runtime = self.runtime.lock().await;
+        if !super::battle_instinct_status::actor_is_current(&runtime, admitted) {
+            return None;
+        }
+        let index = super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
+        let book = self.states.chat.npc_talk()?;
+        let rows = ids
+            .iter()
+            .map(|id| {
+                let (key, revision) = index.definition_at(std::num::NonZeroU32::new(*id)?)?;
+                Some((*id, book.mean_buy_price(key, revision)))
+            })
+            .collect::<Option<Vec<_>>>()?;
+        oteryn_protocol_oteryn::analyser_catalogue::encode_npc_prices(&rows).ok()
+    }
+
     pub(super) async fn analyser_catalogue_page(
         &self,
         admitted: AdmittedSession,
@@ -53,6 +74,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 macro_rules! authority_methods {
     () => {
+        fn analyser_npc_prices_query(
+            &self,
+            _admitted: $crate::gameplay_transport::AdmittedSession,
+            _ids: &[u32],
+        ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
+            async { None }
+        }
         fn analyser_catalogue_query(
             &self,
             _admitted: $crate::gameplay_transport::AdmittedSession,
@@ -65,6 +93,13 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        async fn analyser_npc_prices_query(
+            &self,
+            admitted: connection::AdmittedSession,
+            ids: &[u32],
+        ) -> Option<Vec<u8>> {
+            self.analyser_npc_prices_page(admitted, ids).await
+        }
         async fn analyser_catalogue_query(
             &self,
             admitted: connection::AdmittedSession,
