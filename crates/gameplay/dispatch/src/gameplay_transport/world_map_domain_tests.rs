@@ -516,7 +516,9 @@ fn a_committed_bundle_door_use_is_a_domain_17_change_and_no_domain_2_delta_for_a
             disposition: UseDisposition::Committed,
             committed: None,
             earned: EarnedNotice::NoneEarned,
+            reward_granted: None,
             gate_message_id: None,
+            potion_utterance: None,
             refusal_detail: None,
         };
         let sent = serve(
@@ -580,7 +582,9 @@ fn domain_2_state_offered_to_a_session_with_18_fails_closed_instead_of_being_sen
             disposition: UseDisposition::Committed,
             committed: Some(door_overlay(1)),
             earned: EarnedNotice::NoneEarned,
+            reward_granted: None,
             gate_message_id: None,
+            potion_utterance: None,
             refusal_detail: None,
         };
         let sent = serve(&channel, bundle_session(), &[use_door(1, 1)], NO_HOLD).await;
@@ -608,7 +612,9 @@ fn a_fixture_world_session_keeps_domain_2_on_join_resume_and_delta_and_never_get
             disposition: UseDisposition::Committed,
             committed: Some(door_overlay(2)),
             earned: EarnedNotice::NoneEarned,
+            reward_granted: None,
             gate_message_id: None,
+            potion_utterance: None,
             refusal_detail: None,
         };
         let joined = serve(

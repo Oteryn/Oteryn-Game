@@ -952,14 +952,16 @@ pub fn animus_mastery_experience(base: u64, completed: usize, species_mastered: 
     if !species_mastered {
         return base;
     }
-    let bonus_basis_points = 200_u64
-        + u64::try_from(completed / 10)
-            .unwrap_or(u64::MAX)
-            .saturating_mul(10)
-            .min(200);
+    let bonus_basis_points = animus_mastery_bonus_basis_points(completed);
     let base = u128::from(base);
     let experience = base + base * u128::from(bonus_basis_points) / 10_000;
     u64::try_from(experience).unwrap_or(u64::MAX)
+}
+
+/// Bonus for a mastered species, expressed in basis points (100 = 1%).
+#[must_use]
+pub fn animus_mastery_bonus_basis_points(completed: usize) -> u16 {
+    200 + (completed / 10).min(20) as u16 * 10
 }
 
 /// A kill the Bestiary descendant settled without an error.

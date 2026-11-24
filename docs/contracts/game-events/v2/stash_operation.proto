@@ -28,7 +28,7 @@ message StashOperationV1 {
  uint32 interpretation_revision = 1; // schema1: 1; schema2: 2
  uint32 conversion_kind = 2; // schema1: 1 stow or 2 withdraw; schema2: 3 Task Board consumption; closed per schema
  bytes intent = 3; // schema1: canonical native stash intent <=48 bytes; schema2: original Task Board Deliver command <=192 bytes
- repeated StashItemLineV1 items = 4; // schema1: one input OR 1..20 outputs; schema2: empty
+ repeated StashItemLineV1 items = 4; // schema1: 1..20 inputs of one asset OR 1..20 outputs; schema2: empty
  StashValueLineV1 value = 5; // exactly one, same definition/revision as every item
  optional string house_key = 6; // named House stow/withdraw only; both House fields present together
  optional uint64 house_scope_ownership_generation = 7; // positive current House generation; absent for Task Board

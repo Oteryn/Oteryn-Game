@@ -15,6 +15,10 @@ use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
     team_finder_members::{self as wire, TeamFinderQuery, TeamFinderResult},
+    zones_nologout::{
+        CAPABILITY_SERVER_MESSAGE_CATEGORY_V1, STATE_DOMAIN_SERVER_MESSAGES, ServerMessage,
+        ServerMessageCategory, decode_server_notification,
+    },
 };
 use tokio::{
     io::{AsyncWriteExt, DuplexStream},
@@ -25,6 +29,7 @@ pub(super) struct Peer {
     stream: DuplexStream,
     pub(super) admitted: AdmittedSession,
     next: u64,
+    notices: std::collections::VecDeque<ServerMessage>,
 }
 
 impl Peer {
@@ -33,6 +38,7 @@ impl Peer {
             stream,
             admitted,
             next: admitted.continuity.next_command_id,
+            notices: std::collections::VecDeque::new(),
         }
     }
 
@@ -101,7 +107,34 @@ impl Peer {
                 assert_eq!(result.command_id, id);
                 return Ok((result.status, result.payload.to_vec()));
             }
+            self.capture_notice(&envelope)?;
         }
+    }
+
+    fn capture_notice(&mut self, envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>) -> TestResult {
+        if envelope.message_type() == MessageType::StateDelta {
+            let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+            if delta.domain_id == STATE_DOMAIN_SERVER_MESSAGES {
+                let notice = decode_server_notification(delta.payload).map_err(debug)?;
+                if notice.category == ServerMessageCategory::TeamFinder {
+                    self.notices.push_back(notice.message);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub(super) async fn expect_notice(&mut self, text: &str) -> TestResult {
+        tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            loop {
+                if let Some(message) = self.notices.pop_front() {
+                    assert_eq!(message, ServerMessage::StatusText(text.into()));
+                    return Ok::<(), Box<dyn std::error::Error>>(());
+                }
+                let frame = read_frame(&mut self.stream).await?;
+                self.capture_notice(&decode_wire_envelope(&frame).map_err(debug)?)?;
+            }
+        }).await?
     }
 
     pub(super) async fn action(
@@ -261,12 +294,16 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         imported_charms: &charms, room: &room,
     }.build();
     owner.active_generation = Some(active);
+    let mut supported = vec![6, 7, 21, 42, 200, 232];
+    if case == Case::Notices {
+        supported.extend([92, CAPABILITY_SERVER_MESSAGE_CATEGORY_V1]);
+    }
     for session in &mut admitted {
         session.continuity.selected_capabilities = SelectedCapabilities::select(
             // As in the existing S14a fixture, the synthetic entry room has no
             // bundled map. Inject the actual bundle offer into admitted sessions.
             BUNDLE_WORLD_OFFERED_CAPABILITIES,
-            &[6, 7, 21, 42, 200, 232],
+            &supported,
         )
         .filter(|selected| selected.contains(wire::CAPABILITY_TEAM_FINDER_MEMBERS_V1))
         .ok_or("bundle-world Team Finder offer")?;

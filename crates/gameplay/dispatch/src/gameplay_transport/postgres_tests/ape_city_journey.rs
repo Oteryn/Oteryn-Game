@@ -1,7 +1,7 @@
 //! The chosen Ape City recipe, with the committed World geometry and native quest catalogue.
 use super::fixture::{Harness, debug, id};
-use super::questl2_fixture::wire_sequence;
 use super::quest_world_callbacks_fixtures::wire;
+use super::questl2_fixture::wire_sequence;
 use super::questpc8_authored_programmes_fixtures::{object_target, step, use_target};
 use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
@@ -12,7 +12,10 @@ use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use crate::map::overlay::TilePos;
-use oteryn_gameplay_quests::quest::{loader::load_embedded_quest_state, world_callbacks::{self, Position}};
+use oteryn_gameplay_quests::quest::{
+    loader::load_embedded_quest_state,
+    world_callbacks::{self, Position},
+};
 use oteryn_protocol_oteryn::npc_service::{
     COMMAND_TYPE_NPC_TALK_INTENT, NpcIntentDisposition, NpcTalkIntent, decode_npc_intent_result,
     encode_npc_talk_intent,
@@ -235,8 +238,7 @@ async fn scenario(admin: String) -> TestResult {
     owner.active_generation = Some(generation);
     owner.movement_cells = (&cells).into();
     owner.premium_coordinator = Some(&premium);
-    let lowered = load_embedded_quest_state("content-1")
-        .map_err(debug)?;
+    let lowered = load_embedded_quest_state("content-1").map_err(debug)?;
     let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
     let quest_index = u32::try_from(
         journal
@@ -257,14 +259,21 @@ async fn scenario(admin: String) -> TestResult {
         .await
         .map_err(|()| "quest fence")?
         .ok_or("current quest fence")?;
-    owner.runtime.lock().await.bind_attacker_lease(
-        deps.actor,
-        admitted.game_session_id,
-        crate::foundation::CharacterLease::new(
-            crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
-            fence.character_lease_generation,
-        ).map_err(debug)?,
-    ).map_err(debug)?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            deps.actor,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
     admitted.item_fence = Some(fence.item_fence());
     h.root
         .initialize_admission_equipment(
@@ -468,6 +477,11 @@ impl Journey<'_, '_, '_, '_> {
         command: u64,
     ) -> TestResult {
         self.approach(position).await?;
+        self.owner.clock_origin = self
+            .owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("Snake Destroyer use clock")?;
         let target = object_target(self.owner, position, ordinal)?;
         let reference = self
             .owner
@@ -550,11 +564,19 @@ impl Journey<'_, '_, '_, '_> {
     async fn reopen_catacombs_gate_after_timeout(&mut self) -> TestResult {
         self.owner.clock_origin -= std::time::Duration::from_secs(11);
         let map = self.owner.bundle_map().ok_or("journey World")?;
-        assert!(map.facts.expire_movement_items(self.owner.owner_now().get()) > 0);
+        assert!(
+            map.facts
+                .expire_movement_items(self.owner.owner_now().get())
+                > 0
+        );
         self.use_object(GATE, UseDisposition::Committed).await?;
         self.owner.clock_origin -= std::time::Duration::from_secs(600);
         let map = self.owner.bundle_map().ok_or("journey World")?;
-        assert!(map.facts.expire_movement_items(self.owner.owner_now().get()) > 0);
+        assert!(
+            map.facts
+                .expire_movement_items(self.owner.owner_now().get())
+                > 0
+        );
         for lever in LEVERS {
             self.use_object(lever, UseDisposition::Committed).await?;
         }
@@ -601,7 +623,11 @@ impl Journey<'_, '_, '_, '_> {
         let expired = self.h.root.advance_test_quest_clock(301)?;
         self.owner.clock_origin -= std::time::Duration::from_secs(301);
         let map = self.owner.bundle_map().ok_or("journey World")?;
-        assert!(map.facts.expire_movement_items(self.owner.owner_now().get()) >= AMPHORAS.len());
+        assert!(
+            map.facts
+                .expire_movement_items(self.owner.owner_now().get())
+                >= AMPHORAS.len()
+        );
         let retry = self.next();
         self.use_snake_destroyer(AMPHORAS[0], retry).await?;
         assert_eq!(self.track("amphora-window").await?, expired);

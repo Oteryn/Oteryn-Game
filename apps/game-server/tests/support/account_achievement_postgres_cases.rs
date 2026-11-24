@@ -861,6 +861,8 @@ fn a_fact_under_a_key_absent_from_the_catalogue_is_an_integrity_fault() -> TestR
         let facts = read_facts(root, &authority, ACCOUNT).await?;
         assert_eq!(facts.len(), 2);
         let request = AccountAchievementsRequest {
+            completion:
+                oteryn_protocol_oteryn::account_achievements::AchievementCompletion::Completed,
             account_id: id(ACCOUNT),
             page: 0,
             game_session_id: id(50),

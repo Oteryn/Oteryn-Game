@@ -798,9 +798,21 @@ impl Journey<'_, '_, '_, '_> {
             false,
         )
         .await?;
+        self.owner.states.loop_ground.invalidate();
         let wood: sqlx::types::Uuid = sqlx::query_scalar(
-            "SELECT item_instance_id FROM game_item_instances WHERE definition_production_key=$1 AND quantity=2 AND lifecycle=1 LIMIT 1",
-        ).bind(item(5901)).fetch_one(&self.h.pool).await?;
+            "SELECT item_instance_id FROM game_item_instances
+             JOIN game_item_ground_locations USING (item_instance_id)
+             WHERE definition_production_key = $1 AND quantity = 2 AND lifecycle = 1
+                AND spatial_position = $2",
+        )
+        .bind(item(5901))
+        .bind(crate::durability::map_item_mint_audit::map_item_spatial_position(
+            u16::try_from(cell.x)?,
+            u16::try_from(cell.y)?,
+            -i8::try_from(cell.floor)?,
+        ))
+        .fetch_one(&self.h.pool)
+        .await?;
         let mut view = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
         view.snapshot(
             self.owner

@@ -26,6 +26,8 @@ pub enum PublicDeathCause {
     PlayerSession {
         game_session_id: [u8; 16],
     },
+    /// The hit owner proves a creature source kind, even after its identity is gone.
+    UnidentifiedCreature,
     Creature {
         key: [u8; 128],
         key_len: u8,
@@ -111,6 +113,7 @@ impl PublicDeathCause {
         match self {
             Self::Player { .. } | Self::PlayerSession { .. } => Some("player"),
             Self::Creature { .. } => self.creature_parts().map(|(key, _)| key),
+            Self::UnidentifiedCreature => Some("unknown"),
             Self::Unpublishable { .. } => self.unpublishable_key(),
         }
     }
@@ -119,7 +122,7 @@ impl PublicDeathCause {
     ) -> Option<oteryn_gameplay_foundation::foundation::condition::ConditionHistoricalSource> {
         use oteryn_gameplay_foundation::foundation::condition::ConditionHistoricalSource as H;
         match self {
-            Self::Player { .. } => None, // player fields already retain their accepted lineage.
+            Self::Player { .. } | Self::UnidentifiedCreature => None,
             Self::PlayerSession { game_session_id } => Some(H::PlayerSession {
                 game_session_id: *game_session_id,
             }),
@@ -148,6 +151,18 @@ impl PublicDeathCause {
             } => Self::unpublishable(*source_digest, creature_key.as_deref()),
         }
     }
+    /// Use frozen attribution when available and otherwise retain the source kind
+    /// the condition owner already proved.
+    pub fn from_condition<S>(
+        provenance: &oteryn_gameplay_foundation::foundation::condition::ConditionProvenance<S>,
+    ) -> Option<Self> {
+        use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
+        provenance.historical_source.as_ref().map(Self::from_historical_source).or(
+            (provenance.source_kind == ConditionSourceKind::Creature)
+                .then_some(Self::UnidentifiedCreature)
+        )
+    }
+
     fn creature_parts(&self) -> Option<(&str, &str)> {
         let Self::Creature {
             key,
@@ -191,6 +206,7 @@ impl PublicDeathCause {
                 semantic.push(2);
                 semantic.extend_from_slice(game_session_id);
             }
+            Self::UnidentifiedCreature => semantic.push(5),
             Self::Creature { .. } => {
                 let (key, name) = self
                     .creature_parts()
@@ -212,6 +228,7 @@ impl PublicDeathCause {
 pub(super) struct PreparedPlayers {
     players: Vec<(u8, String, CharacterId)>,
     most_damage: Option<CharacterId>,
+    final_player: Option<[u8; 16]>,
 }
 
 pub(super) async fn prepare_names(
@@ -263,6 +280,7 @@ pub(super) async fn prepare_names(
     Ok(PreparedPlayers {
         players,
         most_damage,
+        final_player,
     })
 }
 
@@ -334,6 +352,15 @@ pub(super) async fn capture(
             .bind(occurrence.as_bytes().as_slice()).bind(ordinal).bind(key).bind(name).execute(&mut **tx).await?;
         ordinal += 1;
     }
+    use oteryn_protocol_oteryn::death_protection::FinalBlowKind;
+    let final_blow_kind = match cause {
+        None => FinalBlowKind::Environment,
+        Some(PublicDeathCause::Creature { .. } | PublicDeathCause::Unpublishable { .. } | PublicDeathCause::UnidentifiedCreature) => FinalBlowKind::Creature,
+        Some(PublicDeathCause::Player { .. } | PublicDeathCause::PlayerSession { .. }) => FinalBlowKind::Player,
+    };
+    if final_blow_kind == FinalBlowKind::Player {
+        capture_player_kill_credits(tx, occurrence, &players).await?;
+    }
     for (_, name, character) in players.players {
         if players.most_damage == Some(character) {
             most_damage = Some(ordinal);
@@ -342,8 +369,45 @@ pub(super) async fn capture(
             .bind(occurrence.as_bytes().as_slice()).bind(ordinal).bind(character.as_bytes().as_slice()).bind(name).execute(&mut **tx).await?;
         ordinal += 1;
     }
-    sqlx::query("INSERT INTO game_public_death_classifications(death_occurrence_id,pvp,publishable,killer_key,most_damage_ordinal) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5)")
-        .bind(occurrence.as_bytes().as_slice()).bind(pvp).bind(!matches!(cause,Some(PublicDeathCause::Unpublishable {..}))).bind(cause.as_ref().map_or(Some("unknown"),PublicDeathCause::killer_key)).bind(most_damage).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_public_death_classifications(death_occurrence_id,pvp,publishable,killer_key,most_damage_ordinal,final_blow_kind) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5,$6)")
+        .bind(occurrence.as_bytes().as_slice()).bind(pvp).bind(!matches!(cause,Some(PublicDeathCause::Unpublishable {..}))).bind(cause.as_ref().map_or(Some("unknown"),PublicDeathCause::killer_key)).bind(most_damage).bind(final_blow_kind as i16).execute(&mut **tx).await?;
+    Ok(())
+}
+
+/// A justified hit still has the same native final-blow and contribution owners.
+async fn capture_player_kill_credits(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    occurrence: PlayerDeathOccurrence,
+    players: &PreparedPlayers,
+) -> std::result::Result<(), DurabilityError> {
+    let Some(final_player) = players.final_player else {
+        return Ok(());
+    };
+    let mut cohort = vec![final_player.to_vec()];
+    cohort.extend(players.players.iter()
+        .map(|(_, _, character)| character.as_bytes())
+        .filter(|character| **character != final_player)
+        .map(|character| character.to_vec()));
+    // Character ids themselves are retained so stepping away, relogging, a rename,
+    // or expiry of the punishment ledger cannot change kill credit.
+    sqlx::query(
+        "INSERT INTO game_character_player_kill_credits
+           (character_id, death_occurrence_id, committed_at, final_blow)
+         SELECT r.character_id, d.death_occurrence_id, d.committed_at, c.ordinal=1
+         FROM game_character_death_receipts d
+         JOIN game_character_roots killer
+           ON killer.character_id=encode($2,'hex')::uuid
+          AND killer.world_id=d.death_world_id AND killer.character_id<>d.character_id
+         CROSS JOIN unnest($3::bytea[]) WITH ORDINALITY AS c(id,ordinal)
+         JOIN game_character_roots r ON r.character_id=encode(c.id,'hex')::uuid
+          AND r.world_id=d.death_world_id AND r.character_id<>d.character_id
+         WHERE d.death_occurrence_id=encode($1,'hex')::uuid",
+    )
+    .bind(occurrence.as_bytes().as_slice())
+    .bind(final_player.as_slice())
+    .bind(cohort)
+    .execute(&mut **tx)
+    .await?;
     Ok(())
 }
 

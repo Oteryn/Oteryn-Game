@@ -1,5 +1,6 @@
 //! APP-3 appearance selection and connection-local appearance dictionary.
 mod catalogue;
+pub mod familiar;
 mod mappings;
 mod selection;
 mod wire;

@@ -334,10 +334,12 @@ pub(super) async fn exercise(
     use_object(owner, a, pos(33056, 31527, 12), 2, Committed).await?;
     at(owner, a, MINE_EXIT).await?;
     use_object(owner, a, pos(33064, 31489, 15), 2, Committed).await?;
+    at(owner, a, MINE_EXIT).await?;
     use_object(owner, a, pos(33064, 31489, 15), 2, Committed).await?;
     at(owner, a, MINE_PLATFORM).await?;
     state(h, 11, ("mine_leader", 0), 0).await?;
     use_object(owner, a, pos(33056, 31527, 12), 2, Committed).await?;
+    at(owner, a, MINE_PLATFORM).await?;
     use_object(owner, a, pos(33056, 31527, 12), 2, Committed).await?;
     at(owner, a, MINE_EXIT).await?;
     travel_to(
@@ -349,7 +351,7 @@ pub(super) async fn exercise(
         },
     )
     .await?;
-    defeat_mine_leader(owner, a).await?;
+    defeat_mine_leader(owner, a, h).await?;
     state(h, 12, ("mine_leader", 1), 0).await?;
     travel_to(owner, a, MINE_EXIT).await?;
     use_object(owner, a, pos(33064, 31489, 15), 2, Committed).await?;
@@ -660,29 +662,72 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
 async fn defeat_mine_leader(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     a: &mut AdmittedSession,
+    h: &Harness,
 ) -> TestResult {
     use oteryn_protocol_oteryn::attack::{
         COMMAND_TYPE_ATTACK_TARGET_INTENT, COMMAND_TYPE_FIGHT_MODES_INTENT, FightMode, FightModes,
         encode_attack_target_intent, encode_fight_modes_intent,
     };
     let player = a.runtime_actor.ok_or("player")?;
+    let fence = owner
+        .current_quest_fence(a.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("mine leader combat fence")?;
+    let build = owner
+        .root
+        .read_character_build_state(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?;
+    super::annihilator_combat::prepare_supplies(owner, a, &build, false).await?;
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
         .ok_or("creature policies")?;
     let scheduled = farmine_world_spawn()?;
+    let spawn_key = scheduled.key.clone();
     {
         let mut runtime = owner.runtime.lock().await;
-        native.install_companion_policies(&mut runtime).map_err(debug)?;
-        runtime.configure_boss_spawns(vec![scheduled]).map_err(debug)?;
+        native
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
+        runtime
+            .configure_boss_spawns(vec![scheduled])
+            .map_err(debug)?;
     }
     crate::durability::DurabilityRoot::with_background_holder(
         owner.boss_spawn_pass(&mut std::collections::BTreeMap::new()),
-    ).await.map_err(debug)?;
+    )
+    .await
+    .map_err(debug)?;
+    // The donor spawn's 90-second deadline uses PostgreSQL wall time. Advance
+    // only the fixture's initial DUE clock and let the normal owner claim it.
+    let due = sqlx::query(
+        "UPDATE game_boss_spawn_clocks SET due_at = 0
+         WHERE world_id = encode($1, 'hex')::uuid AND channel_id = encode($2, 'hex')::uuid
+            AND spawn_key = $3 AND cycle = 0 AND state = 1 AND due_at IS NOT NULL",
+    )
+    .bind(owner.world_id.as_bytes().as_slice())
+    .bind(owner.channel_id.as_bytes().as_slice())
+    .bind(spawn_key)
+    .execute(&h.pool)
+    .await?;
+    assert_eq!(
+        due.rows_affected(),
+        1,
+        "the captured mine leader is scheduled"
+    );
+    crate::durability::DurabilityRoot::with_background_holder(
+        owner.boss_spawn_pass(&mut std::collections::BTreeMap::new()),
+    )
+    .await
+    .map_err(debug)?;
     let (actor, target) = {
         let mut runtime = owner.runtime.lock().await;
         let actor = runtime
-            .boss_spawns().first().and_then(|spawn| spawn.actor)
+            .boss_spawns()
+            .first()
+            .and_then(|spawn| spawn.actor)
             .ok_or("scheduled mine leader was not realized")?;
         // The test starts at the lethal swing. Attacking, capturing the principal
         // and settling both combat and the quest receipt use their native owners.
@@ -850,7 +895,13 @@ pub(super) fn farmine_world_spawn() -> TestResult<crate::foundation::BossSpawn> 
     let points: Vec<_> = table
         .sources
         .iter()
-        .flat_map(|source| source.points.iter().enumerate().map(move |(ordinal, point)| (source, ordinal, point)))
+        .flat_map(|source| {
+            source
+                .points
+                .iter()
+                .enumerate()
+                .map(move |(ordinal, point)| (source, ordinal, point))
+        })
         .filter(|(_, _, point)| point.creature == index)
         .collect();
     assert_eq!(points.len(), 1);
@@ -863,7 +914,9 @@ pub(super) fn farmine_world_spawn() -> TestResult<crate::foundation::BossSpawn> 
         key: format!("{}:{ordinal}", source.key),
         creature: BOSS.into(),
         position: local(BOSS_CELL),
-        policy: point.boss_policy.ok_or("scheduled mine leader boss policy")?,
+        policy: point
+            .boss_policy
+            .ok_or("scheduled mine leader boss policy")?,
         actor: None,
         cycle: 0,
         pending_claim: false,

@@ -167,10 +167,14 @@ async fn install(
     let model = catalogue.service_model_for_project().map_err(debug)?;
     let allowed: std::collections::BTreeSet<_> =
         model.npcs().keys().map(|r| r.key.clone()).collect();
-    owner
-        .states
-        .chat
-        .install_npc_talk(Arc::new(NpcTalkBook::from_model(&model)));
+    let native_npcs = if production {
+        &["oteryn:npc.riddler"][..]
+    } else {
+        &[]
+    };
+    owner.states.chat.install_npc_talk(Arc::new(
+        NpcTalkBook::from_model_with_native_quests(&model, native_npcs),
+    ));
     owner.states.chat.admit(
         admitted.game_session_id,
         "Paradox pilgrim",
@@ -252,6 +256,16 @@ pub(super) async fn conversation(
     npc: EntityRef,
     words: &[&str],
 ) -> TestResult<Vec<Reply>> {
+    conversation_with_checkpoint(owner, admitted, npc, words, async |_| Ok(())).await
+}
+
+pub(super) async fn conversation_with_checkpoint(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    words: &[&str],
+    mut checkpoint: impl AsyncFnMut(usize) -> TestResult,
+) -> TestResult<Vec<Reply>> {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     owner.clock_origin = owner
         .clock_origin
@@ -289,8 +303,8 @@ pub(super) async fn conversation(
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let generation = admitted.continuity.connection_generation;
     let labels = words.iter().map(|w| (*w).to_owned()).collect::<Vec<_>>();
-    let reader = tokio::spawn(async move {
-        let result: TestResult<Vec<Reply>> = async {
+    let reader = async move {
+        async {
             let mut replies = Vec::new();
             let mut window = tokio::time::Instant::now();
             for (index, frame) in frames.iter().enumerate() {
@@ -341,18 +355,20 @@ pub(super) async fn conversation(
                 if (index + 1) % 4 == 0 {
                     window = tokio::time::Instant::now();
                 }
+                checkpoint(index + 1).await?;
             }
             client.shutdown().await?;
             let mut drain = Vec::new();
             client.read_to_end(&mut drain).await?;
             Ok(replies)
         }
-        .await;
-        result.map_err(|e| e.to_string())
-    });
-    let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
-    drop(server);
-    let replies = reader.await?.map_err(std::io::Error::other)?;
+        .await
+    };
+    let active = *admitted;
+    let admission = &*owner;
+    let server = async move { serve_admitted(&mut server, active, admission, IDLE_LIVENESS).await };
+    let (end, replies): (_, TestResult<Vec<Reply>>) = tokio::join!(server, reader);
+    let replies = replies?;
     if let ConnectionEnd::AdmittedThenDisconnected(a) | ConnectionEnd::AdmittedThenClosed(a, _) =
         end
     {

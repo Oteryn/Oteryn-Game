@@ -268,6 +268,10 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 .map_err(|_| DurabilityError::Unavailable)?
                 .0;
                 if next.vitals().health == 0 {
+                    public_cause =
+                        crate::durability::character_death::PublicDeathCause::from_condition(
+                            &tick.provenance,
+                        );
                     break;
                 }
                 continue;

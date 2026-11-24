@@ -334,7 +334,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             3, 4, 6, 13, 15, 25, 49, 51, 86, 115, 165, 502, 508, 509, 511,
         ],
         Case::ResidentExpiryTick => &[3, 4, 6, 15, 49, 51, 86, 115, 165, 508, 509, 511],
-        Case::ResidentLetter => &[4, 6, 15, 49, 86, 115, 508, 509, 511],
+        Case::ResidentLetter => &[4, 6, 15, 49, 86, 115, 508, 509, 511, 596],
         Case::ResidentMail => &[4, 6, 86, 115],
         Case::ResidentEquip | Case::ResidentTimedEquip(_) => &[4, 6, 12, 15, 86],
         Case::ResidentMount | Case::ResidentAppearanceRevoked => &[6, 13, 25, 49, 86, 502],

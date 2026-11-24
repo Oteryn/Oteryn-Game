@@ -23,8 +23,9 @@ use std::sync::Arc;
 
 use oteryn_gameplay_quests::quest::log::{ProjectedLine, QuestLogContent, QuestLogFacts};
 use oteryn_protocol_oteryn::quest_log::{
-    MAX_QUEST_LINE_BYTES, MAX_QUEST_LOG_QUERIES_PER_SECOND, MAX_TRACKED_QUESTS, QuestLine,
-    QuestListEntry, QuestLog, QuestLogQuery, QuestLogView, QuestMission, encode_quest_log,
+    MAX_QUEST_LINE_BYTES, MAX_QUEST_LOG_QUERIES_PER_SECOND, MAX_TRACKED_MISSIONS,
+    MAX_TRACKED_QUESTS, QuestLine, QuestListEntry, QuestLog, QuestLogQuery, QuestLogView,
+    QuestMission, TrackedMission, encode_quest_log, encode_quest_log_missions,
     worst_case_line_bytes,
 };
 use tokio::time::{Duration, Instant};
@@ -85,12 +86,49 @@ impl TrackedQuests {
     }
 }
 
+/// The mission selection survives connection replacement like the legacy tracker.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TrackedMissions {
+    pairs: [TrackedMission; MAX_TRACKED_MISSIONS],
+    len: usize,
+}
+
+impl TrackedMissions {
+    const NONE: Self = Self {
+        pairs: [TrackedMission {
+            quest_index: 0,
+            mission_index: 0,
+        }; MAX_TRACKED_MISSIONS],
+        len: 0,
+    };
+
+    fn new(pairs: &[TrackedMission]) -> Option<Self> {
+        let mut tracked = Self::NONE;
+        tracked.pairs.get_mut(..pairs.len())?.copy_from_slice(pairs);
+        tracked.len = pairs.len();
+        Some(tracked)
+    }
+
+    fn project(self, source: &QuestLogSource) -> Vec<QuestLine> {
+        self.pairs[..self.len]
+            .iter()
+            .filter_map(|pair| {
+                let mut line = line(source.content.0.line(&*source.copy, pair.quest_index)?);
+                line.missions
+                    .retain(|mission| mission.mission_index == pair.mission_index);
+                (!line.missions.is_empty()).then_some(line)
+            })
+            .collect()
+    }
+}
+
 /// What one GameSession keeps of its quest log across connections.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct QuestLogContinuity {
     /// The highest domain 16 revision the session may have seen.
     pub revision: u64,
     pub tracked: TrackedQuests,
+    missions: TrackedMissions,
     pub queries: QueryWindow,
 }
 
@@ -98,6 +136,7 @@ impl QuestLogContinuity {
     pub const FRESH: Self = Self {
         revision: 0,
         tracked: TrackedQuests::NONE,
+        missions: TrackedMissions::NONE,
         queries: QueryWindow::EMPTY,
     };
 }
@@ -183,6 +222,7 @@ pub struct QuestLogState {
     /// The payload last sent.
     sent: Vec<u8>,
     include_map_marks: bool,
+    mission_tracking: bool,
 }
 
 fn line(projected: ProjectedLine) -> QuestLine {
@@ -268,26 +308,76 @@ impl QuestLogState {
         continuity: &mut QuestLogContinuity,
         observation: QuestLogObservation,
         include_map_marks: bool,
+        mission_tracking: bool,
     ) -> Result<(Self, QuestLogDomain), QuestLogFault> {
         let source = match observation {
             QuestLogObservation::Changed(source) => Some(source),
             QuestLogObservation::Unavailable | QuestLogObservation::Unchanged => None,
         };
-        let payload = encode_quest_log(&project(
-            source.as_ref(),
-            None,
-            continuity.tracked.as_slice(),
+        let mut state = Self {
+            version: source.as_ref().map(|source| source.version),
             include_map_marks,
-        ))
-        .map_err(|_| QuestLogFault)?;
-        let to = advance(&mut continuity.revision)?;
-        let state = Self {
-            view: None,
-            version: source.map(|source| source.version),
-            sent: payload.clone(),
-            include_map_marks,
+            mission_tracking,
+            ..Self::default()
         };
+        let payload = state.encode(source.as_ref(), None, continuity)?;
+        let to = advance(&mut continuity.revision)?;
+        state.sent.clone_from(&payload);
         Ok((state, QuestLogDomain { to, payload }))
+    }
+
+    fn encode(
+        &self,
+        source: Option<&QuestLogSource>,
+        view: Option<RequestedView>,
+        continuity: &QuestLogContinuity,
+    ) -> Result<Vec<u8>, QuestLogFault> {
+        let tracked = if self.mission_tracking {
+            &[][..]
+        } else {
+            continuity.tracked.as_slice()
+        };
+        let mut log = project(source, view, tracked, self.include_map_marks);
+        if self.mission_tracking {
+            if let Some(source) = source {
+                log.tracked = continuity.missions.project(source);
+            }
+            encode_quest_log_missions(&log).map_err(|_| QuestLogFault)
+        } else {
+            encode_quest_log(&log).map_err(|_| QuestLogFault)
+        }
+    }
+
+    pub fn track_missions(
+        &mut self,
+        continuity: &mut QuestLogContinuity,
+        pairs: &[TrackedMission],
+        limit: usize,
+        observation: QuestLogObservation,
+    ) -> Option<Result<QuestLogDomain, QuestLogFault>> {
+        let QuestLogObservation::Changed(source) = observation else {
+            return None;
+        };
+        if !self.mission_tracking || pairs.len() > limit {
+            return None;
+        }
+        let missions = TrackedMissions::new(pairs)?;
+        if missions.project(&source).len() != pairs.len() {
+            return None;
+        }
+        let payload = self
+            .encode(
+                Some(&source),
+                self.view,
+                &QuestLogContinuity {
+                    missions,
+                    ..*continuity
+                },
+            )
+            .ok()?;
+        self.version = Some(source.version);
+        continuity.missions = missions;
+        Some(self.delta(continuity, payload))
     }
 
     /// The copy version this connection last projected, for the owner's change check.
@@ -318,22 +408,26 @@ impl QuestLogState {
                 (Some(RequestedView::Quest(*quest_index)), continuity.tracked)
             }
             QuestLogQuery::Track { quest_indexes } => {
-                if !quest_indexes
-                    .iter()
-                    .all(|index| content.is_listed(&*source.copy, *index))
+                if self.mission_tracking
+                    || !quest_indexes
+                        .iter()
+                        .all(|index| content.is_listed(&*source.copy, *index))
                 {
                     return None;
                 }
                 (self.view, TrackedQuests::new(quest_indexes)?)
             }
         };
-        let payload = encode_quest_log(&project(
-            Some(&source),
-            view,
-            tracked.as_slice(),
-            self.include_map_marks,
-        ))
-        .ok()?;
+        let payload = self
+            .encode(
+                Some(&source),
+                view,
+                &QuestLogContinuity {
+                    tracked,
+                    ..*continuity
+                },
+            )
+            .ok()?;
         self.view = view;
         self.version = Some(source.version);
         continuity.tracked = tracked;
@@ -350,13 +444,7 @@ impl QuestLogState {
             return Ok(None);
         };
         self.version = Some(source.version);
-        let payload = encode_quest_log(&project(
-            Some(&source),
-            self.view,
-            continuity.tracked.as_slice(),
-            self.include_map_marks,
-        ))
-        .map_err(|_| QuestLogFault)?;
+        let payload = self.encode(Some(&source), self.view, continuity)?;
         if payload == self.sent {
             return Ok(None);
         }

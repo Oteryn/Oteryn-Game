@@ -6,14 +6,28 @@ use crate::foundation::admission_authority_publication::{
 };
 use crate::foundation::{GameSessionId, GameSessionState, RuntimeScopeRefV1, WorldId};
 use oteryn_protocol_oteryn::highscores::HighscoresQuery;
-use oteryn_protocol_oteryn::highscores_catalogue::{self as wire, Entry, WorldType};
+use oteryn_protocol_oteryn::highscores_catalogue::{
+    self as wire, BattlEyeEntry, BattlEyeStatus, Entry, WorldType,
+};
 use sqlx::Row;
 use std::collections::BTreeMap;
 const SCOPES_SQL: &str = "SELECT scope_key FROM game_durability_admission_runtime_guards WHERE scope_key > $1 ORDER BY scope_key LIMIT 128";
-const POLICY_SQL: &str = "SELECT world_type,source_pin,control_role,decision_identity FROM game_spell_field_world_policies WHERE world_id=encode($1,'hex')::uuid AND world_policy_revision=$2";
+const POLICY_SQL: &str = "SELECT world_type,battleye_status,source_pin,control_role,decision_identity FROM game_spell_field_world_policies WHERE world_id=encode($1,'hex')::uuid AND world_policy_revision=$2";
 
 impl DurabilityRoot {
     pub async fn read_highscores_world_catalogue(&self) -> Result<Vec<Entry>, DurabilityError> {
+        Ok(self
+            .read_world_catalogue(false)
+            .await?
+            .into_iter()
+            .map(|row| row.entry)
+            .collect())
+    }
+
+    async fn read_world_catalogue(
+        &self,
+        include_battleye: bool,
+    ) -> Result<Vec<BattlEyeEntry>, DurabilityError> {
         let root = self.clone();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
@@ -73,9 +87,20 @@ impl DurabilityRoot {
                                 3 => WorldType::Hardcore,
                                 _ => return Err(DurabilityError::InvalidStoredState),
                             };
+                            let status = if include_battleye {
+                                match policy.try_get::<Option<i16>, _>("battleye_status")? {
+                                    None => BattlEyeStatus::Unknown,
+                                    Some(id) => u8::try_from(id)
+                                        .ok()
+                                        .and_then(BattlEyeStatus::from_id)
+                                        .ok_or(DurabilityError::InvalidStoredState)?,
+                                }
+                            } else {
+                                BattlEyeStatus::Unknown
+                            };
                             if worlds
-                                .insert(*world_id.as_bytes(), kind)
-                                .is_some_and(|old| old != kind)
+                                .insert(*world_id.as_bytes(), (kind, status))
+                                .is_some_and(|old| old != (kind, status))
                                 || worlds.len() > wire::MAX_WORLDS
                             {
                                 return Err(DurabilityError::InvalidStoredState);
@@ -84,11 +109,14 @@ impl DurabilityRoot {
                     }
                     let entries = worlds
                         .into_iter()
-                        .map(|(world, world_type)| {
-                            Ok(Entry {
-                                world: wire::WorldId::decode(&world)
-                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
-                                world_type,
+                        .map(|(world, (world_type, battleye))| {
+                            Ok(BattlEyeEntry {
+                                entry: Entry {
+                                    world: wire::WorldId::decode(&world)
+                                        .map_err(|_| DurabilityError::InvalidStoredState)?,
+                                    world_type,
+                                },
+                                battleye,
                             })
                         })
                         .collect::<Result<Vec<_>, DurabilityError>>()?;
@@ -105,6 +133,7 @@ pub async fn answer_session(
     world: WorldId,
     session: GameSessionId,
     query: Option<(HighscoresQuery, Option<WorldType>)>,
+    include_battleye: bool,
 ) -> super::highscore_snapshot::reply::HighscoresReply {
     use super::highscore_snapshot::reply::{HighscoresReply, answer_highscores};
     if served_world != world {
@@ -132,6 +161,13 @@ pub async fn answer_session(
     if current.session_state() == GameSessionState::Terminal || current.commit().world_id() != world
     {
         return HighscoresReply::Rejected;
+    }
+    if include_battleye {
+        return match root.read_world_catalogue(true).await {
+            Ok(entries) => wire::encode_battleye_catalogue(&entries)
+                .map_or(HighscoresReply::Rejected, HighscoresReply::Result),
+            Err(_) => HighscoresReply::Rejected,
+        };
     }
     let Some((query, kind)) = query else {
         return match root.read_highscores_world_catalogue().await {

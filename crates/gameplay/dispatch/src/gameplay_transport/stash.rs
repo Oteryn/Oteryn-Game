@@ -40,24 +40,7 @@ pub(super) async fn execute(
         return Some(reply);
     }
     let permit = admission.spell_lane_permit().await?;
-    let (native, reachable) = {
-        let mut runtime = admission.runtime.lock().await;
-        let states = admission.states.spell_states.lock().await;
-        (
-            native_for_move(
-                &runtime,
-                admission.active_generation,
-                states.is_dead(actor),
-                states.has_pending_spell_commit(actor, command.game_session_id),
-            ),
-            super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)
-                .as_ref()
-                .and_then(super::depot::locker)
-                .is_some(),
-        )
-    };
-    let hireling =
-        super::npc_command::hireling_services::stash_access(admission, actor, command).await;
+    let (native, reachable, hireling) = access(admission, actor, command).await;
     let reachable = reachable || hireling.is_some();
     let live_allowed = native.is_some();
     // Historical receipt identity is independent of current gameplay eligibility.
@@ -98,6 +81,14 @@ pub(super) async fn execute(
             None => {
                 if !reachable {
                     reply.outcome = StashOutcome::NoLocker;
+                    return Some(reply);
+                }
+                if intent.action.needs_stash_actions()
+                    && !admission
+                        .states
+                        .player_trades
+                        .physical_service(command.game_session_id)
+                {
                     return Some(reply);
                 }
                 if let Some(id) = hireling {
@@ -180,4 +171,73 @@ pub(super) async fn execute(
         };
     }
     Some(reply)
+}
+
+async fn access<'g>(
+    admission: &ComposedFreshAdmission<'g, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+) -> (
+    Option<&'g crate::content::native_gameplay::NativeGameplayState>,
+    bool,
+    Option<[u8; 16]>,
+) {
+    let (native, reachable) = {
+        let mut runtime = admission.runtime.lock().await;
+        let states = admission.states.spell_states.lock().await;
+        (
+            native_for_move(
+                &runtime,
+                admission.active_generation,
+                states.is_dead(actor),
+                states.has_pending_spell_commit(actor, command.game_session_id),
+            ),
+            super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)
+                .as_ref()
+                .and_then(super::depot::locker)
+                .is_some(),
+        )
+    };
+    let hireling =
+        super::npc_command::hireling_services::stash_access(admission, actor, command).await;
+    (native, reachable, hireling)
+}
+
+pub(super) async fn row_action(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: StashRowIntent,
+    row_open: bool,
+) -> Result<Option<std::num::NonZeroU32>, crate::durability::DurabilityError> {
+    let (Some(fence), Ok(command_id)) = (command.item_fence, CommandId::new(command.command_id))
+    else {
+        return Ok(None);
+    };
+    let permit = admission
+        .spell_lane_permit()
+        .await
+        .ok_or(crate::durability::DurabilityError::Unavailable)?;
+    let (native, locker_reachable, hireling) = access(admission, actor, command).await;
+    let Some(native) = native else {
+        return Ok(None);
+    };
+    let request = crate::durability::character_stash::StashRowRequest {
+        command: CommandRef::new(command.game_session_id, command_id),
+        intent,
+        row_open,
+        locker_reachable,
+        steward: hireling.map(|id| (admission.channel_id, id)),
+    };
+    admission
+        .root
+        .stash_row_action(
+            &permit,
+            admission.character,
+            admission.holder,
+            fence,
+            request,
+            native,
+        )
+        .await
 }

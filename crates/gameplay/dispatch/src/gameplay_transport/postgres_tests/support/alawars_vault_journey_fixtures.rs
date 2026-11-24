@@ -7,9 +7,8 @@ use crate::content::{CollisionClass, LogicalCell};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    FirstEntryOutcome, FreshAdmissionAuthority, LogoutReply, SessionContinuity, UseCommand,
+    FirstEntryOutcome, FreshAdmissionAuthority, LogoutReply, SessionContinuity,
 };
-use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::last_position::AdmissionPosition;
 use crate::map::floor::{Ground, resolve_landing};
 use crate::map::overlay::TilePos;
@@ -291,44 +290,88 @@ async fn use_object(
 async fn use_key(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
-    h: &Harness,
     p: Position,
     number: i32,
 ) -> TestResult {
-    let instance: Vec<u8> = sqlx::query_scalar(
-        "SELECT decode(replace(k.item_instance_id::text,'-',''),'hex')
-         FROM game_item_keys k JOIN game_quest_callback_carried(encode($1,'hex')::uuid, encode($2,'hex')::uuid) c
-         ON c.item=k.item_instance_id WHERE k.key_number=$3",
+    let reference = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| index.definition_ref("Item", "oteryn:item.tibia.i2970", "definition-r1"))
+        .ok_or("copper key definition")?;
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(NonZeroU64::MIN),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(target(owner, p, 1)?)),
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    // Both numbered keys share the same appearance. Try their projected
+    // handles, and require the door to reject the wrong number without a change.
+    for offset in 0..2 {
+        next_tick(owner)?;
+        let (next, disposition, _) = super::item_craft_fixtures::exchange_selected(
+            owner,
+            *admitted,
+            admitted.continuity.next_command_id,
+            &payload,
+            Some(reference),
+            offset,
+        )
+        .await?;
+        *admitted = next;
+        if disposition == UseDisposition::Committed {
+            return Ok(());
+        }
+        assert_eq!(disposition, UseDisposition::KeyMismatch, "key {number}");
+    }
+    Err(format!("no carried copper key opened lock {number}").into())
+}
+
+async fn take_vault_key(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use crate::gameplay_transport::{
+        connection::UseCommand,
+        item_move::{LoopMove, LoopMoveResult, LoopTarget},
+        item_view::ItemKey,
+    };
+
+    let key: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(k.item_instance_id)
+         FROM game_item_keys k JOIN game_item_container_entries c USING (item_instance_id)
+         JOIN game_item_instances bag ON bag.item_instance_id=c.parent_item_instance_id
+         WHERE k.key_number=4502 AND bag.definition_production_key='oteryn:item.tibia.i2853'",
     )
-    .bind(id(41).as_slice()).bind(owner.world_id.as_bytes().as_slice()).bind(number)
-    .fetch_one(&h.pool).await?;
-    next_tick(owner)?;
+    .fetch_one(&h.pool)
+    .await?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
-        .map_err(|()| "key fence")?
-        .ok_or("key fence")?;
-    let command = UseCommand {
-        game_session_id: admitted.game_session_id,
-        command_id: admitted.continuity.next_command_id,
-        item_fence: Some(fence.item_fence()),
-    };
-    // The connection's key-on-object route calls this with the resolved Item instance.
-    let result = owner
-        .use_key_on_door(
-            admitted.runtime_actor.ok_or("key actor")?,
-            command,
-            ItemKey::Instance(instance.as_slice().try_into()?),
-            target(owner, p, 1)?,
-        )
-        .await
-        .ok_or("key USE")?;
+        .map_err(|()| "vault key fence")?
+        .ok_or("vault key fence")?;
     assert_eq!(
-        result.disposition,
-        UseDisposition::Committed,
-        "key {number}"
+        owner
+            .move_loop_item(
+                admitted.runtime_actor.ok_or("vault key actor")?,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: 90_002,
+                    item_fence: Some(fence.item_fence()),
+                },
+                LoopMove {
+                    item: ItemKey::Instance(key.try_into().map_err(|_| "vault key identity")?),
+                    count: None,
+                    target: LoopTarget::MainBackpack,
+                    slot: None,
+                },
+            )
+            .await,
+        LoopMoveResult::Committed,
+        "the key from Alawar's bag is reachable through normal inventory custody"
     );
-    admitted.continuity.next_command_id += 1;
     Ok(())
 }
 
@@ -528,7 +571,7 @@ pub(super) async fn exercise(
     expected.assert(owner, h, "Folda key cache").await?;
 
     walk(owner, admitted, position(32036, 31642, -8)).await?;
-    use_key(owner, admitted, h, FOLDA_LOCK, 4503).await?;
+    use_key(owner, admitted, FOLDA_LOCK, 4503).await?;
     expected.tracks[0] = 3;
     expected.assert(owner, h, "Folda lock").await?;
     walk(owner, admitted, FOLDA_LOCK).await?;
@@ -559,9 +602,10 @@ pub(super) async fn exercise(
     expected
         .assert(owner, h, "key 4502 bag and side rewards")
         .await?;
+    take_vault_key(owner, admitted, h).await?;
 
     walk(owner, admitted, position(32106, 31569, -9)).await?;
-    use_key(owner, admitted, h, VAULT_LOCK, 4502).await?;
+    use_key(owner, admitted, VAULT_LOCK, 4502).await?;
     expected.tracks[0] = 6;
     expected.assert(owner, h, "vault lock").await?;
     walk(owner, admitted, VAULT_LOCK).await?;

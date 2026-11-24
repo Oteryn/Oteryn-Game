@@ -3707,9 +3707,10 @@ fn scenario_case(
                     )),
                     ..request
                 };
-                assert!(matches!(slot.commit_world_callback(owner.root, owner.character, owner.holder,
-                    stale, fresh_request, catalogue, &permit, context,
-                    None,
+                assert!(matches!(slot.commit_world_callback_with_native_and_gate(
+                    owner.root, owner.character, owner.holder,
+                    stale, fresh_request, catalogue, &permit, context, None,
+                    &owner.premium_coordinator,
                 ).await,
                     Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)));
                 drop(slot);

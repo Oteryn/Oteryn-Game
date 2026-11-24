@@ -1,0 +1,10 @@
+name=managed_container_move
+commands=6365
+transport=managed_container_move
+composed=managed_container_move
+authority=managed_container_move
+[route]
+match routing::managed_container_move::route(authority, session.admitted, command, session.item_view.as_ref(), &mut session.managed_container_move_pending).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

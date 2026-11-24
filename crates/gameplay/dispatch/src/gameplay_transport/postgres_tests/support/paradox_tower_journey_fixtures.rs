@@ -227,14 +227,22 @@ pub(super) async fn carried(
         .await
         .map_err(debug)?
         .ok_or("quest fence")?;
+    carried_for_character(h, fence.character_id, owner.world_id).await
+}
+
+async fn carried_for_character(
+    h: &Harness,
+    character_id: oteryn_gameplay_domain::domain::CharacterId,
+    world_id: crate::foundation::WorldId,
+) -> TestResult<Vec<(String, i64)>> {
     Ok(sqlx::query_as(
         "SELECT i.definition_production_key, sum(i.quantity)::bigint
          FROM game_quest_callback_carried(encode($1,'hex')::uuid, encode($2,'hex')::uuid) c
          JOIN game_item_instances i ON i.item_instance_id=c.item
          GROUP BY i.definition_production_key ORDER BY i.definition_production_key",
     )
-    .bind(fence.character_id.as_bytes().as_slice())
-    .bind(owner.world_id.as_bytes().as_slice())
+    .bind(character_id.as_bytes().as_slice())
+    .bind(world_id.as_bytes().as_slice())
     .fetch_all(&h.pool)
     .await?)
 }
@@ -525,8 +533,11 @@ async fn foods(
     for (idx, offering) in callback.offerings.iter().enumerate() {
         if z == 4 {
             tower::walk(owner, admitted, pos(offering.position.x, 31901, -4)).await?;
-        } else {
-            tower::walk(owner, admitted, pos(offering.position.x, 31904, -3)).await?;
+        } else if offering.position.x == 32479 {
+            // The lever occupies the middle tile. Approach the east altar from the south.
+            tower::walk(owner, admitted, pos(32477, 31905, -3)).await?;
+            tower::walk(owner, admitted, pos(32479, 31905, -3)).await?;
+            tower::walk(owner, admitted, pos(32479, 31904, -3)).await?;
         }
         offer(
             owner,
@@ -547,6 +558,8 @@ async fn foods(
         tower::walk(owner, admitted, pos(32479, 31904, -4)).await?;
         tower::walk(owner, admitted, pos(32478, 31905, -4)).await?;
     } else {
+        tower::walk(owner, admitted, pos(32479, 31905, -3)).await?;
+        tower::walk(owner, admitted, pos(32477, 31905, -3)).await?;
         tower::walk(owner, admitted, pos(32477, 31904, -3)).await?;
     }
     let before = carried(owner, admitted, h).await?;
@@ -633,27 +646,33 @@ async fn riddle(
     let items = carried(owner, admitted, h).await?;
     let math = format!("{RIDDLE}mathemagics");
     let colour = format!("{RIDDLE}favorite_colour");
-    for words in [
-        &["hi", "test", "yes", "goshnar"][..],
-        &["demonbunny", "tha'kull", "yes", "breath"][..],
-        &["silence", "old", "yes", "green"][..],
-        &["none"][..],
-    ] {
-        let replies = story::conversation(owner, admitted, actor, words).await?;
-        assert!(
-            replies
-                .iter()
-                .all(|r| r.disposition == NpcIntentDisposition::Ok)
-        );
-        assert_eq!(track(h, &math).await?, Some(1));
-        assert_eq!(carried(owner, admitted, h).await?, items);
-        assert!(!completed(h).await?);
-    }
-    assert_eq!(track(h, &colour).await?, Some(1));
-    let replies = story::conversation(owner, admitted, actor, &["1"]).await?;
-    assert_eq!(
-        replies.first().ok_or("riddle answer")?.disposition,
-        NpcIntentDisposition::Ok
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("quest fence")?;
+    let world = owner.world_id;
+    let words = [
+        "hi", "test", "yes", "goshnar", "demonbunny", "tha'kull", "yes", "breath", "silence",
+        "old", "yes", "green", "none", "1",
+    ];
+    let replies = story::conversation_with_checkpoint(owner, admitted, actor, &words, async |count| {
+        if matches!(count, 4 | 8 | 12 | 13) {
+            assert_eq!(track(h, &math).await?, Some(1));
+            assert_eq!(carried_for_character(h, fence.character_id, world).await?, items);
+            assert!(!completed(h).await?);
+        }
+        if count == 13 {
+            assert_eq!(track(h, &colour).await?, Some(1));
+        }
+        Ok(())
+    })
+    .await?;
+    assert_eq!(replies.len(), words.len());
+    assert!(
+        replies
+            .iter()
+            .all(|reply| reply.disposition == NpcIntentDisposition::Ok)
     );
     assert_eq!(tower::at(owner, admitted).await?, pos(32478, 31905, -1));
     assert_eq!(track(h, &math).await?, Some(2));

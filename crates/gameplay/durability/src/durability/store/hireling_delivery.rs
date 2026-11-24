@@ -9,7 +9,7 @@ use super::super::runtime_scope_assignment::NodeIncarnationProof;
 use super::codec::{DeliveryReceipt, StoreValidationError, uuid_v7};
 use super::hireling_model::{HirelingServiceDeliveryPlan, HirelingStoreAction};
 use super::storage::{
-    StoreDurabilityError, account_matches, assert_store_fence, lookup_delivery, write_receipt,
+    ReceiptPayload, StoreDurabilityError, account_matches, assert_store_fence, lookup_delivery, write_receipt,
 };
 
 impl DurabilityRoot {
@@ -55,7 +55,19 @@ impl DurabilityRoot {
             lock_admission_relations(&mut tx).await?;
             if !assert_store_fence(&mut tx,&fence,&node,Some(plan.purchase.origin_channel)).await? || !account_matches(&mut tx,&fence,&plan.identity.account_id).await? {return Ok(Err(StoreDurabilityError::AuthorityRejected))}
             if let Err(error)=super::hireling_reservation::apply_effect(&mut tx,plan.identity.character_id,operation_id,None,&plan.purchase).await {return Ok(Err(error))}
-            let receipt=match write_receipt(&mut tx,&recovery,operation_id,&plan.identity,None,Some(&plan.purchase),None).await {Ok(v)=>v,Err(error)=>return Ok(Err(error))};
+            let receipt = match write_receipt(
+                &mut tx,
+                &recovery,
+                operation_id,
+                &plan.identity,
+                ReceiptPayload {
+                    purchase_request_id: Some(plan.purchase.purchase_request_id),
+                    ..ReceiptPayload::default()
+                },
+            ).await {
+                Ok(receipt) => receipt,
+                Err(error) => return Ok(Err(error)),
+            };
             commit_semantic_transaction(tx,deadline).await?;
             Ok(Ok(receipt))
         })).await?

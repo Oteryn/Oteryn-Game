@@ -17,8 +17,9 @@ It writes two packets and refreshes the Rust facts digest pin for the default fa
   only, written into an Unknown leaf. It names no source, so the server holds no compatibility
   data (`apps/game-server/AGENTS.md`);
 - the sources record, which only this tool reads: every source per Item, the holds, the input
-  pins and the derived `timed` flag (`charges.count` or `temporal.duration` Known). The run fails
-  when a materialized Item with an ability has no source, or when the listed flag is wrong.
+  pins and the derived `timed` flag (`charges.count` or `temporal.duration` Known). The verified
+  Global Cyclopedia capture can qualify already-materialized abilities without adding fallback rows.
+  An Item still fails validation when its materialized abilities have no qualified source.
 
 It is a separate tool so that the stats packet, whose bytes embed its compiler digest, stays
 unchanged. `--check` rebuilds both files in memory and fails on any byte difference.
@@ -55,6 +56,9 @@ SOURCES = EVIDENCE / "OTV2-20261003-equip-abilities-sources-v1.json"
 SOURCES_SCHEMA = "OTERYN_EQUIP_ABILITY_SOURCES/v1"
 CANARY = ROOT / "imports" / "canary" / "items-xml" / "items.xml"
 CANARY_MANIFEST = ROOT / "imports" / "canary" / "items-xml" / "manifest.json"
+GLOBAL_CAPTURE_MANIFEST = (
+    "docs/reference/content-prep/item-cyclopedia-capture-1/manifest.json"
+)
 # The wiki lists only the base Power Ring; Canary's equip pair identifies its worn form.
 # Monk Vocation Update 2025-04-08, TibiaWiki Power Ring history: +6 -> +4.
 PAIRED_MODIFIER_BASES = {3087: 3050}
@@ -243,9 +247,10 @@ ABILITY_MODIFIER_KINDS = frozenset(
 )
 
 
-def has_ability(definition):
-    """The materialized Item holds an EQUIP-0 §3.1 ability modifier or any resistance."""
+def ability_fields(definition):
+    """Select the materialized leaves that carry EQUIP-0 §3.1 abilities."""
     semantics = definition.get("semantics", {})
+    fields = {}
     for group, leaf, kinds in (
         ("skill_modifiers", "modifiers", ABILITY_MODIFIER_KINDS),
         ("protection", "resistances", None),
@@ -257,11 +262,39 @@ def has_ability(definition):
         if rows.get("state") == "KNOWN" and any(
             kinds is None or row["kind"] in kinds for row in rows["value"]
         ):
-            return True
-    return False
+            fields[f"{group}.{leaf}"] = rows
+    return fields
 
 
-def ability_sources(snapshot, canary, item_ids, definitions):
+def global_ability_sources(definitions):
+    """Replay the same verified capture and compare the materialized ability leaves."""
+    sys.path.insert(0, str(ROOT / "tools/content-migration"))
+    from import_cyclopedia_global import apply_stats, item_id, load_capture
+
+    capture = load_capture(ROOT)
+    sources = {}
+    for key, definition in definitions.items():
+        fields = ability_fields(definition)
+        row = capture.get(item_id({"key": key}))
+        if not fields or row is None:
+            continue
+        basic = {
+            key: row["basic"][key]
+            for key in ("Skill Boost", "Protection")
+            if key in row["basic"]
+        }
+        projected = {"semantics": {}}
+        apply_stats(projected, basic, Counter())
+        if ability_fields(projected) == fields:
+            sources[key] = {
+                "class": "TIBIA_GLOBAL_CYCLOPEDIA",
+                "captured_item_id": row["id"],
+                "values": basic,
+            }
+    return sources
+
+
+def ability_sources(snapshot, canary, item_ids, definitions, *, global_sources=None):
     """Every source per Item, the timed flag, the fallback rows and the holds."""
     wiki = {
         record["item_id"]: record["observations"]
@@ -387,11 +420,21 @@ def ability_sources(snapshot, canary, item_ids, definitions):
             }
         )
     listed = {item["item_key"] for item in items}
-    unsourced = sorted(
-        key
-        for key, definition in definitions.items()
-        if key not in listed and has_ability(definition)
-    )
+    unsourced = []
+    for key, definition in sorted(definitions.items()):
+        if key in listed or not ability_fields(definition):
+            continue
+        if global_sources is None or key not in global_sources:
+            unsourced.append(key)
+            continue
+        items.append(
+            {
+                "item_key": key,
+                "timed": timed(definition),
+                "sources": [global_sources[key]],
+                "fallback": [],
+            }
+        )
     if unsourced:
         raise ValueError(f"materialized abilities without a source: {unsourced[:5]}")
     # EQUIP-0 §2 expected Canary speed in a doubled unit; the pinned items.xml agrees 1:1 with
@@ -408,10 +451,14 @@ def dump(document):
     ).encode("utf-8")
 
 
-def output_bytes(snapshot, item_ids, definitions, packet_data, canary=None):
+def output_bytes(
+    snapshot, item_ids, definitions, packet_data, canary=None, *, global_sources=None
+):
     """(facts packet, sources record); `packet_data` is the committed stats packet."""
     canary = load_canary_top_level() if canary is None else canary
-    items, holds, speed_pairs = ability_sources(snapshot, canary, item_ids, definitions)
+    items, holds, speed_pairs = ability_sources(
+        snapshot, canary, item_ids, definitions, global_sources=global_sources
+    )
     facts = [
         {"item_key": item["item_key"], **row}
         for item in items
@@ -446,6 +493,18 @@ def output_bytes(snapshot, item_ids, definitions, packet_data, canary=None):
             },
             "source": {
                 "canary": canary_pin(),
+                **(
+                    {
+                        "global_capture": {
+                            "path": GLOBAL_CAPTURE_MANIFEST,
+                            "sha256": hashlib.sha256(
+                                (ROOT / GLOBAL_CAPTURE_MANIFEST).read_bytes()
+                            ).hexdigest(),
+                        }
+                    }
+                    if global_sources is not None
+                    else {}
+                ),
                 "stats_packet": {
                     "path": str(OUTPUT.relative_to(ROOT)),
                     "sha256": hashlib.sha256(packet_data).hexdigest(),
@@ -477,14 +536,16 @@ def main(argv=None):
     parser.add_argument("--sources", type=Path, default=SOURCES)
     args = parser.parse_args(argv)
     snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+    definitions = physical_field_inputs()[0]
     outputs = list(
         zip(
             (args.facts, args.sources),
             output_bytes(
                 snapshot,
                 content_item_ids(),
-                physical_field_inputs()[0],
+                definitions,
                 OUTPUT.read_bytes(),
+                global_sources=global_ability_sources(definitions),
             ),
         )
     )

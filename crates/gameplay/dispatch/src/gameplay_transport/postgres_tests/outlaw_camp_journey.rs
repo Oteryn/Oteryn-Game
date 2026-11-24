@@ -123,11 +123,22 @@ async fn journey(admin: String) -> TestResult {
         &|_| true,
     )?;
     let cells = world
-        .movement_cells(deps.room.movement_cells())
+        .movement_cells(activated.qualified_room().movement_cells())
         .map_err(debug)?;
     let server_digest = generation.identity().server_artifact_digest();
     let client_digest = generation.identity().client_artifact_digest();
-    let frame = activated.frame_binding().digest();
+    let frame = world.frame_binding_digest(admitted.world_id);
+    let start = crate::content::NativeEntryStart {
+        x: i32::from(START.x),
+        y: i32::from(START.y),
+        floor: -i16::from(START.floor),
+    };
+    deps.combat_room = Some(
+        activated
+            .qualified_room()
+            .bundle_view(cells.clone(), frame, world.map_revision_digest(), start)
+            .ok_or("Outlaw Camp bundle room")?,
+    );
     let pin = ChannelContentPin::from_activation(
         admitted.world_id,
         1,
@@ -135,11 +146,7 @@ async fn journey(admin: String) -> TestResult {
         client_digest,
         frame,
         world.map_revision_digest(),
-        (
-            i32::from(START.x),
-            i32::from(START.y),
-            -i16::from(START.floor),
-        ),
+        (start.x, start.y, start.floor),
     );
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         admitted.world_id,
@@ -160,12 +167,18 @@ async fn journey(admin: String) -> TestResult {
     runtime
         .initialize_first_entry_position(deps.actor)
         .map_err(debug)?;
-    deps.runtime = tokio::sync::Mutex::new(runtime);
-
     let current = FreshAdmissionStore::from_root(h.root.clone())
         .current_session_at(admitted.game_session_id)
         .await?
         .0;
+    runtime
+        .bind_attacker_lease(
+            deps.actor,
+            admitted.game_session_id,
+            current.current_character_lease(),
+        )
+        .map_err(debug)?;
+    deps.runtime = tokio::sync::Mutex::new(runtime);
     let fence = crate::gameplay_transport::item_fence_of(current).ok_or("item fence")?;
     sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
@@ -290,24 +303,29 @@ async fn journey(admin: String) -> TestResult {
     assert_snapshot(&h, &owner, &admitted, &keys, (2, 1, false)).await?;
 
     let chest = target(&owner, placement_key(CHEST, 2).ok_or("treasure placement")?)?;
-    let before_terminal = admitted;
-    let command = before_terminal.continuity.next_command_id;
+    let command = admitted.continuity.next_command_id;
     assert_eq!(
         use_object(&mut owner, &mut admitted, command, &chest).await?,
         UseDisposition::Committed
     );
     assert_snapshot(&h, &owner, &admitted, &keys, (3, 1, true)).await?;
+    let commands = std::mem::take(
+        &mut Arc::get_mut(&mut owner.states)
+            .ok_or("isolated Outlaw owner state")?
+            .command_ingress,
+    );
     drop(owner);
 
-    // The terminal socket has closed. Rebuild the transport owner and re-admit the
-    // durable quest copy for a new connection from the last acknowledged
-    // command boundary. The terminal reply is treated as lost.
-    admitted = before_terminal;
+    // Reload the durable quest copy while retaining the Channel's command stream.
+    // The reconnecting client resends the original command after losing its reply.
     let mut reconnect = deps.owner(&h, &authority);
     reconnect.active_generation = Some(generation);
     reconnect.quest_catalogue = Some(catalogue);
     reconnect.quest_log_content = Some(log);
     reconnect.movement_cells = (&cells).into();
+    Arc::get_mut(&mut reconnect.states)
+        .ok_or("isolated Outlaw reconnect state")?
+        .command_ingress = commands;
     reconnect.admit_progression_session(&mut admitted).await;
     deps.initialize(&reconnect).await;
     reconnect.admit_quest_session(&admitted).await;

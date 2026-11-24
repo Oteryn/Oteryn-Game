@@ -136,6 +136,7 @@ pub(super) async fn exercise(
         "shared-budget retry moved without another think"
     );
     let home_due = table.step_due_for_test(rat).ok_or("second native step")?;
+    let think_due = table.due(rat).ok_or("walkback think")?;
     table
         .drive_current_movement(
             &mut runtime,
@@ -160,8 +161,9 @@ pub(super) async fn exercise(
         "walkback movement does not run a think"
     );
     assert_eq!(table.step_due_for_test(rat), None);
-    assert!(table.due(rat).is_some_and(|due| due <= home_due));
-    let mut reader =
+    assert_eq!(table.due(rat), Some(think_due.min(home_due)));
+    // The step schedules a think so the normal think owner can transition to idle.
+    let mut idle_reader =
         NativeMonsterThinkRead::new(reader.map, native, reader.budget, home_due, false);
     let reports = table
         .run_due_current_thinks(
@@ -170,24 +172,25 @@ pub(super) async fn exercise(
             &root,
             &revisions,
             &[],
-            &mut reader,
+            &mut idle_reader,
             |runtime, table, actor, report, reader| {
                 monster_summons
                     .consume_report(runtime, table, native, actor, report, reader, home_due)
             },
         )
         .await;
-    let [(actor, report)] = reports.as_slice() else {
-        return Err("expected one think after walkback".into());
+    let [(actor, idle)] = reports.as_slice() else {
+        return Err("expected one idle think at home".into());
     };
     assert_eq!(*actor, rat);
-    assert!(report.idle);
+    assert_eq!(idle.sequence, sequence + 1);
+    assert!(idle.idle);
     assert_eq!(
         table.due(rat),
         None,
         "the idle think stops scheduling until a real player admission wakes the rat"
     );
-    drop(reader);
+    drop(idle_reader);
     tx.rollback().await?;
     Ok(())
 }

@@ -66,6 +66,13 @@ impl ItemLoopContent for WheelItemWeights<'_> {
     fn is_ammunition(&self, definition: &TypedDefinitionRef) -> bool {
         self.content.is_ammunition(definition)
     }
+    fn managed_item_category(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Option<oteryn_gameplay_items::quick_loot::LootCategory> {
+        self.content.managed_item_category(definition)
+    }
+
     fn loot_category(
         &self,
         definition: &TypedDefinitionRef,

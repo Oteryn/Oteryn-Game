@@ -362,7 +362,7 @@ async fn seal_client(
                             .iter()
                             .filter(|tile| {
                                 (tile.position.x, tile.position.y, tile.position.floor)
-                                    == (body.x, body.y, -body.floor)
+                                    == (body.x, body.y, body.floor)
                             })
                             .flat_map(|tile| &tile.items)
                             .find_map(|item| match item.origin {
@@ -553,6 +553,27 @@ pub(super) async fn exercise(
     assert_eq!(State::read(h).await?, expected);
 
     super::questpc7_native_deaths_fixtures::prepare_native_hunter(owner, admitted).await?;
+    let potion_fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("Koshei potion fence")?;
+    super::quest_world_callbacks_fixtures::input_item(
+        owner,
+        potion_fence.item_fence(),
+        &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+            position: Position {
+                x: SWITCH.x - 1,
+                y: SWITCH.y,
+                floor: SWITCH.floor,
+            },
+            item: super::annihilator_combat::PALADIN_POTION.into(),
+            count: 50,
+        },
+        175,
+        true,
+    )
+    .await?;
     move_to(owner, admitted, at(SWITCH.x - 1, SWITCH.y, SWITCH.floor)).await?;
     let switch = target(owner, SWITCH, 1)?;
     assert_eq!(
@@ -582,7 +603,7 @@ pub(super) async fn exercise(
         admitted,
         boss.actor,
         boss.generation,
-        super::annihilator_combat::KNIGHT_POTION,
+        super::annihilator_combat::PALADIN_POTION,
         ChaseMode::Chase,
     )
     .await?;

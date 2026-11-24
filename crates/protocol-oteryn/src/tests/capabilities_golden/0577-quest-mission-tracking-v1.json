@@ -1,0 +1,19 @@
+{
+  "id": 577,
+  "name": "QUEST_MISSION_TRACKING_V1",
+  "constant": "quest_log::CAPABILITY_QUEST_MISSION_TRACKING_V1",
+  "requires": [
+    16
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    6318
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

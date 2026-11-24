@@ -61,6 +61,69 @@ def admit_map_carriers(root, document):
             document['records'].append(row)
 
 
+def admit_route_scenery(root, document):
+    import authored_static_item_constructors
+    import qengine_reward_item_profiles as donor
+
+    # The Folda corridor carries stones, bloodstains, a bone and patches of ice.
+    folda = (1854, 1855, 1856, 1857, 1858, 1865, 1866, 1867,
+             2697, 2698, 3115, 6487, 6715, 6716)
+    # The New Frontier ramp, Outlaw Camp debris and Ape City jar and statue states.
+    movement = {**dict.fromkeys(folda, False), 1953: False, 6484: False,
+                4850: True, 4851: True, 4995: True, 4996: True}
+    # The captured Outlaw and Alawar placements use three locked doors. The
+    # second Alawar door also needs its unlocked and open counterparts.
+    doors = {6251: True, 7033: True, 7034: True, 7035: False, 7042: True}
+    movement.update(doors)
+    source = donor.source
+    xml = (root / donor.XML).read_bytes()
+    appearances = (root / donor.CLIENT).read_bytes()
+    if (hashlib.sha256(xml).hexdigest() != donor.XML_SHA
+            or hashlib.sha256(appearances).hexdigest() != donor.CLIENT_SHA):
+        raise ValueError('QUEST_ROUTE_SCENERY_SOURCE_PIN')
+    nodes = source.xml_index(xml)
+    objects = source.engine_items.load_appearance_objects(appearances)
+    bindings = source.binding_index((root / 'imports/crystalserver/bindings/items.json').read_bytes())
+    definitions = authored_static_item_constructors.definitions(root)
+    facts = source.policies(appearances, xml, set(movement))
+    if {row['server_item_id'] for row in facts} != set(movement):
+        raise ValueError('QUEST_ROUTE_SCENERY_SOURCE_SET')
+    records = []
+    for row in facts:
+        identifier = row['server_item_id']
+        key = f'oteryn:item.tibia.i{identifier}'
+        portable = identifier == 3115
+        if (row['movable'] != portable or row['pickupable'] != portable or row['ground']
+                or row['block_solid'] != movement[identifier]
+                or (identifier in doors and (row['dynamic_kind'] != 'door'
+                                             or row['block_projectile'] != doors[identifier]))
+                or definitions[key]['materializable'] != portable):
+            raise ValueError(f'QUEST_ROUTE_SCENERY_SOURCE_PHYSICS:{identifier}')
+        record = source.profile(identifier, nodes[identifier], objects[identifier], row, bindings, None)
+        record['admission']['materializable'] = portable
+        records.append(record)
+    bound = source.bind_profiles(
+        {'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records},
+        bindings,
+        set(movement),
+    )
+    existing = {row['production_definition']['production_key']: row
+                for row in document['records']}
+    for row in bound['records']:
+        key = row['production_definition']['production_key']
+        if key not in existing:
+            document['records'].append(row)
+        elif key == 'oteryn:item.tibia.i3115':
+            prior = existing[key]
+            if (prior['production_binding'] != row['production_binding']
+                    or prior['admission'] != row['admission']
+                    or prior['attributes'].get('blocks_movement') not in (None, False)):
+                raise ValueError(f'QUEST_ROUTE_SCENERY_PROFILE_CONFLICT:{key}')
+            prior['attributes']['blocks_movement'] = False
+        elif existing[key] != row:
+            raise ValueError(f'QUEST_ROUTE_SCENERY_PROFILE_CONFLICT:{key}')
+
+
 def complete_native_stack(root, record, definition, binding):
     """Fill only unqualified stack facts; established native facts keep authority."""
     identity = definition['identity']
@@ -372,6 +435,23 @@ def canonical_source_inputs(root):
     return raw, source_items
 
 
+def complete_numbered_copper_key(record, source_items):
+    # Alawar and Outlaw quest rewards mint an instance with an authored key number.
+    source = [item for item in source_items if item.get('id') == '2970']
+    if (len(source) != 1
+            or [attr.get('value') for attr in source[0].findall("attribute[@key='type']")]
+            != ['key']):
+        raise ValueError('QUEST_CALLBACK_COPPER_KEY_SOURCE')
+    semantics = record['semantics']
+    classification = semantics['classification']
+    if classification == {'state': 'UNKNOWN'}:
+        semantics['classification'] = writing.known({
+            'item_type': writing.known('KEY'), 'capabilities': {'state': 'UNKNOWN'},
+        })
+    elif classification.get('value', {}).get('item_type') != writing.known('KEY'):
+        raise ValueError('QUEST_CALLBACK_COPPER_KEY_CLASSIFICATION')
+
+
 def canonical_native_profile(root, definition, matches, source_items):
     """Construct one ordinary profile from the caller's authenticated source inputs."""
     identity = definition['identity']
@@ -418,6 +498,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     import lion_trial_item_profiles
     document = json.loads(generated[profile_path])
     admit_map_carriers(root, document)
+    admit_route_scenery(root, document)
     present = {row['production_definition']['production_key']: row for row in document['records']}
     if len(present) != len(document['records']):
         raise ValueError('QUEST_CALLBACK_DUPLICATE_NATIVE_ITEM')
@@ -565,10 +646,13 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
             present[key] = copy.deepcopy(candidates[0])
             document['records'].append(present[key])
         if key in present:
-            complete_native_stack(root, present[key], definition, matches[0])
-            continue
-        document['records'].append(canonical_native_profile(
-            root, definition, matches, source_items))
+            record = present[key]
+            complete_native_stack(root, record, definition, matches[0])
+        else:
+            record = canonical_native_profile(root, definition, matches, source_items)
+            document['records'].append(record)
+        if key == 'oteryn:item.tibia.i2970':
+            complete_numbered_copper_key(record, source_items)
     document['records'].sort(key=order)
     raw = encode_native_profile(document)
     generated[profile_path] = raw

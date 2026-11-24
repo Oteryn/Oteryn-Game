@@ -1,0 +1,21 @@
+[
+  {
+    "mechanic": "0586-store-home",
+    "kind": "handlers",
+    "id": "0586-store-home-request",
+    "status": "unsupported",
+    "commands": [
+      6335,
+      6336
+    ],
+    "direction": "client_to_server",
+    "reason": "Recent offers and promotional banners await native client wiring.",
+    "not_applicable": {
+      "state": "This capability defines no state domain.",
+      "protocol": "Recent offers and promotional banners use solicited command results.",
+      "view": "The native client has no view for this extension.",
+      "input": "The native client does not send these commands.",
+      "settings": "The extension defines no client settings."
+    }
+  }
+]
