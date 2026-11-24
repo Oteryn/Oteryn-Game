@@ -12,22 +12,35 @@ fn scheduled_altar_scan_yields_on_database_lock_contention() -> fixture::TestRes
     };
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(move || exercise(admin).map_err(|error| error.to_string()))?
+        .spawn(move || exercise(admin, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "scheduled altar scan test thread failed")??;
     Ok(())
 }
 
-fn exercise(admin: String) -> fixture::TestResult {
+#[test]
+fn empty_scheduled_altar_scan_skips_the_admission_relation_fence() -> fixture::TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || exercise(admin, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "empty altar scan test thread failed")??;
+    Ok(())
+}
+
+fn exercise(admin: String, lock_admission: bool) -> fixture::TestResult {
     fixture::runtime()?.block_on(async {
         let harness = fixture::Harness::create(admin, "altar_holder", false).await?;
-        let result = contention(&harness).await;
+        let result = contention(&harness, lock_admission).await;
         harness.cleanup().await?;
         result
     })
 }
 
-async fn contention(harness: &fixture::Harness) -> fixture::TestResult {
+async fn contention(harness: &fixture::Harness, lock_admission: bool) -> fixture::TestResult {
     let root = &harness.root;
     let seal = harness.recovery.seal_current().map_err(fixture::debug)?;
     let authority = root
@@ -41,7 +54,12 @@ async fn contention(harness: &fixture::Harness) -> fixture::TestResult {
         .await
         .map_err(|_| "unexpected parked spell operation")?;
     let mut blocker = harness.pool.begin().await?;
-    sqlx::query("LOCK TABLE game_elemental_boss_latches IN ACCESS EXCLUSIVE MODE")
+    let lock = if lock_admission {
+        "LOCK TABLE game_durability_admission_account_guards IN ACCESS EXCLUSIVE MODE"
+    } else {
+        "LOCK TABLE game_elemental_boss_latches IN ACCESS EXCLUSIVE MODE"
+    };
+    sqlx::query(lock)
         .execute(&mut *blocker)
         .await?;
 
@@ -61,7 +79,9 @@ async fn contention(harness: &fixture::Harness) -> fixture::TestResult {
     .await;
     blocker.rollback().await?;
     let outcome = outcome.map_err(|_| "scheduled altar scan held the shared holder for 500ms")?;
-    if !matches!(
+    if lock_admission {
+        assert!(outcome.map_err(fixture::debug)?.is_empty());
+    } else if !matches!(
         outcome,
         Err(DurabilityError::Database(
             SqlxFailureClass::RetryableStatement

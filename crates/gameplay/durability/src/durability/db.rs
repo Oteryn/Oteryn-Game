@@ -2126,11 +2126,15 @@ pub(super) async fn begin_background_sensitive_transaction<'a>(
     deadline: Instant,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
     let begin = begin_semantic_transaction(holder, deadline);
-    if holder_queue::is_background() {
+    if is_background_holder() {
         PERIODIC_LOCK_BUDGET.scope((), begin).await
     } else {
         begin.await
     }
+}
+
+pub(super) fn is_background_holder() -> bool {
+    holder_queue::is_background()
 }
 
 /// Advisory observations use one consistent snapshot and cannot acquire mutation locks.
