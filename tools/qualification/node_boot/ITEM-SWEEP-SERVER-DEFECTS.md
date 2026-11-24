@@ -368,3 +368,13 @@ covers base placements. It does not establish which states can be created
 by installing, rotating, or sleeping in a bed. A match outside the town
 regions still needs a loaded entrance, accessible route and live custody
 before it can count as a seed PASS.
+
+| Ground-only corpse reseed | Seed PASS | Seed FAIL | Terminal result |
+| --- | ---: | ---: | --- |
+| i39344, i39441, i39442 | 3 | 0 | `NODE_BOOT_PASS` |
+
+All three had failed to seed on the continued replay after native combat
+blocked its shared fixture. The fresh rehearsal observed each exact
+definition through BROWSE_FIELD on the real connection and verified all
+three cleanups. This verifies seed custody. Full corpse capacity still
+requires a native death receipt and the resulting corpse handle.
