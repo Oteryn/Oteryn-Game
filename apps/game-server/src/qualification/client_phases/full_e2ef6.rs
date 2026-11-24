@@ -208,7 +208,7 @@ const RESTING_BONUSES: &[&str] = &[
     "shrine-open-and-claim",
     "duplicate-claim-refused",
     "relog-daily-streak",
-    "premium-bonuses-independent-of-streak",
+    "resting-tiers-independent-of-streak",
     "player-earned-deficits",
     "resting-double-health-mana",
     "resting-soul-and-stamina",
@@ -560,9 +560,49 @@ async fn resting_bonuses(
 
     character_prep::declare_seeded(
         "P10",
-        "dedicated-sorcerer-birth,spell-capable-level,premium",
-        "Premium resting cadence with real deficits",
+        "dedicated-free-and-premium-births,spell-capable-level,premium",
+        "Free and Premium resting tiers and actual Premium recovery with real deficits",
     );
+    let free = {
+        let mut characters = clients.characters.to_vec();
+        characters[1] =
+            qualification_character(clients, 1, 0xf1, "Free Resting Journey", "Sorcerer").await?;
+        let clients = &SeamClients {
+            characters: &characters,
+            ..*clients
+        };
+        let mut player = connect_world(clients, 0xf1).await?;
+        let observed: TestResult<rest::RestStatus> = async {
+            let from = tile(player.world_spatial().actor_position)?;
+            let (inside, outside) = resting_tiles(world, from)?;
+            qualification_hunt_route(
+                &mut player,
+                world,
+                Some(inside),
+                Some(outside),
+                tokio::time::Instant::now() + Duration::from_secs(150),
+            )
+            .await?;
+            let wall = daily_wall(&mut player).await?;
+            let status = resting_status(&mut player).await?;
+            if wall.streak != 0
+                || status.streak != 0
+                || !status.inside_resting_area
+                || status.health_multiplier != 1
+                || status.mana_multiplier != 1
+                || status.stamina
+                || status.soul
+            {
+                return Err(format!("P10 Free resting tier at zero streak differs: {status:?}").into());
+            }
+            Ok(status)
+        }
+        .await;
+        let cleanup = return_and_release(&mut player, world).await;
+        let status = observed?;
+        cleanup?;
+        status
+    };
     let account =
         character_prep::dedicated_character(clients, "NODE_BOOT_LIGHT_ACCOUNT_ID").await?;
     let (accounts, characters) = account.replace_slot(clients, 1)?;
@@ -602,6 +642,9 @@ async fn resting_bonuses(
         ).await?;
         character_prep::grant_premium(&client).await?;
         relog(&mut client, clients, 0xf3).await?;
+        if daily_wall(&mut client).await? != initial {
+            return Err("P10 Premium admission changed the unclaimed daily wall".into());
+        }
         let preclaim = resting_status(&mut client).await?;
         if (preclaim.inside_resting_area, preclaim.streak, preclaim.health_multiplier, preclaim.mana_multiplier, preclaim.stamina, preclaim.soul)
             != (true, initial.streak, 2, 2, true, true) {
@@ -637,7 +680,7 @@ async fn resting_bonuses(
             != (true, claimed.streak, preclaim.health_multiplier, preclaim.mana_multiplier, preclaim.stamina, preclaim.soul) {
             return Err(format!("P10 changing streak changed the Premium resting tier: {preclaim:?}->{after_claim:?}").into());
         }
-        row.pass("premium-bonuses-independent-of-streak", (preclaim, after_claim));
+        row.pass("resting-tiers-independent-of-streak", (free, preclaim, after_claim));
         resting_deficits(&mut client, clients, world, spawns, outside).await?;
         let look = self_look(&mut client).await?;
         if !look.ends_with(", sorcerer).") {
@@ -725,6 +768,9 @@ async fn resting_bonuses(
         }
         row.pass("relog-bonus-state", (client.actor_vitals(), stamina_after));
         resting_deficits(&mut client, clients, world, spawns, outside).await?;
+        if daily_wall(&mut client).await? != claimed {
+            return Err("P10 outside admission changed the saved daily wall".into());
+        }
         let outside_status = resting_status(&mut client).await?;
         if (outside_status.inside_resting_area, outside_status.streak, outside_status.health_multiplier, outside_status.mana_multiplier, outside_status.stamina, outside_status.soul)
             != (false, claimed.streak, 0, 0, false, false) {

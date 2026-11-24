@@ -31,6 +31,12 @@ pub(super) async fn qualification_hunt_route(
                         })
                 })
             })
+            // The authored first floor of the Thais sewer has rats, cave rats
+            // and a few bats. Stay in that site to avoid deeper mixed spawns.
+            .filter(|rat| {
+                rat.floor == TOWN.floor - 1
+                    && rat.x.abs_diff(TOWN.x).max(rat.y.abs_diff(TOWN.y)) <= 26
+            })
             .collect::<Vec<_>>()
     } else {
         Vec::new()
