@@ -710,7 +710,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
         let receipt_count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm")
             .fetch_one(&h.pool)
             .await?;
-        if mode == 7 || mode == 11 || mode == 13 || mode == 14 {
+        if matches!(mode, 7 | 11 | 13 | 14 | 15) {
             assert!(receipt_count > 0);
             assert!(health(&owner, target).await? < original_health);
         } else if mode != 2 && mode != 6 {
