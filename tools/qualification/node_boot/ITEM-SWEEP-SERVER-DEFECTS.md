@@ -151,3 +151,9 @@ omission documented above. There were 16 `NothingToUse` and 12 `StaleState`
 replies. These include weapon and generic-ground requests with the
 precondition gaps described above. The 936 failed seeds leave their items
 unverified through gameplay.
+
+### Equipment claim rejects unknown exclusion groups
+
+| Cause | Keys observed through explicit MOVE | Oteryn owners | Crystal 201189f8 | Expected and observed |
+| --- | --- | --- | --- | --- |
+| Compiled claim refuses an unknown exclusion-group list before eligibility | 34088, 34089, 43870–43875, 43877–43880 | `content/native_gameplay.rs:4776–4798`, `durability/character_equipment.rs:1549–1559`, `gameplay_transport/hotkey_equip.rs:334–347` | `data/items/items.xml:64323–64376,76181–76342,76366–76485`, `src/creatures/players/player.cpp:4631–4636` | Command type 9 targeted RightHand with the fresh carried item handle. Among the positive and restriction probes, 34 rows returned `SlotMismatch/NotPossible` for these twelve keys. The matching native WEAPON patterns reserve SHIELD, give level and vocation, and declare `mutually_exclusive_groups=UNKNOWN`. The content owner rejects that field before evaluating either eligibility gate. Crystal declares the two-handed weapon and its eligible builds without the Oteryn group-list prerequisite. For 43870, the eligible build was a level-600 Knight, and the level and vocation rejection probes also returned `SlotMismatch`. |
