@@ -356,6 +356,7 @@ struct Journey<'a, 'scope> {
     catalogue: &'a QuestStateCatalogue,
     items: &'a crate::content::item_ref::ItemDefinitionIndex,
     client: &'a mut DevClientSession,
+    last_journal_query: &'a mut Option<tokio::time::Instant>,
     reconnect: bool,
 }
 
@@ -396,6 +397,11 @@ impl Journey<'_, '_> {
             &wire::QuestLogQuery::ListOnly,
         )
         .map_err(|error| format!("quest-list-command-{error:?}"))?;
+        // connection/routing/quest_log.rs:21 admits two reads per one-second sliding window.
+        if let Some(previous) = *self.last_journal_query {
+            tokio::time::sleep_until(previous + Duration::from_millis(550)).await;
+        }
+        *self.last_journal_query = Some(tokio::time::Instant::now());
         let reply = wire::send(self.client.session_mut(), &command).await?;
         if reply.status != CommandStatus::Accepted {
             return Err("quest-list-refused".into());
@@ -924,7 +930,7 @@ impl Journey<'_, '_> {
                     },
                 )
                 .await?
-                    != npc_service::NpcIntentDisposition::Ok
+                    == npc_service::NpcIntentDisposition::Rejected
             }
         };
         self.check_log(quest).await?;
@@ -1627,6 +1633,7 @@ pub(super) async fn run(
     evidence("quest_sweep preparation mode=seeded level=100 owner=qualification_fixture.rs:50");
     let mut session =
         Some(provisioning::provision_fixture(client, clients, CHARACTER, SEED_LEVEL).await?);
+    let mut last_journal_query = None;
     let mut isolate_entries = false;
     for (key, entry) in entries.iter().skip(start).take(selected) {
         verdict::Harness::global().progress("quest-sweep-entry");
@@ -1646,6 +1653,7 @@ pub(super) async fn run(
             catalogue: lowered.catalogue(),
             items: &items,
             client: session.as_mut().ok_or("quest sweep session absent")?,
+            last_journal_query: &mut last_journal_query,
             reconnect: false,
         };
         let scenario = Box::leak(format!("QS.{short}.full").into_boxed_str());
