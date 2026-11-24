@@ -14,7 +14,7 @@ fn browse_retry_waits_the_full_four_hundred_milliseconds_after_walk_completion()
         .block_on(async {
             tokio::time::pause();
             let walk_finished = tokio::time::Instant::now();
-            let mut deadline = WaitDeadline::new(walk_finished + BROWSE_RETRY_DELAY);
+            let mut deadline = WaitDeadline::new(walk_finished + WALK_USE_RETRY_DELAY);
             assert_eq!(deadline.due - walk_finished, Duration::from_millis(400));
             let mut wait = std::pin::pin!(deadline.next(std::future::pending::<()>()));
             tokio::time::advance(Duration::from_millis(399)).await;

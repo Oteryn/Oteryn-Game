@@ -592,14 +592,34 @@ pub fn reply(npc: &str, line: u16) -> Option<&'static [String]> {
         .map(|b| b.reply.as_slice())
 }
 
+fn source_state(revision: &str) -> Result<super::loader::LoweredQuestState, String> {
+    super::loader::parse_quest_state(
+        include_str!("../../../../../content/quests/threatened-dreams-npc.json"),
+        revision,
+    )
+    .map_err(|e| format!("{e:?}"))
+}
+
+pub(super) fn animal_transitions() -> Result<Vec<super::QuestTransition>, String> {
+    let source = source_state("threatened-dreams-owner")?;
+    Ok(source
+        .catalogue()
+        .transitions
+        .values()
+        .filter(|transition| {
+            transition
+                .effects
+                .iter()
+                .any(|effect| effect.track == ANIMALS)
+        })
+        .cloned()
+        .collect())
+}
+
 pub(super) fn extend(
     catalogue: super::QuestStateCatalogue,
 ) -> Result<super::QuestStateCatalogue, String> {
-    let overlay = super::loader::parse_quest_state(
-        include_str!("../../../../../content/quests/threatened-dreams-npc.json"),
-        catalogue.content_revision(),
-    )
-    .map_err(|e| format!("{e:?}"))?;
+    let overlay = source_state(catalogue.content_revision())?;
     let mut tracks = catalogue.tracks.clone();
     let mut transitions = catalogue.transitions.clone();
     for (key, track) in &overlay.catalogue().tracks {

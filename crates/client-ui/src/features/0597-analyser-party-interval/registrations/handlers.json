@@ -1,0 +1,19 @@
+{
+  "mechanic": "0597-analyser-party-interval",
+  "kind": "handlers",
+  "id": "0597-analyser-party-interval-commands",
+  "status": "unsupported",
+  "commands": [
+    6357,
+    6358
+  ],
+  "direction": "client_to_server",
+  "reason": "Shared hunt interval commands await the client analyser integration.",
+  "not_applicable": {
+    "state": "Shared hunt interval state is supplied by the server reply.",
+    "protocol": "The server contract defines the negotiated request and reply.",
+    "view": "The current native analyser has no view for this reply.",
+    "input": "The current native analyser has no input that sends these commands.",
+    "settings": "The current native analyser has no setting for this capability."
+  }
+}

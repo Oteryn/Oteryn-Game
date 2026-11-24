@@ -67,12 +67,14 @@ pub(super) async fn exercise(
             );
             let source = quest::task(u8::try_from(task)?).ok_or("native task")?;
             assert_eq!(source.required, if task == 1 { 300 } else { 150 });
-            hunt(
+            hunt_with_decay(
                 owner,
                 admitted,
                 source.creatures[0].key.as_str(),
                 u32::try_from(source.required)?,
                 command,
+                None,
+                HunterRefresh::OncePerHunt,
             )
             .await?;
             assert_eq!(
@@ -137,6 +139,7 @@ pub(super) async fn exercise(
         650,
         command,
         Some(h),
+        HunterRefresh::OncePerHunt,
     )
     .await?;
     assert_eq!(
@@ -310,7 +313,22 @@ pub(in super::super) async fn hunt(
     count: u32,
     command: u64,
 ) -> TestResult {
-    hunt_with_decay(owner, admitted, creature, count, command, None).await
+    hunt_with_decay(
+        owner,
+        admitted,
+        creature,
+        count,
+        command,
+        None,
+        HunterRefresh::BeforeEachKill,
+    )
+    .await
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum HunterRefresh {
+    OncePerHunt,
+    BeforeEachKill,
 }
 
 async fn hunt_with_decay(
@@ -320,8 +338,15 @@ async fn hunt_with_decay(
     count: u32,
     command: u64,
     decay_fixture: Option<&Harness>,
+    refresh: HunterRefresh,
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("hunter")?;
+    // Crystal's death hook reads the live party and task storage. This hunt
+    // keeps one hunter and party, and the real settle publishes each new credit.
+    // Establish the fixture's live projections once before the first death.
+    if refresh == HunterRefresh::OncePerHunt {
+        refresh_hunter(owner, admitted, actor).await;
+    }
     for index in 0..count {
         let target = {
             let mut runtime = owner.runtime.lock().await;
@@ -348,7 +373,10 @@ async fn hunt_with_decay(
                 .map_err(debug)?;
             target
         };
-        lethal(
+        if refresh == HunterRefresh::BeforeEachKill {
+            refresh_hunter(owner, admitted, actor).await;
+        }
+        record_lethal(
             owner,
             admitted,
             target,
@@ -357,6 +385,7 @@ async fn hunt_with_decay(
             u16::try_from(index + 1)?,
         )
         .await?;
+        drain_lethal(owner, admitted).await?;
         let corpse = {
             let mut runtime = owner.runtime.lock().await;
             assert!(!runtime.corpse_projection_pinned(target));
@@ -401,10 +430,25 @@ pub(in super::super) async fn lethal(
     swing: u16,
 ) -> TestResult {
     queue_lethal(owner, admitted, target, creature, command, swing).await?;
-    assert_eq!(
-        owner.drain_kill_rewards(admitted.game_session_id).await,
-        DrainOutcome::Drained
-    );
+    drain_lethal(owner, admitted).await
+}
+
+async fn drain_lethal(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult {
+    let mut outcome = owner.drain_kill_rewards(admitted.game_session_id).await;
+    for _ in 1..8 {
+        if outcome == DrainOutcome::Drained {
+            break;
+        }
+        // A deferred pass keeps the original death queued. Restore the test
+        // holder if the pass retired it, then drain that same death.
+        owner.root.await_ready().await?;
+        tokio::task::yield_now().await;
+        outcome = owner.drain_kill_rewards(admitted.game_session_id).await;
+    }
+    assert_eq!(outcome, DrainOutcome::Drained);
     assert_eq!(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Drained
@@ -421,6 +465,15 @@ pub(in super::super) async fn queue_lethal(
     swing: u16,
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("hunter")?;
+    refresh_hunter(owner, admitted, actor).await;
+    record_lethal(owner, admitted, target, creature, command, swing).await
+}
+
+async fn refresh_hunter(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    actor: ExactActorRef,
+) {
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
@@ -429,6 +482,17 @@ pub(in super::super) async fn queue_lethal(
             .refresh_source_party_presence(actor, admitted.game_session_id)
             .await
     );
+}
+
+async fn record_lethal(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    target: ExactActorRef,
+    creature: &str,
+    command: u64,
+    swing: u16,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("hunter")?;
     let native = owner
         .active_generation
         .and_then(|active| active.native_gameplay())
@@ -438,6 +502,10 @@ pub(in super::super) async fn queue_lethal(
     let now = observed.get() / 1000;
     {
         let mut runtime = owner.runtime.lock().await;
+        assert!(
+            runtime.cached_world_party(actor, admitted.game_session_id).map_err(debug)?.is_some(),
+            "the lethal turn must have the hunter's live party projection"
+        );
         let lease = runtime
             .bound_attacker_lease(actor, admitted.game_session_id)
             .map_err(debug)?;

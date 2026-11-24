@@ -1,5 +1,71 @@
 use super::*;
-pub(super) const MAIN: [Row; 4] = [
+pub(super) const MAIN: [Row; 13] = [
+    Row {
+        id: "interface.animated_cursor",
+        label: "Animate Game Cursor",
+        editor: Editor::Check {
+            read: |p| p.animated_cursor,
+            write: |p, v| {
+                p.animated_cursor = v;
+                if v {
+                    p.system_cursor = false;
+                }
+            },
+        },
+    },
+    check!(
+        "interface.confirm_copy_link",
+        "Confirm Before Copying Links",
+        confirm_copy_link
+    ),
+    check!(
+        "interface.expiry_containers",
+        "Show Expiry in Containers",
+        expiry_containers
+    ),
+    check!(
+        "interface.expiry_inventory",
+        "Show Expiry on Equipped Items",
+        expiry_inventory
+    ),
+    check!(
+        "interface.expiry_unused",
+        "Show Expiry on Unused Items",
+        expiry_unused
+    ),
+    check!(
+        "interface.highlight_mouse_target",
+        "Highlight Object Under Pointer",
+        highlight_mouse_target
+    ),
+    Row {
+        id: "interface.large_cursor",
+        label: "Large Game Cursor",
+        editor: Editor::Check {
+            read: |p| p.large_cursor,
+            write: |p, v| {
+                p.large_cursor = v;
+                if v {
+                    p.system_cursor = false;
+                }
+            },
+        },
+    },
+    Row {
+        id: "interface.system_cursor",
+        label: "Use Operating System Cursor",
+        editor: Editor::Check {
+            read: |p| p.system_cursor,
+            write: |p, v| {
+                p.system_cursor = v;
+                if v {
+                    p.animated_cursor = false;
+                    p.large_cursor = false;
+                }
+            },
+        },
+    },
+    check!("interface.top_menu", "Show Game Menu", top_menu_visible),
     check!("interface.tooltips", "Show Tooltips", tooltips_enabled),
     number!(
         "interface.tooltip_delay",
@@ -23,81 +89,32 @@ pub(super) const MAIN: [Row; 4] = [
         cursor_crosshair
     ),
 ];
-pub(super) const HUD: [Row; 23] = [
-    check!("hud.health", "Show Health", hud_health),
-    check!("hud.mana", "Show Mana", hud_mana),
-    check!("hud.own_name", "Show Own Name", hud_names[0]),
+pub(super) const CONSOLE: [Row; 19] = [
     check!(
-        "hud.player_names",
-        "Show Other Players' Names",
-        hud_names[1]
+        "console.auto_private_tabs",
+        "Open Incoming Private Messages in New Tabs",
+        console.auto_private_tabs
     ),
-    check!("hud.creature_names", "Show Creature Names", hud_names[2]),
-    check!("hud.own_marks", "Show Own Marks", hud_marks_own),
+    check!("console.events", "Show Event Messages", console.events),
     check!(
-        "hud.other_marks",
-        "Show Other Creatures' Marks",
-        hud_marks_other
-    ),
-    check!("hud.npc_icons", "Show NPC Icons", hud_npc_icons),
-    check!(
-        "hud.status_visible",
-        "Show Status Panel",
-        status_panel_visible
-    ),
-    check!("hud.status_compact", "Compact Status Panel", compact_status),
-    check!("hud.health_arc", "Show Health Arc", arcs.health),
-    check!(
-        "hud.health_circle",
-        "Show Health/Mana Circles",
-        health_circle
-    ),
-    check!("hud.mana_arc", "Show Mana Arc", arcs.mana),
-    number!(
-        "hud.arc_distance",
-        "Arc Distance",
-        0,
-        120,
-        u16,
-        arcs.distance
-    ),
-    number!("hud.arc_size", "Arc Size", 20, 120, u16, arcs.size),
-    number!(
-        "hud.arc_opacity",
-        "Arc Opacity (%)",
-        0,
-        100,
-        u8,
-        arcs.opacity
-    ),
-    number!(
-        "hud.boss_opacity",
-        "Boss Area Opacity (%)",
-        0,
-        100,
-        u8,
-        boss_area_opacity
+        "console.information",
+        "Show Information Messages",
+        console.information
     ),
     check!(
-        "hud.resource_values",
-        "Show Hit Point and Mana Values",
-        resource_hud.values
+        "console.join_leave",
+        "Show Join and Leave Messages",
+        console.join_leave
     ),
-    check!("hud.resource_soul", "Show Soul Points", resource_hud.soul),
-    check!("hud.resource_stamina", "Show Stamina", resource_hud.stamina),
+    check!("console.levels", "Show Speaker Levels", console.levels),
+    check!("console.seconds", "Show Timestamp Seconds", console.seconds),
+    check!("console.status", "Show Own Status Messages", console.status),
+    check!("console.timestamps", "Show Timestamps", console.timestamps),
     check!(
-        "hud.resource_conditions",
-        "Show Condition Icons",
-        resource_hud.conditions
+        "console.drag_locked",
+        "Lock Floating Chat Position",
+        chat_drag_locked
     ),
-    check!("hud.resource_rest", "Show Rest Icons", resource_hud.rest),
-    check!(
-        "hud.resource_combo",
-        "Show Harmony Combo",
-        resource_hud.combo
-    ),
-];
-pub(super) const CONSOLE: [Row; 10] = [
     check!("console.local", "Show Local Speech", console.visible[0]),
     check!(
         "console.private",
@@ -139,7 +156,7 @@ pub(super) const CONSOLE: [Row; 10] = [
         console.line_limit
     ),
 ];
-pub(super) const GAME_WINDOW: [Row; 8] = [
+pub(super) const GAME_WINDOW: [Row; 20] = [
     check!(
         "game_window.own_spells",
         "Show Own Spells",
@@ -147,7 +164,7 @@ pub(super) const GAME_WINDOW: [Row; 8] = [
     ),
     check!(
         "game_window.other_spells",
-        "Show Other Creatures' Spells",
+        "Show Other Players' Spells",
         game_window.other_spells
     ),
     check!(
@@ -171,6 +188,73 @@ pub(super) const GAME_WINDOW: [Row; 8] = [
         "Highlight Loot",
         game_window.loot_highlight
     ),
+    check!(
+        "game_window.messages",
+        "Show Messages in Game Window",
+        game_window.messages
+    ),
+    check!(
+        "game_window.boosted_messages",
+        "Show Boosted Creature Messages",
+        game_window.boosted_messages
+    ),
+    check!(
+        "game_window.hotkey_messages",
+        "Show Hotkey Usage Messages",
+        game_window.hotkey_messages
+    ),
+    check!(
+        "game_window.private_messages",
+        "Show Private Messages",
+        game_window.private_messages
+    ),
+    check!(
+        "game_window.store_messages",
+        "Show Store Messages",
+        game_window.store_messages
+    ),
+    check!(
+        "game_window.attack_animation",
+        "Show Attack Hit Animation",
+        game_window.attack_animation
+    ),
+    check!(
+        "game_window.combat_frames",
+        "Show Combat Frames",
+        game_window.combat_frames
+    ),
+    check!(
+        "game_window.target_highlight",
+        "Highlight Attack Target",
+        game_window.target_highlight
+    ),
+    check!(
+        "game_window.fit_viewport",
+        "Fit Map to Game Window",
+        graphics.fit_viewport
+    ),
+    number!(
+        "game_window.upper_pane_height",
+        "Upper Pane Height (0 = automatic)",
+        0,
+        600,
+        u16,
+        game_window.upper_pane_height
+    ),
+    Row {
+        id: "game_window.loot_style",
+        label: "Colourise Loot Value",
+        editor: Editor::Choice {
+            read: |p| usize::from(p.game_window.loot_style),
+            write: |p, v| p.game_window.loot_style = v as u8,
+            values: &["None", "Frames", "Corners"],
+        },
+    },
+    check!(
+        "game_window.offline_training",
+        "Show Offline Training Messages",
+        game_window.offline_training_messages
+    ),
     check!("game_window.banner", "Show Banner", game_window.banner),
 ];
 macro_rules! side_bars {
@@ -189,7 +273,54 @@ macro_rules! side_bars {
         }
     };
 }
-pub(super) const ACTION_BARS: [Row; 20] = [
+macro_rules! lock_side {
+    ($id:literal, $label:literal, $dock:ident) => {
+        Row {
+            id: $id,
+            label: $label,
+            editor: Editor::Check {
+                read: |p| {
+                    p.bar_layout
+                        .rows
+                        .iter()
+                        .filter(|row| row.dock == crate::play::BarDock::$dock)
+                        .all(|row| row.locked)
+                },
+                write: |p, locked| {
+                    for row in &mut p.bar_layout.rows {
+                        if row.dock == crate::play::BarDock::$dock {
+                            row.locked = locked;
+                        }
+                    }
+                },
+            },
+        }
+    };
+}
+pub(super) const ACTION_BARS: [Row; 27] = [
+    lock_side!("action_bars.bottom_lock", "Lock all bottom bars", Bottom),
+    check!(
+        "action_bars.cooldown_numbers",
+        "Show numeric cooldowns",
+        action_bar.cooldown_numbers
+    ),
+    check!(
+        "action_bars.graphical_cooldown",
+        "Show graphical cooldowns",
+        action_bar.graphical_cooldown
+    ),
+    lock_side!("action_bars.left_lock", "Lock all left bars", Left),
+    lock_side!("action_bars.right_lock", "Lock all right bars", Right),
+    check!(
+        "action_bars.show_hotkey",
+        "Show assigned hotkeys",
+        action_bar.show_hotkey
+    ),
+    check!(
+        "action_bars.show_spell_parameters",
+        "Show assigned spell parameters",
+        action_bar.show_spell_parameters
+    ),
     check!(
         "action_bars.visible",
         "Show Action Bars",

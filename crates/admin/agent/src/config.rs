@@ -12,6 +12,7 @@ pub struct Config {
     pub signing_key_path: PathBuf,
     pub policy_file_path: PathBuf,
     pub db_url_env_name: String,
+    pub read_db_url_env_name: Option<String>,
     pub owner_epoch: u64,
     pub worlds: Vec<String>,
     pub nodes: Vec<String>,

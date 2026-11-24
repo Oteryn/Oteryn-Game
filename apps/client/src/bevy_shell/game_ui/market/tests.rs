@@ -33,6 +33,7 @@ fn catalogue() -> wire::Reply {
             level: Some(30),
             forge_class: None,
             depot_units: 4,
+            appearance: None,
         }],
         categories: vec!["Swords".into()],
         page: 0,

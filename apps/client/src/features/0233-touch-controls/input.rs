@@ -25,7 +25,6 @@ impl PlayView {
         phase: Phase,
         at: [f64; 2],
     ) -> Result<(), BatchError> {
-        self.enable_touch_controls();
         if lock(&link.mailbox).world_input_blocked()
             || self.death.dead
             || crate::play::feature_0450_server_modal::view::active()
@@ -36,6 +35,7 @@ impl PlayView {
         let layout = Layout::new(self.scene.view());
         match phase {
             Phase::Started => {
+                self.enable_touch_controls();
                 if layout.distance(at) <= layout.radius {
                     if self.touch.joystick.is_none() {
                         self.touch.joystick = Some(id);

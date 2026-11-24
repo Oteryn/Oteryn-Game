@@ -3,6 +3,8 @@ use super::*;
 pub(in crate::bevy_shell::game_ui::chat) fn transcript_rows(
     panel: &oteryn_client_ui::chat::ChatPanel,
 ) -> Vec<RenderedRow> {
+    let view = panel.transcript_after_clear(panel.console.tab, panel.console.current.as_ref());
+    let panel = &*view;
     let mut single = panel.clone();
     single.lines.clear();
     single.recipients.clear();
@@ -69,7 +71,7 @@ pub(in crate::bevy_shell::game_ui::chat) fn transcript_rows(
             for notice in console
                 .channel_notices
                 .iter()
-                .filter(|notice| notice.channel_id == *id)
+                .filter(|notice| console.filters.shows_participant_notice(notice, *id))
             {
                 let text = oteryn_client_ui::chat_channel_participants::notice_text(notice);
                 rows.push(plain(format!("{text}\n")));

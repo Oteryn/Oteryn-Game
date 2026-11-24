@@ -6,6 +6,8 @@ mtls_ca_path = "/etc/oteryn/platform-ca.pem"
 signing_key_path = "/etc/oteryn/admin-agent.ed25519-seed"
 policy_file_path = "/etc/oteryn/admin_policy.toml"
 db_url_env_name = "OTERYN_ADMIN_DATABASE_URL"
+# Optional SELECT-only connection to the same Game database.
+# read_db_url_env_name = "OTERYN_ADMIN_READ_DATABASE_URL"
 owner_epoch = 1
 worlds = ["w-example"]
 nodes = ["node-example"]

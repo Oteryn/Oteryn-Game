@@ -8,19 +8,25 @@ class GrizzlyRoomTests(unittest.TestCase):
     def test_generated_rooms_match_map_and_preserve_both_source_positions(self):
         actual = grizzly_rooms.generate()
         self.assertEqual(actual, json.loads(grizzly_rooms.OUTPUT.read_text()))
-        source = json.loads((grizzly_rooms.ROOT / 'content/quests/killing-in-the-name-of.json').read_text())
-        for room, boss in zip(actual['rooms'], source['bosses'], strict=True):
-            self.assertEqual(room['boss_id'], boss['id'])
-            if room['qualified']:
-                left, top, right, bottom, z = room['bounds']
-                for position in [boss['player_position'], boss['boss_position']]:
-                    self.assertEqual(position['z'], z)
-                    self.assertTrue(left <= position['x'] <= right)
-                    self.assertTrue(top <= position['y'] <= bottom)
+        source = json.loads(
+            (
+                grizzly_rooms.ROOT / "content/quests/killing-in-the-name-of.json"
+            ).read_text()
+        )
+        for room, boss in zip(actual["rooms"], source["bosses"], strict=True):
+            self.assertEqual(room["boss_id"], boss["id"])
+            if room["qualified"]:
+                left, top, right, bottom, z = room["bounds"]
+                for position in [boss["player_position"], boss["boss_position"]]:
+                    self.assertEqual(position["z"], z)
+                    self.assertTrue(left <= position["x"] <= right)
+                    self.assertTrue(top <= position["y"] <= bottom)
             else:
-                self.assertIsNone(room['bounds'])
-                self.assertTrue(room['reason'])
-        self.assertEqual([r['boss_id'] for r in actual['rooms'] if not r['qualified']], [])
+                self.assertIsNone(room["bounds"])
+                self.assertTrue(room["reason"])
+        self.assertEqual(
+            [r["boss_id"] for r in actual["rooms"] if not r["qualified"]], []
+        )
         counts = {room["boss_id"]: room["connected_tiles"] for room in actual["rooms"]}
         # Independent donor OTBM count: Crystal 201189f data-global/world/world.otbm,
         # blob e61658ec0ab7b70ec35025ae969426d6fc57ae75; source-backed debris flags.
@@ -33,6 +39,11 @@ class GrizzlyRoomTests(unittest.TestCase):
             {boss: counts[boss] for boss in (2, 6, 16)},
             {2: 90, 6: 64, 16: 288},
         )
+        # Ordinary slots with the same appearance as scoped spawn ground do not
+        # extend the Thul or Leviathan rooms.
+        self.assertEqual(counts[10], 82)
+        self.assertEqual(counts[23], 150)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

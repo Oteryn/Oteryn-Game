@@ -38,7 +38,14 @@ impl MockPlatform {
                 let response = format!("HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{reply}", reply.len());
                 let status_gate = (method == "GET" && (target.contains("/bazaar/commands/") || target.contains("/coin-purchases/requests/")))
                     .then(|| state.lock().ok().and_then(|s| s.status_barrier.clone())).flatten();
-                if let Some(gate) = status_gate {
+                if method == "GET" && state.lock().ok().and_then(|s| s.held_bazaar_status.clone())
+                    .is_some_and(|id| target.strip_prefix("/api/v1/native-account/bazaar/commands/") == Some(id.as_str()))
+                {
+                    tokio::spawn(async move {
+                        let mut byte = [0];
+                        let _ = stream.read(&mut byte).await;
+                    });
+                } else if let Some(gate) = status_gate {
                     tokio::spawn(async move {
                         if tokio::time::timeout(std::time::Duration::from_secs(2), gate.wait()).await.is_ok() {
                             let _ = stream.write_all(response.as_bytes()).await;

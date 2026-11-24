@@ -21,7 +21,7 @@ struct Reply {
 struct Worker {
     pending: Arc<Mutex<Vec<Request>>>,
     wake: Option<mpsc::SyncSender<()>>,
-    thread: Option<std::thread::JoinHandle<()>>,
+    done: mpsc::Receiver<()>,
     replies: Mutex<mpsc::Receiver<Reply>>,
 }
 impl Worker {
@@ -30,48 +30,47 @@ impl Worker {
         let pending = Arc::new(Mutex::new(Vec::<Request>::new()));
         let queued = Arc::clone(&pending);
         let (finished, replies) = mpsc::channel();
-        let thread = std::thread::Builder::new()
+        let (stopped, done) = mpsc::channel();
+        std::thread::Builder::new()
             .name("analyser-highs".into())
             .spawn(move || {
+                let mut persisted = std::collections::BTreeMap::new();
                 for () in work {
                     let batch =
                         std::mem::take(&mut *queued.lock().unwrap_or_else(|e| e.into_inner()));
                     for request in batch {
-                        let result = update(&request.path, request.values, request.reset);
-                        if finished
-                            .send(Reply {
-                                generation: request.generation,
-                                revision: request.revision,
-                                result,
-                            })
-                            .is_err()
-                        {
-                            return;
+                        let epoch = (request.generation, request.revision);
+                        let reset = request.reset && persisted.get(&request.path) != Some(&epoch);
+                        let result = update(&request.path, request.values, reset);
+                        if result.is_ok() {
+                            persisted.insert(request.path, epoch);
                         }
+                        let _ = finished.send(Reply {
+                            generation: request.generation,
+                            revision: request.revision,
+                            result,
+                        });
                     }
                 }
+                let _ = stopped.send(());
             })?;
         Ok(Self {
             pending,
             wake: Some(wake),
-            thread: Some(thread),
+            done,
             replies: Mutex::new(replies),
         })
     }
 
     fn submit(&self, request: Request) -> bool {
         let mut pending = self.pending.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(older) = pending.iter_mut().find(|r| r.path == request.path) {
-            // A reset discards all earlier values. Later observations still belong
-            // to that reset until the writer has applied it to disk.
-            let mut latest = request;
-            if !latest.reset {
-                latest.reset = older.reset;
-                for (new, old) in latest.values.iter_mut().zip(older.values) {
-                    *new = (*new).max(old);
-                }
+        if let Some(older) = pending.iter_mut().rev().find(|r| r.path == request.path)
+            && (older.generation, older.revision) == (request.generation, request.revision)
+        {
+            older.reset |= request.reset;
+            for (high, new) in older.values.iter_mut().zip(request.values) {
+                *high = (*high).max(new);
             }
-            *older = latest;
         } else {
             pending.push(request);
         }
@@ -86,9 +85,9 @@ impl Worker {
 impl Drop for Worker {
     fn drop(&mut self) {
         self.wake.take();
-        if let Some(thread) = self.thread.take() {
-            let _ = thread.join();
-        }
+        let _ = self
+            .done
+            .recv_timeout(std::time::Duration::from_millis(100));
     }
 }
 
@@ -139,6 +138,7 @@ fn update(path: &Path, mut values: [u64; 2], reset: bool) -> io::Result<[u64; 2]
 pub(super) struct Saved {
     worker: Option<Worker>,
     submitted: Option<(u64, u64, [u64; 2])>,
+    retry_at: Option<std::time::Instant>,
 }
 pub(super) fn sync(owner: NonSend<HostOwner>, mut saved: Local<Saved>) {
     let Some(play) = owner.play.as_ref() else {
@@ -157,13 +157,13 @@ pub(super) fn sync(owner: NonSend<HostOwner>, mut saved: Local<Saved>) {
         else {
             return;
         };
-        let reset = saved.submitted.map_or(revision != 0, |(g, r, _)| {
-            if g == generation {
-                r != revision
-            } else {
-                revision != 0
-            }
-        });
+        if saved
+            .retry_at
+            .is_some_and(|at| at > std::time::Instant::now())
+        {
+            return;
+        }
+        let reset = revision != 0;
         if saved.worker.is_none() {
             saved.worker = Worker::start().ok();
         }
@@ -177,6 +177,8 @@ pub(super) fn sync(owner: NonSend<HostOwner>, mut saved: Local<Saved>) {
                 reset,
             })
         }) {
+            saved.submitted = None;
+            saved.retry_at = Some(std::time::Instant::now() + std::time::Duration::from_secs(1));
             play.link
                 .analyser_feedback("Could not start analyser profile writer");
         }
@@ -184,8 +186,13 @@ pub(super) fn sync(owner: NonSend<HostOwner>, mut saved: Local<Saved>) {
     let Some(worker) = &mut saved.worker else {
         return;
     };
-    let replies = worker.replies.get_mut().unwrap_or_else(|e| e.into_inner());
-    for reply in replies.try_iter() {
+    let replies: Vec<_> = worker
+        .replies
+        .get_mut()
+        .unwrap_or_else(|e| e.into_inner())
+        .try_iter()
+        .collect();
+    for reply in replies {
         if (reply.generation, reply.revision) != (generation, revision) {
             continue;
         }
@@ -193,9 +200,13 @@ pub(super) fn sync(owner: NonSend<HostOwner>, mut saved: Local<Saved>) {
             Ok(values) => {
                 play.link.analyser_restore_highs(values);
             }
-            Err(_) => play
-                .link
-                .analyser_feedback("Could not read or save analyser highs"),
+            Err(_) => {
+                saved.submitted = None;
+                saved.retry_at =
+                    Some(std::time::Instant::now() + std::time::Duration::from_secs(1));
+                play.link
+                    .analyser_feedback("Could not read or save analyser highs");
+            }
         }
     }
 }
@@ -223,7 +234,7 @@ fn contended_high_updates_have_bounded_shutdown() -> io::Result<()> {
         drop(worker);
         let _ = finished.send(());
     });
-    let result = shutdown.recv_timeout(Duration::from_secs(7));
+    let result = shutdown.recv_timeout(Duration::from_millis(500));
     drop(lock);
     join.join()
         .map_err(|_| io::Error::other("writer panicked"))?;

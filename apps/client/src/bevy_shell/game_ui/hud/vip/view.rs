@@ -1,3 +1,5 @@
+#[path = "contact_row.rs"]
+mod contact_row;
 use super::*;
 use bevy::picking::{events::PointerClick, hover::Hovered, pointer::PointerButton};
 use bevy::ui_widgets::Activate;
@@ -150,10 +152,13 @@ pub(super) fn project(
     mut hover: Local<Option<(Entity, std::time::Duration)>>,
     metadata: Query<(Entity, &VipMetadata, &Text), (Without<VipNameLabel>, Without<Message>)>,
     guard: ModalGuard,
+    presentation: Res<presentation::Preferences>,
 ) {
     let generation = owner.generation();
     if state.generation != Some(generation) || owner.play.is_none() {
         state.generation = Some(generation);
+        state.clipboard_feedback = None;
+        state.copy_pending = None;
         state.draft = None;
         state.pending = None;
     }
@@ -177,6 +182,19 @@ pub(super) fn project(
         *entered = Some(generation);
     }
     let panel = play.link.vip_panel();
+    if let Some((revision, name, result)) = &state.copy_pending
+        && let Some(copied) = result.get()
+    {
+        state.clipboard_feedback = Some((
+            *revision,
+            if *copied {
+                format!("Copied {name}")
+            } else {
+                format!("Could not copy {name} to the clipboard")
+            },
+        ));
+        state.copy_pending = None;
+    }
     let snapshot = Snapshot::read(&panel);
     let entries = snapshot
         .as_ref()
@@ -191,135 +209,77 @@ pub(super) fn project(
     } else if panel.pending {
         "Updating…".to_owned()
     } else {
-        snapshot.as_ref().err().copied().unwrap_or("").to_owned()
+        snapshot
+            .as_ref()
+            .err()
+            .copied()
+            .or_else(|| {
+                state
+                    .clipboard_feedback
+                    .as_ref()
+                    .filter(|(revision, _)| *revision == panel.revision)
+                    .map(|(_, message)| message.as_str())
+            })
+            .unwrap_or("")
+            .to_owned()
     };
     for mut text in &mut messages {
         if text.0 != message {
             text.0.clone_from(&message);
         }
     }
+    let mut projected = Vec::new();
+    for entry in entries {
+        let mut added = false;
+        if presentation.grouped
+            && let Ok(snapshot) = &snapshot
+        {
+            for group in &snapshot.groups {
+                if entry
+                    .groups
+                    .as_ref()
+                    .is_some_and(|groups| groups.contains(&group.group))
+                {
+                    projected.push((entry, Some(group.group)));
+                    added = true;
+                }
+            }
+        }
+        if !added {
+            projected.push((entry, None));
+        }
+    }
     let mut retained = std::collections::HashSet::new();
     for (entity, row, _, _, _) in &rows {
-        if row.generation != generation || !entries.iter().any(|entry| entry.entry == row.entry) {
+        if row.generation != generation
+            || !projected
+                .iter()
+                .any(|(entry, group)| entry.entry == row.entry && *group == row.group)
+        {
             commands.entity(entity).despawn();
         } else {
-            retained.insert(row.entry);
+            retained.insert((row.entry, row.group));
         }
     }
     if let Ok(list) = lists.single() {
-        for entry in entries
+        let mut descriptions: std::collections::HashSet<_> = metadata
             .iter()
-            .filter(|entry| !retained.contains(&entry.entry))
+            .filter(|(_, role, _)| role.description && role.generation == generation)
+            .map(|(_, role, _)| role.entry)
+            .collect();
+        for (entry, group) in projected
+            .into_iter()
+            .filter(|(entry, group)| !retained.contains(&(entry.entry, *group)))
         {
-            let row = commands
-                .spawn((
-                    Row {
-                        generation,
-                        entry: entry.entry,
-                    },
-                    Control {
-                        generation,
-                        revision: panel.revision,
-                        command: Action::Edit(entry.entry),
-                    },
-                    Pickable::default(),
-                    Hovered::default(),
-                    Name::new("vip.entry"),
-                    TabIndex(0),
-                    Node {
-                        width: percent(100.),
-                        min_height: px(16.),
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                ))
-                .observe(input::activate)
-                .observe(presentation::click)
-                .observe(presentation::key)
-                .observe(row_click)
-                .id();
-            let glyph = commands
-                .spawn((
-                    VipMetadata {
-                        generation,
-                        entry: entry.entry,
-                        description: false,
-                    },
-                    Name::new(format!("vip.icon.{}", entry.entry)),
-                    source::text(
-                        vip_icon_text(entry.icon),
-                        source::font(skins.font.clone(), false),
-                    ),
-                    // Text alternative of the artwork icon; the ImageNode below is what is drawn.
-                    Node {
-                        display: Display::None,
-                        ..default()
-                    },
-                ))
-                .id();
-            commands.spawn((
-                VipMetadata {
-                    generation,
-                    entry: entry.entry,
-                    description: true,
-                },
-                Name::new(format!("vip.description.{}", entry.entry)),
-                source::text(
-                    entry.description.as_deref().unwrap_or(""),
-                    source::font(skins.font.clone(), false),
-                ),
-                Node {
-                    display: Display::None,
-                    ..default()
-                },
-                BackgroundColor(Color::srgb_u8(32, 32, 32)),
-                GlobalZIndex(280),
-            ));
-            let name = commands
-                .spawn((
-                    VipNameLabel {
-                        generation,
-                        entry: entry.entry,
-                    },
-                    source::text(&entry.name, source::font(skins.font.clone(), false)),
-                    Node {
-                        flex_grow: 1.,
-                        min_width: px(0.),
-                        overflow: Overflow::clip_x(),
-                        ..default()
-                    },
-                ))
-                .id();
-            let icon = commands
-                .spawn((
-                    presentation::Icon(entry.entry),
-                    ImageNode::default(),
-                    Name::new("vip.icon"),
-                    Node {
-                        width: px(12.),
-                        height: px(12.),
-                        flex_shrink: 0.,
-                        ..default()
-                    },
-                    Pickable::IGNORE,
-                ))
-                .id();
-            let context = button(
+            contact_row::spawn(
                 &mut commands,
                 &skins,
-                Control {
-                    generation,
-                    revision: panel.revision,
-                    command: Action::Context(entry.entry),
-                },
-                "…",
-                18.,
-                "vip.context",
+                list,
+                (generation, panel.revision),
+                entry,
+                group,
+                descriptions.insert(entry.entry),
             );
-            commands
-                .entity(row)
-                .add_children(&[icon, glyph, name, context]);
-            commands.entity(list).add_child(row);
         }
     }
     let target = rows.iter().find(|(entity, _, over, _, _)| {
@@ -393,6 +353,22 @@ pub(super) fn project(
             || entry.name.clone(),
             |value| oteryn_client_ui::social_channel::vip_entry_text(&channel_names, value),
         );
+        let shown = if presentation.grouped {
+            let name = label
+                .group
+                .and_then(|id| {
+                    snapshot
+                        .as_ref()
+                        .ok()?
+                        .groups
+                        .iter()
+                        .find(|g| g.group == id)
+                })
+                .map_or("Ungrouped", |group| group.name.as_str());
+            format!("{name} · {shown}")
+        } else {
+            shown
+        };
         if text.0 != shown {
             text.0 = shown;
         }
@@ -417,6 +393,7 @@ pub(super) fn project(
                 | Action::Next(_)
                 | Action::Close
                 | Action::Sort
+                | Action::Grouped
                 | Action::HideOffline
         ) {
             control.generation = generation;
@@ -430,6 +407,7 @@ pub(super) fn project(
                 | Action::Next(_)
                 | Action::Close
                 | Action::Sort
+                | Action::Grouped
                 | Action::HideOffline
                 | Action::Edit(_)
                 | Action::Context(_)

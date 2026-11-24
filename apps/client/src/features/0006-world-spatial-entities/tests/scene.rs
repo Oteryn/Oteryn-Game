@@ -805,6 +805,22 @@ fn parity_a_health_updates_recolour_cached_name_glyphs() -> Result<(), BatchErro
         critical, scene.names[0].1,
         "unchanged health reuses cached glyphs"
     );
+    let mut world = World::builtin()?;
+    world.first_visible_floor = world.center().2 - 1;
+    world
+        .covering_tiles
+        .insert((world.first_visible_floor, 102, 201));
+    scene.world = Arc::new(world);
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    assert_ne!(critical, scene.names[0].1);
+    assert!(
+        scene
+            .atlas()
+            .rgba()
+            .as_chunks::<4>()
+            .0
+            .contains(&[96, 96, 96, 255])
+    );
     Ok(())
 }
 

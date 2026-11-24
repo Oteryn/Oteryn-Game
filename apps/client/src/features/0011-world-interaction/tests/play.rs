@@ -369,6 +369,46 @@ fn control_click_cases(cases: &[(bool, bool, bool)]) -> Result<(), Box<dyn std::
         .find(|a| a.multi_use)
         .ok_or("multi-use appearance")?
         .id;
+    #[cfg(bevy_shell)]
+    for scheme in [
+        crate::play::MouseScheme::Classic,
+        crate::play::MouseScheme::LeftSmart,
+    ] {
+        let mut world = view()?;
+        let mut map = super::feature_local_world_view::live_snapshot(101);
+        let tile = &mut map.tiles[0];
+        tile.items.truncate(1);
+        tile.items[0].origin = oteryn_session::world_map::MapOrigin::BaseOrdinal {
+            ordinal: 0,
+            object_revision: 0,
+        };
+        tile.items[0].appearance_id = multi.try_into()?;
+        let at = TileCoord::new(tile.position.x, tile.position.y);
+        world.set_live_map(&map)?;
+        let mut observer = battle_list_creature(oteryn_session::EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        });
+        observer.position.x = at.x - 1;
+        world.set_presentations(vec![oteryn_session::VisibleAppearance {
+            entity: observer,
+            look: None,
+            light: None,
+            forge_stacks: None,
+        }])?;
+        assert_eq!(
+            world.scene().smart_item_action(multi.try_into()?),
+            Some(Action::UseWith)
+        );
+        let (link, mut rx, outbox) = play_channel();
+        outbox.world_context_initialize(true, false);
+        outbox.targeting_initialize(true);
+        assert!(world.direct_click(at, &link, scheme));
+        assert!(
+            matches!(rx.try_recv()?,crate::combat_input::PlayCommand::WorldContext(cmd) if cmd.action==Action::Use && matches!(cmd.target,Target::Object(_)))
+        );
+    }
     for &(entity_item, multi_use, map_present) in cases {
         let mut view = view()?;
         let mut map = super::feature_local_world_view::live_snapshot(101);

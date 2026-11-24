@@ -205,3 +205,14 @@ fn npc_shop_bounds_are_the_registered_rows() {
     }
     assert_eq!(MAX_NPC_SHOP_RESULT_BYTES, 524);
 }
+
+#[test]
+fn npc_shop_equipment_option_requires_selection_and_sell_all() -> Result<(), NpcShopWireError> {
+    let sell_all = intent(NpcShopAction::SellAll);
+    let packed = encode_npc_shop_intent_for(&sell_all, true)?;
+    assert_eq!(decode_npc_shop_intent_for(&packed, true)?, (sell_all, true));
+    assert!(decode_npc_shop_intent(&packed).is_err());
+    assert!(decode_npc_shop_intent_for(&[packed.as_slice(), &[56, 1]].concat(), true).is_err());
+    assert!(encode_npc_shop_intent_for(&intent(NpcShopAction::Look), true).is_err());
+    Ok(())
+}

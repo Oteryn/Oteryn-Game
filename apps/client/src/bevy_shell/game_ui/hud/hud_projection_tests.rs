@@ -391,15 +391,141 @@ fn top_status_bar_shows_vitals_level_xp_and_conditions_above_the_game_window() -
 fn harmony_stays_visible_when_serene_ends() -> TestResult {
     let (mut app, _, outbox) = app()?;
     for serene in [true, false] {
-        outbox.bevy_hud_fixture(&[row(7)], Some(ActorVitals { harmony: 3, serene, ..default() }));
+        outbox.bevy_hud_fixture(
+            &[row(7)],
+            Some(ActorVitals {
+                harmony: 3,
+                serene,
+                ..default()
+            }),
+        );
         app.update();
         let world = app.world_mut();
-        let node = world.query_filtered::<&Node, With<MonkRow>>().single(world)?;
+        let node = world
+            .query_filtered::<&Node, With<MonkRow>>()
+            .single(world)?;
         assert_eq!(node.display, Display::Flex);
-        let icon = world.query::<(&Name, Option<&Visibility>)>().iter(world)
+        let icon = world
+            .query::<(&Name, Option<&Visibility>)>()
+            .iter(world)
             .find(|(name, _)| name.as_str() == "status-serene")
             .ok_or("Serene indicator")?;
         assert_eq!(icon.1 == Some(&Visibility::Hidden), !serene);
     }
+    Ok(())
+}
+
+#[test]
+fn xp_boost_button_requests_matching_store_offers() -> TestResult {
+    use oteryn_client_runtime::cui3::store::browse;
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_store_initialize();
+    app.update();
+    while commands.try_recv().is_ok() {}
+    let boost = named(&mut app, "status-xp-boost")?;
+    app.world_mut().trigger(Activate { entity: boost });
+    let crate::combat_input::PlayCommand::ServerMechanic(sent) = commands.try_recv()? else {
+        return Err("store browse".into());
+    };
+    let query = browse::Query::decode(&sent.payload).map_err(|e| format!("{e:?}"))?;
+    assert!(query.search.is_empty());
+    Ok(())
+}
+
+#[test]
+fn status_bar_visibility_hides_and_restores_top_bar() -> TestResult {
+    let (mut app, _, _) = app()?;
+    app.update();
+    let bar = named(&mut app, "Status bar")?;
+    for (enabled, display) in [(false, Display::None), (true, Display::Flex)] {
+        let mut host = app.world_mut().non_send_mut::<HostOwner>();
+        let mut saved = serde_json::to_value(&host.settings.preferences)?;
+        saved["status_bar_visible"] = enabled.into();
+        host.settings.preferences = serde_json::from_value(saved)?;
+        app.update();
+        assert_eq!(
+            app.world().get::<Node>(bar).ok_or("status bar")?.display,
+            display
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn status_bar_projects_selected_skills_and_visibility() -> TestResult {
+    let (mut app, _, outbox) = app()?;
+    outbox.bevy_hud_skills_fixture()?;
+    app.world_mut().non_send_mut::<HostOwner>().settings.preferences.status_bar_skills[3] = true;
+    app.update();
+    let top = named(&mut app, "Status bar")?;
+    let shown = texts_under(&app, top);
+    assert!(shown.contains(&"Sword 24".to_owned()));
+    assert!(!shown.contains(&"Axe 24".to_owned()));
+    app.world_mut().non_send_mut::<HostOwner>().settings.preferences.status_bar_visible = false;
+    app.update();
+    let bar = app.world().resource::<super::super::StatusBar>().0;
+    assert_eq!(app.world().get::<Node>(bar).ok_or("status region")?.display, Display::None);
+    Ok(())
+}
+
+#[test]
+fn compact_bar_fits_vitals_and_experience_on_one_row() -> TestResult {
+    let (mut app, _, _) = app()?;
+    app.world_mut().non_send_mut::<HostOwner>().settings.preferences.status_bar_style = 1;
+    app.update();
+    for name in ["Status bar vitals", "Status bar experience"] {
+        let entity = named(&mut app, name)?;
+        assert_eq!(app.world().get::<Node>(entity).ok_or("status line")?.width, percent(50.));
+    }
+    Ok(())
+}
+
+#[test]
+fn status_bar_placement_and_style_follow_saved_options() -> TestResult {
+    let (mut app, _, _) = app()?;
+    app.add_systems(Update, super::super::projection::project_regions);
+    let bar = app.world().resource::<super::super::StatusBar>().0;
+    let map = app.world().resource::<super::super::GameRegions>().world;
+    let map_row = app.world_mut().spawn(Node::default()).add_child(map).id();
+    let parent = app
+        .world_mut()
+        .spawn(Node::default())
+        .add_children(&[bar, map_row])
+        .id();
+    {
+        let mut host = app.world_mut().non_send_mut::<HostOwner>();
+        let prefs = &mut host.settings.preferences;
+        let mut value = serde_json::to_value(&*prefs)?;
+        value["status_bar_bottom"] = true.into();
+        value["status_bar_style"] = "Parallel".into();
+        *prefs = serde_json::from_value(value)?;
+    }
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<Children>(parent)
+            .ok_or("parent")?
+            .iter()
+            .collect::<Vec<_>>(),
+        [map_row, bar]
+    );
+    let vitals = named(&mut app, "Status bar vitals")?;
+    assert_eq!(
+        app.world()
+            .get::<Node>(vitals)
+            .ok_or("vitals")?
+            .flex_direction,
+        FlexDirection::Column
+    );
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .status_bar_visible = false;
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(bar).ok_or("bar")?.display,
+        Display::None
+    );
     Ok(())
 }

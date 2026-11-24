@@ -123,13 +123,17 @@ impl DurabilityRoot {
                 Err(error) => return Ok(Err(error)),
             };
             super::entitlements::synchronize(&mut tx, fence, &mut before.data, &catalogue).await?;
+            let daily_reset = if credit_kill { None } else { state::daily_reset(&mut tx, fence).await? };
+            if let Some(reset) = &daily_reset {
+                before.daily_reroll_at = reset.claim_at(&before.data);
+            }
             let mut view = before.clone();
             let gold = super::fee::available_gold(&mut tx, fence, &catalogue).await?;
             let has_vocation: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid AND vocation<>$2)")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(super::super::character_build::NO_VOCATION)
                 .fetch_one(&mut **tx).await?;
             let ctx = TaskBoardContext { level: view.level, now_unix_seconds: view.database_now,
-                period: view.period, creatures: &catalogue.creatures, available_gold: gold,
+                period: view.period, reset_day: daily_reset.as_ref().map(|reset| reset.day), creatures: &catalogue.creatures, available_gold: gold,
                 reroll_tokens: view.reroll_tokens, has_vocation };
             let seed: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(game_character_uuid_v7())")
                 .fetch_one(&mut **tx).await?;
@@ -196,6 +200,9 @@ impl DurabilityRoot {
             // omit these counts without adding inventory reads to party fan-out.
             if !credit_kill {
                 super::availability::refresh(&mut tx, fence, &catalogue, &mut view).await?;
+            }
+            if let Some(reset) = &daily_reset {
+                view.daily_reroll_at = reset.claim_at(&view.data);
             }
             let outcome = TaskBoardCommit { view, refusal: None, transition, replayed: false };
             if let Some(delivery) = &expansion_delivery {

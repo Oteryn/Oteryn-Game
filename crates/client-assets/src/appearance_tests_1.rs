@@ -23,6 +23,17 @@ mod tests {
     }
 
     #[test]
+    fn smart_click_flags_distinguish_use_look_and_walk() -> Result<(), Box<dyn std::error::Error>> {
+        for (bytes, expected) in [(&[0x38,1][..], (true,false,false)), (&[0x68,1], (false,true,false)), (&[0x28,1],(true,false,true)), (&[][..],(false,false,false))] {
+            let mut message = shifted(0,0);
+            message.flags = Some(FlagsMsg::decode(bytes)?);
+            let item = convert(1,message).ok_or("appearance")?;
+            assert_eq!((item.usable,item.unpassable,item.container),expected);
+        }
+        Ok(())
+    }
+
+    #[test]
     fn outfit_movement_uses_the_typed_walking_group() -> Result<(), Box<dyn std::error::Error>> {
         let mut message = shifted(0, 0);
         let mut walking = message.frame_group[0].clone();

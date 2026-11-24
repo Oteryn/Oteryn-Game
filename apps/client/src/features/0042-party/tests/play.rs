@@ -288,3 +288,47 @@ fn party_targets_other_player_on_own_tile_by_identity() -> Result<(), Error> {
     assert_eq!(view.party_target(oteryn_renderer::TileCoord::new(1,1)), None);
     Ok(())
 }
+
+#[test]
+fn party_roster_changes_emit_one_membership_tone() -> Result<(), Error> {
+    use oteryn_client_runtime::party::{CommandStatus, PartyResponse};
+    use oteryn_client_ui::party::{Intent, party};
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(1, 1), 7, &[])?;
+    outbox.party_initialize(true, false);
+    let mut state = party::PartyResult::refused(party::PartyDisposition::Ok);
+    let entry = party::PartyEntry {
+        channel: None,
+        list: Vec::new(),
+        handle: 1,
+        name: "Friend".into(),
+        leader: false,
+        expires_at: 0,
+        party_spell_remaining_ms: None,
+    };
+    for (present, changed) in [(false, false), (true, true), (true, false), (false, true)] {
+        state.members = if present {
+            vec![entry.clone()]
+        } else {
+            Vec::new()
+        };
+        link.party_request(Intent::Refresh);
+        assert!(commands.try_recv().is_ok());
+        let bytes = party::encode_party_result(&state).map_err(|e| format!("{e:?}"))?;
+        outbox.party_result(&PartyResponse {
+            status: CommandStatus::Accepted,
+            operation: bytes.clone(),
+            view: Some(bytes),
+        });
+        assert!(view.tick(&link).is_ok());
+        assert_eq!(
+            view.take_ui_sounds(),
+            if changed {
+                vec![crate::play::UiSound::Party]
+            } else {
+                Vec::new()
+            }
+        );
+    }
+    Ok(())
+}

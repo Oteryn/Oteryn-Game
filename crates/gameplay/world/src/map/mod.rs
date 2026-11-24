@@ -704,7 +704,7 @@ fn check_pins(manifest: &Manifest, pins: &BundlePins) -> Result<(), LoadError> {
     Ok(())
 }
 
-/// The compact id and ground semantics of every palette index, from the `terrain` field only.
+/// The compact id and ground semantics of every palette index.
 fn palette(manifest: &Manifest) -> Vec<PaletteGround> {
     manifest
         .palette
@@ -712,10 +712,21 @@ fn palette(manifest: &Manifest) -> Vec<PaletteGround> {
         .map(|entry| PaletteGround {
             id: entry.id,
             appearance: palette_appearance(&entry.key),
-            ground: entry.terrain.as_ref().and_then(|terrain| {
-                (terrain.kind == TerrainKind::Ground)
-                    .then_some((terrain.walkable?, terrain.ground_speed?))
-            }),
+            ground: entry
+                .terrain
+                .as_ref()
+                .and_then(|terrain| {
+                    (terrain.kind == TerrainKind::Ground)
+                        .then_some((terrain.walkable?, terrain.ground_speed?))
+                })
+                .or_else(|| {
+                    // The shovel owns this palette entry as an Item. Crystal's
+                    // closed grass hole has walkable ground at the same speed
+                    // as its open Terrain counterpart (594).
+                    (entry.family == oteryn_world_bundle::bundle::Family::Item
+                        && entry.key == "oteryn:item.tibia.i593")
+                        .then_some((true, 160))
+                }),
         })
         .collect()
 }

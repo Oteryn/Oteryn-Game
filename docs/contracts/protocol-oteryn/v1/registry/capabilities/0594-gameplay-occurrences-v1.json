@@ -1,0 +1,13 @@
+{
+  "id": 594,
+  "name": "GAMEPLAY_OCCURRENCES_V1",
+  "owner_decision": "Client occurrence and inscription protocol gap packet",
+  "owner": "Game chest claim and Wheel vitals owners",
+  "requires": [],
+  "command_types": [
+    6355
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; adds the reward event to command 2 and gates the local Gift activation observation."
+}

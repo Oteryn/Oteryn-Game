@@ -821,3 +821,6 @@ fn close_feedback_is_localized(refresh: bool) -> Result {
     assert!(texts(&mut app).iter().any(|text| text == german));
     Ok(())
 }
+
+#[path = "parity_tests.rs"]
+mod parity_tests;

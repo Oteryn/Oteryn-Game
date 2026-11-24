@@ -8,12 +8,14 @@ IDS = frozenset(CHAIN)
 PROOF = 'tools/content-schema/native-gameplay/elephant-corpse-profiles.json'
 
 
-def capture_chain(root, chain):
+def capture_chain(root, chain, *, project_xml=None):
     ids = set(chain)
     xml_raw=(root/items.XML).read_bytes();client=(root/items.CLIENT).read_bytes()
     if hashlib.sha256(xml_raw).hexdigest()!=items.XML_SHA or hashlib.sha256(client).hexdigest()!=items.CLIENT_SHA:
         raise ValueError('ELEPHANT_CORPSE_CORPSE_SOURCE_DRIFT')
     source=items.source;xml=source.xml_index(xml_raw)
+    if project_xml is not None:
+        project_xml(xml)
     objects=source.engine_items.load_appearance_objects(client)
     physical={r['server_item_id']:r for r in source.policies(client,xml_raw,ids)}
     bindings=source.binding_index((root/'imports/crystalserver/bindings/items.json').read_bytes())

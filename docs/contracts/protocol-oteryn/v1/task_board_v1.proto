@@ -25,7 +25,7 @@ message TaskBoardReplyV1 {
   repeated uint64 talisman_next_costs = 9 [packed = false]; // 0 at maximum level
 }
 
- // Full request actions 4..19: all fields explicitly present, canonical field order.
+// Full request actions 4..20 except retired 12; all fields present in canonical order.
 message TaskBoardFullRequestV1 {
   uint32 action = 1;
   uint32 selection = 2;
@@ -36,8 +36,9 @@ message TaskBoardKillV1 {
   uint32 required = 2;
   uint32 current = 3;
 }
+// Item field 1 is a canonical definition_ref with capability 578, donor ID otherwise.
 message TaskBoardDeliveryV1 {
-  uint32 item = 1; // donor uint16 identifier, resolved to canonical custody identity
+  uint32 item = 1;
   uint32 required = 2;
   uint32 current = 3; // undelivered: recorded carried+stash+depot count modulo 2^32; delivered: required
   bool delivered = 4;
@@ -74,7 +75,7 @@ message TaskBoardBountyV1 {
   uint32 selected = 3; // 0 absent, otherwise original index +1
   uint32 current = 4;
   uint64 rerolls = 5; // 0..i64::MAX; daily threshold10 is not a balance cap
-  uint64 daily_reroll_at = 6; // legacy field, now always zero; rerolls consume one token
+  uint64 daily_reroll_at = 6; // Unix seconds with capability 578, zero otherwise
   repeated TaskBoardBountyOfferV1 offers = 7; // <=3
   optional TaskBoardBountyOfferV1 active = 8;
   repeated TaskBoardListSlotV1 lists = 9; // <=5

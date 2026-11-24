@@ -26,11 +26,25 @@ async fn main() -> Result<(), WireError> {
         .connect(&url)
         .await
         .map_err(|_| "admin DB connection failed")?;
+    let read_pool = config
+        .read_db_url_env_name
+        .as_ref()
+        .map(|name| {
+            let url = std::env::var(name)
+                .map_err(|_| "configured read DB URL environment variable missing")?;
+            sqlx::postgres::PgPoolOptions::new()
+                .max_connections(2)
+                .acquire_timeout(std::time::Duration::from_secs(5))
+                .connect_lazy(&url)
+                .map_err(|_| "invalid read DB connection configuration")
+        })
+        .transpose()?;
     let transport = HttpsTransport::new(&config)?;
     let mut agent = Agent {
         config,
         policy,
         transport,
+        read_pool,
         store: PostgresStore { pool },
         clock: SystemClock,
         signing_key,

@@ -50,6 +50,18 @@ impl oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup
         }
         self.0.equipment_policy(key, revision)
     }
+
+    fn worn_equipment_policy(
+        &self,
+        key: &str,
+        revision: &str,
+    ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
+    {
+        if super::timed_item_content::unhosted_equipment_effect(key) {
+            return None;
+        }
+        self.0.worn_equipment_policy(key, revision)
+    }
 }
 
 /// A plain item names a Known definition with container semantics `NotApplicable`; a container
@@ -446,13 +458,17 @@ pub(super) async fn committed_equipment_move(
         return Some(EquipmentMoveReplay::Absent);
     };
     let command_id = CommandId::new(command.command_id).ok()?;
-    admission
-        .root
-        .read_equipment_move_receipt(
-            admission.character,
-            fence.character_id,
-            CommandRef::new(command.game_session_id, command_id),
-        )
+    super::AdmissionRetryBudget::for_command(admission.root)
+        .retry_command_guard(async || {
+            admission
+                .root
+                .read_equipment_move_receipt(
+                    admission.character,
+                    fence.character_id,
+                    CommandRef::new(command.game_session_id, command_id),
+                )
+                .await
+        })
         .await
         .ok()
 }
@@ -584,8 +600,14 @@ async fn move_equipment_inner(
     if !trade_ready {
         return refused(RejectionStage::EquipmentTrade);
     }
-    if !admission
-        .checkpoint_timed_equipment(actor, session, true)
+    let retry = super::AdmissionRetryBudget::for_command(admission.root);
+    // The clock retains its pending occurrence if a checkpoint needs reconciliation.
+    if !retry
+        .retry_until(async || {
+            admission
+                .checkpoint_timed_equipment(actor, session, true)
+                .await
+        })
         .await
     {
         return EquipmentMoveResult::Unknown;
@@ -624,20 +646,29 @@ async fn move_equipment_inner(
             definition,
             slot,
             upgrade_tier,
-        } => {
-            admission
-                .root
-                .commit_hotkey_equipment_tiered(
-                    admission.character,
-                    admission.holder,
-                    &fence,
-                    CommandRef::new(command.game_session_id, command_id),
-                    &NativeItemWeights(native),
-                    (definition, slot),
-                    upgrade_tier,
-                )
-                .await
-        }
+        } => retry
+            .retry_unavailable(async || {
+                match admission
+                    .root
+                    .commit_hotkey_equipment_tiered(
+                        admission.character,
+                        admission.holder,
+                        &fence,
+                        CommandRef::new(session, command_id),
+                        &NativeItemWeights(native),
+                        (definition.clone(), slot),
+                        upgrade_tier,
+                    )
+                    .await
+                {
+                    Err(crate::durability::DurabilityError::RootUnavailable) => {
+                        Err(super::connection::AdmissionRefusal::Unavailable)
+                    }
+                    result => Ok(result),
+                }
+            })
+            .await
+            .unwrap_or(Err(crate::durability::DurabilityError::RootUnavailable)),
         MoveRequest::Exact(request) => {
             let Some(durable) = durable_move(request) else {
                 return refused(RejectionStage::EquipmentRequest);
@@ -693,13 +724,21 @@ async fn move_equipment_inner(
     match committed {
         Ok(Ok(_receipt)) => {
             // Keep the lane permit across the checkpoint, fresh read and publication.
-            if !admission
-                .checkpoint_timed_equipment(actor, session, true)
+            if !retry
+                .retry_until(async || {
+                    admission
+                        .checkpoint_timed_equipment(actor, session, true)
+                        .await
+                })
                 .await
-                || admission
-                    .refresh_clock_equipment_effects(actor, session, fence, house)
+                || !retry
+                    .retry_until(async || {
+                        admission
+                            .refresh_clock_equipment_effects(actor, session, fence, house)
+                            .await
+                            .is_ok()
+                    })
                     .await
-                    .is_err()
             {
                 return EquipmentMoveResult::Unknown;
             }

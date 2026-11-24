@@ -14,6 +14,10 @@ pub enum BattleSort {
     /// Tibia's display-time order: the order the creatures appeared in the battle rows.
     #[default]
     Appearance,
+    AppearanceDescending,
+    DistanceAscending,
+    DistanceDescending,
+    NameDescending,
     Name,
     HealthAscending,
     HealthDescending,
@@ -36,6 +40,12 @@ pub struct BattleListPreferences {
     pub search: String,
     pub max_health: u8,
     pub sort: BattleSort,
+    pub filters_collapsed: bool,
+    pub hide_npcs: bool,
+    pub hide_summons: bool,
+    pub hide_party: bool,
+    pub hide_non_skull: bool,
+    pub hidden_vocations: std::collections::BTreeSet<u8>,
     pub vocation: Option<u8>,
     pub guild: GuildFilter,
 }
@@ -49,6 +59,12 @@ impl Default for BattleListPreferences {
             search: String::new(),
             max_health: 100,
             sort: BattleSort::Appearance,
+            filters_collapsed: false,
+            hide_npcs: false,
+            hide_summons: false,
+            hide_party: false,
+            hide_non_skull: false,
+            hidden_vocations: Default::default(),
             vocation: None,
             guild: GuildFilter::Any,
         }
@@ -68,6 +84,7 @@ pub fn validate_lists(lists: &[BattleListPreferences]) -> bool {
                 && list.search.len() <= 64
                 && !list.search.chars().any(char::is_control)
                 && list.max_health <= 100
+                && list.hidden_vocations.iter().all(|v| (1..=5).contains(v))
                 && list.vocation.is_none_or(|family| family <= 5)
                 && !lists[..i]
                     .iter()
@@ -90,26 +107,49 @@ pub fn name(row: &WorldSpatialEntity) -> &str {
         .unwrap_or("")
 }
 
-
 impl BattleListPreferences {
     pub fn rows(&self, entities: &[WorldSpatialEntity]) -> Vec<WorldSpatialEntity> {
+        self.rows_at(entities, None)
+    }
+
+    fn rows_at(
+        &self,
+        entities: &[WorldSpatialEntity],
+        own: Option<oteryn_session::ActorPosition>,
+    ) -> Vec<WorldSpatialEntity> {
+        let distance = |row: &WorldSpatialEntity| {
+            own.map(|p| {
+                u64::from(row.position.x.abs_diff(p.x).saturating_sub(1))
+                    + u64::from(row.position.y.abs_diff(p.y).saturating_sub(1))
+            })
+        };
         let search = self.search.to_lowercase();
         let mut rows: Vec<_> = entities
             .iter()
             .filter(|row| {
                 ((row.kind == EntityKind::Player && self.players)
-                    || (row.kind == EntityKind::Creature && self.creatures))
+                    || (row.kind == EntityKind::Creature && self.creatures)
+                    || (row.kind == EntityKind::Npc && !self.hide_npcs))
                     && health(row) <= self.max_health
                     && (search.is_empty() || name(row).to_lowercase().contains(&search))
             })
             .copied()
             .collect();
+        if self.sort == BattleSort::AppearanceDescending {
+            rows.reverse();
+            return rows;
+        }
         if self.sort == BattleSort::Appearance {
             return rows;
         }
         rows.sort_by(|a, b| {
             let order = match self.sort {
-                BattleSort::Appearance => std::cmp::Ordering::Equal,
+                BattleSort::DistanceAscending => distance(a).cmp(&distance(b)),
+                BattleSort::DistanceDescending => distance(b).cmp(&distance(a)),
+                BattleSort::NameDescending => name(b).to_lowercase().cmp(&name(a).to_lowercase()),
+                BattleSort::Appearance | BattleSort::AppearanceDescending => {
+                    std::cmp::Ordering::Equal
+                }
                 BattleSort::Name => name(a).to_lowercase().cmp(&name(b).to_lowercase()),
                 BattleSort::HealthAscending => health(a).cmp(&health(b)),
                 BattleSort::HealthDescending => health(b).cmp(&health(a)),
@@ -157,27 +197,34 @@ impl BattleListsState {
 
 impl BattleListPreferences {
     pub fn needs_metadata(&self) -> bool {
-        self.vocation.is_some() || self.guild != GuildFilter::Any
+        !self.hidden_vocations.is_empty()
+            || self.vocation.is_some()
+            || self.guild != GuildFilter::Any
     }
     pub fn rows_with_metadata(
         &self,
         entities: &[WorldSpatialEntity],
+        own: Option<oteryn_session::ActorPosition>,
         metadata: &std::collections::BTreeMap<
             oteryn_session::EntityRef,
             oteryn_client_runtime::cui3::battle_metadata::PlayerMetadata,
         >,
     ) -> Vec<WorldSpatialEntity> {
-        self.rows(entities)
+        self.rows_at(entities, own)
             .into_iter()
             .filter(|row| {
                 if row.kind != EntityKind::Player || !self.needs_metadata() {
                     return true;
                 }
                 let Some(facts) = metadata.get(&row.entity) else {
-                    return false;
+                    return self.vocation.is_none() && self.guild == GuildFilter::Any;
                 };
-                self.vocation
-                    .is_none_or(|vocation| facts.vocation == Some(vocation))
+                !facts
+                    .vocation
+                    .is_some_and(|v| self.hidden_vocations.contains(&v))
+                    && self
+                        .vocation
+                        .is_none_or(|vocation| facts.vocation == Some(vocation))
                     && match self.guild {
                         GuildFilter::Any => true,
                         GuildFilter::SameGuild => facts.same_guild == Some(true),

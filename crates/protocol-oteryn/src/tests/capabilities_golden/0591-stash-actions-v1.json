@@ -1,0 +1,19 @@
+{
+  "id": 591,
+  "name": "STASH_ACTIONS_V1",
+  "constant": "stash::CAPABILITY_STASH_ACTIONS_V1",
+  "requires": [
+    62
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    6345
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

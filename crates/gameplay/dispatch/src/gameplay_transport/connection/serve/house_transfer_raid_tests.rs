@@ -61,7 +61,10 @@ impl FreshAdmissionAuthority for HouseNoticeAuthority {
         self.left.set(true);
     }
 
-    fn take_server_notice(&self, admitted: AdmittedSession) -> Option<ServerMessage> {
+    fn take_server_notice(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::zones_nologout::ServerNotification> {
         if !admitted
             .continuity
             .selected_capabilities
@@ -69,7 +72,7 @@ impl FreshAdmissionAuthority for HouseNoticeAuthority {
         {
             return None;
         }
-        self.messages.lock().ok()?.pop_front()
+        self.messages.lock().ok()?.pop_front().map(Into::into)
     }
 
     async fn server_messages_changed(&self, admitted: AdmittedSession) {

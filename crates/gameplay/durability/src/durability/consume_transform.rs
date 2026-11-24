@@ -28,6 +28,7 @@ mod planting;
 pub use ground::{GroundActionContext, GroundActionSource};
 #[path = "consume_transform_house.rs"]
 mod house;
+pub(super) use house::house_action_current_in_transaction;
 pub use house::{HouseActionContext, HouseDecorationBaseItem};
 
 #[derive(Debug, Clone)]

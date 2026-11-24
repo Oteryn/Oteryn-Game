@@ -62,7 +62,12 @@ struct IdentityProgress {
     items: Vec<u32>,
     resolved: usize,
 }
-fn resolve_items(owner: NonSend<HostOwner>, mut previous: Local<Option<IdentityProgress>>) {
+fn resolve_items(
+    owner: NonSend<HostOwner>,
+    time: Res<Time<Real>>,
+    mut retry_at: Local<std::time::Duration>,
+    mut previous: Local<Option<IdentityProgress>>,
+) {
     let Some(play) = &owner.play else {
         *previous = None;
         return;
@@ -91,7 +96,10 @@ fn resolve_items(owner: NonSend<HostOwner>, mut previous: Local<Option<IdentityP
         resolved: panel.item_info.len(),
         items,
     };
-    if previous.as_ref() != Some(&progress) {
+    if previous.as_ref() != Some(&progress) || time.elapsed() >= *retry_at {
+        *retry_at = time
+            .elapsed()
+            .saturating_add(std::time::Duration::from_secs(2));
         if panel.catalogue_pending.is_empty()
             && progress
                 .items
@@ -279,8 +287,8 @@ fn finish_configuration(
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<output::ExportTask>()
-        .add_systems(Update, output::finish)
-        .init_resource::<bevy::clipboard::Clipboard>()
+        .add_systems(Update, (output::finish, output::finish_copy))
+        .init_resource::<output::CopyTask>()
         .add_observer(output::copy)
         .init_resource::<InputFocus>()
         .init_resource::<ConfigPending>()

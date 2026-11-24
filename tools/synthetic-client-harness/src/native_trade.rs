@@ -226,11 +226,13 @@ async fn peer(mut stream: DuplexStream) -> Result<(), Error> {
                 phase: 2,
                 reason: 0,
                 own: Some(trade::Offer {
+                    appearance_id: None,
                     definition: 123,
                     count: 2,
                     sub_type: 0,
                 }),
                 counter: Some(trade::Offer {
+                    appearance_id: None,
                     definition: 456,
                     count: 1,
                     sub_type: 0,

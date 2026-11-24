@@ -58,7 +58,7 @@ class InventoryTests(unittest.TestCase):
             self.assertIn('fn canonical_projection_retains_all_2_admitted_bestiary_blocks', text)
             validator_text = (root / VALIDATOR).read_text()
             self.assertIn('LEGACY_CREATURE_COUNT = 3', validator_text)
-            self.assertIn("require(counts['Creature'] == LEGACY_CREATURE_COUNT, 'LEGACY_CREATURE_COUNT')", validator_text)
+            self.assertIn('require(counts["Creature"] == LEGACY_CREATURE_COUNT, "LEGACY_CREATURE_COUNT")', validator_text)
             def require(condition, code):
                 if not condition:
                     raise RuntimeError(code)

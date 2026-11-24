@@ -146,6 +146,20 @@ impl PreyRules {
 mod tests {
     use super::*;
 
+    #[test]
+    fn itemglob3_production_ghastly_dragon_pick_again_price()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let profiles: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../content/creatures/definitions/spell-native-profiles.json"
+        ))?;
+        let rules: PreyRules = serde_json::from_value(profiles["prey_rules"].clone())?;
+        let price = rules
+            .pick_again_price(100, "oteryn:creature.ghastly_dragon")
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(price, 100_920);
+        Ok(())
+    }
+
     fn rules() -> PreyRules {
         PreyRules {
             schema_version: 1,

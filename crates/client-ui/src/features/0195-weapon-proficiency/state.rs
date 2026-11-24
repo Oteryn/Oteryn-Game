@@ -52,6 +52,13 @@ impl WeaponProficiencyPanel {
         if self.pending {
             return false;
         }
+        self.select_catalogue_row(row)
+    }
+    /// An in-flight progress or catalogue read is independent of the selected weapon.
+    pub fn select_equipped_weapon(&mut self, row: usize) -> bool {
+        (!self.pending || matches!(self.command_kind, 641 | 660)) && self.select_catalogue_row(row)
+    }
+    fn select_catalogue_row(&mut self, row: usize) -> bool {
         let Some(entry) = self
             .catalogue
             .as_ref()

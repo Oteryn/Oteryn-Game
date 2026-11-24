@@ -1,0 +1,7 @@
+name=player_status
+commands=6363
+transport=player_status
+composed=player_status
+authority=player_status
+[route]
+routing::player_status::route(authority, session.admitted, command.payload, session.visibility.as_ref()).await

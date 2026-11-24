@@ -14,6 +14,10 @@ use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::CommandRef;
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
+use std::sync::{
+    Arc,
+    atomic::{AtomicI64, Ordering},
+};
 
 pub const ROTATION_SECONDS: u32 = 14 * 24 * 3600;
 pub const PREPARATION_SECONDS: u32 = 8;
@@ -127,6 +131,17 @@ pub struct Read {
 }
 
 impl DurabilityRoot {
+    pub(super) fn drome_test_clock(&self) -> Option<Arc<AtomicI64>> {
+        #[cfg(any(test, feature = "test-support"))]
+        {
+            self.quest_test_clock_handle()
+        }
+        #[cfg(not(any(test, feature = "test-support")))]
+        {
+            None
+        }
+    }
+
     pub async fn read_tibiadrome(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -135,10 +150,14 @@ impl DurabilityRoot {
         command: CommandRef,
         payload: &[u8],
     ) -> Result<Read, CharacterProgressionError> {
+        if command.game_session_id() != fence.game_session_id {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
+        let test_clock = self.drome_test_clock();
         let payload = payload.to_vec();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
@@ -149,16 +168,16 @@ impl DurabilityRoot {
                     if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
                         return Ok(Err(error));
                     }
-                    let now = now(&mut tx).await?;
+                    let now = now(&mut tx, test_clock.as_deref()).await?;
+                    let rotation = now / ROTATION_SECONDS;
                     let state = load(&mut tx, fence).await?;
-                    let rotation_points_eligible = state.progress.rotation
-                        >= now / ROTATION_SECONDS
+                    let rotation_points_eligible = state.progress.rotation >= rotation
                         || rotation_eligible(&mut tx, fence.character_id, state.progress.rotation)
                             .await?;
                     let replay = replay(&mut tx, fence, command, &payload).await?;
-                    publish(&mut tx, fence.character_id, now / ROTATION_SECONDS).await?;
+                    publish(&mut tx, fence.character_id, rotation).await?;
                     let potion = next_potion(&mut tx, fence).await?;
-                    let (rank, potions) = standing(&mut tx, fence, now / ROTATION_SECONDS).await?;
+                    let (rank, potions) = standing(&mut tx, fence, rotation).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(Read {
                         potion,
@@ -198,6 +217,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
+        let test_clock = self.drome_test_clock();
         self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
@@ -207,11 +227,10 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx,deadline).await?; return Ok(Ok(reply));
             }
             if load(&mut tx,fence).await?!=before {return Ok(Err(CharacterProgressionError::ConflictingOccurrence));}
-            let now=now(&mut tx).await?;
+            let now=now(&mut tx, test_clock.as_deref()).await?;
             let rotation=now/ROTATION_SECONDS;
             let mut earned=before.progress.clone();
-            if earned.rotation < rotation && !rotation_eligible(&mut tx, fence.character_id, earned.rotation).await? { earned.waves=0; }
-            earned.rotate(rotation);
+            settle_rotation(&mut tx, fence.character_id, &mut earned, rotation).await?;
             let expected_lifetime=earned.lifetime_levels.map(|levels|levels.saturating_add(u64::from(after.progress.level.saturating_sub(earned.level))));
             if after.progress.rotation!=rotation || after.progress.points!=earned.points
                 || after.progress.lifetime_levels!=expected_lifetime
@@ -252,7 +271,14 @@ impl DurabilityRoot {
 
 pub(super) async fn now(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    test_clock: Option<&AtomicI64>,
 ) -> Result<u32, DurabilityError> {
+    if let Some(seconds) = test_clock
+        .map(|clock| clock.load(Ordering::Acquire))
+        .filter(|seconds| *seconds >= 0)
+    {
+        return u32::try_from(seconds).map_err(|_| DurabilityError::InvalidStoredState);
+    }
     let seconds: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&mut **tx)
@@ -297,6 +323,19 @@ pub(super) async fn save(
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(payload).bind(reply).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_character_tibiadrome(character_id,body) VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT(character_id) DO UPDATE SET body=EXCLUDED.body")
         .bind(fence.character_id.as_bytes().as_slice()).bind(serde_json::to_value(state).map_err(|_|DurabilityError::InvalidStoredState)?).execute(&mut **tx).await?;
+    Ok(())
+}
+
+pub(super) async fn settle_rotation(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: crate::domain::CharacterId,
+    progress: &mut Progress,
+    rotation: u32,
+) -> Result<(), DurabilityError> {
+    if progress.rotation < rotation && !rotation_eligible(tx, character, progress.rotation).await? {
+        progress.waves = 0;
+    }
+    progress.rotate(rotation);
     Ok(())
 }
 // Trading eligibility at the rotation boundary: manual combat.md:263. The
@@ -416,13 +455,14 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
+        let test_clock = self.drome_test_clock();
         self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;
             if let Err(error)=assert_gameplay_fence(&mut tx,&fence,&node).await?{return Ok(Err(error));}
             let mut state=load(&mut tx,fence).await?;
             if state.active && state.run==run && state.session==*fence.game_session_id.as_bytes() && state.generation==fence.scope_ownership_generation.get(){
-                let now=now(&mut tx).await?;
+                let now=now(&mut tx, test_clock.as_deref()).await?;
                 if state.progress.rotation==now/ROTATION_SECONDS {
                     if completed>state.completed {
                         let count=completed-state.completed;
@@ -446,8 +486,7 @@ impl DurabilityRoot {
                 if ended || state.progress.rotation!=now/ROTATION_SECONDS {
                     state.wave=wave;state.active=false;state.progress.finish(now);
                 }
-                if state.progress.rotation < now/ROTATION_SECONDS && !rotation_eligible(&mut tx, fence.character_id, state.progress.rotation).await? { state.progress.waves=0; }
-                state.progress.rotate(now/ROTATION_SECONDS);
+                settle_rotation(&mut tx, fence.character_id, &mut state.progress, now/ROTATION_SECONDS).await?;
                 sqlx::query("UPDATE game_character_tibiadrome SET body=$2 WHERE character_id=encode($1,'hex')::uuid")
                     .bind(fence.character_id.as_bytes().as_slice()).bind(serde_json::to_value(state).map_err(|_|DurabilityError::InvalidStoredState)?).execute(&mut *tx).await?;
             }
