@@ -182,6 +182,18 @@ impl Rows<'_> {
     }
 }
 
+async fn discard_unusable_session(session: &mut Option<DevClientSession>) {
+    if let Some(client) = session.as_mut()
+        && client
+            .session_mut()
+            .service_liveness_discarding_events(Duration::from_millis(100))
+            .await
+            .is_err()
+    {
+        drop(session.take());
+    }
+}
+
 pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     let setting = match std::env::var(BATCH) {
         Ok(value) => Some(value),
@@ -221,6 +233,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
         let outcome = verdict::indexed_timeout(
             Duration::from_secs(150),
             Box::pin(async {
+                discard_unusable_session(&mut session).await;
                 if session.is_none() {
                     session = Some(connect_character(clients, 0x70, 1).await?);
                 }
@@ -243,15 +256,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
             Ok(Err(error)) => {
                 // A failed exchange can poison the connection. Preserve this
                 // row's error and let the next entry acquire a clean admission.
-                if let Some(client) = session.as_mut()
-                    && client
-                        .session_mut()
-                        .service_liveness_discarding_events(Duration::ZERO)
-                        .await
-                        .is_err()
-                {
-                    drop(session.take());
-                }
+                discard_unusable_session(&mut session).await;
                 error.to_string()
             }
             Err(_) => {
@@ -692,7 +697,8 @@ async fn charm_command(
         wire::COMMAND_TYPE_CHARM_PROGRESSION,
         &request,
     )
-    .await?;
+    .await
+    .map_err(|error| format!("charm-{action:?}-{error}"))?;
     wire::decode_charm_progression_reply(&reply).map_err(|e| format!("{e:?}").into())
 }
 
