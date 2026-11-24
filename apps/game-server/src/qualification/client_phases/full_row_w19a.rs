@@ -133,10 +133,6 @@ async fn use_intent(
 }
 
 const MESSENGER: &str = "oteryn:npc.messenger_of_santa";
-fn has_placed_messenger(npcs: &oteryn_world_bundle::npc::Table) -> bool {
-    npcs.npcs.iter().any(|npc| npc.key == MESSENGER && !npc.placements.is_empty())
-}
-
 async fn quote(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -287,25 +283,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W19A_ACCOUNT").await?;
     let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
     let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let mut client = connect_world(clients, 0xa9).await?;
-    let has_seller = has_placed_messenger(&metadata.npcs);
-    let source_sequence = if has_seller {
-        acquire_bundles(&mut client, clients).await?
-    } else {
-        evidence(&format!("W19A_GAP {PURCHASE_GAP}"));
-        character_prep::declare_seeded("W19a", "two-red-christmas-bundles", "random bundle conversion with unplaced donor");
-        let reference = bag_reference()?;
-        let before = quantities(&client)?.get(&reference.get()).copied().unwrap_or(0);
-        character_prep::grant_item(&client, BAG_ID, 2).await?;
-        character_prep::reload(&mut client, clients).await?;
-        let after = quantities(&client)?.get(&reference.get()).copied().unwrap_or(0);
-        if before.checked_add(2) != Some(after) {
-            return Err(format!("seeded bundle quantity: expected two additional bundles, observed {before}->{after}").into());
-        }
-        client.last_server_sequence()
-    };
+    let source_sequence = acquire_bundles(&mut client, clients).await?;
     let before_refusal = quantities(&client)?;
     let position = client.world_spatial().actor_position;
     let source = bag_handle(&client)?;
@@ -394,16 +373,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step 5: final LOGOUT refused".into());
     }
     evidence(&format!(
-        "W19A_CHECK source_sequence={source_sequence} purchased={has_seller} refusal_sequence={} committed_sequence={} durable_outcomes={}",
+        "W19A_CHECK source_sequence={source_sequence} purchased=true refusal_sequence={} committed_sequence={} durable_outcomes={}",
         refused.2, committed.result_server_sequence, rule.picks
     ));
-    if !has_seller {
-        return Err(format!("{PURCHASE_GAP};seeded-conversion=verified").into());
-    }
     Ok(())
 }
-
-const PURCHASE_GAP: &str = "step=messenger-purchase observed=unplaced-donor-npc";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();

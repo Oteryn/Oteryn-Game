@@ -26,7 +26,7 @@ const PREPARATION: character_prep::Seeded = character_prep::Seeded {
     reason: "C12 tests spell augment behavior after obtaining the weapon and qualifying for the spell.",
 };
 const ITEM_ID: u32 = 50_271;
-const PREREQUISITES: &str = "level-20-monk,premium,purchase-gold,mana-potions";
+const PREREQUISITES: &str = "level-20-monk,premium,mana-potions";
 const MANA_POTION: u32 = 268;
 const CAST_MANA: u32 = 50;
 const SPELL_WORDS: &str = "exori nia";
@@ -549,6 +549,18 @@ fn weapon(client: &DevClientSession) -> TestResult<Option<NonZeroU32>> {
         .map(|entry| entry.item.item_definition_ref))
 }
 
+fn pema_planned_price() -> TestResult<u64> {
+    let trades = read_json("content/services/trade/trade-00000-00323.json")?;
+    let key = format!("oteryn:item.tibia.i{ITEM_ID}");
+    trades["records"].as_array().ok_or("trade records absent")?.iter()
+        .map(|record| &record["declaration"])
+        .filter(|declaration| declaration["identity"]["key"] == "oteryn:service.trade.enpa_deia_pema")
+        .flat_map(|declaration| declaration["offers"].as_array().into_iter().flatten())
+        .find(|offer| offer["direction"] == "SellToPlayer" && offer["item"]["key"] == key)
+        .and_then(|offer| offer["unit_price"].as_u64())
+        .ok_or_else(|| "authored Enpa-Deia Pema price for item 50271 absent".into())
+}
+
 async fn acquire_pema(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -564,9 +576,13 @@ async fn acquire_pema(
         at.floor == placement.floor && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
     };
     let placements = seller.placements.iter().map(|p| TilePos { x: p.x, y: p.y, floor: p.floor });
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        placements.clone().any(|placement| near_placement(at, placement))
-    }).ok_or("no playable route within three tiles of a compiled Enpa-Deia Pema placement")?;
+    let route_to_seller = |from| {
+        route(world, from, |at| placements.clone().any(|placement| near_placement(at, placement)))
+            .ok_or("no playable route within three tiles of a compiled Enpa-Deia Pema placement")
+    };
+    route_to_seller(tile(client.world_spatial().actor_position)?)?;
+    full_e2ef7::earn_gold(client, world, pema_planned_price()?).await?;
+    let path = route_to_seller(tile(client.world_spatial().actor_position)?)?;
     walk(client, world, &path).await?;
     let here = tile(client.world_spatial().actor_position)?;
     let actor = client.world_entities().and_then(|entities| {
@@ -581,11 +597,19 @@ async fn acquire_pema(
         matches.next().is_none().then_some(actor)
     }).ok_or("expected one live Enpa-Deia Pema at a compiled placement")?;
 
-    for text in ["hi", "trade"] {
-        let reply = npc_shop::talk(client.session_mut(), &npc::NpcTalkIntent { npc_actor: actor, text: text.into() }).await?;
-        if reply != npc::NpcIntentDisposition::Ok {
-            return Err(format!("Enpa-Deia Pema {text} reply={reply:?}").into());
-        }
+    let reply = npc_shop::talk(client.session_mut(), &npc::NpcTalkIntent { npc_actor: actor, text: "hi".into() }).await?;
+    if reply != npc::NpcIntentDisposition::Ok {
+        return Err(format!("Enpa-Deia Pema hi reply={reply:?}").into());
+    }
+    let greeting = client.session_mut().read_gated_delta(npc::STATE_DOMAIN_NPC_CONVERSATION, 1).await?;
+    let conversation = npc::decode_npc_conversation(&greeting.payload)
+        .map_err(|e| format!("Pema conversation: {e:?}"))?;
+    if !conversation.open.is_some_and(|(speaker, _)| speaker == actor) {
+        return Err("Pema greeting did not open a conversation for the resolved actor".into());
+    }
+    let reply = npc_shop::talk(client.session_mut(), &npc::NpcTalkIntent { npc_actor: actor, text: "trade".into() }).await?;
+    if reply != npc::NpcIntentDisposition::Ok {
+        return Err(format!("Enpa-Deia Pema trade reply={reply:?}").into());
     }
     let delta = client.session_mut().read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1).await?;
     let window = npc::decode_npc_trade_window(&delta.payload).map_err(|e| format!("Pema trade window: {e:?}"))?;
@@ -599,9 +623,9 @@ async fn acquire_pema(
     if offer.count != 1 {
         return Err(format!("Pema offer must contain one item 50271, served {}", offer.count).into());
     }
-    let inventory = client.inventory().ok_or("no inventory before Pema BUY")?;
-    let before = carried_count(client, definition);
-    if before != 0 || inventory.equipment.iter().any(|entry| entry.item.item_definition_ref == definition) {
+    client.inventory().ok_or("no inventory before Pema BUY")?;
+    let before = full_e2ef7::units(client, definition);
+    if before != 0 {
         return Err("item 50271 already present after reload, before Pema BUY".into());
     }
     client.take_events();
@@ -616,7 +640,9 @@ async fn acquire_pema(
     if reply != npc::NpcIntentDisposition::Ok {
         return Err(format!("Pema BUY reply={reply:?} price={}", offer.unit_price).into());
     }
-    wait_inventory(client, "Pema BUY of item 50271", |c| carried_count(c, definition) == before + 1).await
+    wait_inventory(client, "Pema BUY of item 50271", |c| {
+        full_e2ef7::units(c, definition) == before + 1 && carried_count(c, definition) == 1
+    }).await
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -641,7 +667,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     character_prep::grant_premium(&client).await?;
     character_prep::grant_item(&client, MANA_POTION, 12).await?;
-    character_prep::grant_item(&client, 3043, 2).await?;
     character_prep::reload(&mut client, clients).await?;
     acquire_pema(&mut client, world, &metadata.npcs, definition).await?;
     let spell_index = spell(&mut client)?;
@@ -770,13 +795,7 @@ mod tests {
 
     #[test]
     fn the_declared_trade_sells_the_item() -> TestResult {
-        let trades = read_json("content/services/trade/trade-00000-00323.json")?;
-        let key = format!("oteryn:item.tibia.i{ITEM_ID}");
-        assert!(trades["records"].as_array().ok_or("records")?.iter().any(|record| {
-            record["declaration"]["offers"].as_array().is_some_and(|offers| {
-                offers.iter().any(|o| o["direction"] == "SellToPlayer" && o["item"]["key"] == key)
-            })
-        }));
+        assert!(pema_planned_price()? > 0);
         Ok(())
     }
 }

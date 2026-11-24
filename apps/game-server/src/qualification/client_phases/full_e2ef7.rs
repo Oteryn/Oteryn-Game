@@ -4476,7 +4476,7 @@ fn carried(client: &DevClientSession, definition: std::num::NonZeroU32) -> TestR
             format!("required direct-backpack item absent:definition-ref={definition}").into()
         })
 }
-fn units(client: &DevClientSession, definition: std::num::NonZeroU32) -> u64 {
+pub(super) fn units(client: &DevClientSession, definition: std::num::NonZeroU32) -> u64 {
     client.inventory().map_or(0, |i| {
         i.entries
             .iter()
