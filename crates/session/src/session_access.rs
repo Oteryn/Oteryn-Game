@@ -2,6 +2,11 @@
 use super::*;
 
 impl<S: SessionStream> Session<S> {
+    /// Whether exchanges can still be attempted on this connection.
+    pub fn is_usable(&self) -> bool {
+        !self.unusable
+    }
+
     /// Service an idle connection until at least one pushed domain event is applied.
     ///
     /// The deadline bounds the whole wait; individual idle reads are deliberately short so

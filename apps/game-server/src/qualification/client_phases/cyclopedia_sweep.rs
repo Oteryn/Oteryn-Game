@@ -436,6 +436,14 @@ async fn sweep_entry(
             _ => drop(sweep.reader.take()),
         }
     }
+    for session in [&mut sweep.reader, &mut sweep.hunter] {
+        if session
+            .as_mut()
+            .is_some_and(|client| !client.session_mut().is_usable())
+        {
+            drop(session.take());
+        }
+    }
     rows.finish();
     let failures = rows.tally.fail - failed_before;
     let (status, cause) = if failures == 0 {
