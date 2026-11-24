@@ -141,11 +141,14 @@ async fn quote(
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<(npc::NpcTradeIntent, u32)> {
     use oteryn_dev_client::client_runtime::npc_shop as shop;
+    // Crystal 201189f8 registers the Messenger type without a spawn. TibiaWiki
+    // Messenger rev 416417 repeats Santa rev 443236's markers, and Christmas
+    // rev 431702 says the Messenger is near Santa without giving a separate tile.
     let seller = npcs
         .npcs
         .iter()
         .find(|entry| entry.key == "oteryn:npc.messenger_of_santa")
-        .ok_or("step 2: compiled world has no Messenger of Santa acquisition actor")?;
+        .ok_or("step 2: source gap: no verified exact Messenger of Santa spawn tile in compiled world")?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         seller
             .placements
