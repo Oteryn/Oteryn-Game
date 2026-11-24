@@ -49,6 +49,7 @@ pub struct TaskBoardCatalogue {
 
 #[derive(Debug, Clone)]
 pub struct TaskBoardItem {
+    pub definition_ref: std::num::NonZeroU32,
     pub key: String,
     pub revision: String,
     pub stackable: bool,
@@ -68,6 +69,11 @@ pub struct TaskBoardView {
     pub period: i64,
     pub database_now: i64,
     pub reroll_tokens: u64,
+    #[serde(default)]
+    pub daily_reroll_at: u64,
+    /// Canonical Item references from the catalogue used for this receipt.
+    #[serde(default)]
+    pub delivery_definition_refs: BTreeMap<u16, u32>,
     /// Informative source-width snapshot for unfinished delivery rows. This is
     /// frozen with the receipt; internal kill receipts do not project item counts.
     #[serde(default)]

@@ -20,7 +20,12 @@ message PlayerTradeResultV1 {
   // 10 STALE, 11 NOT_SUPPORTED, 12 REJECTED. At most 4 bytes.
   uint32 result = 1;
 }
-message PlayerTradeOfferV1 { uint32 definition = 1; uint32 count = 2; uint32 sub_type = 3; }
+message PlayerTradeOfferV1 {
+  uint32 definition = 1;
+  uint32 count = 2;
+  uint32 sub_type = 3;
+  optional uint32 appearance_id = 4; // Capability 590 only, 1..65535.
+}
 message PlayerTradeStateV1 {
   bytes trade_id = 1; // Server-issued only once READY, opaque 16 bytes.
   TradePartnerV1 partner = 2;

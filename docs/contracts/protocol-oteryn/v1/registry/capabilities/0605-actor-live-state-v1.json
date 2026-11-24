@@ -1,0 +1,14 @@
+{
+  "id": 605,
+  "name": "ACTOR_LIVE_STATE_V1",
+  "owner_decision": "Server/client contract gaps package, 2026-11-22",
+  "owner": "Connection Movement and Actor Spell owners",
+  "requires": [],
+  "command_types": [
+    6371,
+    6372
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Adds own-actor FOLLOW and mana shield queries without changing existing domains."
+}

@@ -1,0 +1,19 @@
+{
+  "id": 599,
+  "name": "ANALYSER_NPC_PRICES_V1",
+  "constant": "analyser_catalogue::CAPABILITY_ANALYSER_NPC_PRICES_V1",
+  "requires": [
+    10
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    6360
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

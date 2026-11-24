@@ -89,7 +89,7 @@ fn reply() -> Reply {
 
 #[test]
 fn full_task_board_request_roundtrips_every_action_and_rejects_ambiguous_fields() {
-    for action in (4..=19).filter(|action| *action != 12) {
+    for action in (4..=ACTION_CLAIM_DAILY_BOUNTY_TOKEN).filter(|action| *action != 12) {
         let request = Request {
             action,
             selection: 0,
@@ -113,7 +113,8 @@ fn full_task_board_request_roundtrips_every_action_and_rejects_ambiguous_fields(
     }
     for (action, selection) in [
         (3, 0),
-        (20, 0),
+        (21, 0),
+        (ACTION_CLAIM_DAILY_BOUNTY_TOKEN, 1),
         (19, 2),
         (4, 1),
         (5, 4),
@@ -207,7 +208,7 @@ fn full_task_board_expanded_board_is_bounded_without_truncation() {
     ];
     board.weekly.deliveries = vec![
         DeliveryTask {
-            item: u16::MAX,
+            item: u32::MAX,
             required: u32::MAX,
             current: u32::MAX,
             delivered: true
@@ -397,6 +398,18 @@ fn retired_daily_reroll_is_not_a_task_board_request() {
         })
         .is_err()
     );
+}
+
+#[test]
+fn daily_token_has_its_own_canonical_action() {
+    let claim = Request {
+        action: ACTION_CLAIM_DAILY_BOUNTY_TOKEN,
+        selection: 0,
+        race: String::new(),
+    };
+    assert_eq!(encode_request(&claim), Ok(vec![8, 20, 16, 0, 26, 0]));
+    assert_eq!(decode_request(&[8, 20, 16, 0, 26, 0]), Ok(claim));
+    assert!(decode_request(&[8, 20, 16, 1, 26, 0]).is_err());
 }
 
 #[test]

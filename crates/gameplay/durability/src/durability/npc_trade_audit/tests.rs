@@ -59,6 +59,7 @@ fn burn(
     after: u32,
 ) -> OneItemNpcTradeLineV1 {
     OneItemNpcTradeLineV1 {
+        source_equipment_slot: None,
         kind,
         before: Some(state(item, definition.clone(), before)),
         after: Some(state(item, definition, after)),
@@ -74,6 +75,7 @@ fn mint_line(
     quantity: u32,
 ) -> OneItemNpcTradeLineV1 {
     OneItemNpcTradeLineV1 {
+        source_equipment_slot: None,
         kind,
         before: None,
         after: Some(state(item, definition, quantity)),
@@ -83,6 +85,8 @@ fn mint_line(
 
 fn trade(side: u32, quantity: u32, unit_price: u64) -> OneItemNpcTradeV1 {
     OneItemNpcTradeV1 {
+        shopping_bag: None,
+        include_equipped: false,
         fluid_subtype: None,
         full_charges: None,
         cause: Some(OneItemNpcTradeCauseV1 {
@@ -688,7 +692,7 @@ fn hireling_package_resource_and_byte_worst_cases_are_bounded_by_existing_rows()
         let mut over = usage;
         over.participants += 1;
         assert_eq!(
-            check_npc_trade_usage(SIDE_BUY, false, true, false, false, false, &over),
+            check_npc_trade_usage(SIDE_BUY, false, true, false, false, (false, false), &over),
             Err(AuditError::CapacityExceeded)
         );
         let mut ordinary = value.clone();
@@ -889,7 +893,7 @@ fn npc_buy_bank_value_line_is_v2_only_and_conserves_the_single_trade() {
             false,
             false,
             false,
-            false,
+            (false, false),
             &over_value_lines
         ),
         Err(AuditError::InvalidInput)
@@ -1293,4 +1297,31 @@ fn default_trade_states_reject_nonzero_key_numbers() {
             }
         }
     }
+}
+
+#[test]
+fn shopping_bag_fee_is_conserved_in_the_purchase_audit() -> Result<(), AuditError> {
+    let mut value = buy();
+    value.shopping_bag = Some(mint_line(LINE_ITEM_MINT, 42, sword("s"), 6, 1)
+        .after.ok_or(AuditError::InvalidInput)?.item_instance_id);
+    assert_eq!(check_npc_trade(&value), Err(AuditError::InvalidInput));
+    value.total_gold_units += 20;
+    value.minted_gold_units -= 20;
+    value.lines[2].after.as_mut().ok_or(AuditError::InvalidInput)?.quantity -= 20;
+    let wire = encode_npc_trade_event(identity(), value.clone(), Type2EventTuple::V1)?;
+    assert_eq!(decode_npc_trade_envelope(&wire)?.1, value);
+    Ok(())
+}
+
+#[test]
+fn equipment_sale_audit_binds_whole_burns_to_distinct_slots() -> Result<(), AuditError> {
+    let mut value = sell_all();
+    value.lines[0].source_equipment_slot = Some(10);
+    assert_eq!(check_npc_trade(&value), Err(AuditError::InvalidInput));
+    value.include_equipped = true;
+    let wire = encode_npc_trade_event(identity(), value.clone(), Type2EventTuple::V1)?;
+    assert_eq!(decode_npc_trade_envelope(&wire)?.1, value);
+    value.lines[1].source_equipment_slot = Some(10);
+    assert_eq!(check_npc_trade(&value), Err(AuditError::InvalidInput));
+    Ok(())
 }

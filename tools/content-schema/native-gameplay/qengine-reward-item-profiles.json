@@ -1052,6 +1052,10 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
+        },
         "item": {
           "family": "Item",
           "key": "candidate:item/875",
@@ -3876,6 +3880,10 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
+        },
         "item": {
           "family": "Item",
           "key": "candidate:item/3403",
@@ -7043,6 +7051,10 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
+        },
         "item": {
           "family": "Item",
           "key": "candidate:item/5903",
@@ -12952,6 +12964,10 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 1,
+          "max_tier": 1
+        },
         "item": {
           "family": "Item",
           "key": "candidate:item/11700",
@@ -13160,6 +13176,10 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 3,
+          "max_tier": 3
+        },
         "item": {
           "family": "Item",
           "key": "candidate:item/11701",
@@ -15352,6 +15372,10 @@
     },
     {
       "authoring": {
+        "forge": {
+          "classification": 4,
+          "max_tier": 10
+        },
         "item": {
           "family": "Item",
           "key": "candidate:item/12599",

@@ -1,0 +1,10 @@
+{
+  "id": 6331,
+  "name": "DEATH_REPORT_QUERY",
+  "owner_decision": "Server protocol gap closure",
+  "capability": 584,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/death-protection-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/death-protection-v1.md#death-report",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 4155
+}

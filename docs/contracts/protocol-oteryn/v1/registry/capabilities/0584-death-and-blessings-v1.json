@@ -1,0 +1,17 @@
+{
+  "id": 584,
+  "name": "DEATH_AND_BLESSINGS_V1",
+  "owner_decision": "Server protocol gap closure",
+  "owner": "Game death receipts and Character blessing balances",
+  "requires": [
+    382,
+    503
+  ],
+  "command_types": [
+    6330,
+    6331
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only."
+}

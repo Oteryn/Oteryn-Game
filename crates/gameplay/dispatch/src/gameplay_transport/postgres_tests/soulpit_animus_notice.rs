@@ -158,7 +158,7 @@ fn scenario(admin: String, replay: bool) -> TestResult {
                 assert_eq!(owner.take_server_notice(connected), None);
                 returned
             };
-            assert_eq!(owner.take_server_notice(recipient), Some(expected));
+            assert_eq!(owner.take_server_notice(recipient), Some(expected.into()));
 
             if replay {
                 let retried = owner

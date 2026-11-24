@@ -97,7 +97,7 @@ pub(super) async fn scenario(h:&Harness,owner:&ComposedFreshAdmission<'_, '_, '_
     // the connection cache. The stored occurrence is read before current conversation/state.
     assert!(matches!(crate::gameplay_transport::npc_trade_command::npc_trade(owner,actor,UseCommand {
         game_session_id:admitted.game_session_id,command_id:command,item_fence:admitted.item_fence,
-    },intent).await,crate::gameplay_transport::npc_trade_command::NpcTradeStep::Traded));
+    },intent,false).await,crate::gameplay_transport::npc_trade_command::NpcTradeStep::Traded));
     assert_eq!(count(h,"SELECT count(*) FROM game_npc_trades").await?,1);
     assert_eq!(count(h,"SELECT count(*) FROM game_item_audit_outbox a JOIN game_npc_trades t USING(transaction_id)").await?,1);
     assert_eq!(count(h,"SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3043' AND lifecycle=1").await?,540);

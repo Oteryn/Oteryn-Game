@@ -107,11 +107,22 @@ impl Summary {
         {
             return Err(INVALID);
         }
-        while lines.peek().is_some_and(|line| {
-            ["Session:", "Loot Type:", "Loot:", "Supplies:", "Balance:"]
+        let mut reported = [None; 3];
+        while let Some(&line) = lines.peek() {
+            if let Some((index, value)) = ["Loot:", "Supplies:", "Balance:"]
                 .iter()
-                .any(|key| line.starts_with(key))
-        }) {
+                .enumerate()
+                .find_map(|(i, key)| line.strip_prefix(key).map(|value| (i, value)))
+            {
+                let value = hunt_number(value)
+                    .and_then(|v| v.parse::<i128>().ok())
+                    .ok_or(INVALID)?;
+                if reported[index].replace(value).is_some() {
+                    return Err(INVALID);
+                }
+            } else if !line.starts_with("Session:") && !line.starts_with("Loot Type:") {
+                break;
+            }
             lines.next();
         }
         let mut rows = Vec::new();
@@ -135,22 +146,7 @@ impl Summary {
                 lines
                     .next()
                     .and_then(|line| line.strip_prefix(key))
-                    .and_then(|value| {
-                        let value = value.trim();
-                        let digits = value.strip_prefix('-').unwrap_or(value);
-                        let mut groups = digits.split(',');
-                        let first = groups.next()?;
-                        if first.is_empty()
-                            || !first.bytes().all(|b| b.is_ascii_digit())
-                            || (digits.contains(',') && first.len() > 3)
-                            || !groups.all(|group| {
-                                group.len() == 3 && group.bytes().all(|b| b.is_ascii_digit())
-                            })
-                        {
-                            return None;
-                        }
-                        Some(value.replace(',', ""))
-                    })
+                    .and_then(hunt_number)
                     .ok_or(INVALID)
             };
             let loot: u64 = number("Loot:")?.parse().map_err(|_| INVALID)?;
@@ -174,6 +170,15 @@ impl Summary {
         }
         if rows.is_empty() {
             return Err(INVALID);
+        }
+        let loot: i128 = rows.iter().map(|row| i128::from(row.loot_value)).sum();
+        let cost: i128 = rows.iter().map(|row| i128::from(row.supply_cost)).sum();
+        if reported
+            .into_iter()
+            .zip([loot, cost, loot - cost])
+            .any(|(reported, total)| reported.is_some_and(|value| value != total))
+        {
+            return Err("Party hunt totals do not match the member rows");
         }
         wire::encode_reply(&rows).map_err(|_| INVALID)?;
         Ok(Self {
@@ -281,4 +286,19 @@ pub fn export_adjusted(
         return Err(tr!("Party summary exceeds the 8 KiB limit"));
     }
     Ok(text)
+}
+
+fn hunt_number(value: &str) -> Option<String> {
+    let value = value.trim();
+    let digits = value.strip_prefix('-').unwrap_or(value);
+    let mut groups = digits.split(',');
+    let first = groups.next()?;
+    if first.is_empty()
+        || !first.bytes().all(|b| b.is_ascii_digit())
+        || (digits.contains(',') && first.len() > 3)
+        || !groups.all(|group| group.len() == 3 && group.bytes().all(|b| b.is_ascii_digit()))
+    {
+        return None;
+    }
+    Some(value.replace(',', ""))
 }

@@ -1,6 +1,8 @@
 //! P01 skinning uses a current carried tool and the exact selected durable corpse handle.
 use super::*;
-use crate::durability::item_craft::SkinningRequest;
+use crate::durability::item_craft::{SkinningOutcome, SkinningRequest};
+use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::durability::spell_owner_commit::SpellLanePermit;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(
@@ -84,10 +86,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         {
-            if result.disposition == UseDisposition::Committed {
-                self.refresh_skinning_projection(fence).await;
-            }
-            return Ok(outcome(result.disposition));
+            return Ok(Some(self.finish_skinning(permit, fence, result).await));
         }
         if hotkey.is_none() && !matches!(source, Some(ItemKey::Instance(_))) {
             return Ok(None);
@@ -226,6 +225,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
             .ok_or(())?;
+        Ok(Some(self.finish_skinning(permit, fence, result).await))
+    }
+
+    async fn finish_skinning(
+        &self,
+        permit: SpellLanePermit,
+        fence: CurrentCharacterItemFence,
+        result: SkinningOutcome,
+    ) -> UseOutcome {
         if result.disposition == UseDisposition::Committed {
             self.refresh_skinning_projection(fence).await;
         }
@@ -240,17 +248,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             self.states
                 .chat
-                .push_quest_feedback(command.game_session_id, message);
+                .push_quest_feedback(fence.game_session_id, message);
         }
-        Ok(outcome(result.disposition))
+        UseOutcome {
+            disposition: result.disposition,
+            ..UseOutcome::rejected()
+        }
     }
 
     /// Refresh only existing corpse bindings from the complete durable owner snapshot.
     /// The caller retains its item lane across this read and runtime update, including replay.
-    async fn refresh_skinning_projection(
-        &self,
-        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
-    ) {
+    async fn refresh_skinning_projection(&self, fence: CurrentCharacterItemFence) {
         let Ok(schedule) = self
             .root
             .read_scoped_corpse_decay_schedule(self.character, fence.runtime_scope)

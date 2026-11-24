@@ -4,7 +4,13 @@ use oteryn_protocol_oteryn::hazard as wire;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn admit_hazard(&self, admitted: AdmittedSession) -> bool {
-        self.admit_hazard_once(admitted).await.is_ok()
+        // A transfer has already installed the destination actor. A busy
+        // holder must not interrupt publication of that successor between
+        // physical installation and the connection's scope barrier.
+        super::AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || self.admit_hazard_once(admitted).await)
+            .await
+            .is_ok()
     }
 
     pub(super) async fn admit_hazard_once(

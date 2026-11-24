@@ -389,14 +389,21 @@ impl Mailbox {
             match event {
                 oteryn_session::SessionEvent::ChatLine(delta) => {
                     #[cfg(bevy_shell)]
-                    if let oteryn_session::ChatLine::Private { speaker_name, text } = &delta.value
-                        && !speaker_name.eq_ignore_ascii_case(&self.party.own_character_name)
-                        && self.chat.console.communication.visible(&delta.value)
-                    {
-                        self.window_notice(
-                            crate::play::feature_local_text_messages::view::NoticeKind::Private,
-                            format!("{speaker_name}: {text}"),
-                        );
+                    match &delta.value {
+                        oteryn_session::ChatLine::System { text } => self.window_notice(
+                            crate::play::feature_local_text_messages::view::NoticeKind::System,
+                            text.clone(),
+                        ),
+                        oteryn_session::ChatLine::Private { speaker_name, text }
+                            if !speaker_name.eq_ignore_ascii_case(&self.party.own_character_name)
+                                && self.chat.console.communication.visible(&delta.value) =>
+                        {
+                            self.window_notice(
+                                crate::play::feature_local_text_messages::view::NoticeKind::Private,
+                                format!("{speaker_name}: {text}"),
+                            );
+                        }
+                        _ => {}
                     }
                     self.chat.pending_lines = self.chat.pending_lines.wrapping_add(1);
                     self.chat.console.metadata.received(&delta.value, received);
@@ -413,6 +420,7 @@ impl Mailbox {
                         oteryn_session::ServerMessage::Warning(text) => {
                             (NoticeClass::Status, format!("Warning: {text}"))
                         }
+                        oteryn_session::ServerMessage::BossDefeated(_) => continue,
                     };
                     self.chat.console.notices.push(class, &text, received);
                 }
