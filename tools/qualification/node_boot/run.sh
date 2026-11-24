@@ -728,6 +728,25 @@ secret_to "$SERVICE_UID" "$WP5_PKI/client.key" "$BASE/node/secrets/platform-clie
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.crt" "$BASE/node/secrets/gameplay.crt"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.key" "$BASE/node/secrets/gameplay.key"
 
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
+  mapfile -t premium_peer < <(python3 - "$WORK/portal-report.json" <<'PY_PREMIUM'
+import json, sys
+with open(sys.argv[1]) as source:
+    report = json.load(source)
+client = report["clients"]["premium"]
+print(report["baseUrls"]["internal"], report["caFile"], client["cert"], client["key"], sep="\n")
+PY_PREMIUM
+  )
+  [[ ${#premium_peer[@]} == 4 ]] || fail "Platform Premium peer configuration"
+  (umask 077; cat "${premium_peer[2]}" "${premium_peer[3]}" > "$WORK/premium-client.pem")
+  secret_to "$SERVICE_UID" "$WORK/premium-client.pem" "$BASE/node/secrets/premium-client.pem"
+  rm -- "$WORK/premium-client.pem"
+  secret_to "$SERVICE_UID" "${premium_peer[1]}" "$BASE/node/secrets/premium-ca.pem"
+  NODE_GAMEPLAY_ENV+=("OTERYN_PREMIUM_SNAPSHOT_URL=${premium_peer[0]}"
+    "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/premium-client.pem"
+    "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/premium-ca.pem")
+fi
+
 cat > "$WORK/ops.toml" <<TOML
 [operator]
 state_directory = "$BASE/state"
