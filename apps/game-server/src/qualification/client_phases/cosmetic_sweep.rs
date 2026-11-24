@@ -922,7 +922,11 @@ fn reversible_step(world: &BundleWorld, at: TilePos, direction: StepDirection) -
     (destination_with_teleports(world, next, reverse, false) == Some(at)).then_some(next)
 }
 
-async fn walk_to_taming_ground(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+async fn walk_to_taming_ground(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    crowded: &[TilePos],
+) -> TestResult {
     use StepDirection::{East, North, South, West};
     let open = |at: TilePos| {
         world
@@ -932,6 +936,9 @@ async fn walk_to_taming_ground(client: &mut DevClientSession, world: &BundleWorl
     };
     let roomy = |at: TilePos| {
         open(at)
+            && crowded.iter().all(|tried| {
+                at.floor != tried.floor || at.x.abs_diff(tried.x).max(at.y.abs_diff(tried.y)) > 3
+            })
             && [North, East, South, West]
                 .into_iter()
                 .filter(|direction| reversible_step(world, at, *direction).is_some_and(open))
@@ -1440,11 +1447,12 @@ async fn obtain_taming(
     }
     let home = tile(client.world_spatial().actor_position)?;
     if !binding.creature_key.is_empty() {
-        walk_to_taming_ground(client, world).await?;
+        walk_to_taming_ground(client, world, &[]).await?;
     } else if binding.target_item_key.as_deref() != Some(binding.item_key.as_str()) {
         return Err("harness-obtain-path: construction needs multiple carried components".into());
     }
     let mut previous = None;
+    let mut crowded = Vec::new();
     for _ in 0..12 {
         verdict::Harness::global().progress("cosmetic-taming-attempt");
         let target = if binding.creature_key.is_empty() {
@@ -1457,9 +1465,21 @@ async fn obtain_taming(
             Some(entity)
         } else {
             let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-            let reply = request_spawn(session, binding.creature_key.clone())
-                .await
-                .map_err(|error| format!("harness-taming-spawn: {error}"))?;
+            let reply = loop {
+                match request_spawn(session.clone(), binding.creature_key.clone()).await {
+                    Ok(reply) => break reply,
+                    Err(error) if error == "no_free_tile" && crowded.len() < 4 => {
+                        crowded.push(tile(client.world_spatial().actor_position)?);
+                        evidence(&format!(
+                            "cosmetic_sweep spawn=relocate creature={} crowded={}",
+                            binding.creature_key,
+                            crowded.len()
+                        ));
+                        walk_to_taming_ground(client, world, &crowded).await?;
+                    }
+                    Err(error) => return Err(format!("harness-taming-spawn: {error}").into()),
+                }
+            };
             let entity = parse_spawned_entity(&reply)?;
             let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
             while !client
