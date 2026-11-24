@@ -241,6 +241,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         "01934f10-7c00-7000-8000-000000000021",
         "01934f10-7c04-7021-805b-3b1122334421",
         "Venore Rat Hunter",
+        "Knight",
     )
     .await?;
     let clients = &identity.clients(clients);
@@ -322,6 +323,41 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         .ok_or("step=initial-spawn no live exact rat observed at the authored spawn")?;
     progress.pass("initial-spawn", (spawn, respawn_ms, target));
 
+    // Move onto a cardinal neighbour of the exact observed actor. A diagonal
+    // approach tile can be adjacent while looking across a wall corner.
+    let mut melee_ready = false;
+    for _ in 0..8 {
+        let target_at = tile(
+            client
+                .world_entities()
+                .and_then(|entities| entities.get(&target))
+                .ok_or("authored rat left interest during the melee approach")?
+                .position,
+        )?;
+        let here = tile(client.world_spatial().actor_position)?;
+        let path = plan(here, &|at| {
+            at.floor == target_at.floor
+                && at
+                    .x
+                    .abs_diff(target_at.x)
+                    .saturating_add(at.y.abs_diff(target_at.y))
+                    == 1
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|tile| !tile.protection_zone())
+        })
+        .ok_or("no safe cardinal melee approach to the exact rat")?;
+        let Some(step) = path.first() else {
+            melee_ready = true;
+            break;
+        };
+        walk_with_landings(&mut client, std::slice::from_ref(step), landing).await?;
+    }
+    if !melee_ready {
+        return Err("exact rat did not stay within a safe cardinal melee approach".into());
+    }
+
     let mut last = tile(
         client
             .world_entities()
@@ -396,7 +432,13 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
             break corpse.entity;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("ATTACK_TARGET accepted but corpse/removal delta timed out".into());
+            let rat = client
+                .world_entities()
+                .and_then(|entities| entities.get(&target));
+            return Err(format!(
+                "ATTACK_TARGET accepted but corpse/removal delta timed out: damaged={damaged} rat={rat:?} actor={:?} vitals={:?}",
+                client.world_spatial().actor_position, client.actor_vitals()
+            ).into());
         }
     };
     if !damaged

@@ -523,6 +523,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ACCOUNT,
         "01934f10-7c04-7022-805b-3b1122334422",
         "Coastal Citizen",
+        "Sorcerer",
     )
     .await?;
     let clients = &identity.clients(clients);

@@ -221,6 +221,7 @@ pub(super) async fn bootstrap_row_character(
     account: &str,
     operation: &str,
     name: &str,
+    vocation: &str,
 ) -> TestResult<DedicatedCharacter> {
     let work = required("NODE_BOOT_PLATFORM_GRANT_DIR")?;
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
@@ -228,6 +229,7 @@ pub(super) async fn bootstrap_row_character(
     let account_id = account.to_owned();
     let operation = operation.to_owned();
     let name = name.to_owned();
+    let vocation = vocation.to_owned();
     let output = tokio::task::spawn_blocking(move || {
         std::process::Command::new("python3")
             .args([
@@ -237,7 +239,7 @@ pub(super) async fn bootstrap_row_character(
 import json, os, secrets, subprocess, sys, tempfile, time
 from pathlib import Path
 
-source, work, socket, account, world, operation, name = sys.argv[1:]
+source, work, socket, account, world, operation, name, vocation = sys.argv[1:]
 work, socket = Path(work), Path(socket)
 sys.path.insert(0, str(Path(source) / 'tools/qualification/game_platform'))
 from composition import bootstrap
@@ -258,7 +260,7 @@ try:
     stage = 'Platform character intent'
     bootstrap(work, account, world, operation,
               ['nb-profile-1', 'nb-ruleset-1', 's3b-content-1', 'newhaven-starter-r1'],
-              name, 'Sorcerer')
+              name, vocation)
     stage = 'node character bootstrap'
     operator = [] if os.environ.get('NODE_BOOT_UNPRIVILEGED') == '1' else ['sudo', '-n']
     command = [*operator, node / 'bin/oteryn-game-ops', '--config', node / 'ops/ops.toml',
@@ -292,7 +294,7 @@ except (OSError, KeyError, ValueError, subprocess.SubprocessError):
 "#,
                 concat!(env!("CARGO_MANIFEST_DIR"), "/../.."),
             ])
-            .args([work, socket, account_id, world, operation, name])
+            .args([work, socket, account_id, world, operation, name, vocation])
             .output()
     })
     .await??;
