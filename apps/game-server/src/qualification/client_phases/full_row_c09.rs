@@ -279,6 +279,7 @@ async fn walk_to_frodo(
         .ok_or("open tavern door face absent")?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
+    client.service_liveness(Duration::from_millis(250)).await?;
     client.take_events();
     let used = client.use_object(&placement, 0).await?;
     if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {

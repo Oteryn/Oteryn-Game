@@ -173,13 +173,15 @@ esac
 NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
 case "$NODE_BOOT_WORLD_PROFILE" in
   # Real Thais/town outskirts and the default-start and seller regions.
-  town|c09)
+  town)
     WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt");125,124"
     selected_groups="${NODE_BOOT_E2E_ONLY:-}"
     case ",${selected_groups//[[:space:]]/}," in
       ,,|*,rows,*) WORLD_REGIONS+=";131,122" ;;
     esac
     ;;
+  # C09 uses the Thais tavern, temple, and nearby food-purchase and hunt routes.
+  c09) WORLD_REGIONS='126,125;126,126' ;;
   # W01b starts on the mainland with a declared retreat fixture near Venore.
   w01b) WORLD_REGIONS='126,125;126,126;128,125' ;;
   # W23 uses the Thais temple and dock, plus both Svargrond regions from arrival to temple.
