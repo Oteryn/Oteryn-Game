@@ -1562,7 +1562,10 @@ impl JourneyRow {
             "S08" => Some(("knight-and-sorcerer-builds,pvp-eligible-levels", "combat and protection")),
             "S13a" | "S13b" => Some(("level-32-premium-caster,clean-peer", "party spell gates and cost")),
             "W20b" => Some(("sorcerer-level-26,premium", "light casts, relog and expiry")),
-            "P21" => Some(("protective-charms,strike-capable-target-if-missing,fee-gold-if-needed", "Basic Strike application and persistence")),
+            "P21" => Some((
+                "dedicated-character-birth,fee-gold-if-needed",
+                "Basic Strike application and persistence",
+            )),
             _ => None,
         };
         if let Some((prerequisites, reason)) = seeded {
@@ -4212,6 +4215,49 @@ async fn pvp_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
+    include!("qualification_hunt_route.rs");
+
+    let url = required("NODE_BOOT_PVP_DATABASE_URL")?;
+    let accounts = [
+        required("NODE_BOOT_PVP_ACCOUNT_ID")?,
+        required("NODE_BOOT_PVP_SECOND_ACCOUNT_ID")?,
+    ];
+    let world_id = required("NODE_BOOT_PVP_WORLD_ID")?;
+    let channel_id = required("NODE_BOOT_PVP_CHANNEL_ID")?;
+    let mut database = sqlx::PgConnection::connect(&url).await?;
+    let mut originals = Vec::new();
+    for (account, name) in accounts.iter().zip(["Arena One", "Arena Two"]) {
+        let id: Vec<u8> = sqlx::query_scalar(
+            "SELECT uuid_send(character_id) FROM game_character_roots
+             WHERE account_id=$1::uuid AND world_id=$2::uuid AND name=$3",
+        )
+        .bind(account)
+        .bind(&world_id)
+        .bind(name)
+        .fetch_one(&mut database)
+        .await?;
+        originals.push(<[u8; 16]>::try_from(id.as_slice())?);
+    }
+    let generation: String = sqlx::query_scalar(
+        "SELECT ownership_generation::text FROM game_runtime_scope_assignments
+         WHERE world_id=$1::uuid AND channel_id=$2::uuid AND state=1",
+    )
+    .bind(&world_id)
+    .bind(&channel_id)
+    .fetch_one(&mut database)
+    .await?;
+    database.close().await?;
+    let arena = SeamClients {
+        address: required("NODE_BOOT_PVP_ADDRESS")?.parse()?,
+        url: &url,
+        accounts: &accounts,
+        characters: &originals,
+        world: crate::node::uuid_bytes(&world_id).ok_or("invalid arena world")?,
+        channel: crate::node::uuid_bytes(&channel_id).ok_or("invalid arena channel")?,
+        scope_generation: generation.parse()?,
+        ..*clients
+    };
+    let clients = &arena;
     for (index, profile) in ["s08-knight", "s08-sorcerer"].into_iter().enumerate() {
         let prep = character_prep::Seeded {
             profile,
@@ -4220,16 +4266,30 @@ async fn pvp_journey(
         let budget = Duration::from_secs(150);
         let deadline = tokio::time::Instant::now() + budget;
         verdict::Harness::global().bounded_wait(deadline, "S08-eligible-build");
-        let player = tokio::time::timeout_at(deadline, async {
-            let mut player = prep.connect_at(clients, 0xf2 + u8::try_from(index)?, index, "NODE_BOOT_PVP_CONTROL_SOCKET").await?;
-            let level = player_level(&mut player).await?;
+        tokio::time::timeout_at(deadline, async {
+            pair[index] = Some(
+                prep.connect_at(
+                    clients,
+                    0xf2 + u8::try_from(index)?,
+                    index,
+                    "NODE_BOOT_PVP_CONTROL_SOCKET",
+                )
+                .await?,
+            );
+            let player = pair[index]
+                .as_mut()
+                .ok_or("S08 participant admission absent")?;
+            let entry = tile(player.world_spatial().actor_position)?;
+            qualification_hunt_route(player, world, None, Some(entry), deadline).await?;
+            acquisition_step("hunt", hunt_one_inner(player, world, Some(deadline))).await?;
+            qualification_hunt_route(player, world, Some(entry), None, deadline).await?;
+            let level = player_level(player).await?;
             if level < oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL {
                 return Err(format!("S08 seeded participant {index} is ineligible at level {level}").into());
             }
-            Ok::<_, Box<dyn std::error::Error>>(player)
+            Ok::<_, Box<dyn std::error::Error>>(())
         }).await.map_err(|_| format!("S08 participant {index} preparation exceeded {budget:?}"))?
             .map_err(|error| format!("S08 participant {index} {profile} Open PvP preparation: {error}"))?;
-        pair[index] = Some(player);
         if index == 0 {
             release_when_unlocked(pair[0].as_mut().ok_or("first admission")?, Duration::from_secs(70)).await?;
             pair[0] = None;
@@ -4902,6 +4962,14 @@ async fn imbuement_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
+    include!("qualification_hunt_route.rs");
+
+    let mut characters = clients.characters.to_vec();
+    characters[1] = qualification_character(clients, 1, 0xf6, "Strike Journey", "Knight").await?;
+    let clients = &SeamClients {
+        characters: &characters,
+        ..*clients
+    };
     *connection = Some(connect_character(clients, 0xf6, 1).await?);
     let client = connection.as_mut().ok_or("imbuement admission absent")?;
     let definitions = provisioning::item_index()?;
@@ -4914,23 +4982,120 @@ async fn imbuement_journey(
             .bytes,
     )?;
     use crate::content::ReferenceItemField::Known;
-    let candidate=profiles.records.iter().filter(|r|r.admission.materializable && matches!(&r.semantics.imbuement,Known(i) if matches!(i.slot_count,Known(1..=3)) && matches!(&i.allowed_family_tiers,Known(fs) if fs.iter().any(|f|f.family.wire()==1))))
-        .min_by_key(|r| {
-            let key=&r.production_definition.production_key;
-            let present=definitions.revision(key).and_then(|rev|definitions.definition_ref("Item",key,rev)).is_some_and(|d|carried(client,d).is_ok());
-            (!present,key!="oteryn:item.tibia.i3264",key.clone())
-        }).ok_or("no materializable strike-capable item in pinned native policy")?;
+    let candidate = profiles
+        .records
+        .iter()
+        .find(|record| {
+            record.production_definition.production_key == "oteryn:item.tibia.i3264"
+                && record.admission.materializable
+                && matches!(&record.semantics.imbuement, Known(policy)
+                if matches!(policy.slot_count, Known(1..=3))
+                    && matches!(&policy.allowed_family_tiers, Known(families)
+                        if families.iter().any(|family| family.family.wire() == 1)))
+        })
+        .ok_or("P21 Sam's Sword has no materializable Strike slot in pinned native policy")?;
     let key = &candidate.production_definition.production_key;
-    let id = character_prep::item_id(key)?;
     let revision = definitions.revision(key).ok_or("P21 target revision absent")?;
     let target = definitions.definition_ref("Item", key, revision).ok_or("P21 target definition absent")?;
-    if carried(client, target).is_err() {
-        character_prep::grant_item(client, id, 1).await.map_err(|error| format!("P21 target item {id}: {error}"))?;
+    qualification_acquire(
+        client,
+        world,
+        tokio::time::Instant::now() + Duration::from_secs(150),
+        async |client| Ok(player_gold(client).await? >= 85),
+        async |client, deadline| {
+            acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await
+        },
+    )
+    .await?;
+    {
+        use native::npc_service as npc;
+        use oteryn_dev_client::client_runtime::npc_shop;
+        let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+        let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+        let sam = metadata
+            .npcs
+            .npcs
+            .iter()
+            .find(|entry| entry.key == "oteryn:npc.sam")
+            .ok_or("P21 Sam is absent from the compiled world")?;
+        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            sam.placements.iter().any(|place| {
+                place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 1
+            })
+        })
+        .ok_or("P21 Sam has no walking route after the hunt")?;
+        walk(client, world, &path).await?;
+        let here = client.world_spatial().actor_position;
+        let actor = client
+            .world_entities()
+            .and_then(|entities| {
+                entities.iter().find(|entity| {
+                    entity.kind == oteryn_dev_client::EntityKind::Npc
+                        && entity
+                            .display_name
+                            .is_some_and(|display| display.as_str() == Ok("Sam"))
+                        && entity.position.floor == here.floor
+                        && entity
+                            .position
+                            .x
+                            .abs_diff(here.x)
+                            .max(entity.position.y.abs_diff(here.y))
+                            <= 4
+                })
+            })
+            .ok_or("P21 the served actor Sam is outside talking range")?
+            .entity;
+        let greeting = client_row_e01::talk(client, actor, "hi", None).await?;
+        if greeting.open.map(|(npc, _)| npc) != Some(actor) {
+            return Err("P21 Sam did not open the native conversation".into());
+        }
+        client_row_e01::talk(client, actor, "trade", None).await?;
+        let delta = client
+            .session_mut()
+            .read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
+            .await?;
+        let window = npc::decode_npc_trade_window(&delta.payload)
+            .map_err(|error| format!("P21 Sam trade window: {error:?}"))?;
+        let (vendor, catalogue_revision) = window.open.ok_or("P21 Sam trade window closed")?;
+        if vendor != actor {
+            return Err("P21 trade window does not belong to Sam".into());
+        }
+        let (offer_index, offer) = window
+            .offers
+            .iter()
+            .enumerate()
+            .find(|(_, offer)| {
+                offer.item_definition_ref == target.get()
+                    && offer.side == npc::NpcTradeSide::Buy
+                    && offer.count == 1
+                    && offer.unit_price == 85
+            })
+            .ok_or("P21 Sam did not quote one Sword for exactly 85 gold")?;
+        let gold = player_gold(client).await?;
+        let count = units(client, target);
+        let reply = npc_shop::buy(
+            client.session_mut(),
+            &npc::NpcTradeIntent {
+                npc_actor: actor,
+                catalogue_revision,
+                offer_index: u32::try_from(offer_index)?,
+                side: offer.side,
+                quantity: 1,
+                expected_unit_price: offer.unit_price,
+            },
+        )
+        .await?;
+        if reply != npc::NpcIntentDisposition::Ok {
+            return Err(format!("P21 Sam refused the 85-gold Sword purchase: {reply:?}").into());
+        }
+        wait_units(client, target, count + 1).await?;
+        verify_gold_payment(gold, player_gold(client).await?, 85)?;
     }
     let basic = oteryn_gameplay_items::imbuement::imbuement_recipe(1, 1)
         .ok_or("basic Strike recipe absent")?;
     for &(key, count) in basic.materials {
-        character_prep::grant_item(client, character_prep::item_id(key)?, count).await
+        acquire(client, world, &definitions, key, count)
+            .await
             .map_err(|error| format!("P21 material {key} x{count}: {error}"))?;
     }
     character_prep::reload(client, clients).await?;
@@ -4986,7 +5151,11 @@ async fn imbuement_journey(
     row.pass("worn-effect");
     // Combat is a real eligible interval for Strike; no clock override. Removing
     // equipment checkpoints the elapsed duration before querying the carried item.
-    hunt_one(client, world).await?;
+    let entry = tile(client.world_spatial().actor_position)?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
+    qualification_hunt_route(client, world, None, Some(entry), deadline).await?;
+    acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await?;
+    qualification_hunt_route(client, world, Some(entry), None, deadline).await?;
     equipment_move(client, target, false).await?;
     let duration = imbue_window(client, target).await?.applied;
     if duration.len() != 1
