@@ -518,62 +518,100 @@ pub(super) async fn ready(
     leave_protection_zone(client, world).await
 }
 
-fn recovery_spell() -> TestResult<std::num::NonZeroU32> {
+// Choose a free authored self-heal against the fixture's served vocation and
+// level. Its wire mana cost is checked again immediately before each cast.
+async fn recovery_spell(
+    client: &mut DevClientSession,
+) -> TestResult<(&'static str, std::num::NonZeroU32, u32)> {
+    use crate::spell::{ManaCost, Vocation};
+    let (_, level, observed) = read_stats(client).await?;
     let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
-    let words = match profile.as_str() {
-        "knight" | "explorer" => "exura infir ico",
-        _ => "exura infir",
+    let key = if profile == "explorer" {
+        "knight"
+    } else {
+        profile.as_str()
     };
-    client_spell_journey::spell_index(native_spell_book()?, words)
+    let vocation = Vocation::from_key(key).ok_or("unknown recovery fixture vocation")?;
+    if observed.is_none() || observed != character::vocation_id(key) {
+        return Err(format!(
+            "recovery vocation mismatch: level={level} expected={key} observed={observed:?}"
+        )
+        .into());
+    }
+    let book = native_spell_book()?;
+    for words in ["exura infir ico", "exura infir", "exura"] {
+        if let Some(entry) = book.spoken(words) {
+            let spell = entry.spell;
+            if spell.vocations.contains(&vocation)
+                && spell.level <= level
+                && !spell.premium
+                && !spell.learning_required
+                && spell.soul == 0
+                && let ManaCost::Fixed(mana) = spell.mana
+            {
+                return Ok((words, client_spell_journey::spell_index(book, words)?, mana));
+            }
+        }
+    }
+    Err(format!("no free recovery spell for level={level} vocation={key}").into())
 }
 
 async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
     use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
-    let mut spell_index = None;
+    let mut recovery = None;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     tokio::time::timeout_at(deadline, async {
         loop {
-            let vitals = client
-                .actor_vitals()
-                .ok_or("sweep recovery vitals absent")?;
+            let vitals = client.actor_vitals().ok_or("sweep recovery vitals absent")?;
+            if vitals.health == 0 {
+                return Err("sweep fixture reached zero health".into());
+            }
             if vitals.health.saturating_mul(2) >= vitals.max_health {
                 return Ok(());
             }
-            let index = match spell_index {
-                Some(index) => index,
+            let (words, index, required_mana) = match recovery {
+                Some(spell) => spell,
                 None => {
-                    let index = recovery_spell()?;
-                    spell_index = Some(index);
-                    index
+                    let spell = recovery_spell(client).await?;
+                    recovery = Some(spell);
+                    spell
                 }
             };
-            let cast = client.cast_spell(index, SpellTarget::None, false).await?;
-            if !(cast.status == CommandStatus::Accepted
-                && cast.disposition == SpellCastDisposition::Cast)
-                && cast.disposition != SpellCastDisposition::CoolingDown
-            {
-                return Err(format!("classed sweep recovery spell refused: {cast:?}").into());
+            let mana = client.actor_vitals().ok_or("sweep recovery vitals absent")?.mana;
+            if mana >= required_mana {
+                let cast = client.cast_spell(index, SpellTarget::None, false).await?;
+                if !(cast.status == CommandStatus::Accepted
+                    && cast.disposition == SpellCastDisposition::Cast)
+                    && cast.disposition != SpellCastDisposition::CoolingDown
+                {
+                    return Err(format!("recovery {words} refused: observed_mana={mana} required_mana={required_mana}; {cast:?}").into());
+                }
             }
             client.service_liveness(Duration::from_millis(250)).await?;
             client.take_events();
         }
     })
     .await
-    .map_err(|_| "classed sweep recovery did not reach half health")?
+    .map_err(|_| format!("sweep recovery did not reach half health: vitals={:?}, recovery={recovery:?}", client.actor_vitals()))?
 }
 
-async fn recover_in_combat(
+pub(super) async fn recover_in_combat(
     client: &mut DevClientSession,
     world: &BundleWorld,
     target: &oteryn_dev_client::EntityRef,
 ) -> TestResult {
     use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 
-    let cast = client
-        .cast_spell(recovery_spell()?, SpellTarget::None, false)
-        .await?;
-    if cast.status == CommandStatus::Accepted && cast.disposition == SpellCastDisposition::Cast {
-        return Ok(());
+    let (_, index, required_mana) = recovery_spell(client).await?;
+    if client
+        .actor_vitals()
+        .is_some_and(|vitals| vitals.mana >= required_mana)
+    {
+        let cast = client.cast_spell(index, SpellTarget::None, false).await?;
+        if cast.status == CommandStatus::Accepted && cast.disposition == SpellCastDisposition::Cast
+        {
+            return Ok(());
+        }
     }
     let Some(enemy) = client
         .world_entities()

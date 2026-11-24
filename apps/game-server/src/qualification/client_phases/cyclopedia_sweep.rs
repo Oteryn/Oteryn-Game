@@ -78,6 +78,12 @@ enum Entry {
     },
     Character(character::CharacterTab),
     CharacterItems,
+    Charm {
+        ordinal: u16,
+        name: String,
+        category: crate::domain::charm::CharmCategory,
+        stage_costs: [u32; 3],
+    },
     Item {
         revision: String,
         name: String,
@@ -106,6 +112,28 @@ fn census(root: &Path) -> TestResult<Content> {
         }
     }
     let mut entries = BTreeMap::new();
+    let charms = crate::content::charm_source::CanonicalCharmCatalogue::embedded()?;
+    let source: serde_json::Value = serde_json::from_slice(charms.source_bytes().1)?;
+    let records = source["records"]
+        .as_array()
+        .ok_or("charm source records missing")?;
+    for (index, definition) in charms.catalogue().definitions().enumerate() {
+        let key = definition.key.as_str();
+        let name = records
+            .iter()
+            .find(|row| row["definition"]["identity"]["key"].as_str() == Some(key))
+            .and_then(|row| row["definition"]["name"].as_str())
+            .ok_or("charm source name missing")?;
+        entries.insert(
+            format!("charms.{key}"),
+            Entry::Charm {
+                ordinal: u16::try_from(index + 1)?,
+                name: name.into(),
+                category: definition.category,
+                stage_costs: definition.stage_costs,
+            },
+        );
+    }
     for (index, (race, _)) in full_row_p05::canonical_races()?.iter().enumerate() {
         entries.insert(
             format!("bestiary.{}", race.key()),
@@ -259,9 +287,11 @@ impl Entry {
             Self::Map(_) => &["query", "visit", "progress"],
             Self::MapAtlas(_) => &["query", "visit", "progress"],
             Self::Weather(_) => &["visit", "state"],
-            Self::Item { .. } | Self::Character(_) | Self::CharacterItems | Self::MapSpeed => {
-                &["query"]
-            }
+            Self::Item { .. }
+            | Self::Character(_)
+            | Self::CharacterItems
+            | Self::Charm { .. }
+            | Self::MapSpeed => &["query"],
         }
     }
 }
@@ -414,6 +444,16 @@ async fn bestiary(
     client: &mut DevClientSession,
     ordinal: NonZeroU32,
 ) -> TestResult<Option<BestiaryRaceProgress>> {
+    Ok(charm_progression(client)
+        .await?
+        .bestiary
+        .into_iter()
+        .find(|row| row.race == ordinal))
+}
+
+async fn charm_progression(
+    client: &mut DevClientSession,
+) -> TestResult<charm::CharmProgressionReply> {
     let payload = charm::encode_charm_progression_request(&charm::CharmProgressionAction::Query)
         .map_err(debug)?;
     let reply = command(
@@ -427,7 +467,7 @@ async fn bestiary(
     if reply.outcome != charm::CharmProgressionOutcome::Query {
         return Err("Bestiary progress query returned the wrong outcome".into());
     }
-    Ok(reply.bestiary.into_iter().find(|row| row.race == ordinal))
+    Ok(reply)
 }
 
 fn progress_oracle(
@@ -569,6 +609,7 @@ async fn spawn(
 async fn kill(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
+    world: &BundleWorld,
     key: &str,
     target: oteryn_dev_client::EntityRef,
 ) -> TestResult<String> {
@@ -589,6 +630,7 @@ async fn kill(
         return Err(format!("attack refused: {result:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
+    let mut next_recovery = tokio::time::Instant::now();
     while client
         .world_entities()
         .is_some_and(|entities| entities.get(&target).is_some())
@@ -600,6 +642,26 @@ async fn kill(
         }
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
+        let vitals = client.actor_vitals().ok_or("combat vitals absent")?;
+        if vitals.health == 0 {
+            return Err("hunter reached zero health during combat".into());
+        }
+        let now = tokio::time::Instant::now();
+        if now >= next_recovery && vitals.health.saturating_mul(2) < vitals.max_health {
+            next_recovery = now + Duration::from_secs(1);
+            tokio::time::timeout_at(
+                deadline,
+                creature_sweep::recover_in_combat(client, world, &target),
+            )
+            .await
+            .map_err(|_| "combat recovery exceeded the combat deadline")??;
+            if client
+                .actor_vitals()
+                .is_some_and(|vitals| vitals.health == 0)
+            {
+                return Err("hunter reached zero health during recovery".into());
+            }
+        }
     }
     committed_hunt_death(
         client,
@@ -693,9 +755,15 @@ async fn check_entry(sweep: &mut Sweep<'_, '_>, key: &str, entry: &Entry, rows: 
                     return;
                 }
             };
-            if rows.emit(kill(client, sweep.clients, key, target).await, "combat") {
+            let result = kill(client, sweep.clients, sweep.world, key, target).await;
+            let dead = client
+                .actor_vitals()
+                .is_some_and(|vitals| vitals.health == 0);
+            if rows.emit(result, if dead { "player-death" } else { "combat" }) {
                 let next = creature_query(client, key, entry, kills.saturating_add(credit)).await;
                 rows.emit(next.map(|(_, detail)| detail), "progress");
+            } else if dead {
+                drop(sweep.hunter.take());
             }
         }
         _ => {
@@ -727,14 +795,6 @@ async fn check_entry(sweep: &mut Sweep<'_, '_>, key: &str, entry: &Entry, rows: 
 }
 
 async fn prepare_hunter(sweep: &mut Sweep<'_, '_>) -> TestResult {
-    let client = sweep.hunter.as_mut().ok_or("hunter session absent")?;
-    let (_, level, _) = creature_sweep::read_stats(client).await?;
-    // The qualification fixture's initial build grant is level 100 even for a
-    // character that bootstrapped with a vocation (qualification_fixture.rs:683).
-    if level == 1 {
-        let client = sweep.hunter.take().ok_or("hunter session absent")?;
-        sweep.hunter = Some(provisioning::provision_fixture(client, sweep.clients, 0, 100).await?);
-    }
     creature_sweep::ready(sweep.clients, sweep.world, &mut sweep.hunter).await
 }
 
@@ -780,6 +840,63 @@ async fn creature_query(
     }
 }
 
+async fn read_charm(
+    client: &mut DevClientSession,
+    ordinal: u16,
+    name: &str,
+    category: crate::domain::charm::CharmCategory,
+    stage_costs: &[u32; 3],
+) -> TestResult<String> {
+    use crate::domain::charm::CharmCategory;
+    use oteryn_protocol_oteryn::charm::CharmKind;
+    let (kind, title, currency) = match category {
+        CharmCategory::Major => (CharmKind::Major, "Major", "Charm Points"),
+        CharmCategory::Minor => (CharmKind::Minor, "Minor", "Minor Charm Echoes"),
+    };
+    // T081 metadata pages follow the same ordinal as the progression view.
+    let after = ordinal.checked_sub(1).ok_or("zero charm ordinal")?;
+    let payload = charm::catalogue::encode_charm_request(after).map_err(debug)?;
+    let reply = command(
+        client,
+        charm::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1,
+        charm::COMMAND_TYPE_CHARM_PROGRESSION,
+        &payload,
+    )
+    .await?;
+    let page = charm::catalogue::decode_page(&reply).map_err(debug)?;
+    let card = page
+        .cards
+        .first()
+        .filter(|card| card.race == ordinal)
+        .ok_or("authored charm missing from metadata page")?;
+    if card.name != name
+        || card.category != title
+        || !stage_costs.iter().enumerate().all(|(index, cost)| {
+            let prefix = format!("Stage {}: {cost} {currency};", index + 1);
+            card.detail.lines().any(|line| line.starts_with(&prefix))
+        })
+    {
+        return Err(format!("charm metadata differs for {name}: {card:?}").into());
+    }
+    let progression = charm_progression(client).await?;
+    let row = progression
+        .charms
+        .charms
+        .iter()
+        .find(|row| row.charm.get() == u32::from(ordinal))
+        .ok_or("authored charm missing from progression view")?;
+    if row.kind != kind
+        || row.unlocked_stage != 0
+        || row.assigned_race.is_some()
+        || row.next_stage_cost != stage_costs[0]
+    {
+        return Err(format!("unexpected seeded charm state for {name}: {row:?}").into());
+    }
+    Ok(format!(
+        "verified {name} metadata, stage costs and locked state"
+    ))
+}
+
 async fn read_page(
     client: &mut DevClientSession,
     key: &str,
@@ -789,6 +906,12 @@ async fn read_page(
     let cap = character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1;
     let kind = character::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB;
     match entry {
+        Entry::Charm {
+            ordinal,
+            name,
+            category,
+            stage_costs,
+        } => read_charm(client, *ordinal, name, *category, stage_costs).await,
         Entry::Character(tab) => {
             let mut model = panel::CyclopediaCharacterPanel {
                 selected: true,
@@ -1341,6 +1464,7 @@ mod tests {
             "bestiary.",
             "bosstiary.",
             "character.",
+            "charms.",
             "items.",
             "map.",
             "weather.",
