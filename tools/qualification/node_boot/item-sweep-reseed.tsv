@@ -88,13 +88,6 @@ exact-bed-absent-from-loaded-houses	tibia.i39437
 exact-bed-absent-from-loaded-houses	tibia.i39438
 exact-bed-absent-from-loaded-houses	tibia.i39439
 exact-bed-absent-from-loaded-houses	tibia.i39440
-fixture-release-blocked	tibia.i39446
-fixture-release-blocked	tibia.i39447
-fixture-release-blocked	tibia.i39496
-fixture-release-blocked	tibia.i39497
-fixture-release-blocked	tibia.i39504
-fixture-release-blocked	tibia.i39505
-fixture-release-blocked	tibia.i39506
 fixture-release-blocked	tibia.i39507
 fixture-release-blocked	tibia.i39528
 fixture-release-blocked	tibia.i39529
@@ -419,6 +412,13 @@ house-bed-placement-unavailable	tibia.i37201
 house-bed-placement-unavailable	tibia.i37202
 house-bed-placement-unavailable	tibia.i37203
 house-bed-placement-unavailable	tibia.i37204
+session-closed-e1200	tibia.i39446
+session-closed-e1200	tibia.i39447
+session-closed-e1200	tibia.i39496
+session-closed-e1200	tibia.i39497
+session-closed-e1200	tibia.i39504
+session-closed-e1200	tibia.i39505
+session-closed-e1200	tibia.i39506
 transport-disconnected	tibia.i2487
 transport-disconnected	tibia.i2488
 transport-disconnected	tibia.i2493

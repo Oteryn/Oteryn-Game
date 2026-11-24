@@ -2056,7 +2056,11 @@ pub(super) async fn run<'a>(
         prepared: [false; 10],
         socket: required("NODE_BOOT_CONTROL_SOCKET")?,
     };
-    let mut cleanup_db = sqlx::PgConnection::connect(scopes[0].url).await?;
+    let custody_deadline = Duration::from_secs(20);
+    let mut cleanup_db =
+        tokio::time::timeout(custody_deadline, sqlx::PgConnection::connect(scopes[0].url))
+            .await
+            .map_err(|_| "ground-fixture-database-connect-deadline")??;
     let mut tally = Tally::default();
     for &(key, item) in &entries[start..end] {
         verdict::Harness::global().progress("item-sweep-entry");
@@ -2070,11 +2074,26 @@ pub(super) async fn run<'a>(
             counts: Tally::default(),
             lap: std::time::Instant::now(),
         };
-        let watermark: i64 = sqlx::query_scalar(
-            "SELECT COALESCE(max(stack_ordinal),0) FROM game_item_ground_locations",
+        let watermark: i64 = match tokio::time::timeout(
+            custody_deadline,
+            sqlx::query_scalar(
+                "SELECT COALESCE(max(stack_ordinal),0) FROM game_item_ground_locations",
+            )
+            .fetch_one(&mut cleanup_db),
         )
-        .fetch_one(&mut cleanup_db)
-        .await?;
+        .await
+        {
+            Ok(Ok(watermark)) => watermark,
+            error => {
+                rows.blocked(if error.is_err() {
+                    "ground-watermark-deadline"
+                } else {
+                    "ground-watermark-unavailable"
+                });
+                tally.fail += rows.counts.fail;
+                continue;
+            }
+        };
         let result = tokio::time::timeout(
             Duration::from_secs(if seed_only { 240 } else { 1200 }),
             Box::pin(sweep_item(
@@ -2094,7 +2113,12 @@ pub(super) async fn run<'a>(
         } else {
             "entry-deadline"
         });
-        let cleared = clear_fixture_drops(&mut cleanup_db, &fixtures, watermark).await;
+        let cleared = tokio::time::timeout(
+            custody_deadline,
+            clear_fixture_drops(&mut cleanup_db, &fixtures, watermark),
+        )
+        .await
+        .unwrap_or_else(|_| Err("ground-cleanup-deadline".into()));
         if cleared.is_err() {
             rows.emit("ground_cleanup", cleared);
         }
