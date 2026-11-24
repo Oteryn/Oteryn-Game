@@ -1498,6 +1498,14 @@ async fn apply_trade(
     let gold = |value: u64| i64::try_from(value).map_err(|_| DurabilityError::InvalidStoredState);
     let cause = &request.cause;
     let item = &request.item.definition;
+    // Bind the shop options together to stay within WP3's 32-parameter limit.
+    let shop_options = serde_json::json!({
+        "fluid_subtype": request.fluid_subtype,
+        "full_charges": request.full_charges,
+        "shopping_bag_item_id": shop.bag_id.map(|id| sqlx::types::Uuid::from_bytes(id).to_string()),
+        "include_equipped": request.include_equipped,
+        "equipment_revision_before": shop.equipment_revision.as_deref(),
+    });
     sqlx::query(
         "INSERT INTO game_npc_trades(transaction_id, event_id, occurrence_id, game_session_id, \
            command_id, character_id, request_binding, world_id, channel_id, \
@@ -1513,7 +1521,9 @@ async fn apply_trade(
            $12::text::numeric(20,0), $13, $14, $15, $16, $17, $18, $19, $20, \
            encode($21,'hex')::uuid, $22, encode($23,'hex')::uuid, $24, $25, $26, $27, \
            sha256($28), floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $29, \
-           $30, $31, ($32::integer[])[1]::smallint, ($32::integer[])[2], encode($33,'hex')::uuid, $34, $35::text::numeric)",
+           $30, $31, ($32::jsonb->>'fluid_subtype')::smallint, \
+           ($32::jsonb->>'full_charges')::integer, ($32::jsonb->>'shopping_bag_item_id')::uuid, \
+           ($32::jsonb->>'include_equipped')::boolean, ($32::jsonb->>'equipment_revision_before')::numeric)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -1546,13 +1556,7 @@ async fn apply_trade(
     .bind(gold(plan.bank_debit_gold_units)?)
     .bind(sell_all)
     .bind(house_key)
-    .bind(vec![
-        request.fluid_subtype.map(i32::from),
-        request.full_charges.map(i32::from),
-    ])
-    .bind(shop.bag_id.as_ref().map(|id| id.as_slice()))
-    .bind(request.include_equipped)
-    .bind(shop.equipment_revision.as_deref())
+    .bind(sqlx::types::Json(shop_options))
     .execute(&mut **tx)
     .await?;
 
