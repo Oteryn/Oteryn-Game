@@ -80,6 +80,14 @@ class CorpseLootAdmissionTests(unittest.TestCase):
                 self.assertTrue(facts[ring]['materializable'])
                 self.assertFalse(facts[ring].get("stackable", False))
 
+    def test_arbaziloth_stackable_drops_preserve_their_rolled_quantity(self):
+        _, creatures = full.read(full.CREATURE_PROFILES)
+        document = json.loads(full.loot_tables(creatures))
+        facts = {row['item']['key']: row for row in document['items']}
+        for source_id in (3043, 7642, 23373, 7643, 23375, 23374, 3041, 3037):
+            with self.subTest(source_id=source_id):
+                self.assertIs(facts[f'oteryn:item.tibia.i{source_id}'].get('stackable'), True)
+
     def produce(self, profile, *, body_is_yield=False, candidate_profile=None):
         body = {'family': 'Item', 'key': 'oteryn:item.tibia.i5969', 'revision': 'definition-r1'}
         creature = {'family': 'Creature', 'key': 'oteryn:creature.test-corpse', 'revision': 'definition-r1'}

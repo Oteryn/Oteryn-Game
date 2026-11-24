@@ -1,6 +1,8 @@
 syntax = "proto3";
 package oteryn.protocol.v1;
 // Capability 39, command 38. Strict singular fields; unknown fields rejected.
+// Inspect reads current held state, ignores expected_timed_revision, and creates no
+// timed state or command receipt. Repeated Inspect observes current state again.
 // Inspect/use require a carried target; repair additionally requires Aldo in talk range.
 // Repair selects the first direct worn Soft Boots in B3 order; target must identify it.
 // Elapsed time, item definitions, fee and identity/fences always come from the server.

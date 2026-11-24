@@ -10,21 +10,9 @@ impl PlayLink {
     #[cfg(bevy_shell)]
     pub(crate) fn open_reward_store_offers(&self, search: &str) -> bool {
         let mut mailbox = lock(&self.mailbox);
-        if !mailbox.store.selected {
-            mailbox.daily_reward.feedback = Some(tr!("Store unavailable in this session"));
+        if let Err(message) = self.open_product_offers(&mut mailbox.store, search) {
+            mailbox.daily_reward.feedback = Some(message);
             return false;
-        }
-        if mailbox.store.pending || mailbox.store.confirmed_purchase.is_some() {
-            mailbox.daily_reward.feedback = Some(tr!("Waiting for the server"));
-            return false;
-        }
-        let Some(command) = oteryn_client_ui::store::browse(&mut mailbox.store, "featured", search, 0, 0) else {
-            return false;
-        };
-        mailbox.store.open = true;
-        if self.commands.send(PlayCommand::ServerMechanic(command)).is_err() {
-            mailbox.store.pending = false;
-            mailbox.store.feedback = Some("The session has ended".into());
         }
         true
     }
@@ -39,9 +27,16 @@ impl PlayLink {
         intent: Intent,
     ) -> bool {
         let mut mailbox = lock(&self.mailbox);
-        if mailbox.world_input_blocked() || mailbox.daily_reward != *expected
-            || !expected.open || !expected.selected || expected.pending
-            || (intent == Intent::Claim && expected.wall.is_none_or(|wall| wall.claimed || !wall.claim_enabled)) {
+        if mailbox.world_input_blocked()
+            || mailbox.daily_reward != *expected
+            || !expected.open
+            || !expected.selected
+            || expected.pending
+            || (intent == Intent::Claim
+                && expected
+                    .wall
+                    .is_none_or(|wall| wall.claimed || !wall.claim_enabled))
+        {
             return false;
         }
         enqueue(&mut mailbox, &self.commands, intent);

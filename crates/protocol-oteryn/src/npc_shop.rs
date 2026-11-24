@@ -24,6 +24,7 @@ use crate::world_spatial_entities::EntityRef;
 
 /// Registered capability `NPC_SHOP_V1`: command type 97, no state domain; requires capability 3.
 pub const CAPABILITY_NPC_SHOP_V1: u32 = 81;
+pub const CAPABILITY_NPC_SHOP_OPTIONS_V1: u32 = 589;
 pub const COMMAND_TYPE_NPC_SHOP: u32 = 97;
 /// SELLALL1-RL-01: the item stacks one sell-all burns (the backpack entry ceiling).
 pub const MAX_SELL_ALL_STACKS: usize = 20;
@@ -33,6 +34,7 @@ pub const MAX_SELL_ALL_UNITS: u32 = 2_000;
 pub const MAX_SELL_ALL_GOLD_UNITS: u64 = 1_009_999;
 /// The NPC field (2 + 29), revision (11), index (3), side (2), action (2) and price (6).
 pub const MAX_NPC_SHOP_INTENT_BYTES: usize = 2 + 29 + 11 + 3 + 2 + 2 + 6;
+pub const MAX_NPC_SHOP_INTENT_OPTIONS_BYTES: usize = MAX_NPC_SHOP_INTENT_BYTES + 2;
 /// The NPC shop look text in UTF-8 bytes. It keeps the original D1143 look bound and does not
 /// follow `MAX_ITEM_LOOK_TEXT_BYTES`, which LOOKBOOK-1 raised for spellbook dialogs only.
 pub const MAX_NPC_SHOP_LOOK_TEXT_BYTES: usize = 512;
@@ -102,20 +104,44 @@ fn check_intent(intent: &NpcShopIntent) -> WireResult<()> {
 
 /// Encodes an `NpcShopIntentV1` (the client side).
 pub fn encode_npc_shop_intent(intent: &NpcShopIntent) -> WireResult<Vec<u8>> {
+    encode_npc_shop_intent_for(intent, false)
+}
+
+pub fn encode_npc_shop_intent_for(
+    intent: &NpcShopIntent,
+    include_equipped: bool,
+) -> WireResult<Vec<u8>> {
     check_intent(intent)?;
-    let mut output = Vec::with_capacity(MAX_NPC_SHOP_INTENT_BYTES);
+    let mut output = Vec::with_capacity(MAX_NPC_SHOP_INTENT_OPTIONS_BYTES);
     encode_npc(&mut output, 1, &intent.npc_actor)?;
     push_nonzero_varint_field(&mut output, 2, intent.catalogue_revision);
     push_nonzero_varint_field(&mut output, 3, u64::from(intent.offer_index));
     push_varint_field(&mut output, 4, intent.side as u64);
     push_varint_field(&mut output, 5, intent.action as u64);
     push_nonzero_varint_field(&mut output, 6, u64::from(intent.expected_unit_price));
+    if include_equipped {
+        if intent.side != NpcTradeSide::Sell || intent.action != NpcShopAction::SellAll {
+            return malformed();
+        }
+        push_varint_field(&mut output, 7, 1);
+    }
     Ok(output)
 }
 
 /// Decodes an `NpcShopIntentV1`; the server answers `REJECTED` to any error.
 pub fn decode_npc_shop_intent(payload: &[u8]) -> WireResult<NpcShopIntent> {
-    check_size(payload, MAX_NPC_SHOP_INTENT_BYTES)?;
+    decode_npc_shop_intent_for(payload, false).map(|(intent, _)| intent)
+}
+
+pub fn decode_npc_shop_intent_for(
+    payload: &[u8],
+    options: bool,
+) -> WireResult<(NpcShopIntent, bool)> {
+    check_size(
+        payload,
+        MAX_NPC_SHOP_INTENT_BYTES + 2 * usize::from(options),
+    )?;
+    let mut option = None;
     let (mut npc, mut revision, mut index) = (None, None, None);
     let (mut side, mut action, mut price) = (None, None, None);
     read_fields(payload, |number, wire, input, cursor| {
@@ -132,6 +158,10 @@ pub fn decode_npc_shop_intent(payload: &[u8]) -> WireResult<NpcShopIntent> {
                 NpcShopAction::from_wire(read_uint32(input, cursor)?)?,
             ),
             (6, 0) => set_once(&mut price, read_uint32(input, cursor)?),
+            (7, 0) if options && input.get(*cursor) == Some(&1) => {
+                *cursor += 1;
+                set_once(&mut option, ())
+            }
             _ => malformed(),
         }
     })?;
@@ -144,7 +174,12 @@ pub fn decode_npc_shop_intent(payload: &[u8]) -> WireResult<NpcShopIntent> {
         expected_unit_price: price.unwrap_or(0),
     };
     check_intent(&intent)?;
-    Ok(intent)
+    if option.is_some()
+        && (intent.side != NpcTradeSide::Sell || intent.action != NpcShopAction::SellAll)
+    {
+        return malformed();
+    }
+    Ok((intent, option.is_some()))
 }
 
 fn check_result(result: &NpcShopResult) -> WireResult<()> {

@@ -87,8 +87,31 @@ fn party_summary_file_io_is_bounded_advisory_and_keeps_live_members_untouched()
     }
     assert_eq!(std::fs::read_to_string(&path)?, original);
     link.analyser_party_refresh();
-    assert!(link.analyser_panel().party_import.is_none());
+    assert_eq!(link.analyser_panel().party_import.as_ref(), Some(&prior));
     assert!(incoming.try_recv().is_err());
+    outbox.party_initialize(true, false);
+    for accepted in [false, true] {
+        link.analyser_party_refresh();
+        let crate::combat_input::PlayCommand::Feature(command) = incoming.try_recv()? else {
+            return Err("party query".into());
+        };
+        assert_eq!(command.kind, wire::COMMAND_TYPE_ANALYSER_PARTY_QUERY);
+        assert_eq!(link.analyser_panel().party_import.as_ref(), Some(&prior));
+        outbox.analyser_result(
+            &command,
+            &GatedCommandResult {
+                command_id: 2,
+                server_sequence: 2,
+                status: if accepted {
+                    oteryn_session::CommandStatus::Accepted
+                } else {
+                    oteryn_session::CommandStatus::Rejected
+                },
+                payload: wire::encode_reply(&rows)?,
+            },
+        );
+        assert_eq!(link.analyser_panel().party_import.is_none(), accepted);
+    }
     outbox.logged_out();
     assert!(link.analyser_panel().party_import.is_none());
     assert!(link.analyser_import_party(&path).is_err());

@@ -4,7 +4,6 @@ use super::parameter_spell_fixtures::scenario;
 
 use super::TestResult;
 
-
 #[test]
 fn parameter_spell_online_exiva_real_session_postgres() -> TestResult {
     scenario(0)
@@ -21,6 +20,14 @@ fn parameter_spell_ordinary_cast_unchanged_real_session_postgres() -> TestResult
 #[test]
 fn parameter_spell_protected_exiva_real_session_postgres() -> TestResult {
     scenario(3)
+}
+
+#[test]
+fn parameter_spell_action_bar_named_target_real_session_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(255)
 }
 
 #[path = "parameter_spell/exiva_settings.rs"]

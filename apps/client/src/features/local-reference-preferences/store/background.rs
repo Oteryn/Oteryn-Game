@@ -1,6 +1,43 @@
 use super::*;
 
 impl PreferenceStore {
+    pub(in super::super) fn save_impact_records(
+        &mut self,
+        preferences: ReferencePreferences,
+        background: bool,
+    ) -> io::Result<()> {
+        let records = preferences.impact_records;
+        if background {
+            self.deferred_impact_records = Some(records);
+            if self.retry_impact_at.is_some() {
+                self.preferences.impact_records = records;
+                return Ok(());
+            }
+        }
+        let result = if background {
+            self.apply_in_background(preferences)
+        } else {
+            self.apply(preferences)
+        };
+        match result {
+            Err(error) if self.saving() && error.kind() == io::ErrorKind::WouldBlock => {
+                self.deferred_impact_records = Some(records);
+                self.preferences.impact_records = records;
+                Ok(())
+            }
+            other => other,
+        }
+    }
+
+    pub(super) fn flush_impact_records(&mut self) -> io::Result<()> {
+        if let Some(records) = self.deferred_impact_records {
+            let mut preferences = self.preferences.clone();
+            preferences.impact_records = records;
+            self.apply_in_background(preferences)?;
+        }
+        Ok(())
+    }
+
     pub(in super::super) fn apply_in_background(
         &mut self,
         preferences: ReferencePreferences,
@@ -114,7 +151,7 @@ impl PreferenceStore {
     }
 
     pub(in super::super) fn saving(&self) -> bool {
-        self.save_task.is_some()
+        self.save_task.is_some() || self.retry_impact_at.is_some()
     }
 
     pub(in super::super) fn at_path(&self, path: &Path) -> bool {
@@ -122,7 +159,17 @@ impl PreferenceStore {
     }
 
     pub(in super::super) fn poll_background_save(&mut self) -> Option<Vec<SaveResult>> {
-        let results = bevy_tasks::futures::check_ready(self.save_task.as_mut()?)?;
+        if !self.replacing
+            && self
+                .retry_impact_at
+                .is_some_and(|at| std::time::Instant::now() >= at)
+        {
+            self.retry_impact_at = None;
+            if let Err(error) = self.flush_impact_records() {
+                return Some(vec![Err(error)]);
+            }
+        }
+        let mut results = bevy_tasks::futures::check_ready(self.save_task.as_mut()?)?;
         self.save_task = None;
         self.queued = 0;
         self.replacing = false;
@@ -137,6 +184,26 @@ impl PreferenceStore {
             .find_map(|item| item.as_ref().ok()?.as_ref())
         {
             self.preferences = restored.clone();
+            // A successful import, restore or character load is the newer complete snapshot.
+            // Impact observation pauses while that replacement is in flight.
+            self.deferred_impact_records = None;
+            self.retry_impact_at = None;
+        }
+        if self.deferred_impact_records == Some(self.preferences.impact_records) {
+            self.deferred_impact_records = None;
+        }
+        if let Some(records) = self.deferred_impact_records
+            && results.iter().any(Result::is_err)
+        {
+            // Keep the durable baseline for the retry and the latest logical value for re-entry.
+            self.io_baseline = Some(std::sync::Arc::new(std::sync::Mutex::new(
+                self.preferences.clone(),
+            )));
+            self.preferences.impact_records = records;
+            self.retry_impact_at =
+                Some(std::time::Instant::now() + std::time::Duration::from_secs(1));
+        } else if let Err(error) = self.flush_impact_records() {
+            results.push(Err(error));
         }
         Some(results)
     }

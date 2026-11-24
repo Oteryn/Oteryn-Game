@@ -11,8 +11,18 @@ use bevy::{
 };
 type UiControls = Or<(With<Button>, With<Checkbox>, With<TextInput>)>;
 
+type TouchGeometry = (
+    &'static ComputedNode,
+    &'static UiGlobalTransform,
+    &'static InheritedVisibility,
+    Option<&'static bevy::ui::CalculatedClip>,
+    Option<&'static Pickable>,
+);
+
 #[derive(SystemParam)]
 pub(in crate::bevy_shell) struct WorldPointerHits<'w, 's> {
+    stack: Option<Res<'w, bevy::ui::UiStack>>,
+    geometry: Query<'w, 's, TouchGeometry>,
     hover: Res<'w, HoverMap>,
     pointers: Query<'w, 's, (&'static PointerId, &'static PointerLocation)>,
     primary: Query<'w, 's, (Entity, &'static Window), With<PrimaryWindow>>,
@@ -23,8 +33,11 @@ impl WorldPointerHits<'_, '_> {
     /// Compare at the native normalizer's physical-pixel precision. A frame-final
     /// pointer cannot establish ownership for an earlier, different press position.
     pub fn matches_primary_pointer(&self, physical: Vec2) -> bool {
+        self.pointer_matches(PointerId::Mouse, physical) == Some(true)
+    }
+    fn pointer_matches(&self, pointer_id: PointerId, physical: Vec2) -> Option<bool> {
         let Ok((entity, window)) = self.primary.single() else {
-            return false;
+            return None;
         };
         let scale = window.scale_factor();
         if !physical.is_finite()
@@ -38,55 +51,85 @@ impl WorldPointerHits<'_, '_> {
                 ))
                 .all()
         {
-            return false;
+            return None;
         }
-        let mut mice = self
-            .pointers
-            .iter()
-            .filter(|(id, _)| **id == PointerId::Mouse);
-        let Some((_, pointer)) = mice.next() else {
-            return false;
-        };
-        if mice.next().is_some() {
-            return false;
+        let mut pointers = self.pointers.iter().filter(|(id, _)| **id == pointer_id);
+        let (_, pointer) = pointers.next()?;
+        if pointers.next().is_some() {
+            return None;
         }
-        let Some(location) = pointer.location() else {
-            return false;
-        };
-        let Some(target) = bevy::window::WindowRef::Entity(entity).normalize(None) else {
-            return false;
-        };
+        let location = pointer.location()?;
+        let target = bevy::window::WindowRef::Entity(entity).normalize(None)?;
         let current = location.position * scale;
-        location.target == bevy::camera::NormalizedRenderTarget::Window(target)
-            && current.is_finite()
-            && current.round() == physical.round()
+        (location.target == bevy::camera::NormalizedRenderTarget::Window(target)
+            && current.is_finite())
+        .then(|| current.round() == physical.round())
     }
     /// Only a resolved world hit may start ordinary world input or a ground-item
     /// candidate. Active item releases use their captured upstream Slot/World token
     /// instead, so they remain valid when the pointer leaves the world rectangle.
     pub fn allows_world_start(&self, world: Entity, physical: Vec2) -> bool {
-        if !self.matches_primary_pointer(physical) {
+        self.allows_pointer_start(PointerId::Mouse, world, physical)
+    }
+    pub fn allows_pointer_start(&self, id: PointerId, world: Entity, physical: Vec2) -> bool {
+        let Some(matches) = self.pointer_matches(id, physical) else {
+            return false;
+        };
+        if !matches {
+            // Touch input may include several positions before picking publishes the last.
+            // Resolve the initial position against the actual rendered UI stack.
+            if matches!(id, PointerId::Touch(_))
+                && let Some(stack) = &self.stack
+            {
+                let Some(nodes) = stack
+                    .partition
+                    .iter()
+                    .map(|range| &stack.uinodes[range.clone()])
+                    .find(|nodes| nodes.contains(&world))
+                else {
+                    return false;
+                };
+                for entity in nodes.iter().rev() {
+                    let Ok((node, transform, visibility, clip, pickable)) =
+                        self.geometry.get(*entity)
+                    else {
+                        continue;
+                    };
+                    if !visibility.get()
+                        || node.size() == Vec2::ZERO
+                        || !node.contains_point(*transform, physical)
+                        || clip.is_some_and(|clip| !clip.contains_point(physical))
+                        || pickable.is_some_and(|p| !p.is_hoverable && !p.should_block_lower)
+                    {
+                        continue;
+                    }
+                    return self.owned_by_world(*entity, world)
+                        && pickable.is_none_or(|p| p.is_hoverable);
+                }
+            }
             return false;
         }
-        let Some(hits) = self.hover.get(&PointerId::Mouse) else {
+        let Some(hits) = self.hover.get(&id) else {
             return false;
         };
         !hits.is_empty()
-            && hits.keys().all(|entity| {
-                let mut current = *entity;
-                loop {
-                    if current == world {
-                        return true;
-                    }
-                    if self.controls.contains(current) {
-                        return false;
-                    }
-                    let Ok(parent) = self.parents.get(current) else {
-                        return false;
-                    };
-                    current = parent.parent();
-                }
-            })
+            && hits
+                .keys()
+                .all(|entity| self.owned_by_world(*entity, world))
+    }
+    fn owned_by_world(&self, mut current: Entity, world: Entity) -> bool {
+        loop {
+            if current == world {
+                return true;
+            }
+            if self.controls.contains(current) {
+                return false;
+            }
+            let Ok(parent) = self.parents.get(current) else {
+                return false;
+            };
+            current = parent.parent();
+        }
     }
 }
 #[cfg(test)]

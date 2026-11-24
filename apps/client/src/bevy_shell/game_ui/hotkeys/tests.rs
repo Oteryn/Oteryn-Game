@@ -489,6 +489,23 @@ fn map_picker_reads_clicked_world_object_through_overlay() -> TestResult {
     .add_systems(Update, map_picker::project);
     control(&mut app, Control::PickMap);
     app.update();
+    press(&mut app, KeyCode::Escape, false);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query_filtered::<Entity, With<map_picker::Overlay>>()
+            .iter(app.world())
+            .next()
+            .is_none()
+    );
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .preferences_draft()
+            .is_some()
+    );
+    control(&mut app, Control::PickMap);
+    app.update();
     let entity = app
         .world_mut()
         .query_filtered::<Entity, With<map_picker::Overlay>>()

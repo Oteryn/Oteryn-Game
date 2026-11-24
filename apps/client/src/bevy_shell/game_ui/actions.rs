@@ -99,6 +99,8 @@ struct DockAnchor(crate::play::BarDock);
 #[derive(Component)]
 struct SlotCaption(usize);
 #[derive(Component)]
+struct SlotCooldown(usize);
+#[derive(Component)]
 struct ActionHint;
 #[derive(Component)]
 struct CooldownLine;
@@ -116,6 +118,7 @@ pub(super) fn install(app: &mut App) {
                 projection::project,
                 editor::project,
                 cooldown::project,
+                projection::slot_timers,
             )
                 .chain(),
         );
@@ -233,7 +236,24 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                     },
                 ))
                 .id();
-            commands.entity(entity).add_children(&[caption, hotkey]);
+            let overlay = commands
+                .spawn((
+                    SlotCooldown(slot),
+                    Name::new(format!("Action slot {} cooldown", slot + 1)),
+                    Pickable::IGNORE,
+                    Node {
+                        position_type: PositionType::Absolute,
+                        bottom: px(0.),
+                        width: percent(100.),
+                        display: Display::None,
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgba(0., 0., 0., 0.5)),
+                ))
+                .id();
+            commands
+                .entity(entity)
+                .add_children(&[overlay, caption, hotkey]);
             commands.entity(row).add_child(entity);
         }
         let next = arrows(&mut commands, &skins, bar, 1);

@@ -41,6 +41,9 @@ pub struct CyclopediaCharacterPanel {
     pub extensions: TabExtensions,
     /// Capability 487: the vocation id of the last confirmed General Stats reply.
     pub vocation_id: Option<u8>,
+    /// Last confirmed self vocation, independent of the profile being inspected.
+    pub own_vocation_id: Option<u8>,
+    pub own_vocation_pending: bool,
     pub kill_filter: Option<oteryn_client_runtime::cyclopedia_character::KillStatus>,
     pub feedback: Option<&'static str>,
 }
@@ -85,6 +88,8 @@ impl Default for CyclopediaCharacterPanel {
             history: Vec::new(),
             extensions: TabExtensions::default(),
             vocation_id: None,
+            own_vocation_id: None,
+            own_vocation_pending: false,
             kill_filter: None,
             feedback: None,
         }

@@ -120,6 +120,66 @@
     },
     {
       "position": [
+        32035,
+        31642,
+        8
+      ],
+      "item": 7042,
+      "attribute": "action",
+      "action": 4503,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 615
+    },
+    {
+      "position": [
+        32107,
+        31568,
+        9
+      ],
+      "item": 7033,
+      "attribute": "action",
+      "action": 4502,
+      "source": "data-global/startup/tables/door_key.lua",
+      "line": 163
+    },
+    {
+      "position": [
+        32180,
+        31633,
+        8
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "action": 30008,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 793
+    },
+    {
+      "position": [
+        32209,
+        32292,
+        6
+      ],
+      "item": 1949,
+      "attribute": "action",
+      "action": 4253,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 5
+    },
+    {
+      "position": [
+        32210,
+        32292,
+        6
+      ],
+      "item": 1949,
+      "attribute": "action",
+      "action": 4253,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 5
+    },
+    {
+      "position": [
         32306,
         31821,
         9

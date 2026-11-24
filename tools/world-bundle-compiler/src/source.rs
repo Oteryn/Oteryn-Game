@@ -1,14 +1,19 @@
 //! Read the canonical World Project inputs used by the bundle compiler.
 use crate::bundle::Extent;
 use crate::{
-    Error, compile,
-    project::{self, Families},
+    Error, b3, bundle, compile,
+    project::{self, Families, LegacyPosition},
     resolve::Registry,
+    sector,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
+
+mod scoped_ground;
+mod spawn_map;
+
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
@@ -141,6 +146,66 @@ pub fn project_regions(root: &Path, selected: &[(u16, u16)]) -> Result<Project, 
     project_selected(root, Some(selected))
 }
 
+/// The disposable node-boot town bundle includes an automatic floor change for M03.
+pub fn project_town_qualification(root: &Path, selected: &[(u16, u16)]) -> Result<Project, Error> {
+    // The entrance is in the dead end beside the upper stair landing. The portal returns to
+    // the street below, outside protection, with an ordinary walk back to the temple.
+    const ENTRANCE: LegacyPosition = (32377, 32219, 6);
+    const LANDING: LegacyPosition = (32377, 32219, 7);
+    const PORTAL: &str = "oteryn:item.tibia.i1949";
+
+    let mut project = project_regions(root, selected)?;
+    let error = |what| Error::Format(format!("M03 qualification portal: {what}"));
+    let palette = project.index["palette"]
+        .as_array()
+        .and_then(|palette| palette.iter().position(|entry| entry["key"] == PORTAL))
+        .and_then(|index| u32::try_from(index).ok())
+        .ok_or_else(|| error("missing portal palette entry"))?;
+    let mut budget = bundle::BUNDLE_BUDGET;
+    for at in [LANDING, ENTRANCE] {
+        let (x, y, z) = at;
+        let [rx_lo, rx_hi] = (x / 256).to_le_bytes();
+        let [ry_lo, ry_hi] = (y / 256).to_le_bytes();
+        let header = [z, rx_lo, rx_hi, ry_lo, ry_hi];
+        let bytes = project
+            .regions
+            .iter_mut()
+            .find(|bytes| bytes.get(5..10) == Some(header.as_slice()))
+            .ok_or_else(|| error("missing region"))?;
+        let mut region = b3::decode_region(bytes, bundle::TILE_LIMITS, &mut budget)?;
+        let tile = region
+            .sectors
+            .iter_mut()
+            .flat_map(|(_, _, tiles)| tiles)
+            .find(|tile| (tile.x, tile.y) == (x, y))
+            .ok_or_else(|| error("missing tile"))?;
+        if tile.flags & compile::FLAG_PROTECTION_ZONE != 0
+            || tile.house != 0
+            || tile.items.is_empty()
+        {
+            return Err(error("expected a non-house tile outside protection"));
+        }
+        if at == ENTRANCE {
+            if project.families.teleports.contains_key(&at)
+                || tile.items.iter().any(|item| item.attrs.teleport.is_some())
+            {
+                return Err(error("entrance already has an authored teleport"));
+            }
+            tile.items.push(sector::Item {
+                palette,
+                depth: 0,
+                attrs: sector::Attrs {
+                    teleport: Some(LANDING),
+                    ..sector::Attrs::default()
+                },
+            });
+            *bytes = crate::authored_props::encode(&region)?;
+            project.families.teleports.insert(at, LANDING);
+        }
+    }
+    Ok(project)
+}
+
 fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Project, Error> {
     let mut index = json(
         &read(&root.join("content/world/placements/index.json"))?,
@@ -166,6 +231,7 @@ fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Proj
         })
         .collect::<Result<Vec<_>, _>>()?;
     crate::authored_props::apply(root, &mut index, &mut regions, selected)?;
+    scoped_ground::validate(root, &index, &regions, selected)?;
     let mut families = Families::default();
     for shard in shards(&root.join("content/world/transitions"), "teleports-")? {
         families.add_teleports(&shard)?;
@@ -184,6 +250,7 @@ fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Proj
     for shard in shards(&root.join("content/world/spawns"), "spawns-")? {
         families.add_spawns(&shard)?;
     }
+    spawn_map::apply(root, &mut families.spawns)?;
     add_npc_families(root, &mut families)?;
     families.subareas = compile::subareas::Source::load(root)?;
     families.layers = compile::layers::Source::load(root)?;

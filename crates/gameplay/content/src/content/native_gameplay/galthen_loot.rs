@@ -14,6 +14,48 @@ pub(super) fn qualified_records() -> Result<Vec<ItemProfileRecord>, ContentError
     qualify(CAPTURE)
 }
 
+pub(super) fn qualified_global_records(
+    source: &[ItemProfileRecord],
+) -> Result<BTreeMap<String, ItemProfileRecord>, ContentError> {
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct GlobalDetails {
+        semantics: Option<super::super::ReferenceItemSemantics>,
+        forge: Option<super::super::ProjectV2ItemForgeProfile>,
+        ranged: Option<super::super::ProjectV2RangedWeapon>,
+    }
+
+    let mut details: BTreeMap<String, GlobalDetails> = serde_json::from_slice(include_bytes!(
+        "../../../../../../tools/content-schema/native-gameplay/galthen-global-item-details.json"
+    ))
+    .map_err(|_| invalid("M25 Global Item Details projection"))?;
+    let mut profiles = BTreeMap::new();
+    for row in source {
+        let key = &row.production_binding.external_id;
+        let Some(detail) = details.remove(key) else {
+            continue;
+        };
+        let mut successor = row.clone();
+        if let Some(semantics) = detail.semantics {
+            successor.semantics = semantics;
+        }
+        if let Some(forge) = detail.forge {
+            successor.authoring.forge = Some(forge);
+        }
+        if let Some(ranged) = detail.ranged {
+            successor.authoring.ranged = Some(ranged);
+        }
+        if &successor == row {
+            return Err(invalid("M25 Global Item Details unchanged row"));
+        }
+        profiles.insert(key.clone(), successor);
+    }
+    if !details.is_empty() {
+        return Err(invalid("M25 Global Item Details source identity"));
+    }
+    Ok(profiles)
+}
+
 fn qualify(raw: &[u8]) -> Result<Vec<ItemProfileRecord>, ContentError> {
     if hex(sha256(raw)) != pin::CAPTURE_SHA256 {
         return Err(invalid("M25 carried loot complete source hash"));

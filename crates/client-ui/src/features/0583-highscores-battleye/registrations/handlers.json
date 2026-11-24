@@ -1,0 +1,18 @@
+{
+  "mechanic": "0583-highscores-battleye",
+  "kind": "handlers",
+  "id": "0583-highscores-battleye-commands",
+  "status": "unsupported",
+  "commands": [
+    6329
+  ],
+  "direction": "client_to_server",
+  "reason": "The client highscores lane has yet to select the BattlEye catalogue capability.",
+  "not_applicable": {
+    "state": "The World policy owns the BattlEye metadata.",
+    "protocol": "The protocol registry defines the capability and its command schemas.",
+    "view": "The highscores panel currently lists World types from command 6244.",
+    "input": "Command 6329 is a read of the published catalogue.",
+    "settings": "The capability adds no client settings."
+  }
+}

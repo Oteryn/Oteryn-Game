@@ -10,6 +10,10 @@ macro_rules! closed {
         pub struct $name { $($(#[$meta])* pub $field: $ty),* }
     };
 }
+#[path = "phase2.rs"]
+mod phase2;
+pub use phase2::*;
+
 closed!(ReadParams { preview_digest: Option<String> });
 closed!(Page { #[schemars(range(min = 1, max = 100))] limit: u16, cursor: Option<String> });
 closed!(PlayerSearch { #[schemars(range(min = 1, max = 100))] limit: u16, cursor: Option<String>, name_prefix: Option<String>, character_id: Option<String>, account_ref: Option<String>, ip_hash: Option<String> });
@@ -63,7 +67,11 @@ closed!(Position {
 });
 closed!(Character { character_id: String, name: String, world_id: String, level: u32, vocation: String, skills: Vec<Skill>, position: Position, online: bool, premium: bool, guild: Option<String>, house: Option<String>, bank_balance: String, sanctions: Vec<Sanction>, last_logins: Vec<String> });
 closed!(Item { instance_id: String, type_id: u32, count: String, location: String, parent_id: Option<String> });
-closed!(Inventory { items: Vec<Item>, next_cursor: Option<String> });
+closed!(StashBalance {
+    type_id: u32,
+    count: String
+});
+closed!(Inventory { items: Vec<Item>, stash_balances: Vec<StashBalance>, next_cursor: Option<String> });
 closed!(Sanction { sanction_id: String, character_id: Option<String>, account_ref: Option<String>, kind: String, starts_at: String, expires_at: Option<String>, active: bool });
 closed!(SanctionPage { sanctions: Vec<Sanction>, next_cursor: Option<String> });
 closed!(LedgerEntry { ledger_id: String, request_id: String, admin_operation_id: String, operation: String, admin_id: String, risk_class: RiskClass, target: crate::Target, status: crate::Status, error_code: Option<crate::ErrorCode>, started_at: String, finished_at: String });
@@ -74,182 +82,196 @@ closed!(AgentPage { agents: Vec<Agent>, next_cursor: Option<String> });
 closed!(AnalyticsMetric { query_id: String, metric_revision: String, watermark: Option<String> });
 closed!(AnalyticsCatalog { metrics: Vec<AnalyticsMetric> });
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-pub enum Operation {
-    #[serde(rename = "ops.overview.get")]
-    OpsOverviewGet,
-    #[serde(rename = "world.list")]
-    WorldList,
-    #[serde(rename = "world.get")]
-    WorldGet,
-    #[serde(rename = "node.list")]
-    NodeList,
-    #[serde(rename = "node.get")]
-    NodeGet,
-    #[serde(rename = "db.status")]
-    DbStatus,
-    #[serde(rename = "db.migrations.list")]
-    DbMigrationsList,
-    #[serde(rename = "player.search")]
-    PlayerSearch,
-    #[serde(rename = "player.character.get")]
-    PlayerCharacterGet,
-    #[serde(rename = "player.inventory.get")]
-    PlayerInventoryGet,
-    #[serde(rename = "sanction.list")]
-    SanctionList,
-    #[serde(rename = "admin.ledger.query")]
-    AdminLedgerQuery,
-    #[serde(rename = "admin.policy.get")]
-    AdminPolicyGet,
-    #[serde(rename = "admin.agent.list")]
-    AdminAgentList,
-    #[serde(rename = "analytics.catalog")]
-    AnalyticsCatalog,
+// Keep the wire name, risk, and schema pair together so every catalog entry is exported.
+macro_rules! operations {
+    ($($variant:ident => ($name:literal, $phase:literal, $kind:ident, $risk:ident, $perm:literal, $params:ty, $result:ty)),+ $(,)?) => {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+        pub enum Operation {
+            $(#[serde(rename = $name)] $variant),+
+        }
+
+        impl Operation {
+            pub const ALL: [Self; [$(Self::$variant),+].len()] = [$(Self::$variant),+];
+
+            pub fn name(self) -> &'static str {
+                match self { $(Self::$variant => $name),+ }
+            }
+
+            pub fn phase(self) -> u8 {
+                match self { $(Self::$variant => $phase),+ }
+            }
+
+            pub fn kind(self) -> crate::Kind {
+                match self { $(Self::$variant => crate::Kind::$kind),+ }
+            }
+
+            /// Base minimum. Use minimum_for_params for named queries.
+            pub fn minimum(self) -> RiskClass {
+                match self { $(Self::$variant => RiskClass::$risk),+ }
+            }
+
+            pub fn permission(self) -> &'static str {
+                match self { $(Self::$variant => $perm),+ }
+            }
+
+            fn decode_params(self, value: &Value) -> Result<(), WireError> {
+                match self { $(Self::$variant => decode::<$params>(value)),+ }
+            }
+
+            pub fn validate_result(self, value: &Value) -> Result<(), WireError> {
+                match self { $(Self::$variant => decode::<$result>(value)),+ }
+            }
+
+            pub(crate) fn insert_schemas(out: &mut std::collections::BTreeMap<String, String>) -> Result<(), WireError> {
+                $(crate::schema::insert_pair::<$params, $result>(out, $name)?;)+
+                economy_schemas(out)
+            }
+        }
+
+        #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+        #[serde(untagged)]
+        pub enum OperationResult {
+            $($variant($result)),+
+        }
+    };
 }
+
+operations! {
+    OpsOverviewGet => ("ops.overview.get", 1, Query, R0, "game.ops.read", ReadParams, Overview),
+    WorldList => ("world.list", 1, Query, R0, "game.world.read", Page, WorldPage),
+    WorldGet => ("world.get", 1, Query, R0, "game.world.read", ReadParams, World),
+    NodeList => ("node.list", 1, Query, R0, "game.node.read", Page, NodePage),
+    NodeGet => ("node.get", 1, Query, R0, "game.node.read", ReadParams, Node),
+    DbStatus => ("db.status", 1, Query, R0, "game.db.read", ReadParams, DatabaseStatus),
+    DbMigrationsList => ("db.migrations.list", 1, Query, R0, "game.db.read", Page, MigrationPage),
+    PlayerSearch => ("player.search", 1, Query, R1, "game.player.read", PlayerSearch, PlayerPage),
+    PlayerCharacterGet => ("player.character.get", 1, Query, R1, "game.player.read", ReadParams, Character),
+    PlayerInventoryGet => ("player.inventory.get", 1, Query, R1, "game.player.read", Page, Inventory),
+    SanctionList => ("sanction.list", 1, Query, R1, "game.sanction.read", Page, SanctionPage),
+    AdminLedgerQuery => ("admin.ledger.query", 1, Query, R1, "game.audit.read", LedgerQuery, LedgerPage),
+    AdminPolicyGet => ("admin.policy.get", 1, Query, R0, "game.ops.read", ReadParams, PolicyView),
+    AdminAgentList => ("admin.agent.list", 1, Query, R0, "game.ops.read", Page, AgentPage),
+    AnalyticsCatalog => ("analytics.catalog", 1, Query, R0, "game.analytics.read", ReadParams, AnalyticsCatalog),
+    AnalyticsQuery => ("analytics.query", 2, Query, R0, "game.analytics.read", AnalyticsQueryParams, AnalyticsQueryResult),
+    NodeDrain => ("node.drain", 2, Command, R2, "game.node.ops", ReadParams, DrainResult),
+    OpsAlertsAck => ("ops.alerts.ack", 2, Command, R2, "game.ops.write", AlertAckParams, AlertAckResult),
+    OpsAlertsList => ("ops.alerts.list", 2, Query, R0, "game.ops.read", AlertsParams, AlertsResult),
+    OpsLogsTail => ("ops.logs.tail", 2, Query, R1, "game.ops.logs.read", LogsParams, LogsResult),
+    OpsMetricsSeries => ("ops.metrics.series", 2, Query, R0, "game.ops.read", MetricsParams, MetricsResult),
+    PlayerKick => ("player.kick", 2, Command, R2, "game.player.moderate", KickParams, KickResult),
+    PlayerMessage => ("player.message", 2, Command, R2, "game.player.moderate", MessageParams, MessageResult),
+    PlayerTeleport => ("player.teleport", 2, Command, R2, "game.player.moderate", TeleportParams, TeleportResult),
+    SanctionBanAccount => ("sanction.ban.account", 2, Command, R3, "game.sanction.ban", BanParams, BanAccountResult),
+    SanctionBanCharacter => ("sanction.ban.character", 2, Command, R3, "game.sanction.ban", BanParams, BanCharacterResult),
+    SanctionMute => ("sanction.mute", 2, Command, R2, "game.sanction.write", MuteParams, MuteResult),
+    SanctionNotationAdd => ("sanction.notation.add", 2, Command, R2, "game.sanction.write", NotationParams, NotationResult),
+    SanctionRevoke => ("sanction.revoke", 2, Command, R3, "game.sanction.ban", RevokeParams, RevokeResult),
+    SanctionUnmute => ("sanction.unmute", 2, Command, R2, "game.sanction.write", UnmuteParams, UnmuteResult),
+    WorldBroadcast => ("world.broadcast", 2, Command, R2, "game.world.ops", MessageParams, BroadcastResult),
+    WorldMotdSet => ("world.motd.set", 2, Command, R2, "game.world.ops", MotdParams, MotdResult),
+    WorldRestart => ("world.restart", 2, Command, R3, "game.world.ops", RestartParams, RestartResult),
+    WorldSaveNow => ("world.save_now", 2, Command, R2, "game.world.ops", ReadParams, SaveReceipt),
+    WorldStateSet => ("world.state.set", 2, Command, R3, "game.world.config", WorldStateParams, WorldStateResult),
+}
+
+fn decode<T: serde::de::DeserializeOwned>(value: &Value) -> Result<(), WireError> {
+    serde_json::from_value::<T>(value.clone())?;
+    Ok(())
+}
+
 impl Operation {
-    pub const ALL: [Self; 15] = [
-        Self::OpsOverviewGet,
-        Self::WorldList,
-        Self::WorldGet,
-        Self::NodeList,
-        Self::NodeGet,
-        Self::DbStatus,
-        Self::DbMigrationsList,
-        Self::PlayerSearch,
-        Self::PlayerCharacterGet,
-        Self::PlayerInventoryGet,
-        Self::SanctionList,
-        Self::AdminLedgerQuery,
-        Self::AdminPolicyGet,
-        Self::AdminAgentList,
-        Self::AnalyticsCatalog,
-    ];
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::OpsOverviewGet => "ops.overview.get",
-            Self::WorldList => "world.list",
-            Self::WorldGet => "world.get",
-            Self::NodeList => "node.list",
-            Self::NodeGet => "node.get",
-            Self::DbStatus => "db.status",
-            Self::DbMigrationsList => "db.migrations.list",
-            Self::PlayerSearch => "player.search",
-            Self::PlayerCharacterGet => "player.character.get",
-            Self::PlayerInventoryGet => "player.inventory.get",
-            Self::SanctionList => "sanction.list",
-            Self::AdminLedgerQuery => "admin.ledger.query",
-            Self::AdminPolicyGet => "admin.policy.get",
-            Self::AdminAgentList => "admin.agent.list",
-            Self::AnalyticsCatalog => "analytics.catalog",
-        }
-    }
-    pub fn minimum(self) -> RiskClass {
-        match self {
-            Self::OpsOverviewGet => RiskClass::R0,
-            Self::WorldList => RiskClass::R0,
-            Self::WorldGet => RiskClass::R0,
-            Self::NodeList => RiskClass::R0,
-            Self::NodeGet => RiskClass::R0,
-            Self::DbStatus => RiskClass::R0,
-            Self::DbMigrationsList => RiskClass::R0,
-            Self::PlayerSearch => RiskClass::R1,
-            Self::PlayerCharacterGet => RiskClass::R1,
-            Self::PlayerInventoryGet => RiskClass::R1,
-            Self::SanctionList => RiskClass::R1,
-            Self::AdminLedgerQuery => RiskClass::R1,
-            Self::AdminPolicyGet => RiskClass::R0,
-            Self::AdminAgentList => RiskClass::R0,
-            Self::AnalyticsCatalog => RiskClass::R0,
-        }
-    }
-    pub fn permission(self) -> &'static str {
-        match self {
-            Self::OpsOverviewGet => "game.ops.read",
-            Self::WorldList => "game.world.read",
-            Self::WorldGet => "game.world.read",
-            Self::NodeList => "game.node.read",
-            Self::NodeGet => "game.node.read",
-            Self::DbStatus => "game.db.read",
-            Self::DbMigrationsList => "game.db.read",
-            Self::PlayerSearch => "game.player.read",
-            Self::PlayerCharacterGet => "game.player.read",
-            Self::PlayerInventoryGet => "game.player.read",
-            Self::SanctionList => "game.sanction.read",
-            Self::AdminLedgerQuery => "game.audit.read",
-            Self::AdminPolicyGet => "game.ops.read",
-            Self::AdminAgentList => "game.ops.read",
-            Self::AnalyticsCatalog => "game.analytics.read",
-        }
-    }
     pub fn parse(name: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|op| op.name() == name)
     }
+
+    /// Phase 2 is published for form generation. The agent advertises only implemented executors.
+    pub fn minimum_for_params(self, params: &Value) -> Result<RiskClass, WireError> {
+        if self == Self::AnalyticsQuery {
+            return Ok(serde_json::from_value::<AnalyticsQueryParams>(params.clone())?.minimum());
+        }
+        Ok(self.minimum())
+    }
+
+    pub fn is_global_read(self) -> bool {
+        matches!(
+            self,
+            Self::AdminPolicyGet | Self::DbMigrationsList | Self::DbStatus
+        )
+    }
+
     pub fn validate_target(self, target: &crate::Target) -> Result<(), WireError> {
         let present = |id: &Option<String>| id.as_deref().is_some_and(|s| !s.trim().is_empty());
         let valid = match self {
-            Self::WorldGet => present(&target.world_id),
-            Self::NodeGet => present(&target.node_id),
-            Self::PlayerCharacterGet | Self::PlayerInventoryGet => {
-                present(&target.character_id) && present(&target.world_id)
+            Self::AnalyticsQuery
+            | Self::WorldGet
+            | Self::WorldMotdSet
+            | Self::WorldRestart
+            | Self::WorldSaveNow
+            | Self::WorldStateSet => present(&target.world_id),
+            Self::NodeDrain | Self::NodeGet => present(&target.node_id),
+            Self::PlayerCharacterGet
+            | Self::PlayerInventoryGet
+            | Self::PlayerKick
+            | Self::PlayerMessage
+            | Self::PlayerTeleport
+            | Self::SanctionBanCharacter
+            | Self::SanctionMute
+            | Self::SanctionUnmute => present(&target.character_id) && present(&target.world_id),
+            Self::SanctionBanAccount => present(&target.account_ref),
+            Self::SanctionList | Self::SanctionNotationAdd | Self::SanctionRevoke => {
+                present(&target.character_id) || present(&target.account_ref)
             }
-            Self::SanctionList => present(&target.character_id) || present(&target.account_ref),
             _ => true,
         };
         if !valid {
             return Err("required operation target missing".into());
         }
+        let incompatible = match self {
+            Self::AdminPolicyGet | Self::DbMigrationsList | Self::DbStatus => {
+                target.world_id.is_some()
+                    || target.node_id.is_some()
+                    || target.character_id.is_some()
+                    || target.account_ref.is_some()
+            }
+            Self::NodeGet
+            | Self::NodeList
+            | Self::OpsOverviewGet
+            | Self::WorldGet
+            | Self::WorldList => {
+                target.character_id.is_some()
+                    || target.account_ref.is_some()
+                    || (matches!(self, Self::WorldGet | Self::WorldList)
+                        && target.node_id.is_some())
+            }
+            Self::PlayerCharacterGet
+            | Self::PlayerInventoryGet
+            | Self::PlayerSearch
+            | Self::SanctionList => target.node_id.is_some(),
+            _ => false,
+        };
+        if incompatible {
+            return Err("incompatible operation target".into());
+        }
         Ok(())
     }
+
     pub fn validate_params(self, value: &Value) -> Result<(), WireError> {
-        match self {
-            Self::OpsOverviewGet => {
-                let _: ReadParams = serde_json::from_value(value.clone())?;
-            }
-            Self::WorldList => {
-                let _: Page = serde_json::from_value(value.clone())?;
-            }
-            Self::WorldGet => {
-                let _: ReadParams = serde_json::from_value(value.clone())?;
-            }
-            Self::NodeList => {
-                let _: Page = serde_json::from_value(value.clone())?;
-            }
-            Self::NodeGet => {
-                let _: ReadParams = serde_json::from_value(value.clone())?;
-            }
-            Self::DbStatus => {
-                let _: ReadParams = serde_json::from_value(value.clone())?;
-            }
-            Self::DbMigrationsList => {
-                let _: Page = serde_json::from_value(value.clone())?;
-            }
-            Self::PlayerSearch => {
-                let _: PlayerSearch = serde_json::from_value(value.clone())?;
-            }
-            Self::PlayerCharacterGet => {
-                let _: ReadParams = serde_json::from_value(value.clone())?;
-            }
-            Self::PlayerInventoryGet => {
-                let _: Page = serde_json::from_value(value.clone())?;
-            }
-            Self::SanctionList => {
-                let _: Page = serde_json::from_value(value.clone())?;
-            }
-            Self::AdminLedgerQuery => {
-                let _: LedgerQuery = serde_json::from_value(value.clone())?;
-            }
-            Self::AdminPolicyGet => {
-                let _: ReadParams = serde_json::from_value(value.clone())?;
-            }
-            Self::AdminAgentList => {
-                let _: Page = serde_json::from_value(value.clone())?;
-            }
-            Self::AnalyticsCatalog => {
-                let _: ReadParams = serde_json::from_value(value.clone())?;
-            }
+        self.decode_params(value)?;
+        let integer = |key| value.get(key).and_then(Value::as_u64);
+        if integer("effective_at_ms")
+            .zip(integer("expires_at_ms"))
+            .is_some_and(|(start, end)| start >= end)
+        {
+            return Err("sanction expiry must follow its effective time".into());
         }
-        if let Some(limit) = value.get("limit")
+        if integer("prior_decision_revision")
+            .zip(integer("decision_revision"))
+            .is_some_and(|(prior, next)| prior >= next)
+        {
+            return Err("sanction decision revision must advance".into());
+        }
+        if self.phase() == 1
+            && let Some(limit) = value.get("limit")
             && limit.as_u64().is_none_or(|n| n == 0 || n > 100)
         {
             return Err("limit must be 1..=100".into());
@@ -268,23 +290,4 @@ impl Operation {
         }
         Ok(())
     }
-}
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[serde(untagged)]
-pub enum OperationResult {
-    OpsOverviewGet(Overview),
-    WorldList(WorldPage),
-    WorldGet(World),
-    NodeList(NodePage),
-    NodeGet(Node),
-    DbStatus(DatabaseStatus),
-    DbMigrationsList(MigrationPage),
-    PlayerSearch(PlayerPage),
-    PlayerCharacterGet(Character),
-    PlayerInventoryGet(Inventory),
-    SanctionList(SanctionPage),
-    AdminLedgerQuery(LedgerPage),
-    AdminPolicyGet(PolicyView),
-    AdminAgentList(AgentPage),
-    AnalyticsCatalog(AnalyticsCatalog),
 }

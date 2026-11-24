@@ -57,6 +57,10 @@ impl PlayLink {
             panel.hide_completed = hide_completed;
         }
     }
+    pub fn cyclopedia_tracker_reverse(&self, boss: bool) {
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.cyclopedia_tracker.reversed[usize::from(boss)] ^= true;
+    }
     pub fn cyclopedia_tracker_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::cyclopedia_tracker::open_key(events) {
             return false;

@@ -24,7 +24,7 @@ fn drop_rank(line: &ChatLine) -> u8 {
         | ChatLine::PrivateChannel(_)
         | ChatLine::Room { .. } => LineClass::Room,
         ChatLine::Local { .. } => LineClass::Local,
-        ChatLine::Private { .. } => LineClass::Private,
+        ChatLine::Private { .. } | ChatLine::System { .. } => LineClass::Private,
         ChatLine::Dropped => LineClass::Dropped,
     })
 }

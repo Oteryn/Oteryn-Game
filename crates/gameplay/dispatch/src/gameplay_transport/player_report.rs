@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::player_report as wire;
 #[derive(Debug)]
 pub enum PlayerReportOutcome {
     Rejected,
+    ConversationUnavailable,
     Payload(Vec<u8>),
     Unavailable,
 }
@@ -20,7 +21,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         kind: u32,
         payload: &[u8],
     ) -> PlayerReportOutcome {
-        let Ok(request) = wire::decode_player_report_request(payload) else {
+        let (capability, request) = match kind {
+            wire::COMMAND_TYPE_PLAYER_REPORT => (
+                wire::CAPABILITY_PLAYER_REPORT_V1,
+                wire::decode_player_report_request(payload).map(|report| (report, None)),
+            ),
+            wire::COMMAND_TYPE_NAMED_RULE_VIOLATION => (
+                wire::CAPABILITY_RULE_VIOLATION_V1,
+                wire::decode_named_rule_violation(payload)
+                    .map(|(report, suggestion)| (report, Some(suggestion))),
+            ),
+            wire::COMMAND_TYPE_RULE_VIOLATION_CONVERSATION => {
+                return if admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(wire::CAPABILITY_RULE_VIOLATION_V1)
+                    && wire::validate_report_conversation(payload).is_ok()
+                {
+                    PlayerReportOutcome::ConversationUnavailable
+                } else {
+                    PlayerReportOutcome::Rejected
+                };
+            }
+            _ => return PlayerReportOutcome::Rejected,
+        };
+        let Ok((request, suggestion)) = request else {
             return PlayerReportOutcome::Rejected;
         };
         let (Some(fence), Some(actor), Ok(_)) = (
@@ -33,11 +58,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let position = {
             let mut runtime = self.runtime.lock().await;
             let binding = runtime.binding();
-            if kind != wire::COMMAND_TYPE_PLAYER_REPORT
-                || !admitted
-                    .continuity
-                    .selected_capabilities
-                    .contains(wire::CAPABILITY_PLAYER_REPORT_V1)
+            if !admitted
+                .continuity
+                .selected_capabilities
+                .contains(capability)
                 || fence.game_session_id != admitted.game_session_id
                 || fence.connection_generation.get() != admitted.continuity.connection_generation
                 || admitted.world_id != binding.world_id()
@@ -67,7 +91,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match self
             .root
-            .submit_player_report(self.character, self.holder, fence, id, &request, position)
+            .submit_player_report(
+                self.character,
+                self.holder,
+                fence,
+                id,
+                (&request, suggestion),
+                position,
+            )
             .await
         {
             Ok(Some(reply)) => wire::encode_player_report_reply(&reply).map_or(

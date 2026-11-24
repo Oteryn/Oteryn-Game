@@ -28,3 +28,18 @@ World labels may be resolved from the login catalogue; ids remain authoritative.
 6245 returns the existing HighscoresResultV1 with its persisted snapshot, rank,
 page and own row semantics. Queries retain the admitted session's authority.
 Both commands are refused without 507. No persistent data is written.
+
+## BattlEye catalogue
+
+Capability 583 requires 507. Command 6329 has an empty request and uses
+the same current-session and public World policy gates as 6244. The 6244
+and 6245 wire formats remain unchanged.
+
+The 6329 reply has the same count and sorted World entries as 6244, with
+one extra `battleye_status:u8` per entry, for at most 4610 bytes. Status 0
+means unpublished, 1 unprotected, 2 protected (yellow), and 3 protected
+since launch (green). State comes from the control-published World policy
+at the admitted Channel guard's World policy revision. Conflicting current
+Channel statuses fail closed for 6329. This field is descriptive and grants no
+anti-cheat or transfer authority. The display categories follow the
+[Tibia Fandom archive](https://tibia.fandom.com/wiki/BattlEye).

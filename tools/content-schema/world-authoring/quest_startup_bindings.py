@@ -21,9 +21,14 @@ SUMMARY = "tools/content-schema/world-authoring/samples/world-base-capture-v1.js
 SPECS = (
     ("tile.lua", "TileAction", 50022, "action"),
     ("teleport.lua", "TeleportAction", 50022, "action"),
+    # Adventurers' Guild exits (adventurers_guild.lua).
+    ("teleport.lua", "TeleportAction", 4253, "action"),
     ("door_level.lua", "LevelDoorAction", 1070, "action"),
+    ("lever.lua", "LeverUnique", 30008, "unique"),
     ("lever.lua", "LeverUnique", 30034, "unique"),
     ("lever.lua", "LeverAction", 5633, "action"),
+    ("item.lua", "ItemAction", 4503, "action"),
+    ("door_key.lua", "KeyDoorAction", "Storage.Quest.Key.ID4502", "action"),
     # World change returns: the Fury Dungeon archway (fury_gates.lua) and the
     # Nightmare Isle exit (nightmare_isles.lua uid 35020).
     ("item.lua", "ItemAction", 9715, "action"),
@@ -76,12 +81,15 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
             ):
                 # The same action also names an unrelated surface object.
                 continue
+            if selector == 4503 and group["itemId"] != 7042:
+                # The Folda chest USE mints this key. The map restores its lock only.
+                continue
             positions = group["itemPos"]
             for position in positions if isinstance(positions, list) else [positions]:
                 cell = [position[k] for k in "xyz"]
                 if table == "TilePickAction" and cell != [32774, 32289, 10]:
                     continue
-                if table == "KeyDoorAction":
+                if selector == "Storage.Quest.Key.ID3142":
                     if cell != [32450, 32044, 8] or group["itemId"] is not False:
                         raise ValueError("Key 3142 source selector changed")
                     storage_path = "data-global/lib/core/storages.lua"
@@ -107,6 +115,7 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
                     or {
                         ("ItemAction", 25018): 104,
                         ("KeyDoorAction", "Storage.Quest.Key.ID3142"): 6248,
+                        ("KeyDoorAction", "Storage.Quest.Key.ID4502"): 7033,
                         ("LevelDoorAction", 1070): 5102,
                         ("TilePickAction", 101): 355,
                     }[(table, selector)]
@@ -116,11 +125,21 @@ def capture(source, specs=(*SPECS, *ADDITIONAL_ACTIONS), *, include_tibia_tales=
                         "position": cell,
                         "item": item,
                         "attribute": attribute,
-                        "action": 3142 if table == "KeyDoorAction" else selector,
+                        "action": int(selector.rsplit("ID", 1)[1]) if table == "KeyDoorAction" else selector,
                         "source": path,
                         "line": field["line"],
                     }
                 )
+    path = "data-global/lib/core/storages.lua"
+    raw = (source / path).read_bytes()
+    storage = lua_tables.as_python(
+        lua_tables.assignments(raw.decode(), {"Storage"})["Storage"]
+    )
+    if storage["Quest"]["Key"]["ID4502"] != 4502:
+        raise ValueError("Alawar key storage changed")
+    storage_row = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
+    if storage_row not in sources:
+        sources.append(storage_row)
     path = "data/libs/tables/doors.lua"
     raw = (source / path).read_bytes()
     sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})

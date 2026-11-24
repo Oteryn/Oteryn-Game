@@ -833,7 +833,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 return Err("captured Overlord queue entry".into());
             };
             let entry = taken.entry().ok_or("captured Overlord death")?;
-            let recipients = crate::gameplay_transport::quest_kill_objectives::overlord_recipients(entry);
+            let recipients = crate::gameplay_transport::quest_kill_objectives::boss_objective_recipients(entry);
             assert_eq!(recipients.len(), 2);
             assert!(recipients.iter().any(|(_, captured, _)| *captured == peer_session));
             drop(taken);
@@ -857,7 +857,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 return Err("captured Overlord queue entry".into());
             };
             let entry = taken.entry().ok_or("captured Overlord death")?;
-            assert!(crate::gameplay_transport::quest_kill_objectives::overlord_recipients(entry)
+            assert!(crate::gameplay_transport::quest_kill_objectives::boss_objective_recipients(entry)
                 .contains(&(peer_fence.character_id, peer_session, peer_fence.character_lease_generation)));
 
             assert!(entry.boss_reward.is_some(), "capture includes private rewards");

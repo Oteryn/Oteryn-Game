@@ -129,3 +129,22 @@ fn project(
     held.entries = offered;
     held.labels = labels;
 }
+
+pub(super) fn open_saved_local_tabs(link: &crate::play::PlayLink, enabled: [bool; 3]) {
+    // Tibia Global opens Local Chat, Server Log and Loot; Local Chat stays selected.
+    let panel = link.chat_panel();
+    let mut opened = false;
+    for tab in [
+        oteryn_client_ui::chat::ChannelTab::ServerLog,
+        oteryn_client_ui::chat::ChannelTab::Loot,
+    ] {
+        let index = usize::from(tab == oteryn_client_ui::chat::ChannelTab::ServerLog);
+        if enabled[index] && !panel.console.channels.contains(&tab) {
+            link.chat_open_entry(&ChannelEntry::Local(tab));
+            opened = true;
+        }
+    }
+    if opened {
+        link.chat_console_tab(ConsoleTab::All);
+    }
+}

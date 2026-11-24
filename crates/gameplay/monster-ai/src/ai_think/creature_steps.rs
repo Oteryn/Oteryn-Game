@@ -1,6 +1,7 @@
 //! Creature movement state and the Channel-owned step timer, independent of the think cadence.
 use super::CreatureAiTable;
 use super::movement_goal::{MovementGoal, NearCounter, destination};
+use super::targeting::TargetCandidate;
 use crate::ai::PathProposal;
 use crate::content::{LogicalCell, NativeEntryMovementCells};
 use crate::foundation::owner_timer::{OwnerTimerLane, TimerFamily};
@@ -91,6 +92,7 @@ impl CreatureAiTable {
         source: &dyn CurrentCreatureSpeedReader,
         ground: &dyn GroundSpeedSource,
         root: &GameplayDecisionRoot,
+        players: &[TargetCandidate],
         now: u64,
         budget: &mut ChannelPathBudget,
         player_waiting: bool,
@@ -109,7 +111,9 @@ impl CreatureAiTable {
         self.forget_dead(runtime);
         self.refresh_goals(runtime, cells, blocking, None, navigation, now, source);
         self.drain_creature_paths(runtime, cells, blocking, now, budget, player_waiting);
-        self.fire_steps(runtime, cells, blocking, None, source, ground, root, now);
+        self.fire_steps_through(
+            runtime, cells, blocking, None, source, ground, root, players, now, now,
+        );
         let mut next = self.entries.values().filter_map(|e| e.motion.due).min();
         if self.entries.values().any(|e| e.motion.pending.is_some()) {
             let window = (now / crate::movement::path_budget::PATH_WINDOW_US)

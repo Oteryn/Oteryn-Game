@@ -1,0 +1,84 @@
+{
+  "canonical_signed_utf8": "{\"actor\":{\"admin_id\":\"a-17\",\"ip_hash\":\"test-hash\",\"mfa_at\":\"2026-11-05T11:59:00Z\",\"permission\":\"game.world.ops\",\"roles\":[\"fixture\"],\"session_ref\":\"test-session\",\"step_up_at\":\"2026-11-05T11:59:50Z\"},\"admin_operation_id\":\"019a5620-0000-7000-8001-000000000049\",\"approvals\":[],\"contract\":\"oteryn.admin-control.v1\",\"dry_run\":false,\"expires_at\":\"2026-11-05T12:01:00Z\",\"issued_at\":\"2026-11-05T12:00:00Z\",\"kind\":\"command\",\"nonce\":\"MTExMTExMTExMTExMTExMQ\",\"operation\":\"world.restart\",\"operation_version\":1,\"params\":{\"countdown_seconds\":60},\"reason\":{\"code\":\"TEST\",\"text\":\"Conformance vector.\",\"ticket_ref\":null},\"request_id\":\"019a5620-0000-7000-8000-000000000049\",\"risk_class\":\"R3\",\"signer_key_id\":\"platform-admin-signer-1\",\"target\":{\"account_ref\":null,\"character_id\":null,\"node_id\":null,\"world_id\":\"w-antica\"}}",
+  "clock": 1793880000,
+  "expected_error": null,
+  "expected_result_valid": true,
+  "nonce_seen": false,
+  "policy": {
+    "operations": [
+      {
+        "allowed_permissions": [
+          "game.world.ops"
+        ],
+        "min_risk_class": "R3",
+        "operation": "world.restart",
+        "worlds": [
+          "w-antica"
+        ]
+      }
+    ]
+  },
+  "precondition_error": null,
+  "preview_digest": null,
+  "prior_params_digest": null,
+  "prior_result": null,
+  "request": {
+    "actor": {
+      "admin_id": "a-17",
+      "ip_hash": "test-hash",
+      "mfa_at": "2026-11-05T11:59:00Z",
+      "permission": "game.world.ops",
+      "roles": [
+        "fixture"
+      ],
+      "session_ref": "test-session",
+      "step_up_at": "2026-11-05T11:59:50Z"
+    },
+    "admin_operation_id": "019a5620-0000-7000-8001-000000000049",
+    "approvals": [],
+    "contract": "oteryn.admin-control.v1",
+    "dry_run": false,
+    "expires_at": "2026-11-05T12:01:00Z",
+    "issued_at": "2026-11-05T12:00:00Z",
+    "kind": "command",
+    "nonce": "MTExMTExMTExMTExMTExMQ",
+    "operation": "world.restart",
+    "operation_version": 1,
+    "params": {
+      "countdown_seconds": 60
+    },
+    "reason": {
+      "code": "TEST",
+      "text": "Conformance vector.",
+      "ticket_ref": null
+    },
+    "request_id": "019a5620-0000-7000-8000-000000000049",
+    "risk_class": "R3",
+    "signature": "o9rJl9UphqeOJnHsVi7ZKpA1RB0lzuzklr61kUq20xRPsV3RA_pHUbvOb4fF6RYB9F_ghHlo0_-TKSR_TI0UCg",
+    "signer_key_id": "platform-admin-signer-1",
+    "target": {
+      "account_ref": null,
+      "character_id": null,
+      "node_id": null,
+      "world_id": "w-antica"
+    }
+  },
+  "result": {
+    "restarted_node_ids": [
+      "node-1"
+    ],
+    "save_receipt": {
+      "save_receipt_id": "save-42",
+      "saved_at": "2026-11-05T12:00:00Z"
+    },
+    "state": "open"
+  },
+  "trusted_signers": [
+    {
+      "key_id": "platform-admin-signer-1",
+      "not_after": "2027-01-01T00:00:00Z",
+      "not_before": "2026-01-01T00:00:00Z",
+      "public_key": "6kpsY-KcUgq-9VB7Ey7F-ZVHdq6-vnuSQh7qaRRG0iw"
+    }
+  ]
+}

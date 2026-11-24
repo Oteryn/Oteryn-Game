@@ -1,15 +1,36 @@
 use super::*;
 impl BattlePanel {
     pub fn replace_entities(&mut self, entities: &[WorldSpatialEntity], own_floor: Option<i16>) {
-        self.rows = entities
+        let mut visible: std::collections::BTreeMap<_, _> = entities
             .iter()
             .filter(|e| {
                 Some(e.position.floor) == own_floor
-                    && matches!(e.kind, EntityKind::Player | EntityKind::Creature)
+                    && matches!(
+                        e.kind,
+                        EntityKind::Player | EntityKind::Creature | EntityKind::Npc
+                    )
             })
-            .copied()
+            .map(|row| (row.entity, *row))
             .collect();
-        self.rows.sort_by_key(|e| e.entity);
+        self.visible_actors.retain_mut(|row| {
+            if let Some(updated) = visible.remove(&row.entity) {
+                *row = updated;
+                true
+            } else {
+                false
+            }
+        });
+        self.visible_actors.extend(
+            entities
+                .iter()
+                .filter_map(|row| visible.remove(&row.entity)),
+        );
+        self.rows = self
+            .visible_actors
+            .iter()
+            .copied()
+            .filter(|row| row.kind != EntityKind::Npc)
+            .collect();
     }
 }
 

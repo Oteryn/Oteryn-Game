@@ -23,9 +23,14 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let explorer = name == super::super::explorer_society_journey_fixtures::NAME;
     let (name, variant) = name.split_once('#').unwrap_or((name, ""));
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
+    let koshei = name == super::super::koshei_the_deathless_journey_fixtures::NAME;
+    use super::super::new_frontier_journey_fixtures;
+    let recover_bait = name == new_frontier_journey_fixtures::BAIT_RECOVERY;
+    let frontier = name == new_frontier_journey_fixtures::NAME || recover_bait;
     let sarina_vine = name.starts_with("thieves-guild-sarina-vine-");
     let vampire_coffin = super::super::inquisition_coffin_recovery_fixtures::matches(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
@@ -62,6 +67,7 @@ fn scenario_case(
     let m03_pits = name == super::super::qengine_m03_pits_fixtures::NAME;
     let nomads_window = name.starts_with(super::super::qengine_m02_use_fixtures::NAME);
     let m01b_explore = name.starts_with("m01b/");
+    let alawars_vault = name == super::super::alawars_vault_journey_fixtures::NAME;
     let qready_craft = name == super::super::qready1_crafting_fixtures::NAME;
     let qready_workbench = super::super::qready1_workbenches_fixtures::matches(name);
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -72,7 +78,11 @@ fn scenario_case(
     let mead = name == "l6/waterskin-of-mead";
     let spirit = name == "qengine-rewards-questpc4-spirit";
     let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
+    let paradox_source_probe = native_tower
+        || name == "paradox-skulls"
+        || name.starts_with("qengine-rewards-questpc4-admission-");
     let native_switch = name.starts_with("l6-tomb-switch-native-");
+    let paradox_journey = name == super::super::paradox_tower_journey_fixtures::NAME;
     let native_upper = name.starts_with("qengine-rewards-questpc4-paradox-upper-");
     let native_story = name.starts_with("qengine-rewards-questpc4-paradox-story-");
     let diprath_room = name.starts_with("l6-diprath-room-");
@@ -91,7 +101,10 @@ fn scenario_case(
         || sarina_vine
         || cursed_crystal_stairs
         || tibia_tales_hallowed
+        || explorer
+        || koshei
         || pinned_qc_world
+        || frontier
         || m03_use
         || qd_world
         || engenc_asura
@@ -114,6 +127,7 @@ fn scenario_case(
         || nomads_window
         || qm48
         || m01b_explore
+        || alawars_vault
         || small_ruby
         || mead
         || spirit
@@ -127,7 +141,8 @@ fn scenario_case(
         || native_signs
         || diprath_room
         || native_story
-        || native_upper;
+        || native_upper
+        || paradox_journey;
     let start = if vampire_coffin {
         super::super::inquisition_coffin_recovery_fixtures::staging(name)?
     } else if sarina_vine {
@@ -139,6 +154,12 @@ fn scenario_case(
         callback(reverse)?.teleport.ok_or("Sarina vine starting tile")?
     } else if tibia_tales_hallowed {
         super::super::tibia_tales_fixtures::HALLOWED_START
+    } else if alawars_vault {
+        super::super::alawars_vault_journey_fixtures::START
+    } else if explorer {
+        super::super::explorer_society_journey_fixtures::START
+    } else if frontier {
+        super::super::new_frontier_journey_fixtures::start()
     } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
@@ -157,6 +178,8 @@ fn scenario_case(
         super::super::qh_authored_cases_fixtures::dig_start()
     } else if qd_world {
         super::super::qd_world_fixtures::start(name)?
+    } else if koshei {
+        Position { x: trigger.x - 1, ..trigger }
     } else if engenc_asura {
         super::super::engenc_asura_dispatch_fixtures::start(name)?
     } else if too_hot_research || tower_defence {
@@ -252,7 +275,7 @@ fn scenario_case(
         super::super::m01b_explore_fixtures::start(name, trigger)
     } else if native_upper {
         super::super::l6_paradox_upper_fixtures::start(name)
-    } else if native_story {
+    } else if native_story || paradox_journey {
         super::super::l6_paradox_story_fixtures::start()
     } else if diprath_room {
         super::super::l6_diprath_room_fixtures::start()?
@@ -382,10 +405,16 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if alawars_vault {
+        callback("alawars-vault-entrance")?
+    } else if explorer {
+        callback("fish-napping-key")?
+    } else if m03_use {
         super::super::qengine_m03_use_fixtures::callback()?
     } else if qd_world {
         super::super::qd_world_fixtures::callback(name)?
+    } else if koshei {
+        super::super::koshei_the_deathless_journey_fixtures::callback()?
     } else if engenc_asura {
         super::super::engenc_asura_dispatch_fixtures::callback(name)?
     } else if m03_pits {
@@ -463,6 +492,8 @@ fn scenario_case(
             "dreamers-challenge-carrot-entry"
         } else if m44_flower {
             "m44-lions-flower-0"
+        } else if frontier {
+            "new-frontier-mountain-passage-31532"
         } else if m44_lions || name == "lions-rock-strength-first" {
             "m07/lion-strength"
         } else if name == "lions-rock-beauty" {
@@ -1059,9 +1090,15 @@ fn scenario_case(
                 eprintln!("POSTGRES_DATABASE_READY l6_small_ruby_native_pickup version={version}");
             }
         }
-        prepare_current_session(&h)
-            .await
-            .map_err(|e| format!("callback session: {e}"))?;
+        let recovery = if koshei {
+            let source = super::super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::super::house_transfer_fixtures::prepare_owned_session(&h).await?;
+            Some(source)
+        } else {
+            prepare_current_session(&h).await
+                .map_err(|e| format!("callback session: {e}"))?;
+            None
+        };
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -1075,7 +1112,17 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if pinned_qc_world {
+        let world = if alawars_vault {
+            super::super::alawars_vault_journey_fixtures::world(generation.native_gameplay().ok_or("Alawar native content")?)?
+        } else if koshei {
+            super::super::koshei_the_deathless_journey_fixtures::world(generation.native_gameplay().ok_or("Koshei native content")?)?
+        } else if explorer {
+            super::super::explorer_society_journey_fixtures::world(
+                generation.native_gameplay().ok_or("Explorer native policies")?,
+            )?
+        } else if frontier {
+            super::super::new_frontier_journey_fixtures::world(generation.native_gameplay().ok_or("Frontier native policies")?)?
+        } else if pinned_qc_world {
             super::super::qc_pinned_world::world(
                 generation
                     .native_gameplay()
@@ -1183,6 +1230,10 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("native explore policies")?,
                 name,
+            )?
+        } else if paradox_journey {
+            super::super::paradox_tower_journey_fixtures::world(
+                generation.native_gameplay().ok_or("Paradox native policies")?,
             )?
         } else if native_upper {
             super::super::l6_paradox_upper_fixtures::world(
@@ -1447,6 +1498,9 @@ fn scenario_case(
         };
 
         let initial_level: Option<u32> = match name {
+            super::super::koshei_the_deathless_journey_fixtures::NAME => Some(150),
+            // The settlement journey includes combat with a classed starter loadout.
+            new_frontier_journey_fixtures::NAME => Some(8),
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
             "questpc7-eligibility-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
@@ -1454,6 +1508,7 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
+            _ if paradox_source_probe => Some(30),
             super::super::too_hot_research_fixtures::NAME => Some(80),
             _ => None,
         };
@@ -1527,7 +1582,13 @@ fn scenario_case(
             tx.commit().await?;
         }
 
-        let world = if name.starts_with("qengine-rewards-l2-djinn-") {
+        let world = if name == "questpc7-outfits-fiend" {
+            super::super::quest_container_chests_fixtures::forgemaster::production_chests(
+                generation
+                    .native_gameplay()
+                    .ok_or("Forgemaster native gameplay")?,
+            )?
+        } else if name.starts_with("qengine-rewards-l2-djinn-") {
             super::super::questl2_djinn_world::world()?
         } else if eroth_mirror {
             super::super::source_world_crop::compiled_region(
@@ -1625,7 +1686,9 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
-            if m07_realm || name == "qengine-rewards-questpc4-native-tower-third" {
+            if explorer {
+                8 // Player, society contacts, captain and butterfly.
+            } else if m07_realm || name == "qengine-rewards-questpc4-native-tower-third" {
                 4_104 // Quest callbacks must tolerate >4096 unrelated live creatures.
             } else if name == "qengine-rewards-qnpcfx-m10-inquisition" {
                 7 // One player and the six source NPCs for the full interview story.
@@ -1639,6 +1702,8 @@ fn scenario_case(
             } else if name == "questpc7-friends" {
                 // Thirteen selected vendors/priests and one player; charge every actor slot.
                 14
+            } else if paradox_journey {
+                8 // Pilgrim, six contacts, and the lever's timed Ghoul.
             } else if native_story
                 || (native_upper && name.ends_with("-complete"))
                 || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
@@ -1650,6 +1715,8 @@ fn scenario_case(
                 7
             } else if name == "authored-treasure-island" {
                 3
+            } else if frontier {
+                12
             } else if name == "authored-secret-library" {
                 5
             } else if matches!(name, "authored-anniversary" | "authored-venore") {
@@ -1691,7 +1758,8 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name.starts_with("authored-")
+        let premium = if koshei || name.starts_with("authored-")
+            || paradox_source_probe
             || name == "nx6-wayfarer"
             || name == "m07-carrot-premium"
             || m03_use
@@ -1816,18 +1884,25 @@ fn scenario_case(
             );
         }
 
+        if let Some(recovery) = &recovery {
+            owner.evidence = &recovery.evidence;
+        }
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
         if let Some(room) = bundle_room.as_ref() {
             owner.rooms =
                 crate::gameplay_transport::SeamRooms::new(native_crop.then_some(room), Some(room));
         }
-        owner.quest_catalogue = Some(std::sync::Arc::new(
-            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-                .map_err(debug)?
-                .catalogue()
-                .clone(),
-        ));
+        let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(debug)?;
+        owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
+        if koshei || alawars_vault || (frontier && !recover_bait) {
+            let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
+            owner.quest_log_content = Some(
+                crate::gameplay_transport::quest_log::QuestLogLines::new(journal.content)
+                    .ok_or("journey journal line bounds")?,
+            );
+        }
         if draconia_escape {
             owner.quest_catalogue =
                 Some(super::super::draconia_escape_fixtures::catalogue(&callback, name)?);
@@ -1960,16 +2035,21 @@ fn scenario_case(
             },
             ..crate::durability::starter_grant::StarterTemplate::main()
         };
-        h.root
-            .grant_starter_items(
-                &authority,
-                &h.node,
-                &fence.item_fence(),
-                &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
-                &template,
-            )
-            .await
-            .map_err(|e| format!("callback starter items: {e:?}"))?;
+        if name == super::super::new_frontier_journey_fixtures::NAME {
+            let build = h.root.read_character_build_state(&authority, fence.character_id).await.map_err(debug)?;
+            super::super::annihilator_combat::prepare_supplies(&owner, &admitted, &build, false).await?;
+        } else {
+            h.root
+                .grant_starter_items(
+                    &authority,
+                    &h.node,
+                    &fence.item_fence(),
+                    &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+                    &template,
+                )
+                .await
+                .map_err(|e| format!("callback starter items: {e:?}"))?;
+        }
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         if let Some(initial_level) = initial_level {
@@ -1989,7 +2069,10 @@ fn scenario_case(
                 "source eligibility uses the actual durable starting level"
             );
         }
-        if name == "nx6-wayfarer"
+        if explorer
+            || koshei
+            || paradox_source_probe
+            || name == "nx6-wayfarer"
             || qm03
             || m07_too_hot
             || mead
@@ -2005,7 +2088,11 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_use {
+        if koshei {
+            Box::pin(super::super::koshei_the_deathless_journey_fixtures::exercise(&mut owner, &mut admitted, &h)).await?;
+        } else if explorer {
+            Box::pin(super::super::explorer_society_journey_fixtures::exercise(&mut owner, &mut admitted, &h)).await?;
+        } else if m03_use {
             Box::pin(super::super::qengine_m03_use_fixtures::exercise(
                 &mut owner,
                 &mut admitted,
@@ -2110,6 +2197,8 @@ fn scenario_case(
             .await?;
         } else if qm50 {
             Box::pin(super::super::qm50_elevator_fixtures::exercise(&owner, &mut admitted)).await?;
+        } else if alawars_vault {
+            Box::pin(super::super::alawars_vault_journey_fixtures::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if m01b_explore {
             Box::pin(super::super::m01b_explore_fixtures::exercise(
                 &mut owner,
@@ -2856,6 +2945,10 @@ fn scenario_case(
                 trigger,
             ))
             .await?;
+        } else if paradox_journey {
+            Box::pin(super::super::paradox_tower_journey_fixtures::exercise(
+                &mut owner, &mut admitted, &h, &authority,
+            )).await?;
         } else if name.starts_with("qengine-rewards-tibia-tales-") {
             Box::pin(super::super::tibia_tales_fixtures::exercise(
                 name, &mut owner, &mut admitted, &h, trigger,
@@ -2949,6 +3042,10 @@ fn scenario_case(
                 &h,
             ))
             .await?;
+        } else if frontier {
+            Box::pin(
+                new_frontier_journey_fixtures::exercise(&mut owner, &mut admitted, &h, recover_bait),
+            ).await?;
         } else if name == "authored-secret-library" {
             Box::pin(super::super::questpc8_secret_library_fixtures::exercise(
                 &mut owner,
@@ -3826,9 +3923,10 @@ fn scenario_case(
                     )),
                     ..request
                 };
-                assert!(matches!(slot.commit_world_callback(owner.root, owner.character, owner.holder,
-                    stale, fresh_request, catalogue, &permit, context,
-                    None,
+                assert!(matches!(slot.commit_world_callback_with_native_and_gate(
+                    owner.root, owner.character, owner.holder,
+                    stale, fresh_request, catalogue, &permit, context, None,
+                    &owner.premium_coordinator,
                 ).await,
                     Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)));
                 drop(slot);

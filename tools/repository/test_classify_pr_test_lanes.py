@@ -745,7 +745,7 @@ def scope_pull(count, head="a" * 40, base="b" * 40):
     }
 
 
-def run_scope(before, after, records=(), *, expected_head="a" * 40):
+def run_scope(before, after, records=(), *, expected_head="a" * 40, event_base="main", base_from=""):
     """Execute the production scope body; replace only its API and output boundary."""
     import urllib.request
 
@@ -772,8 +772,8 @@ def run_scope(before, after, records=(), *, expected_head="a" * 40):
         output = Path(directory) / "output"
         env = {
             "REPOSITORY": "Oteryn/Oteryn-Game", "EVENT_PR_NUMBER": "42",
-            "EVENT_PR_HEAD_SHA": expected_head, "GH_TOKEN": "fixture",
-            "GITHUB_OUTPUT": str(output),
+            "EVENT_PR_HEAD_SHA": expected_head, "EVENT_PR_BASE_REF": event_base,
+            "EVENT_BASE_FROM": base_from, "GH_TOKEN": "fixture", "GITHUB_OUTPUT": str(output),
         }
         errors = io.StringIO()
         code = 0
@@ -795,7 +795,7 @@ def test_scope_stable_small_pr():
     assert code == 0 and not errors, (code, errors)
     outputs = dict(line.split("=", 1) for line in wire.splitlines())
     assert outputs == {
-        "pr_number": "42", "target_sha": "a" * 40, "base_sha": "b" * 40,
+        "pr_number": "42", "target_sha": "a" * 40, "base_sha": "b" * 40, "base_ref": "main",
         "file_count": "1", "file_records": json.dumps(records, separators=(",", ":")),
         "complete": "true",
     }, outputs
@@ -918,6 +918,27 @@ def test_scope_identity_drift():
     print("Scope identity fences PASS: five identity changes fail with stable or drifting counts and no outputs")
 
 
+def test_scope_event_base_binding():
+    """A rerun after a main <-> staging retarget must not qualify the other base."""
+    records = [{"filename": "docs/note.md", "status": "modified"}]
+    staging = scope_pull(1)
+    staging["base"] = {"ref": "staging", "sha": "b" * 40}
+    code, wire, errors, _ = run_scope(staging, staging, records, event_base="staging")
+    assert code == 0 and not errors, (code, errors)
+    assert dict(line.split("=", 1) for line in wire.splitlines())["base_ref"] == "staging", wire
+    for event_base, live in (("main", staging), ("staging", scope_pull(1)), ("", scope_pull(1)),
+                             ("other", dict(scope_pull(1), base={"ref": "other", "sha": "b" * 40}))):
+        code, wire, errors, _ = run_scope(live, live, records, event_base=event_base)
+        assert code == 1 and wire == "" and ("base ref" in errors or "targeting" in errors), (event_base, code, wire, errors)
+    # A retarget (staging -> main or back) fails until a new push qualifies the new base,
+    # so the old base's game-gate success cannot stand for it.
+    for event_base, live, base_from in (("main", scope_pull(1), "staging"), ("staging", staging, "main")):
+        code, wire, errors, requests = run_scope(live, live, records, event_base=event_base, base_from=base_from)
+        assert code == 1 and wire == "" and f"retargeted from {base_from}" in errors and requests == [], (
+            event_base, code, wire, errors, requests)
+    print("Scope base binding PASS: only the event's base ref (main or staging) qualifies; retargets fail")
+
+
 def test_scope_count_drift(module):
     """Mutable counts cannot block exact heads or authorize stale narrowed lanes."""
     import urllib.request
@@ -957,7 +978,8 @@ def test_scope_count_drift(module):
                     value = next(pulls)
                 return io.StringIO(json.dumps(value))
             env = {"REPOSITORY": "Oteryn/Oteryn-Game", "EVENT_PR_NUMBER": "3042",
-                   "EVENT_PR_HEAD_SHA": head, "GH_TOKEN": "fixture", "GITHUB_OUTPUT": str(output)}
+                   "EVENT_PR_HEAD_SHA": head, "EVENT_PR_BASE_REF": "main", "GH_TOKEN": "fixture",
+                   "GITHUB_OUTPUT": str(output)}
             errors = io.StringIO()
             with patch.dict(os.environ, env), patch.object(urllib.request, "urlopen", side_effect=urlopen), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(errors):
                 try:
@@ -1130,7 +1152,10 @@ def test_metadata_events():
     assert "      - edited\n" in gate, "base retargets must retain native qualification"
     assert "classify_event" not in gate and "metadata_only" not in gate
     scope = core.indented_yaml_mapping_block(gate, "scope", 2)
-    main_guard = "github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref"
+    main_guard = (
+        "github.event.pull_request.base.ref == 'main' || "
+        "github.event.pull_request.base.ref == 'staging' || !github.event.pull_request.base.ref"
+    )
     assert f"    if: {main_guard}\n" in scope
     assert not re.search(r"^    needs:", scope, flags=re.MULTILINE)
     aggregate = core.indented_yaml_mapping_block(gate, "validate", 2)
@@ -1179,27 +1204,47 @@ def test_metadata_events():
     assert cancels("edited", True) is True
     assert cancels("edited", False) is False
     # Execute the actual final fence with fresh/retargeted live responses. A
-    # returning main with a newer base must never publish the old edit's gate.
+    # returning main with a newer base must never publish the old edit's gate,
+    # and a retargeted head stays tainted until a push.
     import urllib.request
     script = textwrap.dedent(final.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
     expected_head, expected_base = "a" * 40, "b" * 40
     live = {"number": 42, "state": "open", "head": {
         "sha": expected_head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
         "base": {"ref": "main", "sha": expected_base}}
-    def accepts_live(pull):
-        response = io.StringIO(json.dumps(pull))
+    clean_run = {"display_title": "Merge gate • pull_request • 42"}
+    def accepts_live(pull, *, isolated=True, runs=None, base_ref="main"):
+        pages = runs if runs is not None else [{"workflow_runs": [clean_run]}]
+        calls = []
+        def respond(request, timeout):
+            assert timeout == 30
+            calls.append(request.full_url)
+            prefix = "https://api.github.com/repos/Oteryn/Oteryn-Game/"
+            if request.full_url == prefix + "pulls/42":
+                return io.StringIO(json.dumps(pull))
+            page = len(calls) - 1
+            assert request.full_url == (prefix + "actions/workflows/merge-gate.yml/runs?head_sha="
+                                        f"{expected_head}&per_page=100&page={page}"), request.full_url
+            body = pages[page - 1]
+            if isinstance(body, dict) and "workflow_runs" in body and "total_count" not in body:
+                body = dict(body, total_count=sum(len(item.get("workflow_runs") or []) for item in pages))
+            return io.StringIO(json.dumps(body))
         env = {"REPOSITORY": "Oteryn/Oteryn-Game", "PR_NUMBER": "42",
-               "EXPECTED_HEAD": expected_head, "EXPECTED_BASE": expected_base, "GH_TOKEN": "fixture"}
-        with patch.dict(os.environ, env), patch.object(urllib.request, "urlopen", return_value=response), contextlib.redirect_stdout(io.StringIO()):
+               "ISOLATED_EDIT": "true" if isolated else "false",
+               "EXPECTED_HEAD": expected_head, "EXPECTED_BASE": expected_base,
+               "EXPECTED_BASE_REF": base_ref, "GH_TOKEN": "fixture"}
+        with patch.dict(os.environ, env), patch.object(urllib.request, "urlopen", side_effect=respond), contextlib.redirect_stdout(io.StringIO()):
             try:
-                exec(compile(script, "isolated-edit-live-fence", "exec"), {})
+                exec(compile(script, "live-target-fence", "exec"), {})
                 return True
-            except (SystemExit, AttributeError, TypeError, ValueError):
+            except (SystemExit, AttributeError, TypeError, ValueError, IndexError):
                 return False
     assert accepts_live(live)
+    assert accepts_live(live, isolated=False)
     for changed in (
         {"number": 43}, {"state": "closed"},
         {"base": {"ref": "stack", "sha": expected_base}},
+        {"base": {"ref": "staging", "sha": expected_base}},
         {"base": {"ref": "main", "sha": "c" * 40}},
         {"head": {"sha": "d" * 40, "repo": {"full_name": "Oteryn/Oteryn-Game"}}},
         {"head": {"sha": expected_head, "repo": {"full_name": "fork/Game"}}},
@@ -1207,9 +1252,32 @@ def test_metadata_events():
     ):
         assert not accepts_live(dict(live, **changed)), changed
     assert not accepts_live({}) and not accepts_live(None)
-    assert "        if: github.event.action == 'edited' && github.event.changes.base == null\n" in final
+    # Every attempt checks the live base ref; only an isolated edit pins the base SHA.
+    staging_live = dict(live, base={"ref": "staging", "sha": expected_base})
+    assert not accepts_live(staging_live, isolated=False)
+    assert accepts_live(staging_live, isolated=False, base_ref="staging")
+    assert accepts_live(dict(live, base={"ref": "main", "sha": "c" * 40}), isolated=False)
+    # A retargeted head stays tainted (edits, reruns and job retries), across pages.
+    tainted = {"display_title": "Merge gate • pull_request • 42 • retargeted"}
+    assert not accepts_live(live, runs=[{"workflow_runs": [clean_run, tainted]}])
+    assert not accepts_live(live, isolated=False, runs=[{"workflow_runs": [clean_run] * 100},
+                                                        {"workflow_runs": [tainted]}])
+    assert accepts_live(live, runs=[{"workflow_runs": [clean_run] * 100}, {"workflow_runs": []}])
+    assert accepts_live(live, runs=[{"workflow_runs": [{"display_title": "Merge gate • pull_request • 43 • retargeted"}]}])
+    # The filtered listing is capped at 1000 runs: a longer or uncounted history fails closed.
+    assert accepts_live(live, runs=[{"workflow_runs": [clean_run], "total_count": 1000}])
+    assert not accepts_live(live, runs=[{"workflow_runs": [clean_run], "total_count": 1001}])
+    assert not accepts_live(live, runs=[{"workflow_runs": [clean_run], "total_count": "1"}])
+    for broken in ({}, {"workflow_runs": None}, {"workflow_runs": ["x"]}):
+        assert not accepts_live(live, runs=[broken]), broken
+    assert "        if: github.event.action == 'edited' && github.event.changes.base == null\n" not in final
+    assert "          ISOLATED_EDIT: ${{ github.event.action == 'edited' && github.event.changes.base == null }}\n" in final
     assert "          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}\n" in final
+    assert "          EXPECTED_BASE_REF: ${{ needs.scope.outputs.base_ref }}\n" in final
     assert "      pull-requests: read\n" in final
+    assert "      actions: read\n" in final
+    assert gate.startswith("name: Merge gate\n\nrun-name: Merge gate • pull_request • "
+                           "${{ github.event.pull_request.number }}${{ github.event.changes.base && ' • retargeted' || '' }}\n")
     print("Metadata concurrency PASS: isolated edits, retarget cancellation and canonical full game-gate")
 
 
@@ -1584,6 +1652,7 @@ def main() -> int:
     test_scope_file_count_drift(module)
     test_scope_count_drift(module)
     test_scope_identity_drift()
+    test_scope_event_base_binding()
     test_scope_invalid_file_counts()
     test_scope_stable_small_pr()
     test_aggregate()

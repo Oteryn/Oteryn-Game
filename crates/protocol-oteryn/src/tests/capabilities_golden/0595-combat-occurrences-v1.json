@@ -1,0 +1,20 @@
+{
+  "id": 595,
+  "name": "COMBAT_OCCURRENCES_V1",
+  "constant": "death_protection::CAPABILITY_COMBAT_OCCURRENCES_V1",
+  "requires": [
+    382
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    6352,
+    6354
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

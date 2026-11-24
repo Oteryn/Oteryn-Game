@@ -50,6 +50,9 @@ impl Stepper for Peer {
                 self.stored = true;
                 stash::StashOutcome::Committed
             }
+            stash::StashAction::StowQuantity { .. }
+            | stash::StashAction::StowMatching(_)
+            | stash::StashAction::StowContents(_) => stash::StashOutcome::Rejected,
             stash::StashAction::Withdraw { row, amount } => {
                 assert_eq!(row, [7; 16]);
                 assert_eq!(amount, 1);

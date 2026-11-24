@@ -14,6 +14,16 @@ const CLAIMS: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../../../content/interactions/reward_claims/reward-claims-00200-00230.json"
 ));
+const SERPENTINE_BINDING: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/quests/authored-bindings/serpentine_tower_journey.json"
+));
+const SERPENTINE_CLAIMS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/interactions/reward_claims/reward-claims-00100-00199.json"
+));
+pub const SERPENTINE_PEARL_CLAIM: &str =
+    "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl";
 const TIBIA_TALES: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../../../content/quests/world-callbacks/tibia-tales.json"
@@ -66,7 +76,7 @@ struct Binding {
 }
 
 struct ClaimSource {
-    claim_namespace: &'static str,
+    claim_prefix: &'static str,
     reward_item: &'static str,
     appearances: &'static [u16],
     quest_alias: Option<&'static str>,
@@ -74,7 +84,7 @@ struct ClaimSource {
 }
 
 const SOURCE_BOOKS: ClaimSource = ClaimSource {
-    claim_namespace: "u8_54",
+    claim_prefix: "oteryn:reward-claim.quest.u8_54.",
     reward_item: "oteryn:item.tibia.i10217",
     appearances: &[2472, 2480],
     quest_alias: None,
@@ -82,11 +92,19 @@ const SOURCE_BOOKS: ClaimSource = ClaimSource {
 };
 
 const OUTFOX: ClaimSource = ClaimSource {
-    claim_namespace: "u8_1",
+    claim_prefix: "oteryn:reward-claim.quest.u8_1.",
     reward_item: "oteryn:item.tibia.i139",
     appearances: &[2469],
     quest_alias: Some("to_outfox_a_fox_quest"),
     explicit_uid: Some(6257),
+};
+
+const SERPENTINE: ClaimSource = ClaimSource {
+    claim_prefix: SERPENTINE_PEARL_CLAIM,
+    reward_item: "oteryn:item.tibia.i3026",
+    appearances: &[2472, 2480],
+    quest_alias: None,
+    explicit_uid: None,
 };
 
 fn only(value: &Value, fields: &[&str]) -> bool {
@@ -96,12 +114,11 @@ fn only(value: &Value, fields: &[&str]) -> bool {
 }
 
 fn bind(
-    callbacks: &str,
+    callbacks: &[Callback],
     claims: &str,
     pairs: &[(&str, &str)],
     group: &ClaimSource,
 ) -> Result<Vec<Binding>, String> {
-    let callbacks = super::parse(callbacks)?;
     let claims: Value = serde_json::from_str(claims).map_err(|error| error.to_string())?;
     if claims["schema"] != "OTERYN_REWARD_CLAIM_SHARD/v1" || claims["family"] != "RewardClaim" {
         return Err("legacy World claim shard".into());
@@ -121,10 +138,7 @@ fn bind(
             .iter()
             .find(|callback| callback.key == key)
             .ok_or("legacy World callback missing")?;
-        let claim_key = format!(
-            "oteryn:reward-claim.quest.{}.{claim_suffix}",
-            group.claim_namespace
-        );
+        let claim_key = format!("{}{claim_suffix}", group.claim_prefix);
         let matching: Vec<_> = records
             .iter()
             .map(|row| &row["definition"])
@@ -241,10 +255,22 @@ fn bind(
     Ok(bindings)
 }
 
+fn bind_tomes(claims: &str) -> Result<Vec<Binding>, String> {
+    bind(&super::parse(CALLBACKS)?, claims, PAIRS, &SOURCE_BOOKS)
+}
+
 fn bind_all() -> Result<Vec<Binding>, String> {
-    let mut bindings = bind(CALLBACKS, CLAIMS, PAIRS, &SOURCE_BOOKS)?;
+    let mut bindings = bind_tomes(CLAIMS)?;
+    let tower = crate::quest::authored_bindings::Bindings::parse(SERPENTINE_BINDING.as_bytes())?;
+    let tower_callbacks = tower.world_callbacks().cloned().collect::<Vec<_>>();
     bindings.extend(bind(
-        TIBIA_TALES,
+        &tower_callbacks,
+        SERPENTINE_CLAIMS,
+        &[("authored-serpentine-tower-pearl", "")],
+        &SERPENTINE,
+    )?);
+    bindings.extend(bind(
+        &super::parse(TIBIA_TALES)?,
         TIBIA_TALES_CLAIMS,
         &[(
             "tibia-tales/outfox-helmet",
@@ -412,7 +438,7 @@ mod tests {
                 _ => records.push(records[index].clone()),
             }
             assert!(
-                bind(CALLBACKS, &changed.to_string(), PAIRS, &SOURCE_BOOKS).is_err(),
+                bind_tomes(&changed.to_string()).is_err(),
                 "mutation {mutation}"
             );
         }

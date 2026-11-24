@@ -1,0 +1,7 @@
+{
+  "mechanic": "0617-chat-system-message",
+  "kind": "panels",
+  "id": "0617-chat-system-message-panel",
+  "status": "supported",
+  "entry": "protocol.rs::feedback"
+}

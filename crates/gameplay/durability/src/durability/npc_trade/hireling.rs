@@ -324,6 +324,7 @@ impl Extra {
                 .zip(package.items)
                 .enumerate()
                 .map(|(index, (facts, (_, quantity)))| OneItemNpcTradeLineV1 {
+                    source_equipment_slot: None,
                     kind: LINE_ITEM_MINT,
                     before: None,
                     placement_ordinal: index as u64 + 1,

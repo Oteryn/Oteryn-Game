@@ -9,16 +9,13 @@ fn run_case(name: &'static str) -> TestResult {
         return Ok(());
     }
     let start = std::time::Instant::now();
-    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, || {
-        super::quest_world_callbacks_fixtures::scenario(
-            name,
-            Position {
-                x: 33294,
-                y: 31677,
-                floor: -15,
-            },
-            false,
-        )
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
+        let (x, y, floor) = if name == "questpc7-outfits-fiend" {
+            super::quest_container_chests_fixtures::forgemaster::SERVED_CHEST
+        } else {
+            (33294, 31677, -15)
+        };
+        super::quest_world_callbacks_fixtures::scenario(name, Position { x, y, floor }, false)
     });
     eprintln!(
         "QUESTPC7_OUTFIT_ITEMS POSTGRES_CASE_COMPLETED case={name} duration={:?} success={}",
