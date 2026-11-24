@@ -13,8 +13,8 @@ base = context.base
 IDS = frozenset({23229, 23230, 23231, 23232, 23295, 23299, 23335, 23339})
 PROOF = "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v4.json"
 PROOF_SHA = "f9465526c2c133f436a414bd9702df23aeb3739b0d9023f718407108bec163b7"
-RECEIPT = "docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v17.json"
-RECEIPT_SHA = "e1a1f9fc70ccfd0ee3507dbbf07119276d024f645f0c891e6c84900e3345a059"
+RECEIPT = "docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v18.json"
+RECEIPT_SHA = "e42af3733d5b238b53804df63979421b86f1b4f37bb6ac0f9654b95886d75897"
 OUTPUT = (
     "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json"
 )

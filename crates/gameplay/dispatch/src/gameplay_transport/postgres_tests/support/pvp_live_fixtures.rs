@@ -138,7 +138,13 @@ async fn melee_fault(
     payload: &[u8],
     point: crate::gameplay_transport::pvp_live::faults::Point,
 ) -> TestResult {
-    let mut consumed = crate::gameplay_transport::pvp_live::faults::arm(point);
+    use crate::gameplay_transport::pvp_live::faults::{Point, arm};
+    let mut pending = if point == Point::AfterCommit {
+        Point::SwingHolderBusy
+    } else {
+        point
+    };
+    let mut consumed = arm(pending);
     let result = command(
         client,
         command_id,
@@ -151,11 +157,16 @@ async fn melee_fault(
         attack::AttackIntentDisposition::Ok
     );
     // The serving loop alone drives combat and reconciliation. An explicit owner
-    // drain here races that loop for the harness's single database holder and can
-    // clear the target on RootUnavailable. Observe the real fault and lane instead.
+    // drain here would change the cadence and contend for the harness's single
+    // database holder. Observe the real fault and lane instead.
     tokio::time::timeout(Duration::from_secs(10), async {
         loop {
             match consumed.try_recv() {
+                Ok(()) if pending != point => {
+                    // The accepted target must still swing after a busy checkout.
+                    pending = point;
+                    consumed = arm(point);
+                }
                 Ok(()) => break,
                 Err(tokio::sync::oneshot::error::TryRecvError::Empty) => {
                     wait_live(client, Duration::from_millis(25)).await?;
@@ -553,9 +564,37 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 (true, false),
                 "first aggression forfeits only the attacker's Adventurer's Blessing"
             );
+            let before_hold = health(&owner, target).await?;
             let result = command(
                 &mut client,
                 5,
+                attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
+                &payload,
+            )
+            .await?;
+            assert_eq!(
+                attack::decode_attack_intent_result(&result).map_err(debug)?,
+                attack::AttackIntentDisposition::Ok
+            );
+            tokio::time::timeout(Duration::from_secs(6), async {
+                loop {
+                    let hits: i64 = sqlx::query_scalar(
+                        "SELECT count(DISTINCT ordinal) FROM game_character_pvp_harm WHERE command_id=5 AND damage>0",
+                    )
+                    .fetch_one(&h.pool)
+                    .await?;
+                    if hits >= 2 {
+                        return Ok::<_, Box<dyn std::error::Error>>(());
+                    }
+                    wait_live(&mut client, Duration::from_millis(25)).await?;
+                }
+            })
+            .await
+            .map_err(|_| "held ATTACK did not commit two distinct melee swings")??;
+            assert!(health(&owner, target).await? < before_hold);
+            let result = command(
+                &mut client,
+                6,
                 attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
                 &attack::encode_attack_target_intent(None).map_err(debug)?,
             )
@@ -585,7 +624,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
             };
             let result = command(
                 &mut client,
-                6,
+                7,
                 actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
                 &actor_spell::encode_spell_cast_intent(&cast),
             )
@@ -608,7 +647,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
             }
             let result = command(
                 &mut client,
-                7,
+                8,
                 oteryn_protocol_oteryn::logout::COMMAND_TYPE_LOGOUT_INTENT,
                 &[],
             )
@@ -633,7 +672,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
             wait_live(&mut client, Duration::from_secs(2)).await?;
             let result = command(
                 &mut client,
-                8,
+                9,
                 actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
                 &actor_spell::encode_spell_cast_intent(&cast),
             )
@@ -670,7 +709,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                     .fetch_one(&h.pool)
                     .await?;
             let frame = test_command(
-                8,
+                9,
                 actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
                 &actor_spell::encode_spell_cast_intent(&cast),
             );
@@ -684,7 +723,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 }
                 if env.message_type() == MessageType::CommandResult {
                     let replay = decode_command_result(env.payload()).map_err(debug)?;
-                    assert_eq!(replay.command_id, 8);
+                    assert_eq!(replay.command_id, 9);
                     assert_eq!(replay.status, CommandStatus::DuplicateReplay);
                     assert_eq!(
                         actor_spell::decode_spell_cast_result(replay.payload).map_err(debug)?,

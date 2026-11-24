@@ -790,6 +790,16 @@ def check_inventory(*, workflow_checks=False):
         check=True,
     )
 
+    # Native Forge profiles and the latest Forge SQL admission migration move together.
+    schedule_check(
+        [
+            sys.executable,
+            str(ROOT / "tools/content-migration/forge_sql_admission.py"),
+            "--check",
+        ],
+        check=True,
+    )
+
     if workflow_checks:
         # Flatten the workflow's independent outer scripts into this SAME pool.
         # Item taxonomy is already in the inventory above; execute it exactly once.
