@@ -282,7 +282,7 @@ enum MapAction {
     Lever {
         poses: [u16; 2],
         reversible: bool,
-        has_passages: bool,
+        has_secondary_effects: bool,
     },
     Callback,
 }
@@ -423,10 +423,16 @@ fn map_entries(
                         Some(poses) => MapAction::Lever {
                             poses,
                             reversible: callback.reversible,
-                            has_passages: !callback.passages.is_empty()
+                            has_secondary_effects: !callback.passages.is_empty()
                                 || callback.teleport.is_some()
                                 || callback.item_reward.is_some()
-                                || callback.success_message.is_some(),
+                                || callback.success_message.is_some()
+                                || callback.remote_teleport.is_some()
+                                || !callback.effects.is_empty()
+                                || callback.has_state_writes()
+                                || callback.experience.is_some()
+                                || callback.completes
+                                || !callback.achievements.is_empty(),
                         },
                         None => MapAction::Callback,
                     })
@@ -850,7 +856,7 @@ async fn map_action(
         MapAction::Lever {
             poses,
             reversible,
-            has_passages,
+            has_secondary_effects,
         } => {
             let (appearance, revision) = before.ok_or("missing prior lever pose")?;
             let expected = if appearance == poses[0] {
@@ -864,7 +870,7 @@ async fn map_action(
                 face == expected && next > revision
             })
             .await?;
-            if has_passages {
+            if has_secondary_effects {
                 if reversible {
                     approach(client, world, placement.at).await?;
                     use_map_action(client, world, placement, action, None, next).await?;
@@ -1264,6 +1270,17 @@ async fn session<'a>(
     slot: &'a mut Option<DevClientSession>,
     clients: &SeamClients<'_>,
 ) -> TestResult<&'a mut DevClientSession> {
+    if let Some(client) = slot.as_mut()
+        && let Err(error) = client
+            .session_mut()
+            .service_liveness_discarding_events(Duration::from_millis(25))
+            .await
+    {
+        evidence(&format!(
+            "interaction_sweep session=lost before=entry error={error}"
+        ));
+        *slot = None;
+    }
     if slot.is_none() {
         *slot = Some(connect_world(clients, 0x92).await?);
     }
