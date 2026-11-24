@@ -125,8 +125,8 @@ fn shortest_approach(
 async fn messages_until(
     client: &mut DevClientSession,
     expected: &str,
+    deadline: tokio::time::Instant,
 ) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
     loop {
         for event in client.take_events() {
             if let SessionEvent::ChatLine(delta) = event
@@ -159,6 +159,34 @@ async fn home_town(database: &mut sqlx::PgConnection, character: &[u8; 16]) -> T
     Ok(sqlx::query_scalar(
         "SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid",
     ).bind(character.as_slice()).fetch_optional(database).await?)
+}
+
+async fn step_citizenship(
+    client: &mut DevClientSession,
+    database: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+    direction: StepDirection,
+    message: &str,
+) -> TestResult<oteryn_dev_client::StepOutcome> {
+    let origin = client.world_spatial().actor_position;
+    let before = home_town(database, character).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    loop {
+        client.take_events();
+        let outcome = step_onto(client, direction).await?;
+        if client.world_spatial().actor_position != origin
+            || home_town(database, character).await? != before
+        {
+            messages_until(client, message, deadline).await?;
+            return Ok(outcome);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "step=citizenship rolled back to {origin:?} with unchanged home {before:?}"
+            ).into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+    }
 }
 
 async fn accepted_logout(client: &mut DevClientSession) -> TestResult {
@@ -543,8 +571,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .min_by_key(|(_, path, _)| path.len())
         .ok_or("step=citizenship-route observed=no-walking-route need=reachable-shipped-citizen-tile-for-different-home-town")?;
     walk(&mut client, world, &path).await?;
-    client.take_events();
-    let outcome = step_onto(&mut client, direction).await?;
     let area = world
         .base()
         .subareas
@@ -559,7 +585,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         floor: -i16::from(temple.floor),
     };
     let expected_message = format!("You are now a citizen of {}.", area.name);
-    messages_until(&mut client, &expected_message).await?;
+    let outcome = step_citizenship(
+        &mut client, &mut database, &clients.characters[0], direction, &expected_message,
+    ).await?;
     if client.world_spatial().actor_position != expected_position {
         return Err(format!(
             "step=temple-teleport observed={:?} need={expected_position:?}",
@@ -611,9 +639,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         y: i32::from(temple.y),
         floor: -i16::from(temple.floor),
     };
-    fresh.take_events();
-    let outcome = step_onto(&mut fresh, direction).await?;
-    messages_until(&mut fresh, REFUSAL).await?;
+    let outcome = step_citizenship(
+        &mut fresh, &mut database, &clients.characters[0], direction, REFUSAL,
+    ).await?;
     if fresh.world_spatial().actor_position != temple {
         return Err(format!(
             "step=svargrond-refusal observed=position-{:?} need=temple-{temple:?}",
@@ -640,15 +668,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     seed_barbarian_test(clients, &mut database).await?;
     let mut qualified = connect_character(clients, 0xdb, 0).await?;
     let direction = approach_svargrond_portal(&mut qualified, world, svargrond.at).await?;
-    qualified.take_events();
-    let outcome = step_onto(&mut qualified, direction).await?;
     let area = world
         .base()
         .subareas
         .town(svargrond.town)
         .ok_or("Svargrond town absent")?;
-    messages_until(
+    let outcome = step_citizenship(
         &mut qualified,
+        &mut database,
+        &clients.characters[0],
+        direction,
         &format!("You are now a citizen of {}.", area.name),
     )
     .await?;
