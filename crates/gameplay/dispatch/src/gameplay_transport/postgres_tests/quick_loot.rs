@@ -582,6 +582,15 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
                 count, 2048,
                 "full list reloads without truncation or mutation"
             );
+            deps.runtime
+                .lock()
+                .await
+                .bind_attacker_lease(
+                    deps.actor,
+                    admitted.game_session_id,
+                    current.current_character_lease(),
+                )
+                .map_err(debug)?;
             owner.premium_coordinator = Some(&premium);
             owner.admit_premium(id(40), admitted.game_session_id);
             quick_loot_destination_management(&owner, &mut admitted, &harness.pool).await?;
@@ -693,13 +702,32 @@ async fn quick_loot_destination_management(
     let actual: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(parent_item_instance_id) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(coin.as_slice()).fetch_one(pool).await?;
     assert_eq!(actual, id(71));
-    // Resume an original command whose terminal result had not been observed.
-    // The fresh snapshot allocates new handles, so the old handle cannot resolve.
-    admitted.continuity.next_command_id = distribution_id;
-    let (retry, _) =
-        super::parameter_spell_fixtures::exchange(owner, admitted, &commands[5..], false, false)
-            .await?;
-    assert_eq!(retry, [replies[5].clone()]);
+    let (retry, _) = super::parameter_spell_fixtures::exchange_from(
+        owner,
+        admitted,
+        &commands[5..],
+        false,
+        false,
+        distribution_id,
+    )
+    .await?;
+    assert_eq!(retry, [(CommandStatus::DuplicateReplay, replies[5].1.clone())]);
+
+    // The durable receipt also answers the original bytes when its handle cannot resolve.
+    let (kind, payload) = &commands[5];
+    let replayed = owner
+        .quick_loot_destinations(
+            *admitted,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: distribution_id,
+                item_fence: admitted.item_fence,
+            },
+            (*kind, payload),
+            None,
+        )
+        .await;
+    assert_eq!(replayed.as_ref(), Some(&replies[5]));
 
     Ok(())
 }
