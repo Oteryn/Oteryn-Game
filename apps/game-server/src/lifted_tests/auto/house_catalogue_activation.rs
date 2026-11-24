@@ -102,7 +102,8 @@ async fn fund_account(h: &fixture::Harness) -> fixture::TestResult {
              request_binding,acting_character_id,account_id,world_id,channel_id,
              runtime_scope_ownership_generation,amount,outcome,occurred_at,envelope_sha256,committed_at,
              planned_platinum_item_instance_id,planned_gold_item_instance_id,backpack_item_instance_id)
-           SELECT occurrence,operation,event,1,sha256('test'),$1::uuid,$2::uuid,$3::uuid,$4::uuid,
+           SELECT occurrence,operation,event,1,sha256('test'),encode($1,'hex')::uuid,encode($2,'hex')::uuid,
+             encode($3,'hex')::uuid,encode($4,'hex')::uuid,
              1,600,0,1,sha256('test'),0,platinum,gold,backpack FROM ids
            RETURNING transaction_id,account_id,world_id,acting_character_id
          ), credit AS (
@@ -114,10 +115,10 @@ async fn fund_account(h: &fixture::Harness) -> fixture::TestResult {
          INSERT INTO game_account_bank_balances(account_id,world_id,balance,last_entry_id)
          SELECT account_id,world_id,600,entry_id FROM credit",
     )
-    .bind(hex::encode(fixture::id(fixture::CHARACTER)))
-    .bind(hex::encode(fixture::id(40)))
-    .bind(hex::encode(fixture::id(fixture::WORLD)))
-    .bind(hex::encode(fixture::id(fixture::CHANNEL)))
+    .bind(fixture::id(fixture::CHARACTER).as_slice())
+    .bind(fixture::id(40).as_slice())
+    .bind(fixture::id(fixture::WORLD).as_slice())
+    .bind(fixture::id(fixture::CHANNEL).as_slice())
     .execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())
