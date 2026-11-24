@@ -23,6 +23,8 @@ EXPECTED = (
     ((32573, 32121, 7), 2772, "unique", 30034),
     ((33290, 31785, 13), 776, "action", 9715),
     ((33498, 32613, 8), 10840, "unique", 35020),
+    ((32209, 32292, 6), 1949, "action", 4253),
+    ((32210, 32292, 6), 1949, "action", 4253),
 )
 
 
@@ -72,7 +74,16 @@ class QuestStartupBindingsTests(unittest.TestCase):
         # Literal source shapes; CI must not depend on a worker's local donor cache.
         sources = {
             "data-global/startup/tables/tile.lua": "TileAction = {[50022] = {itemId=4634, itemPos={{x=32966,y=32626,z=5}}}}",
-            "data-global/startup/tables/teleport.lua": "TeleportAction = {[50022] = {{itemId=1720,itemPos={{x=32968,y=32630,z=7}}},{itemId=1949,itemPos={{x=32968,y=32629,z=7},{x=32967,y=32630,z=8}}}}} TeleportUnique = {[35020] = {itemId=10840,itemPos={x=33498,y=32613,z=8}}}",
+            "data-global/startup/tables/teleport.lua": """
+                TeleportAction = {
+                    [4253] = {itemId=1949,itemPos={{x=32209,y=32292,z=6},{x=32210,y=32292,z=6}}},
+                    [50022] = {
+                        {itemId=1720,itemPos={{x=32968,y=32630,z=7}}},
+                        {itemId=1949,itemPos={{x=32968,y=32629,z=7},{x=32967,y=32630,z=8}}},
+                    },
+                }
+                TeleportUnique = {[35020] = {itemId=10840,itemPos={x=33498,y=32613,z=8}}}
+            """,
             "data-global/startup/tables/door_level.lua": "LevelDoorAction = {[1070] = {itemId=false,itemPos={{x=33190,y=31684,z=14},{x=33195,y=31684,z=14}}}}",
             "data-global/startup/tables/lever.lua": "LeverUnique = {[30008] = {itemId=2772,itemPos={x=32180,y=31633,z=8}}, [30034] = {itemId=2772,itemPos={x=32573,y=32121,z=7}}}",
             "data-global/startup/tables/item.lua": "ItemAction = {[4503] = {{itemId=2970,itemPos={{x=32030,y=31688,z=8}}},{itemId=7042,itemPos={{x=32035,y=31642,z=8}}}}, [9715] = {itemId=776,itemPos={{x=33290,y=31785,z=13}}}}",

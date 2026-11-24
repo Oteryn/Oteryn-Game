@@ -7,7 +7,7 @@ pub(super) async fn project(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     native: &crate::content::native_gameplay::NativeGameplayState,
-    town: u16,
+    town: Option<u16>,
     query: Query,
     definition: Option<crate::durability::item_mint::TypedDefinitionRef>,
 ) -> Option<Vec<u8>> {
