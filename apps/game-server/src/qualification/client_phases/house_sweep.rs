@@ -591,7 +591,7 @@ async fn sweep_house(
             rows.emit(Err("bidder session absent".into()), "preparation");
             return;
         };
-        match provisioning::provision_profile(unprepared, clients, 0, 100, "explorer").await {
+        match provisioning::provision_fixture(unprepared, clients, 0, 100).await {
             Ok(client) => {
                 *session = Some(client);
                 *prepared = true;
