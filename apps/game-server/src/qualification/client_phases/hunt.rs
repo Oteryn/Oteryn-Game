@@ -60,7 +60,7 @@ pub(super) async fn hunt_with_loot(
     {
         return Err(format!("hunt attack: {attack:?}").into());
     }
-    verdict::Harness::global().progress("hunt-attack-accepted");
+    client_world::hunt_progress("hunt-attack-accepted");
     evidence(&format!(
         "mechanic=hunt state=corpse_pending target={:?}",
         target.entity
@@ -95,7 +95,7 @@ pub(super) async fn hunt_with_loot(
                         damaged |= health_percent < 100;
                         if health_percent < lowest_health {
                             lowest_health = health_percent;
-                            verdict::Harness::global().progress("hunt-target-damaged");
+                            client_world::hunt_progress("hunt-target-damaged");
                         }
                     }
                 }
@@ -128,7 +128,7 @@ pub(super) async fn hunt_with_loot(
     {
         return Err("hunt did not observe damage and target removal".into());
     }
-    verdict::Harness::global().progress("hunt-corpse-observed");
+    client_world::hunt_progress("hunt-corpse-observed");
     let EntityDetail::Object {
         item_handle: Some(handle),
         ..

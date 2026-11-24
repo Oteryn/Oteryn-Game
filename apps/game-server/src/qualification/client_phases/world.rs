@@ -3468,6 +3468,10 @@ pub(super) async fn connect_character(
     Ok(client)
 }
 
+pub(super) fn hunt_progress(phase: &'static str) {
+    verdict::Harness::global().progress(phase);
+}
+
 async fn travel_to_spawn(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
