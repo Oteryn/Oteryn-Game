@@ -330,8 +330,8 @@ const INVENTORY: &[Entry] = &[
         plan: "world item casts",
         accessor: "gate_world_item_cast",
         key: "",
-        state: Gate::Closed {
-            owners: &["MAGIC-SUMMON-1", "MAGIC-ITEMS-1"],
+        state: Gate::AllocatedOpen {
+            task: "MAGIC-ITEMS-1",
         },
         calls: &[("gameplay_transport/world_item_cast.rs", 2)],
     },
@@ -896,6 +896,11 @@ fn every_gate_names_its_opener_or_owner() -> Result<(), Box<dyn std::error::Erro
                     assert_eq!(entry.key, "");
                     continue;
                 }
+                if task == "MAGIC-ITEMS-1" {
+                    assert_eq!(entry.accessor, "gate_world_item_cast");
+                    assert_eq!(entry.key, "");
+                    continue;
+                }
                 assert_eq!(task, "FIELD-RUNES-1");
                 let contract: serde_json::Value = serde_json::from_str(include_str!(
                     "../../../../../docs/contracts/protocol-oteryn/v1/registry/capabilities/0091-field-runes-v1.json"
@@ -1104,7 +1109,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/m26_static_instance.rs",
         2,
     ),
-    ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
+    ("gameplay_transport/postgres_tests/magic2_conjure.rs", 3),
     ("gameplay_transport/postgres_tests/newhaven_corruptor.rs", 1),
     (
         "gameplay_transport/postgres_tests/novelty_items/scenario.rs",
