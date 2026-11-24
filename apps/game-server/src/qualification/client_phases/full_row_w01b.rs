@@ -142,36 +142,67 @@ fn visible_rat_at(client: &DevClientSession, at: TilePos) -> Option<EntityRef> {
         .and_then(|entities| rat_at(entities.iter().copied(), at))
 }
 
-async fn walk_observing_spawn(
+async fn walk_rat_route(
     client: &mut DevClientSession,
-    path: &[StepDirection],
+    goal: TilePos,
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
-    spawn: TilePos,
+    spawn: Option<TilePos>,
 ) -> TestResult<Option<EntityRef>> {
-    let mut at = tile(client.world_spatial().actor_position)?;
-    let mut near = 0;
-    // Keep the approach as one route so the shared walker can detour around
-    // visible occupants before the exact rat can enter the client view.
-    while distance(at, spawn) > 8 && near < path.len() {
-        at = landing(at, path[near]).ok_or("planned rat approach lost its landing")?;
-        near += 1;
-    }
-    walk_with_landings(client, &path[..near], &landing).await?;
-    let mut observed = visible_rat_at(client, spawn);
-    for (index, step) in path.iter().enumerate().skip(near) {
-        walk_with_landings(client, std::slice::from_ref(step), &landing).await?;
-        observed = visible_rat_at(client, spawn).or(observed);
-        if observed.is_some() {
-            walk_with_landings(client, &path[index + 1..], &landing).await?;
-            break;
+    let mut blocked = BTreeSet::new();
+    let mut observed = spawn.and_then(|site| visible_rat_at(client, site));
+    'replan: loop {
+        let from = tile(client.world_spatial().actor_position)?;
+        let path =
+            route_with_landings(from, |at| at == goal, |at| !blocked.contains(&at), &landing)
+                .ok_or_else(|| {
+                    format!("no safe rat route from {from:?} to {goal:?} avoiding {blocked:?}")
+                })?;
+        for direction in path {
+            let before = client.world_spatial().actor_position;
+            let expected =
+                landing(tile(before)?, direction).ok_or("rat route landing disappeared")?;
+            let mut outcome = client.step_retrying(direction).await?;
+            for attempt in 1..=6 {
+                let Some(delay) = town_route_retry_delay(
+                    outcome.disposition,
+                    client.world_spatial().actor_position == before,
+                    attempt,
+                ) else {
+                    break;
+                };
+                tokio::time::sleep(delay).await;
+                outcome = client.step_retrying(direction).await?;
+            }
+            let after = client.world_spatial().actor_position;
+            if outcome.status == CommandStatus::Accepted
+                && outcome.disposition == StepDisposition::Blocked
+                && before == after
+                && blocked.len() < 8
+                && blocked.insert(expected)
+            {
+                evidence(&format!("W01B_ROUTE blocked={expected:?} from={before:?}"));
+                continue 'replan;
+            }
+            if outcome.status != CommandStatus::Accepted
+                || outcome.disposition != StepDisposition::Moved
+                || outcome.world_spatial_delta.is_none()
+                || tile(after)? != expected
+            {
+                return Err(format!("rat route STEP {direction:?} from={before:?} expected={expected:?} observed={after:?}: {outcome:?}").into());
+            }
+            observed = spawn
+                .and_then(|site| visible_rat_at(client, site))
+                .or(observed);
+            verdict::Harness::global().progress("walk");
+            client.take_events();
         }
+        break;
     }
-    let live = |actor: &EntityRef| {
+    Ok(observed.filter(|actor| {
         client
             .world_entities()
             .is_some_and(|entities| entities.get(actor).is_some())
-    };
-    Ok(visible_rat_at(client, spawn).or_else(|| observed.filter(live)))
+    }))
 }
 
 async fn pump(client: &mut DevClientSession) -> TestResult<Vec<oteryn_dev_client::SessionEvent>> {
@@ -317,7 +348,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     let landing = |at, direction| destination(world, at, direction).filter(|&next| safe(next));
     let plan =
         |from, goal: &dyn Fn(TilePos) -> bool| route_with_landings(from, goal, |_| true, landing);
-    let approach = plan(retreat, &|at| at == stand)
+    plan(retreat, &|at| at == stand)
         .ok_or("no safe STEP approach from the Venore retreat to the rat")?;
     plan(stand, &|at| at == retreat).ok_or("no safe STEP retreat from the Venore rat")?;
 
@@ -327,7 +358,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     if tile(client.world_spatial().actor_position)? != retreat {
         return Err("W01b admission did not observe the seeded retreat tile".into());
     }
-    let target = walk_observing_spawn(&mut client, &approach, landing, spawn)
+    let target = walk_rat_route(&mut client, stand, landing, Some(spawn))
         .await?
         .ok_or("step=initial-spawn no live exact rat observed at the authored spawn")?;
     progress.pass("initial-spawn", (spawn, respawn_ms, target));
@@ -472,10 +503,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.pass("nearby-refusal", (spawn, respawn_ms));
 
     progress.begin("leave-interest");
-    let from = tile(client.world_spatial().actor_position)?;
-    let away = plan(from, &|at| at == retreat)
-        .ok_or("no safe walking route outside spawn interest from the kill site")?;
-    walk_with_landings(&mut client, &away, landing).await?;
+    walk_rat_route(&mut client, retreat, landing, None).await?;
     progress.pass(
         "leave-interest",
         tile(client.world_spatial().actor_position)?,
@@ -488,11 +516,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         client.service_liveness(Duration::from_millis(500)).await?;
     }
     progress.begin("return-to-spawn");
-    let back = plan(tile(client.world_spatial().actor_position)?, &|at| {
-        at == stand
-    })
-    .ok_or("no legitimate return route to rat spawn")?;
-    let observed = walk_observing_spawn(&mut client, &back, landing, spawn).await?;
+    let observed = walk_rat_route(&mut client, stand, landing, Some(spawn)).await?;
     progress.begin("replacement-delta");
     let mut replacement = observed;
     wait_until(
@@ -523,11 +547,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         return Err("fresh W01b admission reused the original session".into());
     }
     progress.begin("fresh-admission-route");
-    let path = plan(tile(fresh.world_spatial().actor_position)?, &|at| {
-        at == stand
-    })
-    .ok_or("fresh admission cannot route to rat spawn")?;
-    walk_with_landings(&mut fresh, &path, landing).await?;
+    walk_rat_route(&mut fresh, stand, landing, None).await?;
     progress.begin("fresh-admission-state");
     wait_until(
         &mut fresh,
