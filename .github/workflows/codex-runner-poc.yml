@@ -27,7 +27,21 @@ jobs:
       packages: write
     env:
       SOURCE_RUN: "45369833403"
+      SOURCE_SHA: 2b9bfde7e898dd7b28d017f2d172a08cf689ceb1
     steps:
+      - name: Check out the source head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - name: Pack the source tree
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/relay/tree"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          git archive --format=tar HEAD | zstd -q -T0 -3 -o "$RUNNER_TEMP/relay/tree/tree.tar.zst"
+          echo "$SOURCE_SHA" > "$RUNNER_TEMP/relay/tree/head-sha"
+          ls -la "$RUNNER_TEMP/relay/tree"
       - name: Download the planner of the source run
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -51,7 +65,7 @@ jobs:
           cd "$RUNNER_TEMP/relay"
           (cd pg-selected && sha256sum -c SHA256SUMS)
           ls -la pg-planner pg-selected
-          printf 'FROM scratch\nCOPY pg-planner /pg-planner\nCOPY pg-selected /pg-selected\n' > Dockerfile
+          printf 'FROM scratch\nCOPY pg-planner /pg-planner\nCOPY pg-selected /pg-selected\nCOPY tree /tree\n' > Dockerfile
           echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
@@ -86,25 +100,12 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     steps:
-      - name: Check out the source head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ env.SOURCE_SHA }}
-          persist-credentials: false
-          # Experiment: leave out the largest documentation trees (about 0.8 of 2.4 GB).
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            /*
-            !/docs/agents/
-            !/docs/reference/
-            !/qlane-meta/
       - name: Runner facts
         run: |
           nproc
           free -g
           df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP"
-          du -sh "$GITHUB_WORKSPACE"
-          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+
       - name: Pull archive and CI image from ghcr
         env:
           GH_TOKEN: ${{ github.token }}
@@ -120,8 +121,20 @@ jobs:
           docker cp "$id:/pg-planner" "$RUNNER_TEMP/pg-planner"
           docker cp "$id:/pg-selected" "$RUNNER_TEMP/pg-selected"
           docker rm "$id"
+          docker cp "$id:/tree" "$RUNNER_TEMP/tree"
           docker pull "$CI_IMAGE"
           echo "pulls took $(( $(date +%s) - start ))s"
+      # Instead of a checkout: the hosted relay job packed the exact source tree into the image.
+      - name: Unpack the source tree
+        run: |
+          set -euo pipefail
+          start=$(date +%s)
+          test "$(cat "$RUNNER_TEMP/tree/head-sha")" = "$SOURCE_SHA"
+          mkdir -p "$GITHUB_WORKSPACE"
+          docker run --rm -v "$RUNNER_TEMP/tree:/in:ro" -v "$GITHUB_WORKSPACE:/out" "$CI_IMAGE" \
+            tar --zstd -xf /in/tree.tar.zst -C /out
+          du -sh "$GITHUB_WORKSPACE"
+          echo "unpack took $(( $(date +%s) - start ))s"
       - name: Verify archive and plan the partition
         run: |
           set -euo pipefail
