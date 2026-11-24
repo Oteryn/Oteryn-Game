@@ -295,13 +295,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             auction.key, response.payload
         )
     })?;
-    evidence(&format!(
-        "W18_CHECK step=1 command=HOUSE_BID house={} maximum=1 status=Accepted disposition={} revision={revision}",
-        auction.key, disposition
-    ));
-    if disposition != house_wire::HouseDisposition::Ok as u64 || revision == 0 {
-        return Err(format!("step-1 HOUSE BID did not commit: disposition={disposition} revision={revision}").into());
+    if disposition != house_wire::HouseDisposition::Ok as u64 || revision != 0 {
+        return Err(format!("step-1 unexpected HOUSE BID result: disposition={disposition} revision={revision}").into());
     }
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let committed: bool = sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1 FROM game_house_operations o
+            JOIN game_house_bids b USING (auction_id, account_id, world_id, character_id)
+            WHERE o.kind=1 AND o.game_session_id=$1::uuid AND o.command_id=$2::text::numeric
+              AND o.world_id=$3::uuid AND o.house_key=$4 AND o.character_id=$5::uuid
+              AND b.maximum=1 AND o.escrow_after=1+o.first_rent
+        )",
+    )
+    .bind(uuid_text(client.join_snapshot().game_session_id.as_bytes()))
+    .bind(response.command_id.to_string())
+    .bind(uuid_text(&clients.world))
+    .bind(&auction.key)
+    .bind(uuid_text(&clients.characters[0]))
+    .fetch_one(&mut database).await?;
+    database.close().await?;
+    if !committed {
+        return Err("step-1 accepted HOUSE BID lacks the matching durable escrow receipt".into());
+    }
+    evidence(&format!(
+        "W18_CHECK step=1 command=HOUSE_BID house={} maximum=1 status=PASS escrow=committed",
+        auction.key,
+    ));
     let readback = exchange(&mut client, house_wire::COMMAND_TYPE_HOUSE_QUERY, &payload).await?;
     if readback.status != CommandStatus::Accepted {
         return Err("step-1 post-bid HOUSE QUERY refused".into());
