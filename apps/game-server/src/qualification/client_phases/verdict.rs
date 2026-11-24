@@ -822,6 +822,12 @@ impl Groups {
             .is_some_and(|selected| selected.contains(group))
     }
 
+    pub(super) fn only(&self, group: &str) -> bool {
+        self.0
+            .as_ref()
+            .is_some_and(|selected| selected.len() == 1 && selected.contains(group))
+    }
+
     pub(super) fn runs(&self, group: &str) -> bool {
         self.0
             .as_ref()
@@ -1217,6 +1223,9 @@ mod verdict_tests {
         let all = Groups::parse(None, GROUPS)?;
         assert!(!all.opted_in("interaction_sweep"));
         assert!(Groups::parse(Some("interaction_sweep"), GROUPS)?.opted_in("interaction_sweep"));
+        assert!(Groups::parse(Some("interaction_sweep"), GROUPS)?.only("interaction_sweep"));
+        assert!(!Groups::parse(Some("interaction_sweep,core"), GROUPS)?.only("interaction_sweep"));
+        assert!(!all.only("interaction_sweep"));
         assert!(!Groups::parse(Some("creature_sweep"), GROUPS)?.opted_in("interaction_sweep"));
         assert!(GROUPS.iter().all(|(group, _)| all.runs(group)));
         assert!(Groups::parse(Some(" "), GROUPS)?.runs("core"));
