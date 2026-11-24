@@ -665,6 +665,39 @@ async fn paralyze_bruise_fixture(
         })
         .map(|entry| entry.entity)
         .ok_or("Bruise Bane caster's exact entity is absent")?;
+    if vitals(target)?.health == vitals(target)?.max_health {
+        let attack = full_e2ef5::with_observer_liveness(target, async {
+            Ok(peer.session_mut().attack_target(Some(&entity)).await?)
+        })
+        .await?;
+        require(
+            attack.disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok,
+            format!("Open PvP wound attack refused: {attack:?}"),
+        )?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+        while vitals(target)?.health == vitals(target)?.max_health
+            && tokio::time::Instant::now() < deadline
+        {
+            full_e2ef5::with_observer_liveness(target, async {
+                peer.service_liveness(Duration::from_millis(250)).await?;
+                peer.take_events();
+                Ok(())
+            })
+            .await?;
+        }
+        let clear = full_e2ef5::with_observer_liveness(target, async {
+            Ok(peer.session_mut().attack_target(None).await?)
+        })
+        .await?;
+        require(
+            clear.disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok,
+            format!("could not clear Open PvP wound attack: {clear:?}"),
+        )?;
+        require(
+            vitals(target)?.health < vitals(target)?.max_health,
+            "Open PvP attack did not wound Bruise Bane caster",
+        )?;
+    }
     let (reply, _) = full_e2ef5::with_observer_liveness(
         target,
         full_e2ef5::rune_use(peer, rune, Some(entity), None),
@@ -690,7 +723,7 @@ async fn approach_for_paralyze(
             |at| {
                 at != target
                     && at.floor == target.floor
-                    && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 2
+                    && u32::from(at.x.abs_diff(target.x)) + u32::from(at.y.abs_diff(target.y)) == 1
                     && world
                         .base()
                         .tile(at.x, at.y, at.floor)
@@ -749,13 +782,9 @@ async fn positive(
     let target = match health_effect {
         Some(HealthEffect::Damage) => Some(spawn_target(client, "deer").await?),
         Some(HealthEffect::Heal) if targets_self => {
-            if vitals(client)?.health == vitals(client)?.max_health {
-                if !dispel || bruise_bane {
-                    if bruise_bane {
-                        spawn_target_at(client, "bear", "NODE_BOOT_PVP_CONTROL_SOCKET").await?;
-                    } else {
-                        spawn_target(client, "bear").await?;
-                    }
+            if !bruise_bane && vitals(client)?.health == vitals(client)?.max_health {
+                if !dispel {
+                    spawn_target(client, "bear").await?;
                 }
                 let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
                 while vitals(client)?.health == vitals(client)?.max_health {
@@ -1148,22 +1177,8 @@ async fn spawn_target(
     client: &mut DevClientSession,
     species: &str,
 ) -> TestResult<(oteryn_dev_client::EntityRef, ActorPosition)> {
-    spawn_target_at(client, species, "NODE_BOOT_CONTROL_SOCKET").await
-}
-
-async fn spawn_target_at(
-    client: &mut DevClientSession,
-    species: &str,
-    socket_key: &str,
-) -> TestResult<(oteryn_dev_client::EntityRef, ActorPosition)> {
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let answer = request_fixture_control_at(
-        socket_key,
-        session,
-        "--spawn",
-        format!("oteryn:creature.{species}"),
-    )
-    .await?;
+    let answer = request_spawn(session, format!("oteryn:creature.{species}")).await?;
     let entity = parse_spawned_entity(&answer)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
     loop {
