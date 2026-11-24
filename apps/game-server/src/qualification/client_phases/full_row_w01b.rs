@@ -21,6 +21,21 @@ use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMo
 use std::collections::BTreeSet;
 
 const ROW: &str = "W01b";
+const RAT_SITE: TilePos = TilePos {
+    x: 32794,
+    y: 32044,
+    floor: -7,
+};
+const RAT_STAND: TilePos = TilePos {
+    x: 32793,
+    y: 32043,
+    floor: -7,
+};
+const RAT_RETREAT: TilePos = TilePos {
+    x: 32779,
+    y: 32024,
+    floor: -7,
+};
 
 struct Progress {
     step: &'static str,
@@ -64,15 +79,13 @@ impl Progress {
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut progress = Progress::new();
     progress.begin("world-bundle");
-    let result = match verdict::indexed_timeout(
-        Duration::from_secs(420),
-        journey(clients, &mut progress),
-    )
-    .await
-    {
-        Ok(result) => result,
-        Err(_) => Err(format!("timeout while executing step={}", progress.step).into()),
-    };
+    let result =
+        match verdict::indexed_timeout(Duration::from_secs(420), journey(clients, &mut progress))
+            .await
+        {
+            Ok(result) => result,
+            Err(_) => Err(format!("timeout while executing step={}", progress.step).into()),
+        };
     progress.finish(&result);
 }
 
@@ -135,24 +148,19 @@ async fn walk_observing_spawn(
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
     spawn: TilePos,
 ) -> TestResult<Option<EntityRef>> {
-    let mut at = tile(client.world_spatial().actor_position)?;
     let mut observed = visible_rat_at(client, spawn);
-    let mut split = 0;
-    // The shared walker drains its event queue after every step. Read the
-    // applied entity view while entering interest, before the rat can chase.
-    while observed.is_none() && split < path.len() {
-        let step = path[split];
-        at = landing(at, step).ok_or("planned rat approach lost its landing")?;
-        split += 1;
-        if distance(at, spawn) <= 6 {
+    for (index, step) in path.iter().enumerate() {
+        walk_with_landings(client, std::slice::from_ref(step), &landing).await?;
+        observed = visible_rat_at(client, spawn).or(observed);
+        if observed.is_some() {
+            walk_with_landings(client, &path[index + 1..], &landing).await?;
             break;
         }
     }
-    walk_with_landings(client, &path[..split], &landing).await?;
-    observed = observed.or_else(|| visible_rat_at(client, spawn));
-    walk_with_landings(client, &path[split..], landing).await?;
     let live = |actor: &EntityRef| {
-        client.world_entities().is_some_and(|entities| entities.get(actor).is_some())
+        client
+            .world_entities()
+            .is_some_and(|entities| entities.get(actor).is_some())
     };
     Ok(visible_rat_at(client, spawn).or_else(|| observed.filter(live)))
 }
@@ -184,6 +192,34 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+async fn seed_rat_retreat(clients: &SeamClients<'_>) -> TestResult {
+    let mut initial = connect_character(clients, 0xb0, 0).await?;
+    logout(&mut initial).await?;
+    drop(initial);
+    wait_character_released(clients, 0).await?;
+
+    // Reuse the frame and generation recorded by the initial native logout.
+    // Advance only the exact disposable character's last-position sequence.
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let updated = sqlx::query(
+        "UPDATE game_character_last_positions
+         SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
+         WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(i32::from(RAT_RETREAT.x))
+    .bind(i32::from(RAT_RETREAT.y))
+    .bind(-i16::from(RAT_RETREAT.floor))
+    .execute(&mut database)
+    .await?;
+    database.close().await?;
+    if updated.rows_affected() != 1 {
+        return Err("seeded rat retreat requires one native last-position record".into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -195,27 +231,34 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         ChannelId::decode(&clients.channel)?,
     )?;
     progress.begin("admission");
-    character_prep::declare_seeded(ROW, "character", "dedicated Platform bootstrap");
+    character_prep::declare_seeded(
+        ROW,
+        "character,starting-position",
+        "dedicated level-one character starts at the verified Venore retreat tile",
+    );
     let identity = character_prep::bootstrap_row_character(
         clients,
         "01934f10-7c00-7000-8000-000000000021",
         "01934f10-7c04-7021-805b-3b1122334421",
-        "Sewer Rat Hunter",
+        "Venore Rat Hunter",
     )
     .await?;
     let clients = &identity.clients(clients);
-    let mut client = connect_character(clients, 0xb1, 0).await?;
-    progress.begin("initial-spawn");
-    let from = tile(client.world_spatial().actor_position)?;
-    // Restrict travel to the streets and sewers around the Thais temple.
-    // Leave six tiles around other authored creature sites.
-    const SITE_RADIUS: u16 = 32;
+    let spawn = RAT_SITE;
+    let stand = RAT_STAND;
+    let retreat = RAT_RETREAT;
+    let mut exact_sites = rat_points(&metadata.spawns).filter(|(at, _)| *at == spawn);
+    let (_, respawn_ms) = exact_sites.next().ok_or("authored Venore rat missing")?;
+    if exact_sites.next().is_some() || distance(spawn, retreat) < 20 {
+        return Err("Venore rat site or retreat does not match the qualification fixture".into());
+    }
     const ROUTE_RADIUS: u16 = 56;
     const CREATURE_BUFFER: i16 = 6;
-    let town_distance = |at: TilePos| at.x.abs_diff(TOWN.x).max(at.y.abs_diff(TOWN.y));
+    let in_route_floors = |floor| matches!(floor, -8..=-6);
+    let site_distance = |at: TilePos| at.x.abs_diff(spawn.x).max(at.y.abs_diff(spawn.y));
     let mut unsafe_tiles = BTreeSet::new();
     for source in &metadata.spawns.sources {
-        if !matches!(source.floor, -7 | -8) {
+        if !in_route_floors(source.floor) {
             continue;
         }
         for point in &source.points {
@@ -224,7 +267,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
                 y: point.y,
                 floor: source.floor,
             };
-            if town_distance(at) > ROUTE_RADIUS + CREATURE_BUFFER.unsigned_abs()
+            if site_distance(at) > ROUTE_RADIUS + CREATURE_BUFFER.unsigned_abs()
                 || metadata.spawns.creatures[point.creature as usize].key == "oteryn:creature.rat"
             {
                 continue;
@@ -245,50 +288,35 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         }
     }
     let safe = |at: TilePos| {
-        matches!(at.floor, -7 | -8)
-            && town_distance(at) <= ROUTE_RADIUS
+        in_route_floors(at.floor)
+            && site_distance(at) <= ROUTE_RADIUS
             && !unsafe_tiles.contains(&at)
     };
+    if !safe(spawn)
+        || !safe(stand)
+        || !safe(retreat)
+        || rat_points(&metadata.spawns)
+            .any(|(other, _)| other != spawn && distance(other, spawn) <= 8)
+        || world
+            .base()
+            .tile(stand.x, stand.y, stand.floor)
+            .is_none_or(|tile| tile.protection_zone())
+    {
+        return Err("authored Venore rat site lost its safety clearance".into());
+    }
     let landing = |at, direction| destination(world, at, direction).filter(|&next| safe(next));
     let plan =
         |from, goal: &dyn Fn(TilePos) -> bool| route_with_landings(from, goal, |_| true, landing);
-    let authored_rats: Vec<_> = rat_points(&metadata.spawns).collect();
-    let mut sites: Vec<_> = authored_rats
-        .iter()
-        .copied()
-        .filter(|(at, _)| {
-            at.floor == -8
-                && town_distance(*at) <= SITE_RADIUS
-                && safe(*at)
-                && authored_rats
-                    .iter()
-                    .all(|(other, _)| other == at || distance(*other, *at) > 8)
-        })
-        .collect();
-    sites.sort_by_key(|(at, interval)| {
-        (at.x.abs_diff(from.x).max(at.y.abs_diff(from.y)), *interval)
-    });
-    let (spawn, respawn_ms, approach, stand, retreat) = sites
-        .into_iter()
-        .find_map(|(spawn, respawn_ms)| {
-            let approach = plan(from, &|at| {
-                distance(at, spawn) == 1
-                    && world
-                        .base()
-                        .tile(at.x, at.y, at.floor)
-                        .is_some_and(|tile| !tile.protection_zone())
-            })?;
-            let stand = approach
-                .iter()
-                .try_fold(from, |at, &step| landing(at, step))?;
-            let away = plan(stand, &|at| {
-                at.x.abs_diff(spawn.x).max(at.y.abs_diff(spawn.y)) >= 20
-            })?;
-            let retreat = away.iter().try_fold(stand, |at, &step| landing(at, step))?;
-            plan(retreat, &|at| at == stand)?;
-            Some((spawn, respawn_ms, approach, stand, retreat))
-        })
-        .ok_or("no safe round-trip STEP route to an authored Thais sewer rat")?;
+    let approach = plan(retreat, &|at| at == stand)
+        .ok_or("no safe STEP approach from the Venore retreat to the rat")?;
+    plan(stand, &|at| at == retreat).ok_or("no safe STEP retreat from the Venore rat")?;
+
+    seed_rat_retreat(clients).await?;
+    let mut client = connect_character(clients, 0xb1, 0).await?;
+    progress.begin("initial-spawn");
+    if tile(client.world_spatial().actor_position)? != retreat {
+        return Err("W01b admission did not observe the seeded retreat tile".into());
+    }
     let target = walk_observing_spawn(&mut client, &approach, landing, spawn)
         .await?
         .ok_or("step=initial-spawn no live exact rat observed at the authored spawn")?;
@@ -421,10 +449,15 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         tokio::time::Instant::now() + Duration::from_secs(10),
         |client| {
             replacement = visible_rat_at(client, spawn).or(replacement);
-            replacement.is_some_and(|actor| actor != target
-                && client.world_entities().is_some_and(|entities| entities.get(&actor).is_some()))
+            replacement.is_some_and(|actor| {
+                actor != target
+                    && client
+                        .world_entities()
+                        .is_some_and(|entities| entities.get(&actor).is_some())
+            })
         },
-    ).await?;
+    )
+    .await?;
     let replacement = replacement.ok_or("replacement disappeared")?;
     progress.pass("replacement-delta", replacement);
 
@@ -517,8 +550,32 @@ mod tests {
 
     #[test]
     fn distance_is_floor_scoped() {
-        let at = TilePos { x: 10, y: 10, floor: -7 };
-        assert_eq!(distance(at, TilePos { x: 13, y: 8, floor: -7 }), 3);
-        assert_eq!(distance(at, TilePos { x: 10, y: 10, floor: -6 }), u16::MAX);
+        let at = TilePos {
+            x: 10,
+            y: 10,
+            floor: -7,
+        };
+        assert_eq!(
+            distance(
+                at,
+                TilePos {
+                    x: 13,
+                    y: 8,
+                    floor: -7
+                }
+            ),
+            3
+        );
+        assert_eq!(
+            distance(
+                at,
+                TilePos {
+                    x: 10,
+                    y: 10,
+                    floor: -6
+                }
+            ),
+            u16::MAX
+        );
     }
 }

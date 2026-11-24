@@ -180,6 +180,8 @@ case "$NODE_BOOT_WORLD_PROFILE" in
       ,,|*,rows,*) WORLD_REGIONS+=";131,122" ;;
     esac
     ;;
+  # W01b starts on the mainland with a declared retreat fixture near Venore.
+  w01b) WORLD_REGIONS='126,125;126,126;128,125' ;;
   # W23 uses the Thais temple and dock, plus both Svargrond regions from arrival to temple.
   w23) WORLD_REGIONS='126,125;126,126;125,121;126,121' ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
@@ -702,7 +704,7 @@ NODE_NPC_ARGS=()
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
   compile_world=compile-regions
-  case "$NODE_BOOT_WORLD_PROFILE" in town|c09|w23) compile_world=compile-town-qualification ;; esac
+  case "$NODE_BOOT_WORLD_PROFILE" in town|c09|w01b|w23) compile_world=compile-town-qualification ;; esac
   "${WORLD_COMPILER[@]}" "$compile_world" "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
   PIN="$WORK/world.json"
   python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
