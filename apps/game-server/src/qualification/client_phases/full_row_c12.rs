@@ -6,7 +6,7 @@
 //!    spell hit is never health-capped, attack it, and CAST Greater Tiger Clash repeatedly without
 //!    the item; require `Cast` and a mana debit each time and record the spell damage the server
 //!    attributes to the cast (the presentation events sharing the cast's decision ordinal).
-//! 2. `acquire-50271`: verify the seeded Fists of Enlightenment (50271) in the backpack.
+//! 2. `acquire-50271`: purchase the Fists of Enlightenment (50271) from Enpa-Deia Pema.
 //! 3. `augmented-cast`: ITEM_MOVE the item to the right hand, CAST again and require the measured
 //!    the cast to publish attributed damage. The weapon swap changes the attack inputs.
 //! 4. `unequip`: ITEM_MOVE it back to the backpack; require the inventory delta.
@@ -111,7 +111,7 @@ fn token(value: &str) -> String {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("C12", "level-20-monk,premium,item-50271,mana-potions-if-needed", "exori nia augment attribution");
+    character_prep::declare_seeded("C12", "level-20-monk,premium,purchase-gold,mana-potions", "exori nia augment attribution");
     let mut row = Row::new();
     let result = match verdict::indexed_timeout(Duration::from_secs(480), verdict::observe(journey(&mut row, clients))).await {
         Ok(result) => result,
@@ -557,22 +557,44 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into());
     }
     let mut client = PREPARATION.connect(clients, 0xc2, 1).await?;
-    match carried_count(&client, definition) {
-        0 if !equipped_right(&client, definition) => {
-            character_prep::grant_item(&client, MANA_POTION, 12).await?;
-            character_prep::grant_item(&client, ITEM_ID, 1).await?;
-            character_prep::reload(&mut client, clients).await?;
-        }
-        1 => {}
-        count => return Err(format!("unexpected initial backpack count for item {ITEM_ID}: {count}").into()),
+    let level = full_e2ef7::player_level(&mut client).await?;
+    if level < 20 {
+        return Err(format!("Platform-admitted Monk needs level 20 for item {ITEM_ID}; observed={level}").into());
     }
-    character_prep::grant_premium(&client).await?;
-    let spell_index = spell(&mut client)?;
-    let augment = content_augment()?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let talk_range = oteryn_protocol_oteryn::npc_service::TALK_RANGE_TILES;
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at.floor == 7 && u32::from(at.x.abs_diff(33603).max(at.y.abs_diff(31468))) <= talk_range
+    }).ok_or("no playable route to Enpa-Deia Pema at (33603,31468,z7)")?;
+    walk(&mut client, world, &path).await?;
+    let position = client.world_spatial().actor_position;
+    if !client.world_entities().is_some_and(|entities| entities.iter().any(|entry| {
+        entry.kind == EntityKind::Npc
+            && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Enpa-Deia Pema"))
+            && entry.position.floor == position.floor
+            && entry.position.x.abs_diff(position.x).max(entry.position.y.abs_diff(position.y)) <= talk_range
+    })) {
+        return Err("Enpa-Deia Pema absent within talk range after walking".into());
+    }
+    if carried_count(&client, definition) != 0 || equipped_right(&client, definition) {
+        return Err("item 50271 must first enter the dedicated Monk's backpack through the purchase".into());
+    }
+    character_prep::grant_item(&client, MANA_POTION, 12).await?;
+    character_prep::grant_item(&client, 3043, 2).await?;
+    character_prep::reload(&mut client, clients).await?;
+    let index = provisioning::item_index()?;
+    let purchased = full_e2ef7::acquire(
+        &mut client, world, &index, "oteryn:item.tibia.i50271", 1
+    ).await?;
+    if purchased != definition {
+        return Err("live purchase returned the wrong weapon definition".into());
+    }
+    character_prep::grant_premium(&client).await?;
+    let spell_index = spell(&mut client)?;
+    let augment = content_augment()?;
     let from = tile(client.world_spatial().actor_position)?;
     let profiles = creature_profiles()?;
     let (creature, _) = pick_creature(
@@ -595,7 +617,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     let acquired = carried_count(&client, definition);
     if acquired != 1 {
-        return Err(format!("expected one granted item {ITEM_ID} in backpack; observed={acquired}").into());
+        return Err(format!("expected one purchased item {ITEM_ID} in backpack; observed={acquired}").into());
     }
     row.pass("acquire-50271", acquired);
 
