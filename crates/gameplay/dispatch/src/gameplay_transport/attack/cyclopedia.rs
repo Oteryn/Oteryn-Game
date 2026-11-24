@@ -14,6 +14,50 @@ use oteryn_gameplay_content::content::spell_data::formula::level_base_damage_hea
 use oteryn_gameplay_progression::wheel_effects::{BattleInstinctBonuses, WheelRuntimeEffects};
 use oteryn_protocol_oteryn::cyclopedia_character::combat::{CombatStat as Stat, CombatStats};
 use oteryn_protocol_oteryn::cyclopedia_character::{CharacterTab, TabWireError};
+use tokio::sync::{Mutex, MutexGuard};
+
+enum BusyCombatLock {
+    SpellState,
+    Attack,
+}
+
+async fn lock_combat_observation<'a, R, S, A>(
+    runtime: &'a Mutex<R>,
+    states: &'a Mutex<S>,
+    attack: &'a Mutex<A>,
+    requested: bool,
+) -> Result<(MutexGuard<'a, R>, MutexGuard<'a, S>, MutexGuard<'a, A>), ()> {
+    let observe = async {
+        loop {
+            let busy = {
+                let runtime = runtime.lock().await;
+                match states.try_lock() {
+                    Ok(states) => match attack.try_lock() {
+                        Ok(attack) => return Ok((runtime, states, attack)),
+                        Err(_) => BusyCombatLock::Attack,
+                    },
+                    Err(_) => BusyCombatLock::SpellState,
+                }
+            };
+            if !requested {
+                return Err(());
+            }
+            // Wait without the runtime or another combat guard, then take a coherent
+            // observation in the ordinary runtime → spell state → attack lock order.
+            match busy {
+                BusyCombatLock::SpellState => drop(states.lock().await),
+                BusyCombatLock::Attack => drop(attack.lock().await),
+            }
+        }
+    };
+    if requested {
+        tokio::time::timeout(super::super::COMMAND_HOLDER_WINDOW, observe)
+            .await
+            .map_err(|_| ())?
+    } else {
+        observe.await
+    }
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn refresh_cyclopedia_combat(
@@ -97,8 +141,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let augments;
         {
-            // Stats are best-effort. Never await another lock while holding the runtime lock.
-            let runtime = self.runtime.lock().await;
+            // Periodic refresh is best-effort. A requested page can await a busy lock
+            // within the command read budget.
+            let (runtime, states, attack) = lock_combat_observation(
+                &self.runtime,
+                &self.states.spell_states,
+                &self.states.attack,
+                expected_fence.is_some(),
+            )
+            .await?;
             let lease = runtime
                 .bound_attacker_lease(actor, session)
                 .map_err(|_| ())?;
@@ -109,7 +160,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Err(());
             }
-            let states = self.states.spell_states.try_lock().map_err(|_| ())?;
             let state = states.get(&runtime, actor, session).ok_or(())?;
             // A read racing an equipment installation cannot report a set the actor did not
             // consume. Its next combat refresh or query retries after the normal installation.
@@ -119,7 +169,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Err(());
             }
-            let attack = self.states.attack.try_lock().map_err(|_| ())?;
             let mode = fight_mode(attack.expert_modes(actor, session).modes.fight_mode);
             let facts = state.character_facts();
             let wheel = self.wheel_stat_bonuses(

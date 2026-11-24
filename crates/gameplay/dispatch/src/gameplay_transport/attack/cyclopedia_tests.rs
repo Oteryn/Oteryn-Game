@@ -297,3 +297,33 @@ fn p12c_defence_observes_loaded_live_skills_and_owned_equipment() -> Result<(), 
     );
     Ok(())
 }
+#[tokio::test]
+async fn cyclopedia_requested_read_waits_for_combat_locks() -> Result<(), &'static str> {
+    use std::{future::Future, task::Poll};
+
+    let runtime = Mutex::new(());
+    let states = Mutex::new(());
+    let attack = Mutex::new(());
+    for busy in [&states, &attack] {
+        let held = busy.lock().await;
+        let read = lock_combat_observation(&runtime, &states, &attack, true);
+        let mut read = std::pin::pin!(read);
+        let first = std::future::poll_fn(|context| Poll::Ready(read.as_mut().poll(context))).await;
+        assert!(
+            first.is_pending(),
+            "explicit read must wait for the busy combat lock"
+        );
+        assert!(
+            runtime.try_lock().is_ok(),
+            "the wait must release the runtime"
+        );
+        assert!(
+            lock_combat_observation(&runtime, &states, &attack, false)
+                .await
+                .is_err()
+        );
+        drop(held);
+        assert!(read.await.is_ok());
+    }
+    Ok(())
+}
