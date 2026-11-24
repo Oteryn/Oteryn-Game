@@ -83,10 +83,19 @@ if __name__ == "__main__":
     parser.add_argument("--session", required=True)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--profile", choices=PROFILES)
+    group.add_argument("--place-sweep-player", choices=("hunting-ground",))
     group.add_argument("--spawn", metavar="CREATURE_KEY")
     group.add_argument("--inspect-damage", metavar="TARGET")
     args = parser.parse_args()
-    if args.spawn is not None:
+    if args.place_sweep_player is not None:
+        identifier = uuid.UUID(args.session)
+        if identifier.version != 7 or str(identifier) != args.session:
+            raise ValueError("invalid qualification session")
+        answer = _request(args.socket, f"place-sweep-player {args.session}\n", 64)
+        if answer != b"placed\n":
+            raise RuntimeError(f"qualification sweep placement refused: {bytes(answer)!r}")
+        print("placed")
+    elif args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
     elif args.inspect_damage is not None:
         print(inspect_damage(args.socket, args.session, args.inspect_damage))

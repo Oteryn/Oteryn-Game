@@ -307,46 +307,6 @@ fn loot_tables(root: &Path) -> TestResult<BTreeMap<String, Vec<LootEntry>>> {
     Ok(found)
 }
 
-/// `plan` limits its box to 160 tiles and two floors around the start, but the authored spawns can
-/// lie beyond it, so this plans over the same production collision facts (`destination`) across
-/// the whole map. Err carries every tile the search reached.
-fn far_route(
-    world: &BundleWorld,
-    from: TilePos,
-    goal: impl Fn(TilePos) -> bool,
-) -> Result<Vec<StepDirection>, Vec<TilePos>> {
-    let mut queue = std::collections::VecDeque::from([from]);
-    let mut parents = std::collections::BTreeMap::from([(from, None)]);
-    while let Some(at) = queue.pop_front() {
-        if goal(at) {
-            let mut path = Vec::new();
-            let mut cursor = at;
-            while let Some(Some((previous, direction))) = parents.get(&cursor) {
-                path.push(*direction);
-                cursor = *previous;
-            }
-            path.reverse();
-            return Ok(path);
-        }
-        for direction in [
-            StepDirection::North,
-            StepDirection::East,
-            StepDirection::South,
-            StepDirection::West,
-        ] {
-            let Some(next) = destination(world, at, direction) else {
-                continue;
-            };
-            if parents.contains_key(&next) {
-                continue;
-            }
-            parents.insert(next, Some((at, direction)));
-            queue.push_back(next);
-        }
-    }
-    Err(parents.into_keys().collect())
-}
-
 fn item_ref(
     items: &crate::content::item_ref::ItemDefinitionIndex,
     key: &str,
@@ -638,7 +598,7 @@ pub(super) async fn recover_in_combat(
     Ok(())
 }
 
-/// The spawn needs free non-PZ cells next to the player: walk once to open ground.
+/// The spawn needs free non-PZ cells next to the player. Provision a known hunting cell.
 async fn leave_protection_zone(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let open = |at: TilePos| {
         world
@@ -659,19 +619,35 @@ async fn leave_protection_zone(client: &mut DevClientSession, world: &BundleWorl
             .count()
                 >= 3
     };
-    let from = tile(client.world_spatial().actor_position)?;
-    if roomy(from) {
+    if roomy(tile(client.world_spatial().actor_position)?) {
         return Ok(());
     }
-    verdict::Harness::global().progress("creature-sweep-route");
-    let path = far_route(world, from, roomy).map_err(|reachable| {
-        format!(
-            "no open ground from {} ({} tiles reachable)",
-            at(from),
-            reachable.len()
-        )
-    })?;
-    walk(client, world, &path).await
+    verdict::Harness::global().progress("creature-sweep-placement");
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let answer =
+        request_fixture_control(session, "--place-sweep-player", "hunting-ground".into()).await?;
+    if answer != "placed" {
+        return Err("qualification fixture did not place the sweep player".into());
+    }
+    let target = crate::qualification_wild_spawn::SWEEP_HUNT_POSITION;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(VISIBLE_SECONDS);
+    tokio::time::timeout_at(deadline, async {
+        loop {
+            let here = client.world_spatial().actor_position;
+            if (here.x, here.y, here.floor) == (target.x, target.y, target.floor) {
+                if !roomy(tile(here)?) {
+                    return Err(
+                        "qualification fixture placed the player outside open ground".into(),
+                    );
+                }
+                return Ok(());
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+        }
+    })
+    .await
+    .map_err(|_| "qualification sweep placement was not observed")?
 }
 
 fn creature_named(entry: &oteryn_dev_client::WorldSpatialEntity, name: &str) -> bool {

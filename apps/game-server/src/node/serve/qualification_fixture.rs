@@ -157,6 +157,38 @@ pub(super) async fn spawn(
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
+pub(super) async fn place_sweep_player(
+    config: &NodeConfig,
+    owners: Option<SpawnOwners<'_>>,
+    request: &[u8],
+) -> Option<&'static str> {
+    if !config.qualification_fixture {
+        return None;
+    }
+    let session = parse_operation_id(request.strip_prefix(b"place-sweep-player ")?)?;
+    let session = crate::foundation::GameSessionId::decode(&session).ok()?;
+    let owners = owners?;
+    let mut runtime = owners.runtime.lock().await;
+    let pin = runtime.content_pin();
+    if owners.room.compiled().server_digest() != pin.server_artifact_digest()
+        || owners.room.frame_binding().digest() != pin.frame_binding_digest()
+        || owners.room.map_revision_digest() != pin.map_revision_digest()
+    {
+        return None;
+    }
+    let (actor, snapshot) = runtime.positioned_player_for_session(session).ok()??;
+    let target = wild_spawn::SWEEP_HUNT_POSITION;
+    wild_spawn::static_cell_refusal(owners.room, target).ok()?;
+    if runtime.position_occupied_by_other(actor, target).ok()? {
+        return None;
+    }
+    runtime
+        .relocate_arena_player(actor, session, snapshot, target)
+        .ok()?;
+    Some("placed")
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
 pub(super) async fn inspect_damage(
     config: &NodeConfig,
     owners: Option<SpawnOwners<'_>>,
