@@ -59,6 +59,7 @@ def main():
     launcher = work / "portal-exec"
     launcher.write_text("#!/usr/bin/env bash\nset -euo pipefail\nset +x\n"
                         "export OTERYN_ACCOUNT_MFA=true APP_ENV=testing\n"
+                        f"export PLATFORM_BUILD_REVISION={shlex.quote(os.environ['PLATFORM_BUILD_REVISION'])}\n"
                         "export OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED=true\n"
                         "export OTERYN_NATIVE_DEVICE_PROJECTION_AUTHORITY=oteryn-game-e2e\n"
                         f"export OTERYN_NATIVE_TLS_BIND=127.0.0.1:{native_port}\n"
