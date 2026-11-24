@@ -281,6 +281,7 @@ enum MapAction {
     Rope,
     Sewer,
     Teleport(TilePos),
+    CallbackTeleport(TilePos),
     Terrain {
         tool: u32,
         after: u16,
@@ -293,6 +294,43 @@ enum MapAction {
         has_secondary_effects: bool,
     },
     Callback,
+}
+
+// quest_callbacks/execute.rs:1682 commits a local callback teleport through
+// the source-step owner. Keep callbacks with other authored effects on
+// their own path until those effects can also be checked.
+fn callback_teleport(
+    callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
+) -> Option<TilePos> {
+    let destination = callback.teleport?;
+    if matches!(
+        callback.key.as_str(),
+        "oteryn:quest-callback/dryad-garden-enter" | "oteryn:quest-callback/dryad-garden-leave"
+    ) || callback.lever.is_some()
+        || callback.facing.is_some()
+        || callback.disguise.is_some()
+        || callback.native_rule.is_some()
+        || !callback.passages.is_empty()
+        || !callback.effects.is_empty()
+        || callback.remote_teleport.is_some()
+        || callback.has_state_writes()
+        || callback.world_change.is_some()
+        || callback.experience.is_some()
+        || callback.completes
+        || callback.monk_reward.is_some()
+        || !callback.offerings.is_empty()
+        || callback.item_on_target.is_some()
+        || callback.success_message.is_some()
+        || callback.item_reward.is_some()
+        || !callback.achievements.is_empty()
+    {
+        return None;
+    }
+    Some(TilePos {
+        x: destination.x,
+        y: destination.y,
+        floor: destination.floor,
+    })
 }
 
 fn map_entries(
@@ -442,7 +480,8 @@ fn map_entries(
                                 || callback.completes
                                 || !callback.achievements.is_empty(),
                         },
-                        None => MapAction::Callback,
+                        None => callback_teleport(callback)
+                            .map_or(MapAction::Callback, MapAction::CallbackTeleport),
                     })
                 } else if world.facts().doors().contains(key) || item.attrs.door.is_some() {
                     Some(MapAction::Door)
@@ -700,7 +739,7 @@ async fn use_map_action(
 }
 
 fn movement_landing(world: &BundleWorld, placement: TilePos, action: MapAction) -> Option<TilePos> {
-    if let MapAction::Teleport(destination) = action {
+    if let MapAction::Teleport(destination) | MapAction::CallbackTeleport(destination) = action {
         return Some(destination);
     }
     if matches!(action, MapAction::Sewer) {
@@ -1849,6 +1888,27 @@ mod tests {
             &format!("You see a sign.\nYou read: {authored}\n"),
             authored
         ));
+    }
+
+    #[test]
+    fn qualification_interaction_callback_teleport_requires_a_complete_oracle() -> TestResult {
+        use oteryn_gameplay_quests::quest::world_callbacks as callbacks;
+
+        let mut callback = callbacks::load()?
+            .into_iter()
+            .find(|callback| callback.key == "oteryn:quest-callback/deeper-fibula-well")
+            .ok_or("missing fixture callback")?;
+        assert_eq!(
+            callback_teleport(&callback),
+            Some(TilePos {
+                x: 32172,
+                y: 32439,
+                floor: -8,
+            })
+        );
+        callback.success_message = Some("A second authored effect".into());
+        assert_eq!(callback_teleport(&callback), None);
+        Ok(())
     }
 
     #[test]
