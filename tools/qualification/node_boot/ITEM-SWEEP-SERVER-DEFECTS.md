@@ -169,3 +169,10 @@ restriction helper returns its cleanup error after an otherwise successful
 restriction check, the same disposal refusal also appears under
 `equip_level` and `equip_vocation`. Those rows fail end to end and
 do not establish a failed eligibility decision.
+
+### Later weapon-projection evidence
+
+| Cause | Keys | Oteryn owner | Crystal 201189f8 | Expected and observed |
+| --- | --- | --- | --- | --- |
+| Energy bond omitted from the item inspection reply | 50166, alongside the earlier content-backed 3289 case | `gameplay_transport/inspection.rs:536–576` | `data/items/items.xml:84741–84754`, `src/items/item.cpp:2059–2061,3257–3262` | Both Oteryn content and Crystal declare the energy bond. Command 153 inspected the live definition 27841 while worn and after removal. Both item payloads omitted the bond. The movement assertions separately record an explicit slot refusal and a verified unequip. |
+| Hand defence omitted from a successful self Defence page | 21176, 22727, 50181, 50182 | `combat-rules/src/resolution/player_defence.rs:48–60`, `gameplay_transport/attack/cyclopedia.rs:475–476` | `data/items/items.xml:42137,45332,84905–84936`, `src/items/items.hpp:305`, `src/creatures/players/player.cpp:690–697` | The live page omitted expected hand values of 18, 28, 14 and 15 respectively. These extend the previously recorded base-plus-extra calculation class. |
