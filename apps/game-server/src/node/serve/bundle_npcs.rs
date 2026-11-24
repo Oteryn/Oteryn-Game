@@ -833,6 +833,42 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn w19a_messenger_spawns_beside_santa_only_during_christmas() -> Result<(), String> {
+        let santa = "oteryn:npc.santa_claus";
+        let messenger = "oteryn:npc.messenger_of_santa";
+        let boot = timed_boot(&[santa, messenger]);
+        let mut runtime = channel_runtime_with(32);
+        let anchor = crate::map::overlay::TilePos {
+            x: 32357,
+            y: 32210,
+            floor: -7,
+        };
+        let next = crate::map::overlay::TilePos { x: 32358, ..anchor };
+        let open = |tile| tile == anchor || tile == next;
+        assert!(seasonal::SeasonalNpcSpawns::admit(Some(&boot), &[], open).is_empty());
+
+        let mut spawns =
+            seasonal::SeasonalNpcSpawns::admit(Some(&boot), &["christmas".into()], open);
+        for _ in 0..2 {
+            spawns
+                .tick(&mut runtime)
+                .map_err(|error| format!("{error:?}"))?;
+        }
+        let visible = runtime.visible_entities();
+        let positions = |key| {
+            visible
+                .npcs
+                .iter()
+                .filter(|npc| runtime.npc_key(npc.actor) == Some(key))
+                .map(|npc| (npc.position.x, npc.position.y, npc.position.floor))
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(positions(santa), [(32357, 32210, 7)]);
+        assert_eq!(positions(messenger), [(32358, 32210, 7)]);
+        Ok(())
+    }
+
+    #[test]
     fn w05d_santa_placements_require_active_calendar_catalogue_and_real_tiles() {
         let santa = "oteryn:npc.santa_claus";
         let boot = timed_boot(&[santa]);
