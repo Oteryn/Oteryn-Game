@@ -178,8 +178,8 @@ source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
 NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "$NODE_BOOT_WORLD" "$NODE_BOOT_SPELLS")"
 NODE_READINESS_WAIT_SECONDS=60
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_WORLD_PROFILE" == quests ]]; then
-  # The quests node took 93s from content activation to readiness, including 80s of map boot.
-  NODE_READINESS_WAIT_SECONDS=${NODE_BOOT_QUESTS_READINESS_PROBE_SECONDS:-150}
+  # Quests readiness took 93s on the primary node and 132s on the PvP node.
+  NODE_READINESS_WAIT_SECONDS=${NODE_BOOT_QUESTS_READINESS_PROBE_SECONDS:-180}
 fi
 [[ "$NODE_READINESS_WAIT_SECONDS" =~ ^[1-9][0-9]{0,2}$ ]] || blocked invalid_readiness_wait
 NODE_GAMEPLAY_ENV=()
