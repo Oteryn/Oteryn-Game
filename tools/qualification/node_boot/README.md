@@ -149,6 +149,20 @@ settlement-only coverage. The PostgreSQL regression
 `house_ownership_first_rent_settlement_and_restart_replay` waits for its original
 fixture deadline to elapse.
 
+For a house settlement timeout, compare expired rows in `game_house_auctions`
+with committed receipts in `game_house_settlement_steps`. The live sweep saw
+expired auctions persist for more than 40 minutes with zero settlement receipts.
+The auction expiry scheduler is still missing in the tested checkout
+([HOUSE-WIRE-1](../../../docs/agents/tasks/HOUSE-WIRE-1.md#status)). Its production
+caller needs to dispatch to `DurabilityRoot::house_settlement` in
+`crates/gameplay/durability/src/durability/house_ownership/premium.rs`.
+Use successful winner projection timings to calibrate the 15-second probe.
+
+Detached-run diagnostics reproduced `bank-query-status-Rejected` when the current
+gameplay fence read returned `RootUnavailable`. The Atelier resources handler
+at `crates/gameplay/dispatch/src/gameplay_transport/atelier/resources.rs` maps
+that fence error to `Rejected` before reading the balance.
+
 For a verification checkout containing the fxh house catalogue activation (migration
 3078 and the UUID-binding fix in `669d7752`), apply this branch’s strict regression overlay with
 `git apply --unidiff-zero /path/to/house_catalogue_activation_fxh.patch`.
