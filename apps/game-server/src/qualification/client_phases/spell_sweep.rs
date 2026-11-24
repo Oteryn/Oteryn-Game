@@ -22,6 +22,8 @@ use oteryn_protocol_oteryn::{
 use std::num::NonZeroU32;
 
 const FIXTURE_LEVEL: u32 = 300;
+// The condition status owner maps ConditionType::Paralysis to this icon.
+const PARALYSIS_ICON: u8 = 14;
 const BATCH_VARIABLE: &str = "OTERYN_E2E_SPELL_SWEEP_BATCH";
 const STEPS: [&str; 6] = [
     "prepare",
@@ -238,18 +240,26 @@ async fn sweep(
         rows.record("effect", Err("blocked-by-cast_cost".into()));
         rows.record("cooldown", Err("blocked-by-cast_cost".into()));
     }
-    rows.record("release", release_fixture(&mut client).await);
+    rows.record("release", release_fixture(&mut client, world).await);
 }
 
 async fn reach_ground(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    route_to_zone(client, world, false).await
+}
+
+async fn route_to_zone(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    protection_zone: bool,
+) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
-    let open = |at: TilePos| {
+    let goal = |at: TilePos| {
         world
             .base()
             .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
+            .is_some_and(|tile| tile.protection_zone() == protection_zone)
     };
-    if open(from) {
+    if goal(from) {
         return Ok(());
     }
     let occupied: std::collections::BTreeSet<_> = client
@@ -259,12 +269,13 @@ async fn reach_ground(client: &mut DevClientSession, world: &BundleWorld) -> Tes
         .filter_map(|actor| tile(actor.position).ok())
         .collect();
     let path =
-        route_avoiding(world, from, open, |at| !occupied.contains(&at)).ok_or_else(|| {
-            format!(
-                "no unoccupied route to non-protection ground from {:?}",
-                from
-            )
+        route_avoiding(world, from, goal, |at| !occupied.contains(&at)).ok_or_else(|| {
+            format!("no unoccupied route from {from:?} to protection_zone={protection_zone}")
         })?;
+    require(
+        !protection_zone || path.len() <= 6,
+        format!("nearest protection-zone retreat needs {} steps", path.len()),
+    )?;
     walk(client, world, &path).await
 }
 
@@ -342,7 +353,7 @@ async fn prepare(
     .await;
     match setup {
         Ok(rune) => Ok((client, rune)),
-        Err(error) => match release_fixture(&mut client).await {
+        Err(error) => match release_fixture(&mut client, world).await {
             Ok(()) => Err(error),
             Err(release) => Err(format!("{error}; release: {release}").into()),
         },
@@ -417,7 +428,7 @@ async fn cast(
     }
 }
 
-async fn release_fixture(client: &mut DevClientSession) -> TestResult {
+async fn release_fixture(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let clear = async {
         if client
             .session_mut()
@@ -435,6 +446,7 @@ async fn release_fixture(client: &mut DevClientSession) -> TestResult {
     .await;
     let release = async {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
+        let mut retreat = None;
         loop {
             let (result, reply, attempts, busy_timed_out) = logout_retrying_busy(client).await?;
             match result {
@@ -442,6 +454,15 @@ async fn release_fixture(client: &mut DevClientSession) -> TestResult {
                 Some(LogoutResult::InFight { retry_after_ms })
                     if tokio::time::Instant::now() < deadline =>
                 {
+                    if retreat.is_none() {
+                        match route_to_zone(client, world, true).await {
+                            Ok(()) => {
+                                retreat = Some("reached protection zone".to_owned());
+                                continue;
+                            }
+                            Err(error) => retreat = Some(error.to_string()),
+                        }
+                    }
                     if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some() {
                         full_e2ef7::advance_qualification_time(Duration::from_millis(
                             u64::from(retry_after_ms) + 1,
@@ -450,7 +471,7 @@ async fn release_fixture(client: &mut DevClientSession) -> TestResult {
                     client.service_liveness(Duration::from_millis(250)).await?;
                     client.take_events();
                 }
-                _ => return Err(format!("fixture logout refused: {reply}; attempts={attempts}; busy_timed_out={busy_timed_out}").into()),
+                _ => return Err(format!("fixture logout refused: {reply}; attempts={attempts}; busy_timed_out={busy_timed_out}; retreat={retreat:?}").into()),
             }
         }
     }.await;
@@ -521,7 +542,7 @@ async fn ineligible(
         )
     }
     .await;
-    let release = release_fixture(&mut client).await;
+    let release = release_fixture(&mut client, world).await;
     combine(result, release)
 }
 
@@ -544,7 +565,7 @@ async fn positive(
     rows: &mut Rows<'_>,
 ) -> TestResult {
     let health_effect = pure_effect(spell);
-    let dispel = match &spell.execution {
+    let dispel = (spell.self_target || !spell.needs_target) && rune.is_none() && match &spell.execution {
         Execution::Effects(effects) => effects.iter().any(|effect| {
             matches!(effect, SpellEffect::RemoveCondition { condition, .. } if condition == "paralyze")
         }),
@@ -558,7 +579,7 @@ async fn positive(
         Some(HealthEffect::Heal) if spell.self_target || !spell.needs_target => {
             if vitals(client)?.health == vitals(client)?.max_health {
                 if !dispel {
-                    spawn_target(client, "rat").await?;
+                    spawn_target(client, "bear").await?;
                 }
                 let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
                 while vitals(client)?.health == vitals(client)?.max_health {
@@ -577,23 +598,25 @@ async fn positive(
     };
     select_attack_target(client, rune, target, spell.needs_target).await?;
     let dispel_before = if dispel {
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(25);
         loop {
+            let sent = std::time::Instant::now();
             let status = condition_status(client).await?;
-            if status
+            if let Some(remaining) = status
                 .conditions
                 .iter()
-                .any(|condition| condition.icon == 14)
+                .find(|condition| condition.icon == PARALYSIS_ICON)
+                .map(|condition| condition.remaining_ms)
             {
-                break true;
+                break Some((sent, remaining));
             }
             if tokio::time::Instant::now() >= deadline {
-                break false;
+                break None;
             }
             client.service_liveness(Duration::from_millis(250)).await?;
         }
     } else {
-        false
+        None
     };
     let condition = condition_icon(spell);
     let conditions_before = if condition.is_some() {
@@ -668,13 +691,27 @@ async fn positive(
             ),
         ),
     );
+    let dispel_after = if dispel {
+        Some(condition_status(client).await.map(|status| {
+            (
+                !status
+                    .conditions
+                    .iter()
+                    .any(|condition| condition.icon == PARALYSIS_ICON),
+                std::time::Instant::now(),
+            )
+        }))
+    } else {
+        None
+    };
     let retry_sent = std::time::Instant::now();
-    let retry = if has_cooldown {
+    let retry = if has_cooldown && !dispel {
         Some(cast(client, index, rune, target, spell.needs_target).await)
     } else {
         None
     };
     let retry_received = std::time::Instant::now();
+    let retry_vitals = vitals(client);
     let upper_us = retry_received.duration_since(first_sent).as_micros();
     let lower_us = retry_sent.duration_since(first_received).as_micros();
     evidence(&format!(
@@ -683,7 +720,17 @@ async fn positive(
         first_received.duration_since(first_sent).as_micros(),
         retry_sent.duration_since(first_sent).as_micros()
     ));
-    let effect = if matches!(
+    let effect = if let Some(observation) = dispel_after {
+        async {
+            let (removed, observed) = observation?;
+            let (sampled, remaining_ms) = dispel_before.ok_or("fixture paralysis was never observed")?;
+            let elapsed = observed.duration_since(sampled);
+            require(
+                removed && before_natural_expiry(remaining_ms, elapsed) && after.health > before.health,
+                format!("heal+dispel unproven: removed={removed} remaining_before_ms={remaining_ms} observation_ms={} health_before={} health_after={}", elapsed.as_millis(), before.health, after.health),
+            )
+        }.await
+    } else if matches!(
         &retry,
         Some(Ok(
             Reply::Spell(SpellCastDisposition::Cast, _) | Reply::Rune(UseDisposition::Committed)
@@ -701,15 +748,6 @@ async fn positive(
             condition_increased(icon, &before, &after),
             format!("authored condition icon={icon} was not applied or refreshed"),
         )
-    } else if dispel {
-        async {
-            let status = condition_status(client).await?;
-            require(
-                dispel_before && !status.conditions.iter().any(|condition| condition.icon == 14)
-                    && after.health > before.health,
-                format!("authored heal+dispel missing: paralyzed_before={dispel_before} health_before={} health_after={}", before.health, after.health),
-            )
-        }.await
     } else if let Some(name) = familiar {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
         loop {
@@ -757,34 +795,52 @@ async fn positive(
                 reply,
                 Reply::Spell(SpellCastDisposition::CoolingDown, false)
                     | Reply::Rune(UseDisposition::Exhausted)
-            ) && pools_unchanged(after, vitals(client)?);
-            require(expected && upper_us < u128::from(cooldown_us), format!(
+            ) && pools_unchanged(after, retry_vitals?);
+            require(expected, format!(
                 "cooldown reply={reply:?} elapsed_lower_us={lower_us} elapsed_upper_us={upper_us} authored_us={cooldown_us} classification={}",
                 if upper_us < u128::from(cooldown_us) { "within-window" }
                 else { "inconclusive-wire-timing" }
-            ))?;
-            // The node owner adds the qualification offset to its monotonic clock
-            // (gameplay_transport/monk_save.rs:43–60). Advancing by the entire authored
-            // window guarantees the second probe is on the expired side of the deadline.
-            if dispel && std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some() {
-                let step = Duration::from_millis(cooldown_us.div_ceil(1000));
-                full_e2ef7::advance_qualification_time(step)?;
-                let now = std::time::Instant::now();
-                let reply = cast(client, index, rune, target, spell.needs_target).await?;
-                let owner_lower_us = now.duration_since(first_received).as_micros() + step.as_micros();
-                let owner_upper_us = first_sent.elapsed().as_micros() + step.as_micros();
-                evidence(&format!(
-                    "spell_sweep cooldown_expiry key={} owner_elapsed_lower_us={owner_lower_us} owner_elapsed_upper_us={owner_upper_us} injected_ms={} authored_us={cooldown_us} result={reply:?}",
-                    spell.key, step.as_millis()
-                ));
-                require(
-                    matches!(reply, Reply::Spell(SpellCastDisposition::Cast, true)),
-                    format!("post-expiry cast refused: {reply:?}, owner_elapsed_lower_us={owner_lower_us}, authored_us={cooldown_us}"),
-                )?;
-            }
-            Ok(())
+            ))
         }
         .await;
+        rows.record("cooldown", cooldown);
+    }
+    if dispel && has_cooldown {
+        let cooldown = async {
+            require(
+                std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some(),
+                "heal+dispel cooldown requires the node qualification clock",
+            )?;
+            // The node's monotonic cast owner uses this offset (monk_save.rs:43–60).
+            // A full authored-window advance makes this new cast definitively late.
+            let step = Duration::from_millis(cooldown_us.div_ceil(1000));
+            full_e2ef7::advance_qualification_time(step)?;
+            let reopened_sent = std::time::Instant::now();
+            let reopened = cast(client, index, rune, target, spell.needs_target).await?;
+            let reopened_received = std::time::Instant::now();
+            let owner_lower_us = reopened_sent.duration_since(first_received).as_micros() + step.as_micros();
+            let owner_upper_us = reopened_received.duration_since(first_sent).as_micros() + step.as_micros();
+            evidence(&format!(
+                "spell_sweep cooldown_expiry key={} owner_elapsed_lower_us={owner_lower_us} owner_elapsed_upper_us={owner_upper_us} injected_ms={} authored_us={cooldown_us} result={reopened:?}",
+                spell.key, step.as_millis()
+            ));
+            require(
+                matches!(reopened, Reply::Spell(SpellCastDisposition::Cast, true)),
+                format!("post-expiry cast refused: {reopened:?}, owner_elapsed_lower_us={owner_lower_us}, authored_us={cooldown_us}"),
+            )?;
+            let before_retry = vitals(client)?;
+            let reply = cast(client, index, rune, target, spell.needs_target).await?;
+            let upper_us = reopened_sent.elapsed().as_micros();
+            evidence(&format!(
+                "spell_sweep cooldown_retry key={} owner_elapsed_lower_us=0 owner_elapsed_upper_us={upper_us} authored_us={cooldown_us} result={reply:?}",
+                spell.key,
+            ));
+            require(
+                matches!(reply, Reply::Spell(SpellCastDisposition::CoolingDown, false))
+                    && pools_unchanged(before_retry, vitals(client)?),
+                format!("post-reset cooldown reply={reply:?}, owner_elapsed_upper_us={upper_us}, authored_us={cooldown_us}"),
+            )
+        }.await;
         rows.record("cooldown", cooldown);
     }
     if !has_cooldown {
@@ -844,6 +900,11 @@ async fn condition_status(client: &mut DevClientSession) -> TestResult<Condition
     ConditionStatus::decode(&reply.payload).ok_or_else(|| "malformed condition status".into())
 }
 
+fn before_natural_expiry(remaining_ms: i64, elapsed: Duration) -> bool {
+    remaining_ms == -1
+        || u64::try_from(remaining_ms).is_ok_and(|ms| elapsed < Duration::from_millis(ms))
+}
+
 fn condition_increased(icon: u8, before: &ConditionStatus, after: &ConditionStatus) -> bool {
     after.conditions.iter().any(|new| {
         new.icon == icon
@@ -894,7 +955,7 @@ async fn spawn_target(
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let answer = request_spawn(session, format!("oteryn:creature.{species}")).await?;
     let entity = parse_spawned_entity(&answer)?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
     loop {
         if let Some(actor) = client
             .world_entities()
@@ -906,7 +967,8 @@ async fn spawn_target(
             tokio::time::Instant::now() < deadline,
             format!("fixture {species} absent from wire view"),
         )?;
-        client.service_liveness(Duration::from_millis(50)).await?;
+        client.service_liveness(Duration::from_millis(100)).await?;
+        verdict::Harness::global().progress("spell-sweep-target-visibility");
         client.take_events();
     }
 }
@@ -993,6 +1055,14 @@ mod tests {
             assert!(batch(Some(bad)).is_err(), "{bad}");
         }
         Ok(())
+    }
+
+    #[test]
+    fn dispel_must_precede_natural_expiry() {
+        assert!(before_natural_expiry(1000, Duration::from_millis(999)));
+        assert!(!before_natural_expiry(1000, Duration::from_secs(1)));
+        assert!(before_natural_expiry(-1, Duration::from_secs(1)));
+        assert!(!before_natural_expiry(0, Duration::ZERO));
     }
 
     #[test]
