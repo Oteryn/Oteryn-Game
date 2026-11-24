@@ -157,7 +157,8 @@ pub(super) async fn exercise(
     );
     assert_eq!(
         table.last_report_for_test(rat).ok_or("report")?.sequence,
-        sequence
+        sequence,
+        "walkback movement does not run a think"
     );
     assert_eq!(table.step_due_for_test(rat), None);
     assert_eq!(table.due(rat), Some(think_due.min(home_due)));
@@ -187,7 +188,7 @@ pub(super) async fn exercise(
     assert_eq!(
         table.due(rat),
         None,
-        "the completed walkback idles until the real player admission wakes it"
+        "the idle think stops scheduling until a real player admission wakes the rat"
     );
     drop(idle_reader);
     tx.rollback().await?;

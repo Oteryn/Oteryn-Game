@@ -64,7 +64,12 @@ fn market_postgres_migration_diagnostic() -> TestResult {
         let mut connection = sqlx::PgConnection::connect(&admin)
             .await
             .map_err(|_| "PG connect")?;
-        let name = oteryn_test_support::postgres::database_name("market_diag");
+        let name = format!(
+            "market_diag_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_nanos()
+        );
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!("CREATE DATABASE {name}")))
             .execute(&mut connection)
             .await?;

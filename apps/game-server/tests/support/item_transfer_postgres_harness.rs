@@ -149,10 +149,24 @@ impl Database {
         {
             return Err("unsafe PostgreSQL test admin URL".into());
         }
-        let name = oteryn_test_support::postgres::database_name(&format!("it_{name}"));
+        let suffix = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos();
+        let name = format!("it_{name}_{suffix}");
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
+        admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                "CREATE DATABASE {name}"
+            ))))
+            .await?;
+        admin.close().await?;
+        let prefix = admin_url
+            .strip_suffix("/postgres")
+            .ok_or("invalid admin URL")?;
+        let url = format!("{prefix}/{name}");
+        let mut connection = sqlx::PgConnection::connect(&url).await?;
         let version: String = sqlx::query_scalar("SHOW server_version_num")
-            .fetch_one(&mut admin)
+            .fetch_one(&mut connection)
             .await?;
         // The protected lane pins PostgreSQL 18.6; any 18.x server runs the
         // same schema, and the exact server is recorded as evidence.
@@ -160,19 +174,11 @@ impl Database {
             version.starts_with("18"),
             "PostgreSQL 18 required: {version}"
         );
-        oteryn_test_support::postgres::create_migrated_database(
-            &mut admin,
-            &admin_url,
-            &name,
-            &oteryn_gameplay_durability::GAME_MIGRATOR,
-        )
-        .await?;
-        admin.close().await?;
-        let prefix = admin_url
-            .strip_suffix("/postgres")
-            .ok_or("invalid admin URL")?;
-        let url = format!("{prefix}/{name}");
         eprintln!("ITEM-TRANSFER-PG: database {name} on server_version_num={version}");
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
+        connection.close().await?;
         Ok(Self {
             admin_url,
             name,

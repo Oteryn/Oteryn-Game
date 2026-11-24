@@ -271,17 +271,20 @@ fn the_revision_chain_query_runs_on_the_migrated_schema_and_passes_an_empty_one(
         .enable_all()
         .build()?
         .block_on(async {
-            let name = oteryn_test_support::postgres::database_name("logdbg_c_migrated");
+            let name = format!("logdbg_c_migrated_{}", std::process::id());
             let mut admin = PgConnection::connect(&admin_url).await?;
-            oteryn_test_support::postgres::create_migrated_database(
-                &mut admin,
-                &admin_url,
-                &name,
-                &oteryn_gameplay_durability::GAME_MIGRATOR,
-            )
-            .await?;
+            admin
+                .execute(sqlx::AssertSqlSafe(format!("DROP DATABASE IF EXISTS {name}")))
+                .await?;
+            admin
+                .execute(sqlx::AssertSqlSafe(format!("CREATE DATABASE {name}")))
+                .await?;
             let result = async {
                 let url = format!("{prefix}/{name}");
+                crate::durability::MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
                 let mut connection = PgConnection::connect(&url).await?;
                 let mut transaction = connection.begin().await?;
                 let violation = verify_revision_chain(&mut transaction).await?;

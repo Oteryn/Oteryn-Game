@@ -114,27 +114,33 @@ impl Database {
         {
             return Err("unsafe PostgreSQL test admin URL".into());
         }
-        let name = oteryn_test_support::postgres::database_name(&format!("cdr_{name}"));
+        let suffix = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos();
+        let name = format!("cdr_{name}_{suffix}");
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
-        let version: String = sqlx::query_scalar("SHOW server_version_num")
-            .fetch_one(&mut admin)
+        admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                "CREATE DATABASE {name}"
+            ))))
             .await?;
-        assert!(
-            version.starts_with("18"),
-            "PostgreSQL 18 required: {version}"
-        );
-        oteryn_test_support::postgres::create_migrated_database(
-            &mut admin,
-            &admin_url,
-            &name,
-            &oteryn_gameplay_durability::GAME_MIGRATOR,
-        )
-        .await?;
         admin.close().await?;
         let prefix = admin_url
             .strip_suffix("/postgres")
             .ok_or("invalid admin URL")?;
         let url = format!("{prefix}/{name}");
+        let mut connection = sqlx::PgConnection::connect(&url).await?;
+        let version: String = sqlx::query_scalar("SHOW server_version_num")
+            .fetch_one(&mut connection)
+            .await?;
+        assert!(
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
+        );
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
+        connection.close().await?;
         Ok(Self {
             admin_url,
             name,
