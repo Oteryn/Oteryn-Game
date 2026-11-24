@@ -49,7 +49,7 @@ where
                     .observe_projected_entities(actor, without_names)
                     .await
                     .ok()?;
-                view.retain_published_names(&mut channel);
+                view.defer_unnamed_actors(&mut channel);
                 channel
             }
             Err(_) => return None,

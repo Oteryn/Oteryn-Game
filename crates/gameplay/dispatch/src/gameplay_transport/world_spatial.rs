@@ -299,9 +299,15 @@ impl SessionVisibility {
         self.published
     }
 
-    /// Retain a published display name for the same incarnation while names are unreadable.
-    pub(crate) fn retain_published_names(&self, channel: &mut ChannelEntities) {
-        for entity in &mut channel.entities {
+    /// Reuse published names for exact incarnations and defer actors without a name.
+    pub(crate) fn defer_unnamed_actors(&self, channel: &mut ChannelEntities) {
+        channel.entities.retain_mut(|entity| {
+            if matches!(
+                entity.kind,
+                VisibleKind::Corpse { .. } | VisibleKind::GroundItem { .. }
+            ) {
+                return true;
+            }
             if entity.display_name.is_none() {
                 entity.display_name = self
                     .entities
@@ -309,7 +315,8 @@ impl SessionVisibility {
                     .filter(|known| known.entity.generation == entity.generation)
                     .and_then(|known| known.display_name);
             }
-        }
+            entity.display_name.is_some()
+        });
     }
 
     /// A view that shows objects (corpses) when `objects`, the session's capability 4.

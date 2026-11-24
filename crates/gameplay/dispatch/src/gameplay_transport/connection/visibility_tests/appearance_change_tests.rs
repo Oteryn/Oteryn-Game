@@ -63,9 +63,16 @@ impl FreshAdmissionAuthority for AppearanceChannel {
             .await
             .ok_or(AdmissionRefusal::Rejected)?;
         for entity in &mut channel.entities {
-            if entity.identity == channel.observer {
-                entity.display_name =
-                    oteryn_protocol_oteryn::entity_names::EntityDisplayName::new("Observer").ok();
+            if entity.kind == VisibleKind::Player {
+                let name = if entity.identity == channel.observer {
+                    "Observer"
+                } else {
+                    "Entrant"
+                };
+                entity.display_name = Some(
+                    oteryn_protocol_oteryn::entity_names::EntityDisplayName::new(name)
+                        .map_err(|_| AdmissionRefusal::Rejected)?,
+                );
             }
         }
         Ok(channel)
@@ -187,15 +194,20 @@ fn appearance_change_rejected_unresolved_and_downgraded_clients_publish_nothing(
 
 #[test]
 fn busy_appearance_keeps_committed_step_and_defers_new_player() -> TestResult {
-    committed_step_during_busy_projection(false)
+    committed_step_during_busy_projection(false, true)
 }
 
 #[test]
 fn busy_names_keep_committed_step_and_published_identity() -> TestResult {
-    committed_step_during_busy_projection(true)
+    committed_step_during_busy_projection(true, true)
 }
 
-fn committed_step_during_busy_projection(named: bool) -> TestResult {
+#[test]
+fn busy_names_alone_keep_committed_step_and_defer_new_player() -> TestResult {
+    committed_step_during_busy_projection(true, false)
+}
+
+fn committed_step_during_busy_projection(named: bool, appearance_busy: bool) -> TestResult {
     use oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2;
     use oteryn_protocol_oteryn::world_spatial_entities::{
         EntityFields, decode_world_spatial_entities_delta_with_fields,
@@ -246,7 +258,7 @@ fn committed_step_during_busy_projection(named: bool) -> TestResult {
             let mut entrant = creature([9; 16], at(102, 100), 1);
             entrant.kind = VisibleKind::Player;
             authority.channel.others.borrow_mut().push(entrant);
-            authority.appearance_busy.set(true);
+            authority.appearance_busy.set(appearance_busy);
             authority.names_busy.set(named);
             let step = encode_client_command(
                 1,
@@ -294,12 +306,13 @@ fn committed_step_during_busy_projection(named: bool) -> TestResult {
             )
             .map_err(|error| format!("{error:?}"))?;
             assert_eq!(spatial.actor_position, at(101, 100));
-            assert!(
-                spatial
-                    .enter
-                    .iter()
-                    .any(|entity| entity.entity.identity == [9; 16])
-            );
+            assert!(spatial.enter.iter().any(|entity| {
+                entity.entity.identity == [9; 16]
+                    && (!named
+                        || entity
+                            .display_name
+                            .is_some_and(|name| matches!(name.as_str(), Ok("Entrant"))))
+            }));
             client.shutdown().await?;
             TestResult::Ok(())
         };
