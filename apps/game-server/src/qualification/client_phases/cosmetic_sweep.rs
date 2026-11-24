@@ -404,9 +404,15 @@ pub(super) async fn run(
             failed: 0,
             last: std::time::Instant::now(),
         };
-        if let Err(error) = journey(&mut rows, clients, world, &content, entry, &obtain, npcs).await
-        {
-            rows.block_rest(error.as_ref());
+        let mut items = Vec::new();
+        let result = journey(
+            &mut rows, clients, world, &content, entry, &obtain, npcs, &mut items,
+        )
+        .await;
+        let cleanup = retire_fixture_items(clients, &items).await;
+        match result.and(cleanup) {
+            Ok(()) => rows.pass("fresh admission retained selected look, colours and unlock"),
+            Err(error) => rows.block_rest(error.as_ref()),
         }
         pass += rows.next - rows.failed;
         fail += rows.failed;
@@ -690,6 +696,7 @@ async fn prepare<'a>(
     addon: u8,
     mount: Option<(&Mount, Option<&'a Taming>)>,
     obtain: &'a ObtainContent,
+    items: &mut Vec<Vec<u8>>,
 ) -> TestResult<(String, Vec<ObtainAction<'a>>)> {
     wait_character_released(clients, 0).await?;
     let mut targets = Vec::new();
@@ -709,7 +716,7 @@ async fn prepare<'a>(
     for target in targets {
         if let Some(steps) = obtain.npc_route(&target)? {
             for item in steps.iter().flat_map(|step| &step.take) {
-                seed_item(clients, &item.item, item.count).await?;
+                seed_item(clients, &item.item, item.count, items).await?;
             }
             actions.push(ObtainAction::Npc(target, steps));
             continue;
@@ -721,7 +728,7 @@ async fn prepare<'a>(
             .clone()
             .find_map(|grant| obtain.direct_item(&grant.grant_key))
         {
-            seed_item(clients, &item, 1).await?;
+            seed_item(clients, &item, 1, items).await?;
             actions.push(ObtainAction::Item(target, item));
             continue;
         }
@@ -730,7 +737,7 @@ async fn prepare<'a>(
         {
             // The explicit taming slice owns binding-specific attempts. Mount journeys
             // load the same authored binding before attempting the selected mount.
-            seed_taming_prerequisites(clients, &binding).await?;
+            seed_taming_prerequisites(clients, &binding, items).await?;
             actions.push(ObtainAction::OwnedTame(binding));
             continue;
         }
@@ -743,7 +750,7 @@ async fn prepare<'a>(
         seeded.push(key);
     }
     if let Some((_, Some(binding))) = mount {
-        seed_taming_prerequisites(clients, binding).await?;
+        seed_taming_prerequisites(clients, binding, items).await?;
         actions.push(ObtainAction::Tame(binding));
     }
     let mode = if !seeded.is_empty() {
@@ -770,7 +777,12 @@ fn obtain_taming_binding(mount: &str) -> TestResult<Option<Taming>> {
 
 // Disposable inventory setup uses the same migration-owned fixture approach as
 // gameplay_transport/postgres_tests/support/item_look_fixtures.rs:592.
-async fn seed_item(clients: &SeamClients<'_>, key: &str, count: i64) -> TestResult {
+async fn seed_item(
+    clients: &SeamClients<'_>,
+    key: &str,
+    count: i64,
+    items: &mut Vec<Vec<u8>>,
+) -> TestResult {
     let index = provisioning::item_index()?;
     let revision = index.revision(key).ok_or("content taming item absent")?;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
@@ -778,7 +790,7 @@ async fn seed_item(clients: &SeamClients<'_>, key: &str, count: i64) -> TestResu
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tx)
         .await?;
-    let placed = sqlx::query(
+    let placed: Vec<Vec<u8>> = sqlx::query_scalar(
         "WITH backpack AS (
             SELECT character_id, world_id, item_instance_id
             FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid
@@ -795,34 +807,73 @@ async fn seed_item(clients: &SeamClients<'_>, key: &str, count: i64) -> TestResu
             COALESCE((SELECT max(e.placement_ordinal) FROM game_item_container_entries e
                 WHERE e.parent_item_instance_id=b.item_instance_id), 0) + row_number() OVER (),
             m.minted_transaction_id
-        FROM minted m CROSS JOIN backpack b",
+        FROM minted m CROSS JOIN backpack b
+        RETURNING uuid_send(item_instance_id)",
     ).bind(clients.characters[0].as_slice()).bind(key).bind(revision).bind(count)
-        .execute(&mut *tx).await?.rows_affected();
-    if placed != u64::try_from(count)? {
-        return Err(
-            format!("harness-taming-fixture: expected {count} items, placed {placed}").into(),
-        );
+        .fetch_all(&mut *tx).await?;
+    if placed.len() != usize::try_from(count)? {
+        return Err(format!(
+            "harness-taming-fixture: expected {count} items, placed {}",
+            placed.len()
+        )
+        .into());
     }
     tx.commit().await?;
+    items.extend(placed);
     Ok(())
 }
 
-async fn seed_taming_prerequisites(clients: &SeamClients<'_>, binding: &Taming) -> TestResult {
+async fn seed_taming_prerequisites(
+    clients: &SeamClients<'_>,
+    binding: &Taming,
+    items: &mut Vec<Vec<u8>>,
+) -> TestResult {
     if binding.required_items.is_empty() {
         let attempts = if binding.creature_key.is_empty() {
             1
         } else {
             12
         };
-        seed_item(clients, &binding.item_key, attempts).await?;
+        seed_item(clients, &binding.item_key, attempts, items).await?;
     } else {
         for key in &binding.required_items {
-            seed_item(clients, key, 1).await?;
+            seed_item(clients, key, 1, items).await?;
         }
     }
     if let Some(key) = &binding.required_equipment {
-        seed_item(clients, key, 1).await?;
+        seed_item(clients, key, 1, items).await?;
     }
+    Ok(())
+}
+
+// Keep the disposable backpack below the protocol inventory cap. Retire only
+// this row's remaining fixture items after the ordinary session has released.
+async fn retire_fixture_items(clients: &SeamClients<'_>, items: &[Vec<u8>]) -> TestResult {
+    if items.is_empty() {
+        return Ok(());
+    }
+    wait_character_released(clients, 0).await?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let mut tx = sqlx::Connection::begin(&mut db).await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "WITH backpack AS (
+            DELETE FROM game_item_container_entries
+            WHERE character_id=encode($1,'hex')::uuid AND uuid_send(item_instance_id)=ANY($2::bytea[])
+            RETURNING item_instance_id
+        ), equipment AS (
+            DELETE FROM game_character_equipment_slots
+            WHERE character_id=encode($1,'hex')::uuid AND uuid_send(item_instance_id)=ANY($2::bytea[])
+            RETURNING item_instance_id
+        )
+        UPDATE game_item_instances SET quantity=0, lifecycle=2, last_transaction_id=game_character_uuid_v7()
+        WHERE item_instance_id IN (
+            SELECT item_instance_id FROM backpack UNION ALL SELECT item_instance_id FROM equipment
+        )",
+    ).bind(clients.characters[0].as_slice()).bind(items).execute(&mut *tx).await?;
+    tx.commit().await?;
     Ok(())
 }
 
@@ -904,10 +955,17 @@ async fn obtain_taming(
     } else if binding.target_item_key.as_deref() != Some(binding.item_key.as_str()) {
         return Err("harness-obtain-path: construction needs multiple carried components".into());
     }
+    let mut previous = None;
     for _ in 0..12 {
         verdict::Harness::global().progress("cosmetic-taming-attempt");
         let target = if binding.creature_key.is_empty() {
             None
+        } else if let Some(entity) = previous
+            && client
+                .world_entities()
+                .is_some_and(|view| view.get(&entity).is_some())
+        {
+            Some(entity)
         } else {
             let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
             let reply = request_spawn(session, binding.creature_key.clone())
@@ -928,6 +986,7 @@ async fn obtain_taming(
             }
             Some(entity)
         };
+        previous = target;
         client.take_events();
         let payload = world_object::encode_item_use_intent(&UseIntent {
             target: if binding.required_items.len() > 1 {
@@ -1009,6 +1068,7 @@ async fn journey(
     entry: &Entry<'_>,
     obtain: &ObtainContent,
     npcs: &oteryn_world_bundle::npc::Table,
+    items: &mut Vec<Vec<u8>>,
 ) -> TestResult {
     let (outfit, addon, mount) = match entry {
         Entry::Outfit(outfit, addon) => (*outfit, *addon, None),
@@ -1024,7 +1084,7 @@ async fn journey(
             return Err("no admitted appearance definition for this content key".into());
         }
     };
-    let (mode, actions) = prepare(clients, content, outfit, addon, mount, obtain).await?;
+    let (mode, actions) = prepare(clients, content, outfit, addon, mount, obtain, items).await?;
     let mut client = connect_character(clients, 0xc9, 0).await?;
     let mut observer = None;
     let result = async {
@@ -1094,9 +1154,7 @@ async fn journey(
     let release = logout(&mut client).await;
     result?;
     observer_release?;
-    release?;
-    rows.pass("fresh admission retained selected look, colours and unlock");
-    Ok(())
+    release
 }
 
 fn has_unlock(
