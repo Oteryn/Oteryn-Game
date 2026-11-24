@@ -606,7 +606,46 @@ impl Journey<'_, '_> {
     }
 
     async fn classic(&mut self, npc: &str, branch: &str, expected: &[String]) -> TestResult {
-        let messages = classic_input(npc, branch).ok_or("classic-branch-input-unmapped")?;
+        let seeded = classic_seeded_input(npc, branch);
+        let messages = match &seeded {
+            Some((messages, _)) => messages.as_slice(),
+            None => classic_input(npc, branch).ok_or("classic-branch-input-unmapped")?,
+        };
+        if let Some((_, tracks)) = &seeded {
+            if !self.npcs.npcs.iter().any(|candidate| candidate.key == npc) {
+                return Err("npc-not-in-served-bundle".into());
+            }
+            let mut by_quest = BTreeMap::<_, BTreeMap<_, _>>::new();
+            for (key, &value) in tracks {
+                let declaration = self
+                    .catalogue
+                    .track(key)
+                    .ok_or("classic-seed-track-absent")?;
+                if !(declaration.min..=declaration.max).contains(&value) {
+                    return Err("classic-seed-track-out-of-range".into());
+                }
+                by_quest
+                    .entry(declaration.quest.clone())
+                    .or_default()
+                    .insert(key.clone(), value);
+            }
+            let (result, _, _, _) = logout_retrying_busy(self.client).await?;
+            if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+                return Err("classic-seed-logout-refused".into());
+            }
+            self.reconnect = true;
+            wait_character_released(self.clients, CHARACTER).await?;
+            for (quest, expected) in by_quest {
+                self.write_predecessor_tracks(&quest, &expected).await?;
+            }
+            *self.client = connect_character(self.clients, 0x72, CHARACTER).await?;
+            self.reconnect = false;
+            evidence(&format!(
+                "quest_sweep prerequisites mode=seeded npc={} branch={branch} seeded_tracks={}",
+                row_key(npc),
+                tracks.len()
+            ));
+        }
         let actor = self.npc_actor(npc).await?;
         self.talk(actor, "hi").await?;
         let mut lines = Vec::new();
@@ -1146,7 +1185,6 @@ fn classic_input(npc: &str, branch: &str) -> Option<&'static [&'static str]> {
         (JEROM, "line-69") => &["mission"],
         (JEROM, "line-82") => &["mission", "yes"],
         (QUEEN, "line-63") => &["seventh seal"],
-        (QUEEN, "line-94") => &["seventh seal", "yes"],
         (QUEEN, "line-172") => &["seventh seal", "no"],
         (ROTTIN, "line-91") => &["mission"],
         (ROTTIN, "line-149") => &["mission", "yes"],
@@ -1154,6 +1192,47 @@ fn classic_input(npc: &str, branch: &str) -> Option<&'static [&'static str]> {
         (ROTTIN, "line-336") => &["task"],
         _ => return None,
     })
+}
+
+// Classic branch state and topic order are owned by quest/classic_talk.rs:337 and :399.
+fn classic_seeded_input(
+    npc: &str,
+    branch: &str,
+) -> Option<(Vec<&'static str>, BTreeMap<String, i64>)> {
+    use oteryn_gameplay_quests::quest::classic_talk::QUEEN;
+    if npc != QUEEN {
+        return None;
+    }
+    let seals = [
+        ("fourth_seal", "line-91", "line-94"),
+        ("first_seal", "line-99", "line-102"),
+        ("second_seal", "line-107", "line-110"),
+        ("third_seal", "line-115", "line-118"),
+        ("fifth_seal", "line-123", "line-126"),
+        ("sixth_seal", "line-131", "line-134"),
+    ];
+    let seal_key =
+        |name| format!("oteryn:quest-progress/quest/u7_2/the_queen_of_the_banshees/{name}");
+    let mut messages = vec!["seventh seal"];
+    let mut tracks = BTreeMap::new();
+    for (name, accepted, refused) in seals {
+        messages.push("yes");
+        tracks.insert(seal_key(name), i64::from(branch != refused));
+        if branch == accepted || branch == refused {
+            return Some((messages, tracks));
+        }
+    }
+    let last_seal = match branch {
+        "line-67" | "line-174" => 0,
+        "line-70" => 1,
+        _ => return None,
+    };
+    tracks.insert(seal_key("last_seal"), last_seal);
+    messages.push("kiss");
+    if branch == "line-174" {
+        messages.push("no");
+    }
+    Some((messages, tracks))
 }
 
 fn item_id(key: &str) -> TestResult<u32> {
@@ -1790,6 +1869,35 @@ mod tests {
             &reward
         ));
         assert!(!exact_inventory_delta(&before, &before, &reward));
+    }
+
+    #[test]
+    fn seeded_classic_routes_reach_the_authored_stateful_branches() -> TestResult {
+        use oteryn_gameplay_quests::quest::classic_talk::{QUEEN, choose};
+
+        let lowered = load_embedded_quest_state(SERVED_CONTENT_REVISION)
+            .map_err(|error| format!("quest state catalogue: {error:?}"))?;
+        for (npc, branch) in [(QUEEN, "line-134"), (QUEEN, "line-174")] {
+            let (messages, tracks) =
+                classic_seeded_input(npc, branch).ok_or("missing classic route")?;
+            for (key, value) in &tracks {
+                let declaration = lowered
+                    .catalogue()
+                    .track(key)
+                    .ok_or_else(|| format!("undeclared classic fixture track {key}"))?;
+                assert!((declaration.min..=declaration.max).contains(value), "{key}");
+            }
+            let mut topic = None;
+            let mut branches = Vec::new();
+            for message in messages {
+                let choice =
+                    choose(npc, message, topic, &tracks).ok_or("owner rejected classic input")?;
+                topic = choice.topic;
+                branches = choice.branches;
+            }
+            assert_eq!(branches, [branch]);
+        }
+        Ok(())
     }
 
     #[test]
