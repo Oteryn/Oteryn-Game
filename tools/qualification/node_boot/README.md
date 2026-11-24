@@ -171,9 +171,12 @@ The `interactions=60:600` slice emitted 615 PASS and 2,385 FAIL step rows
 and ended with `NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged`. At that
 revision, 580 approaches could not be routed and seven more failed on a live
 route or floor transition. The server refused 11 USE requests after approach.
+Ten of the refused placements were house doors. Their positive cases require
+house access in the fixture.
 Two USE requests committed, but the driver sampled position before processing
 the spatial projection. The later driver waits for the wire update and replans
-after accepted transit redirects.
+after accepted transit redirects. With that change, ladder `06.32426.32264.001`
+passed walk, USE, exact landing and repeat activation on the real wire.
 
 The runner prints a
 summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
