@@ -95,6 +95,8 @@ struct Grant {
     sex: Option<String>,
     #[serde(default)]
     outfit_aliases: Vec<String>,
+    #[serde(default)]
+    mount_aliases: Vec<String>,
 }
 
 #[derive(Deserialize, PartialEq, Eq)]
@@ -130,6 +132,7 @@ impl Taming {
     }
 }
 
+#[derive(Clone, Copy)]
 enum Entry<'a> {
     Outfit(&'a Outfit, u8),
     Mount(&'a Mount, Option<&'a Taming>),
@@ -230,6 +233,9 @@ impl Grant {
                     }
                     (Target::Addon { addon: source, .. }, Target::Addon { outfit_key, addon }) => {
                         source == addon && self.outfit_aliases.contains(outfit_key)
+                    }
+                    (Target::Mount { .. }, Target::Mount { mount_key }) => {
+                        self.mount_aliases.contains(mount_key)
                     }
                     _ => false,
                 })
@@ -408,8 +414,18 @@ pub(super) async fn run(
         ..*clients
     };
     for (key, entry) in entries.into_iter().skip(start).take(selected) {
+        // Canonical and legacy aliases can share one entitlement. Give the
+        // second representation a fresh acquisition on the other fixture account.
+        let entry = match *entry {
+            Entry::Mount(mount, None) => {
+                Entry::Mount(mount, taming_binding(&content, &taming, &mount.key))
+            }
+            _ => *entry,
+        };
         let clients = match entry {
-            Entry::Mount(mount, Some(_)) if !mounts_seen.insert(mount.key.as_str()) => &alternate,
+            Entry::Mount(_, Some(binding)) if !mounts_seen.insert(binding.mount_key.as_str()) => {
+                &alternate
+            }
             _ => clients,
         };
         verdict::Harness::global().progress("cosmetic-sweep-entry");
@@ -428,7 +444,7 @@ pub(super) async fn run(
         };
         let mut items = Vec::new();
         let result = journey(
-            &mut rows, clients, world, &content, entry, &obtain, npcs, &mut items,
+            &mut rows, clients, world, &content, &entry, &obtain, npcs, &mut items,
         )
         .await;
         let cleanup = retire_fixture_items(clients, &items).await;
@@ -685,7 +701,6 @@ enum ObtainAction<'a> {
     Npc(Target, Vec<&'a NpcReward>),
     Item(Target, String),
     Tame(&'a Taming),
-    OwnedTame(Taming),
 }
 
 impl Target {
@@ -929,15 +944,6 @@ async fn prepare<'a>(
             actions.push(ObtainAction::Item(target, item));
             continue;
         }
-        if let Target::Mount { mount_key } = &target
-            && let Some(binding) = obtain_taming_binding(mount_key)?
-        {
-            // The explicit taming slice owns binding-specific attempts. Mount journeys
-            // load the same authored binding before attempting the selected mount.
-            seed_taming_prerequisites(clients, &binding, items).await?;
-            actions.push(ObtainAction::OwnedTame(binding));
-            continue;
-        }
         let (key, provenance) = grant(content, &target, None)
             .ok_or("content cosmetic has no authored grant mapping")?;
         let reason = if key.contains("/quest-grant")
@@ -965,13 +971,22 @@ async fn prepare<'a>(
     Ok((mode, actions))
 }
 
-fn obtain_taming_binding(mount: &str) -> TestResult<Option<Taming>> {
-    let path =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/cosmetics/taming-native.json");
-    let bindings: Vec<Taming> = serde_json::from_slice(&std::fs::read(path)?)?;
-    Ok(bindings
-        .into_iter()
-        .find(|binding| binding.mount_key == mount))
+fn taming_binding<'a>(
+    content: &Content,
+    bindings: &'a [Taming],
+    mount: &str,
+) -> Option<&'a Taming> {
+    let target = Target::Mount {
+        mount_key: mount.into(),
+    };
+    bindings
+        .iter()
+        .find(|binding| binding.mount_key == mount)
+        .or_else(|| {
+            bindings
+                .iter()
+                .find(|binding| grant(content, &target, Some(&binding.grant_key)).is_some())
+        })
 }
 
 // Disposable inventory setup uses the same migration-owned fixture approach as
@@ -1360,9 +1375,6 @@ async fn journey(
                 ObtainAction::Tame(binding) => {
                     obtain_taming(&mut client, world, binding, &mut state).await?
                 }
-                ObtainAction::OwnedTame(binding) => {
-                    obtain_taming(&mut client, world, &binding, &mut state).await?
-                }
             }
         }
         let mount_key = mount.map(|(mount, _)| mount.key.as_str());
@@ -1719,6 +1731,33 @@ mod tests {
                 "secret",
             ]
         );
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_mount_alias_uses_the_canonical_taming_grant() -> TestResult {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/cosmetics");
+        let mut cosmetics = content(&root)?;
+        cosmetics.grant_mappings = vec![serde_json::from_value(serde_json::json!({
+            "grant_key": "oteryn:taming.black_sheep",
+            "target": {"kind": "Mount", "mount_key": "oteryn:content.mount.black_sheep"},
+            "compatible_provenance": ["mount-taming-v1"],
+            "mount_aliases": ["oteryn:content.mount.black_sheep_mount"]
+        }))?];
+        let old_key = "oteryn:content.mount.black_sheep_mount";
+        let target = Target::Mount {
+            mount_key: old_key.into(),
+        };
+        assert_eq!(
+            grant(&cosmetics, &target, None),
+            Some(("oteryn:taming.black_sheep", "mount-taming-v1"))
+        );
+        let bindings: Vec<Taming> =
+            serde_json::from_slice(&std::fs::read(root.join("taming-native.json"))?)?;
+        let binding = taming_binding(&cosmetics, &bindings, old_key)
+            .ok_or("legacy mount did not resolve its real taming item binding")?;
+        assert_eq!(binding.grant_key, "oteryn:taming.black_sheep");
+        assert_eq!(binding.mount_key, "oteryn:content.mount.black_sheep");
         Ok(())
     }
 
