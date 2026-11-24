@@ -159,9 +159,12 @@ case "$NODE_BOOT_WORLD_PROFILE" in
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;
 esac
+NODE_READINESS_WAIT_SECONDS=60
 # The NPC sweep uses authored placement cells in addition to the normal profile.
 # Retain the town entry and existing qualification facts in the same bundle.
 if [[ "$NODE_BOOT_WORLD" == 1 && ",${NODE_BOOT_E2E_ONLY:-}," == *,npc_sweep,* ]]; then
+  # Loading the expanded region set continues after the content activation event.
+  NODE_READINESS_WAIT_SECONDS=180
   WORLD_REGIONS="$(python3 - "$GAME_SOURCE" "$WORLD_REGIONS" "${OTERYN_E2E_NPC_SWEEP_BATCH:-0:3}" <<'PY_NPC_REGIONS'
 import json
 import re
@@ -187,7 +190,7 @@ print(";".join(f"{x},{y}" for x, y in sorted(regions)))
 PY_NPC_REGIONS
 )"
 fi
-readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
+readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS NODE_READINESS_WAIT_SECONDS
 # A kept or reused stack is one topology, so it never runs the separate basic pass.
 # The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
@@ -1333,7 +1336,7 @@ node_complete_assignment() {
   assignment_report_args
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
-  await_log "event=readiness .*ready=true" 60
+  await_log "event=readiness .*ready=true" "$NODE_READINESS_WAIT_SECONDS"
   # The canonical manifest makes each validation substantial. Prove the same
   # stale-predecessor rejection against the now-active sequence 1, without
   # spending the unassigned node's unchanged wait on this independent negative.
@@ -1570,7 +1573,7 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   # A new incarnation starts with no active Content and reactivates only the current issuance.
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
-  await_log "event=readiness .*ready=true" 60
+  await_log "event=readiness .*ready=true" "$NODE_READINESS_WAIT_SECONDS"
   node_signal -TERM "$NODE_PID"
   for _ in $(seq 1 30); do node_signal -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "replacement did not shut down cleanly"
@@ -1665,7 +1668,7 @@ SQL
   pvp_ops content activate --request content-1.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --sequence 1 --previous empty
   pvp_ops assignment assign --request assign-pvp.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --node-id "$node" --revision "$revision"
   pvp_await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
-  pvp_await_log "event=readiness .*ready=true" 60
+  pvp_await_log "event=readiness .*ready=true" "$NODE_READINESS_WAIT_SECONDS"
   local bound_address
   bound_address="$(sed -nE 's/.* event=listener_bound (trace=[^ ]+ )?detail="address=([^"]+)"$/\2/p' "$WORK/pvp-node.log" | tail -n 1)"
   if [[ ! "$bound_address" =~ ^127\.0\.0\.1:([1-9][0-9]{3,4})$ ]] || (( BASH_REMATCH[1] > 65535 )); then

@@ -1382,6 +1382,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn crystal_placement_census() -> TestResult {
+        let census = Census::load(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))?;
+        let tally = placement_census(&census)?;
+        assert_eq!(
+            tally.pass + tally.fail + census.placements.len(),
+            census.npcs.len()
+        );
+        assert!(tally.fail > 0 && tally.pass > 0);
+        Ok(())
+    }
+
+    #[test]
     fn parses_only_positive_decimal_batch_lengths() -> TestResult {
         assert_eq!(batch(None)?, (0, 3));
         assert_eq!(batch(Some("0:20"))?, (0, 20));
