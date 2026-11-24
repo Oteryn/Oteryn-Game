@@ -135,6 +135,31 @@ mod tests {
         assert_eq!(start.elapsed(), Duration::from_millis(4));
     }
 
+    #[tokio::test(start_paused = true)]
+    async fn busy_discovery_observes_return_during_first_readiness_sample() {
+        let start = Instant::now();
+        let returned = Notify::new();
+        let sampled = Cell::new(false);
+        wait_for_discovery_retry(
+            start + Duration::from_secs(1),
+            || {
+                if sampled.replace(true) {
+                    true
+                } else {
+                    returned.notify_waiters();
+                    false
+                }
+            },
+            || returned.notified(),
+        )
+        .await;
+        assert_eq!(
+            Instant::now(),
+            start,
+            "the first return wakes the same slice"
+        );
+    }
+
     #[test]
     fn busy_discovery_retries_once_after_holder_return_or_ready_backoff()
     -> Result<(), Box<dyn std::error::Error>> {

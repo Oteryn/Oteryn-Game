@@ -222,11 +222,15 @@
       ],
       "requirements": {
         "min_level": 250,
-        "premium": true,
-        "completed_quests": [
-          "oteryn:quest.no_rest_for_the_wicked_quest"
-        ]
+        "premium": true
       },
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/reward",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
       "take": [],
       "give": null,
       "outfit": {
@@ -263,9 +267,6 @@
       "requirements": {
         "min_level": 250,
         "premium": true,
-        "completed_quests": [
-          "oteryn:quest.no_rest_for_the_wicked_quest"
-        ],
         "owned_cosmetics": [
           {
             "outfit": "oteryn:outfit.fiend_slayer",
@@ -273,6 +274,13 @@
           }
         ]
       },
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/reward",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
       "take": [],
       "give": null,
       "outfit": null,
@@ -306,9 +314,6 @@
       "requirements": {
         "min_level": 250,
         "premium": true,
-        "completed_quests": [
-          "oteryn:quest.no_rest_for_the_wicked_quest"
-        ],
         "owned_cosmetics": [
           {
             "outfit": "oteryn:outfit.fiend_slayer",
@@ -316,6 +321,13 @@
           }
         ]
       },
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/reward",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
       "take": [],
       "give": {
         "item": "oteryn:item.tibia.i50060",
@@ -353,9 +365,6 @@
       "requirements": {
         "min_level": 250,
         "premium": true,
-        "completed_quests": [
-          "oteryn:quest.no_rest_for_the_wicked_quest"
-        ],
         "owned_cosmetics": [
           {
             "outfit": "oteryn:outfit.fiend_slayer",
@@ -363,6 +372,13 @@
           }
         ]
       },
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/reward",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
       "take": [],
       "give": {
         "item": "oteryn:item.tibia.i50061",

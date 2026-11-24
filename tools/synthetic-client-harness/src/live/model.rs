@@ -271,6 +271,7 @@ pub fn render_chat_line(line: &ChatLine) -> String {
             "[#{}] {}: {}",
             line.channel_id, line.speaker_name, line.text
         ),
+        ChatLine::System { text } => format!("Game: {text}"),
         ChatLine::Dropped => "-- DROPPED: chat lines were lost --".to_owned(),
     }
 }

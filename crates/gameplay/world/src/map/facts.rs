@@ -197,6 +197,25 @@ pub struct BundleFacts {
 const AMBIGUOUS: u32 = u32::MAX;
 
 impl BundleFacts {
+    #[cfg(any(test, feature = "test-support"))]
+    pub(super) fn fresh_for_test(&self) -> Self {
+        Self {
+            palette: self.palette.clone(),
+            movement_definitions: self.movement_definitions.clone(),
+            movement_solidities: self.movement_solidities.clone(),
+            movement_blocks: self.movement_blocks.clone(),
+            ids: self.ids.clone(),
+            placements: self.placements.clone(),
+            map_source_items: self.map_source_items.clone(),
+            map_source_children: self.map_source_children.clone(),
+            unsupported_source_containers: self.unsupported_source_containers.clone(),
+            houses: self.houses.clone(),
+            house_doors: self.house_doors.clone(),
+            doors: self.doors.fresh_for_test(),
+            ..Self::default()
+        }
+    }
+
     /// A qualified Source owner may use the same bounded volatile-item model
     /// without inventing a bundle, base tile, durable Item or map placement.
     /// The caller supplies its already resolved immovable native Item facts.

@@ -6,6 +6,7 @@ use super::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::OnceLock;
 
 #[cfg(test)]
 mod m39_sample_tests;
@@ -694,6 +695,12 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 }
 
 pub fn load() -> Result<Vec<Callback>, String> {
+    // Durable quest writers also consult the base callbacks for ownership checks.
+    static CALLBACKS: OnceLock<Result<Vec<Callback>, String>> = OnceLock::new();
+    CALLBACKS.get_or_init(load_embedded_callbacks).clone()
+}
+
+fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(
         &serde_json::json!({"schema":1,"callbacks":[court_warlock::callback()?]}).to_string(),

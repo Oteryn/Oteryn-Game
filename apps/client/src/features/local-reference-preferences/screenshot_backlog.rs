@@ -15,6 +15,7 @@ pub(in super::super) struct ScreenshotRuntime {
     last_frame: Option<Instant>,
     last_pvp_query: Option<Instant>,
     incoming_situations: Option<Vec<u64>>,
+    incoming_ids: Option<Vec<u64>>,
     last_pvp_observation: Option<Instant>,
     last_bestiary_query: Option<Instant>,
     activity: Option<u64>,
@@ -234,17 +235,25 @@ impl SettingsState {
                     && let Some(incoming) = &panel.incoming_situations
                 {
                     runtime.last_pvp_observation = panel.status_received_at;
+                    let old_ids =
+                        std::mem::replace(&mut runtime.incoming_ids, panel.incoming_ids.clone());
+                    let legacy_change = runtime
+                        .incoming_situations
+                        .replace(incoming.clone())
+                        .is_some_and(|old| {
+                            incoming.len() > old.len()
+                                || incoming
+                                    .iter()
+                                    .zip(old)
+                                    .any(|(current, previous)| *current > previous)
+                        });
                     runtime.automatic_pending[3] |= enabled[3]
-                        && runtime
-                            .incoming_situations
-                            .replace(incoming.clone())
-                            .is_some_and(|old| {
-                                incoming.len() > old.len()
-                                    || incoming
-                                        .iter()
-                                        .zip(old)
-                                        .any(|(current, previous)| *current > previous)
-                            });
+                        && match (&panel.incoming_ids, old_ids) {
+                            (Some(current), Some(previous)) => {
+                                oteryn_client_ui::pvp_situation_id::renewed(current, &previous)
+                            }
+                            _ => legacy_change,
+                        };
                 }
                 if panel.selected
                     && !panel.pending
@@ -261,13 +270,21 @@ impl SettingsState {
                 }
             } else {
                 runtime.incoming_situations = None;
+                runtime.incoming_ids = None;
                 runtime.last_pvp_query = None;
                 runtime.last_pvp_observation = None;
             }
-            let (boss_baseline, boss_advanced) = link.boss_capture(
-                !preferences.automatic_disabled && preferences.on_boss_defeat,
-                now,
-            );
+            let (boss_baseline, boss_advanced) = if signals.events.personal_boss_events {
+                (
+                    true,
+                    link.take_boss_defeat(enabled[2], runtime.automatic_pending[2]),
+                )
+            } else {
+                link.boss_capture(
+                    !preferences.automatic_disabled && preferences.on_boss_defeat,
+                    now,
+                )
+            };
             runtime.automatic_pending[2] |= enabled[2] && boss_advanced;
             let full = signals.bestiary.is_some();
             if !preferences.automatic_disabled
@@ -307,7 +324,10 @@ impl SettingsState {
                     (3, signals.combat.player_hits > previous.combat.player_hits),
                     (4, records[0]),
                     (5, records[1]),
-                    (12, signals.combat.reward_collections > previous.combat.reward_collections),
+                    (
+                        12,
+                        signals.combat.reward_collections > previous.combat.reward_collections,
+                    ),
                     (8, skill),
                     (9, level),
                     (10, death),
@@ -316,11 +336,14 @@ impl SettingsState {
                 for (i, advanced) in events {
                     runtime.automatic_pending[i] |= enabled[i] && advanced;
                 }
-                if let Some((old, current)) = previous.bestiary.as_ref().zip(signals.bestiary.as_ref())
+                if let Some((old, current)) =
+                    previous.bestiary.as_ref().zip(signals.bestiary.as_ref())
                     && !Arc::ptr_eq(old, current)
                 {
                     for (race, stage) in current.iter() {
-                        let last = old.binary_search_by_key(race, |(id, _)| *id).map_or(0, |index| old[index].1);
+                        let last = old
+                            .binary_search_by_key(race, |(id, _)| *id)
+                            .map_or(0, |index| old[index].1);
                         let trigger = usize::from(*stage == 3);
                         runtime.automatic_pending[trigger] |= enabled[trigger] && *stage > last;
                     }

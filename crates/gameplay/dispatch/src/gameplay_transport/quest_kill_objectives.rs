@@ -131,9 +131,7 @@ pub(super) fn capture(
             }
         }
     }
-    if entry.boss_reward.is_some() || entry.creature == death_objectives::GRAVE_NICTROS {
-        capture_grave_objectives(runtime, entry, &cache.sessions, &mut captured);
-    }
+    capture_grave_objectives(runtime, entry, &cache.sessions, &mut captured);
     let captured = Arc::new(captured);
     cache
         .deaths

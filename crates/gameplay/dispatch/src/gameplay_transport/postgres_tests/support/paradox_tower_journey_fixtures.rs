@@ -278,7 +278,7 @@ async fn use_wire(
     let payload = encode_use_intent(&object_target(owner, p, ordinal)?).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
     let result = wire::wire(owner, admitted, command, 2, payload).await?;
-    Ok(decode_use_result(&result).map_err(debug)?)
+    decode_use_result(&result).map_err(debug)
 }
 
 async fn send(

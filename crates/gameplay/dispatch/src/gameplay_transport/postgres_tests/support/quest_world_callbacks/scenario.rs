@@ -1064,16 +1064,11 @@ fn scenario_case(
             .await
             .map_err(|e| format!("callback authority: {e:?}"))?;
         let mut deps = Dependencies::new()?;
-        let (controller, activated) = if name == "questpc7-grave" {
-            super::super::questpc7_grave_fixtures::generation_with_qualified_grave_rewards(
-                deps.admitted.world_id,
-            )?
-        } else {
+        let (controller, activated) =
             super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
-            )?
-        };
+            )?;
         let generation = controller.active().ok_or("generation")?;
         let world = if alawars_vault {
             super::super::alawars_vault_journey_fixtures::world(generation.native_gameplay().ok_or("Alawar native content")?)?
@@ -1527,7 +1522,13 @@ fn scenario_case(
             tx.commit().await?;
         }
 
-        let world = if name.starts_with("qengine-rewards-l2-djinn-") {
+        let world = if name == "questpc7-outfits-fiend" {
+            super::super::quest_container_chests_fixtures::forgemaster::production_chests(
+                generation
+                    .native_gameplay()
+                    .ok_or("Forgemaster native gameplay")?,
+            )?
+        } else if name.starts_with("qengine-rewards-l2-djinn-") {
             super::super::questl2_djinn_world::world()?
         } else if name == "qengine-rewards-l2-white-raven" {
             super::super::questl2_white_raven_world::world(

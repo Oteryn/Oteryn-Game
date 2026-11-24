@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ItemSupplyByTypeParams",
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string"
+    },
+    "grain": {
+      "$ref": "#/$defs/Grain"
+    },
+    "params": {
+      "$ref": "#/$defs/ItemSupplyByTypeFilters"
+    },
+    "query_id": {
+      "$ref": "#/$defs/ItemSupplyByTypeId"
+    },
+    "to": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "query_id",
+    "params",
+    "from",
+    "to",
+    "grain"
+  ],
+  "$defs": {
+    "Grain": {
+      "type": "string",
+      "enum": [
+        "minute",
+        "hour",
+        "day"
+      ]
+    },
+    "ItemSupplyByTypeFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "ItemSupplyByTypeId": {
+      "type": "string",
+      "enum": [
+        "item_supply_by_type"
+      ]
+    }
+  }
+}

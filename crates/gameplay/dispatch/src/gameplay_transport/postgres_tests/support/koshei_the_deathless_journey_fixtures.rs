@@ -189,7 +189,6 @@ async fn use_object(
     .await?;
     use_wire::decode_use_result(&reply)
         .map_err(debug)
-        .map_err(Into::into)
 }
 
 async fn move_to(
@@ -388,8 +387,7 @@ async fn seal_client(
             assert_eq!(result.command_id, command);
             client.shutdown().await?;
             return use_wire::decode_use_result(result.payload)
-                .map_err(debug)
-                .map_err(Into::into);
+                .map_err(debug);
         }
     }
 }

@@ -1,0 +1,60 @@
+[profile.default]
+slow-timeout = { period = "120s", terminate-after = 4 }
+
+# These PostgreSQL cases passed after 480s in CI runs 44996564771, 45093658734, or 45158319401.
+[[profile.default.overrides]]
+filter = '''
+test(=gameplay_transport::monk_save::postgres_tests::grizzly_npc::questpc8_campaign::questpc8_hunting_campaign_native_deaths_portals_reports_and_rewards) |
+test(=gameplay_transport::monk_save::postgres_tests::qc_chests::qc_skull_of_ratha_three_source_chests_use_replay_and_refusal)
+'''
+slow-timeout = { period = "120s", terminate-after = 9 }
+
+[[profile.default.overrides]]
+filter = '''
+test(=gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_20_of_24) |
+test(=gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests::quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal_slice_22_of_24) |
+test(=gameplay_transport::monk_save::postgres_tests::quest_catalogue_chests_qchk3::quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal)
+'''
+slow-timeout = { period = "120s", terminate-after = 6 }
+
+[[profile.default.overrides]]
+filter = '''
+test(=gameplay_transport::monk_save::postgres_tests::m25_ahau_exit::m25_ahau_native_step_exit_returns_exact_current_instance_participant_postgres) |
+test(=gameplay_transport::monk_save::postgres_tests::m25_ahau_exit::m25_ahau_player_push_exit_returns_only_pushed_participant_postgres) |
+test(=gameplay_transport::monk_save::postgres_tests::qc_chests::qc_sanctuary_pinned_legion_helmet_chest_uses_live_uid) |
+test(=gameplay_transport::monk_save::postgres_tests::qc_lizard_sanctuary::qc_lizard_sanctuary_second_altar_half_takes_the_eggs_once) |
+test(=gameplay_transport::monk_save::postgres_tests::srx3_claustrophobic::srx3_claustrophobic_actual_world_step_starts_source_raid_postgres) |
+test(=gameplay_transport::monk_save::postgres_tests::srx3_omrafir_beam::srx3_omrafir_actual_native_beam_installs_shared_marker_and_fires_after_four_seconds_postgres) |
+test(=gameplay_transport::monk_save::postgres_tests::srx3_omrafir_beam::srx3_omrafir_unattached_think_event_is_inactive_in_production_postgres) |
+test(=gameplay_transport::monk_save::postgres_tests::srx3_rotten_callbacks::srx3_murcion_published_whole_world_entry_native_children_postgres) |
+test(=gameplay_transport::monk_save::postgres_tests::srx3_soul_war_world_fixture::srx3_published_world_callback_context_requires_exact_current_world_pins) |
+test(=gameplay_transport::monk_save::postgres_tests::srx3_spite_global::srx3_spite_registered_global_qualifies_actual_published_world_without_private_alias) |
+test(=gameplay_transport::monk_save::postgres_tests::srx3_spite_global::srx3_spite_registered_world_owner_emits_one_selected_field_without_a_boss_after_fourteen_seconds_postgres)
+'''
+slow-timeout = { period = "120s", terminate-after = 5 }
+
+# Full World boots and reward-catalogue sweeps can monopolize a hosted runner
+# when the duration planner queues them together. Reserve two runner slots
+# and allow one such case at a time so ordinary cases can keep making progress.
+[test-groups.dispatch-world-postgres]
+max-threads = 2
+
+[[profile.default.overrides]]
+filter = '''
+test(/monk_save::postgres_tests::(m25_ahau_exit|m25_forced_equipment_read|qc_lizard_sanctuary|srx3_claustrophobic|srx3_omrafir_beam|srx3_poor_soul_world_corpse|srx3_rotten_area_think|srx3_soul_war_world_entrance|srx3_soul_war_world_fixture)::/) |
+test(/monk_save::postgres_tests::qc_chests::qc_sanctuary_pinned_legion_helmet/) |
+test(=gameplay_transport::monk_save::postgres_tests::qcx_rotten_blood::passive_rotten_charge_advances_after_twenty_seconds) |
+test(=gameplay_transport::monk_save::postgres_tests::qcx_rotten_blood::torkada_expedition_dialogue_grants_the_temple_blessing) |
+test(=gameplay_transport::monk_save::postgres_tests::shattered_isles_journey::shattered_isles_full_journey_earns_four_passages) |
+test(/monk_save::postgres_tests::srx3_rotten_callbacks::srx3_murcion_published_whole_world/) |
+test(/monk_save::postgres_tests::srx3_spite_global::srx3_spite_registered_(global_qualifies_actual_published_world|world_owner_emits_one_selected_field)/) |
+test(/monk_save::postgres_tests::quest_catalogue_chests(::quest_catalogue_chests_(every_supported_source_placement|phase_a)|_qchk[0-9]+::)/)
+'''
+test-group = "dispatch-world-postgres"
+threads-required = 2
+
+# These pinned World callers already take the full runner in the CI planner.
+[[profile.default.overrides]]
+filter = 'test(/monk_save::postgres_tests::m09_treasure_rewards::/)'
+test-group = "dispatch-world-postgres"
+threads-required = "num-test-threads"
