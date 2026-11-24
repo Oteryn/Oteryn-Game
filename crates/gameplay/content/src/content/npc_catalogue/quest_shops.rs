@@ -177,13 +177,23 @@ pub(super) fn declarations(
             key: shop.service.clone(),
             revision: "definition-r1".into(),
         };
-        if records.iter().any(|(r, _)| **r == service) {
-            continue;
-        }
         let mut npc = (**declaration).clone();
         let ProjectV2Declaration::Npc { services, .. } = &mut npc else {
             continue;
         };
+        let offers = shop.offers.iter().map(Offer::project).collect();
+        if let Some((_, existing)) = records.iter().find(|(r, _)| **r == service) {
+            // A protected merchant may already own this service in the base
+            // catalogue. Publish only the reviewed offers with matching gates.
+            let mut existing = (**existing).clone();
+            if let ProjectV2Declaration::Service { offers: stock, .. } = &mut existing
+                && services.contains(&service)
+            {
+                *stock = offers;
+                additions.push((service, existing));
+            }
+            continue;
+        }
         services.push(service.clone());
         additions.push(((**reference).clone(), npc));
         additions.push((
@@ -194,7 +204,7 @@ pub(super) fn declarations(
                     revision: "definition-r1".into(),
                 },
                 bank: false,
-                offers: shop.offers.iter().map(Offer::project).collect(),
+                offers,
                 recipes: Vec::new(),
                 routes: Vec::new(),
                 fields: Vec::new(),

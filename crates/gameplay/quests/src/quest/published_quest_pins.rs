@@ -49,6 +49,11 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
         hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
     ),
     (
+        "oteryn:quest.grimvale_quest",
+        hash(b"ffc0064a21640b08fd5cddd020cac005af21aed2fc98c8a0c76369e3ddbd33bf"),
+        hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
+    ),
+    (
         "oteryn:quest.heart_of_destruction_quest",
         hash(b"5fd58496a9bbec4ab0feda817d182f73fc9b562cfeee6c48ccec84df16fe064d"),
         hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),

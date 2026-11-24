@@ -13,6 +13,7 @@ from pathlib import Path
 import sys
 import tarfile
 import xml.etree.ElementTree as ET
+import lua_tables
 import questl2_ready
 import taming_cosmetics
 import qb_barbarian
@@ -103,7 +104,7 @@ def donor_inputs():
               'data-global/scripts/actions/other/others/quest_system2.lua',
               'data-global/scripts/quests/the_djinn_war_quest/action_water_fountain.lua']
     paths += [f'data-global/npc/{name}.lua' for name in (
-        'dermot', 'marina', 'gamon', 'quentin', 'tibra', 'maealil', 'yberius',
+        'black_bert', 'dermot', 'marina', 'gamon', 'quentin', 'tibra', 'maealil', 'yberius',
         'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias', 'rafzan',
         'jorge', 'the_forgemaster', 'henricus', 'yana', 'ivalisse', 'a_strange_chalice')]
     paths += ['data/XML/imbuements.xml',
@@ -1164,15 +1165,26 @@ def build():
     shops = questl2_ready.djinn.shops(inputs, PIN)
     service = 'oteryn:service.trade.black_bert'
     trade = json.loads((ROOT / 'content/services/trade/trade-00000-00323.json').read_bytes())
-    retained = next(row['declaration']['offers'] for row in trade['records']
-                    if row['declaration']['identity']['key'] == service)
+    stock = next(row['declaration']['offers'] for row in trade['records']
+                 if row['declaration']['identity']['key'] == service)
+    bert_source = inputs['data-global/npc/black_bert.lua']
+    # The corpus copy is byte-identical to the chosen 201189f8 shop source.
+    if sha(bert_source) != 'd4e83b34b3f20b62f0e1f06a764c6dadea0010a61f252048300c44eda27e6e0c':
+        raise ValueError('Black Bert shop source changed')
+    bert_shop = lua_tables.as_python(lua_tables.assignments(bert_source.decode(), {'shop'})['shop'])
+    # Keep source stock already admitted by the Item catalogue and the two
+    # previously reviewed Global variants (special flask and lump of clay).
+    stock_ids = {row['clientid'] for row in bert_shop if 'buy' in row} | {125, 11329}
+    stock_keys = {f'oteryn:item.tibia.i{item}' for item in stock_ids}
+    retained = [row for row in stock
+                if row['direction'] == 'SellToPlayer' and row['item']['key'] in stock_keys]
     requirement = {'quest': 'oteryn:quest.the_thieves_guild_quest',
                    'track': 'oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline',
                    'initial': 0, 'minimum': 9, 'maximum': 9}
     shops.append({'npc': 'oteryn:npc.black_bert', 'service': service,
                   'offers': [row | {'requirements': [requirement]} for row in retained],
                   'sources': ['crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:211-219',
-                              'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/black_bert.lua:23-150']})
+                              f'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/black_bert.lua:23-154:sha256:{sha(bert_source)}']})
     generated['content/quests/shared-quest-shops.json'] = encoded({
         'schema': 1, 'shops': shops})
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))
