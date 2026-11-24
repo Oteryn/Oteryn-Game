@@ -416,6 +416,22 @@ async fn walk_to(
     Ok(())
 }
 
+fn rotten_blood_minimum(creature: &str) -> Option<u32> {
+    use oteryn_gameplay_quests::quest::rotten_blood::{REQUIRED_LEVEL, RottenBloodBoss};
+
+    RottenBloodBoss::from_creature_key(creature).map(|_| REQUIRED_LEVEL)
+}
+
+fn off_lever_refusal(quest_minimum: Option<u32>, level: u32) -> BossActivityRefusal {
+    // rotten_blood_entry.rs:93 runs the quest level gate before the boss-room
+    // owner reaches its lever-roster check (boss_activity.rs:417).
+    if quest_minimum.is_some_and(|required| level < required) {
+        BossActivityRefusal::Level
+    } else {
+        BossActivityRefusal::Position
+    }
+}
+
 async fn refused(
     client: &mut DevClientSession,
     payload: &[u8],
@@ -792,7 +808,16 @@ async fn journey(
     let (_, initial_cooldown, _) = cooldowns(leader, &boss_key)
         .await
         .map_err(|error| failure("protocol", error))?;
-    refused(leader, &payload, BossActivityRefusal::Position)
+    let quest_minimum = rotten_blood_minimum(creature);
+    let expected = if quest_minimum.is_some() {
+        let (_, level, _) = creature_sweep::read_stats(leader)
+            .await
+            .map_err(|error| failure("protocol", error))?;
+        off_lever_refusal(quest_minimum, level)
+    } else {
+        BossActivityRefusal::Position
+    };
+    refused(leader, &payload, expected)
         .await
         .map_err(|error| failure("entry_refusal", error))?;
     let (_, negative_cooldown, _) = cooldowns(leader, &boss_key)
@@ -804,7 +829,10 @@ async fn journey(
             "ineligible attempt changed cooldown",
         ));
     }
-    rows.emit(None, "typed-Position-without-handoff-or-cooldown-change");
+    rows.emit(
+        None,
+        &format!("typed-{expected:?}-without-handoff-or-cooldown-change"),
+    );
 
     let minimum = authored
         .minimum_players
@@ -818,7 +846,8 @@ async fn journey(
     }
     let minimum_level = authored
         .minimum_level
-        .ok_or_else(|| failure("content", "no minimum level"))?;
+        .ok_or_else(|| failure("content", "no minimum level"))?
+        .max(quest_minimum.unwrap_or_default());
     let leader = party
         .pop()
         .ok_or_else(|| failure("fixture", "no admitted leader"))?;
@@ -1110,6 +1139,17 @@ mod tests {
             2
         );
         Ok(())
+    }
+
+    #[test]
+    fn rotten_blood_checks_the_quest_level_before_position() {
+        let minimum = rotten_blood_minimum("oteryn:creature.chagorz");
+        assert_eq!(off_lever_refusal(minimum, 249), BossActivityRefusal::Level);
+        assert_eq!(
+            off_lever_refusal(minimum, 250),
+            BossActivityRefusal::Position
+        );
+        assert_eq!(off_lever_refusal(None, 1), BossActivityRefusal::Position);
     }
 
     #[test]
