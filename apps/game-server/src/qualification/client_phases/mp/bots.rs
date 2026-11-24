@@ -597,8 +597,10 @@ pub(super) async fn party(
             None => "Query",
         };
         return Err(format!(
-            "party operation={operation};command_type={};command_id={command_id};status={:?}",
-            command.kind, reply.status,
+            "party operation={operation};command_type={};command_id={command_id};status={:?};disposition={:?}",
+            command.kind,
+            reply.status,
+            party::decode_party_result(&reply.operation).map(|result| result.disposition),
         )
         .into());
     }
