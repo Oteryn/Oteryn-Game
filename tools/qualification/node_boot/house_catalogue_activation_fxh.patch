@@ -1,0 +1,140 @@
+diff --git a/apps/game-server/src/lifted_tests/auto/house_catalogue_activation.rs b/apps/game-server/src/lifted_tests/auto/house_catalogue_activation.rs
+index adb991eab..6ec9b8d39 100644
+--- a/apps/game-server/src/lifted_tests/auto/house_catalogue_activation.rs
++++ b/apps/game-server/src/lifted_tests/auto/house_catalogue_activation.rs
+@@ -4 +4 @@ use crate::durability::house_ownership::{
+-    HouseBidRequest, HouseCatalogueActivation, HouseOwnershipOutcome,
++    HouseBidRequest, HouseCatalogueActivation, HouseOwnershipError, HouseOwnershipOutcome,
+@@ -7,0 +8 @@ use oteryn_gameplay_dispatch::gameplay_transport::spell_premium_coordinator::Spe
++use oteryn_gameplay_housing::house_auction::AuctionError;
+@@ -14,3 +15 @@ fn house_catalogue_activation_registers_vacant_property_and_opens_on_first_bid()
+-    let Some(admin) = fixture::configured_admin() else {
+-        return Ok(());
+-    };
++    let admin = fixture::configured_admin().ok_or("OTERYN_TEST_POSTGRES_ADMIN_URL is required")?;
+@@ -20,6 +19,10 @@ fn house_catalogue_activation_registers_vacant_property_and_opens_on_first_bid()
+-            fixture::runtime().map_err(fixture::debug)?.block_on(async move {
+-                let harness = fixture::Harness::create(admin, "house_catalogue_activation", true).await?;
+-                let result = exercise(&harness).await;
+-                harness.cleanup().await?;
+-                result
+-            }).map_err(fixture::debug)
++            fixture::runtime()
++                .map_err(fixture::debug)?
++                .block_on(async move {
++                    let harness =
++                        fixture::Harness::create(admin, "house_catalogue_activation", true).await?;
++                    let result = exercise(&harness).await;
++                    harness.cleanup().await?;
++                    result
++                })
++                .map_err(fixture::debug)
+@@ -42 +45,2 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
+-        "{}?options=-c%20role%3Doteryn_game_runtime", h.database.url
++        "{}?options=-c%20role%3Doteryn_game_runtime",
++        h.database.url
+@@ -46,2 +50,8 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
+-        world, channel, generation, sequence: 1, digest: DIGEST,
+-        entries: vec![serde_json::json!({"house_key":HOUSE,"kind":"private_house","rent_gold":100})],
++        world,
++        channel,
++        generation,
++        sequence: 1,
++        digest: DIGEST,
++        entries: vec![
++            serde_json::json!({"house_key":HOUSE,"kind":"private_house","rent_gold":100}),
++        ],
+@@ -49 +59,5 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
+-    assert!(root.activate_house_catalogue(&h.node, catalogue(2)).await.is_err());
++    let stale = root.activate_house_catalogue(&h.node, catalogue(2)).await;
++    assert!(
++        matches!(stale, Err(HouseOwnershipError::AuthorityRejected)),
++        "{stale:?}"
++    );
+@@ -52 +66,3 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
+-        root.activate_house_catalogue(&h.node, catalogue(1)).await.map_err(debug)?;
++        root.activate_house_catalogue(&h.node, catalogue(1))
++            .await
++            .map_err(debug)?;
+@@ -64 +80,6 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
+-    let gate = SpellPremiumCoordinator::new(Arc::new(PremiumConsumer::default()), None, None, Some(root.clone()));
++    let gate = SpellPremiumCoordinator::new(
++        Arc::new(PremiumConsumer::default()),
++        None,
++        None,
++        Some(root.clone()),
++    );
+@@ -69,2 +90,9 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
+-            command: CommandRef::new(fence.game_session_id, CommandId::new(u64::from(command)).map_err(debug)?),
+-            house_key: HOUSE.into(), maximum, content_digest: DIGEST, kind: "private_house", catalogue_rent: 100,
++            command: CommandRef::new(
++                fence.game_session_id,
++                CommandId::new(u64::from(command)).map_err(debug)?,
++            ),
++            house_key: HOUSE.into(),
++            maximum,
++            content_digest: DIGEST,
++            kind: "private_house",
++            catalogue_rent: 100,
+@@ -73 +101,10 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
+-    assert!(root.house_bid(&authority, &h.node, &gate, fence, request(80, 701)?).await.is_err());
++    let unfunded = root
++        .house_bid(&authority, &h.node, &gate, fence, request(80, 701)?)
++        .await;
++    assert!(
++        matches!(
++            unfunded,
++            Err(HouseOwnershipError::Value(AuctionError::Unfunded))
++        ),
++        "{unfunded:?}"
++    );
+@@ -77,5 +114,25 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
+-    assert_eq!(root.house_bid(&authority, &h.node, &gate, fence, first.clone()).await.map_err(debug)?, HouseOwnershipOutcome::Applied);
+-    assert_eq!(root.house_bid(&authority, &h.node, &gate, fence, first).await.map_err(debug)?, HouseOwnershipOutcome::Replayed);
+-    root.activate_house_catalogue(&h.node, catalogue(1)).await.map_err(debug)?;
+-    let opened: (i16, i64, i64, bool) = sqlx::query_as(
+-        "SELECT p.state,a.first_rent,b.escrow_gold,a.ends_at>statement_timestamp()+interval '6 days'
++    let clock = || {
++        sqlx::query_scalar::<_, i64>(
++            "SELECT (extract(epoch FROM clock_timestamp())*1000000)::bigint",
++        )
++        .fetch_one(&h.pool)
++    };
++    let before = clock().await?;
++    assert_eq!(
++        root.house_bid(&authority, &h.node, &gate, fence, first.clone())
++            .await
++            .map_err(debug)?,
++        HouseOwnershipOutcome::Applied
++    );
++    let after = clock().await?;
++    assert_eq!(
++        root.house_bid(&authority, &h.node, &gate, fence, first)
++            .await
++            .map_err(debug)?,
++        HouseOwnershipOutcome::Replayed
++    );
++    root.activate_house_catalogue(&h.node, catalogue(1))
++        .await
++        .map_err(debug)?;
++    let opened: (i16, i64, i64, i64) = sqlx::query_as(
++        "SELECT p.state,a.first_rent,b.escrow_gold,(extract(epoch FROM a.ends_at)*1000000)::bigint
+@@ -84,2 +141,12 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
+-    ).bind(HOUSE).fetch_one(&h.pool).await?;
+-    assert_eq!(opened, (2, 100, 400, true));
++    )
++    .bind(HOUSE)
++    .fetch_one(&h.pool)
++    .await?;
++    assert_eq!((opened.0, opened.1, opened.2), (2, 100, 400));
++    const SEVEN_DAYS_US: i64 = 7 * 24 * 60 * 60 * 1_000_000;
++    let expected = before + SEVEN_DAYS_US..=after + SEVEN_DAYS_US;
++    assert!(
++        expected.contains(&opened.3),
++        "deadline {} outside {expected:?}",
++        opened.3
++    );
+@@ -93 +160,2 @@ async fn fund_account(h: &fixture::Harness) -> fixture::TestResult {
+-        .execute(&mut *tx).await?;
++        .execute(&mut *tx)
++        .await?;

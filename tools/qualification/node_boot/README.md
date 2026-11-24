@@ -144,6 +144,18 @@ The house batch uses `start:len` on the key-sorted catalogue and defaults to `0:
 summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
 at the path reported on stderr. It exits nonzero if any group fails.
 
+The sweep checks the original auction deadline before seeding an elapsed deadline for
+settlement-only coverage. The PostgreSQL regression
+`house_ownership_first_rent_settlement_and_restart_replay` waits for its original
+fixture deadline to elapse.
+
+For a verification checkout containing the fxh house catalogue activation (migration
+3078 and the UUID-binding fix in `669d7752`), apply this branch’s strict regression overlay with
+`git apply --unidiff-zero /path/to/house_catalogue_activation_fxh.patch`.
+Run the `house_catalogue_activation_registers_vacant_property_and_opens_on_first_bid`
+library test with `OTERYN_TEST_POSTGRES_ADMIN_URL` set to the disposable PostgreSQL
+admin route.
+
 ## Parallel stacks, the single-row loop and diagnostics
 
 Local runs can start several isolated stacks at once. Unset knobs keep the CI
