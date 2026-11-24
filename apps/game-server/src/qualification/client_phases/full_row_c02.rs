@@ -25,10 +25,7 @@ use oteryn_protocol_oteryn::{
 };
 use std::{collections::BTreeSet, num::NonZeroU32};
 
-mod hunt_route {
-    use super::*;
-    include!("qualification_hunt_route.rs");
-}
+include!("qualification_hunt_plan.rs");
 
 const BOW: u32 = 3350;
 const ARROW: u32 = 3447;
@@ -334,7 +331,7 @@ async fn approach_funding_rat(
     deadline: tokio::time::Instant,
 ) -> TestResult {
     let origin = tile(client.world_spatial().actor_position)?;
-    let path = hunt_route::qualification_hunt_plan(client, world, None, Some(origin), deadline)?;
+    let path = qualification_hunt_plan(client, world, None, Some(origin), deadline)?;
     evidence(&format!(
         "C02_FUNDING_ROUTE origin={origin:?} steps={}",
         path.len()
