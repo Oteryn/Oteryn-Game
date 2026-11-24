@@ -269,11 +269,11 @@ SHARDS = {
     "WorldObject": "content/world/objects/objects-12932-13108.json",
 }
 TRAVERSAL_SHARDS = {
-    "Terrain": "content/world/terrain/terrain-08758-08762.json",
+    "Terrain": "content/world/terrain/terrain-08886-08886.json",
     "WorldObject": "content/world/objects/objects-13109-13114.json",
 }
 TRAVERSAL_NOTES = {
-    "Terrain": " Additionally five source-qualified Crystal stair grounds.",
+    "Terrain": " Additionally one Crystal stair ground beyond the shared spawn-map grounds.",
     "WorldObject": " Additionally six Crystal traversal fixtures.",
 }
 REGISTRY = "content/world/source-static-definitions.json"
@@ -342,10 +342,13 @@ def compose_placement_palette(placement, activity_registry, soulpit_rows, root=R
         row["source_item_id"]
         for row in placement["palette"]
         if row["source_item_id"] in expected_soulpit
+        and not row.get("scoped_spawn_ground")
     ]
     if len(selected) != len(expected_soulpit) or set(selected) != expected_soulpit:
         raise ValueError("SOULPIT_STATIC_PALETTE_SET")
     for row in placement["palette"]:
+        if row.get("scoped_spawn_ground"):
+            continue
         identity = by_id.get(row["source_item_id"])
         if identity is not None:
             row.update(key=identity["key"], provisional=False)
@@ -440,6 +443,17 @@ def traversal_records(root=ROOT):
     objects, static = crystal_traversal_facts.records(appearances, members)
     grounds = crystal_traversal_facts.grounds(appearances, members)
     return {"WorldObject": objects, "Terrain": grounds}, static
+
+
+def traversal_shard(family, rows):
+    if family == "Terrain":
+        # The spawn map already publishes four of the qualified stair grounds.
+        from spawn_map_ground import GROUND_IDS
+
+        rows = [
+            row for row in rows if row["provenance"]["source_item_id"] not in GROUND_IDS
+        ]
+    return encode({"family": family, "records": rows})
 
 
 @lru_cache(maxsize=4)
@@ -627,7 +641,7 @@ def outputs(root=ROOT):
         raise ValueError("joint static registry shared set changed")
     traversal, traversal_static = traversal_records(root)
     for family, rows in traversal.items():
-        files[TRAVERSAL_SHARDS[family]] = encode({"family": family, "records": rows})
+        files[TRAVERSAL_SHARDS[family]] = traversal_shard(family, rows)
     registry.extend(traversal_static)
     registry.sort(key=lambda row: row["source_item_id"])
     terrain_keys.update(row["identity"]["key"] for row in traversal["Terrain"])

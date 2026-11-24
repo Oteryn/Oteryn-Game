@@ -10,6 +10,10 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
+
+mod scoped_ground;
+mod spawn_map;
+
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
@@ -144,10 +148,10 @@ pub fn project_regions(root: &Path, selected: &[(u16, u16)]) -> Result<Project, 
 
 /// The disposable node-boot town bundle includes an automatic floor change for M03.
 pub fn project_town_qualification(root: &Path, selected: &[(u16, u16)]) -> Result<Project, Error> {
-    // The entrance is in the dead end beside the upper stair landing. The portal returns to
-    // the street below, outside protection, with an ordinary walk back to the temple.
-    const ENTRANCE: LegacyPosition = (32377, 32219, 6);
-    const LANDING: LegacyPosition = (32377, 32219, 7);
+    // Enter from the street to repeat Scorch on the same upper landing and in the
+    // same direction as the stair experiment. Only the floor-change owner differs.
+    const ENTRANCE: LegacyPosition = (32377, 32217, 7);
+    const LANDING: LegacyPosition = (32376, 32219, 6);
     const PORTAL: &str = "oteryn:item.tibia.i1949";
 
     let mut project = project_regions(root, selected)?;
@@ -227,6 +231,7 @@ fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Proj
         })
         .collect::<Result<Vec<_>, _>>()?;
     crate::authored_props::apply(root, &mut index, &mut regions, selected)?;
+    scoped_ground::validate(root, &index, &regions, selected)?;
     crate::startup_attributes::apply(root, &mut index, &mut regions, selected)?;
     let mut families = Families::default();
     for shard in shards(&root.join("content/world/transitions"), "teleports-")? {
@@ -246,6 +251,7 @@ fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Proj
     for shard in shards(&root.join("content/world/spawns"), "spawns-")? {
         families.add_spawns(&shard)?;
     }
+    spawn_map::apply(root, &mut families.spawns)?;
     add_npc_families(root, &mut families)?;
     families.subareas = compile::subareas::Source::load(root)?;
     families.layers = compile::layers::Source::load(root)?;

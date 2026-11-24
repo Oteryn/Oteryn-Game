@@ -10,7 +10,7 @@ pub const ITEM_USE_OBSERVATION_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json"
 );
 pub const ITEM_USE_OBSERVATION_PACKET_SHA256: &str =
-    "b248c8657d1185cda0bc05247d1b198097049e9385c04f7f619a93b60fda313e";
+    "7ddc79244fada2e9dfe3372fb7e200a70f3d71f76a863c68c09afca86a281966";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,

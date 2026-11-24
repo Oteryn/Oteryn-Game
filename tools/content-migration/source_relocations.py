@@ -13,10 +13,51 @@ relocated source therefore fails closed until that edit is reviewed and recorded
 from __future__ import annotations
 
 import hashlib
+import re
 from pathlib import Path
+
+# The reviewed spawn map revisions preserve the bound quest placements.
+QUEST_PLAN_PLACEMENT_RELOCATIONS = {
+    (
+        "content/world/placements/index.json",
+        "86d294671104ff928bc6070e4fab19b68c2f1598fbddbf9e0496ee37eee33197",
+    ): (
+        "content/world/placements/index.json",
+        "55e6c528c1a7824f2ddd17ece5d8b5e04de9ba5a71299b85c9636dc0ca54de3d",
+    ),
+    (
+        "content/world/placements/region-z07-x130-y127.b3",
+        "dda5c6165990fc024b707fc6dcaca826b830a2d2b083ce98d19d0df470d3e127",
+    ): (
+        "content/world/placements/region-z07-x130-y127.b3",
+        "b56bb3d6843ff73501174ded54acf8db9811fb25aa3eec672b9afb9cf99cf204",
+    ),
+    (
+        "content/world/placements/region-z08-x128-y128.b3",
+        "bd808a71a6bdd1284444209c02b3991b5e315ff2cccb2cc72f434c1061f3c004",
+    ): (
+        "content/world/placements/region-z08-x128-y128.b3",
+        "87a420f93d73e369d11fb1af422923fabda2339e4b19e8f001abee6f30568100",
+    ),
+    (
+        "content/world/placements/region-z09-x130-y125.b3",
+        "2a259538a67532773231f989e72cca0bd84424524c39679e56b8c181e91216d9",
+    ): (
+        "content/world/placements/region-z09-x130-y125.b3",
+        "b30ac2211f8d1e3ec679d513be4e67acb35f3e5160a204be612cacdcc7f31433",
+    ),
+    (
+        "content/world/placements/region-z11-x129-y126.b3",
+        "25000632406f556ca125613aa69a3ed52a6ddca472e4874c2c4b6f1761dd5f94",
+    ): (
+        "content/world/placements/region-z11-x129-y126.b3",
+        "10e4b1ca595b43df3499715a7910e01718eef5dbf99e9b95e0d0f28e82095af4",
+    ),
+}
 
 # (pinned path, pinned sha256) -> (current path, current sha256)
 RELOCATIONS = {
+    **QUEST_PLAN_PLACEMENT_RELOCATIONS,
     # The traversal overlay appends its exact Terrain and WorldObject owner notes.
     (
         "content/world/objects/index.json",
@@ -30,35 +71,35 @@ RELOCATIONS = {
         "ce986ca83b92f5ea2b7aeaa5bdc75b591cb28d63ab1a93dce0077215ce90979f",
     ): (
         "content/world/terrain/index.json",
-        "f4b9c418ca93577b7b6340c48e6947bb05283ce00fddbd6b75a6eede200e837b",
+        "a45754e19444cab3d9a56c0a72d19cef921fe0b937cbf22087c7ef15276b895a",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "96b24f0cbedb168d73aeca26644536693d97b7fe2d2f49ecbd150bdfd4f3037b",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "06415dbbfc1361c2213bf9bd9ef2515b8364663e6615cefb2027378918bf1404",
+        "726a74f8cae90a7544d30096e589eb4b5b015a8975ab0c2c36e4a2bbde996fd8",
     ),
     (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
         "17f828cc66dfe6629e8d11663673a6eda7d72fbb1adc08e956f2c53e818d5049",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "44babcccaffc0fb5b8642a6039d227d48cb0be7a4867725301ede99969082bd2",
+        "0dcc8eada8b278e3b26f77b7d0a4154d6f1db0c17359917869e86877fdbf9e42",
     ),
     (
         "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
         "5524d0a35c47e77092490798a17c938ab3e8c392d485805ae0ab48559f04b260",
     ): (
         "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-        "697d2d4f37d255f737d22332e3072dc0de0a27fb91e325fb08ba170032672351",
+        "76e185f1457b9660a6dbf226edabf5e71d8db72236425346ccda5e533abf44ef",
     ),
     (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
         "b933eaae211fdbdda5e52b78fa7193cd00d4766587da2932e31012dc95915d8c",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "c5ea5d46f2b75860fed6873eebd5ea0f4563ebc616bdba6314c3cd1accb65ff9",
+        "acea0d0c90ccb06ecfdfe24a7476764f63e4d11ee5afd6e2e3e0fadae6a57806",
     ),
     # The source-qualified Anomaly ground retains its pre-existing Item route;
     # the complete terrain row otherwise remains byte-identical.
@@ -76,7 +117,7 @@ RELOCATIONS = {
         "704991a60238795986358b6d2bcb7ac25f2172a04723b541e3f959a50eb9d768",
     ): (
         "content/world/terrain/index.json",
-        "f4b9c418ca93577b7b6340c48e6947bb05283ce00fddbd6b75a6eede200e837b",
+        "a45754e19444cab3d9a56c0a72d19cef921fe0b937cbf22087c7ef15276b895a",
     ),
     (
         "content/world/terrain/terrain-05500-05999.json",
@@ -90,7 +131,7 @@ RELOCATIONS = {
         "db9150a3639c4d6bcd596c040b7d2ad39047fbc3f51c925761bebfbb6def26fd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "06415dbbfc1361c2213bf9bd9ef2515b8364663e6615cefb2027378918bf1404",
+        "726a74f8cae90a7544d30096e589eb4b5b015a8975ab0c2c36e4a2bbde996fd8",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
@@ -121,14 +162,14 @@ RELOCATIONS = {
         "82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "44babcccaffc0fb5b8642a6039d227d48cb0be7a4867725301ede99969082bd2",
+        "0dcc8eada8b278e3b26f77b7d0a4154d6f1db0c17359917869e86877fdbf9e42",
     ),
     (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
         "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "44babcccaffc0fb5b8642a6039d227d48cb0be7a4867725301ede99969082bd2",
+        "0dcc8eada8b278e3b26f77b7d0a4154d6f1db0c17359917869e86877fdbf9e42",
     ),
     # Numeric17 reuses the Mantra/Bond compiler's source readers. Their behavior
     # is unchanged by the exact Global overlay check on live Mantra/Bond rows.
@@ -146,21 +187,21 @@ RELOCATIONS = {
         "a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9",
     ): (
         "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-        "697d2d4f37d255f737d22332e3072dc0de0a27fb91e325fb08ba170032672351",
+        "76e185f1457b9660a6dbf226edabf5e71d8db72236425346ccda5e533abf44ef",
     ),
     (
         "crates/gameplay/content/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "c5ea5d46f2b75860fed6873eebd5ea0f4563ebc616bdba6314c3cd1accb65ff9",
+        "acea0d0c90ccb06ecfdfe24a7476764f63e4d11ee5afd6e2e3e0fadae6a57806",
     ),
     (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "c5ea5d46f2b75860fed6873eebd5ea0f4563ebc616bdba6314c3cd1accb65ff9",
+        "acea0d0c90ccb06ecfdfe24a7476764f63e4d11ee5afd6e2e3e0fadae6a57806",
     ),
     # QMINT3's tree-first reference view changes only the Forge289 compiler and
     # mapper fingerprints. All454 binding rows and289 literal promotions are
@@ -212,42 +253,42 @@ RELOCATIONS = {
         "0549b3567749436b9e6f91f79751d32d9ea4431fe6b1be7505566d50b797e27d",
     ): (
         "content/world/terrain/index.json",
-        "f4b9c418ca93577b7b6340c48e6947bb05283ce00fddbd6b75a6eede200e837b",
+        "a45754e19444cab3d9a56c0a72d19cef921fe0b937cbf22087c7ef15276b895a",
     ),
     (
         "content/world/terrain/index.json",
         "22cb600cca441ac68526501c8e3576ec9c1dd07f77b276db470c70b996028fec",
     ): (
         "content/world/terrain/index.json",
-        "f4b9c418ca93577b7b6340c48e6947bb05283ce00fddbd6b75a6eede200e837b",
+        "a45754e19444cab3d9a56c0a72d19cef921fe0b937cbf22087c7ef15276b895a",
     ),
     (
         "content/world/terrain/index.json",
         "360e65beb939450179cb6c99b5c19a0e2842051fd9c3beaf21e6366b9c9245a4",
     ): (
         "content/world/terrain/index.json",
-        "f4b9c418ca93577b7b6340c48e6947bb05283ce00fddbd6b75a6eede200e837b",
+        "a45754e19444cab3d9a56c0a72d19cef921fe0b937cbf22087c7ef15276b895a",
     ),
     (
         "content/world/terrain/index.json",
         "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44",
     ): (
         "content/world/terrain/index.json",
-        "f4b9c418ca93577b7b6340c48e6947bb05283ce00fddbd6b75a6eede200e837b",
+        "a45754e19444cab3d9a56c0a72d19cef921fe0b937cbf22087c7ef15276b895a",
     ),
     (
         "content/world/terrain/index.json",
         "abffe2dd83dfec1ce1afd657bd0fcaae3760a10a509f8e1034e35834a714ba79",
     ): (
         "content/world/terrain/index.json",
-        "f4b9c418ca93577b7b6340c48e6947bb05283ce00fddbd6b75a6eede200e837b",
+        "a45754e19444cab3d9a56c0a72d19cef921fe0b937cbf22087c7ef15276b895a",
     ),
     (
         "content/world/terrain/index.json",
         "baf9f79b334c9478895ae824c67aad32e06eb4e7b09435570389dd64ad455836",
     ): (
         "content/world/terrain/index.json",
-        "f4b9c418ca93577b7b6340c48e6947bb05283ce00fddbd6b75a6eede200e837b",
+        "a45754e19444cab3d9a56c0a72d19cef921fe0b937cbf22087c7ef15276b895a",
     ),
     (
         "content/world/terrain/terrain-08614-08668.json",
@@ -261,21 +302,21 @@ RELOCATIONS = {
         "00878d28eb56c84f57734956505f60eb1fe7d248b7d1002c19209172a5125cfd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "06415dbbfc1361c2213bf9bd9ef2515b8364663e6615cefb2027378918bf1404",
+        "726a74f8cae90a7544d30096e589eb4b5b015a8975ab0c2c36e4a2bbde996fd8",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "8e41e838db44b527e4a243d4be1dc5245fe74def7145d9a68cdfc1436d609d5c",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "06415dbbfc1361c2213bf9bd9ef2515b8364663e6615cefb2027378918bf1404",
+        "726a74f8cae90a7544d30096e589eb4b5b015a8975ab0c2c36e4a2bbde996fd8",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "ae1a4f2c09345efbda4293eee96a93f9054bb33e40f658ab483b8b0c88027477",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "06415dbbfc1361c2213bf9bd9ef2515b8364663e6615cefb2027378918bf1404",
+        "726a74f8cae90a7544d30096e589eb4b5b015a8975ab0c2c36e4a2bbde996fd8",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
@@ -365,3 +406,50 @@ def read_pinned(root: Path, path: str, expected: str) -> bytes | None:
         return None
     data = target.read_bytes()
     return data if digest(data) == current_digest else None
+
+
+def retain_quest_plan_citations(rows: list[dict]) -> list[dict]:
+    """Preserve published plan identities for exact, reviewed placement changes."""
+    historical_citations = {
+        f"{current_path}:1:sha256:{current}": f"{path}:1:sha256:{historical}"
+        for (path, historical), (
+            current_path,
+            current,
+        ) in QUEST_PLAN_PLACEMENT_RELOCATIONS.items()
+    }
+    return [
+        {
+            **row,
+            "sources": [
+                historical_citations.get(source, source) for source in row["sources"]
+            ],
+        }
+        for row in rows
+    ]
+
+
+def refresh_current(paths: list[str]) -> None:
+    """Refresh the destination digests of explicitly reviewed paths."""
+    ledger = Path(__file__).resolve()
+    root = ledger.parents[2]
+    text = ledger.read_text()
+    for relative in paths:
+        count = sum(current == relative for current, _ in RELOCATIONS.values())
+        if not count:
+            raise ValueError(f"no relocation target: {relative}")
+        current = digest((root / relative).read_bytes())
+        if (relative, current) in RELOCATIONS:
+            raise ValueError(f"relocation target matches a historical pin: {relative}")
+        pattern = rf"""(:\s*\(\s*['"]{re.escape(relative)}['"]\s*,\s*['"])[0-9a-f]{{64}}(['"])"""
+        text, updated = re.subn(pattern, rf"\g<1>{current}\2", text)
+        if updated != count:
+            raise ValueError(f"unexpected number of relocation entries: {relative}")
+    ledger.write_text(text)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description=refresh_current.__doc__)
+    parser.add_argument("--refresh-current", nargs="+", required=True, metavar="PATH")
+    refresh_current(parser.parse_args().refresh_current)
