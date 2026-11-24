@@ -578,8 +578,10 @@ async fn scenario(
     // Carry the stale connection's ended continuity while keeping the current lease.
     admitted[2].continuity = stale.continuity;
     if !partyskull && !reference_level && !chat {
-        roundtrip(&owner, &mut admitted[0], &[Step::Revoke(targets[1])]).await?;
-        let before = roundtrip(&owner, &mut admitted[1], &[Step::Query]).await?;
+        // Reinvite the last invitee to preserve the roster order for the leadership checks.
+        let target = targets[2];
+        roundtrip(&owner, &mut admitted[0], &[Step::Revoke(target)]).await?;
+        let before = roundtrip(&owner, &mut admitted[2], &[Step::Query]).await?;
         assert_eq!(before[0].invitations.len(), 1);
         admitted[0].continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42, CAPABILITY_PARTY_REVOKE_V1])
@@ -587,15 +589,15 @@ async fn scenario(
         let results = roundtrip(
             &owner,
             &mut admitted[0],
-            &[Step::Revoke(targets[1]), Step::Revoke(targets[1])],
+            &[Step::Revoke(target), Step::Revoke(target)],
         ).await?;
         assert_eq!(results[0].disposition, PartyDisposition::Ok);
         assert_eq!(results[1].disposition, PartyDisposition::NotInvited);
-        let revoked = roundtrip(&owner, &mut admitted[1], &[Step::Query]).await?;
+        let revoked = roundtrip(&owner, &mut admitted[2], &[Step::Query]).await?;
         assert!(revoked[0].invitations.is_empty());
-        let unaffected = roundtrip(&owner, &mut admitted[2], &[Step::Query]).await?;
+        let unaffected = roundtrip(&owner, &mut admitted[1], &[Step::Query]).await?;
         assert_eq!(unaffected[0].invitations.len(), 1);
-        let invited = roundtrip(&owner, &mut admitted[0], &[Step::Invite(targets[1])]).await?;
+        let invited = roundtrip(&owner, &mut admitted[0], &[Step::Invite(target)]).await?;
         assert_eq!(invited[0].disposition, PartyDisposition::Ok);
     }
     if partyskull {
