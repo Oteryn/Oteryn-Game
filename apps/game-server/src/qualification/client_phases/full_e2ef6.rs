@@ -1132,10 +1132,15 @@ async fn approach_oressa(
         .iter()
         .find(|npc| npc.key == "oteryn:npc.oressa")
         .ok_or("Oressa prerequisite blocked: compiled world has no oteryn:npc.oressa placement")?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        npc.placements.iter().any(|placement| placement.floor == at.floor
-            && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 1)
-    }).ok_or("Oressa prerequisite blocked: no player walking route to oteryn:npc.oressa within the existing town route budget")?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| {
+        at != from
+            && npc.placements.iter().any(|placement| {
+                placement.floor == at.floor
+                    && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+            })
+    })
+    .ok_or("Oressa prerequisite blocked: no player walking route to oteryn:npc.oressa within the existing town route budget")?;
     walk(client, world, &path).await?;
     client.world_entities().and_then(|entities| entities.iter().find(|entry| {
         entry.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|placement| {
