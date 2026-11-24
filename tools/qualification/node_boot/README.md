@@ -163,6 +163,13 @@ gameplay fence read returned `RootUnavailable`. The Atelier resources handler
 at `crates/gameplay/dispatch/src/gameplay_transport/atelier/resources.rs` maps
 that fence error to `Rejected` before reading the balance.
 
+The detached `117:400` run returned `NODE_BOOT_FAIL` with 21 PASS and 2,379 FAIL
+rows. Two auctions remained unsettled for more than 68 minutes with zero receipts.
+Admission failures included 225 connection failures and 161 channel-full refusals.
+The channel capacity predicate in
+[2858_channel_switch_guard.sql](../../../apps/game-server/migrations/2858_channel_switch_guard.sql)
+counts live and reconnectable sessions toward the limit.
+
 For a verification checkout containing the fxh house catalogue activation (migration
 3078 and the UUID-binding fix in `669d7752`), apply this branch’s strict regression overlay with
 `git apply --unidiff-zero /path/to/house_catalogue_activation_fxh.patch`.
