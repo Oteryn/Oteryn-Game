@@ -132,42 +132,55 @@ async fn use_intent(
     Ok((reply.status, disposition, reply.server_sequence))
 }
 
+const MESSENGER: &str = "oteryn:npc.messenger_of_santa";
+// The Thais donor cell shared with Santa Claus.
+const THAIS_CHRISTMAS: TilePos = TilePos { x: 32357, y: 32210, floor: 7 };
+
+fn has_placed_messenger(npcs: &oteryn_world_bundle::npc::Table) -> bool {
+    npcs.npcs.iter().any(|npc| npc.key == MESSENGER && !npc.placements.is_empty())
+}
+
+async fn walk_to_messenger(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult<Option<oteryn_dev_client::EntityRef>> {
+    let seller = npcs.npcs.iter().find(|entry| entry.key == MESSENGER && !entry.placements.is_empty());
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        let in_talk_range = |x, y, floor| {
+            floor == at.floor && u32::from(at.x.abs_diff(x).max(at.y.abs_diff(y))) <= npc::TALK_RANGE_TILES
+        };
+        if let Some(seller) = seller {
+            seller.placements.iter().any(|p| in_talk_range(p.x, p.y, p.floor))
+        } else {
+            in_talk_range(THAIS_CHRISTMAS.x, THAIS_CHRISTMAS.y, THAIS_CHRISTMAS.floor)
+        }
+    }).ok_or("step 2: no player-walk route to the Thais Christmas location")?;
+    walk(client, world, &path).await?;
+    let position = client.world_spatial().actor_position;
+    let entities = client.world_entities().ok_or("step 2: no served world entities at the Christmas location")?;
+    let mut candidates = entities.iter().filter(|entry| {
+        entry.kind == oteryn_dev_client::EntityKind::Npc
+            && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Messenger of Santa"))
+            && entry.position.floor == position.floor
+            && entry.position.x.abs_diff(position.x).max(entry.position.y.abs_diff(position.y))
+                <= npc::TALK_RANGE_TILES
+    });
+    let actor = candidates.next().map(|entry| entry.entity);
+    if candidates.next().is_some() {
+        return Err("step 2: ambiguous live Messenger of Santa in talk range".into());
+    }
+    Ok(actor)
+}
+
 async fn quote(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<(npc::NpcTradeIntent, u32)> {
     use oteryn_dev_client::client_runtime::npc_shop as shop;
-    let seller = npcs
-        .npcs
-        .iter()
-        .find(|entry| entry.key == "oteryn:npc.messenger_of_santa")
-        .ok_or("step 2: compiled world has no Messenger of Santa acquisition actor")?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        seller
-            .placements
-            .iter()
-            .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= npc::TALK_RANGE_TILES as u16)
-    })
-    .ok_or("step 2: no player-walk route to Messenger of Santa")?;
-    walk(client, world, &path).await?;
-    let position = client.world_spatial().actor_position;
-    let actor = {
-        let entities = client.world_entities().ok_or("step 2: no served world entities at the Messenger placement")?;
-        let mut candidates = entities.iter().filter(|entry| {
-            entry.kind == oteryn_dev_client::EntityKind::Npc
-                && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Messenger of Santa"))
-                && entry.position.floor == position.floor
-                && entry.position.x.abs_diff(position.x).max(entry.position.y.abs_diff(position.y))
-                    <= npc::TALK_RANGE_TILES
-        });
-        let actor = candidates.next().map(|entry| entry.entity)
-            .ok_or("step 2: Messenger of Santa absent in talk range after walking to the Thais placement")?;
-        if candidates.next().is_some() {
-            return Err("step 2: ambiguous live Messenger of Santa in talk range".into());
-        }
-        actor
-    };
+    let actor = walk_to_messenger(client, world, npcs).await?
+        .ok_or("step 2: Messenger of Santa absent in talk range after walking to the Thais placement")?;
     for text in ["hi", "trade"] {
         let reply = shop::talk(
             client.session_mut(),
@@ -292,10 +305,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let has_seller = metadata.npcs.npcs.iter().any(|npc| {
-        npc.key == "oteryn:npc.messenger_of_santa" && !npc.placements.is_empty()
-    });
+    let world = full_e2ef7::qualification_world(clients)?;
     let mut client = connect_world(clients, 0xa9).await?;
+    let visible = walk_to_messenger(&mut client, world, &metadata.npcs).await?.is_some();
+    let has_seller = has_placed_messenger(&metadata.npcs) || visible;
     let source_sequence = if has_seller {
         acquire_bundles(&mut client, clients).await?
     } else {
