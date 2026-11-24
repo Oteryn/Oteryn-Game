@@ -524,19 +524,22 @@ async fn prepare_spatial(
     for a in &profile.dependencies.abilities {
         candidates.extend(geometry(a, origin, facing)?);
     }
-    // Unrelated actors cannot be hit by an area cast. Their tiles must not
-    // widen the footprint or make its qualification depend on distant terrain.
-    let area_only = spell.chain.is_none()
-        && matches!(
-            spell.execution,
-            Execution::Effects(_) | Execution::AbilityVariants(_)
-        )
-        && !profile.dependencies.abilities.is_empty()
+    // A local cast must not depend on the sight paths of unrelated actors.
+    let local_targets = rules::uses_local_targets(spell, profile);
+    if local_targets
+        && spell.target_or_direction
+        && !spell.self_target
         && profile
             .dependencies
             .abilities
             .iter()
-            .all(|ability| ability.area.is_some());
+            .any(|ability| ability.area.is_none())
+        && let Some(facing) = position.facing().map(direction)
+    {
+        // The direct strike can fall back to the caster's actual facing.
+        let (dx, dy) = delta(facing);
+        candidates.insert(offset(caster_position, dx, dy)?);
+    }
     let mut bindings = Vec::new();
     let mut chain_creatures = Vec::new();
     for (a, p, _) in roster {
@@ -545,7 +548,7 @@ async fn prepare_spatial(
             plan_position(caster_position),
             plan_position(p),
             MAX_SIGHT_DISTANCE,
-            area_only.then(|| candidates.contains(&p) || attack_target_tile == Some(p)),
+            local_targets.then(|| candidates.contains(&p) || attack_target_tile == Some(p)),
         ) {
             continue;
         }

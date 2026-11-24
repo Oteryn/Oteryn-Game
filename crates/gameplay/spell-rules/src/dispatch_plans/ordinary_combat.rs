@@ -31,6 +31,22 @@ pub fn applicable(spell: &SpellDefinition) -> bool {
         Execution::Effects(_) | Execution::AbilityVariants(_) | Execution::PartyBuff(_)
     )
 }
+/// Whether ordinary spatial preparation can qualify only the spell's target cells.
+pub fn uses_local_targets(spell: &SpellDefinition, profile: &OperationalProfile) -> bool {
+    spell.chain.is_none()
+        && matches!(
+            spell.execution,
+            Execution::Effects(_) | Execution::AbilityVariants(_)
+        )
+        && !profile.dependencies.abilities.is_empty()
+        && (spell.target_or_direction
+            || profile
+                .dependencies
+                .abilities
+                .iter()
+                .all(|ability| ability.area.is_some()))
+}
+
 pub fn has_world_geometry(spell: &SpellDefinition) -> bool {
     spell.chain.is_some()
         || spell.authored.as_ref().is_some_and(|p| {
@@ -213,6 +229,29 @@ mod tests {
         )
         .unwrap()
     }
+    #[test]
+    fn buzz_cannot_expand_spatial_reads_to_unrelated_actors() {
+        let buzz = source("candidate:spell/buzz");
+        let profile = buzz.authored.as_ref().unwrap();
+        let caster = (32369, 32230, 7);
+        let front = (32369, 32229, 7);
+        let unrelated = (32317, 32294, 7);
+        let local = uses_local_targets(&buzz, profile);
+
+        assert!(actor_in_cast_scope(
+            caster,
+            front,
+            64,
+            local.then_some(true)
+        ));
+        assert!(!actor_in_cast_scope(
+            caster,
+            unrelated,
+            64,
+            local.then_some(false)
+        ));
+    }
+
     #[test]
     fn directional_held_target_keeps_the_caster_as_geometry_origin() {
         let tile = |x, y| (x, y, 7);

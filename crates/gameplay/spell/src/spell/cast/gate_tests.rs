@@ -356,3 +356,47 @@ fn gates_refuse_in_their_order_and_runes_take_the_rune_gate() {
     };
     assert_eq!(condition_gate(&all, &healing_rune, at(1)), Ok(()));
 }
+
+#[test]
+fn scorch_starts_the_shared_attack_cooldown_for_buzz() {
+    let book = book();
+    let mut state = PlayerSpellState::new(
+        CharacterCastFacts {
+            vocation: Vocation::Sorcerer,
+            level: 1,
+            magic_level: 0,
+            max_health: 150,
+            max_mana: 55,
+            max_soul: 100,
+        },
+        0,
+        0,
+    )
+    .expect("sorcerer");
+    state.make_playable(at(0)).expect("playable");
+    let outside = operational(false);
+    let paid = ordinary(&book, &state, "Scorch", &outside).expect("Scorch");
+    let buzz = book.spells.iter().find(|s| s.name == "Buzz").expect("Buzz");
+    let caster = paid
+        .next
+        .caster(paid.next.owned_harmony_multiplier(buzz).expect("harmony"));
+    let outcome = |now| {
+        crate::spell::resolve_cast_with_operational_facts(
+            buzz,
+            &caster,
+            &paid.next.cooldowns,
+            at(now),
+            &outside,
+            &mut |_, maximum| maximum,
+        )
+    };
+    assert!(matches!(
+        outcome(2000),
+        Err(crate::spell::CastRejection::GroupCooling { .. })
+    ));
+    assert!(outcome(2001).is_ok());
+    assert!(matches!(
+        ordinary(&book, &paid.next, "Buzz", &outside),
+        Err(SpellCastDisposition::CoolingDown)
+    ));
+}
