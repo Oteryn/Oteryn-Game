@@ -921,6 +921,12 @@ fixture-seed-or-admission-failed	tibia.i8063
 fixture-seed-or-admission-failed	tibia.i8095
 fixture-seed-or-admission-failed	tibia.i8863
 fresh-admission-missing-seeded-item	tibia.i21400
+house-bed-placement-unavailable	tibia.i15506
+house-bed-placement-unavailable	tibia.i15507
+house-bed-placement-unavailable	tibia.i15508
+house-bed-placement-unavailable	tibia.i15509
+house-bed-placement-unavailable	tibia.i15510
+house-bed-placement-unavailable	tibia.i15511
 transport-disconnected	tibia.i2430
 transport-disconnected	tibia.i42069
 transport-disconnected	tibia.i42283
@@ -1289,12 +1295,6 @@ unclassified-preparation-refusal	tibia.i9598
 unclassified-preparation-refusal	tibia.i9601
 unclassified-preparation-refusal	tibia.i9604
 unclassified-preparation-refusal	tibia.i9653
-wire-projection-timeout	tibia.i15506
-wire-projection-timeout	tibia.i15507
-wire-projection-timeout	tibia.i15508
-wire-projection-timeout	tibia.i15509
-wire-projection-timeout	tibia.i15510
-wire-projection-timeout	tibia.i15511
 wire-projection-timeout	tibia.i15512
 wire-projection-timeout	tibia.i15513
 wire-projection-timeout	tibia.i15514

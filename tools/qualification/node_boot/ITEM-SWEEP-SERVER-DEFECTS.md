@@ -279,3 +279,10 @@ fxi's head in a separate detached test checkout.
 The first `110:120` attempt reached `NODE_BOOT_FAIL` before any seed rows.
 The seam client reported `ServerProtocolError { code: 1051 }` during
 fixture admission. This attempt contributes no item verdicts.
+
+A session reset interrupted `10:100` (0 seed PASS, 7 seed FAIL),
+the detached fxi replay (no seed rows), the `110:120` retry
+(no seed rows), and `230:1150` (no seed rows). Their retained logs
+contain no `NODE_BOOT_RESULT`. Six observed bed keys in `10:100`
+had no matching reachable house placement in the town bundle.
+The remaining observed key, 14248, returned `DefinitionNotFound`.
