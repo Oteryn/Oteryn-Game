@@ -351,6 +351,7 @@ fn plan_bed(world: &BundleWorld, from: TilePos, exact: Option<NonZeroU32>) -> Te
     let facts = world.facts();
     let present: BTreeSet<_> = facts.house_ids().collect();
     let mut closest: Option<(usize, BedPlan)> = None;
+    let mut exact_placement_found = false;
     for (house, key, entrance) in authored_houses()? {
         if !present.contains(&house) {
             continue;
@@ -369,6 +370,7 @@ fn plan_bed(world: &BundleWorld, from: TilePos, exact: Option<NonZeroU32>) -> Te
         }) {
             continue;
         }
+        exact_placement_found |= exact.is_some();
         let Some(path) = route(world, from, |at| at == entrance) else { continue };
         if closest.as_ref().is_some_and(|(length, _)| path.len() >= *length) {
             continue;
@@ -393,8 +395,13 @@ fn plan_bed(world: &BundleWorld, from: TilePos, exact: Option<NonZeroU32>) -> Te
             }
         }
     }
-    closest.map(|(_, plan)| plan)
-        .ok_or_else(|| "step=house-admission observed=no-reachable-catalogue-entrance-with-interior-bed".into())
+    closest.map(|(_, plan)| plan).ok_or_else(|| {
+        if exact.is_some() && !exact_placement_found {
+            "step=house-admission observed=exact-bed-absent-from-loaded-catalogue-houses".into()
+        } else {
+            "step=house-admission observed=no-reachable-catalogue-entrance-with-interior-bed".into()
+        }
+    })
 }
 
 /// Probe one exact base-map bed through the normal house transfer and modal owners.
