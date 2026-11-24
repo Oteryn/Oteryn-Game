@@ -8,7 +8,7 @@ use super::super::{
 use super::Dispatch;
 use crate::foundation::CommandStatus;
 use oteryn_protocol_oteryn::ClientCommandView;
-use oteryn_protocol_oteryn::npc_shop::{decode_npc_shop_intent, encode_npc_shop_result};
+use oteryn_protocol_oteryn::npc_shop::{decode_npc_shop_intent_for, encode_npc_shop_result};
 use transport::npc_shop::NpcShopStep;
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
@@ -23,10 +23,13 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         // committed sell-all answers OK with its units and gold, then the inventory delta
         // (domain 9) when the session shows items; an unknown outcome ends the connection before
         // the CommandId is sequenced, so the resend replays.
-        let step = match decode_npc_shop_intent(command.payload) {
-            Ok(intent) => {
+        let options = admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_OPTIONS_V1,
+        );
+        let step = match decode_npc_shop_intent_for(command.payload, options) {
+            Ok((intent, include_equipped)) => {
                 authority
-                    .npc_shop(
+                    .npc_shop_with_scope(
                         actor,
                         UseCommand {
                             game_session_id: admitted.game_session_id,
@@ -34,6 +37,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                             item_fence: admitted.item_fence,
                         },
                         intent,
+                        include_equipped,
                     )
                     .await
             }

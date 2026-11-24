@@ -341,21 +341,25 @@ async fn scenario(
         initialize.await
     };
     assert!(initialized, "real source-map initialization");
+    let check_container_preview =
+        !contents && !check_capacity && !inspection && !offer_contention && !read_priority;
     for a in &mut admitted {
         owner.admit_loop_training(a).await;
         assert_eq!(a.first_entry, FirstEntryOutcome::Positioned);
         a.continuity.selected_capabilities = SelectedCapabilities::select(
-            if contents || check_capacity {
+            if contents || check_capacity || check_container_preview {
                 crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
             } else {
                 owner.offered_capabilities()
             },
             if contents {
-                &[3, 4, 6, 12, 14, 21, 60, 61, 132, 501]
+                &[3, 4, 6, 12, 14, 21, 60, 61, 132, 501, 590]
             } else if check_capacity {
                 &[4, 6, 21, 60, 508]
             } else if inspection {
                 &[4, 6, 21, 60, 132]
+            } else if check_container_preview {
+                &[4, 6, 21, 37, 60, 62, 601]
             } else {
                 &[4, 6, 21, 60]
             },
@@ -438,6 +442,21 @@ async fn scenario(
             a.trade(offer_a).await?
         };
         assert_eq!(offered, ResultCode::Offered.payload());
+        if check_container_preview {
+            use oteryn_protocol_oteryn::container_batch::{COMMAND_TYPE_STASH_CONTAINER, Request};
+            let payload = Request::Preview {
+                source: std::num::NonZeroU64::MIN,
+                recursive: true,
+            }
+            .encode();
+            let reply = a.send(a.next, COMMAND_TYPE_STASH_CONTAINER, &payload).await?;
+            a.next += 1;
+            assert_eq!(reply, (CommandStatus::Rejected, Vec::new()));
+            assert!(
+                owner.states.player_trades.open(admitted[0].game_session_id),
+                "a rejected container preview must leave the live trade open"
+            );
+        }
         let (_, first, _) = owner
             .trade_observation(admitted[1].game_session_id)
             .await
@@ -492,11 +511,18 @@ async fn scenario(
                 .ok_or("partner ready")?;
             b.trade_state(&partner_state).await?;
             for peer in [&a, &b] {
-                let received = wire::decode_state_for(
+                let received = wire::decode_state_negotiated(
                     peer.last_trade.as_deref().ok_or("ready trade bytes")?,
+                    true,
                     true,
                 )
                 .map_err(debug)?;
+                assert_eq!(received.own.and_then(|offer| offer.appearance_id).map(|id| id.get()), Some(2854));
+                assert_eq!(received.counter.and_then(|offer| offer.appearance_id).map(|id| id.get()), Some(2854));
+                assert_eq!(
+                    received.contents.each_ref().map(|tree| tree[3].item.appearance_id.map(|id| id.get())),
+                    [Some(2874), Some(2874)],
+                );
                 assert_eq!(
                     received.contents.each_ref().map(|tree| tree[3].item.sub_type),
                     [7, 7],
@@ -1495,14 +1521,14 @@ impl Peer {
         Ok(r)
     }
     async fn trade_state(&mut self, state: &wire::State) -> TestResult {
-        let expected = wire::encode_state_for(state, self.details).map_err(debug)?;
+        let expected = wire::encode_state_negotiated(state, self.details, self.details).map_err(debug)?;
         while self.last_trade.as_ref() != Some(&expected) {
             let frame = self.read().await?;
             self.capture(&frame)?;
         }
         if self.details {
             let decoded =
-                wire::decode_state_for(self.last_trade.as_deref().ok_or("trade bytes")?, true)
+                wire::decode_state_negotiated(self.last_trade.as_deref().ok_or("trade bytes")?, true, true)
                     .map_err(debug)?;
             let panel = oteryn_dev_client::client_ui::player_trade::PlayerTradePanel {
                 selected: true,

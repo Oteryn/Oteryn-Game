@@ -1,6 +1,7 @@
 //! Store purchase retry evidence and Platform-owned delivery receipts.
 //!
 //! These journals are not a purchase or coin ledger. Platform owns both.
+mod blessing_delivery;
 mod charm_expansion;
 mod codec;
 mod cosmetic_tokens;
@@ -14,6 +15,7 @@ mod prey_purchase;
 mod purchase;
 mod purchase_history;
 mod storage;
+pub use blessing_delivery::StoreBlessingDelivery;
 pub use codec::{
     DeliveryIdentity, DeliveryPlan, DeliveryReceipt, PurchaseRequest, StoreValidationError,
 };

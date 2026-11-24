@@ -1,0 +1,13 @@
+{
+  "id": 603,
+  "name": "CYCLOPEDIA_MOVEMENT_SPEED_V1",
+  "owner_decision": "Server/client contract gaps package, 2026-11-22",
+  "owner": "Channel Movement and Cyclopedia Character",
+  "requires": [
+    199
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Adds the negotiated General Stats movement speed suffix to command 388."
+}

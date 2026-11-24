@@ -2,6 +2,12 @@
 use super::*;
 use crate::durability::npc_trade::yeo::{GLOO, NPC, SHRIMP};
 pub(super) fn check(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
+    if value.shopping_bag.is_some()
+        || value.include_equipped
+        || value.lines.iter().any(|line| line.source_equipment_slot.is_some())
+    {
+        return Err(AuditError::InvalidInput);
+    }
     let cause = value.cause.as_ref().ok_or(AuditError::InvalidInput)?;
     if cause.npc_key != NPC
         || cause.side != SIDE_BUY
@@ -80,7 +86,7 @@ pub(super) fn check(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
         false,
         false,
         false,
-        false,
+        (false, false),
         &npc_trade_usage(value),
     )
 }

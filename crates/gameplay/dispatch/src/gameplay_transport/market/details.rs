@@ -10,6 +10,7 @@ pub(super) async fn project(
     town: Option<u16>,
     query: Query,
     definition: Option<crate::durability::item_mint::TypedDefinitionRef>,
+    presentation: bool,
 ) -> Option<Vec<u8>> {
     let key = match &query {
         Query::Statistics { .. } | Query::Book { .. } => Some(definition?.production_key),
@@ -80,6 +81,14 @@ pub(super) async fn project(
                 return wire_details::encode_reply(&Reply::Refused { code: 9 }).ok();
             }
             let index = native.item_index()?;
+            let artwork_digest = if presentation {
+                let generation = owner.active_generation?;
+                let runtime = owner.runtime.lock().await;
+                let digest = generation.identity().client_artifact_digest();
+                (runtime.content_pin().client_artifact_digest() == digest).then_some(digest)
+            } else {
+                None
+            };
             let profiles: BTreeMap<_, _> = native
                 .item_profiles()
                 .map(|p| {
@@ -112,6 +121,7 @@ pub(super) async fn project(
                     vocations: None,
                     level: None,
                     forge_class: metadata.and_then(|m| m.forge_class),
+                    appearance: None,
                     depot_units: projection.depot.get(key).copied().unwrap_or(0),
                 };
                 if let Some(record) = profiles.get(&(key, revision)) {
@@ -161,6 +171,12 @@ pub(super) async fn project(
                 categories.extend(item.categories.iter().cloned());
                 if filter.matches(&item) {
                     if matched >= page * 32 && items.len() < 33 {
+                        item.appearance = artwork_digest.and_then(|catalogue_digest| {
+                            Some(wire_details::Artwork {
+                                catalogue_digest,
+                                object_appearance_id: super::super::item_ref_admission::native_item_appearance(native, key, revision)?,
+                            })
+                        });
                         items.push(item);
                     }
                     matched = matched.saturating_add(1);

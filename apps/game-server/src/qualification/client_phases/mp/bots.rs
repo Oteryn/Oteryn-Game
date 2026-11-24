@@ -559,6 +559,7 @@ pub(super) async fn party(
             Some(party::PartyIntent::Leave) => "Leave",
             Some(party::PartyIntent::Kick(_)) => "Kick",
             Some(party::PartyIntent::PassLeadership(_)) => "PassLeadership",
+            Some(party::PartyIntent::Revoke(_)) => "Revoke",
             None => "Query",
         };
         return Err(format!(

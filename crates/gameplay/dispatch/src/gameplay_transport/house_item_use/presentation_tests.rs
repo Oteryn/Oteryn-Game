@@ -75,6 +75,21 @@ fn w18_house_committed_cue_waits_without_holding_runtime_and_publishes_once()
                 runtime_scope: scope,
                 scope_ownership_generation: generation,
             };
+            let admitted = crate::gameplay_transport::connection::AdmittedSession {
+                game_session_id: session,
+                world_id: house.world_id(),
+                channel_id: runtime.binding().channel_id().ok_or("origin Channel")?,
+                runtime_actor: Some(actor),
+                first_entry: crate::gameplay_transport::connection::FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: crate::gameplay_transport::connection::SessionContinuity::FRESH,
+                item_fence: Some(fence),
+            };
+            assert_eq!(
+                crate::gameplay_transport::party_command::party_notice_fence(&admitted, &runtime),
+                Some((fence, Some(house.clone()))),
+                "a party notice follows current named-House custody"
+            );
             let runtime = Mutex::new(runtime);
             let states = Mutex::new(ChannelSpellStates::default());
             let chat = ChatRuntime::default();

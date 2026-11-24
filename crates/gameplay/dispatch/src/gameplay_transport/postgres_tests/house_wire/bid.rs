@@ -97,6 +97,49 @@ fn scenario() -> TestResult {
         );
         let page = send(&owner, &mut admitted, 57, &query()).await?.1;
         assert!(page.windows(HOUSE.len()).any(|w| w == HOUSE.as_bytes()));
+        const ACTIVE: &str = "oteryn:content.house.admiral_s_avenue_2";
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest) VALUES(encode($1,'hex')::uuid,$2,'private_house',2,0,$3)")
+            .bind(id(42).as_slice()).bind(ACTIVE).bind(digest.as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_house_ownership VALUES(encode($1,'hex')::uuid,$2,NULL,1,encode($3,'hex')::uuid)")
+            .bind(id(42).as_slice()).bind(ACTIVE).bind(id(77).as_slice()).execute(&mut *tx).await?;
+        let earlier_end: i64 = sqlx::query_scalar("INSERT INTO game_house_auctions(auction_id,world_id,house_key,first_rent,ends_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,0,statement_timestamp()+interval '1 day') RETURNING (extract(epoch FROM ends_at)*1000)::bigint")
+            .bind(id(78).as_slice()).bind(id(42).as_slice()).bind(ACTIVE).fetch_one(&mut *tx).await?;
+        tx.commit().await?;
+        assert_eq!(
+            send(&owner, &mut admitted, 6390, &query()).await?,
+            (CommandStatus::Rejected, Vec::new())
+        );
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(owner.offered_capabilities(), &[6, 49, 614])
+                .ok_or("House auction ordering selection")?;
+        let first =
+            |page: &[u8], key: &str| page.windows(key.len()).position(|w| w == key.as_bytes());
+        let (status, ordered) = send(&owner, &mut admitted, 6390, &query()).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert!(
+            matches!((first(&ordered, ACTIVE), first(&ordered, HOUSE)), (Some(a), Some(b)) if a < b)
+        );
+        let (status, legacy) = send(&owner, &mut admitted, 57, &query()).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert!(
+            matches!((first(&legacy, ACTIVE), first(&legacy, HOUSE)), (Some(a), Some(b)) if a > b)
+        );
+        let mut after_active = query();
+        let cursor = format!("{earlier_end}/{ACTIVE}");
+        bytes(&mut after_active, 3, cursor.as_bytes());
+        let (status, continuation) = send(&owner, &mut admitted, 6390, &after_active).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert!(first(&continuation, ACTIVE).is_none());
+        assert!(first(&continuation, HOUSE).is_some());
+        sqlx::query("UPDATE game_house_auctions SET ends_at=statement_timestamp()-interval '1 second' WHERE house_key=$1")
+            .bind(ACTIVE).execute(&h.pool).await?;
+        let (status, continuation_after_expiry) =
+            send(&owner, &mut admitted, 6390, &after_active).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert!(first(&continuation_after_expiry, HOUSE).is_some());
+        assert!(first(&continuation_after_expiry, ACTIVE).is_none());
+
         // A fresh session directory has no retained result, so the changed maximum under
         // command 1 reaches the native House receipt conflict check.
         let mut restarted = deps.owner(&h, &authority);

@@ -40,7 +40,10 @@ fn dedicated_house_name(database: &str, harness_only: bool) -> bool {
         let Some((tag, nanos)) = database.rsplit_once('_') else {
             return false;
         };
-        if nanos.is_empty() || !nanos.bytes().all(|b| b.is_ascii_digit()) {
+        if !nanos
+            .parse::<u128>()
+            .is_ok_and(|number| nanos == number.to_string())
+        {
             return false;
         }
         tag
@@ -74,6 +77,11 @@ fn house_fixture_requires_owned_house_case_names() {
         "postgres".to_owned(),
         "oteryn_tpl_0123456789abcdef".to_owned(),
         case("it_item_transfer"),
+        "it_ordinary_transfer_1795478400000000000".to_owned(),
+        "it_house_interior__1795478400000000000".to_owned(),
+        "it_house_loader_current_not_decimal".to_owned(),
+        "it_house_loader_current_+1795478400000000000".to_owned(),
+        "house_interior_0123".to_owned(),
         case("it_house_loader_"),
         format!("oteryn_case_{:x}_0_it_house_interior_f28", process ^ 1),
         format!("oteryn_case_{process:x}_+1_it_house_interior_f28"),

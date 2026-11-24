@@ -194,8 +194,10 @@ No native owner currently records these facts:
 
 - Monster killers in a death cause and the "most damage" killer: the death
   receipt records no killer.
-- Justified (0), assisted (3) and arena (4) kill statuses: only unjustified
-  kills and guild war frags are recorded.
+- The legacy PvP kills tab still carries only unjustified kills and guild war
+  frags. Justified kills and assist roles are available through
+  [player kill credit occurrences](#player-kill-credit-occurrences). Arena
+  status (4) remains unavailable.
 - General stats speed, capacity, maximum health and mana, soul, food and
   skill percentages: live state.
 - The outfit/mount split of appearance unlocks: the keys are opaque.
@@ -352,3 +354,68 @@ With capability 506 selected, command 388 also accepts selector 135 from
 legacy selectors keep their existing grammars and bounds. The reply adds the
 active content names for exactly the server-filtered custody page. Selector 135
 is rejected without 506; legacy selector 130 and its reply remain unchanged.
+
+## Owned appearance gallery (capability 611)
+
+Capability 611 requires 199. Command 388 accepts
+`136:u8, offset:u16le, outfit_source:u8` when the session selected 611.
+Source 0 returns all owned outfits, mounts and familiars. A positive source
+returns only owned outfits whose sources include that bit. The values below
+are the only valid positive request values. The server applies the filter
+before calculating the total and slicing the page.
+
+The reply is `136:u8, gallery_len:u16le, gallery:bytes`, followed by one
+nonzero `sources:u8` mask per row. The enclosed page uses the selector 129
+codec and ascending order by kind and key. Each row confirms ownership of
+that appearance. The mask combines the sources proven for its base look.
+Starter (1) is a sex-qualified starter outfit. Quest (2), NPC (8), taming (16),
+item action (32) and task board (64) come from accepted, compatible earned
+grant receipts. Store (4) comes from the Character's compatible confirmed
+Store cosmetic. Familiar grant (128) means the look is in this Character's
+durable familiar grants and resolves to a familiar in the active catalogue.
+This is the sole source bit on a familiar row. The server reads ownership
+under the current Character fence, and the reply confers no ownership or
+selection authority.
+
+The page remains bounded to 24 rows. An offset greater than the filtered
+total is refused. Selector 136 is refused without 611. Requests and replies
+on selector 129, including its legacy familiar catalogue, retain their
+existing semantics and byte format.
+
+Crystal 201189f8 sends owned outfits, mounts and familiars and tags their
+source in [ProtocolGame::sendCyclopediaCharacterOutfitsMounts](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp#L4632).
+[TibiaWiki Cyclopedia](https://www.tibiawiki.com.br/wiki/Cyclopedia) describes
+the owned gallery and the quest and Store source distinction.
+
+## Current and base movement speed (capability 603)
+
+With `CYCLOPEDIA_MOVEMENT_SPEED_V1` selected alongside 199, command 388
+appends a movement speed suffix to tab 1 after the unchanged body and the
+vocation byte when 487 was selected. The suffix is `0:u8` when unavailable
+or `1:u8, current:u16le, base:u16le` when observed. Both speeds are positive
+and use native Movement units. Other tabs and sessions without 603 retain
+their existing bytes and the extended reply bound remains 32768.
+
+The live Channel observation uses the same base speed, spell and runtime
+conditions, equipment and mounted speed as paced steps. Foreign characters,
+actors outside the Channel Movement owner, and unavailable or stale
+equipment observations return the unavailable tag. No movement fact is
+persisted. The two values correspond to Crystal's `getSpeed()` and
+`getBaseSpeed()` in
+[ProtocolGame::sendCyclopediaCharacterGeneralStats](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp#L4409-L4411).
+
+## Player kill credit occurrences
+
+Capability 595 gates command 6354 for the session's own Character. The request
+is `offset:u16, limit:u8` (little-endian, limit 1–50). It uses the current
+session-generation fence and pages the last 30 days by descending death commit
+time, breaking ties by descending occurrence ID. The reply is `count:u8` then
+`occurrence:[u8;16], victim_character_id:[u8;16], at_unix_ms:i64, final_blow:u8`
+per row. Maximum reply size is 2051 bytes.
+
+The native death transaction freezes the victim Character and final killer
+when a player's final blow causes the death. It records the other native PvP
+damage and assist contributors with `final_blow=0`. The final killer gets one
+row with `final_blow=1`, including for justified kills. History starts at
+capture deployment. Command 388's legacy tabs and status values keep their
+previous behavior.

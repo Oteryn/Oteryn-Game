@@ -1,0 +1,4 @@
+name=mana_shield_remaining
+commands=6372
+[route]
+routing::mana_shield_remaining::route(authority, session.admitted, command.payload).await

@@ -55,6 +55,7 @@ pub mod coin_transfer;
 pub mod command_replay;
 pub mod condition_status;
 pub mod connection_trace;
+pub mod container_batch;
 pub mod container_sort;
 pub mod container_tree;
 mod contract_registries;

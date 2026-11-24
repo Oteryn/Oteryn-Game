@@ -1,0 +1,13 @@
+{
+  "mechanic": "0148-wheel-allocation",
+  "kind": "handlers",
+  "id": "0148-wheel-allocation-server-commands",
+  "status": "unsupported",
+  "commands": [
+    6378,
+    6379
+  ],
+  "direction": "client_to_server",
+  "capability": 148,
+  "reason": "Client wiring is delivered in its own lane."
+}

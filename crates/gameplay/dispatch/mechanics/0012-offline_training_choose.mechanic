@@ -1,0 +1,4 @@
+name=offline_training_choose
+commands=6370
+[route]
+training(authority, session, command).await?

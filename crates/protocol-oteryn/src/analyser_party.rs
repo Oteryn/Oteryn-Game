@@ -1,5 +1,88 @@
 //! Confirmed current-party accounting, valued with explicit client-supplied unit prices.
 pub const COMMAND_TYPE_ANALYSER_PARTY_QUERY: u32 = 735;
+pub const CAPABILITY_ANALYSER_PARTY_INTERVAL_V1: u32 = 597;
+pub const CAPABILITY_ANALYSER_PARTY_VALUATION_V1: u32 = 598;
+pub const COMMAND_TYPE_ANALYSER_PARTY_RESET: u32 = 6357;
+pub const COMMAND_TYPE_ANALYSER_PARTY_INTERVAL: u32 = 6358;
+pub const COMMAND_TYPE_ANALYSER_PARTY_VALUATION: u32 = 6359;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[repr(u8)]
+pub enum ValuationSource {
+    #[default]
+    Market = 0,
+    Leader = 1,
+}
+impl TryFrom<u8> for ValuationSource {
+    type Error = &'static str;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::Market),
+            1 => Ok(Self::Leader),
+            _ => Err("invalid party valuation source"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HuntRequest {
+    Legacy(Vec<Price>),
+    Interval,
+    Reset,
+    Valuation(ValuationSource, Vec<Price>),
+}
+
+impl HuntRequest {
+    pub fn decode(command_type: u32, payload: &[u8]) -> Result<Self, &'static str> {
+        match command_type {
+            COMMAND_TYPE_ANALYSER_PARTY_QUERY => Ok(Self::Legacy(decode_request(payload)?)),
+            COMMAND_TYPE_ANALYSER_PARTY_INTERVAL if payload.is_empty() => Ok(Self::Interval),
+            COMMAND_TYPE_ANALYSER_PARTY_RESET if payload.is_empty() => Ok(Self::Reset),
+            COMMAND_TYPE_ANALYSER_PARTY_VALUATION => match payload.split_first() {
+                Some((&0, [])) => Ok(Self::Valuation(ValuationSource::Market, Vec::new())),
+                Some((&1, prices)) => Ok(Self::Valuation(
+                    ValuationSource::Leader,
+                    decode_request(prices)?,
+                )),
+                _ => Err("invalid party valuation request"),
+            },
+            _ => Err("invalid party analyser command"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HuntInterval {
+    pub number: u64,
+    pub elapsed_seconds: u64,
+    pub source: ValuationSource,
+    pub members: Vec<Member>,
+}
+
+impl HuntInterval {
+    pub fn encode(&self) -> Result<Vec<u8>, &'static str> {
+        let mut out = self.number.to_le_bytes().to_vec();
+        out.extend_from_slice(&self.elapsed_seconds.to_le_bytes());
+        out.push(self.source as u8);
+        out.extend_from_slice(&encode_reply(&self.members)?);
+        Ok(out)
+    }
+
+    pub fn decode(bytes: &[u8]) -> Result<Self, &'static str> {
+        let mut cursor = 0;
+        let number = u64::from_le_bytes(read(bytes, &mut cursor)?);
+        let elapsed_seconds = u64::from_le_bytes(read(bytes, &mut cursor)?);
+        let source = ValuationSource::try_from(read::<1>(bytes, &mut cursor)?[0])?;
+        Ok(Self {
+            number,
+            elapsed_seconds,
+            source,
+            members: decode_reply(&bytes[cursor..])?,
+        })
+    }
+}
+
 pub const MAX_PRICES: usize = 2048;
 pub const MAX_MEMBERS: usize = 50;
 pub const MAX_BYTES: usize = 65536;

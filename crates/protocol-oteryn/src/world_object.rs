@@ -75,9 +75,11 @@ const MAX_USE_WITH_BYTES: usize = 29;
 /// The `position` arm (`SpellTargetPositionV1`, SPELL-D7): x and y (1 tag + 5-byte sint32 = 6 each)
 /// and Global floor (1 + 1 = 2).
 pub const MAX_USE_WITH_POSITION_BYTES: usize = 16;
-/// A single small enum field (1 tag + 1 value byte = 2), with the same slack as
-/// `MAX_STEP_RESULT_BYTES` in `world_spatial.rs` to keep the repeated-field and
-/// over-bound decode failures distinct in tests.
+/// Optional reward occurrence on the negotiated USE result.
+pub const CAPABILITY_GAMEPLAY_OCCURRENCES_V1: u32 = 594;
+/// The ordinary committed result plus a length-delimited sixteen-byte occurrence.
+pub const MAX_USE_REWARD_RESULT_BYTES: usize = 20;
+/// Legacy result bound, including the gate message ID.
 pub const MAX_USE_RESULT_BYTES: usize = 4;
 /// One `WorldObjectOverlayEntryV1` as an element of a repeated `entries` field:
 /// see `WOBJ-RL-03` in `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` for the full
@@ -557,6 +559,66 @@ pub fn encode_use_result(disposition: UseDisposition) -> Result<Vec<u8>, WorldOb
     encode_use_result_with_gate(disposition, None)
 }
 
+pub const CAPABILITY_POTION_UTTERANCE_V1: u32 = 593;
+
+/// The source-qualified text spoken on a committed potion use.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum PotionUtterance {
+    Restore = 1,
+    Berserk = 2,
+    Mastermind = 3,
+    Bullseye = 4,
+    Transcendence = 5,
+}
+
+impl PotionUtterance {
+    pub const fn text(self) -> &'static str {
+        match self {
+            Self::Restore => "Aaaah...",
+            Self::Berserk => "You feel stronger.",
+            Self::Mastermind => "You feel smarter.",
+            Self::Bullseye => "You feel more accurate.",
+            Self::Transcendence => "You feel more balanced.",
+        }
+    }
+}
+
+/// Encodes a USE result for a peer that selected potion utterances.
+pub fn encode_use_result_with_utterance(
+    disposition: UseDisposition,
+    gate_message_id: Option<u8>,
+    utterance: Option<PotionUtterance>,
+) -> Result<Vec<u8>, WorldObjectError> {
+    let mut result = encode_use_result_with_gate(disposition, gate_message_id)?;
+    if let Some(utterance) = utterance {
+        if disposition != UseDisposition::Committed {
+            return Err(WorldObjectError::Malformed);
+        }
+        push_varint_field(&mut result, 3, utterance as u64);
+    }
+    Ok(result)
+}
+
+/// Decodes a USE result under capability 593. PUSH still uses the legacy codec.
+pub fn decode_use_result_with_utterance(
+    payload: &[u8],
+) -> Result<(UseDisposition, Option<u8>, Option<PotionUtterance>), WorldObjectError> {
+    if let [0x08, 1, 0x18, value] | [0x18, value, 0x08, 1] = payload {
+        let utterance = match value {
+            1 => PotionUtterance::Restore,
+            2 => PotionUtterance::Berserk,
+            3 => PotionUtterance::Mastermind,
+            4 => PotionUtterance::Bullseye,
+            5 => PotionUtterance::Transcendence,
+            _ => return Err(WorldObjectError::Malformed),
+        };
+        return Ok((UseDisposition::Committed, None, Some(utterance)));
+    }
+    let (disposition, gate) = decode_use_result_with_gate(payload)?;
+    Ok((disposition, gate, None))
+}
+
 /// The gate message id of a `SEALED` result: 1 to 127, one varint byte, so the result stays within
 /// `MAX_USE_RESULT_BYTES` (disposition 2 + id 2).
 pub const MAX_GATE_MESSAGE_ID: u8 = 127;
@@ -577,6 +639,33 @@ pub fn encode_use_result_with_gate(
         push_varint_field(&mut output, 2, u64::from(id));
     }
     Ok(output)
+}
+
+/// A granted treasure reward is identified by its immutable mint event ID.
+pub fn encode_use_reward_result(occurrence: [u8; 16]) -> Result<Vec<u8>, WorldObjectError> {
+    if occurrence == [0; 16] {
+        return Err(WorldObjectError::Malformed);
+    }
+    let mut bytes = encode_use_result(UseDisposition::Committed)?;
+    bytes.extend_from_slice(&[0x22, 16]);
+    bytes.extend_from_slice(&occurrence);
+    Ok(bytes)
+}
+
+/// The USE disposition, optional gate message ID, and optional reward mint event ID.
+pub type UseRewardResult = (UseDisposition, Option<u8>, Option<[u8; 16]>);
+
+pub fn decode_use_reward_result(payload: &[u8]) -> Result<UseRewardResult, WorldObjectError> {
+    if let [0x08, 0x01, 0x22, 16, occurrence @ ..] = payload {
+        let occurrence: [u8; 16] = occurrence
+            .try_into()
+            .map_err(|_| WorldObjectError::Malformed)?;
+        if occurrence == [0; 16] {
+            return Err(WorldObjectError::Malformed);
+        }
+        return Ok((UseDisposition::Committed, None, Some(occurrence)));
+    }
+    decode_use_result_with_gate(payload).map(|(disposition, gate)| (disposition, gate, None))
 }
 
 /// Decodes `UseResultV1` and `PushResultV1`: field 2 `gate_message_id` is carried by `SEALED`
@@ -1314,7 +1403,7 @@ mod tests {
         assert_eq!(use_intent["max_payload_bytes"], MAX_USE_INTENT_BYTES as u64);
         assert_eq!(
             use_intent["max_result_payload_bytes"],
-            MAX_USE_RESULT_BYTES as u64
+            MAX_USE_REWARD_RESULT_BYTES as u64
         );
 
         let domains = protocol["state_domains"].as_array().expect("state_domains");
@@ -1667,4 +1756,24 @@ mod count_bounds_tests {
     fn f26_borrowed_length_bounds() {
         crate::count_bounds_tests::borrowed_length_bounds(super::read_bytes);
     }
+}
+
+#[cfg(test)]
+#[test]
+fn occurrence_reward_extension_accepts_only_committed_rewards() -> Result<(), WorldObjectError> {
+    let mut wire = encode_use_reward_result([7; 16])?;
+    assert_eq!(wire.len(), MAX_USE_REWARD_RESULT_BYTES);
+    assert_eq!(
+        decode_use_reward_result(&wire)?,
+        (UseDisposition::Committed, None, Some([7; 16]))
+    );
+    assert!(decode_use_result(&wire).is_err());
+    wire[1] = UseDisposition::NothingToUse as u8;
+    assert!(decode_use_reward_result(&wire).is_err());
+    let legacy = encode_use_result(UseDisposition::Committed)?;
+    assert_eq!(
+        decode_use_reward_result(&legacy)?,
+        (UseDisposition::Committed, None, None)
+    );
+    Ok(())
 }

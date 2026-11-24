@@ -36,6 +36,9 @@ pub struct TaskBoardData {
     pub shop_purchases: BTreeSet<u16>,
     /// Paid bonus points read by the existing Wheel allocation owner.
     pub promotion_points: u16,
+    /// Committed server-save day of the most recent Task Board token claim.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub daily_bounty_claim_day: Option<i64>,
 }
 
 impl TaskBoardData {
@@ -205,6 +208,7 @@ pub struct TaskBoardContext<'a> {
     pub now_unix_seconds: i64,
     /// Current weekly period supplied by the server-save owner.
     pub period: i64,
+    pub reset_day: Option<i64>,
     pub creatures: &'a [TaskBoardCreature],
     pub available_gold: u64,
     /// Existing durable bounty-reroll resource balance.
@@ -235,6 +239,7 @@ pub enum TaskBoardAction {
     /// Historical serialized action retained only to refuse old durable callers.
     #[serde(rename = "ClaimDailyReroll")]
     RetiredDailyReroll,
+    ClaimDailyBountyToken,
     SetPreferred {
         slot: u8,
         race: Option<String>,
@@ -576,6 +581,20 @@ fn apply_inner(
             generate_bounty(&mut data.bounty, context.creatures, draw)?;
         }
         TaskBoardAction::RetiredDailyReroll => return Err(TaskBoardRefusal::RetiredAction),
+        TaskBoardAction::ClaimDailyBountyToken => {
+            let day = context.reset_day.ok_or(TaskBoardRefusal::WrongState)?;
+            if context.reroll_tokens >= MAX_REROLL_TOKENS {
+                return Err(TaskBoardRefusal::LimitReached);
+            }
+            if data
+                .daily_bounty_claim_day
+                .is_some_and(|previous| previous >= day)
+            {
+                return Err(TaskBoardRefusal::Cooldown);
+            }
+            data.daily_bounty_claim_day = Some(day);
+            effects.reroll_tokens_granted = 1;
+        }
         TaskBoardAction::SetPreferred { slot, race }
         | TaskBoardAction::SetUnwanted { slot, race } => {
             let preferred = matches!(action, TaskBoardAction::SetPreferred { .. });

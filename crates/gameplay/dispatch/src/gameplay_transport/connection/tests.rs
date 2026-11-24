@@ -36,7 +36,9 @@ mod write_text_depot_view;
 
 use super::*;
 use crate::gameplay_transport::world_spatial::encode_step_result;
-use oteryn_protocol_oteryn::world_object::decode_use_result_with_gate;
+use oteryn_protocol_oteryn::world_object::{
+    decode_use_result_with_gate, encode_use_result_with_gate,
+};
 use std::cell::{Cell, RefCell};
 use std::error::Error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};

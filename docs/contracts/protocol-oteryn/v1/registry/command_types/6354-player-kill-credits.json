@@ -1,0 +1,10 @@
+{
+  "id": 6354,
+  "name": "PLAYER_KILL_CREDITS",
+  "owner_decision": "Client occurrence and inscription protocol gap packet",
+  "capability": 595,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/cyclopedia-character-v1.md#player-kill-credit-occurrences",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/cyclopedia-character-v1.md#player-kill-credit-occurrences",
+  "max_payload_bytes": 3,
+  "max_result_payload_bytes": 2051
+}

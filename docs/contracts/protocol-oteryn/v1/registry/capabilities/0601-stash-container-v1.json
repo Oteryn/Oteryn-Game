@@ -1,0 +1,16 @@
+{
+  "id": 601,
+  "name": "STASH_CONTAINER_V1",
+  "owner_decision": "Whole-container stash confirmation",
+  "owner": "Game carried item loop",
+  "requires": [
+    4,
+    62
+  ],
+  "command_types": [
+    6364
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only"
+}
