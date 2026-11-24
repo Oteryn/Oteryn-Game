@@ -142,21 +142,6 @@ fn visible_npc(client: &DevClientSession, npc: &oteryn_world_bundle::npc::Npc) -
     }).map(|entity| entity.entity)
 }
 
-async fn approach_path(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    npc: &oteryn_world_bundle::npc::Npc,
-) -> TestResult<Option<Vec<StepDirection>>> {
-    let placements = npc.placements.clone();
-    route_live(client, world, move |at| {
-        placements.iter().any(|placement| {
-            placement.floor == at.floor
-                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
-        })
-    })
-    .await
-}
-
 async fn approach(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -174,7 +159,7 @@ async fn find_exchange_npc(
 ) -> TestResult<(EntityRef, String)> {
     let mut attempted = Vec::new();
     for npc in &npcs.npcs {
-        let Some(path) = approach_path(client, world, npc).await? else {
+        let Some(path) = npc_approach_path(client, world, npc).await? else {
             continue;
         };
         let actor = approach(client, world, npc, &path).await?;
@@ -213,7 +198,7 @@ async fn earn_gold(
         if observed[0] >= 100 {
             continue;
         }
-        let Some(path) = approach_path(client, world, npc).await? else {
+        let Some(path) = npc_approach_path(client, world, npc).await? else {
             continue;
         };
         let actor = approach(client, world, npc, &path).await?;

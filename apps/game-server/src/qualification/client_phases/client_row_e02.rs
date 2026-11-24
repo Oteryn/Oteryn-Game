@@ -112,13 +112,19 @@ pub(super) async fn approach(
     world: &BundleWorld,
     npc: &oteryn_world_bundle::npc::Npc,
 ) -> TestResult<EntityRef> {
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        npc.placements.iter().any(|placement| {
-            placement.floor == at.floor
-                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
-        })
-    }).ok_or_else(|| format!("step=walk-npc observed=no-route:{}", npc.key))?;
-    walk(client, world, &path).await?;
+    let path = npc_approach_path(client, world, npc)
+        .await?
+        .ok_or_else(|| format!("step=walk-npc observed=no-route:{}", npc.key))?;
+    approach_along(client, world, npc, &path).await
+}
+
+async fn approach_along(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npc: &oteryn_world_bundle::npc::Npc,
+    path: &[StepDirection],
+) -> TestResult<EntityRef> {
+    walk(client, world, path).await?;
     visible_npc(client, npc).ok_or_else(|| format!("step=walk-npc observed=actor-not-visible:{}", npc.key).into())
 }
 
@@ -129,13 +135,10 @@ async fn find_exchange_npc(
 ) -> TestResult<(EntityRef, String)> {
     let mut attempted = Vec::new();
     for npc in &npcs.npcs {
-        if route(world, tile(client.world_spatial().actor_position)?, |at| {
-            npc.placements.iter().any(|placement| placement.floor == at.floor
-                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3)
-        }).is_none() {
+        let Some(path) = npc_approach_path(client, world, npc).await? else {
             continue;
-        }
-        let actor = approach(client, world, npc).await?;
+        };
+        let actor = approach_along(client, world, npc, &path).await?;
         let greeting = talk(client, actor, "hi").await?;
         attempted.push(format!("{}:hi={:?}", npc.key, greeting.lines));
         let reply = talk(client, actor, "change gold").await?;
@@ -168,15 +171,13 @@ async fn earn_gold(
     let mut observed = backpack_coins(client, refs)?;
     let mut attempts = Vec::new();
     for npc in &npcs.npcs {
-        if observed[0] >= 100
-            || route(world, tile(client.world_spatial().actor_position)?, |at| {
-                npc.placements.iter().any(|placement| placement.floor == at.floor
-                    && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3)
-            }).is_none()
-        {
+        if observed[0] >= 100 {
             continue;
         }
-        let actor = approach(client, world, npc).await?;
+        let Some(path) = npc_approach_path(client, world, npc).await? else {
+            continue;
+        };
+        let actor = approach_along(client, world, npc, &path).await?;
         let greeting = talk(client, actor, "hi").await?;
         let trade = talk(client, actor, "trade").await?;
         attempts.push(format!("{}:hi={:?}:trade={:?}", npc.key, greeting.lines, trade.lines));

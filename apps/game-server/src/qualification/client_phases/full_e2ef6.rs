@@ -1654,10 +1654,9 @@ async fn wait_inventory(
 async fn return_and_release(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let restore: TestResult = async {
         client.session_mut().attack_target(None).await?;
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            at == TOWN
-        })
-        .ok_or("death row cleanup: no walking route back to entry")?;
+        let path = route_live(client, world, |at| at == TOWN)
+            .await?
+            .ok_or("death row cleanup: no walking route back to entry")?;
         walk(client, world, &path).await
     }
     .await;
@@ -1716,12 +1715,7 @@ async fn approach_service(
     let npc = npcs.npcs.iter().find(|npc| npc.key == key).ok_or_else(|| {
         format!("player prerequisite blocked: compiled world has no {key} placement")
     })?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        npc.placements.iter().any(|place| {
-            place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
-        })
-    })
-    .ok_or_else(|| {
+    let path = npc_approach_path(client, world, npc).await?.ok_or_else(|| {
         format!("player prerequisite blocked: no walking route to {key} within town route budget")
     })?;
     walk(client, world, &path).await?;

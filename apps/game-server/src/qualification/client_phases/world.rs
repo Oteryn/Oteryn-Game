@@ -483,6 +483,28 @@ async fn route_live(
     route_work(client, move || Ok(route(&world, start, goal))).await
 }
 
+async fn npc_approach_path(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    npc: &oteryn_world_bundle::npc::Npc,
+) -> TestResult<Option<Vec<StepDirection>>> {
+    if npc.placements.is_empty() {
+        return Ok(None);
+    }
+    let placements = npc.placements.clone();
+    route_live(client, world, move |at| {
+        placements.iter().any(|placement| {
+            placement.floor == at.floor
+                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+        })
+    })
+    .await
+}
+
+pub(super) fn hunt_progress(phase: &'static str) {
+    verdict::Harness::global().progress(phase);
+}
+
 /// Plan from immutable production map facts; only replies to real STEP commands prove travel.
 fn route(
     world: &BundleWorld,
