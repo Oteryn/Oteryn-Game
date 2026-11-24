@@ -423,6 +423,10 @@ mod native_advertisement_tests {
     -> Result<(), FoundationProtocolError> {
         assert!(
             CLIENT_SUPPORTED_CAPABILITIES
+                .contains(&oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_V1)
+        );
+        assert!(
+            CLIENT_SUPPORTED_CAPABILITIES
                 .windows(2)
                 .all(|pair| pair[0] < pair[1]),
             "native capabilities must be strictly ascending without duplicates"
