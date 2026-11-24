@@ -24,6 +24,8 @@ use std::num::NonZeroU32;
 const BATCH_VARIABLE: &str = "OTERYN_E2E_NPC_SWEEP_BATCH";
 const CHARACTER: usize = 0;
 const LEVEL: u32 = 100;
+// The server recognizes hello as a standalone focus word.
+const GREETING: &str = "hello";
 const STEP_DEADLINE: Duration = Duration::from_secs(180);
 
 fn batch(value: Option<&str>) -> TestResult<(usize, usize)> {
@@ -606,30 +608,37 @@ fn npc_name(npc: &Definition) -> String {
 }
 
 fn nearby(world: &BundleWorld, at: TilePos) -> TestResult<TilePos> {
+    // Prefer orthogonal contact before diagonals or distant tiles. A walkable
+    // diagonal may be across two blocked edges.
     for distance in 1_i32..=3 {
-        for dx in -distance..=distance {
-            for dy in -distance..=distance {
-                if dx.abs().max(dy.abs()) != distance {
-                    continue;
-                }
-                let (Ok(x), Ok(y)) = (
-                    u16::try_from(i32::from(at.x) + dx),
-                    u16::try_from(i32::from(at.y) + dy),
-                ) else {
-                    continue;
-                };
-                let pos = TilePos {
-                    x,
-                    y,
-                    floor: at.floor,
-                };
-                if world.enterable(pos)
-                    && world
-                        .base()
-                        .tile(x, y, at.floor)
-                        .is_some_and(|tile| tile.walkable())
-                {
-                    return Ok(pos);
+        for orthogonal in [true, false] {
+            for dx in -distance..=distance {
+                for dy in -distance..=distance {
+                    if dx.abs().max(dy.abs()) != distance
+                        || (dx == 0 || dy == 0) != orthogonal
+                        || dx.abs() + dy.abs() > 4
+                    {
+                        continue;
+                    }
+                    let (Ok(x), Ok(y)) = (
+                        u16::try_from(i32::from(at.x) + dx),
+                        u16::try_from(i32::from(at.y) + dy),
+                    ) else {
+                        continue;
+                    };
+                    let pos = TilePos {
+                        x,
+                        y,
+                        floor: at.floor,
+                    };
+                    if world.enterable(pos)
+                        && world
+                            .base()
+                            .tile(x, y, at.floor)
+                            .is_some_and(|tile| tile.walkable())
+                    {
+                        return Ok(pos);
+                    }
                 }
             }
         }
@@ -806,6 +815,20 @@ impl Fixture<'_> {
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *tx)
                 .await?;
+            // A previous placement may have killed the released fixture and
+            // transferred its backpack to a corpse. Seed an empty starter bag
+            // before adding the stock for this independent placement.
+            sqlx::query("WITH minted AS (
+                INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
+                    definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+                SELECT uuidv7(),encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i2854',
+                    'definition-r1',1,1,uuidv7()
+                WHERE NOT EXISTS (SELECT 1 FROM game_item_container_slots
+                    WHERE character_id=encode($1,'hex')::uuid)
+                RETURNING item_instance_id,world_id,minted_transaction_id)
+                INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id)
+                SELECT encode($1,'hex')::uuid,item_instance_id,world_id,minted_transaction_id FROM minted")
+                .bind(character).bind(world).execute(&mut *tx).await?;
             let stock = sell.map(|offer| {
                 (
                     offer.item.key.as_str(),
@@ -957,7 +980,7 @@ impl Fixture<'_> {
             Action::Missing(key) => Err(format!("missing or stale authored binding {key}").into()),
             Action::Greet(expected) => {
                 let client = self.client.as_mut().ok_or("NPC fixture client missing")?;
-                let reply = talk(client, actor, "hi").await?;
+                let reply = talk(client, actor, GREETING).await?;
                 if reply.open != Some((actor, NpcConversationState::Open)) {
                     return Err("NPC greeting did not open the expected actor conversation".into());
                 }
@@ -977,7 +1000,7 @@ impl Fixture<'_> {
                     self.focused = false;
                 }
                 if !self.focused && !keyword.only_unfocus {
-                    talk(client, actor, "hi").await?;
+                    talk(client, actor, GREETING).await?;
                     self.focused = true;
                 }
                 let player = player_name(clients).await?;
@@ -1023,23 +1046,25 @@ impl Fixture<'_> {
                         if sell.is_none() { offer.unit_price } else { 0 },
                     )
                     .await?;
-                let reply = talk(client, actor, "hi").await?;
-                let focused = reply.open == Some((actor, NpcConversationState::Open));
+                let reply = talk(client, actor, GREETING).await?;
+                if reply.open != Some((actor, NpcConversationState::Open)) {
+                    return Err("trade greeting did not open the target conversation".into());
+                }
                 let result = trade(client, actor, offer, *occurrence).await;
-                self.focused = focused && result.is_ok();
+                self.focused = result.is_ok();
                 result
             }
             Action::Route(service, route) => {
                 let client = self
                     .enter(at, None, None, Some((service, route)), route.price)
                     .await?;
-                talk(client, actor, "hi").await?;
+                talk(client, actor, GREETING).await?;
                 travel(client, actor, route).await
             }
             Action::Service(service) => {
                 let fee = service_price(&service.identity.key).map_or(100, |(_, fee)| fee.max(100));
                 let client = self.enter(at, None, None, None, fee).await?;
-                talk(client, actor, "hi").await?;
+                talk(client, actor, GREETING).await?;
                 perform_service(client, actor, clients, service).await
             }
         }
@@ -1216,21 +1241,30 @@ async fn shop_window(
     client: &mut DevClientSession,
     actor: EntityRef,
 ) -> TestResult<wire::NpcTradeWindow> {
-    say(client, actor, "trade").await?;
-    let delta = tokio::time::timeout(
-        Duration::from_secs(2),
-        client
-            .session_mut()
-            .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1),
-    )
-    .await??;
-    wire::decode_npc_trade_window_for(
-        &delta.payload,
-        client
-            .selected_capabilities()
-            .contains(&oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1),
-    )
-    .map_err(|error| format!("NPC trade window wire: {error:?}").into())
+    // The owner accepts both keywords. "Offers" avoids authored dialogue
+    // that consumes "trade" before the shop handler.
+    say(client, actor, "offers").await?;
+    let details = client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let delta = client
+                .session_mut()
+                .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
+                .await?;
+            let window = wire::decode_npc_trade_window_for(&delta.payload, details)
+                .map_err(|error| format!("NPC trade window wire: {error:?}"))?;
+            match window.open {
+                Some((owner, _)) if owner == actor => return Ok(window),
+                Some(_) => return Err("shop window names another NPC".into()),
+                // A preceding conversation reset can queue a closed delta.
+                None => continue,
+            }
+        }
+    })
+    .await
+    .map_err(|_| "no open trade window after offers request")?
 }
 
 async fn trade(
