@@ -1399,7 +1399,7 @@ pub(super) async fn read_stats(
 }
 
 /// Logout with the combat lock honoured: wait it out with keep-alive Turns, never clear it.
-async fn release(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn release(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(930);
     let mut activity_due = tokio::time::Instant::now();
     loop {

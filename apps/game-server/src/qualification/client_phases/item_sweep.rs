@@ -341,12 +341,48 @@ impl Fixtures<'_> {
 }
 
 async fn release(client: &mut DevClientSession) -> TestResult {
-    let (result, _, _, _) = logout_retrying_busy(client).await?;
-    if result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        Ok(())
-    } else {
-        Err(format!("fixture-logout-{result:?}").into())
-    }
+    super::creature_sweep::release(client).await
+}
+
+/// Remove only scratch-world ground custody created by this entry's fixture
+/// characters. The MOVE receipt and line keep the historical item identity.
+async fn clear_fixture_drops(
+    db: &mut sqlx::PgConnection,
+    fixtures: &Fixtures<'_>,
+    after: i64,
+) -> TestResult {
+    let characters: Vec<_> = fixtures
+        .scopes
+        .iter()
+        .flat_map(|scope| {
+            scope
+                .characters
+                .iter()
+                .map(|character| uuid_text(character))
+        })
+        .collect();
+    let scope = fixtures.scopes[0];
+    let mut tx = db.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "DELETE FROM game_item_ground_locations g USING game_item_loop_move_lines l, \
+         game_item_loop_move_receipts r WHERE g.item_instance_id=l.item_instance_id \
+         AND l.transaction_id=r.transaction_id AND l.to_kind=3 \
+         AND g.spatial_position=l.to_spatial_position AND g.stack_ordinal>$1 \
+         AND g.world_id=$2::uuid AND g.channel_id=$3::uuid \
+         AND r.world_id=g.world_id AND r.channel_id=g.channel_id \
+         AND r.character_id::text=ANY($4)",
+    )
+    .bind(after)
+    .bind(uuid_text(&scope.world))
+    .bind(uuid_text(&scope.channel))
+    .bind(&characters)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
 }
 
 fn carried(client: &DevClientSession, reference: NonZeroU32) -> Option<ItemEntry> {
@@ -1467,6 +1503,7 @@ pub(super) async fn run<'a>(scopes: [&'a SeamClients<'a>; 5], world: &BundleWorl
         prepared: [false; 10],
         socket: required("NODE_BOOT_CONTROL_SOCKET")?,
     };
+    let mut cleanup_db = sqlx::PgConnection::connect(scopes[0].url).await?;
     let mut tally = Tally::default();
     for &(key, item) in &entries[start..end] {
         verdict::Harness::global().progress("item-sweep-entry");
@@ -1476,8 +1513,13 @@ pub(super) async fn run<'a>(scopes: [&'a SeamClients<'a>; 5], world: &BundleWorl
             counts: Tally::default(),
             lap: std::time::Instant::now(),
         };
+        let watermark: i64 = sqlx::query_scalar(
+            "SELECT COALESCE(max(stack_ordinal),0) FROM game_item_ground_locations",
+        )
+        .fetch_one(&mut cleanup_db)
+        .await?;
         let result = tokio::time::timeout(
-            Duration::from_secs(180),
+            Duration::from_secs(1200),
             Box::pin(sweep_item(
                 &mut fixtures,
                 world,
@@ -1494,6 +1536,10 @@ pub(super) async fn run<'a>(scopes: [&'a SeamClients<'a>; 5], world: &BundleWorl
         } else {
             "entry-deadline"
         });
+        let cleared = clear_fixture_drops(&mut cleanup_db, &fixtures, watermark).await;
+        if cleared.is_err() {
+            rows.emit("ground_cleanup", cleared);
+        }
         tally.pass += rows.counts.pass;
         tally.fail += rows.counts.fail;
     }
