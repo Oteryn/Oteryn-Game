@@ -364,7 +364,8 @@ async fn resting_walk(
     to: TilePos,
 ) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| at == to)
+    let path = route_live(client, world, move |at| at == to)
+        .await?
         .ok_or_else(|| format!("P10 player walking route blocked: {from:?}->{to:?}"))?;
     walk(client, world, &path).await?;
     if tile(client.world_spatial().actor_position)? != to {
@@ -380,7 +381,9 @@ async fn resting_reentry(
     inside: TilePos,
 ) -> TestResult<tokio::time::Instant> {
     let mut at = tile(client.world_spatial().actor_position)?;
-    let path = route(world, at, |at| at == inside).ok_or("P10 reentry walking route blocked")?;
+    let path = route_live(client, world, move |at| at == inside)
+        .await?
+        .ok_or("P10 reentry walking route blocked")?;
     let mut entered = None;
     for direction in path {
         let to = destination(world, at, direction).ok_or("P10 reentry destination absent")?;
@@ -574,7 +577,11 @@ async fn resting_bonuses(
         let mut player = connect_world(clients, 0xf1).await?;
         let observed: TestResult<rest::RestStatus> = async {
             let from = tile(player.world_spatial().actor_position)?;
-            let (inside, outside) = resting_tiles(world, from)?;
+            let snapshot = world.clone();
+            let (inside, outside) = route_work(&mut player, move || {
+                resting_tiles(&snapshot, from).map_err(|error| error.to_string())
+            })
+            .await?;
             qualification_hunt_route(
                 &mut player,
                 world,
@@ -635,7 +642,9 @@ async fn resting_bonuses(
             return Err("P10 unopened refusal changed daily state or item custody".into());
         }
         row.pass("unopened-claim-refused", initial);
-        let (inside, outside) = resting_tiles(world, tile(client.world_spatial().actor_position)?)?;
+        let from = tile(client.world_spatial().actor_position)?;
+        let snapshot = world.clone();
+        let (inside, outside) = route_work(&mut client, move || resting_tiles(&snapshot, from).map_err(|error| error.to_string())).await?;
         qualification_hunt_route(
             &mut client, world, Some(inside), Some(outside),
             tokio::time::Instant::now() + Duration::from_secs(150),
@@ -2220,7 +2229,7 @@ async fn item_loss(
         if custody(client.inventory().ok_or("protected relog inventory absent")?) != expected { return Err("protected death custody/amulet consumption differs after fresh admission".into()); }
         row.pass("protected-relog-custody", &expected);
         let destination = tile(protected_position)?;
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == destination).ok_or("protected death ground return route unavailable")?;
+        let path = route_live(&mut client, world, move |at| at == destination).await?.ok_or("protected death ground return route unavailable")?;
         walk(&mut client, world, &path).await?;
         let after_ground = custody(&CharacterInventory { entries: ground_entries(&mut client, protected_position).await?, ..Default::default() });
         if after_ground != ground_signature { return Err(format!("protected death changed ground custody: before={ground_signature:?} after={after_ground:?}").into()); }
@@ -2239,7 +2248,7 @@ async fn item_loss(
         if custody(client.inventory().ok_or("unprotected relog inventory absent")?) != saved { return Err("unprotected death custody differs after fresh admission".into()); }
         row.pass("unprotected-relog-custody", &saved);
         let destination = tile(encounter)?;
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == destination)
+        let path = route_live(&mut client, world, move |at| at == destination).await?
             .ok_or("no real return route to death ground")?;
         walk(&mut client, world, &path).await?;
         let ground = ground_entries(&mut client, encounter).await?;

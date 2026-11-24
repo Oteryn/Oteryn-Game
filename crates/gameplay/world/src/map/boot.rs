@@ -140,7 +140,7 @@ pub fn native_item_definition(
 
 /// A Channel booted from a world bundle: the shared base, its empty overlay, the start tile and
 /// the walkable tiles a wall or a solid item blocks.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct BundleWorld {
     source_bases: Arc<crate::content::QualifiedBundleSourceBases>,
     daily: Option<super::daily::DailyMap>,

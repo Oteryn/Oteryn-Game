@@ -3898,36 +3898,46 @@ async fn hunt_one_inner(
     world: &BundleWorld,
     acquisition_deadline: Option<tokio::time::Instant>,
 ) -> TestResult {
-    let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let positions: Vec<_> = meta
-        .spawns
-        .sources
-        .iter()
-        .flat_map(|s| s.points.iter().map(move |p| (s.floor, p)))
-        .filter(|(_, p)| {
-            meta.spawns
-                .creatures
-                .get(p.creature as usize)
-                .is_some_and(|c| c.key == "oteryn:creature.rat")
-        })
-        .map(|(floor, p)| TilePos {
-            x: p.x,
-            y: p.y,
-            floor,
-        })
-        .collect();
+    let start = tile(client.world_spatial().actor_position)?;
+    let world_snapshot = world.clone();
     let route_started = tokio::time::Instant::now();
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|t| !t.protection_zone())
-            && positions
-                .iter()
-                .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 1)
+    let path = route_work(client, move || {
+        let world = world_snapshot;
+        let bytes =
+            fs::read(required("NODE_BOOT_WORLD_BUNDLE").map_err(|error| error.to_string())?)
+                .map_err(|error| error.to_string())?;
+        let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))
+            .map_err(|error| error.to_string())?;
+        let positions: Vec<_> = meta
+            .spawns
+            .sources
+            .iter()
+            .flat_map(|s| s.points.iter().map(move |p| (s.floor, p)))
+            .filter(|(_, p)| {
+                meta.spawns
+                    .creatures
+                    .get(p.creature as usize)
+                    .is_some_and(|c| c.key == "oteryn:creature.rat")
+            })
+            .map(|(floor, p)| TilePos {
+                x: p.x,
+                y: p.y,
+                floor,
+            })
+            .collect();
+        route(&world, start, |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|t| !t.protection_zone())
+                && positions
+                    .iter()
+                    .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 1)
+        })
+        .ok_or("no reachable unprotected rat spawn in compiled world within 160-tile route budget")
+        .map_err(String::from)
     })
-    .ok_or("no reachable unprotected rat spawn in compiled world within 160-tile route budget")?;
+    .await?;
     evidence(&format!(
         "acquisition step=hunt-route state=complete elapsed_ms={} steps={}",
         route_started.elapsed().as_millis(),
@@ -4636,12 +4646,13 @@ async fn acquire_inner(
         else {
             continue;
         };
-        let Some(_path) = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            vendor
-                .placements
+        let placements = vendor.placements.clone();
+        let Some(_path) = route_live(client, world, move |at| {
+            placements
                 .iter()
                 .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 3)
-        }) else {
+        })
+        .await? else {
             attempted.push(format!("{name}:unreachable"));
             continue;
         };
@@ -4665,12 +4676,13 @@ async fn acquire_inner(
         )
         .await?;
         // Hunting may move the player; resolve the actual route again.
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            vendor
-                .placements
+        let placements = vendor.placements.clone();
+        let path = route_live(client, world, move |at| {
+            placements
                 .iter()
                 .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 3)
         })
+        .await?
         .ok_or("vendor route unavailable after gold hunt")?;
         acquisition_step("vendor-walk", walk(client, world, &path)).await?;
         let vendor_name = name.replace('_', " ");
@@ -4699,10 +4711,11 @@ async fn acquire_inner(
         let from = tile(client.world_spatial().actor_position)?;
         let vendor_at = tile(vendor_actor.position)?;
         if from.x.abs_diff(vendor_at.x).max(from.y.abs_diff(vendor_at.y)) > 3 {
-            let path = route(world, from, |at| {
+            let path = route_live(client, world, move |at| {
                 at.floor == vendor_at.floor
                     && at.x.abs_diff(vendor_at.x).max(at.y.abs_diff(vendor_at.y)) <= 2
             })
+            .await?
             .ok_or_else(|| format!("vendor {name} wandered to unreachable {vendor_at:?}"))?;
             acquisition_step("vendor-walk", walk(client, world, &path)).await?;
         }
