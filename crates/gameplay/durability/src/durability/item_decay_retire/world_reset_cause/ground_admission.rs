@@ -51,10 +51,8 @@ pub(in crate::durability::item_decay_retire) async fn admit_ground(
     };
     // Only receipt-proven death trees retire their retained contents atomically
     // with the root. Other nested Ground shapes remain refused.
-    if !matches!(step.cause, RetireCause::ArenaReset(_)) {
-        crate::durability::world_reset::ground_step::validate_root(tx, step.corpse_item_instance_id)
-            .await?;
-    }
+    crate::durability::world_reset::ground_step::validate_root(tx, step.corpse_item_instance_id)
+        .await?;
     let entries = sqlx::query("SELECT item_instance_id::text,placement_ordinal::text FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal LIMIT $2")
         .bind(step.corpse_item_instance_id.as_slice())
         .bind((CORPSE_CONTAINER_ENTRIES_MAX + 1) as i64)

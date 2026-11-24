@@ -380,7 +380,6 @@ impl DurabilityRoot {
                         &node,
                         step,
                         &admitted,
-                        None,
                         #[cfg(any(test, feature = "test-support"))]
                         profile.as_mut(),
                     )

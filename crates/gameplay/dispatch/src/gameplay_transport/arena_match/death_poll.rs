@@ -22,20 +22,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // This entry is before the spell lane. Keep the same gate/lane/slot
         // order as arena commands; corpse/kill consumers settle before removal.
         let _gate = self.states.arena_matches.command.lock().await;
-        // The persisted lease can be ahead of the live opponent after a failed
-        // Ground reset or a lost transition acknowledgement. Reconcile it
-        // before consulting a deadline from the previous fight.
-        let Some(resumed) = Box::pin(self.resume_arena_projections()).await else {
-            return;
-        };
         let pending = {
             let Ok(live) = self.states.arena_matches.live.lock() else {
                 return;
             };
             live.iter()
-                .filter(|(session, live)| {
-                    matches!(live.state.phase, 1 | 2) && !resumed.contains(session)
-                })
+                .filter(|(_, live)| matches!(live.state.phase, 1 | 2))
                 .take(10)
                 .map(|(session, live)| (*session, live.clone()))
                 .collect::<Vec<_>>()
@@ -53,46 +45,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    async fn resume_arena_projections(&self) -> Option<Vec<GameSessionId>> {
-        if self.bundle_map().is_none() {
-            return Some(Vec::new());
-        }
-        let (scope, generation) = {
-            let runtime = self.runtime.lock().await;
-            runtime.owner_fence().ok()?;
-            let binding = runtime.binding();
-            (binding.runtime_scope(), binding.scope_generation().get())
-        };
-        let (now_ms, leased) = self.root
-            .read_arena_projection_leases(self.character, scope, generation)
-            .await.ok()?;
-        let mut resumed = Vec::new();
-        for (character, state) in leased {
-            let session = GameSessionId::decode(&state.session).ok()?;
-            let live = self.states.arena_matches.live.lock().ok()?.get(&session).cloned();
-            if live.as_ref().is_some_and(|current| current.state == state) {
-                continue;
-            }
-            resumed.push(session);
-            let actor = {
-                let runtime = self.runtime.lock().await;
-                runtime.positioned_player_for_session(session).ok().flatten().map(|(actor, _)| actor)
-            };
-            let Some(actor) = actor else { continue };
-            if now_ms >= state.deadline_ms {
-                let pending = LiveMatch { actor, opponent: None, state, deadline: Instant::now() };
-                let _ = Box::pin(self.settle_arena_timeout(session, &pending)).await;
-                continue;
-            }
-            let Some(permit) = self.spell_lane_permit().await else { continue };
-            let Ok(Some(fence)) = self.current_quest_fence(session).await else { continue };
-            if fence.character_id == character && fence.runtime_scope == scope && fence.scope_ownership_generation.get() == generation {
-                let _ = self.restore_arena_projection(actor, session, &state, now_ms, &permit, fence).await;
-            }
-        }
-        Some(resumed)
-    }
-
     async fn settle_arena_victory(&self, session: GameSessionId, live: LiveMatch) {
         let candidate = {
             let mut runtime = self.runtime.lock().await;
@@ -107,7 +59,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return;
         }
-        let Some(permit) = self.spell_lane_permit().await else {
+        let Some(_permit) = self.spell_lane_permit().await else {
             return;
         };
         let Ok(Some(mut fence)) = self.current_quest_fence(session).await else {
@@ -158,7 +110,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if read.replay.is_some() || read.state != live.state {
             if read.state.run == live.state.run && read.state.pit == live.state.pit {
                 let _ = self
-                    .restore_arena_projection(live.actor, session, &read.state, read.now_ms, &permit, fence)
+                    .restore_arena_projection(live.actor, session, &read.state, read.now_ms)
                     .await;
             }
             return;
@@ -197,7 +149,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if wire::decode_match_result(&bytes).is_ok_and(|result| result.disposition == D::Applied) {
             let _ = self
-                .restore_arena_projection(live.actor, session, &after, read.now_ms, &permit, fence)
+                .restore_arena_projection(live.actor, session, &after, read.now_ms)
                 .await;
         }
     }

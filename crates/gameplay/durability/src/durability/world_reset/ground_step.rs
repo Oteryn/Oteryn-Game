@@ -89,6 +89,7 @@ pub(in crate::durability) async fn death_tree(
     tx: &mut Transaction<'_, Postgres>,
     root: [u8; 16],
 ) -> Result<Vec<DeathTreeEntry>> {
+    use crate::durability::item_loop_move::{ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX};
     let source: Option<(Vec<u8>, i16, String)> = sqlx::query_as(
         "SELECT uuid_send(g.world_id),r.source_slot,i.definition_production_key FROM game_player_death_item_records r \
          JOIN game_item_ground_locations g USING(item_instance_id) \
@@ -103,26 +104,6 @@ pub(in crate::durability) async fn death_tree(
     .await?;
     let (world, source_slot, root_definition) =
         source.ok_or(DurabilityError::InvalidStoredState)?;
-    let entries = ground_tree(tx, root, &world).await?;
-    order_death_tree(root, source_slot, &root_definition, entries)
-}
-
-pub(in crate::durability) async fn arena_tree(
-    tx: &mut Transaction<'_, Postgres>,
-    root: [u8; 16],
-    world: &[u8],
-) -> Result<Vec<DeathTreeEntry>> {
-    use crate::durability::item_loop_move::{ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX};
-    let entries = ground_tree(tx, root, world).await?;
-    order_ground_tree(root, entries, ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX)
-}
-
-async fn ground_tree(
-    tx: &mut Transaction<'_, Postgres>,
-    root: [u8; 16],
-    world: &[u8],
-) -> Result<Vec<DeathTreeEntry>> {
-    use crate::durability::item_loop_move::{ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX};
     let rows = sqlx::query(
         "WITH RECURSIVE tree(item,parent,ordinal,kind,world,depth,path,cycle) AS ( \
            SELECT encode($1,'hex')::uuid,NULL::uuid,NULL::numeric,0,encode($2,'hex')::uuid,0,ARRAY[encode($1,'hex')::uuid],false \
@@ -187,16 +168,17 @@ async fn ground_tree(
             depth,
         });
     }
-    Ok(entries)
+    order_death_tree(root, source_slot, &root_definition, entries)
 }
 
 fn order_death_tree(
     root: [u8; 16],
     source_slot: i16,
     root_definition: &str,
-    entries: Vec<DeathTreeEntry>,
+    mut entries: Vec<DeathTreeEntry>,
 ) -> Result<Vec<DeathTreeEntry>> {
     use crate::durability::item_loop_move::{ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX};
+    use std::collections::{BTreeMap, BTreeSet};
     let (depth_limit, descendants_limit) = match source_slot {
         9 => (ITEM_LOOP_DEPTH_MAX, ITEM_LOOP_TREE_ITEMS_MAX),
         0 => (ITEM_LOOP_DEPTH_MAX - 1, ITEM_LOOP_TREE_ITEMS_MAX - 1),
@@ -206,16 +188,6 @@ fn order_death_tree(
         ),
         _ => (0, 0),
     };
-    order_ground_tree(root, entries, depth_limit, descendants_limit)
-}
-
-fn order_ground_tree(
-    root: [u8; 16],
-    mut entries: Vec<DeathTreeEntry>,
-    depth_limit: i32,
-    descendants_limit: i64,
-) -> Result<Vec<DeathTreeEntry>> {
-    use std::collections::{BTreeMap, BTreeSet};
     if entries.len() > descendants_limit as usize {
         return Err(DurabilityError::InvalidStoredState);
     }

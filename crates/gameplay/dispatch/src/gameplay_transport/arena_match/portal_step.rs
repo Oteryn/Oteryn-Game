@@ -7,7 +7,7 @@ use crate::foundation::MovementPositionSnapshot;
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn step_arena_portal(
         &self,
-        permit: &SpellLanePermit,
+        _permit: &SpellLanePermit,
         actor: ExactActorRef,
         session: GameSessionId,
         origin: MovementPositionSnapshot,
@@ -16,14 +16,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if origin.position() == entered.position() {
             return entered;
         }
-        self.try_arena_portal_step(permit, actor, session, entered)
+        self.try_arena_portal_step(actor, session, entered)
             .await
             .unwrap_or(entered)
     }
 
     async fn try_arena_portal_step(
         &self,
-        permit: &SpellLanePermit,
         actor: ExactActorRef,
         session: GameSessionId,
         entered: MovementPositionSnapshot,
@@ -79,7 +78,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         if read.replay.is_some() {
-            self.restore_arena_projection(actor, session, &read.state, read.now_ms, permit, fence)
+            self.restore_arena_projection(actor, session, &read.state, read.now_ms)
                 .await?;
             return self.runtime.lock().await.read_actor_position(actor).ok();
         }
@@ -149,7 +148,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()?;
         let result = wire::decode_match_result(&bytes).ok()?;
         after.reconcile_arena_refusal(&before, result.disposition, &result.state);
-        self.restore_arena_projection(actor, session, &after, read.now_ms, permit, fence)
+        self.restore_arena_projection(actor, session, &after, read.now_ms)
             .await?;
         self.runtime.lock().await.read_actor_position(actor).ok()
     }

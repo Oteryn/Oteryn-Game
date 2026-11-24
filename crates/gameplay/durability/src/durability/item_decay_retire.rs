@@ -69,7 +69,6 @@ use sqlx::Row;
 
 mod activity_retirement;
 pub use activity_retirement::ActivityGroundRetirement;
-pub(super) mod arena_reset;
 mod world_reset_cause;
 use world_reset_cause::RetireCause;
 
@@ -440,7 +439,6 @@ async fn admit(
             }
             return world_reset_cause::admit_ground(tx, fence, step).await;
         }
-        RetireCause::ArenaReset(_) => return Ok(Err(DecayRetireError::AuthorityRejected)),
         RetireCause::CorpseDecay => {}
     }
     let item = sqlx::query(
