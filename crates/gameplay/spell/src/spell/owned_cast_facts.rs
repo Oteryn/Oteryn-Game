@@ -6,7 +6,7 @@ use super::{CasterState, SpellDefinition};
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{ReferenceItemField, ReferenceWeaponType};
 use crate::durability::character_build::DurableBuildState;
-use crate::durability::character_equipment::EquipmentSnapshot;
+use crate::durability::character_equipment::{CombatMode, EquipmentSnapshot};
 use crate::foundation::{ExactActorRef, GameSessionId};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -73,7 +73,6 @@ pub enum OwnedFactsError {
     UnavailableWheel,
     UnavailableEquipment,
     UnknownItemPolicy,
-    UnknownCombatMode,
 }
 impl OwnedCastFacts {
     pub fn current_black_skull(&self, now: u64) -> Option<&CurrentProjection<bool>> {
@@ -377,10 +376,11 @@ impl OwnedCastFacts {
         if spell.needs_weapon && attack.is_none() {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
+        // Crystal 201189f8 player.hpp:2009 starts players in attack mode.
         let attack_factor = if needs_attack && attack.is_some() {
             self.equipment
                 .combat_mode
-                .ok_or(OwnedFactsError::UnknownCombatMode)?
+                .unwrap_or(CombatMode::Attack)
                 .attack_factor()
         } else {
             0.0

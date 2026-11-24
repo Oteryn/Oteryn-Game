@@ -530,3 +530,22 @@ fn attack_spell_reads_the_weapon_without_qualifying_unneeded_shield_facts() -> R
     ));
     Ok(())
 }
+
+#[test]
+fn attack_spell_uses_initial_attack_mode_until_the_player_selects_one() -> Result<(), String> {
+    let (content, items) = equipped_spell_fixture()?;
+    let spell = spell(&content, "Chained Penance")?;
+    for (mode, factor) in [
+        (None, 1.0),
+        (Some(CombatMode::Balanced), 0.75),
+        (Some(CombatMode::Defense), 0.5),
+    ] {
+        let (state, owned) = owner_with_equipment(&content, &spell, 0, 0, mode, items.clone())?;
+        let caster = owned
+            .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
+            .map_err(|error| format!("caster with mode {mode:?}: {error:?}"))?;
+        assert_eq!(caster.attack_value, 15);
+        assert_eq!(caster.attack_factor, factor);
+    }
+    Ok(())
+}
