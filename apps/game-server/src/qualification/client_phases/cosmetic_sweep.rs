@@ -322,7 +322,9 @@ impl Rows<'_> {
         let step = self.steps[self.next];
         let detail = error.to_string();
         let cause = if let Some((cause, _)) = detail.split_once(": ")
-            && (cause.starts_with("harness-") || cause.starts_with("server-"))
+            && (cause.starts_with("harness-")
+                || cause.starts_with("server-")
+                || cause.starts_with("content-"))
         {
             cause
         } else if detail.contains("no admitted appearance definition") {
@@ -353,8 +355,16 @@ impl Rows<'_> {
     }
 }
 
+async fn release_pair(clients: &SeamClients<'_>) -> TestResult {
+    let (actor, observer) = tokio::join!(
+        wait_character_released(clients, 0),
+        wait_character_released(clients, 1)
+    );
+    actor.and(observer)
+}
+
 pub(super) async fn run(
-    clients: &SeamClients<'_>,
+    fixtures: &[SeamClients<'_>],
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
@@ -402,17 +412,7 @@ pub(super) async fn run(
     let mut pass = 0;
     let mut fail = 0;
     let mut mounts_seen = std::collections::BTreeSet::new();
-    for index in 0..2 {
-        let mut actor = connect_character(clients, 0xc8, index).await?;
-        logout(&mut actor).await?;
-    }
-    let accounts = [clients.accounts[1].clone(), clients.accounts[0].clone()];
-    let characters = [clients.characters[1], clients.characters[0]];
-    let alternate = SeamClients {
-        accounts: &accounts,
-        characters: &characters,
-        ..*clients
-    };
+    let mut fixture_index = 0;
     for (key, entry) in entries.into_iter().skip(start).take(selected) {
         // Canonical and legacy aliases can share one entitlement. Give the
         // second representation a fresh acquisition on the other fixture account.
@@ -421,12 +421,6 @@ pub(super) async fn run(
                 Entry::Mount(mount, taming_binding(&content, &taming, &mount.key))
             }
             _ => *entry,
-        };
-        let clients = match entry {
-            Entry::Mount(_, Some(binding)) if !mounts_seen.insert(binding.mount_key.as_str()) => {
-                &alternate
-            }
-            _ => clients,
         };
         verdict::Harness::global().progress("cosmetic-sweep-entry");
         let steps: &[&str] = match entry {
@@ -442,13 +436,59 @@ pub(super) async fn run(
             failed: 0,
             last: std::time::Instant::now(),
         };
-        let mut items = Vec::new();
-        let result = journey(
-            &mut rows, clients, world, &content, &entry, &obtain, npcs, &mut items,
-        )
-        .await;
-        let cleanup = retire_fixture_items(clients, &items).await;
-        match result.and(cleanup) {
+        let result = loop {
+            let Some(pair) = fixtures.get(fixture_index) else {
+                break Err("harness-fixture-release: no unused fixture pairs remain".into());
+            };
+            let accounts = [pair.accounts[1].clone(), pair.accounts[0].clone()];
+            let characters = [pair.characters[1], pair.characters[0]];
+            let alternate = SeamClients {
+                accounts: &accounts,
+                characters: &characters,
+                ..*pair
+            };
+            let clients = match entry {
+                Entry::Mount(_, Some(binding))
+                    if mounts_seen.contains(binding.mount_key.as_str()) =>
+                {
+                    &alternate
+                }
+                _ => pair,
+            };
+            if let Err(error) = release_pair(clients).await {
+                evidence(&format!(
+                    "cosmetic_sweep fixture=retired pair={fixture_index} error={error}"
+                ));
+                fixture_index += 1;
+                mounts_seen.clear();
+                continue;
+            }
+            if let Entry::Mount(_, Some(binding)) = entry {
+                mounts_seen.insert(binding.mount_key.as_str());
+            }
+            let mut items = Vec::new();
+            let result = journey(
+                &mut rows, clients, world, &content, &entry, &obtain, npcs, &mut items,
+            )
+            .await;
+            let release = release_pair(clients).await;
+            if let Err(error) = &release {
+                evidence(&format!(
+                    "cosmetic_sweep fixture=retired pair={fixture_index} error={error}"
+                ));
+                fixture_index += 1;
+                mounts_seen.clear();
+                if rows.next == 0 && fixture_index < fixtures.len() {
+                    continue;
+                }
+            }
+            let cleanup = match release {
+                Ok(()) => retire_fixture_items(clients, &items).await,
+                Err(error) => Err(error),
+            };
+            break result.and(cleanup);
+        };
+        match result {
             Ok(()) => rows.pass("fresh admission retained selected look, colours and unlock"),
             Err(error) => rows.block_rest(error.as_ref()),
         }
@@ -563,13 +603,23 @@ impl ObtainContent {
         target: &Target,
         npcs: &oteryn_world_bundle::npc::Table,
     ) -> Option<Vec<&NpcReward>> {
+        self.npc_route_matching(target, |callback| {
+            npcs.npcs
+                .iter()
+                .any(|npc| npc.key == callback.npc && !npc.placements.is_empty())
+        })
+    }
+
+    fn npc_route_matching(
+        &self,
+        target: &Target,
+        available: impl Fn(&NpcReward) -> bool,
+    ) -> Option<Vec<&NpcReward>> {
         let mut rewards = self
             .callbacks
             .iter()
             .filter(|callback| {
-                npcs.npcs
-                    .iter()
-                    .any(|npc| npc.key == callback.npc && !npc.placements.is_empty())
+                available(callback)
                     && callback
                         .outfit
                         .iter()
@@ -794,21 +844,22 @@ async fn obtain_npc(
         .find(|npc| npc.key == first.npc)
         .ok_or_else(|| format!("harness-obtain-path: NPC {} absent from fixture", first.npc))?;
     let home = tile(client.world_spatial().actor_position)?;
-    if let Some(path) = route(world, home, |at| {
+    let greeting_range = |at: TilePos| {
         npc.placements.iter().any(|placement| {
             placement.floor == at.floor
                 && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 2
         })
-    }) {
+    };
+    if let Some(path) = route(world, home, greeting_range) {
         walk(client, world, &path).await?;
         talk_for_reward(client, npc, steps, target, state).await?;
         return return_to(client, world, home).await;
     }
-    let landing = npc
+    let (landing, path) = npc
         .placements
         .iter()
         .find_map(|npc| {
-            [(0, -1), (1, 0), (0, 1), (-1, 0)]
+            [(0, -4), (4, 0), (0, 4), (-4, 0)]
                 .into_iter()
                 .find_map(|(dx, dy)| {
                     let at = TilePos {
@@ -816,13 +867,15 @@ async fn obtain_npc(
                         y: npc.y.checked_add_signed(dy)?,
                         floor: npc.floor,
                     };
-                    (world.base().tile(at.x, at.y, at.floor).is_some() && world.enterable(at))
-                        .then_some(at)
+                    if world.base().tile(at.x, at.y, at.floor).is_none() || !world.enterable(at) {
+                        return None;
+                    }
+                    route(world, at, greeting_range).map(|path| (at, path))
                 })
         })
         .ok_or_else(|| {
             format!(
-                "harness-obtain-path: NPC {} has no adjacent fixture tile",
+                "harness-obtain-path: NPC {} has no walkable approach from a fixture landing",
                 first.npc
             )
         })?;
@@ -838,6 +891,7 @@ async fn obtain_npc(
             if tile(nearby.world_spatial().actor_position)? != landing {
                 return Err("harness-obtain-path: admission refused seeded NPC position".into());
             }
+            walk(&mut nearby, world, &path).await?;
             let mut nearby_state = snapshot(&mut nearby)?;
             talk_for_reward(&mut nearby, npc, steps, target, &mut nearby_state).await
         }
@@ -864,20 +918,33 @@ async fn talk_for_reward(
 ) -> TestResult {
     use oteryn_dev_client::{client_runtime::npc_shop, client_ui::npc_shop as ui};
     let basis = spatial_basis::current(client)?;
-    let entity = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Npc
-                    && npc.placements.iter().any(|placement| {
-                        entity.position.x == i32::from(placement.x)
-                            && entity.position.y == i32::from(placement.y)
-                            && entity.position.floor == basis.floor(placement.floor)
-                    })
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let entity = loop {
+        if let Some(entity) = client
+            .world_entities()
+            .and_then(|entities| {
+                entities.iter().find(|entity| {
+                    entity.kind == oteryn_dev_client::EntityKind::Npc
+                        && npc.placements.iter().any(|placement| {
+                            entity.position.x == i32::from(placement.x)
+                                && entity.position.y == i32::from(placement.y)
+                                && entity.position.floor == basis.floor(placement.floor)
+                        })
+                })
             })
-        })
-        .map(|entry| entry.entity)
-        .ok_or("harness-obtain-path: NPC actor not visible at authored placement")?;
+            .map(|entry| entry.entity)
+        {
+            break entity;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "content-npc-map: {} absent from wire at authored placement",
+                npc.key
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    };
     for text in std::iter::once("hi").chain(
         steps
             .iter()
@@ -943,6 +1010,15 @@ async fn prepare<'a>(
             seed_item(clients, &item, 1, items).await?;
             actions.push(ObtainAction::Item(target, item));
             continue;
+        }
+        if let Some(steps) = obtain.npc_route_matching(&target, |_| true)
+            && let Some(donor) = steps.first()
+        {
+            return Err(format!(
+                "content-npc-map: {} has no placement in this map bundle",
+                donor.npc
+            )
+            .into());
         }
         let (key, provenance) = grant(content, &target, None)
             .ok_or("content cosmetic has no authored grant mapping")?;
@@ -1110,7 +1186,6 @@ async fn retire_fixture_items(clients: &SeamClients<'_>, items: &[Vec<u8>]) -> T
     if items.is_empty() {
         return Ok(());
     }
-    wait_character_released(clients, 0).await?;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let mut tx = sqlx::Connection::begin(&mut db).await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
