@@ -334,6 +334,12 @@ where
                 }
             }
         }
+        Dispatch::Reply(CommandStatus::Accepted, _)
+            if command.command_type == oteryn_protocol_oteryn::actor_motion::COMMAND_TYPE_MOUNT
+                && session.visibility.is_some() =>
+        {
+            refresh::visibility(stream, authority, session).await?;
+        }
         Dispatch::Reply(_, payload)
             if (command.command_type
                 == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH
