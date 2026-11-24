@@ -87,6 +87,8 @@ struct Grant {
     target: Target,
     compatible_provenance: Vec<String>,
     sex: Option<String>,
+    #[serde(default)]
+    outfit_aliases: Vec<String>,
 }
 
 #[derive(Deserialize, PartialEq, Eq)]
@@ -212,22 +214,36 @@ fn addon_mask(addon: u8) -> u8 {
     if addon == 0 { 0 } else { 1 << (addon - 1) }
 }
 
+impl Grant {
+    fn applies_to(&self, target: &Target) -> bool {
+        self.sex.as_deref().is_none_or(|sex| sex == "female")
+            && (self.target == *target
+                || match (&self.target, target) {
+                    (Target::Outfit { .. }, Target::Outfit { outfit_key }) => {
+                        self.outfit_aliases.contains(outfit_key)
+                    }
+                    (Target::Addon { addon: source, .. }, Target::Addon { outfit_key, addon }) => {
+                        source == addon && self.outfit_aliases.contains(outfit_key)
+                    }
+                    _ => false,
+                })
+    }
+}
+
 fn grant<'a>(
     content: &'a Content,
     target: &Target,
     only: Option<&str>,
 ) -> Option<(&'a str, &'a str)> {
     content.grant_mappings.iter().find_map(|grant| {
-        (grant.target == *target
-            && grant.sex.as_deref().is_none_or(|sex| sex == "female")
-            && only.is_none_or(|key| key == grant.grant_key))
-        .then(|| {
-            Some((
-                grant.grant_key.as_str(),
-                grant.compatible_provenance.first()?.as_str(),
-            ))
-        })
-        .flatten()
+        (grant.applies_to(target) && only.is_none_or(|key| key == grant.grant_key))
+            .then(|| {
+                Some((
+                    grant.grant_key.as_str(),
+                    grant.compatible_provenance.first()?.as_str(),
+                ))
+            })
+            .flatten()
     })
 }
 
@@ -559,7 +575,6 @@ impl ObtainContent {
                 let choice = choices.first()?;
                 (choices.len() == 1
                     && !rule["premium"].as_bool().unwrap_or(false)
-                    && choice["required"].as_array().is_some_and(Vec::is_empty)
                     && choice["grants"]
                         .as_array()?
                         .iter()
@@ -721,9 +736,10 @@ async fn prepare<'a>(
             actions.push(ObtainAction::Npc(target, steps));
             continue;
         }
-        let candidates = content.grant_mappings.iter().filter(|grant| {
-            grant.target == target && grant.sex.as_deref().is_none_or(|sex| sex == "female")
-        });
+        let candidates = content
+            .grant_mappings
+            .iter()
+            .filter(|grant| grant.applies_to(&target));
         if let Some(item) = candidates
             .clone()
             .find_map(|grant| obtain.direct_item(&grant.grant_key))
@@ -743,7 +759,7 @@ async fn prepare<'a>(
         }
         let (key, provenance) = grant(content, &target, None)
             .ok_or("content cosmetic has no authored grant mapping")?;
-        if key.contains("/quest-grant") || key.contains("/npc-grant") {
+        if key.contains("/quest-grant") || key.contains("/npc-grant") || key.contains("/quest/") {
             return Err(format!("harness-obtain-path: quest/NPC journey missing for {key}").into());
         }
         seed(clients, key, provenance).await?;
