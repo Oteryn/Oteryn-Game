@@ -342,7 +342,7 @@ async fn wait_spell(
 }
 
 async fn knight_journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    use oteryn_protocol_oteryn::{battle_instinct_status as wire, cyclopedia_character, wheel};
+    use oteryn_protocol_oteryn::{battle_instinct_status as wire, wheel};
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -382,6 +382,10 @@ async fn knight_journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult 
     if talk(&mut client, king, "hi").await?.is_empty() {
         return Err("King Tibianus returned an empty promotion greeting".into());
     }
+    let unpromoted = promotion_forecast(&mut client).await?;
+    if unpromoted.promotion_benefit || unpromoted.level != 625 {
+        return Err(format!("expected an unpromoted level-625 Knight before purchase: {unpromoted:?}").into());
+    }
     let offer = talk(&mut client, king, "promotion").await?;
     if offer != ["Do you want to be promoted for 20000 gold coins?"] {
         return Err(format!("King Tibianus promotion offer: {offer:?}").into());
@@ -395,17 +399,11 @@ async fn knight_journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult 
     if !is_vocation(vocation, "knight") || level != 625 {
         return Err(format!("Battle Instinct requires the prepared level-625 Knight; observed vocation={vocation} level={level}").into());
     }
-    let forecast = client.session_mut().gated_command(
-        cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
-        cyclopedia_character::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
-        &[cyclopedia_character::protection::SELECTOR],
-    ).await?;
-    if forecast.status != CommandStatus::Accepted
-        || !cyclopedia_character::protection::Forecast::decode(&forecast.payload)
-            .is_some_and(|forecast| forecast.promotion_benefit && forecast.level == level)
-    {
-        return Err(format!("Battle Instinct requires current promotion benefits; observed {forecast:?}").into());
+    let promoted = promotion_forecast(&mut client).await?;
+    if !promoted.promotion_benefit || promoted.level != level {
+        return Err(format!("Battle Instinct requires current promotion benefits: {unpromoted:?} -> {promoted:?}").into());
     }
+    evidence(&format!("C11_PROMOTION_BENEFIT level={level} before=false after=true"));
     let before = battle_status(&mut client).await?;
     if before.active || before.melee != 0 || before.shielding != 0 {
         return Err(format!("Battle Instinct active before allocation: {before:?}").into());
@@ -425,14 +423,16 @@ async fn knight_journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult 
     let saved = wheel_command(&mut client, &wheel::WheelAllocationRequest {
         action: 1, occurrence: v7(0xcb, 1), expected_revision: initial.revision, points, vessels: None,
     }).await?;
-    if saved.refused || Some(saved.revision) != initial.revision.checked_add(1) || saved.points != points
-        || wheel_command(&mut client, &request).await? != saved
-    {
-        return Err(format!("Knight Wheel allocation did not commit: {saved:?}").into());
+    if saved.refused || Some(saved.revision) != initial.revision.checked_add(1) || saved.points != points {
+        return Err(format!("Knight Wheel allocation did not commit: initial={initial:?} saved={saved:?}").into());
+    }
+    let persisted = wheel_command(&mut client, &request).await?;
+    if persisted != saved {
+        return Err(format!("Knight Wheel readback differs from the committed allocation: saved={saved:?} readback={persisted:?}").into());
     }
     let active = battle_status(&mut client).await?;
     if !active.active || active.melee != 0 || active.shielding != 0 {
-        return Err(format!("Battle Instinct did not activate in the empty temple: {active:?}").into());
+        return Err(format!("Battle Instinct did not activate with zero adjacent-monster bonuses: {active:?}").into());
     }
     row.pass("battle-instinct-snapshot", (saved, before, active));
     match client
@@ -511,6 +511,20 @@ async fn open_castle_entrance(client: &mut DevClientSession, world: &BundleWorld
         (at == outside && direction == StepDirection::North).then_some(entrance)
     })
     .await
+}
+
+async fn promotion_forecast(client: &mut DevClientSession) -> TestResult<oteryn_protocol_oteryn::cyclopedia_character::protection::Forecast> {
+    use oteryn_protocol_oteryn::cyclopedia_character as wire;
+    let reply = client.session_mut().gated_command(
+        wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+        wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+        &[wire::protection::SELECTOR],
+    ).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("Cyclopedia promotion forecast refused: {reply:?}").into());
+    }
+    wire::protection::Forecast::decode(&reply.payload)
+        .ok_or_else(|| "invalid Cyclopedia promotion forecast payload".into())
 }
 
 async fn battle_status(client: &mut DevClientSession) -> TestResult<oteryn_protocol_oteryn::battle_instinct_status::BattleInstinctStatus> {
