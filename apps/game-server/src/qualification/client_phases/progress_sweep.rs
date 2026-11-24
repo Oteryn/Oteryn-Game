@@ -230,27 +230,40 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
             passed: 0,
             started: std::time::Instant::now(),
         };
-        let outcome = verdict::indexed_timeout(
-            Duration::from_secs(150),
-            Box::pin(async {
-                discard_unusable_session(&mut session).await;
-                if session.is_none() {
-                    session = Some(connect_character(clients, 0x70, 1).await?);
-                }
-                let client = session.as_mut().ok_or("fixture admission missing")?;
-                match entry.family {
-                    Family::Achievement => achievement(client, clients, world, &mut rows).await,
-                    Family::Charm => {
-                        charm(client, world, &mut rows, &mut unsupported_mastery).await
-                    }
-                    Family::Craft => craft(client, clients, world, &mut rows).await,
-                    Family::Proficiency => {
-                        proficiency(client, clients, world, &root, &mut rows).await
-                    }
-                }
-            }),
-        )
-        .await;
+        discard_unusable_session(&mut session).await;
+        // Admission owns the longer, fail-closed fixture release deadline.
+        // Let it report and gate a failed fixture before timing row actions.
+        let admission = if session.is_none() {
+            connect_character(clients, 0x70, 1).await.map(|client| {
+                session = Some(client);
+            })
+        } else {
+            Ok(())
+        };
+        let outcome = match admission {
+            Err(error) => Ok(Err(error)),
+            Ok(()) => {
+                verdict::indexed_timeout(
+                    Duration::from_secs(150),
+                    Box::pin(async {
+                        let client = session.as_mut().ok_or("fixture admission missing")?;
+                        match entry.family {
+                            Family::Achievement => {
+                                achievement(client, clients, world, &mut rows).await
+                            }
+                            Family::Charm => {
+                                charm(client, world, &mut rows, &mut unsupported_mastery).await
+                            }
+                            Family::Craft => craft(client, clients, world, &mut rows).await,
+                            Family::Proficiency => {
+                                proficiency(client, clients, world, &root, &mut rows).await
+                            }
+                        }
+                    }),
+                )
+                .await
+            }
+        };
         let reason = match outcome {
             Ok(Ok(())) => "missing-step-evidence".to_owned(),
             Ok(Err(error)) => {
