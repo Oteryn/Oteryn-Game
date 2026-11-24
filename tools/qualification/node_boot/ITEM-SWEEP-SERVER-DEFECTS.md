@@ -227,3 +227,15 @@ full-backpack refusals are fixture fallout. Separately, the node logged
 `DefinitionNotFound` for typed production keys such as 5678, 5949, 5964,
 6125, 6278 and 6392. That explicit active-content refusal extends the
 already recorded admission class.
+
+The `1700:419` node log identified the following additional members of the
+active definition admission class. Provisioning sent their exact production
+keys and the item admission owner returned `DefinitionNotFound` before the
+client could obtain a handle
+(`crates/gameplay/items/src/item_ref_admission.rs:63–74`).
+
+| Typed refusal keys | Crystal 201189f8 definitions |
+| --- | --- |
+| 54414, 54415, 54678–54681 | `data/items/items.xml:89997–90008,90366–90389` |
+| 5678, 5949, 5964, 6125, 6278, 6392 | `data/items/items.xml:15444,16146,16222,17101,17314,17768` |
+| 7373, 7374, 7376, 8012 | `data/items/items.xml:19384–19404,21446` |
