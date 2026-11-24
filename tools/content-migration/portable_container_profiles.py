@@ -216,12 +216,20 @@ def admit(root, items, order):
         if key not in existing:
             items["records"].append(record)
             continue
-        # The parity packet also admits the feedbag as a Creature loot yield.
-        # Check every portable-container fact and retain its extra loot metadata.
+        # Preserve the feedbag's loot metadata, the Explorer Society crown
+        # backpack, and packed BUY's shopping bag when their custody agrees.
         prior = existing[key]
         policy_fields = ("container", "physical", "stack", "temporal")
+        if key == "oteryn:item.tibia.i21411" and prior["semantics"]["temporal"] == source.U:
+            # The packed BUY admission leaves duration unknown. Crystal
+            # qualifies the shopping bag as a non-decaying container.
+            policy_fields = ("container", "physical", "stack")
         if (
-            key != "oteryn:item.tibia.i21292"
+            key not in {
+                "oteryn:item.tibia.i9605",
+                "oteryn:item.tibia.i21292",
+                "oteryn:item.tibia.i21411",
+            }
             or any(
                 prior[field] != record[field]
                 for field in (
@@ -240,6 +248,7 @@ def admit(root, items, order):
             )
         ):
             raise ValueError(f"Conflicting portable container native policy: {key}")
+        prior["semantics"]["temporal"] = record["semantics"]["temporal"]
         prior["attributes"].update(record["attributes"])
     items["records"].sort(key=order)
 

@@ -178,6 +178,31 @@ class NativeWorldCompletion(unittest.TestCase):
         native.assert_called_once()
         self.assertEqual(canonical.read_documents(default_world), self.original)
 
+    def test_qualification_installs_buddel_before_native_serialization(self):
+        def native(command, **kwargs):
+            staging = Path(command[command.index("--input-root") + 1])
+            install_buddel.assert_called_once_with(self.repo, staging)
+            return self.native_output(command, **kwargs)
+
+        argv = [
+            "native_world_canonicalization.py",
+            "--repo-root",
+            str(self.repo),
+            "--input-root",
+            str(self.world),
+        ]
+        with (
+            patch.object(sys, "argv", argv),
+            patch("buddel_travel.install_buddel") as install_buddel,
+            patch("travel_route_corrections.project_routes"),
+            patch("import_cyclopedia_global.apply_trade_source"),
+            patch("import_cyclopedia_global.load_capture"),
+            patch("questpc7_world_seal.refresh"),
+            patch.object(canonical.subprocess, "run", side_effect=native),
+        ):
+            canonical.main()
+        self.assertEqual(len(self.calls), 1)
+
     def test_qualification_installs_travel_and_trades_before_native_serialization(self):
         item = {
             "family": "Item",
@@ -337,6 +362,48 @@ class NativeWorldCompletion(unittest.TestCase):
         ):
             regenerate.main()
         repin.assert_not_called()
+
+    def test_world_canonicalizer_copies_only_a_complete_document_inventory(self):
+        producer = self.repo / "materialize_content_world_project_v2"
+        self.write(producer, b"fixture executable")
+        world = self.repo / "content/world"
+        for scenario in ("complete", "missing", "unexpected", "refused"):
+            with self.subTest(scenario=scenario):
+                shutil.copytree(self.world, world)
+
+                def writer(command, *, cwd, check):
+                    self.assertEqual(command[0], str(producer))
+                    self.assertEqual(cwd, self.repo)
+                    self.assertTrue(check)
+                    source = Path(command[command.index("--canonicalize-root") + 1])
+                    output = Path(command[command.index("--output-root") + 1])
+                    self.assertFalse(output.exists())
+                    if scenario == "refused":
+                        raise subprocess.CalledProcessError(1, command)
+                    shutil.copytree(source, output)
+                    if scenario == "missing":
+                        (output / "definitions/reference.json").unlink()
+                    if scenario == "unexpected":
+                        self.write(output / "unexpected.json", b"unexpected\n")
+
+                with patch.object(canonical.subprocess, "run", side_effect=writer):
+                    if scenario == "complete":
+                        canonical.complete_world_project(
+                            self.repo, world, materializer_executable=producer
+                        )
+                        actual = canonical.read_documents(world)
+                        changed = {key for key in actual if actual[key] != self.original[key]}
+                        self.assertEqual(changed, canonical.OWNED_DOCUMENTS)
+                    else:
+                        with self.assertRaises((ValueError, subprocess.CalledProcessError)):
+                            canonical.complete_world_project(
+                                self.repo, world, materializer_executable=producer
+                            )
+                        self.assertEqual(canonical.read_documents(world), self.original)
+                self.assertEqual(
+                    (world / "unmanaged/sentinel").read_bytes(), b"retain caller sibling\n"
+                )
+                shutil.rmtree(world)
 
     def test_missing_extra_or_changed_unowned_output_refuses_every_replacement(self):
         def missing(output):

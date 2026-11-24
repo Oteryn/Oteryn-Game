@@ -591,7 +591,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 260, 38, 39)
+        (52, 257, 37, 50)
     );
     assert_eq!(
         admitted,

@@ -12,58 +12,58 @@ use std::path::{Path, PathBuf};
 const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "assets/catalog.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        56,
+        "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344",
     ),
     (
         "content.lock.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        433,
+        "3748e7260970d3bcf966cd9c1a40286ad98d74ae39712add6736309155a5e185",
     ),
     (
         "definitions/declarations.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        28_169_087,
+        "06f49cf6bd84a41528a46f45d57d3c3145e942c4abe256e762e4d68d68f979f0",
     ),
     (
         "definitions/reference.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        27_554_843,
+        "b84790389837ee2c016b3ebf994f9624809083c9d2ab920150d2e8d1c557a272",
     ),
     (
         "editor/author.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        120_557,
+        "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb",
     ),
     (
         "manifest.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        1962,
+        "27ac13dac70270a739e35efed68c44e2eebf3e45fd7df220862943ad35e42d20",
     ),
     (
         "presentations/bindings.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        73,
+        "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7",
     ),
     (
         "project.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        413,
+        "bfdd891dfcc27c76c77de8ce7ca062725224b0a9b19b51a06f67e81488aa774f",
     ),
     (
         "provenance/imports.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        6_777_146,
+        "bbf79e079bbbec0c33dfbdfc713cf2df68b63ea66e495726c72512c9e22d7e68",
     ),
     (
         "provenance/sources.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        1_685_650,
+        "b58230e5e3a52a3714a1c46a1627f7827628f307302c29ddc613dcff7e76313d",
     ),
     (
         "worlds/world.json",
-        0,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        72,
+        "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa",
     ),
 ];
 /// Successor authoring-tree directory markers that coexist under the legacy package root.
@@ -144,7 +144,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "0000000000000000000000000000000000000000000000000000000000000000";
+const TREE_SHA256: &str = "598a4017c99da1d2bbb081b0185f94e708c8a463c2d652584b43697f997482d0";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.

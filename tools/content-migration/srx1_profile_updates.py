@@ -49,13 +49,19 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
                if original.get(row['production_definition']['production_key']) != row]
     if not updates or len(updates) > 128:
         raise ValueError('SRX1_ITEM_UPDATE_BOUNDS')
-    data = ('{\n  "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",\n'
-            '  "base_sha256": "' + hashlib.sha256(base).hexdigest() + '",\n'
-            '  "records": [\n'
-            + ',\n'.join('    ' + json.dumps(row, ensure_ascii=False, sort_keys=True,
-                                             separators=(',', ':'))
-                        for row in sorted(updates, key=order))
-            + '\n  ]\n}\n').encode()
+    data = (
+        json.dumps(
+            {
+                "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",
+                "base_sha256": hashlib.sha256(base).hexdigest(),
+                "records": sorted(updates, key=order),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n"
+    ).encode()
     if len(data) > 200_000:
         raise ValueError('SRX1_ITEM_UPDATE_SIZE')
     manifest = json.loads(generated[manifest_path])

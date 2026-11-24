@@ -278,7 +278,7 @@ def refresh_consumer_pins(root):
         )
         actual = digest((root / "docs/agents/evidence" / packet).read_bytes())
         pattern = (
-            r'(hashlib\.sha256\(raw\)\.hexdigest\(\) == ")[0-9a-f]{64}(", "'
+            r'(hashlib\.sha256\(raw\)\.hexdigest\(\)\s*==\s*")[0-9a-f]{64}(",\s*"'
             + code
             + '")'
         )
