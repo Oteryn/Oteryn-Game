@@ -1313,19 +1313,22 @@ node_complete_assignment() {
   ops content activate --request content-stale.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 2 --previous empty || code=$?
   [[ $code == 6 ]] || fail "stale content activation predecessor exit=$code"
   [[ "$(echo 'SELECT count(*) FROM game_content_activations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "content activation rows"
-  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
-    # World admission prepares Cyclopedia/boost state against the admitted epoch.
-    # A fresh database has none: initialize through the existing Control owner,
-    # with the actual bundle and issued content, before any Character admission.
-    local epoch_result
+  if [[ "$NODE_BOOT_WORLD" == 1 || "$NODE_BOOT_SPELLS" == 1 ]]; then
+    # Full-manifest admission initializes Prey against committed reset history.
+    # Use the Control initializer for both the bundle and the native entry fixture.
+    local epoch_result epoch_bundle=none epoch_digest_sql=NULL
+    if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+      epoch_bundle=compiled
+      epoch_digest_sql="'$WORLD_DIGEST'"
+    fi
     epoch_result="$({
-      echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT) AS'
+      echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT, TEXT) AS'
       cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
-      printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST"
-      printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST"
+      printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
+      printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
     } | psql_admin oteryn_node_boot)"
     [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
-    evidence "world_epoch=0 source=control_initializer bundle=compiled content=issued replay=idempotent"
+    evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
   fi
   local control_socket_mode="uid${SERVICE_UID}_0600"
   if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
@@ -1644,9 +1647,9 @@ SQL
   remember PVP_GAME_PORT "$PVP_GAME_PORT"
   local epoch_result
   epoch_result="$({
-    echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT) AS'
+    echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT, TEXT) AS'
     cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
-    printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$PVP_WORLD_ID" "$PVP_CHANNEL_ID" "$WORLD_DIGEST"
+    printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s', '%s');\n" "$PVP_WORLD_ID" "$PVP_CHANNEL_ID" "$WORLD_DIGEST" "$WORLD_DIGEST"
   } | psql_admin "$PVP_DATABASE")"
   [[ "$epoch_result" == t ]] || fail "PvP World epoch initialization"
   if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then

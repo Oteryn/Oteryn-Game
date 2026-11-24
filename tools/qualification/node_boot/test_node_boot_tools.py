@@ -210,6 +210,29 @@ class KnobTests(unittest.TestCase):
 
 
 class WorldFixtureTests(unittest.TestCase):
+    def test_spell_manifest_initializes_world_epoch_without_a_bundle(self):
+        assignment = function('node_complete_assignment')
+        epoch_setup = assignment.split('|| fail "content activation rows"\n', 1)[1].split(
+            '  [[ "$(sudo stat', 1
+        )[0]
+        setup = r'''set -Eeuo pipefail
+fail() { echo "$*"; return 1; }
+evidence() { echo "$*"; }
+psql_admin() { cat > epoch.sql; printf 't\nf\n'; }
+NODE_BOOT_WORLD=0
+NODE_BOOT_SPELLS=1
+WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
+CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
+MAP_REVISION=map-s3b-1
+'''
+        with tempfile.TemporaryDirectory() as work:
+            script = setup + 'initialize_entry_epoch() {\n' + epoch_setup + '}\ninitialize_entry_epoch\n'
+            result = bash(script, {'GAME_SOURCE': str(HERE.parents[2])}, cwd=work)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn('world_epoch=0 source=control_initializer bundle=none', result.stdout)
+            sql = Path(work, 'epoch.sql').read_text()
+            self.assertEqual(sql.count("NULL, 'map-s3b-1');"), 2, sql)
+
     def test_only_the_disposable_town_profile_selects_the_m03_portal(self):
         compile_world = section('  evidence "world_profile=', '  PIN="$WORK/world.json"')
         setup = r'''set -Eeuo pipefail
