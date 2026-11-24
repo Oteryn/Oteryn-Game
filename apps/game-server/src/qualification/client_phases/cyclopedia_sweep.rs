@@ -220,11 +220,36 @@ struct Tally {
     fail: usize,
 }
 
+fn lost_transport(mut error: &(dyn std::error::Error + 'static)) -> bool {
+    use oteryn_dev_client::{DevClientError, SessionError};
+    loop {
+        if matches!(
+            error.downcast_ref::<SessionError>(),
+            Some(
+                SessionError::Io(_)
+                    | SessionError::Timeout(_)
+                    | SessionError::SessionUnusable
+                    | SessionError::ServerProtocolError { .. }
+            )
+        ) || matches!(
+            error.downcast_ref::<DevClientError>(),
+            Some(DevClientError::Io(_))
+        ) {
+            return true;
+        }
+        let Some(source) = error.source() else {
+            return false;
+        };
+        error = source;
+    }
+}
+
 /// One row per step, with remaining rows failed if a dependency fails.
 struct Rows<'a> {
     key: &'a str,
     remaining: &'static [&'static str],
     first_failure: Option<&'static str>,
+    transport_lost: bool,
     tally: &'a mut Tally,
     lap: std::time::Instant,
 }
@@ -243,6 +268,7 @@ impl Rows<'_> {
                 ("PASS", detail, String::new())
             }
             Err(error) => {
+                self.transport_lost |= lost_transport(error.as_ref());
                 self.tally.fail += 1;
                 self.first_failure.get_or_insert(step);
                 ("FAIL", error.to_string(), format!(" cause={cause}"))
@@ -345,6 +371,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
             key,
             remaining: entry.steps(),
             first_failure: None,
+            transport_lost: false,
             tally: &mut tally,
             lap: std::time::Instant::now(),
         };
@@ -402,6 +429,12 @@ async fn sweep_entry(
         rows.emit(Err("entry deadline exceeded".into()), "deadline");
         sweep.reader = None;
         sweep.hunter = None;
+    }
+    if rows.transport_lost {
+        match entry {
+            Entry::Bestiary { .. } | Entry::Boss { .. } => drop(sweep.hunter.take()),
+            _ => drop(sweep.reader.take()),
+        }
     }
     rows.finish();
     let failures = rows.tally.fail - failed_before;
@@ -1339,6 +1372,23 @@ async fn check_weather(sweep: &mut Sweep<'_, '_>, area: &WeatherArea, rows: &mut
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn recognizes_transport_loss_through_dev_client_context() {
+        use oteryn_dev_client::{DevClientError, SessionError};
+        let error = DevClientError::Context {
+            phase: "command",
+            elapsed: Duration::ZERO,
+            last_frame: String::new(),
+            source: Box::new(DevClientError::Session(SessionError::Io(
+                std::io::Error::from(std::io::ErrorKind::UnexpectedEof),
+            ))),
+        };
+        assert!(lost_transport(&error));
+        assert!(lost_transport(&SessionError::SessionUnusable));
+        assert!(!lost_transport(&SessionError::ActivityScopeChanged));
+        assert!(!lost_transport(&std::io::Error::other("content fixture")));
+    }
 
     #[test]
     fn batch_accepts_only_plain_bounded_positive_slices() -> TestResult {
