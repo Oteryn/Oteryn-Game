@@ -747,8 +747,9 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     if native_item_profiles is None:
         updates = profile_path.with_name('srx1-item-updates.json')
         profile_raw = profile_path.read_bytes() if profile_path.exists() else None
+        # Intermediate Cake composition runs before the SRX-1 supplement is rebuilt.
         native_profiles = (loot_item_profiles(profile_raw,
-                                              updates.read_bytes() if updates.exists() else None)
+                                              updates.read_bytes() if qualify_carried_yields and updates.exists() else None)
                            if profile_raw is not None else {'records': []})
         starter_path = item_definitions / 'starting-loadout-profiles.json'
         if slice_creatures and starter_path.exists():
@@ -918,10 +919,15 @@ def refresh_loot_tables(output: Path = LOOT_TABLES) -> str:
     if migration_tools not in sys.path:
         sys.path.insert(0, migration_tools)
     import register_spell_families as registered
+    from srx1_profile_updates import PATH as item_updates
+    from starting_loadout_profiles import FRAGMENT
 
     providers = registered.spell_import.PROVIDER_DESTINATIONS
-    inputs = (providers['item_profiles'], providers['creature_profiles'], registered.NATIVE_MANIFEST)
+    inputs = (providers['item_profiles'], providers['creature_profiles'],
+              registered.NATIVE_MANIFEST, FRAGMENT)
     generated = {path: (ROOT / path).read_bytes() for path in inputs}
+    if (ROOT / item_updates).is_file():
+        generated[item_updates] = (ROOT / item_updates).read_bytes()
     registered.refresh_registered_loot(ROOT, generated)
     raw = generated[LOOT_TABLES.relative_to(ROOT).as_posix()]
     if len(raw) > LIMITS['loot_tables']:

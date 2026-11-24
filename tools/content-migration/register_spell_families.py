@@ -104,11 +104,6 @@ def refresh_registered_loot(root: Path, generated: dict[str, bytes]) -> None:
     from cake_native_successor import loot_successor
     from srx1_profile_updates import PATH as item_updates
     from starting_loadout_profiles import FRAGMENT
-    import questpc7_hot_corpse_loot
-    import questpc7_marsh_loot
-    import questpc7_slug_loot
-    import questpc7_smith_corpse_loot
-    import world_change_loot_inputs
 
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
@@ -126,6 +121,17 @@ def refresh_registered_loot(root: Path, generated: dict[str, bytes]) -> None:
         "sha256": hashlib.sha256(generated[loot_path]).hexdigest(),
     }
     generated[NATIVE_MANIFEST] = canonical(manifest)
+    refine_loot_inputs(root, generated)
+
+
+def refine_loot_inputs(root: Path, generated: dict[str, bytes]) -> None:
+    import questpc7_hot_corpse_loot
+    import questpc7_marsh_loot
+    import questpc7_slug_loot
+    import questpc7_smith_corpse_loot
+    import world_change_loot_inputs
+
+    item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     for overlay in (
         world_change_loot_inputs,
         questpc7_marsh_loot,
@@ -133,7 +139,7 @@ def refresh_registered_loot(root: Path, generated: dict[str, bytes]) -> None:
         questpc7_smith_corpse_loot,
         questpc7_hot_corpse_loot,
     ):
-        overlay.apply(root, generated, item_path, NATIVE_MANIFEST, canonical)
+        overlay.apply(root, generated, item_path, NATIVE_MANIFEST, spell_import.canonical_bytes)
 
 
 def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:

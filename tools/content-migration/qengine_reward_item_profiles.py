@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT / 'tools/content-schema/quest-authoring'))
 import qmech_m39
 import m07_lion_flower_profile as lion_flower
 import questl2_ready
+from srx1_profile_updates import OMIT_IF_UNKNOWN
 
 IDS = {21897, 21898, 21899, 21901, 21902, 21905, 21906, 30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 16167, 16242, 12517, 12413, 16128, 16129, 20275, 20276, 5903, 5947, 133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
        4867, 5886, 5924, 5937, 5938, 5939, 5940, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793}
@@ -294,7 +295,8 @@ def reconcile(existing, observed):
         previous = attributes.get(key)
         if previous is not None and value is not None and previous != value:
             raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:attributes.' + key)
-        if previous is None:
+        # Keep compact Unknown fields absent when admitting the same source facts again.
+        if previous is None and (value is not None or key not in OMIT_IF_UNKNOWN):
             attributes[key] = value
     merged['attributes'] = attributes
     if existing.keys() != observed.keys():

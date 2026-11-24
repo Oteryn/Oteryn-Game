@@ -4,6 +4,14 @@ import hashlib
 import json
 
 PATH = 'content/items/definitions/srx1-item-updates.json'
+OMIT_IF_UNKNOWN = ('field_condition', 'rune_consumption')
+
+
+def omit_unknown_attributes(row):
+    attributes = row['attributes']
+    for name in OMIT_IF_UNKNOWN:
+        if attributes.get(name) is None:
+            attributes.pop(name, None)
 
 
 def coalesce_dispenser_top_order(document, source_records, house_overlay):
@@ -47,10 +55,7 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
     # representation as Unknown and keeps the composed provider within 16 MiB.
     for profile_document in (original_document, enriched):
         for row in profile_document['records']:
-            attributes = row['attributes']
-            for name in ('field_condition', 'rune_consumption'):
-                if attributes.get(name) is None:
-                    attributes.pop(name, None)
+            omit_unknown_attributes(row)
     base = canonical(original_document)
     generated[profile_path] = base
     original = {row['production_definition']['production_key']: row
