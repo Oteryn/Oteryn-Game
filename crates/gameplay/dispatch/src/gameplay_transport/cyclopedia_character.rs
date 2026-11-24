@@ -299,19 +299,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await?;
                 }
-                let (view, mut extension) = self
-                    .root
-                    .read_cyclopedia_character_tab_extended(
-                        self.character,
-                        self.holder,
-                        fence,
-                        target,
-                        request.tab,
-                        request.page,
-                        now,
+                let read_tab = || {
+                    self.root.read_cyclopedia_character_tab_extended(
+                        self.character, self.holder, fence, target, request.tab, request.page, now,
                     )
-                    .await
-                    .map_err(|_| ())?;
+                };
+                let (view, mut extension) = if request.tab == wire::CharacterTab::GeneralStats {
+                    use crate::durability::{DurabilityError, character_authority::CharacterAuthorityError};
+
+                    let retry = super::AdmissionRetryBudget::for_foreground_command(self.root)
+                        .map_err(|_| ())?;
+                    retry.retry_durability("cyclopedia_general_stats", || async {
+                        read_tab().await.map_err(|error| match error {
+                            CharacterAuthorityError::Unavailable(error) => error,
+                            CharacterAuthorityError::Rejected
+                            | CharacterAuthorityError::Conflict
+                            | CharacterAuthorityError::NameUnavailable => DurabilityError::CommitRejected,
+                        })
+                    }).await.map_err(|error| {
+                        super::operator_event(&format!(
+                            "event=cyclopedia_tab_refused tab=GeneralStats reason={error:?}",
+                        ));
+                    })?
+                } else {
+                    read_tab().await.map_err(|_| ())?
+                };
                 // Each extension field reaches only a session that selected its capability.
                 if !admitted
                     .continuity
