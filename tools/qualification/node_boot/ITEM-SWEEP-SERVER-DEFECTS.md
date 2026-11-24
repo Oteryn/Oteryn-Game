@@ -378,3 +378,14 @@ blocked its shared fixture. The fresh rehearsal observed each exact
 definition through BROWSE_FIELD on the real connection and verified all
 three cleanups. This verifies seed custody. Full corpse capacity still
 requires a native death receipt and the resulting corpse handle.
+
+The fresh tail stack replayed past the keys presenting E1200 on the
+earlier stack. At its 64-verdict checkpoint it had 52 seed PASS and
+12 exact-bed-placement failures. The pending ledger then had 731 keys
+from the original 1,403. The tail replay remained in progress.
+
+The mean paladin spear (i17110) requires the authored `NONE` vocation.
+The sweep now uses the third packet account's untouched level-one
+character and the fixture's level-zero custody path, then verifies the
+actual vocation on the fresh connection. The content unit test verifies
+the positive build and the availability of a wrong-vocation fixture.
