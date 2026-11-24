@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.rabaz",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/an-interest-in-botany/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you collect samples of two rare plants in Zao?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rabaz",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/an-interest-in-botany/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "You found both specimens. May I have the Almanach?"
+      ]
+    }
+  ]
+}

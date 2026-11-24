@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing. NODEBOOT-SAM: Sam Thais equipment trade at the agreeing Canary/Crystal promotion-candidate cell 32361,32198,z7 for node-boot NPC and player trade. QB-1: Hunter (Legola), Mage and Summoner (Angelina, Lynda, Myra, Zoltan) and Wizard (Lugri, The Queen of the Banshees) outfit hand-ins at their single agreeing promotion-candidate cells. QB-2: Cave Explorer (Gnommander, a source-backed solid contact), Revenant (Flickering Soul), Hand of the Inquisition (Grof, Kulag, Miles, Tim and Walter the Guard) at their single agreeing promotion-candidate cells. QB-3: mainland Citizen (Lubo, Hanna) and Warrior (Trisha, Cornelia) addon hand-ins at their agreeing promotion-candidate cells; Hanna's alternate example-map cell is excluded by explicit selection. QB Barbarian Outfits: Bron and Ajax near Northport at their single agreeing promotion-candidate cells (Bron as a source-backed block_solid_contact: no adjacent clear single-item ground). QCX13: Frodo and Mordecai at their retained promotion-candidate cells for the existing seller offers. QH-TOP-OF-THE-CITY: Iriana at her agreeing Canary/Crystal candidate cell; Jimmy at the TibiaWiki and Polish TibiaWiki cell 32857,31383,6, on the passage stub the qh_jimmy_stub world overlay restores (owner evidence 2026-11-17). C06: Xodet at the retained Thais promotion-candidate cell 32398,32222,z7 for native rune purchases. QC-SINATUKI: Sinatuki (Nibelor, Sinatuki Quest) at the agreeing Canary/Crystal promotion-candidate cell 32425,31085,z7. CNPC1 joins six-region contacts by runtime NPC identity to the Crystal 201189f world-npc.xml and uses retained TibiaWiki BR revision cells where the XML has no placement. The original candidates supply agreeing positions and the override rows retain pinned evidence where they differ. CNPC2: stationary regional contacts from Crystal 201189f8; retained Wiki coordinates where the pinned Crystal XML has no matching occurrence. Regional population for Yalahar, Farmine, Gray Beach, Rathleton, Roshamuul, Issavi and Marapur at the pinned Crystal Global cells or retained TibiaWiki fallback cells.",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing. NODEBOOT-SAM: Sam Thais equipment trade at the agreeing Canary/Crystal promotion-candidate cell 32361,32198,z7 for node-boot NPC and player trade. QB-1: Hunter (Legola), Mage and Summoner (Angelina, Lynda, Myra, Zoltan) and Wizard (Lugri, The Queen of the Banshees) outfit hand-ins at their single agreeing promotion-candidate cells. QB-2: Cave Explorer (Gnommander, a source-backed solid contact), Revenant (Flickering Soul), Hand of the Inquisition (Grof, Kulag, Miles, Tim and Walter the Guard) at their single agreeing promotion-candidate cells. QB-3: mainland Citizen (Lubo, Hanna) and Warrior (Trisha, Cornelia) addon hand-ins at their agreeing promotion-candidate cells; Hanna's alternate example-map cell is excluded by explicit selection. QB Barbarian Outfits: Bron and Ajax near Northport at their single agreeing promotion-candidate cells (Bron as a source-backed block_solid_contact: no adjacent clear single-item ground). QCX13: Frodo and Mordecai at their retained promotion-candidate cells for the existing seller offers. QH-TOP-OF-THE-CITY: Iriana at her agreeing Canary/Crystal candidate cell; Jimmy at the TibiaWiki and Polish TibiaWiki cell 32857,31383,6, on the passage stub the qh_jimmy_stub world overlay restores (owner evidence 2026-11-17). C06: Xodet at the retained Thais promotion-candidate cell 32398,32222,z7 for native rune purchases. QC-SINATUKI: Sinatuki (Nibelor, Sinatuki Quest) at the agreeing Canary/Crystal promotion-candidate cell 32425,31085,z7. CNPC1 joins six-region contacts by runtime NPC identity to the Crystal 201189f world-npc.xml and uses retained TibiaWiki BR revision cells where the XML has no placement. The original candidates supply agreeing positions and the override rows retain pinned evidence where they differ. CNPC2: stationary regional contacts from Crystal 201189f8; retained Wiki coordinates where the pinned Crystal XML has no matching occurrence. Regional population for Yalahar, Farmine, Gray Beach, Rathleton, Roshamuul, Issavi and Marapur at the pinned Crystal Global cells or retained TibiaWiki fallback cells. Shattered Isles: admit the retained quest NPC candidate cells for the chosen four passages. CWTRAV2: Crystal travel origins at their pinned Global map cells. Travel lane 3: static transport actors checked against Crystal 201189f8 data-global/world/world-npc.xml, including the outbound Tonar passage. Old Adall and Ziyad retain their source-backed solid-object contacts.",
   "npcs": [
     "oteryn:npc.a_beggar",
     "oteryn:npc.a_confused_frog",
@@ -54,6 +54,7 @@
     "oteryn:npc.an_ominous_bat",
     "oteryn:npc.an_orc_guard",
     "oteryn:npc.anaztassja_moroia_init",
+    "oteryn:npc.anderson",
     "oteryn:npc.andrew_lyze",
     "oteryn:npc.anerui",
     "oteryn:npc.aneus",
@@ -140,12 +141,15 @@
     "oteryn:npc.captain_breezelda",
     "oteryn:npc.captain_chelop",
     "oteryn:npc.captain_cookie",
+    "oteryn:npc.captain_corsarah",
     "oteryn:npc.captain_fearless",
     "oteryn:npc.captain_greyhound",
+    "oteryn:npc.captain_gulliver",
     "oteryn:npc.captain_haba",
     "oteryn:npc.captain_harava",
     "oteryn:npc.captain_max",
     "oteryn:npc.captain_max_calassa",
+    "oteryn:npc.captain_pelagia",
     "oteryn:npc.captain_seagull",
     "oteryn:npc.captain_seahorse",
     "oteryn:npc.captain_sinbeard",
@@ -154,6 +158,7 @@
     "oteryn:npc.caramellia",
     "oteryn:npc.carina",
     "oteryn:npc.carlos",
+    "oteryn:npc.carlson",
     "oteryn:npc.cedrik",
     "oteryn:npc.ceiron",
     "oteryn:npc.cerdras",
@@ -420,6 +425,7 @@
     "oteryn:npc.julian",
     "oteryn:npc.julius",
     "oteryn:npc.junkar_mines",
+    "oteryn:npc.junkar_robsons",
     "oteryn:npc.junkar_thais",
     "oteryn:npc.kais",
     "oteryn:npc.kallimae",
@@ -445,6 +451,7 @@
     "oteryn:npc.larfion_the_shaman",
     "oteryn:npc.larry",
     "oteryn:npc.lavirias",
+    "oteryn:npc.lazaran",
     "oteryn:npc.lea",
     "oteryn:npc.lector",
     "oteryn:npc.lee_delle",
@@ -474,6 +481,7 @@
     "oteryn:npc.lynda",
     "oteryn:npc.lyonel",
     "oteryn:npc.maealil",
+    "oteryn:npc.maelyrra",
     "oteryn:npc.maeryn",
     "oteryn:npc.malor",
     "oteryn:npc.malunga",
@@ -481,6 +489,7 @@
     "oteryn:npc.maria",
     "oteryn:npc.marina",
     "oteryn:npc.maris",
+    "oteryn:npc.maris_fenrock",
     "oteryn:npc.maris_mistrock",
     "oteryn:npc.maritima",
     "oteryn:npc.markwin",
@@ -508,6 +517,7 @@
     "oteryn:npc.mordecai",
     "oteryn:npc.morgan",
     "oteryn:npc.morpel",
+    "oteryn:npc.mortimer",
     "oteryn:npc.mortis",
     "oteryn:npc.morun",
     "oteryn:npc.mother_of_jack",
@@ -553,6 +563,7 @@
     "oteryn:npc.oiriz",
     "oteryn:npc.old_adall",
     "oteryn:npc.old_rock_boy",
+    "oteryn:npc.oldrak",
     "oteryn:npc.oliver",
     "oteryn:npc.olrik",
     "oteryn:npc.omrabas",
@@ -584,6 +595,7 @@
     "oteryn:npc.petros",
     "oteryn:npc.phillip",
     "oteryn:npc.pig",
+    "oteryn:npc.pino",
     "oteryn:npc.polly",
     "oteryn:npc.pompan",
     "oteryn:npc.prezil",
@@ -689,6 +701,7 @@
     "oteryn:npc.sundara",
     "oteryn:npc.suzy",
     "oteryn:npc.sven",
+    "oteryn:npc.svenson",
     "oteryn:npc.swolt",
     "oteryn:npc.sylvester",
     "oteryn:npc.talesia",
@@ -734,6 +747,7 @@
     "oteryn:npc.tom",
     "oteryn:npc.tomruk_the_ruddy",
     "oteryn:npc.tonar",
+    "oteryn:npc.tonar_oskayaat",
     "oteryn:npc.tony",
     "oteryn:npc.tooth_fairy",
     "oteryn:npc.toothless_tim",
@@ -899,6 +913,7 @@
     "oteryn:npc.gnomfurry",
     "oteryn:npc.gnommander",
     "oteryn:npc.imbul",
+    "oteryn:npc.iyad",
     "oteryn:npc.jack",
     "oteryn:npc.javala",
     "oteryn:npc.jessica",
@@ -910,6 +925,7 @@
     "oteryn:npc.messenger_of_heaven",
     "oteryn:npc.mysterious_ornate_chest",
     "oteryn:npc.oblivis",
+    "oteryn:npc.ocelus",
     "oteryn:npc.oiriz",
     "oteryn:npc.old_adall",
     "oteryn:npc.ortheus",
@@ -917,6 +933,7 @@
     "oteryn:npc.pompan",
     "oteryn:npc.prisoner",
     "oteryn:npc.ray",
+    "oteryn:npc.raymond_striker",
     "oteryn:npc.rock_with_a_soft_spot",
     "oteryn:npc.shalmar",
     "oteryn:npc.sherry_mcronald",
@@ -963,6 +980,19 @@
         "z": 15
       },
       "reason": "Use the adjacent identical protection-zone tile to keep Thorgrin's Crystal Kazordoon arrival clear."
+    },
+    "oteryn:npc.captain_harava": {
+      "source": {
+        "x": 33902,
+        "y": 31462,
+        "z": 6
+      },
+      "target": {
+        "x": 33902,
+        "y": 31463,
+        "z": 6
+      },
+      "reason": "Crystal 201189f8 captain_gulliver.lua:68 lands on this XML anchor at Issavi. The next cell south uses the same clear ground and is within the donor walk radius of 2 (captain_harava.lua:11)."
     },
     "oteryn:npc.captain_max": {
       "source": {
@@ -1068,6 +1098,19 @@
       },
       "reason": "Nearest clear ground at the source contact in the retained Oteryn map."
     },
+    "oteryn:npc.jack_fate_goroma": {
+      "source": {
+        "x": 32161,
+        "y": 32558,
+        "z": 6
+      },
+      "target": {
+        "x": 32161,
+        "y": 32559,
+        "z": 6
+      },
+      "reason": "Use the adjacent dock tile to keep Jack Fate's Goroma arrival clear."
+    },
     "oteryn:npc.jacob": {
       "source": {
         "x": 33570,
@@ -1093,19 +1136,6 @@
         "z": 7
       },
       "reason": "Nearest clear ground at the source contact in the retained Oteryn map."
-    },
-    "oteryn:npc.jack_fate_goroma": {
-      "source": {
-        "x": 32161,
-        "y": 32558,
-        "z": 6
-      },
-      "target": {
-        "x": 32161,
-        "y": 32559,
-        "z": 6
-      },
-      "reason": "Use the adjacent dock tile to keep Jack Fate's Goroma arrival clear."
     },
     "oteryn:npc.john": {
       "source": {
@@ -1263,6 +1293,19 @@
         "z": 6
       },
       "reason": "Nearest clear ground at the source contact in the retained Oteryn map."
+    },
+    "oteryn:npc.tonar_oskayaat": {
+      "source": {
+        "x": 33068,
+        "y": 32917,
+        "z": 7
+      },
+      "target": {
+        "x": 33067,
+        "y": 32917,
+        "z": 7
+      },
+      "reason": "The source Oskayaat boat cell has no admitted ground in the native map. The adjacent shoreline keeps the return contact in talk range of the outbound landing."
     },
     "oteryn:npc.umar": {
       "source": {
@@ -1765,6 +1808,25 @@
       "supersedes_unscoped": [
         "oteryn:npc.anaztassja_moroia_vampires_lair"
       ]
+    },
+    "oteryn:npc.anderson": {
+      "basis": "Crystal world-npc.xml:1471-1472 anchors Anderson. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32127,
+            "y": 31660,
+            "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
     },
     "oteryn:npc.andrew_lyze": {
       "basis": "Port Hope region. Crystal world-npc.xml line(s) 2233. The source cell is the spawn center plus its child offsets. Explicit XML facing takes precedence over the north default.",
@@ -2393,6 +2455,25 @@
         }
       ]
     },
+    "oteryn:npc.brodrosch": {
+      "basis": "Crystal world-npc.xml:3287-3288 anchors Brodrosch. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32659,
+            "y": 31957,
+            "z": 15
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
     "oteryn:npc.bruce": {
       "source": {
         "origin": "crystal",
@@ -2545,6 +2626,25 @@
         }
       ]
     },
+    "oteryn:npc.captain_bluebear": {
+      "basis": "Crystal world-npc.xml:886-887 anchors Captain Bluebear. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32310,
+            "y": 32209,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
     "oteryn:npc.captain_breezelda": {
       "basis": "Svargrond region. Crystal world-npc.xml line(s) 508. The source cell is the spawn center plus its child offsets. Explicit XML facing takes precedence over the north default.",
       "source": {
@@ -2601,6 +2701,82 @@
           }
         }
       ]
+    },
+    "oteryn:npc.captain_corsarah": {
+      "basis": "Crystal world-npc.xml:955-956 anchors Captain Corsarah. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 34010,
+            "y": 32475,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_fearless": {
+      "basis": "Crystal world-npc.xml:705-706 anchors Captain Fearless. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32957,
+            "y": 32021,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_greyhound": {
+      "basis": "Crystal world-npc.xml:636-637 anchors Captain Greyhound. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32387,
+            "y": 31822,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_gulliver": {
+      "basis": "Crystal world-npc.xml:1759-1760 anchors Captain Gulliver. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33479,
+            "y": 31986,
+            "z": 7
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
     },
     "oteryn:npc.captain_haba": {
       "basis": "Svargrond region. Crystal world-npc.xml line(s) 511. The source cell is the spawn center plus its child offsets. Explicit XML facing takes precedence over the north default.",
@@ -2678,6 +2854,44 @@
         }
       ]
     },
+    "oteryn:npc.captain_pelagia": {
+      "basis": "Crystal world-npc.xml:594-595 anchors Captain Pelagia. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 33491,
+            "y": 31710,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
+    "oteryn:npc.captain_seagull": {
+      "basis": "Crystal world-npc.xml:579-580 anchors Captain Seagull. The source leaves direction unspecified, so the native placement uses north.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32735,
+            "y": 31670,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "path": "data-global/world/world-npc.xml",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
     "oteryn:npc.captain_seahorse": {
       "basis": "Edron region. Crystal world-npc.xml line(s) 604. The source cell is the spawn center plus its child offsets. Explicit XML facing takes precedence over the north default.",
       "source": {
@@ -2711,6 +2925,25 @@
             "x": 33091,
             "y": 32883,
             "z": 6
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.carlson": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 1505. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32022,
+            "y": 31692,
+            "z": 7
           },
           "direction": "NORTH"
         }
@@ -4040,6 +4273,25 @@
         }
       ]
     },
+    "oteryn:npc.gewen": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 13. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32588,
+            "y": 31942,
+            "z": 0
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
     "oteryn:npc.ghost_of_a_priest": {
       "basis": "Port Hope region. Crystal world-npc.xml line(s) 3072, 3114, 3243. The source cell is the spawn center plus its child offsets. Explicit XML facing takes precedence over the north default.",
       "source": {
@@ -5356,6 +5608,63 @@
         }
       ]
     },
+    "oteryn:npc.junkar_mines": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 2853. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32556,
+            "y": 32069,
+            "z": 10
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.junkar_robsons": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 3198. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32525,
+            "y": 32038,
+            "z": 14
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.junkar_thais": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 3108. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32368,
+            "y": 32181,
+            "z": 13
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
     "oteryn:npc.kais": {
       "basis": "Port Hope region. Crystal world-npc.xml line(s) 2582. The source cell is the spawn center plus its child offsets. Explicit XML facing takes precedence over the north default.",
       "source": {
@@ -5427,6 +5736,25 @@
             "x": 33231,
             "y": 32389,
             "z": 6
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.kendra_thais": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 2000. The XML omits facing, so use the engine default north. Crystal places this contact in the static world XML and registers Nostalgia unconditionally in kendra_thais.lua:70. Tibia first offered the ferry on January 7 during the January 2017 anniversary and later brought it back for annual anniversaries.",
+      "placements": [
+        {
+          "position": {
+            "x": 32261,
+            "y": 32262,
+            "z": 7
           },
           "direction": "NORTH"
         }
@@ -5752,6 +6080,25 @@
             "y": 31292,
             "z": 6
           }
+        }
+      ]
+    },
+    "oteryn:npc.maris_fenrock": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 1307. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32564,
+            "y": 31313,
+            "z": 7
+          },
+          "direction": "NORTH"
         }
       ]
     },

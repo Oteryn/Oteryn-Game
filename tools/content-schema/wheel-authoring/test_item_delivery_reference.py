@@ -83,7 +83,11 @@ class ItemDeliveryReferenceTests(unittest.TestCase):
                         }[key],
                     )
                 }
-            self.assertEqual(declarations, expected)
+            # Main also qualifies the Global NPC buyback prices for the two fragments.
+            for fragment, price in (("i46625", 500), ("i46626", 2500)):
+                if key == f"oteryn:item.tibia.{fragment}":
+                    expected.add(("BuyFromPlayer", price))
+            self.assertEqual(declarations, expected, key)
         coverage = data["client_icon_coverage"]
         self.assertEqual(
             [

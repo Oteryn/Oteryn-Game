@@ -8,6 +8,7 @@ use serde_json::{Value, json};
 use std::{
     fs,
     io::Write,
+    net::SocketAddr,
     process::{Child, Command, Stdio},
     time::Duration,
 };
@@ -182,6 +183,9 @@ pub async fn empty_projection(t: &Topology, account: &str) -> TestResult {
 
 pub struct Portal {
     child: Child,
+    command: Command,
+    public_address: SocketAddr,
+    admission_address: SocketAddr,
     pub origin: String,
 }
 fn reserve_listener() -> TestResult<std::net::TcpListener> {
@@ -244,31 +248,38 @@ impl Portal {
         drop((native_listener, public_listener, admission_listener));
         let mut portal = Self {
             child: command.spawn().map_err(|_| "portal_spawn_failed")?,
+            command,
+            public_address,
+            admission_address,
             origin,
         };
+        portal.await_ready(t).await?;
+        Ok(portal)
+    }
+
+    async fn await_ready(&mut self, t: &Topology) -> TestResult {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
         let client = http(t)?;
         loop {
             check(
-                portal
-                    .child
+                self.child
                     .try_wait()
                     .map_err(|_| "portal_poll_failed")?
                     .is_none(),
                 "portal_exited",
             )?;
             let native_ready = client
-                .get(format!("{}/healthz", portal.origin))
+                .get(format!("{}/healthz", self.origin))
                 .send()
                 .await
                 .is_ok_and(|r| r.status() == 200);
             let admission_ready = client
-                .get(format!("http://{admission_address}/health"))
+                .get(format!("http://{}/health", self.admission_address))
                 .send()
                 .await
                 .is_ok_and(|r| r.status() == 200);
             let public_ready = client
-                .get(format!("http://{public_address}/healthz"))
+                .get(format!("http://{}/healthz", self.public_address))
                 .send()
                 .await
                 .is_ok_and(|r| r.status() == 200);
@@ -281,8 +292,15 @@ impl Portal {
             )?;
             tokio::time::sleep(Duration::from_millis(50)).await;
         }
-        Ok(portal)
+        Ok(())
     }
+
+    /// Restart after stop with the same TLS origin and database.
+    pub async fn restart(&mut self, t: &Topology) -> TestResult {
+        self.child = self.command.spawn().map_err(|_| "portal_restart_failed")?;
+        self.await_ready(t).await
+    }
+
     pub async fn stop(&mut self) -> TestResult {
         self.child.kill().map_err(|_| "portal_stop_failed")?;
         self.child.wait().map_err(|_| "portal_wait_failed")?;

@@ -10,17 +10,21 @@ use std::{
 };
 #[derive(Default)]
 pub(in super::super) struct ScreenshotRuntime {
+    readback_epoch: u64,
     frames: VecDeque<(Instant, Arc<Pixels>)>,
     last_frame: Option<Instant>,
-    last_query: Option<Instant>,
     last_pvp_query: Option<Instant>,
-    incoming_situations: Option<usize>,
+    incoming_situations: Option<Vec<u64>>,
+    incoming_ids: Option<Vec<u64>>,
     last_pvp_observation: Option<Instant>,
     last_bestiary_query: Option<Instant>,
+    activity: Option<u64>,
     previous: Option<Signals>,
+    options: Option<[bool; 13]>,
+    trigger_revisions: [u64; 13],
     queried_kills: Option<u64>,
     stages_at_request: Option<oteryn_client_ui::charm_progression::BestiaryStages>,
-    automatic_pending: bool,
+    automatic_pending: [bool; 13],
     game_only: Option<bool>,
 }
 struct Signals {
@@ -70,13 +74,54 @@ impl ScreenshotBatch {
     }
 }
 
+impl PlayLink {
+    pub(crate) fn activity_generation(&self) -> u64 {
+        crate::play::mailbox::lock(&self.mailbox).bar_actions.scope
+    }
+}
+
+impl ScreenshotRuntime {
+    fn invalidate(&mut self) {
+        *self = Self {
+            readback_epoch: self.readback_epoch.wrapping_add(1),
+            ..Default::default()
+        };
+    }
+}
+
 impl SettingsState {
+    pub(in super::super) fn change_screenshot_triggers(&mut self, next: [bool; 13]) {
+        let previous = self.preferences.screenshots.triggers();
+        let runtime = &mut self.screenshot_runtime;
+        for i in 0..next.len() {
+            if previous[i] != next[i] {
+                runtime.trigger_revisions[i] = runtime.trigger_revisions[i].wrapping_add(1);
+                runtime.automatic_pending[i] = false;
+                if let Some(options) = &mut runtime.options {
+                    options[i] = false;
+                }
+            }
+        }
+    }
+    #[cfg(bevy_shell)]
+    pub(crate) fn pending_screenshot_triggers(&self) -> [Option<u64>; 13] {
+        let runtime = &self.screenshot_runtime;
+        let enabled = self.preferences.screenshots.triggers();
+        std::array::from_fn(|i| {
+            (enabled[i] && runtime.automatic_pending[i]).then_some(runtime.trigger_revisions[i])
+        })
+    }
     pub fn cancel_screenshot(&mut self) {
-        self.screenshot_runtime.automatic_pending = false;
+        self.screenshot_runtime.automatic_pending = [false; 13];
         self.screenshot_requested = false;
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn screenshot_readback_epoch(&self) -> u64 {
+        self.screenshot_runtime.readback_epoch
+    }
+
     pub fn reset_screenshot_session(&mut self) {
-        self.screenshot_runtime = ScreenshotRuntime::default();
+        self.screenshot_runtime.invalidate();
         self.screenshot_requested = false;
     }
     pub fn process_screenshots(
@@ -141,13 +186,21 @@ impl SettingsState {
                 .unwrap_or_default();
             self.observe_impact_records(s.combat, old)
         });
+        let activity = link.map(PlayLink::activity_generation);
         let runtime = &mut self.screenshot_runtime;
-        if preferences.automatic_disabled {
-            runtime.automatic_pending = false;
-        }
-        if link.is_none() || runtime.game_only != Some(preferences.game_only) {
-            *runtime = ScreenshotRuntime::default();
+        if link.is_none()
+            || runtime.game_only != Some(preferences.game_only)
+            || runtime.activity != activity
+        {
+            runtime.invalidate();
             runtime.game_only = Some(preferences.game_only);
+            runtime.activity = activity;
+        }
+        let triggers = preferences.triggers();
+        let previous = runtime.options.replace(triggers).unwrap_or(triggers);
+        let enabled: [bool; 13] = std::array::from_fn(|i| previous[i] && triggers[i]);
+        for (pending, active) in runtime.automatic_pending.iter_mut().zip(enabled) {
+            *pending &= active;
         }
         if let (Some(link), Some(signals)) = (link, signals) {
             let bestiary = !preferences.automatic_disabled
@@ -179,13 +232,28 @@ impl SettingsState {
                     runtime.last_pvp_observation = panel.status_received_at;
                 }
                 if panel.status_received_at != runtime.last_pvp_observation
-                    && let Some(count) = panel.incoming_situations
+                    && let Some(incoming) = &panel.incoming_situations
                 {
                     runtime.last_pvp_observation = panel.status_received_at;
-                    runtime.automatic_pending |= runtime
+                    let old_ids =
+                        std::mem::replace(&mut runtime.incoming_ids, panel.incoming_ids.clone());
+                    let legacy_change = runtime
                         .incoming_situations
-                        .replace(count)
-                        .is_some_and(|old| count > old);
+                        .replace(incoming.clone())
+                        .is_some_and(|old| {
+                            incoming.len() > old.len()
+                                || incoming
+                                    .iter()
+                                    .zip(old)
+                                    .any(|(current, previous)| *current > previous)
+                        });
+                    runtime.automatic_pending[3] |= enabled[3]
+                        && match (&panel.incoming_ids, old_ids) {
+                            (Some(current), Some(previous)) => {
+                                oteryn_client_ui::pvp_situation_id::renewed(current, &previous)
+                            }
+                            _ => legacy_change,
+                        };
                 }
                 if panel.selected
                     && !panel.pending
@@ -202,14 +270,22 @@ impl SettingsState {
                 }
             } else {
                 runtime.incoming_situations = None;
+                runtime.incoming_ids = None;
                 runtime.last_pvp_query = None;
                 runtime.last_pvp_observation = None;
             }
-            let (boss_baseline, boss_advanced) = link.boss_capture(
-                !preferences.automatic_disabled && preferences.on_boss_defeat,
-                now,
-            );
-            runtime.automatic_pending |= boss_advanced;
+            let (boss_baseline, boss_advanced) = if signals.events.personal_boss_events {
+                (
+                    true,
+                    link.take_boss_defeat(enabled[2], runtime.automatic_pending[2]),
+                )
+            } else {
+                link.boss_capture(
+                    !preferences.automatic_disabled && preferences.on_boss_defeat,
+                    now,
+                )
+            };
+            runtime.automatic_pending[2] |= enabled[2] && boss_advanced;
             let full = signals.bestiary.is_some();
             if !preferences.automatic_disabled
                 && let Some(previous) = &runtime.previous
@@ -227,57 +303,55 @@ impl SettingsState {
                     .achievement
                     .zip(signals.achievement)
                     .is_some_and(|(old, new)| new > old);
-                runtime.automatic_pending |= (preferences.on_death && death)
-                    || (preferences.on_bestiary_unlock
-                        && !full
-                        && signals.events.tracker[0] != previous.events.tracker[0])
-                    || (preferences.on_bestiary_complete
-                        && !full
-                        && signals.events.tracker[1] != previous.events.tracker[1])
-                    || (preferences.on_boss_defeat
-                        && !boss_baseline
-                        && signals.events.tracker[2] != previous.events.tracker[2])
-                    || (preferences.on_valuable_loot
-                        && previous.events.tracked_loot != signals.events.tracked_loot)
-                    || (preferences.on_low_health
-                        && previous.events.low_health != signals.events.low_health)
-                    || (preferences.on_level && level)
-                    || (preferences.on_skill && skill)
-                    || (preferences.on_achievement && achievement)
-                    || previous
-                        .bestiary
-                        .as_ref()
-                        .zip(signals.bestiary.as_ref())
-                        .is_some_and(|(old, current)| {
-                            !Arc::ptr_eq(old, current)
-                                && current.iter().any(|(race, stage)| {
-                                    let last = old
-                                        .binary_search_by_key(race, |(id, _)| *id)
-                                        .map_or(0, |index| old[index].1);
-                                    *stage > last
-                                        && if *stage == 3 {
-                                            preferences.on_bestiary_complete
-                                        } else {
-                                            preferences.on_bestiary_unlock
-                                        }
-                                })
-                        })
-                    || (preferences.reward_chest
-                        && signals.combat.reward_collections > previous.combat.reward_collections)
-                    || (preferences.on_record_damage && records[0])
-                    || (preferences.on_record_healing && records[1])
-                    || (preferences.on_player_attacking
-                        && signals.combat.player_hits > previous.combat.player_hits);
+                let events = [
+                    (
+                        0,
+                        !full && signals.events.tracker[0] > previous.events.tracker[0],
+                    ),
+                    (
+                        1,
+                        !full && signals.events.tracker[1] > previous.events.tracker[1],
+                    ),
+                    (
+                        2,
+                        !boss_baseline && signals.events.tracker[2] > previous.events.tracker[2],
+                    ),
+                    (
+                        6,
+                        signals.events.tracked_loot > previous.events.tracked_loot,
+                    ),
+                    (7, signals.events.low_health > previous.events.low_health),
+                    (3, signals.combat.player_hits > previous.combat.player_hits),
+                    (4, records[0]),
+                    (5, records[1]),
+                    (
+                        12,
+                        signals.combat.reward_collections > previous.combat.reward_collections,
+                    ),
+                    (8, skill),
+                    (9, level),
+                    (10, death),
+                    (11, achievement),
+                ];
+                for (i, advanced) in events {
+                    runtime.automatic_pending[i] |= enabled[i] && advanced;
+                }
+                if let Some((old, current)) =
+                    previous.bestiary.as_ref().zip(signals.bestiary.as_ref())
+                    && !Arc::ptr_eq(old, current)
+                {
+                    for (race, stage) in current.iter() {
+                        let last = old
+                            .binary_search_by_key(race, |(id, _)| *id)
+                            .map_or(0, |index| old[index].1);
+                        let trigger = usize::from(*stage == 3);
+                        runtime.automatic_pending[trigger] |= enabled[trigger] && *stage > last;
+                    }
+                }
             }
             runtime.previous = Some(signals);
-            if !preferences.automatic_disabled
-                && (preferences.on_level || preferences.on_skill)
-                && runtime.last_query.is_none_or(|last| {
-                    now.saturating_duration_since(last) >= Duration::from_secs(2)
-                })
-            {
-                link.skill_progress_request();
-                runtime.last_query = Some(now);
+            if !preferences.automatic_disabled && (preferences.on_level || preferences.on_skill) {
+                link.poll_skill_progress(Duration::from_secs(2));
             }
         }
         let limit = usize::from(preferences.backlog_frames);
@@ -290,7 +364,7 @@ impl SettingsState {
         {
             runtime.frames.pop_front();
         }
-        if self.screenshot_requested || runtime.automatic_pending {
+        if self.screenshot_requested || runtime.automatic_pending.contains(&true) {
             CaptureAction::Save
         } else if link.is_some()
             && limit > 0
@@ -345,7 +419,8 @@ impl SettingsState {
         directory: String,
     ) -> (ScreenshotBatch, bool) {
         self.screenshot_runtime.last_frame = Some(now);
-        let consumed = !(self.screenshot_requested || self.screenshot_runtime.automatic_pending);
+        let consumed = !(self.screenshot_requested
+            || self.screenshot_runtime.automatic_pending.contains(&true));
         let frames = if consumed {
             std::mem::take(&mut self.screenshot_runtime.frames)
         } else {

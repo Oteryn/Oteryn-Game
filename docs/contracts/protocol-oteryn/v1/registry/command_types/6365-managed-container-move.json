@@ -1,0 +1,10 @@
+{
+  "id": 6365,
+  "name": "MANAGED_CONTAINER_MOVE",
+  "owner_decision": "Managed container moves with preview and confirmation",
+  "capability": 602,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/managed-container-move-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/managed-container-move-v1.md#reply",
+  "max_payload_bytes": 10,
+  "max_result_payload_bytes": 5
+}

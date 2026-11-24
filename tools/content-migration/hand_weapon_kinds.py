@@ -45,19 +45,26 @@ def capture(root, profiles):
             lines[int(match.group(1))] = line_number
     records = []
     for record in profiles['records']:
-        if record.get('authoring',{}).get('taxonomy',{}).get('primary') != 'Shields':
-            continue
         key = record['production_definition']['production_key']
+        taxonomy = record.get('authoring', {}).get('taxonomy', {}).get('primary')
+        # The starter spellbook lacks imported taxonomy. Its exact bound identity and
+        # both pinned source fields qualify the offhand kind (Crystal 201189f8 items.xml:7009-7012).
+        if key == 'oteryn:item.tibia.i3059' and taxonomy in (None, 'Spellbooks'):
+            taxonomy, kind = 'Spellbooks', 'spellbook'
+        elif taxonomy == 'Shields':
+            kind = 'shield'
+        else:
+            continue
         number = key.removeprefix('oteryn:item.tibia.i')
         binding = bindings.get(number)
         if not binding or binding['disposition'] != 'EXACT' or binding['target'] != {'family':'Item','key':key,'revision':'definition-r1'}:
             raise ValueError('HAND_KIND_IDENTITY_BINDING')
         node = nodes.get(int(number))
         attrs = {} if node is None else {a.get('key','').lower():a.get('value') for a in node.findall('attribute')}
-        if attrs.get('weapontype') != 'shield':
+        if attrs.get('weapontype') != kind or (kind == 'spellbook' and attrs.get('primarytype') != 'spellbooks'):
             raise ValueError('HAND_KIND_TAXONOMY_XML_DISAGREEMENT:'+key)
         records.append({'key':key,'source_id':int(number),'source_line':lines[int(number)],
-                        'taxonomy':'Shields','weapon_type':'SHIELD'})
+                        'taxonomy':taxonomy,'weapon_type':kind.upper()})
     return {'schema':'OTERYN_NATIVE_HAND_KIND_FACTS/v1','source':XML,'source_sha256':XML_SHA,
             'binding_sha256':BINDINGS_SHA,'records':sorted(records,key=lambda r:r['source_id'])}
 

@@ -1,5 +1,5 @@
 //! NPC-TRADE-3: source subtypes are Item state, never transaction quantity.
-use super::service::Record;
+use super::service::{NpcItemFacts, Record};
 use crate::content::{
     ProjectV2CandidateValue, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2ServiceOffer,
 };
@@ -68,11 +68,38 @@ pub fn fluid_name(subtype: u16) -> Option<&'static str> {
     .copied()
 }
 
+fn normalize(offer: &mut ProjectV2ServiceOffer, facts: &dyn NpcItemFacts) {
+    if fluid_container(&offer.item.key) {
+        offer.sub_type = offer
+            .sub_type
+            .or_else(|| offer.count.and_then(|n| u16::try_from(n).ok()))
+            .or(Some(0));
+        offer.count = Some(1);
+    } else if let Some(charges) = facts.default_charges(&offer.item.key)
+        && offer
+            .sub_type
+            .map(u32::from)
+            .or(offer.count)
+            .is_none_or(|source| source == charges)
+    {
+        offer.sub_type = u16::try_from(charges).ok();
+        offer.count = Some(1);
+    }
+}
+
+fn same_variant(left: &ProjectV2ServiceOffer, right: &ProjectV2ServiceOffer) -> bool {
+    left.item == right.item
+        && left.direction == right.direction
+        && left.currency == right.currency
+        && left.count == right.count
+        && left.sub_type == right.sub_type
+}
+
 /// The donor enum is the same Item subtype namespace used by I10a. Only proven
 /// fluid and exact full-charge wrap holds are restored; access callbacks stay held.
 pub(super) fn declarations(
     records: &[Record<'_>],
-    facts: &dyn super::service::NpcItemFacts,
+    facts: &dyn NpcItemFacts,
 ) -> Vec<(ProjectV2DefinitionRef, ProjectV2Declaration)> {
     records
         .iter()
@@ -80,7 +107,25 @@ pub(super) fn declarations(
             let ProjectV2Declaration::Service { offers, fields, .. } = declaration else {
                 return None;
             };
-            let mut restored = offers.clone();
+            let mut restored: Vec<(ProjectV2ServiceOffer, bool)> = Vec::with_capacity(offers.len());
+            // Explicit subtype rows own the price when an older count encoding
+            // normalizes to the same offer. Keep the order of distinct variants.
+            for source in offers {
+                let mut offer = source.clone();
+                normalize(&mut offer, facts);
+                if let Some((prior, exact)) = restored
+                    .iter_mut()
+                    .find(|(prior, _)| same_variant(prior, &offer))
+                {
+                    if source.sub_type.is_some() && !*exact {
+                        *prior = offer;
+                        *exact = true;
+                    }
+                } else {
+                    restored.push((offer, source.sub_type.is_some()));
+                }
+            }
+            let mut restored: Vec<_> = restored.into_iter().map(|(offer, _)| offer).collect();
             for field in fields {
                 if !field
                     .field_path
@@ -124,7 +169,7 @@ pub(super) fn declarations(
                         && facts.default_charges(&offer.item.key) == offer.sub_type.map(u32::from)
                     {
                         offer.count = Some(1);
-                        if !restored.contains(&offer) {
+                        if !restored.iter().any(|row| same_variant(row, &offer)) {
                             restored.push(offer);
                         }
                     }
@@ -137,26 +182,8 @@ pub(super) fn declarations(
                 }
                 offer.sub_type = u16::try_from(subtype).ok();
                 offer.count = Some(1);
-                if !restored.contains(&offer) {
+                if !restored.iter().any(|row| same_variant(row, &offer)) {
                     restored.push(offer);
-                }
-            }
-            for offer in &mut restored {
-                if fluid_container(&offer.item.key) {
-                    offer.sub_type = offer
-                        .sub_type
-                        .or_else(|| offer.count.and_then(|n| u16::try_from(n).ok()))
-                        .or(Some(0));
-                    offer.count = Some(1);
-                } else if let Some(charges) = facts.default_charges(&offer.item.key)
-                    && offer
-                        .sub_type
-                        .map(u32::from)
-                        .or(offer.count)
-                        .is_none_or(|source| source == charges)
-                {
-                    offer.sub_type = u16::try_from(charges).ok();
-                    offer.count = Some(1);
                 }
             }
             for offer in regional_offers(&reference.key) {

@@ -1,0 +1,16 @@
+{
+  "id": 582,
+  "name": "IMBUEMENT_AFFORDABILITY_V1",
+  "owner_decision": "Server protocol gap closure",
+  "owner": "Game shrine and Character wallet",
+  "requires": [
+    447
+  ],
+  "command_types": [
+    6327,
+    6328
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only."
+}

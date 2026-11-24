@@ -1,0 +1,16 @@
+{
+  "id": 604,
+  "name": "OFFLINE_TRAINING_CHOICE_V1",
+  "owner_decision": "Server/client contract gaps package, 2026-11-22",
+  "owner": "Game offline training and logout owners",
+  "requires": [
+    54
+  ],
+  "command_types": [
+    6369,
+    6370
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Dynamically offered with TRAINING_V1 by the enabled Bundle World training owner."
+}

@@ -476,8 +476,13 @@ pub(super) async fn apply(
     };
     drop(slot);
     #[cfg(test)]
-    if value_callback && let Err(error) = &outcome {
-        eprintln!("quest reward commit: {error:?}");
+    if value_callback
+        && !matches!(
+            outcome,
+            Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_))
+        )
+    {
+        eprintln!("quest reward commit: {outcome:?}");
     }
     let newly_committed = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
     match outcome {

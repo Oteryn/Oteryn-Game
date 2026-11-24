@@ -16,11 +16,12 @@
 //! schema, including the text and grade bounds, is checked offline by
 //! `tools/content-schema/achievement-authoring/`; the wire encoder refuses a row over its bounds.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use oteryn_protocol_oteryn::FoundationProtocolError;
 use oteryn_protocol_oteryn::account_achievements::{
     ACCOUNT_ACHIEVEMENTS_PAGE_ROWS, AccountAchievementRow, AccountAchievementsResult,
+    AchievementCompletion,
 };
 
 use crate::content::{CanonicalReferencePlayableContent, ReferenceDefinitionKind};
@@ -55,6 +56,7 @@ impl AccountAchievementsPageError {
 /// event of an integrity fault uses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AccountAchievementsRequest {
+    pub completion: AchievementCompletion,
     pub account_id: [u8; 16],
     pub page: u32,
     pub game_session_id: [u8; 16],
@@ -163,6 +165,15 @@ impl AchievementCatalogue {
         facts: &[EarnedAchievement],
         page: u32,
     ) -> Result<AccountAchievementsResult, AccountAchievementsPageError> {
+        self.account_achievements_filtered_page(facts, page, AchievementCompletion::Completed)
+    }
+
+    fn account_achievements_filtered_page(
+        &self,
+        facts: &[EarnedAchievement],
+        page: u32,
+        completion: AchievementCompletion,
+    ) -> Result<AccountAchievementsResult, AccountAchievementsPageError> {
         let mut rows = Vec::with_capacity(facts.len());
         let mut total_points = 0_u32;
         for fact in facts {
@@ -185,6 +196,29 @@ impl AchievementCatalogue {
         }
         let fact_count =
             u32::try_from(rows.len()).map_err(|_| AccountAchievementsPageError::Overflow)?;
+        if completion == AchievementCompletion::Incomplete {
+            let earned: BTreeSet<_> = facts
+                .iter()
+                .map(|fact| fact.achievement_key.as_str())
+                .collect();
+            rows.clear();
+            rows.extend(
+                self.entries
+                    .iter()
+                    .filter(|(key, entry)| {
+                        !entry.secret && !entry.retired && !earned.contains(key.as_str())
+                    })
+                    .map(|(key, entry)| AccountAchievementRow {
+                        key: key.clone(),
+                        name: entry.name.clone(),
+                        description: entry.description.clone(),
+                        grade: entry.grade,
+                        points: entry.points,
+                        earned_at: 0,
+                        secret: false,
+                    }),
+            );
+        }
         rows.sort_unstable_by(|left, right| {
             (left.grade, &left.name, &left.key).cmp(&(right.grade, &right.name, &right.key))
         });
@@ -217,7 +251,8 @@ impl AchievementCatalogue {
         request: &AccountAchievementsRequest,
         log: &mut dyn FnMut(&str),
     ) -> Result<AccountAchievementsResult, AccountAchievementsPageError> {
-        let answer = self.account_achievements_page(facts, request.page);
+        let answer =
+            self.account_achievements_filtered_page(facts, request.page, request.completion);
         if let Err(AccountAchievementsPageError::UnknownKey(key)) = &answer {
             log(&integrity_fault_event(request, key));
         }
@@ -462,6 +497,7 @@ mod tests {
         account_id[0] = 0xab;
         account_id[15] = 0x01;
         let request = AccountAchievementsRequest {
+            completion: AchievementCompletion::Completed,
             account_id,
             page: 0,
             game_session_id: [0x5e; 16],

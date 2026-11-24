@@ -1,0 +1,18 @@
+{
+  "mechanic": "0594-gameplay-occurrences",
+  "kind": "handlers",
+  "id": "0594-gameplay-occurrences-query",
+  "status": "unsupported",
+  "commands": [
+    6355
+  ],
+  "direction": "client_to_server",
+  "reason": "The capability is reserved for the client lane implementing the negotiated occurrence and inscription extensions.",
+  "not_applicable": {
+    "state": "Reward-mint receipts and installed actor vitals supplies the server-owned fields.",
+    "protocol": "The server gates the request on its negotiated capability.",
+    "view": "Client presentation is owned by the client lane.",
+    "input": "The server owns the facts behind this read-only query.",
+    "settings": "The query has no client setting."
+  }
+}

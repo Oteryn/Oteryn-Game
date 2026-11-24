@@ -175,6 +175,32 @@ fn custom_object_picker_uses_open_container_handles_and_current_combat_generatio
             }],
         }],
     }));
+    assert!(
+        !link
+            .custom_hotkey_choices()
+            .iter()
+            .any(|(_, action)| matches!(
+                action,
+                CustomAction::Object {
+                    definition: 900,
+                    ..
+                }
+            ))
+    );
+    outbox.inventory_initialize(
+        Some(oteryn_session::CharacterInventory {
+            main_backpack: Some(oteryn_session::ItemEntry {
+                appearance_id: 0,
+                handle: 1u64.try_into()?,
+                item_definition_ref: 100u32.try_into()?,
+                count: 1u32.try_into()?,
+                sub_type: 0,
+            }),
+            entries: vec![],
+            equipment: vec![],
+        }),
+        false,
+    );
     let action = link
         .custom_hotkey_choices()
         .into_iter()

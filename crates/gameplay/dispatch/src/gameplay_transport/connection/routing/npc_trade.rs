@@ -3,7 +3,7 @@
 use super::super::super as transport;
 use super::super::{
     AdmittedSession, ExactActorRef, FreshAdmissionAuthority, NpcIntentDisposition, NpcTradeStep,
-    NpcUpdate, SessionItemView, UseCommand, decode_npc_trade_intent, item_move,
+    NpcUpdate, SessionItemView, UseCommand, item_move,
 };
 use super::Dispatch;
 use oteryn_protocol_oteryn::ClientCommandView;
@@ -19,8 +19,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         // NPC-TRADE-2: a malformed intent is REJECTED. A committed trade answers OK and the
         // inventory delta (domain 9) follows when the session shows items; an unknown outcome
         // ends the connection before the CommandId is sequenced, so the resend replays.
-        let step = match decode_npc_trade_intent(command.payload) {
-            Ok(intent)
+        let options = admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_OPTIONS_V1,
+        );
+        let step = match oteryn_protocol_oteryn::npc_service::decode_npc_trade_intent_for(command.payload, options) {
+            Ok((intent, _))
                 if intent.quantity > 100
                     && !admitted.continuity.selected_capabilities.contains(501) =>
             {
@@ -28,9 +31,9 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     NpcIntentDisposition::Rejected,
                 ))
             }
-            Ok(intent) => {
+            Ok((intent, packed)) => {
                 authority
-                    .npc_trade(
+                    .npc_trade_with_delivery(
                         actor,
                         UseCommand {
                             game_session_id: admitted.game_session_id,
@@ -38,6 +41,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                             item_fence: admitted.item_fence,
                         },
                         intent,
+                        packed,
                     )
                     .await
             }

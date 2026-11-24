@@ -17,6 +17,9 @@ use oteryn_protocol_oteryn::npc_service::{
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+// The Global Cyclopedia capture for item 50293 quotes Baltim at 434,028 gold.
+const BALTIM_EXERCISE_WRAPS_PRICE: u32 = 434_028;
+
 #[test]
 fn srv9b_fluids_postgres_buy_sell_subtype_fence_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -120,7 +123,7 @@ fn scenario(charged: bool) -> TestResult {
             assert_eq!(offers.len(), 1, "full charge source wrap admitted once");
             assert_eq!(
                 (offers[0].count, offers[0].sub_type, offers[0].unit_price),
-                (Some(1), Some(500), 347222)
+                (Some(1), Some(500), u64::from(BALTIM_EXERCISE_WRAPS_PRICE))
             );
             book = book.with(
                 npc_key,
@@ -257,7 +260,7 @@ fn scenario(charged: bool) -> TestResult {
             expected_unit_price: price,
         };
         if charged {
-            let buy = intent(0, NpcTradeSide::Buy, 347222);
+            let buy = intent(0, NpcTradeSide::Buy, BALTIM_EXERCISE_WRAPS_PRICE);
             assert!(matches!(
                 owner.npc_trade(deps.actor, command(3), buy).await,
                 NpcTradeStep::Traded

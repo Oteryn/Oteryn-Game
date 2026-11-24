@@ -160,13 +160,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.root.staff_moderation_configured() {
             return None;
         }
-        let Some(fence) = super::character_gameplay_fence::current(self, session, false).await
-        else {
-            return Some(1);
-        };
-        let staff_wait = match self
-            .root
-            .staff_mute_for_session(self.character, self.holder, fence.item_fence())
+        let staff_wait = match super::AdmissionRetryBudget::for_command(self.root)
+            .retry_command_guard(async || {
+                let Some(fence) =
+                    super::character_gameplay_fence::current_once(self, session, false).await?
+                else {
+                    return Ok(None);
+                };
+                self.root
+                    .staff_mute_for_session(self.character, self.holder, fence.item_fence())
+                    .await
+            })
             .await
         {
             Ok(Some(0)) => None,

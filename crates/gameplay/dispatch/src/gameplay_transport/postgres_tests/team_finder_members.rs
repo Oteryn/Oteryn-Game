@@ -19,6 +19,7 @@ enum Case {
     Invite,
     Accept,
     Deny,
+    Notices,
     Remove,
     Logout,
     Refusals,
@@ -32,6 +33,7 @@ impl Case {
             Self::Invite => "tf_invite",
             Self::Accept => "tf_accept",
             Self::Deny => "tf_deny",
+            Self::Notices => "tf_notices",
             Self::Remove => "tf_remove",
             Self::Logout => "tf_logout",
             Self::Refusals => "tf_refusals",
@@ -43,6 +45,10 @@ fn run_case(case: Case) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
+    run_with_admin(admin, case)
+}
+
+fn run_with_admin(admin: String, case: Case) -> TestResult {
     std::thread::Builder::new()
         .name(case.tag().into())
         .stack_size(64 << 20)
@@ -102,4 +108,10 @@ fn team_finder_members_real_logout_closes_advertisement_but_retains_template() -
 fn team_finder_members_refuses_malformed_wrong_owner_unknown_handle_and_stale_fence() -> TestResult
 {
     run_case(Case::Refusals)
+}
+
+#[test]
+fn team_finder_changes_push_categorized_notices_to_owner_and_applicant() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    run_with_admin(admin, Case::Notices)
 }

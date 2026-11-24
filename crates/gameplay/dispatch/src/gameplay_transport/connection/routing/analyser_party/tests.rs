@@ -15,10 +15,11 @@ impl FreshAdmissionAuthority for Authority {
         &self,
         _: AdmittedSession,
         _: u64,
-        prices: &[oteryn_protocol_oteryn::analyser_party::Price],
+        _: u32,
+        request: HuntRequest,
         _: &mut crate::gameplay_transport::party_command::SessionPartyView,
     ) -> Option<Vec<u8>> {
-        assert!(prices.is_empty());
+        assert_eq!(request, HuntRequest::Legacy(Vec::new()));
         self.0.set(self.0.get() + 1);
         oteryn_protocol_oteryn::analyser_party::encode_reply(&[]).ok()
     }

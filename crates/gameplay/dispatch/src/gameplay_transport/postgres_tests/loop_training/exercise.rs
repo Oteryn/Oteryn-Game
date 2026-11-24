@@ -53,7 +53,7 @@ fn loop_training_postgres_statue_logout_checks_player_tile_and_pinned_map() -> T
         .stack_size(64 << 20)
         .spawn(|| {
             for (flags, expected) in [([1, 1], 3), ([1, 9], 3), ([9, 1], 4)] {
-                statue_scenario(flags, expected).map_err(|error| error.to_string())?;
+                statue_scenario(flags, expected, None).map_err(|error| error.to_string())?;
             }
             Ok::<_, String>(())
         })?
@@ -62,7 +62,21 @@ fn loop_training_postgres_statue_logout_checks_player_tile_and_pinned_map() -> T
     Ok(())
 }
 
-fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
+#[test]
+fn offline_training_skill_comparison_and_choice_postgres_real_dispatch() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| statue_scenario([1, 1], 3, Some(1)).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "offline training choice PG panic")??;
+    Ok(())
+}
+
+fn statue_scenario(flags: [u32; 2], expected: u8, choice: Option<u8>) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "nologout_statue", true, false).await?;
         eprintln!("POSTGRES_STARTED statue logout {flags:?}");
@@ -231,7 +245,40 @@ fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
 
         owner.movement_cells = (&cells).into();
         owner.clock_origin -= Duration::from_secs(1);
-        let bytes = payload(&mut items, statue(world.base().digest())?)?;
+        let (kind, bytes) = if let Some(choice) = choice {
+            use super::super::cyclopedia_fixtures::support::exchange;
+            use oteryn_protocol_oteryn::CommandStatus;
+            let (status, legacy) = exchange(&owner, &mut admitted, 1, 6369, &[]).await?;
+            assert_eq!((status, legacy), (CommandStatus::Rejected, vec![]));
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[4, 6, 18, 21, 54, 604],
+            ).ok_or("offline choice selection")?;
+            let (status, comparison) = exchange(&owner, &mut admitted, 2, 6369, &[]).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(
+                comparison,
+                [0, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 208, 2],
+                "magic level, five weapon skills in ID order, and the 720-minute pool",
+            );
+            let malformed = crate::gameplay_transport::loop_training::wire::dispatch(
+                &owner, admitted, command, 6370, &[6], None,
+            ).await.ok_or("invalid skill refusal")?;
+            assert_eq!(malformed, TrainingResult::REFUSED);
+            let mut obsolete = admitted;
+            obsolete.continuity.connection_generation += 1;
+            let stale = crate::gameplay_transport::loop_training::wire::dispatch(
+                &owner, obsolete, command, 6370, &[choice], None,
+            ).await.ok_or("stale generation refusal")?;
+            assert_eq!(stale, TrainingResult::REFUSED);
+            let selected_logout_count: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_training_markers WHERE cause='logout'",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(selected_logout_count, 0, "a refusal never writes the skill marker");
+            (6370, vec![choice])
+        } else {
+            (COMMAND_TYPE_OFFLINE_TRAINING, payload(&mut items, statue(world.base().digest())?)?)
+        };
         let result = crate::gameplay_transport::loop_training::wire::dispatch(
             &owner,
             admitted,
@@ -239,7 +286,7 @@ fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
                 command_id: 2,
                 ..command
             },
-            COMMAND_TYPE_OFFLINE_TRAINING,
+            kind,
             &bytes,
             Some(&items),
         )
@@ -253,7 +300,7 @@ fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
             "SELECT session_state,(SELECT count(*) FROM game_character_training_markers WHERE cause='logout'),(SELECT offline_skill FROM game_character_build_state) FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid"
         ).bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
         if expected == 3 {
-            assert_eq!(state, (3, 1, 3));
+            assert_eq!(state, (3, 1, choice.map_or(3, i16::from)));
             assert_eq!(result.pool_seconds, 43200);
         } else {
             assert_eq!(state, (2, 0, -1));

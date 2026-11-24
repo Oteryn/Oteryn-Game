@@ -34,7 +34,7 @@ fn npcfix_m38_travel_permission_and_clear_fine_are_both_required_postgres() -> T
                     required_quest_tracks: Vec::new(),
                 }, keyword: "return".into(), crystal_callback: false, postman: false, carpet: false, held: false,
                 yalahar_gate: false, yalahar_town_gate: None,
-                quest_gate: Some(permission.into()), quest_clear_gate: Some(fine.into()), ticket: None, return_origin: None, world_change: None,
+                quest_gate: Some(permission.into()), quest_clear_gate: Some(fine.into()), ticket: None, return_origin: None, world_changes: Vec::new(), partial_quest_callback: None,
             };
             use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition};
             use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};

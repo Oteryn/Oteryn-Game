@@ -30,6 +30,7 @@ impl Stepper for Peer {
                     level: Some(30),
                     forge_class: Some(2),
                     depot_units: 4,
+                    appearance: None,
                 }],
                 categories: vec!["Swords".into()],
                 page,

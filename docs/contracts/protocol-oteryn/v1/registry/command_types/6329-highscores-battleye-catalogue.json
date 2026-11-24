@@ -1,0 +1,10 @@
+{
+  "id": 6329,
+  "name": "HIGHSCORES_BATTLEYE_CATALOGUE",
+  "owner_decision": "Server protocol gap closure",
+  "capability": 583,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/highscores-catalogue-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/highscores-catalogue-v1.md#battleye-catalogue",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 4610
+}

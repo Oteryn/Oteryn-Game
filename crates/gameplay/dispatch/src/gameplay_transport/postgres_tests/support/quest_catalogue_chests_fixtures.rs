@@ -25,6 +25,12 @@ pub(super) struct CatalogueChest {
     pub fluids: Vec<(String, i32)>,
 }
 
+impl CatalogueChest {
+    pub(super) fn uses_pinned_world(&self) -> bool {
+        super::qc_pinned_world::COMPLETION_CHEST_UIDS.contains(&self.unique)
+    }
+}
+
 pub(super) fn string(value: &Value) -> TestResult<String> {
     Ok(value.as_str().ok_or("catalogue string")?.into())
 }
@@ -766,6 +772,23 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
             let quests = super::quest_container_chests_fixtures::embedded_catalogue()
                 .map_err(|error| error.to_string())?;
             slice_phase("quest_catalogue");
+            // Boot the pinned source neighborhoods once. Each chest still gets
+            // independent map facts, database and session.
+            let pinned_claims: BTreeSet<_> = cases
+                .iter()
+                .filter(|case| case.uses_pinned_world())
+                .map(|case| case.claim.as_str())
+                .collect();
+            let pinned_positions: Vec<_> = cases
+                .iter()
+                .filter(|case| pinned_claims.contains(case.claim.as_str()))
+                .map(|case| (case.position.0, case.position.1))
+                .collect();
+            let pinned_world = (!pinned_positions.is_empty())
+                .then(|| super::qc_pinned_world::world_near(native, &pinned_positions))
+                .transpose()
+                .map_err(|error| error.to_string())?;
+            slice_phase("pinned_world");
             let mut template = None;
             super::fixture::run(async |admin| {
                 template = Some(super::fixture::MigratedDatabaseTemplate::create(admin).await?);
@@ -776,8 +799,15 @@ pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
             let batch = super::quest_container_chests_fixtures::CatalogueBatch {
                 template: template.as_ref().ok_or("migration template")?,
                 quests,
+                pinned_world: pinned_world.as_ref(),
             };
             for case in cases {
+                if case.claim == oteryn_gameplay_quests::quest::world_callbacks::SERPENTINE_PEARL_CLAIM {
+                    // The existing evidence name now exercises the same claim after its tower prerequisites.
+                    super::serpentine_tower_journey_fixtures::journey()
+                        .map_err(|error| error.to_string())?;
+                    continue;
+                }
                 for key in std::iter::once(case.root.as_str())
                     .chain(case.contents.iter().map(|(key, _, _)| key.as_str()))
                 {

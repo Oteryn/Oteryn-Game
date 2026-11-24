@@ -17,6 +17,9 @@ use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome, wire_slo
 #[derive(Clone, Copy)]
 pub(super) enum RejectionStage {
     Payload,
+    Throttled,
+    InputUnavailable,
+    Superseded,
     ItemView,
     AuthorityUnavailable,
     TierRequiresCarried,
@@ -43,6 +46,9 @@ impl RejectionStage {
     pub(super) fn log(self, command_id: u64) {
         let stage = match self {
             Self::Payload => "payload",
+            Self::Throttled => "throttled",
+            Self::InputUnavailable => "input_unavailable",
+            Self::Superseded => "superseded",
             Self::ItemView => "item_view",
             Self::AuthorityUnavailable => "authority_unavailable",
             Self::TierRequiresCarried => "tier_requires_carried",

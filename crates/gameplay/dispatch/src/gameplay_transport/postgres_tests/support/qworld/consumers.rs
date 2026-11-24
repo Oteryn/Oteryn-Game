@@ -336,6 +336,7 @@ fn travel_route(key: &str) -> oteryn_gameplay_content::content::npc_catalogue::t
         quest_clear_gate: None,
         ticket: None,
         return_origin: None,
-        world_change: Some(key.into()),
+        world_changes: vec![key.into()],
+        partial_quest_callback: None,
     }
 }

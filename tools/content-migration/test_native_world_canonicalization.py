@@ -163,6 +163,28 @@ class NativeWorldCompletion(unittest.TestCase):
             b"do not borrow repository output\n",
         )
 
+    def test_predecessor_materializer_uses_output_first(self):
+        materializer = self.repo / "materialize_content_world_project_v2"
+
+        def native(command, *, cwd, check):
+            self.assertEqual(cwd, self.repo)
+            self.assertTrue(check)
+            self.assertEqual(command[:2], [str(materializer), "--output-root"])
+            self.assertEqual(command[3], "--canonicalize-root")
+            self.assertEqual(len(command), 5)
+            output, staging = Path(command[2]), Path(command[4])
+            self.assertNotEqual(staging, self.world)
+            self.assertFalse(output.exists())
+            shutil.copytree(staging, output)
+            self.calls.append(output)
+
+        with patch.object(canonical.subprocess, "run", side_effect=native):
+            extent = canonical.complete_world_project(
+                self.repo, self.world, materializer=materializer
+            )
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(extent["creatures"], 1)
+
     def test_native_failure_cannot_leave_staged_python_bytes_in_the_input(self):
         default_world = self.repo / "content/world"
         shutil.copytree(self.world, default_world)
@@ -178,12 +200,53 @@ class NativeWorldCompletion(unittest.TestCase):
         native.assert_called_once()
         self.assertEqual(canonical.read_documents(default_world), self.original)
 
-    def test_qualification_installs_all_successors_before_native_serialization(self):
+    def test_qualification_installs_travel_and_trades_before_native_serialization(self):
+        item = {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3361",
+            "revision": "fixture-r1",
+        }
+        service = {"key": "oteryn:service.trade.dixi", "revision": "fixture-r1"}
+        offer = {"item": item, "direction": "SellToPlayer", "unit_price": 31}
+        self.write(
+            self.world / "definitions/reference.json",
+            encode({"records": [{"kind": "Item", "identity": item}]}),
+        )
+        self.write(
+            self.world / "definitions/declarations.json",
+            encode(
+                {
+                    "records": [
+                        {"kind": "Service", "identity": service, "offers": [offer]},
+                        {
+                            "kind": "NPC",
+                            "identity": {"key": "oteryn:npc.dixi"},
+                            "services": [service],
+                        },
+                    ],
+                    "authoring_profiles": [],
+                }
+            ),
+        )
+
         def native(command, **kwargs):
             staging = Path(command[command.index("--input-root") + 1])
             install_buddel.assert_called_once_with(self.repo, staging)
-            install_prices.assert_called_once_with(self.repo, staging)
-            install_dialogue.assert_called_once_with(self.repo, staging)
+            project_routes.assert_called_once_with(self.repo, staging)
+            capture.assert_called_once_with(self.repo)
+            prices.assert_called_once_with(self.repo, staging)
+            dialogue.assert_called_once_with(self.repo, staging)
+            locator = "definitions/declarations.json"
+            declarations = (staging / locator).read_bytes()
+            self.assertEqual(
+                json.loads(declarations)["records"][0]["offers"],
+                [dict(offer, unit_price=25)],
+            )
+            manifest = json.loads((staging / "manifest.json").read_bytes())
+            (seal,) = [
+                row for row in manifest["documents"] if row["locator"] == locator
+            ]
+            self.assertEqual(seal["sha256"], hashlib.sha256(declarations).hexdigest())
             return self.native_output(command, **kwargs)
 
         argv = [
@@ -196,14 +259,24 @@ class NativeWorldCompletion(unittest.TestCase):
         with (
             patch.object(sys, "argv", argv),
             patch("buddel_travel.install_buddel") as install_buddel,
-            patch("regional_npc_prices.install") as install_prices,
-            patch("regional_npc_dialogue.install") as install_dialogue,
+            patch("travel_route_corrections.project_routes") as project_routes,
+            patch("regional_npc_prices.install") as prices,
+            patch("regional_npc_dialogue.install") as dialogue,
+            patch(
+                "import_cyclopedia_global.load_capture",
+                return_value={3361: {"npc_buy_from": [{"npc": "Dixi", "price": 25}]}},
+            ) as capture,
             patch.object(canonical.subprocess, "run", side_effect=native),
         ):
             canonical.main()
         self.assertEqual(len(self.calls), 1)
 
     def test_normal_regeneration_completes_natively_before_refreshing_pins(self):
+        self.write(
+            self.repo
+            / "crates/gameplay/content/src/content/npc_catalogue/travel_routes.json",
+            encode([]),
+        )
         shutil.copytree(self.world, self.repo / "content/world")
 
         class Completed(Exception):
@@ -231,8 +304,8 @@ class NativeWorldCompletion(unittest.TestCase):
             output = Path(command[command.index("--output-root") + 1])
             self.assertEqual(source, self.repo / "content/world")
             install_buddel.assert_called_once_with(self.repo, source)
-            install_prices.assert_called_once_with(self.repo, source)
-            install_dialogue.assert_called_once_with(self.repo, source)
+            prices.assert_called_once_with(self.repo, source)
+            dialogue.assert_called_once_with(self.repo, source)
             self.assertFalse(output.exists())
             # The real writer emits exactly the managed package, not the caller's
             # unmanaged sibling. Keep production's strict output-set assertion live.
@@ -252,9 +325,9 @@ class NativeWorldCompletion(unittest.TestCase):
             patch.object(regenerate, "run", side_effect=canonical_writer),
             patch.object(regenerate, "refresh_quest_callback_proof"),
             patch.object(regenerate, "materialize_world"),
+            patch("regional_npc_prices.install") as prices,
+            patch("regional_npc_dialogue.install") as dialogue,
             patch("buddel_travel.install_buddel") as install_buddel,
-            patch("regional_npc_prices.install") as install_prices,
-            patch("regional_npc_dialogue.install") as install_dialogue,
             patch.object(
                 regenerate, "refresh_source_cohort_extent", side_effect=measured
             ),
@@ -278,9 +351,9 @@ class NativeWorldCompletion(unittest.TestCase):
         for mutate in [missing, extra, unowned]:
             with self.subTest(mutation=mutate.__name__):
 
-                def native(command, *, mutate=mutate, **kwargs):
+                def native(command, *, mutation=mutate, **kwargs):
                     result = self.native_output(command, **kwargs)
-                    mutate(self.calls[-1])
+                    mutation(self.calls[-1])
                     return result
 
                 with (

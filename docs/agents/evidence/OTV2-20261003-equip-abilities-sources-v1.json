@@ -6,7 +6,7 @@
   },
   "fallback_items": 27,
   "holds": 12,
-  "items": 761,
+  "items": 768,
   "timed_items": 153
  },
  "facts_packet": {
@@ -17675,6 +17675,109 @@
     }
    ],
    "timed": false
+  },
+  {
+   "fallback": [],
+   "item_key": "oteryn:item.tibia.i49176",
+   "sources": [
+    {
+     "captured_item_id": 49176,
+     "class": "TIBIA_GLOBAL_CYCLOPEDIA",
+     "values": {
+      "Skill Boost": "speed +25"
+     }
+    }
+   ],
+   "timed": false
+  },
+  {
+   "fallback": [],
+   "item_key": "oteryn:item.tibia.i51119",
+   "sources": [
+    {
+     "captured_item_id": 51119,
+     "class": "TIBIA_GLOBAL_CYCLOPEDIA",
+     "values": {
+      "Skill Boost": "fist fighting +1"
+     }
+    }
+   ],
+   "timed": false
+  },
+  {
+   "fallback": [],
+   "item_key": "oteryn:item.tibia.i53197",
+   "sources": [
+    {
+     "captured_item_id": 53197,
+     "class": "TIBIA_GLOBAL_CYCLOPEDIA",
+     "values": {
+      "Protection": "physical +7%, fire +12%",
+      "Skill Boost": "sword fighting +4, axe fighting +4, club fighting +4, shielding +1"
+     }
+    }
+   ],
+   "timed": false
+  },
+  {
+   "fallback": [],
+   "item_key": "oteryn:item.tibia.i53199",
+   "sources": [
+    {
+     "captured_item_id": 53199,
+     "class": "TIBIA_GLOBAL_CYCLOPEDIA",
+     "values": {
+      "Protection": "physical +5%, fire +14%",
+      "Skill Boost": "distance fighting +4, holy magic level +1"
+     }
+    }
+   ],
+   "timed": false
+  },
+  {
+   "fallback": [],
+   "item_key": "oteryn:item.tibia.i53201",
+   "sources": [
+    {
+     "captured_item_id": 53201,
+     "class": "TIBIA_GLOBAL_CYCLOPEDIA",
+     "values": {
+      "Protection": "physical +3%, fire +11%",
+      "Skill Boost": "magic level +3, energy magic level +1"
+     }
+    }
+   ],
+   "timed": false
+  },
+  {
+   "fallback": [],
+   "item_key": "oteryn:item.tibia.i53203",
+   "sources": [
+    {
+     "captured_item_id": 53203,
+     "class": "TIBIA_GLOBAL_CYCLOPEDIA",
+     "values": {
+      "Protection": "physical +3%, fire +11%",
+      "Skill Boost": "magic level +3, ice magic level +1"
+     }
+    }
+   ],
+   "timed": false
+  },
+  {
+   "fallback": [],
+   "item_key": "oteryn:item.tibia.i53205",
+   "sources": [
+    {
+     "captured_item_id": 53205,
+     "class": "TIBIA_GLOBAL_CYCLOPEDIA",
+     "values": {
+      "Protection": "physical +4%, ice +12%",
+      "Skill Boost": "fist fighting +4, magic level +2"
+     }
+    }
+   ],
+   "timed": false
   }
  ],
  "policy": {
@@ -17698,9 +17801,13 @@
    "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
    "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
   },
+  "global_capture": {
+   "path": "docs/reference/content-prep/item-cyclopedia-capture-1/manifest.json",
+   "sha256": "d92fc4da9d70aea5d435ac7b3fff0188d40c54a0d1f0df98910573212697a3a6"
+  },
   "stats_packet": {
    "path": "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-   "sha256": "de06edad1c9f71d697829a7d5a61c934d6fe66138c7b0e65870eef567d2dda14"
+   "sha256": "5ef32cfa01e7a319e4ef056592df1aa66e7fbff30b6d86604f5354316436aa3d"
   },
   "wiki_snapshot_sha256": "a4cd8038051518678121ea59f8f3b195dd04b4329e77dfbfe217cf998770be49"
  }

@@ -8,6 +8,7 @@ import os
 import stat
 import subprocess
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 from prebuilt import executable as prebuilt_executable
@@ -69,15 +70,14 @@ def complete_world_project(
     repo_root: Path,
     input_root: Path,
     *,
-    include_npc_successors: bool = False,
+    include_world_successors: bool = False,
     canonicalizer_manifest: Path | None = None,
     materializer: Path | None = None,
 ) -> dict[str, int | str]:
     from buddel_travel import install_buddel
     from questpc7_thaian_authoring import _install_documents
     from regenerate_content import source_cohort_extent
-    from regional_npc_dialogue import install as install_dialogue
-    from regional_npc_prices import install as install_prices
+    from travel_route_corrections import project_routes
 
     repo_root = repo_root.resolve(strict=True)
     input_root = input_root.absolute()
@@ -85,11 +85,8 @@ def complete_world_project(
         manifest = os.environ.get("OTERYN_WORLD_CANONICALIZER_MANIFEST")
         if manifest is not None:
             canonicalizer_manifest = Path(manifest)
-    input_option = "--input-root"
     if materializer is not None:
-        # The predecessor example can use its own native writer without a nested Cargo build.
         command = [str(materializer)]
-        input_option = "--canonicalize-root"
     elif canonicalizer_manifest is None:
         command = [
             "cargo",
@@ -118,23 +115,31 @@ def complete_world_project(
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
         _install_documents(repo_root, staging_root)
-        if include_npc_successors:
+        if include_world_successors:
+            from import_cyclopedia_global import apply_trade_source, load_capture
+            from questpc7_world_seal import refresh
+            from regional_npc_dialogue import install as install_dialogue
+            from regional_npc_prices import install as install_prices
+
             install_buddel(repo_root, staging_root)
+            project_routes(repo_root, staging_root)
+            reference = json.loads(
+                (staging_root / "definitions/reference.json").read_bytes()
+            )
+            apply_trade_source(
+                staging_root, load_capture(repo_root), reference, Counter()
+            )
             install_prices(repo_root, staging_root)
             install_dialogue(repo_root, staging_root)
+            refresh(repo_root, staging_root)
         authored_extent = source_cohort_extent(staging_root)
         # Native capture enforces the existing bounded source limits before serialization.
-        subprocess.run(
-            [
-                *command,
-                "--output-root",
-                str(output_root),
-                input_option,
-                str(staging_root),
-            ],
-            cwd=repo_root,
-            check=True,
-        )
+        output_args = ["--output-root", str(output_root)]
+        if materializer is not None:
+            writer_args = [*output_args, "--canonicalize-root", str(staging_root)]
+        else:
+            writer_args = ["--input-root", str(staging_root), *output_args]
+        subprocess.run([*command, *writer_args], cwd=repo_root, check=True)
         canonical = read_documents(output_root, exact=True)
         if source_cohort_extent(output_root) != authored_extent:
             raise ValueError("native rewrite changed the authored source cohort")
@@ -184,7 +189,7 @@ def main() -> None:
     extent = complete_world_project(
         args.repo_root,
         args.input_root,
-        include_npc_successors=True,
+        include_world_successors=True,
         canonicalizer_manifest=args.canonicalizer_manifest,
         materializer=args.materializer,
     )

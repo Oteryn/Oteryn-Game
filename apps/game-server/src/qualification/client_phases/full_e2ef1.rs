@@ -9,7 +9,10 @@ pub(super) async fn with_peer_liveness<T>(
     work: impl std::future::Future<Output = TestResult<T>>,
 ) -> TestResult<T> {
     super::mp::observations::while_servicing_liveness(work, async || {
-        client.service_liveness(Duration::from_millis(25)).await?;
+        client
+            .session_mut()
+            .service_liveness_discarding_events(Duration::from_millis(25))
+            .await?;
         Ok(())
     })
     .await?
@@ -590,11 +593,15 @@ mod e2ef1 {
         .await?;
         let before = tile(client.world_spatial().actor_position)?;
         let revision = *revisions.get(&(object.at, object.ordinal)).unwrap_or(&0);
-        if door_use(client, world, object, revision).await? != UseDisposition::Committed
-            || distance(tile(client.world_spatial().actor_position)?, object.at) > 1
-            || tile(client.world_spatial().actor_position)? == before
+        let disposition = door_use(client, world, object, revision).await?;
+        let after = tile(client.world_spatial().actor_position)?;
+        if disposition != UseDisposition::Committed
+            || distance(after, object.at) > 1
+            || after == before
         {
-            return Err("far USE did not walk and commit retry".into());
+            return Err(format!(
+                "far USE did not walk and commit retry: {disposition:?} from={before:?} to={after:?} target={object:?} revision={revision}"
+            ).into());
         }
         checks.pass("far-use-retry", (before, object, client.world_spatial()));
         // Restore the channel-scoped door, using its actual transition revision.
@@ -761,6 +768,15 @@ mod e2ef1 {
                     let at = tile(client.world_spatial().actor_position)?;
                     let ObjectKind::Teleport(expected) = object.kind else { return Err("missing authored teleport".into()) };
                     let direction = teleport_entry(world, at, object).ok_or("no automatic teleport entry edge")?;
+                    if at.floor != from.floor {
+                        // The approach can descend the ordinary staircase. Let that floor
+                        // exhaust settle before proving a new one from entering the portal.
+                        let approach_exhaust = tokio::time::Instant::now()
+                            + Duration::from_micros(crate::spell::STAIRHOP_MICROS);
+                        while tokio::time::Instant::now() < approach_exhaust {
+                            pump(client).await?;
+                        }
+                    }
                     walk_with_landings(client, &[direction], |origin, step| {
                         (origin == at && step == direction).then_some(expected)
                     }).await?;
@@ -1006,6 +1022,41 @@ mod e2ef1 {
             pump(client).await?;
         }
     }
+    fn door_spaces_clear(
+        mut occupants: impl Iterator<Item = (EntityKind, ActorPosition, bool)>,
+        stand: ActorPosition,
+        door: ActorPosition,
+    ) -> bool {
+        !occupants.any(|(kind, position, is_self)| {
+            matches!(
+                kind,
+                EntityKind::Player | EntityKind::Creature | EntityKind::Npc
+            ) && (position == door || (position == stand && !is_self))
+        })
+    }
+
+    async fn wait_for_clear_door(
+        client: &mut DevClientSession,
+        stand: ActorPosition,
+        door: ActorPosition,
+    ) -> TestResult {
+        until(client, |client| {
+            client.world_spatial().actor_position == stand
+                && client.world_entities().is_some_and(|entities| {
+                    let occupants = entities.iter().map(|entity| {
+                        (
+                            entity.kind,
+                            entity.position,
+                            &entity.entity.identity == entities.own_identity(),
+                        )
+                    });
+                    door_spaces_clear(occupants, stand, door)
+                })
+        })
+        .await
+        .map_err(|error| format!("door {door:?} approach {stand:?} did not clear: {error}").into())
+    }
+
     async fn door_cycle(
         client: &mut DevClientSession,
         world: &BundleWorld,
@@ -1037,6 +1088,8 @@ mod e2ef1 {
         {
             return Err("closed door collision did not block".into());
         }
+        let door = position(object.at, basis);
+        wait_for_clear_door(client, before, door).await?;
         toggle(client, world, object, revision, UseDisposition::Committed).await?;
         // The oracle keeps immutable closed-door collision. Here only the server
         // knows the new door state, so assert the actual native crossing directly.
@@ -1068,6 +1121,7 @@ mod e2ef1 {
         {
             return Err("door exit did not restore approach".into());
         }
+        wait_for_clear_door(client, before, door).await?;
         toggle(
             client,
             world,
@@ -1219,7 +1273,9 @@ mod e2ef1 {
         Ok(())
     }
 
-    fn inventory_signature(client: &DevClientSession) -> TestResult<Vec<(u32, u32, u32, u8)>> {
+    type InventorySignature = Vec<(u32, u32, u32, u8)>;
+
+    fn inventory_signature(client: &DevClientSession) -> TestResult<InventorySignature> {
         let inventory = client
             .inventory()
             .ok_or("movement inventory snapshot missing")?;
@@ -1264,7 +1320,8 @@ mod e2ef1 {
             if tokio::time::Instant::now() >= deadline {
                 return Err(format!("movement logout lock did not settle: {logout:?}").into());
             }
-            pump(client).await?;
+            client.service_liveness(Duration::from_millis(250)).await?;
+            client.take_events();
         }
     }
     /// M05 cleanup after its door checks (#3373): the doors leave the actor outside the
@@ -1297,15 +1354,10 @@ mod e2ef1 {
                 client.actor_vitals()
             ));
         }
-        let protection_zone = |cell: TilePos| {
-            world
-                .base()
-                .tile(cell.x, cell.y, cell.floor)
-                .is_some_and(|tile| tile.protection_zone())
-        };
-        if !protection_zone(here) {
-            let path = route(world, here, protection_zone)
-                .ok_or("no reachable protection zone to leave the fight")?;
+        let resting_tile = |cell| is_logout_rest_tile(world, cell);
+        if !resting_tile(here) {
+            let path = route(world, here, resting_tile)
+                .ok_or("no reachable protection zone that admits logout")?;
             evidence(&format!(
                 "E2EF1_LEAVE_FIGHT from={at:?} steps={}",
                 path.len()
@@ -1317,6 +1369,61 @@ mod e2ef1 {
         }
         Ok(())
     }
+
+    struct RestingLogout {
+        position: ActorPosition,
+        inventory: InventorySignature,
+        session: crate::foundation::GameSessionId,
+    }
+
+    async fn logout_at_rest(
+        client: &mut DevClientSession,
+        world: &BundleWorld,
+    ) -> TestResult<RestingLogout> {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+        tokio::time::timeout_at(deadline, leave_fight(client, world, deadline))
+            .await
+            .map_err(|_| "movement logout cleanup exceeded deadline reaching protection")??;
+        let saved = RestingLogout {
+            position: client.world_spatial().actor_position,
+            inventory: inventory_signature(client)?,
+            session: client.join_snapshot().game_session_id,
+        };
+        tokio::time::timeout_at(deadline, logout_by(client, deadline))
+            .await
+            .map_err(|_| "movement logout cleanup exceeded deadline awaiting logout")??;
+        Ok(saved)
+    }
+
+    async fn m05_independent(
+        clients: &SeamClients<'_>,
+        world: &BundleWorld,
+        objects: &[Object],
+        checks: &mut Checks,
+        revisions: &mut BTreeMap<(TilePos, u8), u64>,
+    ) -> TestResult {
+        let mut door_client = connect_character(clients, 0xa4, 0).await?;
+        let origin = tile(door_client.world_spatial().actor_position)?;
+        let doors = m05(&mut door_client, world, objects, checks, revisions).await;
+        if let Err(error) = &doors {
+            evidence(&format!("E2EF1_GAP row=M05 phase=doors error={error}"));
+        }
+        let saved = logout_at_rest(&mut door_client, world).await?;
+        drop(door_client);
+        let mut fresh = connect_character(clients, 0xb4, 0).await?;
+        let durable = fresh.world_spatial().actor_position == saved.position
+            && fresh.join_snapshot().game_session_id != saved.session
+            && inventory_signature(&fresh)? == saved.inventory;
+        let back =
+            route(world, tile(saved.position)?, |at| at == origin).ok_or("M05 return route")?;
+        walk(&mut fresh, world, &back).await?;
+        logout(&mut fresh).await?;
+        if !durable {
+            return Err("M05 fresh admission did not preserve position and inventory".into());
+        }
+        doors
+    }
+
     pub(super) async fn run(
         client: DevClientSession,
         clients: &SeamClients<'_>,
@@ -1347,6 +1454,40 @@ mod e2ef1 {
                 row,
                 ..Checks::default()
             };
+            if *row == "M05" {
+                // Retire the primary session before the door journey so a parked
+                // actor cannot take damage while waiting for M07.
+                let saved = logout_at_rest(&mut client, world).await?;
+                drop(client);
+                let result =
+                    m05_independent(clients, world, &objects, &mut checks, &mut revisions).await;
+                if let Err(error) = &result {
+                    evidence(&format!("E2EF1_GAP row=M05 error={error}"));
+                }
+                failed |= !record_row(
+                    verdicts,
+                    row,
+                    required,
+                    started,
+                    &checks,
+                    &result,
+                    result.is_ok(),
+                );
+                client = connect_world(clients, 0x94).await?;
+                if client.world_spatial().actor_position != saved.position
+                    || client.join_snapshot().game_session_id == saved.session
+                    || inventory_signature(&client)? != saved.inventory
+                {
+                    return Err(
+                        "movement primary fresh admission changed saved position or inventory"
+                            .into(),
+                    );
+                }
+                let back = route(world, tile(saved.position)?, |at| at == origin)
+                    .ok_or("movement primary has no return route")?;
+                walk(&mut client, world, &back).await?;
+                continue;
+            }
             let mut peer = if matches!(*row, "M01" | "M04") {
                 Some(
                     with_peer_liveness(
@@ -1380,22 +1521,13 @@ mod e2ef1 {
                     )
                     .await
                 }
-                "M05" => m05(&mut client, world, &objects, &mut checks, &mut revisions).await,
                 "M07" => m07(&mut client, world, &objects, &mut checks).await,
                 _ => unreachable!(),
             };
             if let Err(error) = &result {
                 evidence(&format!("E2EF1_GAP row={row} error={error}"));
             }
-            // Every position-changing row saves its actual landing via ordinary
-            // logout, gets a fresh Platform admission and compares the saved cell.
-            // M05 alone first leaves its fight through the town PZ (`leave_fight`); its
-            // checks are door states, so its saved cell is that PZ tile.
-            let cleanup =
-                (*row == "M05").then(|| tokio::time::Instant::now() + Duration::from_secs(70));
-            if let Some(deadline) = cleanup {
-                leave_fight(&mut client, world, deadline).await?;
-            }
+            // Compare the actual saved landing after a fresh admission.
             let saved = client.world_spatial().actor_position;
             let inventory = inventory_signature(&client)?;
             let old_session = client.join_snapshot().game_session_id;
@@ -1420,10 +1552,7 @@ mod e2ef1 {
                 })
                 .await?;
             }
-            match cleanup {
-                Some(deadline) => logout_by(&mut client, deadline).await?,
-                None => logout(&mut client).await?,
-            }
+            logout(&mut client).await?;
             drop(client);
             client = connect_world(clients, 0xb0 + u8::try_from(ordinal)?).await?;
             let durable = client.world_spatial().actor_position == saved
@@ -1433,34 +1562,7 @@ mod e2ef1 {
             if durable && required.contains(&"relogin") {
                 checks.pass("relogin", saved);
             }
-            let passed = result.is_ok() && durable && checks.complete(required);
-            failed |= !passed;
-            let gaps: Vec<_> = required
-                .iter()
-                .filter(|case| !checks.passed.contains(**case))
-                .copied()
-                .collect();
-            evidence(&format!(
-                "E2EF1_ROW row={row} missing={gaps:?} result={result:?} durable={durable}"
-            ));
-            verdicts.done.insert(row);
-            let suffix = if passed {
-                String::new()
-            } else {
-                let cause = match &result {
-                    Err(error) => verdict::classify(error.as_ref()),
-                    Ok(()) => verdict::Cause::Assertion,
-                };
-                cause.suffix(&format!(
-                    "{row}/{}",
-                    gaps.first().copied().unwrap_or("durable")
-                ))
-            };
-            evidence(&format!(
-                "e2e_all scenario={row}.full status={} seconds={:.3} evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs{suffix}",
-                if passed { "PASS" } else { "FAIL" },
-                started.elapsed().as_secs_f64()
-            ));
+            failed |= !record_row(verdicts, row, required, started, &checks, &result, durable);
             let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
                 at == origin
             })
@@ -1473,9 +1575,95 @@ mod e2ef1 {
         Ok(client)
     }
 
+    fn record_row(
+        verdicts: &mut Verdicts,
+        row: &'static str,
+        required: &[&str],
+        started: std::time::Instant,
+        checks: &Checks,
+        result: &TestResult,
+        durable: bool,
+    ) -> bool {
+        let passed = result.is_ok() && durable && checks.complete(required);
+        let gaps: Vec<_> = required
+            .iter()
+            .filter(|case| !checks.passed.contains(**case))
+            .copied()
+            .collect();
+        evidence(&format!(
+            "E2EF1_ROW row={row} missing={gaps:?} result={result:?} durable={durable}"
+        ));
+        verdicts.done.insert(row);
+        let suffix = if passed {
+            String::new()
+        } else {
+            let cause = match result {
+                Err(error) => verdict::classify(error.as_ref()),
+                Ok(()) => verdict::Cause::Assertion,
+            };
+            cause.suffix(&format!(
+                "{row}/{}",
+                gaps.first().copied().unwrap_or("durable")
+            ))
+        };
+        evidence(&format!(
+            "e2e_all scenario={row}.full status={} seconds={:.3} evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs{suffix}",
+            if passed { "PASS" } else { "FAIL" },
+            started.elapsed().as_secs_f64()
+        ));
+        passed
+    }
+
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[test]
+        fn qualification_m05_door_requires_a_clear_approach_and_threshold() {
+            let stand = ActorPosition {
+                x: 32401,
+                y: 32235,
+                floor: 7,
+            };
+            let door = ActorPosition { x: 32402, ..stand };
+            let own = (EntityKind::Player, stand, true);
+            assert!(door_spaces_clear([own].into_iter(), stand, door));
+            for kind in [EntityKind::Creature, EntityKind::Npc, EntityKind::Player] {
+                for position in [stand, door] {
+                    assert!(!door_spaces_clear(
+                        [own, (kind, position, false)].into_iter(),
+                        stand,
+                        door
+                    ));
+                }
+            }
+            assert!(!door_spaces_clear(
+                [(EntityKind::Player, door, true)].into_iter(),
+                stand,
+                door
+            ));
+        }
+
+        #[test]
+        fn qualification_m05_failed_cleanup_records_only_its_own_row() {
+            let mut verdicts = Verdicts::default();
+            let checks = Checks {
+                row: "M05",
+                ..Checks::default()
+            };
+            assert!(!record_row(
+                &mut verdicts,
+                "M05",
+                ROWS[4].1,
+                std::time::Instant::now(),
+                &checks,
+                &Err("M05 fight cleanup exceeded the logout deadline".into()),
+                false,
+            ));
+            assert!(verdicts.done.contains("M05"));
+            assert!(!verdicts.done.contains("M07"));
+            assert!(verdicts.aborted.is_none());
+        }
+
         #[test]
         fn qualification_review_m03_stairs_exclude_teleport_landing() {
             let upstairs = TilePos {

@@ -13,7 +13,14 @@ pub struct HouseManagementSummary {
     pub price: u64,
     pub ends_ms: Option<u64>,
     pub own_maximum: Option<u64>,
+    pub auction_sort_end: i64,
 }
+pub struct HouseManagementPage {
+    pub houses: Vec<QualifiedHouse>,
+    pub cursor: Option<String>,
+    pub auction_order: bool,
+}
+
 impl DurabilityRoot {
     /// Bounded keyset read. Keys come from the server catalogue for the requested town;
     /// actor-private notices are returned only to the current owner.
@@ -22,10 +29,28 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-        houses: Vec<QualifiedHouse>,
-        cursor: Option<String>,
+        page: HouseManagementPage,
         content_digest: [u8; 32],
     ) -> Result<Vec<HouseManagementSummary>> {
+        let HouseManagementPage {
+            houses,
+            cursor,
+            auction_order,
+        } = page;
+        let (cursor, cursor_end) = match (auction_order, cursor.as_deref()) {
+            (true, Some(cursor)) => {
+                let (end, key) = cursor
+                    .split_once('/')
+                    .ok_or(HouseManagementError::Rejected)?;
+                let end: i64 = end.parse().map_err(|_| HouseManagementError::Rejected)?;
+                if end < 0 {
+                    return Err(HouseManagementError::Rejected);
+                }
+                (Some(key), end)
+            }
+            (_, cursor) => (cursor, i64::MAX),
+        };
+        let cursor = cursor.map(str::to_owned);
         if houses.len() > 1024
             || houses.iter().any(|house| {
                 HouseId::new(fence.runtime_scope.world_id(), &house.key).is_none()
@@ -62,6 +87,8 @@ impl DurabilityRoot {
                         .bind(fence.character_id.as_bytes().as_slice())
                         .bind(content_digest.as_slice())
                         .bind(&kinds)
+                        .bind(auction_order)
+                        .bind(cursor_end)
                         .fetch_all(&mut *tx)
                         .await?;
                     let rows = rows
@@ -99,17 +126,31 @@ fn summary(
         price: unsigned("price")?,
         ends_ms: optional("ends")?,
         own_maximum: optional("own_maximum")?,
+        auction_sort_end: row.try_get("sort_end")?,
     })
 }
 const PAGE_SQL: &str = r#"
-SELECT p.house_key,p.kind,p.state,p.rent_gold,p.revision::text,p.acl_revision::text,
- (SELECT CASE count(*) WHEN 0 THEN 0 WHEN 1 THEN 0 ELSE least(max(maximum),min(maximum)+1) END FROM (SELECT maximum FROM game_house_bids b WHERE b.auction_id=a.auction_id AND b.state=1 ORDER BY maximum DESC,reached_order LIMIT 2) bids) AS price,(extract(epoch FROM a.ends_at)*1000)::bigint AS ends,
- (SELECT maximum FROM game_house_bids b WHERE b.auction_id=a.auction_id AND (b.guild_id IS NULL AND b.character_id=encode($4,'hex')::uuid OR b.guild_id=(SELECT guild_id FROM game_guild_members WHERE character_id=encode($4,'hex')::uuid AND rank_level=1)) AND b.state=1 LIMIT 1) AS own_maximum,game_house_effective_owner(p.world_id,p.house_key)=encode($4,'hex')::uuid AS owned,CASE WHEN game_house_effective_owner(p.world_id,p.house_key)=encode($4,'hex')::uuid AND n.ownership_revision=p.ownership_generation THEN n.due_at_unix_ms END AS due
+WITH eligible AS (
+ SELECT p.*, a.auction_id, a.ends_at,
+  CASE WHEN $7 AND p.state=2 AND a.ends_at > statement_timestamp()
+       THEN (extract(epoch FROM a.ends_at)*1000)::bigint
+       ELSE 9223372036854775807::bigint END AS sort_end
  FROM game_house_properties p
- LEFT JOIN game_house_move_out_notices n USING(world_id,house_key)
  LEFT JOIN game_house_auctions a ON a.world_id=p.world_id AND a.house_key=p.house_key AND NOT a.settled
  WHERE p.world_id=encode($1,'hex')::uuid AND (p.house_key,p.kind) IN
   (SELECT * FROM unnest($2::text[],$6::text[]))
-  AND p.house_key>coalesce($3,'') AND p.content_digest=$5
- ORDER BY p.house_key LIMIT 21
+  AND p.content_digest=$5
+), page AS (
+ SELECT * FROM eligible
+ WHERE $3::text IS NULL
+    OR (NOT $7 AND house_key>$3)
+    OR ($7 AND house_key<>$3 AND (sort_end,house_key) > ($8::bigint,$3))
+ ORDER BY sort_end,house_key LIMIT 21
+)
+SELECT p.house_key,p.kind,p.state,p.rent_gold,p.revision::text,p.acl_revision::text,p.sort_end,
+ (SELECT CASE count(*) WHEN 0 THEN 0 WHEN 1 THEN 0 ELSE least(max(maximum),min(maximum)+1) END FROM (SELECT maximum FROM game_house_bids b WHERE b.auction_id=p.auction_id AND b.state=1 ORDER BY maximum DESC,reached_order LIMIT 2) bids) AS price,(extract(epoch FROM p.ends_at)*1000)::bigint AS ends,
+ (SELECT maximum FROM game_house_bids b WHERE b.auction_id=p.auction_id AND (b.guild_id IS NULL AND b.character_id=encode($4,'hex')::uuid OR b.guild_id=(SELECT guild_id FROM game_guild_members WHERE character_id=encode($4,'hex')::uuid AND rank_level=1)) AND b.state=1 LIMIT 1) AS own_maximum,game_house_effective_owner(p.world_id,p.house_key)=encode($4,'hex')::uuid AS owned,CASE WHEN game_house_effective_owner(p.world_id,p.house_key)=encode($4,'hex')::uuid AND n.ownership_revision=p.ownership_generation THEN n.due_at_unix_ms END AS due
+ FROM page p
+ LEFT JOIN game_house_move_out_notices n USING(world_id,house_key)
+ ORDER BY p.sort_end,p.house_key
 "#;

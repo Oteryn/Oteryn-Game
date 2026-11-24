@@ -1,0 +1,19 @@
+{
+  "id": 600,
+  "name": "PLAYER_STATUS_V1",
+  "constant": "zones_nologout::CAPABILITY_PLAYER_STATUS_V1",
+  "requires": [
+    6
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    6363
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

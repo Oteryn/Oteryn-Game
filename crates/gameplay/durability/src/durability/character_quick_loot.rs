@@ -50,26 +50,44 @@ pub(super) async fn store(
     Ok(())
 }
 
-fn category_id(value: LootCategory) -> i16 {
-    match value {
-        LootCategory::Gold => 0,
-        LootCategory::CreatureProduct => 1,
-        LootCategory::Equipment => 2,
-        LootCategory::Consumable => 3,
-        LootCategory::Other => 4,
+/// Apply a list edit while the caller holds the current Character item fence.
+pub(super) async fn edit_filter_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: crate::domain::CharacterId,
+    settings: DurableQuickLootSettings,
+    key: &str,
+    add: bool,
+) -> Result<bool, DurabilityError> {
+    let accepted = settings.accept_only;
+    let list = if accepted { &settings.accepted_items } else { &settings.skipped_items };
+    if add && list.len() >= oteryn_gameplay_items::quick_loot::MAX_FILTER_ITEMS && !list.contains(key) {
+        return Ok(false);
     }
+    let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    store(tx, character, revision.parse().map_err(|_| DurabilityError::InvalidStoredState)?, settings).await?;
+    if add {
+        sqlx::query("INSERT INTO game_character_quick_loot_filters(character_id,accepted,item_production_key)
+            VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
+            .bind(character.as_bytes().as_slice()).bind(accepted).bind(key).execute(&mut **tx).await?;
+    } else {
+        sqlx::query("DELETE FROM game_character_quick_loot_filters WHERE character_id=encode($1,'hex')::uuid
+            AND accepted=$2 AND item_production_key=$3")
+            .bind(character.as_bytes().as_slice()).bind(accepted).bind(key).execute(&mut **tx).await?;
+    }
+    Ok(true)
 }
+
+pub(super) fn category_id(value: LootCategory) -> i16 {
+    value as i16
+}
+
 fn category(value: i16) -> std::result::Result<LootCategory, DurabilityError> {
-    match value {
-        0 => Ok(LootCategory::Gold),
-        1 => Ok(LootCategory::CreatureProduct),
-        2 => Ok(LootCategory::Equipment),
-        3 => Ok(LootCategory::Consumable),
-        4 => Ok(LootCategory::Other),
-        _ => Err(DurabilityError::InvalidStoredState),
-    }
+    usize::try_from(value).ok().and_then(|id| LootCategory::ALL.get(id).copied())
+        .ok_or(DurabilityError::InvalidStoredState)
 }
-fn recipient_parts(value: Recipient<[u8; 16]>) -> (Option<[u8; 16]>, bool) {
+
+pub(super) fn recipient_parts(value: Recipient<[u8; 16]>) -> (Option<[u8; 16]>, bool) {
     match value {
         Recipient::Container(id) => (Some(id), false),
         Recipient::GoldPouch(id) => (Some(id), true),
@@ -124,19 +142,70 @@ pub(super) async fn load(
     Ok(result)
 }
 
+pub(super) async fn load_obtain(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: &[u8; 16],
+) -> Result<BTreeMap<Option<LootCategory>, Recipient<[u8; 16]>>, DurabilityError> {
+    let rows = sqlx::query(
+        "SELECT category, uuid_send(container_id) AS target, gold_pouch
+         FROM game_character_quick_loot_obtain
+         WHERE character_id = encode($1, 'hex')::uuid ORDER BY category LIMIT $2",
+    )
+    .bind(character.as_slice())
+    .bind((1 + LootCategory::ALL.len()) as i64)
+    .fetch_all(&mut **tx)
+    .await?;
+    rows.into_iter().map(|row| {
+        let key = match row.try_get::<i16, _>("category")? {
+            -1 => None,
+            id => Some(category(id)?),
+        };
+        let target = match (bytes(&row, "target")?, row.try_get::<bool, _>("gold_pouch")?) {
+            (Some(id), true) => Recipient::GoldPouch(id),
+            (Some(id), false) => Recipient::Container(id),
+            (None, false) => Recipient::MainContainer,
+            (None, true) => return Err(DurabilityError::InvalidStoredState),
+        };
+        Ok((key, target))
+    }).collect()
+}
+
+pub(super) async fn set_obtain(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: &[u8; 16],
+    category: Option<LootCategory>,
+    target: Option<Recipient<[u8; 16]>>,
+) -> Result<(), DurabilityError> {
+    let category = category.map_or(-1, category_id);
+    if let Some(target) = target {
+        let (id, pouch) = recipient_parts(target);
+        sqlx::query(
+            "INSERT INTO game_character_quick_loot_obtain(character_id, category, container_id, gold_pouch)
+             VALUES (encode($1,'hex')::uuid, $2, encode($3,'hex')::uuid, $4)
+             ON CONFLICT (character_id, category)
+             DO UPDATE SET container_id=EXCLUDED.container_id, gold_pouch=EXCLUDED.gold_pouch",
+        )
+        .bind(character.as_slice()).bind(category)
+        .bind(id.as_ref().map(<[u8; 16]>::as_slice)).bind(pouch)
+        .execute(&mut **tx).await?;
+    } else {
+        sqlx::query(
+            "DELETE FROM game_character_quick_loot_obtain
+             WHERE character_id=encode($1,'hex')::uuid AND category=$2",
+        )
+        .bind(character.as_slice()).bind(category)
+        .execute(&mut **tx).await?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn category_ids_are_stable() -> std::result::Result<(), DurabilityError> {
-        for (id, value) in [
-            LootCategory::Gold,
-            LootCategory::CreatureProduct,
-            LootCategory::Equipment,
-            LootCategory::Consumable,
-            LootCategory::Other,
-        ]
+        for (id, value) in LootCategory::ALL
         .into_iter()
         .enumerate()
         {

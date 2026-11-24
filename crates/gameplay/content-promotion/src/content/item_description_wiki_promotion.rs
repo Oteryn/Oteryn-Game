@@ -4,7 +4,7 @@ pub const ITEM_DESCRIPTION_WIKI_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20261002-item-description-wiki-promotion-v1.json"
 );
 pub const ITEM_DESCRIPTION_WIKI_PACKET_SHA256: &str =
-    "dd7d7efd0580bd489d2d8d0c8a149e82c19f3ecf5e4e1bb23ccd2e5c5a2bcb10";
+    "cbd626a7e91b927de41bf82fc632de2b6c176b8c8addb2ec705f3876bc395bf5";
 pub fn apply_item_description_wiki_promotion_v1(
     draft: &mut ProjectV2Draft,
 ) -> Result<usize, String> {
