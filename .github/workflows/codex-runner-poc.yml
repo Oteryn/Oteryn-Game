@@ -102,24 +102,45 @@ jobs:
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           echo "source tree took $(( $(date +%s) - start ))s"
 
-      - name: Start the environment PostgreSQL cluster
+      # A throwaway cluster from the environment's PostgreSQL 18 binaries: the retained cluster's
+      # identity check fails in some task containers, and a fresh one needs no shared state.
+      - name: Start ephemeral PostgreSQL 18
         run: |
           set +x
           set -euo pipefail
           start=$(date +%s)
           export OTERYN_AUTO_START=0
           source /workspace/oteryn-env/env.sh
-          # A start can fail transiently (the cluster lock or a slow first start); retry before failing.
-          ok=0
-          for attempt in 1 2 3 4 5; do
-            if bash /workspace/oteryn-env/start.sh > "$RUNNER_TEMP/pg-start.log" 2>&1; then ok=1; break; fi
-            echo "postgres start attempt $attempt failed:"
-            grep -viE 'password|secret|token|://' "$RUNNER_TEMP/pg-start.log" | tail -n 15
-            sleep $((attempt * 3))
+          bin="$(dirname "$(command -v postgres)")"
+          "$bin/postgres" --version | grep -Eq ' 18\.'
+          dir="$RUNNER_TEMP/pr-postgres"
+          rm -rf -- "$dir"
+          mkdir -p "$dir/sock"
+          chmod 700 "$dir"
+          password="$(python3 -c 'import secrets; print(secrets.token_hex(24))')"
+          echo "::add-mask::$password"
+          printf '%s\n' "$password" > "$dir/pwfile"
+          locale=en_US.UTF-8
+          locale -a 2>/dev/null | grep -qiE '^en_US\.utf-?8$' || locale=C.UTF-8
+          "$bin/initdb" -D "$dir/data" -U oteryn_test_admin --pwfile="$dir/pwfile" \
+            --auth=scram-sha-256 --encoding=UTF8 --locale="$locale" >/dev/null
+          rm -f -- "$dir/pwfile"
+          started=''
+          for _ in 1 2 3; do
+            port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')"
+            if "$bin/pg_ctl" -D "$dir/data" -l "$dir/postgres.log" -w -t 60 start \
+              -o "-c listen_addresses=127.0.0.1 -p $port -k $dir/sock -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=200"; then
+              started=1
+              break
+            fi
           done
-          (( ok == 1 )) || exit 1
-          test -n "${OTERYN_TEST_POSTGRES_ADMIN_URL:-}" || { echo 'env.sh sets no OTERYN_TEST_POSTGRES_ADMIN_URL' >&2; exit 1; }
-          echo "postgres start took $(( $(date +%s) - start ))s"
+          if [[ -z "$started" ]]; then
+            grep -viE 'password|secret|token|://' "$dir/postgres.log" | tail -n 50 >&2 || true
+            exit 1
+          fi
+          "$bin/pg_isready" -h 127.0.0.1 -p "$port" -U oteryn_test_admin -d postgres
+          echo "CODEX_PG_URL=postgresql://oteryn_test_admin:${password}@127.0.0.1:${port}/postgres" >> "$GITHUB_ENV"
+          echo "postgres start took $(( $(date +%s) - start ))s (locale $locale)"
 
       - name: Pull the test archive from ghcr
         env:
@@ -165,6 +186,7 @@ jobs:
           set -euo pipefail
           export OTERYN_AUTO_START=0
           source /workspace/oteryn-env/env.sh
+          export OTERYN_TEST_POSTGRES_ADMIN_URL="$CODEX_PG_URL"
           mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-e2e.filters"
           test "${#filters[@]}" -gt 0
           args=(nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
@@ -172,6 +194,7 @@ jobs:
             --no-fail-fast "${filters[@]}")
           start=$(date +%s)
           status=0
+          exec > >(tee -a "$RUNNER_TEMP/pg-nextest.log") 2>&1
           nextest=$(command -v cargo-nextest || true)
           if [[ -n "$nextest" ]] && unshare --user --mount --map-root-user true 2>/dev/null; then
             echo 'mode: native'
@@ -193,4 +216,9 @@ jobs:
               "$CI_IMAGE" cargo-nextest "${args[@]}" || status=$?
           fi
           echo "tests took $(( $(date +%s) - start ))s, exit $status"
+          # Step logs do not upload from Codex Cloud; annotations travel with the job result.
+          if (( status != 0 )); then
+            grep -E '^\s*(FAIL|SIGSEGV|SIGABRT|TIMEOUT|LEAK)' "$RUNNER_TEMP/pg-nextest.log" | sort -u | head -n 20 |
+              while IFS= read -r line; do echo "::error title=Codex e2e partition ${ARCHIVE_INDEX}::${line}"; done || true
+          fi
           exit "$status"
