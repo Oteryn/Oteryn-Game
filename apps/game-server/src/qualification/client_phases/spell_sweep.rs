@@ -654,18 +654,8 @@ async fn paralyze_bruise_fixture(
     )?;
     full_e2ef5::with_observer_liveness(target, full_row_s02::set_open_attack(peer)).await?;
     let position = tile(target.world_spatial().actor_position)?;
-    let from = tile(peer.world_spatial().actor_position)?;
-    let path = route(world, from, |at| {
-        at != position
-            && at.floor == position.floor
-            && at.x.abs_diff(position.x).max(at.y.abs_diff(position.y)) <= 2
-            && world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|tile| !tile.protection_zone())
-    })
-    .ok_or("no reachable Paralyze casting tile")?;
-    full_e2ef5::with_observer_liveness(target, walk(peer, world, &path)).await?;
+    full_e2ef5::with_observer_liveness(target, approach_for_paralyze(peer, world, position))
+        .await?;
     let entity = target
         .world_entities()
         .and_then(|entities| {
@@ -684,6 +674,54 @@ async fn paralyze_bruise_fixture(
         reply == UseDisposition::Committed,
         format!("Paralyze rune refused: {reply:?}"),
     )
+}
+
+async fn approach_for_paralyze(
+    peer: &mut DevClientSession,
+    world: &BundleWorld,
+    target: TilePos,
+) -> TestResult {
+    let mut blocked = std::collections::BTreeSet::from([target]);
+    for _ in 0..64 {
+        let from = tile(peer.world_spatial().actor_position)?;
+        let path = route_avoiding(
+            world,
+            from,
+            |at| {
+                at != target
+                    && at.floor == target.floor
+                    && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 2
+                    && world
+                        .base()
+                        .tile(at.x, at.y, at.floor)
+                        .is_some_and(|tile| !tile.protection_zone())
+            },
+            |at| !blocked.contains(&at),
+        )
+        .ok_or("no reachable Paralyze casting tile after live obstacles")?;
+        let Some(&direction) = path.first() else {
+            return Ok(());
+        };
+        let landing =
+            destination(world, from, direction).ok_or("Paralyze route lost its landing")?;
+        let outcome = peer.step_retrying(direction).await?;
+        let after = tile(peer.world_spatial().actor_position)?;
+        match (outcome.disposition, after) {
+            (StepDisposition::Blocked, at) if at == from => {
+                blocked.insert(landing);
+            }
+            (StepDisposition::Moved, at)
+                if at == landing && outcome.world_spatial_delta.is_some() => {}
+            _ => {
+                return Err(format!(
+                    "Paralyze approach {from:?}->{landing:?} went to {after:?}: {outcome:?}"
+                )
+                .into());
+            }
+        }
+        verdict::Harness::global().progress("paralyze-approach");
+    }
+    Err("Paralyze approach exhausted its live step budget".into())
 }
 
 async fn positive(
