@@ -1,6 +1,13 @@
-//! C20d-W23: the pinned hometown catalogue and citizen step ingress.
+//! The pinned hometown catalogue and temple step callbacks.
 use super::*;
 use crate::foundation::{MovementLocalPosition, MovementPositionSnapshot};
+use crate::map::overlay::TilePos;
+use crate::map::view::{MapFacts, placement_key};
+
+/// Crystal 201189f8 `data-global/scripts/movements/teleport/adventurers_guild.lua:3-20`.
+const ADVENTURERS_GUILD_RETURN_ACTION: u16 = 4253;
+// Crystal src/utils/utils_definitions.hpp:66, CONST_ME_TELEPORT.
+const TELEPORT_EFFECT: u16 = 11;
 
 /// Crystal/Canary citizen.lua: these are placement unique ids, not appearance ids.
 fn citizen_town(unique: u16) -> Option<u32> {
@@ -312,8 +319,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         outcome.ok()
     }
 
-    /// A portal may already have applied its map teleport. Inspect the entered cardinal tile,
-    /// rather than only the final landing, while retaining the ordinary movement lane.
+    /// Inspect the stepped-on tile even if a map teleport has already moved the actor.
     pub(super) async fn citizen_step(
         &self,
         actor: ExactActorRef,
@@ -337,8 +343,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(tile) = map.overlay.base().tile(x, y, floor) else {
             return entered;
         };
-        let mut citizens = (0..tile.depths().iter().filter(|d| **d == 0).count())
-            .filter_map(|ordinal| tile.unique(u8::try_from(ordinal).ok()?))
+        let ordinals = (0..tile.depths().iter().filter(|d| **d == 0).count())
+            .filter_map(|ordinal| u8::try_from(ordinal).ok());
+        let source = TilePos { x, y, floor };
+        if ordinals
+            .clone()
+            .filter_map(|ordinal| placement_key(source, ordinal))
+            .any(|key| {
+                map.facts.action_at(key) == Some(ADVENTURERS_GUILD_RETURN_ACTION)
+                    && !map.facts.base_hidden(key)
+            })
+        {
+            return self
+                .adventurers_guild_return(actor, session, entered, map, source)
+                .await
+                .unwrap_or(entered);
+        }
+        let mut citizens = ordinals
+            .filter_map(|ordinal| tile.unique(ordinal))
             .filter_map(|entry| citizen_town(entry.unique));
         let Some(town) = citizens.next() else {
             return entered;
@@ -410,6 +432,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         runtime.read_actor_position(actor).unwrap_or(entered)
+    }
+
+    /// The Adventurers' Guild exit sends an unattuned player to their citizen temple.
+    async fn adventurers_guild_return(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        entered: MovementPositionSnapshot,
+        map: &crate::map::boot::BundleMap,
+        source: TilePos,
+    ) -> Option<MovementPositionSnapshot> {
+        let scope = crate::foundation::RuntimeScopeRefV1::channel(self.world_id, self.channel_id);
+        if map.overlay.runtime_scope() != scope {
+            return None;
+        }
+        let town = self.home_town(session, None).await?;
+        let temple = map.overlay.base().subareas.town(town)?.temple?;
+        let target = MovementLocalPosition {
+            x: i32::from(temple.x),
+            y: i32::from(temple.y),
+            floor: -i16::from(temple.floor),
+        };
+        let mut runtime = self.runtime.lock().await;
+        if runtime.binding().runtime_scope() != scope {
+            return None;
+        }
+        runtime.owner_fence().ok()?;
+        let states = self.states.spell_states.lock().await;
+        if states.is_dead(actor) {
+            return None;
+        }
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        let blocked = super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
+        let proof = crate::map::floor::prepare_quest_callback_teleport(
+            &runtime,
+            self.movement_cells(),
+            actor,
+            session,
+            entered,
+            target,
+            blocked,
+            &closed,
+        )
+        .ok()?;
+        let arrival = runtime.commit_source_step(proof).ok()?;
+        let _ = map.facts.emit_movement_effect(source, TELEPORT_EFFECT);
+        let _ = map.facts.emit_movement_effect(
+            TilePos {
+                x: temple.x,
+                y: temple.y,
+                floor: temple.floor,
+            },
+            TELEPORT_EFFECT,
+        );
+        Some(arrival)
     }
 }
 

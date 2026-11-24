@@ -77,22 +77,35 @@ pub(super) fn admit_at(
         .iter()
         .filter_map(|a| a.parent.map(|parent| (parent, a.id)))
         .collect();
-    let mut pool = Vec::new();
+    let mut pool = Vec::with_capacity(sampling.pool_limit);
+    let mut visible = Vec::with_capacity(sampling.generated_count);
     'candidates: for run in table.runs.iter().filter(|run| run.subarea == subarea) {
         for x in run.begin..run.end {
-            if pool.len() == sampling.pool_limit {
-                break 'candidates;
-            }
             let point = Point {
                 x: i32::from(x),
                 y: i32::from(run.y),
                 floor: i16::from(run.floor),
             };
-            if walkable(point) {
+            if point.in_window(start) {
+                // Small subareas still need to admit progress reads and finds.
+                if visible.len() < sampling.generated_count && walkable(point) {
+                    visible.push(point);
+                }
+            } else if walkable(point) {
+                // Crystal discovery_system.lua:458–488 checks visibility before
+                // counting candidates. Bound the hidden pool across the subarea.
                 pool.push(point);
+                if pool.len() == sampling.pool_limit {
+                    break 'candidates;
+                }
             }
         }
     }
+    pool.extend(
+        visible
+            .into_iter()
+            .take(sampling.generated_count.saturating_sub(pool.len())),
+    );
     if pool.len() < sampling.generated_count {
         return None;
     }

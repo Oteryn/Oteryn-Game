@@ -128,26 +128,18 @@ async fn daily_bounty_claim(
     admitted: &mut AdmittedSession,
     id: u64,
 ) -> TestResult<(CommandStatus, Vec<u8>)> {
-    let (_, mut replies) = daily_bounty_attempt(owner, admitted, id).await?;
-    assert_eq!(replies.len(), 1);
-    let (_, status, payload) = replies.remove(0);
-    Ok((status, payload))
-}
-
-async fn daily_bounty_attempt(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
-    id: u64,
-) -> TestResult<(ConnectionEnd, CommandReplies)> {
     let claim = full_request(wire::full::ACTION_CLAIM_DAILY_BOUNTY_TOKEN, 0, "");
-    serve_attempt_kind(
+    let (_, mut replies) = serve_attempt_kind(
         owner,
         admitted,
         id,
         &[claim],
         wire::full::COMMAND_CLAIM_DAILY_BOUNTY_TOKEN,
     )
-    .await
+    .await?;
+    assert_eq!(replies.len(), 1);
+    let (_, status, payload) = replies.remove(0);
+    Ok((status, payload))
 }
 
 pub(super) async fn daily_bounty_token_dispatch_claims_once_per_reset(
@@ -181,14 +173,15 @@ pub(super) async fn daily_bounty_token_dispatch_claims_once_per_reset(
     let mut fence = stale.item_fence.ok_or("item fence")?;
     fence.connection_generation = ConnectionGeneration::new(fence.connection_generation.get() + 1).map_err(debug)?;
     stale.item_fence = Some(fence);
-    // A replacement connection with a stale fence cannot reconcile earlier commands.
-    // It closes without acknowledging the stale attempt or spending the new reset's token.
-    let (end, replies) = daily_bounty_attempt(owner, &mut stale, next).await?;
-    assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
-    assert!(replies.is_empty());
-    assert_eq!(stale.continuity.next_command_id, next + 1);
-    admitted.continuity = stale.continuity;
-    let next = admitted.continuity.next_command_id;
+    // Exercise the Task Board fence before the transport reserves the next CommandId.
+    // A replacement transport would close on the stale fence during Bank reconciliation.
+    let claim = full_request(wire::full::ACTION_CLAIM_DAILY_BOUNTY_TOKEN, 0, "");
+    assert!(matches!(
+        owner
+            .task_board_wire(stale, next, wire::full::COMMAND_CLAIM_DAILY_BOUNTY_TOKEN, &claim)
+            .await,
+        crate::gameplay_transport::task_board::TaskBoardReply::Rejected
+    ));
     let (status, payload) = daily_bounty_claim(owner, admitted, next).await?;
     assert_eq!(status, CommandStatus::Accepted);
     let after_reset = wire::full::decode_reply(&payload).map_err(debug)?;

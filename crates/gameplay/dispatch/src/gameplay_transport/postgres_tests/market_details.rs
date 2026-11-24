@@ -32,7 +32,7 @@ fn market_catalogue_filters_by_forge_tier_through_dispatch() -> TestResult {
     drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run("market-catalogue-tier", || {
         use super::market_fixtures::{scenario_with_catalogue_extension, CatalogueExtension};
-        scenario_with_catalogue_extension(false, false, Some(CatalogueExtension::Tier))
+        scenario_with_catalogue_extension(CatalogueExtension::Tier)
     })
 }
 
@@ -42,6 +42,6 @@ fn market_catalogue_projects_pinned_artwork_through_dispatch() -> TestResult {
     drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run("market-catalogue-artwork", || {
         use super::market_fixtures::{scenario_with_catalogue_extension, CatalogueExtension};
-        scenario_with_catalogue_extension(false, false, Some(CatalogueExtension::Artwork))
+        scenario_with_catalogue_extension(CatalogueExtension::Artwork)
     })
 }

@@ -4,6 +4,8 @@ use crate::world_interaction::WorldInteractionWireError as Error;
 use serde::{Deserialize, Serialize};
 pub const CAPABILITY_MARKET_CATALOGUE_PRESENTATION_V1: u32 = 588;
 pub const COMMAND_TYPE_MARKET_DETAILS: u32 = 6126;
+/// The statistics query has exhausted its per-session request window.
+pub const STATISTICS_RATE_LIMITED: u8 = 15;
 pub const PAGE_SIZE: usize = 32;
 pub const MAX_REPLY: usize = 32 * 1024;
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

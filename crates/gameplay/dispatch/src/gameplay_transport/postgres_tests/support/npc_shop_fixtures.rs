@@ -257,6 +257,9 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) = activated_with_loot_tables(world, None);
+        if equipped {
+            super::tutorial_vitals_fixture::publish_native_activation(&h, &pin).await?;
+        }
         let active = controller.active().ok_or("active content")?;
         let destination = oteryn_gameplay_entities::rashid_schedule::destination_at(
             crate::gameplay_transport::npc_trade_command::unix_ms_now(),

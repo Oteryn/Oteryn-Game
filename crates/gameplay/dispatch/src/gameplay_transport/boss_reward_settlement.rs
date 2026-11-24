@@ -16,6 +16,7 @@ use oteryn_gameplay_encounters::bosses::reward_chest::{
     FrozenBossContribution, contribution_loot_factors, freeze_personal_rewards, reward_expiry,
     top_contributor,
 };
+use oteryn_gameplay_foundation::scheduled_events::{NEUTRAL_RATE, rates_at};
 use oteryn_gameplay_items::loot_plan::{
     LootPlan, LootPlanError, LootTableDefinition, plan_boss_loot_with_bonus,
 };
@@ -207,6 +208,11 @@ fn plan_personal_death_with_slots(
         });
     }
     let expires = reward_expiry(frozen.died_at_unix_ms).ok_or(PlanError::Overflow)?;
+    // Crystal monstertype.lua:12-15 multiplies the contribution factor for reward bosses.
+    // The frozen lethal timestamp keeps the rate stable across a deferred drain or replay.
+    let death_second =
+        i64::try_from(frozen.died_at_unix_ms / 1_000).map_err(|_| PlanError::Overflow)?;
+    let scheduled_factor = f64::from(rates_at(death_second).boss_loot) / f64::from(NEUTRAL_RATE);
     let mut failure = None;
     // The existing personal-container owner freezes eligibility before invoking the loot
     // callback. A fallible roll rejects the entire death plan; its empty temporary result
@@ -238,7 +244,7 @@ fn plan_personal_death_with_slots(
                     .as_ref()
                     .ok_or(PlanError::ContentUnavailable)?,
                 boosted.as_ref().unwrap_or(&frozen.reward.loot_table),
-                factors[index],
+                factors[index] * scheduled_factor,
                 top == Some(character),
                 rolls,
                 &equipment,
