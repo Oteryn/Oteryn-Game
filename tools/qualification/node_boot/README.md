@@ -159,6 +159,14 @@ The `documents=440:1169` slice completed the 1,609-report census with 1,050
 PASS and 2,457 FAIL step rows. Across the three slices, 754 detail replies
 omitted the authored report and 855 reports had no canonical wire race.
 
+The shrine passed all eight wire checks, including claim, replay refusal and
+durability across readmission. The `claims=40:346` slice selected the remaining
+306 reward claims and emitted 23 PASS and 1,507 FAIL step rows.
+`kv.minotaurleatherquest` passed all five checks, including the exact inventory
+delta and repeat-use refusal. The served town bundle had no matching binding
+for 287 claims in that slice
+([reward placement resolver](../../../crates/gameplay/content/src/content/world_reward_claims.rs#L1267)).
+
 The runner prints a
 summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
 at the path reported on stderr. It exits nonzero if any group fails.
