@@ -160,9 +160,10 @@ case "$NODE_BOOT_WORLD_PROFILE" in
   *) blocked invalid_world_profile ;;
 esac
 house_sweep_groups="${NODE_BOOT_E2E_ONLY:-}"
+HOUSE_SWEEP_ACCOUNTS=()
 # A house sweep compiles the authored locations in its selected slice, plus town/start.
 if [[ "$NODE_BOOT_WORLD" == 1 && ",${house_sweep_groups// /}," == *,house_sweep,* ]]; then
-  WORLD_REGIONS="$(python3 - "$GAME_SOURCE/content/houses" "${OTERYN_E2E_HOUSE_SWEEP_BATCH-0:3}" "$WORLD_REGIONS" <<'PY_HOUSE_REGIONS'
+  house_sweep_plan="$(python3 - "$GAME_SOURCE/content/houses" "${OTERYN_E2E_HOUSE_SWEEP_BATCH-0:3}" "$WORLD_REGIONS" <<'PY_HOUSE_REGIONS'
 import json
 import pathlib
 import re
@@ -186,8 +187,13 @@ for house in houses[start:start + length]:
     entrance = house["entrance"]
     regions.add(f'{entrance["x"] // 256},{entrance["y"] // 256}')
 print(";".join(sorted(regions)))
+for index in range(start, min(start + length, len(houses))):
+    print(f"01934f10-7c00-7000-8001-{index:012x}")
 PY_HOUSE_REGIONS
 )" || blocked invalid_house_sweep_batch
+  mapfile -t house_sweep_lines <<< "$house_sweep_plan"
+  WORLD_REGIONS="${house_sweep_lines[0]}"
+  HOUSE_SWEEP_ACCOUNTS=("${house_sweep_lines[@]:1}")
   NODE_BOOT_WORLD_PROFILE=house_sweep
 fi
 readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
@@ -202,7 +208,7 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Packet journeys may move, loot or kill their Characters before the required core runs.
-  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID")
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "${HOUSE_SWEEP_ACCOUNTS[@]}")
 fi
 readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
@@ -377,7 +383,7 @@ fi
 # Seed only this run's extra synthetic accounts through the same portal binary
 # and disposable environment as the upstream harness and composition.py.
 seed_mp_accounts() {
-  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" <<'PY_MP_SEED'
+  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "${HOUSE_SWEEP_ACCOUNTS[@]}" <<'PY_MP_SEED'
 import json
 from pathlib import Path
 import secrets
@@ -401,6 +407,14 @@ for account in accounts:
     seed("account", {"accountId": account, "email": f"nb-{account}@example.invalid",
                      "password": secrets.token_urlsafe(48)})
 PY_MP_SEED
+  if (( ${#HOUSE_SWEEP_ACCOUNTS[@]} )); then
+    local portal_db accounts
+    portal_db="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["database"])' "$WORK/portal-report.json")"
+    [[ "$portal_db" =~ ^portal_e2e_[0-9a-f]{12}$ ]] || fail "house sweep requires a disposable Platform database"
+    accounts="$(IFS=,; echo "${HOUSE_SWEEP_ACCOUNTS[*]}")"
+    docker exec -i "$GP_PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U game_platform_admin -d "$portal_db" \
+      -v accounts="$accounts" < "$GAME_SOURCE/tools/qualification/node_boot/house_sweep_premium.sql"
+  fi
 }
 
 result=NODE_BOOT_FAIL
@@ -1397,8 +1411,13 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
   local index=0 account operation name requested_vocation failed=0 vocation="${NODE_BOOT_PROFILE^}"
   [[ "$NODE_BOOT_PROFILE" != explorer ]] || vocation=Knight
   for account in "${BOOTSTRAP_ACCOUNTS[@]}"; do
-    operation="${INTENT_OPERATIONS[$index]}"
-    name="${INTENT_NAMES[$index]}"
+    if (( index < ${#INTENT_OPERATIONS[@]} )); then
+      operation="${INTENT_OPERATIONS[$index]}"
+      name="${INTENT_NAMES[$index]}"
+    else
+      operation="${account/7c00/7c04}"
+      name="$(python3 -c 'import sys; n = int(sys.argv[1][-12:], 16); print("House Bidder " + "".join(chr(65 + n // d % 26) for d in (676, 26, 1)))' "$account")"
+    fi
     index=$((index + 1))
     requested_vocation="$vocation"
     [[ "$account" != "$LIGHT_ACCOUNT_ID" ]] || requested_vocation=Sorcerer
@@ -1487,6 +1506,9 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     local extra_accounts
     extra_accounts="$(IFS=,; echo "${EXTRA_WORLD_ACCOUNTS[*]}")"
     test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts")
+    if (( ${#HOUSE_SWEEP_ACCOUNTS[@]} )); then
+      test_env+=("NODE_BOOT_HOUSE_SWEEP_ACCOUNTS=$(IFS=,; echo "${HOUSE_SWEEP_ACCOUNTS[*]}")")
+    fi
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID" "NODE_BOOT_LIGHT_ACCOUNT_ID=$LIGHT_ACCOUNT_ID")
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 && ${STATUS[pvp_character_bootstrap]:-} == PASS ]]; then

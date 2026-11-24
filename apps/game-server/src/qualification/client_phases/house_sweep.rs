@@ -42,6 +42,7 @@ struct EngineHouse {
 struct House {
     identity: Key,
     town: Key,
+    kind: String,
     provenance: Option<Source>,
     doors: Vec<(u16, u16, i8)>,
     tiles: Vec<(u16, u16, i8)>,
@@ -423,12 +424,66 @@ fn first_rent(before: u64, after: u64, price: u64, rent: u64) -> TestResult {
     Ok(())
 }
 
+// The maximum accepted house-bid escrow in bid.rs and the guildhall bid port.
+const SEEDED_BANK_GOLD: i64 = 999_999_999_999;
+
+async fn seed_bidder(
+    clients: &SeamClients<'_>,
+    account: &str,
+    house: &House,
+) -> TestResult<[u8; 16]> {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let mut tx = database.begin().await?;
+    let character: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(character_id) FROM game_character_roots
+         WHERE account_id=$1::uuid AND world_id=encode($2,'hex')::uuid",
+    )
+    .bind(account)
+    .bind(clients.world.as_slice())
+    .fetch_one(&mut *tx)
+    .await?;
+
+    // These are fixture-only historical records. Restore triggers before any live command.
+    tx.execute("SET LOCAL session_replication_role = replica")
+        .await?;
+    let bank = sqlx::query(include_str!("house_sweep_fixture.sql"))
+        .bind(account)
+        .bind(clients.world.as_slice())
+        .bind(clients.channel.as_slice())
+        .bind(clients.scope_generation.to_string())
+        .bind(SEEDED_BANK_GOLD)
+        .execute(&mut *tx)
+        .await?;
+    if bank.rows_affected() != 1 {
+        return Err("house sweep bank fixture expected one opening balance".into());
+    }
+    if house.kind == "guildhall" {
+        let guild = sqlx::query(include_str!("house_sweep_guild.sql"))
+            .bind(account)
+            .bind(clients.world.as_slice())
+            .execute(&mut *tx)
+            .await?;
+        if guild.rows_affected() != 1 {
+            return Err("house sweep guild fixture expected one active guild leader".into());
+        }
+    }
+    tx.commit().await?;
+    let character = character
+        .try_into()
+        .map_err(|_| "invalid bidder Character id")?;
+    evidence(&format!(
+        "house_sweep preparation house={} mode=seeded bank_gold={SEEDED_BANK_GOLD} premium=platform_grant guild={}",
+        house.identity.key,
+        house.kind == "guildhall",
+    ));
+    Ok(character)
+}
+
 async fn sweep_house(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     house: &House,
     session: &mut Option<DevClientSession>,
-    prepared: &mut bool,
     rows: &mut Rows<'_>,
 ) {
     if session.is_none() {
@@ -480,20 +535,15 @@ async fn sweep_house(
             return;
         }
     };
-    if !*prepared {
-        let Some(unprepared) = session.take() else {
-            rows.emit(Err("bidder session absent".into()), "preparation");
+    let Some(unprepared) = session.take() else {
+        rows.emit(Err("bidder session absent".into()), "preparation");
+        return;
+    };
+    match provisioning::provision_fixture(unprepared, clients, 0, 100).await {
+        Ok(client) => *session = Some(client),
+        Err(error) => {
+            rows.emit(Err(error), "preparation");
             return;
-        };
-        match provisioning::provision_fixture(unprepared, clients, 0, 100).await {
-            Ok(client) => {
-                *session = Some(client);
-                *prepared = true;
-            }
-            Err(error) => {
-                rows.emit(Err(error), "preparation");
-                return;
-            }
         }
     }
     let Some(client) = session.as_mut() else {
@@ -503,6 +553,12 @@ async fn sweep_house(
     let bid_result = async {
         let balance = bank(client).await?;
         let maximum = auction.price.checked_add(1).ok_or("bid overflow")?;
+        if maximum
+            .checked_add(house.rent_gold)
+            .is_none_or(|escrow| escrow > balance)
+        {
+            return Err("seeded bank balance cannot cover the bid and first rent".into());
+        }
         bid(client, clients.world, house, maximum).await?;
         Ok::<_, Box<dyn std::error::Error>>(balance)
     }
@@ -576,9 +632,20 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
         houses.len()
     ));
     let mut tally = Tally::default();
-    let mut session = None;
-    let mut prepared = false;
-    for house in &houses[start..end] {
+    let account_list = required("NODE_BOOT_HOUSE_SWEEP_ACCOUNTS")?;
+    let accounts: Vec<_> = account_list.split(',').collect();
+    let unique: std::collections::BTreeSet<_> = accounts.iter().collect();
+    if accounts.len() != end - start
+        || accounts.len() != unique.len()
+        || accounts.iter().any(|account| {
+            crate::node::uuid_bytes(account).is_none()
+                || clients.accounts.iter().any(|existing| existing == account)
+        })
+    {
+        return Err("house sweep requires one distinct Platform Account per selected house".into());
+    }
+    let mut release_error = None;
+    for (house, account) in houses[start..end].iter().zip(accounts) {
         let key = house
             .identity
             .key
@@ -591,17 +658,24 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
             emitted: 0,
             lap: std::time::Instant::now(),
         };
-        if tokio::time::timeout(
-            Duration::from_secs(90),
-            sweep_house(
-                clients,
-                world,
-                house,
-                &mut session,
-                &mut prepared,
-                &mut rows,
-            ),
-        )
+        let mut session = None;
+        if tokio::time::timeout(Duration::from_secs(90), async {
+            let character = match seed_bidder(clients, account, house).await {
+                Ok(character) => character,
+                Err(error) => {
+                    rows.emit(Err(error), "preparation");
+                    return;
+                }
+            };
+            let accounts = [account.to_owned(), clients.accounts[1].clone()];
+            let characters = [character, clients.characters[1]];
+            let entry = SeamClients {
+                accounts: &accounts,
+                characters: &characters,
+                ..*clients
+            };
+            sweep_house(&entry, world, house, &mut session, &mut rows).await;
+        })
         .await
         .is_err()
         {
@@ -609,28 +683,28 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
                 Err("house entry exceeded its 90s budget".into()),
                 "deadline",
             );
-            session = None;
+        }
+        if let Some(mut client) = session {
+            let release = logout_retrying_busy(&mut client)
+                .await
+                .and_then(|(result, _, _, _)| {
+                    if matches!(
+                        result,
+                        Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+                    ) {
+                        Ok(())
+                    } else {
+                        Err("bidder logout refused".into())
+                    }
+                });
+            if let Err(error) = release {
+                release_error.get_or_insert(error);
+            }
         }
         if rows.emitted < STEPS.len() {
             rows.block_rest();
         }
     }
-    let release = if let Some(mut client) = session {
-        logout_retrying_busy(&mut client)
-            .await
-            .and_then(|(result, _, _, _)| {
-                if matches!(
-                    result,
-                    Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-                ) {
-                    Ok(())
-                } else {
-                    Err("bidder logout refused".into())
-                }
-            })
-    } else {
-        Ok(())
-    };
     evidence(&format!(
         "house_sweep summary entries={} total={} rows_pass={} rows_fail={} mode=seeded",
         end - start,
@@ -638,7 +712,9 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
         tally.pass,
         tally.fail
     ));
-    release?;
+    if let Some(error) = release_error {
+        return Err(error);
+    }
     if tally.fail > 0 {
         return Err(format!("house sweep has {} FAIL rows", tally.fail).into());
     }
