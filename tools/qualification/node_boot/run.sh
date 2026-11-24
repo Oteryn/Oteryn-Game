@@ -219,6 +219,7 @@ if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_B
   && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
   && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
   NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
+  printf 'NODE_BOOT_EVIDENCE nested_basic_complete=1\n'
 fi
 NODE_BOOT_LIBTEST=""
 WORLD_COMPILER=(cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler --)

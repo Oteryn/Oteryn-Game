@@ -30,7 +30,8 @@ select_work_parent() {
 
 summarize() {
   local log=$1 group=$2 seconds=${3:-0} status=${4:-0} result rows row
-  result=$(awk '/^NODE_BOOT_RESULT=(NODE_BOOT_[A-Z0-9_]+|BLOCKED)([[:space:]]|$)/ {
+  result=$(awk '/^NODE_BOOT_EVIDENCE nested_basic_complete=1$/ { result = "" }
+  /^NODE_BOOT_RESULT=(NODE_BOOT_[A-Z0-9_]+|BLOCKED)([[:space:]]|$)/ {
     sub(/^NODE_BOOT_RESULT=/, "", $1)
     result = $1
   } END { print result }' < "$log") || return 1

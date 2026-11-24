@@ -630,6 +630,20 @@ class CloudRunSummaryTests(unittest.TestCase):
                                     check=True, capture_output=True, text=True)
             self.assertEqual(result.stdout.strip(), str(work.resolve()))
 
+    def test_summary_rejects_an_interrupted_world_run_after_basic_pass(self):
+        with tempfile.TemporaryDirectory() as temp:
+            log = Path(temp, "run.log")
+            log.write_text("NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged\n"
+                           "NODE_BOOT_EVIDENCE nested_basic_complete=1\n"
+                           "::group::stage superseding_replacement\n")
+            command = ["bash", str(HERE / "cloud_run.sh"), "--summarize", str(log), "f4"]
+            result = subprocess.run(command, capture_output=True, text=True, check=True)
+            self.assertIn("result=NODE_BOOT_FAIL", result.stdout)
+            with log.open("a") as stream:
+                stream.write("NODE_BOOT_RESULT=NODE_BOOT_PASS mode=unprivileged\n")
+            result = subprocess.run(command, capture_output=True, text=True, check=True)
+            self.assertIn("result=NODE_BOOT_PASS", result.stdout)
+
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(
             ['bash', str(HERE / 'cloud_run.sh'), '--summarize',
