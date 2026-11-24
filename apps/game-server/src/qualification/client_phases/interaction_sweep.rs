@@ -299,15 +299,13 @@ enum MapAction {
 // quest_callbacks/execute.rs:1682 commits a local callback teleport through
 // the source-step owner. Keep callbacks with other authored effects on
 // their own path until those effects can also be checked.
-fn callback_teleport(
+fn has_additional_callback_effects(
     callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
-) -> Option<TilePos> {
-    let destination = callback.teleport?;
-    if matches!(
+) -> bool {
+    matches!(
         callback.key.as_str(),
         "oteryn:quest-callback/dryad-garden-enter" | "oteryn:quest-callback/dryad-garden-leave"
-    ) || callback.lever.is_some()
-        || callback.facing.is_some()
+    ) || callback.facing.is_some()
         || callback.disguise.is_some()
         || callback.native_rule.is_some()
         || !callback.passages.is_empty()
@@ -323,7 +321,13 @@ fn callback_teleport(
         || callback.success_message.is_some()
         || callback.item_reward.is_some()
         || !callback.achievements.is_empty()
-    {
+}
+
+fn callback_teleport(
+    callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
+) -> Option<TilePos> {
+    let destination = callback.teleport?;
+    if callback.lever.is_some() || has_additional_callback_effects(callback) {
         return None;
     }
     Some(TilePos {
@@ -469,16 +473,8 @@ fn map_entries(
                         Some(poses) => MapAction::Lever {
                             poses,
                             reversible: callback.reversible,
-                            has_secondary_effects: !callback.passages.is_empty()
-                                || callback.teleport.is_some()
-                                || callback.item_reward.is_some()
-                                || callback.success_message.is_some()
-                                || callback.remote_teleport.is_some()
-                                || !callback.effects.is_empty()
-                                || callback.has_state_writes()
-                                || callback.experience.is_some()
-                                || callback.completes
-                                || !callback.achievements.is_empty(),
+                            has_secondary_effects: callback.teleport.is_some()
+                                || has_additional_callback_effects(callback),
                         },
                         None => callback_teleport(callback)
                             .map_or(MapAction::Callback, MapAction::CallbackTeleport),
