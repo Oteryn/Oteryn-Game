@@ -737,7 +737,16 @@ async fn approach_for_paralyze(
         };
         let landing =
             destination(world, from, direction).ok_or("Paralyze route lost its landing")?;
-        let outcome = peer.step_retrying(direction).await?;
+        let mut outcome = peer.step_retrying(direction).await?;
+        for attempt in 1..=6 {
+            let unchanged = tile(peer.world_spatial().actor_position)? == from;
+            let Some(delay) = town_route_retry_delay(outcome.disposition, unchanged, attempt)
+            else {
+                break;
+            };
+            tokio::time::sleep(delay).await;
+            outcome = peer.step_retrying(direction).await?;
+        }
         let after = tile(peer.world_spatial().actor_position)?;
         match (outcome.disposition, after) {
             (StepDisposition::Blocked, at) if at == from => {
