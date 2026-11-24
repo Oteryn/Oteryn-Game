@@ -685,6 +685,23 @@ fn charm_balance(view: &oteryn_protocol_oteryn::charm::CharmView, minor: bool) -
     }
 }
 
+fn charm_unlock_balances_match(
+    before: &oteryn_protocol_oteryn::charm::CharmView,
+    after: &oteryn_protocol_oteryn::charm::CharmView,
+    minor: bool,
+    cost: u32,
+) -> bool {
+    use crate::domain::charm::MAJOR_STAGE_ECHOES;
+
+    let other_after = if minor {
+        Some(u64::from(charm_balance(before, false)))
+    } else {
+        u64::from(charm_balance(before, true)).checked_add(MAJOR_STAGE_ECHOES[0])
+    };
+    charm_balance(before, minor).checked_sub(cost) == Some(charm_balance(after, minor))
+        && other_after == Some(u64::from(charm_balance(after, !minor)))
+}
+
 fn charm_state(
     reply: &oteryn_protocol_oteryn::charm_progression::CharmProgressionReply,
     id: NonZeroU32,
@@ -798,8 +815,7 @@ async fn charm(
     .await?;
     if unlocked.outcome != Outcome::Unlock(CharmUnlockDisposition::Unlocked)
         || charm_state(&unlocked, id)?.unlocked_stage != 1
-        || balance.checked_sub(cost) != Some(charm_balance(&unlocked.charms, minor))
-        || charm_balance(&before.charms, !minor) != charm_balance(&unlocked.charms, !minor)
+        || !charm_unlock_balances_match(&before.charms, &unlocked.charms, minor, cost)
     {
         return Err(format!("charm-unlock-mismatch-{:?}", unlocked.outcome).into());
     }
@@ -1539,6 +1555,42 @@ mod tests {
             );
         }
         Ok(())
+    }
+
+    #[test]
+    fn progress_sweep_charm_unlock_checks_both_derived_currencies() {
+        use oteryn_protocol_oteryn::charm::CharmView;
+
+        let view = |points, echoes| CharmView {
+            charms: Vec::new(),
+            charm_points_available: points,
+            minor_charm_echoes_available: echoes,
+            assignment_slot_limit: None,
+        };
+        assert!(charm_unlock_balances_match(
+            &view(300, 100),
+            &view(60, 150),
+            false,
+            240
+        ));
+        assert!(!charm_unlock_balances_match(
+            &view(300, 100),
+            &view(60, 100),
+            false,
+            240
+        ));
+        assert!(charm_unlock_balances_match(
+            &view(300, 100),
+            &view(300, 0),
+            true,
+            100
+        ));
+        assert!(!charm_unlock_balances_match(
+            &view(300, 100),
+            &view(299, 0),
+            true,
+            100
+        ));
     }
 
     #[test]
