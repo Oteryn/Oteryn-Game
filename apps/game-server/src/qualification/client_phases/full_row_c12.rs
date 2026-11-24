@@ -26,6 +26,7 @@ const PREPARATION: character_prep::Seeded = character_prep::Seeded {
     reason: "C12 tests spell augment behavior after obtaining the weapon and qualifying for the spell.",
 };
 const ITEM_ID: u32 = 50_271;
+const PREREQUISITES: &str = "level-20-monk,premium,purchase-gold,mana-potions";
 const MANA_POTION: u32 = 268;
 const CAST_MANA: u32 = 50;
 const SPELL_WORDS: &str = "exori nia";
@@ -92,7 +93,7 @@ impl Row {
             }
         };
         evidence(&format!(
-            "e2e_all scenario=C12.full status={} seconds={:.3}{detail}",
+            "e2e_all scenario=C12.full status={} seconds={:.3} mode=seeded prerequisites={PREREQUISITES}{detail}",
             if complete { "PASS" } else { "FAIL" },
             self.started.elapsed().as_secs_f64()
         ));
@@ -111,7 +112,7 @@ fn token(value: &str) -> String {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("C12", "level-20-monk,premium,purchase-gold,mana-potions", "exori nia augment attribution");
+    character_prep::declare_seeded("C12", PREREQUISITES, "exori nia augment attribution");
     let mut row = Row::new();
     let result = match verdict::indexed_timeout(Duration::from_secs(480), verdict::observe(journey(&mut row, clients))).await {
         Ok(result) => result,
@@ -582,6 +583,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if carried_count(&client, definition) != 0 || equipped_right(&client, definition) {
         return Err("item 50271 must first enter the dedicated Monk's backpack through the purchase".into());
     }
+    character_prep::grant_premium(&client).await?;
     character_prep::grant_item(&client, MANA_POTION, 12).await?;
     character_prep::grant_item(&client, 3043, 2).await?;
     character_prep::reload(&mut client, clients).await?;
@@ -592,7 +594,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if purchased != definition {
         return Err("live purchase returned the wrong weapon definition".into());
     }
-    character_prep::grant_premium(&client).await?;
     let spell_index = spell(&mut client)?;
     let augment = content_augment()?;
     let from = tile(client.world_spatial().actor_position)?;
