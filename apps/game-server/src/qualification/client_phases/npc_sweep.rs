@@ -1,5 +1,5 @@
 //! Real node NPC content sweep. Select explicitly with NODE_BOOT_E2E_ONLY=npc_sweep.
-//! The batch is a slice of the key-sorted NPC census, including unplaced definitions.
+//! Batch over key-sorted live placements and classify unplaced definitions separately.
 //! Placement owner: crates/gameplay/entities/src/carrier/npc_actor.rs:346.
 //! Reply oracles: crates/gameplay/content/src/content/npc_catalogue/replies.rs:56 and
 //! crates/gameplay/npc/src/quest_greetings.rs:142.
@@ -159,6 +159,14 @@ struct Route {
     key: String,
     destination: Cell,
     price: u64,
+    #[serde(default)]
+    required_quest_tracks: Vec<QuestRequirement>,
+}
+
+#[derive(Deserialize)]
+struct QuestRequirement {
+    track: String,
+    minimum: i64,
 }
 
 #[derive(Deserialize)]
@@ -391,6 +399,74 @@ fn dialogue_steps<'a>(
     }
 }
 
+// Derived from the <npc name=...> elements in the pinned Crystal spawn XMLs.
+// The fixture stores normalized identities and source locations only.
+const CRYSTAL_PLACEMENTS: &str = include_str!("npc_sweep_crystal_placements.tsv");
+
+fn donor_slug(name: &str) -> String {
+    name.split(|c: char| !c.is_ascii_alphanumeric())
+        .filter(|word| !word.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>()
+        .join("_")
+}
+
+fn placement_census(census: &Census) -> TestResult<Tally> {
+    let mut donor = BTreeMap::new();
+    for line in CRYSTAL_PLACEMENTS
+        .lines()
+        .filter(|line| !line.starts_with('#'))
+    {
+        let (name, source) = line
+            .split_once('\t')
+            .ok_or("invalid Crystal placement fixture")?;
+        if donor.insert(name, source).is_some() {
+            return Err("duplicate Crystal placement identity".into());
+        }
+    }
+    let mut tally = Tally::default();
+    for (key, npc) in &census.npcs {
+        if census.placements.contains_key(key) {
+            continue;
+        }
+        let short = key.trim_start_matches("oteryn:npc.");
+        let name = npc_name(npc);
+        let source = donor
+            .get(short)
+            .or_else(|| donor.get(donor_slug(&name).as_str()));
+        let (status, reason) = match source {
+            Some(source) => {
+                tally.fail += 1;
+                (
+                    "FAIL",
+                    format!(
+                        "donor map placement missing source=Crystal@201189f8/{source} cause=donor_placement_missing"
+                    ),
+                )
+            }
+            None => {
+                tally.pass += 1;
+                (
+                    "PASS",
+                    "not map-placed in donor (spawned by script/quest/event)".into(),
+                )
+            }
+        };
+        evidence(&format!(
+            "e2e_all scenario=NS.{short}.placement status={status} seconds=0.000 evidence={reason}"
+        ));
+    }
+    evidence(&format!(
+        "npc_sweep placement_census definitions={} placed_npcs={} placed_entries={} donor_placed_but_missing={} not_placed_in_donor={} donor=Crystal@201189f8",
+        census.npcs.len(),
+        census.placements.len(),
+        census.placements.values().map(Vec::len).sum::<usize>(),
+        tally.fail,
+        tally.pass,
+    ));
+    Ok(tally)
+}
+
 pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     if !std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty()) {
         return Ok(());
@@ -401,11 +477,18 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
         Err(error) => return Err(error.into()),
     };
     let census = Census::load(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))?;
-    let total = census.npcs.len();
+    let live = census.placements.iter().flat_map(|(key, placements)| {
+        placements
+            .iter()
+            .enumerate()
+            .map(move |(index, placement)| (key, index, placement))
+    });
+    let total = live.clone().count();
     if start >= total {
         return Err(format!("{BATCH_VARIABLE} start {start} is beyond the {total} NPCs").into());
     }
     let selected = len.min(total - start);
+    let placement_tally = placement_census(&census)?;
     evidence(&format!(
         "npc_sweep census total={total} placements={} dialogues={} services={} offers={} routes={} start={start} selected={selected} mode=seeded",
         census.placements.values().map(Vec::len).sum::<usize>(),
@@ -431,32 +514,22 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
     };
     let mut tally = Tally::default();
     let started = std::time::Instant::now();
-    for (key, npc) in census.npcs.iter().skip(start).take(selected) {
+    for (key, index, placement) in live.skip(start).take(selected) {
         verdict::Harness::global().progress("npc-sweep-entry");
-        let short = token(key.trim_start_matches("oteryn:npc."));
+        let npc = census
+            .npcs
+            .get(key)
+            .ok_or("placement NPC definition missing")?;
+        let short = format!("{}.p{index}", token(key.trim_start_matches("oteryn:npc.")));
         let mut rows = Rows {
             npc: &short,
             lap: std::time::Instant::now(),
             counts: Tally::default(),
         };
         let steps = actions(&census, npc);
-        if let Some(placements) = census.placements.get(key) {
-            for (index, placement) in placements.iter().enumerate() {
-                let prefix = format!("p{index}");
-                fixture
-                    .sweep_placement(&mut rows, npc, placement, &prefix, &steps)
-                    .await;
-            }
-        } else {
-            rows.emit(
-                "placement",
-                "missing_placement",
-                Err("NPC has no authored placement".into()),
-            );
-            for (step, _) in &steps {
-                rows.emit(step, "blocked", Err("blocked-by-placement".into()));
-            }
-        }
+        fixture
+            .sweep_placement(&mut rows, npc, placement, &steps)
+            .await;
         rows.emit(
             "full",
             "entry_failed",
@@ -475,8 +548,12 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
         tally.fail,
         started.elapsed().as_secs_f64(),
     ));
-    if tally.fail > 0 {
-        return Err(format!("NPC sweep: {} FAIL rows (see NS.*)", tally.fail).into());
+    if tally.fail > 0 || placement_tally.fail > 0 {
+        return Err(format!(
+            "NPC sweep: {} live FAIL rows, {} placement census FAIL rows",
+            tally.fail, placement_tally.fail
+        )
+        .into());
     }
     Ok(())
 }
@@ -575,7 +652,13 @@ impl Fixture<'_> {
 
     /// Edit only this sweep's released fixture. Position retains the owner-written frame
     /// digests and generation. Item seeding follows item_look_fixtures.rs:592.
-    async fn seed(&self, at: TilePos, sell: Option<&Offer>, fund: bool) -> TestResult {
+    async fn seed(
+        &self,
+        at: TilePos,
+        sell: Option<&Offer>,
+        route: Option<&Route>,
+        required_gold: u64,
+    ) -> TestResult {
         let mut database = sqlx::PgConnection::connect(self.clients.url).await?;
         let mut tx = sqlx::Connection::begin(&mut database).await?;
         let character = self.clients.characters[CHARACTER].as_slice();
@@ -608,7 +691,36 @@ impl Fixture<'_> {
         if changed.rows_affected() != 1 {
             return Err("fixture last position missing after owner logout".into());
         }
-        if sell.is_some() || fund {
+        let carried_gold: i64 = sqlx::query_scalar(
+            "SELECT COALESCE(sum(i.quantity * CASE i.definition_production_key
+                WHEN 'oteryn:item.tibia.i3031' THEN 1 WHEN 'oteryn:item.tibia.i3035' THEN 100
+                WHEN 'oteryn:item.tibia.i3043' THEN 10000 ELSE 0 END),0)::bigint
+             FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id)
+             WHERE e.character_id=encode($1,'hex')::uuid AND e.world_id=encode($2,'hex')::uuid AND i.lifecycle=1",
+        ).bind(character).bind(world).fetch_one(&mut *tx).await?;
+        let crystal = required_gold
+            .saturating_sub(u64::try_from(carried_gold)?)
+            .div_ceil(10_000);
+        if let Some(route) = route {
+            for requirement in &route.required_quest_tracks {
+                let quest = requirement
+                    .track
+                    .strip_prefix("oteryn:quest-progress/")
+                    .and_then(|track| track.rsplit_once('/'))
+                    .map(|(quest, _)| format!("oteryn:{quest}"))
+                    .ok_or("travel prerequisite has no quest owner")?;
+                sqlx::query("INSERT INTO game_character_quest_tracks
+                    (character_id,track_key,quest_key,value,committed_character_revision)
+                    SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots
+                    WHERE character_id=encode($1,'hex')::uuid
+                    ON CONFLICT(character_id,track_key) DO UPDATE
+                    SET value=EXCLUDED.value,committed_character_revision=EXCLUDED.committed_character_revision
+                    WHERE game_character_quest_tracks.quest_key=EXCLUDED.quest_key")
+                    .bind(character).bind(&requirement.track).bind(quest).bind(requirement.minimum)
+                    .execute(&mut *tx).await?;
+            }
+        }
+        if sell.is_some() || crystal != 0 {
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *tx)
                 .await?;
@@ -619,8 +731,16 @@ impl Fixture<'_> {
                     offer.count,
                 )
             });
-            let gold = fund.then_some(("oteryn:item.tibia.i3043", "definition-r1", 100));
-            for (key, revision, quantity) in gold.into_iter().chain(stock) {
+            let gold = (0..crystal.div_ceil(100)).map(|stack| {
+                (
+                    "oteryn:item.tibia.i3043",
+                    "definition-r1",
+                    crystal.saturating_sub(stack * 100).min(100),
+                )
+            });
+            for (key, revision, quantity) in
+                gold.chain(stock.map(|(key, revision, count)| (key, revision, u64::from(count))))
+            {
                 let inserted = sqlx::query("WITH minted AS (
                     INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
                         definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
@@ -636,7 +756,7 @@ impl Fixture<'_> {
                         WHERE e.parent_item_instance_id=s.item_instance_id),0)+1,uuidv7()
                 FROM game_item_container_slots s CROSS JOIN minted
                 WHERE s.character_id=encode($1,'hex')::uuid AND s.world_id=encode($2,'hex')::uuid")
-                    .bind(character).bind(world).bind(key).bind(revision).bind(i64::from(quantity))
+                    .bind(character).bind(world).bind(key).bind(revision).bind(i64::try_from(quantity)?)
                     .execute(&mut *tx).await?;
                 if inserted.rows_affected() != 1 {
                     return Err("fixture backpack missing after provisioning".into());
@@ -651,6 +771,8 @@ impl Fixture<'_> {
         &mut self,
         at: TilePos,
         sell: Option<&Offer>,
+        route: Option<&Route>,
+        required_gold: u64,
     ) -> TestResult<&mut DevClientSession> {
         let fund = !self.classed;
         if fund {
@@ -660,7 +782,7 @@ impl Fixture<'_> {
             );
         }
         self.release().await?;
-        self.seed(at, sell, fund).await?;
+        self.seed(at, sell, route, required_gold).await?;
         self.classed = true;
         let client = connect_character(self.clients, 0x72, CHARACTER).await?;
         let observed = tile(client.world_spatial().actor_position)?;
@@ -678,65 +800,56 @@ impl Fixture<'_> {
         rows: &mut Rows<'_>,
         npc: &Definition,
         placement: &Placement,
-        prefix: &str,
         steps: &[(String, Action<'_>)],
     ) {
         let name = npc_name(npc);
         let setup = within_step(async {
             let there = placement.cell.native()?;
             let at = nearby(self.world, there)?;
-            let client = self.enter(at, None).await?;
+            let client = self.enter(at, None, None, 100).await?;
             let actor = visible_npc(client, there, &name).await?;
             Ok((at, there, actor))
         })
         .await;
         let (at, there, actor) = match setup {
             Ok(value) => {
-                rows.emit(&format!("{prefix}.placement"), "", Ok(()));
+                rows.emit("placement", "", Ok(()));
                 value
             }
             Err(error) => {
-                rows.emit(
-                    &format!("{prefix}.placement"),
-                    "placement_or_fixture",
-                    Err(error),
-                );
+                rows.emit("placement", "placement_or_fixture", Err(error));
                 for (step, _) in steps {
-                    rows.emit(
-                        &format!("{prefix}.{step}"),
-                        "blocked",
-                        Err("blocked-by-placement".into()),
-                    );
+                    rows.emit(step, "blocked", Err("blocked-by-placement".into()));
                 }
-                self.finish_placement(rows, prefix).await;
+                self.finish_placement(rows).await;
                 return;
             }
         };
         let mut failures: Vec<&str> = Vec::new();
         for (step, action) in steps {
             verdict::Harness::global().progress("npc-sweep-step");
-            let row = format!("{prefix}.{step}");
+            let row = step;
             if let Some(root) = failures.iter().find(|root| {
                 **root == "greet"
                     || step
                         .strip_prefix(**root)
                         .is_some_and(|suffix| suffix.starts_with('.'))
             }) {
-                rows.emit(&row, "blocked", Err(format!("blocked-by-{root}").into()));
+                rows.emit(row, "blocked", Err(format!("blocked-by-{root}").into()));
                 continue;
             }
             let result = within_step(self.step(at, there, actor, &name, action)).await;
-            if !rows.emit(&row, action.cause(), result) {
+            if !rows.emit(row, action.cause(), result) {
                 failures.push(step);
             }
         }
-        self.finish_placement(rows, prefix).await;
+        self.finish_placement(rows).await;
     }
 
-    async fn finish_placement(&mut self, rows: &mut Rows<'_>, prefix: &str) {
+    async fn finish_placement(&mut self, rows: &mut Rows<'_>) {
         if self.client.is_some() {
             let released = within_step(self.release()).await;
-            rows.emit(&format!("{prefix}.release"), "fixture_release", released);
+            rows.emit("release", "fixture_release", released);
         }
     }
 
@@ -799,19 +912,27 @@ impl Fixture<'_> {
             }
             Action::Offer(offer, occurrence) => {
                 let sell = (offer.direction.side() == NpcTradeSide::Sell).then_some(*offer);
-                let client = self.enter(at, sell).await?;
+                let client = self
+                    .enter(
+                        at,
+                        sell,
+                        None,
+                        if sell.is_none() { offer.unit_price } else { 0 },
+                    )
+                    .await?;
                 let actor = visible_npc(client, there, name).await?;
                 talk(client, actor, "hi").await?;
                 trade(client, actor, offer, *occurrence).await
             }
             Action::Route(route) => {
-                let client = self.enter(at, None).await?;
+                let client = self.enter(at, None, Some(route), route.price).await?;
                 let actor = visible_npc(client, there, name).await?;
                 talk(client, actor, "hi").await?;
                 travel(client, actor, route).await
             }
             Action::Service(service) => {
-                let client = self.enter(at, None).await?;
+                let fee = service_price(&service.identity.key).map_or(100, |(_, fee)| fee.max(100));
+                let client = self.enter(at, None, None, fee).await?;
                 let actor = visible_npc(client, there, name).await?;
                 talk(client, actor, "hi").await?;
                 perform_service(client, actor, clients, service).await

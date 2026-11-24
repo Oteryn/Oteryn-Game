@@ -159,6 +159,34 @@ case "$NODE_BOOT_WORLD_PROFILE" in
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;
 esac
+# The NPC sweep uses authored placement cells in addition to the normal profile.
+# Retain the town entry and existing qualification facts in the same bundle.
+if [[ "$NODE_BOOT_WORLD" == 1 && ",${NODE_BOOT_E2E_ONLY:-}," == *,npc_sweep,* ]]; then
+  WORLD_REGIONS="$(python3 - "$GAME_SOURCE" "$WORLD_REGIONS" "${OTERYN_E2E_NPC_SWEEP_BATCH:-0:3}" <<'PY_NPC_REGIONS'
+import json
+import re
+import sys
+from pathlib import Path
+
+root, baseline, batch = sys.argv[1:]
+if not re.fullmatch(r"[0-9]+:[0-9]+", batch):
+    raise SystemExit("invalid NPC sweep batch")
+start, length = map(int, batch.split(":"))
+root = Path(root)
+index = json.loads((root / "content/world/npc-placements/index.json").read_text())
+placements = sorted(
+    (row["declaration"] for shard in index["shards"]
+     for row in json.loads((root / shard).read_text())["records"]),
+    key=lambda row: (row["npc"], row["identity"]["key"]),
+)
+regions = {tuple(map(int, region.split(","))) for region in baseline.split(";")}
+for row in placements[start:start + length]:
+    cell = row["cell"]
+    regions.add((cell["x"] // 256, cell["y"] // 256))
+print(";".join(f"{x},{y}" for x, y in sorted(regions)))
+PY_NPC_REGIONS
+)"
+fi
 readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
 # A kept or reused stack is one topology, so it never runs the separate basic pass.
 # The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
