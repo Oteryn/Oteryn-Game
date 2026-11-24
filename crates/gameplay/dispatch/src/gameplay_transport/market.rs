@@ -1,8 +1,9 @@
-//! Depot-admitted MARKET_V1. No client Account, World or custody proof is accepted.
+//! MARKET_V1 with depot-admitted trading and location-independent price statistics.
 use super::ComposedFreshAdmission;
 use super::connection::AdmittedSession;
 use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::market::{self as wire, MarketReply, MarketRow};
+use oteryn_protocol_oteryn::market_details::Query;
 use std::num::NonZeroU32;
 #[path = "market/details.rs"]
 mod details;
@@ -83,16 +84,16 @@ pub(super) async fn execute(
         wire::MarketRequest {
             action: if matches!(
                 query,
-                oteryn_protocol_oteryn::market_details::Query::Statistics { .. }
-                    | oteryn_protocol_oteryn::market_details::Query::Book { .. }
+                Query::Statistics { .. }
+                    | Query::Book { .. }
             ) {
                 2
             } else {
                 1
             },
             definition: match query {
-                oteryn_protocol_oteryn::market_details::Query::Statistics { definition }
-                | oteryn_protocol_oteryn::market_details::Query::Book { definition, .. } => {
+                Query::Statistics { definition }
+                | Query::Book { definition, .. } => {
                     *definition
                 }
                 _ => 0,
@@ -126,6 +127,7 @@ pub(super) async fn execute(
     {
         return refusal(9);
     }
+    let statistics = matches!(query, Some(Query::Statistics { .. }));
     let actor = admitted.runtime_actor?;
     let _permit = owner.spell_lane_permit().await?;
     let (town, mut definition, native) = {
@@ -139,17 +141,21 @@ pub(super) async fn execute(
         ) else {
             return refusal(9);
         };
-        let town = super::bundle_map_position(&mut runtime, owner.movement_cells(), actor)
-            .as_ref()
-            .and_then(super::depot::locker);
+        let town = if statistics {
+            None
+        } else {
+            super::bundle_map_position(&mut runtime, owner.movement_cells(), actor)
+                .as_ref()
+                .and_then(super::depot::locker)
+        };
         let index = native.item_index()?;
         let definition = NonZeroU32::new(request.definition)
             .and_then(|r| super::item_look::typed_definition(index, r));
         (town, definition, native)
     };
-    let Some(town) = town else {
+    if !statistics && town.is_none() {
         return refusal(11);
-    };
+    }
     if matches!(request.action, 2 | 5 | 6)
         && !definition
             .as_ref()
@@ -157,9 +163,12 @@ pub(super) async fn execute(
     {
         return refusal(14);
     }
-    if let Some(query) = query.clone() {
+    if let Some(query) = query {
         return details::project(owner, fence, native, town, query, definition).await;
     }
+    let Some(town) = town else {
+        return refusal(11);
+    };
     if matches!(request.action, 5 | 6)
         && !owner
             .session_premium_gate(admitted.game_session_id)

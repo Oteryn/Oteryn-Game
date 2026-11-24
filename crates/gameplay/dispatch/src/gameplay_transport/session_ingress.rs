@@ -4,6 +4,7 @@
 //! is never re-executed here: without terminal truth that session cannot resume.
 use super::capabilities::SelectedCapabilities;
 use super::connection::AdmittedSession;
+use super::item_look::LookWindow;
 use crate::foundation::{
     CommandId, CommandIngress, CommandSemanticIdentity, DuplicateDisposition,
     FoundationProtocolError, GameSessionId, IngressDecision, NormalizedSemanticIntentIdentity,
@@ -31,6 +32,7 @@ mod native_tests;
 #[derive(Default)]
 struct SessionIngress {
     ingress: CommandIngress,
+    market_statistics: Option<LookWindow>,
     retained: Option<Vec<u8>>,
     result_sequence_floor: u64,
     active: bool,
@@ -436,6 +438,17 @@ impl SessionCommandStream {
             next,
             selected: admitted.continuity.selected_capabilities,
         })
+    }
+
+    /// The owner retains this window with the command stream across socket loss.
+    pub(super) fn admit_market_statistics(&self, now: tokio::time::Instant) -> Option<bool> {
+        let mut state = self.state.as_ref()?.lock().ok()?;
+        Some(
+            state
+                .market_statistics
+                .get_or_insert(LookWindow::EMPTY)
+                .admit(now),
+        )
     }
 
     pub(super) const fn next_command_id(&self) -> u64 {
