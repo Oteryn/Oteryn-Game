@@ -734,36 +734,156 @@ fn movement_landing(world: &BundleWorld, placement: TilePos, action: MapAction) 
     })
 }
 
+#[derive(Clone, Copy)]
+enum RouteStep {
+    Walk(StepDirection),
+    Use {
+        placement: Placement,
+        action: MapAction,
+        landing: TilePos,
+    },
+}
+
+/// Cache one exhausted reachability search over the immutable bundle. If a later
+/// origin was reached by that search, everything it can reach is in the same
+/// set, even when floor changes and teleports make step edges one-way.
+struct SweepRoutes<'a> {
+    world: &'a BundleWorld,
+    exhausted: std::cell::RefCell<std::collections::HashSet<TilePos>>,
+    connections: BTreeMap<TilePos, Vec<RouteStep>>,
+}
+
+impl SweepRoutes<'_> {
+    fn find(
+        &self,
+        from: TilePos,
+        neighbors: impl Iterator<Item = TilePos>,
+    ) -> TestResult<(TilePos, Vec<RouteStep>)> {
+        use std::collections::{HashMap, hash_map::Entry};
+        let goals: std::collections::HashSet<_> = neighbors.collect();
+        let exhausted = self.exhausted.borrow();
+        if exhausted.contains(&from) && goals.is_disjoint(&exhausted) {
+            return Err(format!(
+                "no-route: no approach in the {} reachable cells",
+                exhausted.len()
+            )
+            .into());
+        }
+        drop(exhausted);
+
+        let mut queue = VecDeque::from([from]);
+        let mut parents = HashMap::from([(from, None)]);
+        while let Some(at) = queue.pop_front() {
+            if goals.contains(&at) {
+                let mut cursor = at;
+                let mut path = Vec::new();
+                while let Some(Some((previous, direction))) = parents.get(&cursor) {
+                    path.push(*direction);
+                    cursor = *previous;
+                }
+                path.reverse();
+                return Ok((at, path));
+            }
+            for direction in [
+                StepDirection::North,
+                StepDirection::East,
+                StepDirection::South,
+                StepDirection::West,
+                StepDirection::NorthEast,
+                StepDirection::SouthEast,
+                StepDirection::SouthWest,
+                StepDirection::NorthWest,
+            ] {
+                if let Some(next) = destination(self.world, at, direction)
+                    && let Entry::Vacant(entry) = parents.entry(next)
+                {
+                    entry.insert(Some((at, RouteStep::Walk(direction))));
+                    queue.push_back(next);
+                }
+            }
+            for &step in self.connections.get(&at).into_iter().flatten() {
+                if let RouteStep::Use { landing, .. } = step
+                    && let Entry::Vacant(entry) = parents.entry(landing)
+                {
+                    entry.insert(Some((at, step)));
+                    queue.push_back(landing);
+                }
+            }
+        }
+        let count = parents.len();
+        *self.exhausted.borrow_mut() = parents.into_keys().collect();
+        Err(format!("no-route: exhausted {count} reachable cells").into())
+    }
+    async fn follow(&self, client: &mut DevClientSession, path: &[RouteStep]) -> TestResult {
+        let mut walking = Vec::new();
+        for &step in path {
+            match step {
+                RouteStep::Walk(direction) => walking.push(direction),
+                RouteStep::Use {
+                    placement,
+                    action,
+                    landing,
+                } => {
+                    walk(client, self.world, &walking).await?;
+                    walking.clear();
+                    let revision = map_face(client, placement).map_or(0, |(_, revision)| revision);
+                    use_map_action(client, self.world, placement, action, None, revision)
+                        .await
+                        .map_err(|error| format!("route-transit-refused: {error}"))?;
+                    if tile(client.world_spatial().actor_position)? != landing {
+                        return Err(
+                            "route-transit-mismatch: server landed outside the planned approach"
+                                .into(),
+                        );
+                    }
+                }
+            }
+        }
+        walk(client, self.world, &walking).await
+    }
+}
+
+fn approaches(target: TilePos, cardinal: bool) -> impl Iterator<Item = TilePos> {
+    (-1_i16..=1).flat_map(move |dy| {
+        (-1_i16..=1).filter_map(move |dx| {
+            let distance = dx.abs() + dy.abs();
+            if distance == 0 || (cardinal && distance != 1) {
+                return None;
+            }
+            Some(TilePos {
+                x: target.x.checked_add_signed(dx)?,
+                y: target.y.checked_add_signed(dy)?,
+                ..target
+            })
+        })
+    })
+}
+
 async fn approach_action(
     client: &mut DevClientSession,
-    world: &BundleWorld,
+    routes: &SweepRoutes<'_>,
     target: TilePos,
     action: MapAction,
 ) -> TestResult {
-    if !matches!(action, MapAction::Teleport(_)) {
-        return approach(client, world, target).await;
+    let cardinal = matches!(action, MapAction::Teleport(_));
+    let start = tile(client.world_spatial().actor_position)?;
+    let (expected, path) = routes.find(start, approaches(target, cardinal))?;
+    routes.follow(client, &path).await?;
+    if tile(client.world_spatial().actor_position)? != expected {
+        return Err("wrong-position: client did not arrive at the selected approach".into());
     }
-    let from = tile(client.world_spatial().actor_position)?;
-    let path = find_route(
-        from,
-        |at| {
-            at.floor == target.floor
-                && u32::from(at.x.abs_diff(target.x)) + u32::from(at.y.abs_diff(target.y)) == 1
-        },
-        |at, direction| destination(world, at, direction),
-    )
-    .map_err(|visited| format!("no-route: teleport approach visited {visited} tiles"))?;
-    walk(client, world, &path).await
+    Ok(())
 }
 
 async fn map_action(
     slot: &mut Option<DevClientSession>,
     clients: &SeamClients<'_>,
     rows: &mut Rows<'_>,
-    world: &BundleWorld,
+    routes: &SweepRoutes<'_>,
     placement: Placement,
     action: MapAction,
 ) -> TestResult {
+    let world = routes.world;
     let tool_id = match action {
         MapAction::Rope => Some(3003),
         MapAction::Terrain { tool, .. } => Some(tool),
@@ -793,7 +913,7 @@ async fn map_action(
         );
     }
     let client = session(slot, clients).await?;
-    approach_action(client, world, placement.at, action).await?;
+    approach_action(client, routes, placement.at, action).await?;
     rows.pass("adjacent-to-authored-action");
     let tool = has_tool(client);
     if reference.is_some() && tool.is_none() {
@@ -819,7 +939,7 @@ async fn map_action(
             .await?;
             rows.pass("same-door-revised-with-changed-appearance");
             // Doors can step the user through; reacquire the reachable pose before toggling.
-            approach_action(client, world, placement.at, action).await?;
+            approach_action(client, routes, placement.at, action).await?;
             use_map_action(client, world, placement, action, None, next).await?;
             wait_face(client, placement, |(face, latest)| {
                 face == appearance && latest > next
@@ -872,7 +992,7 @@ async fn map_action(
             .await?;
             if has_secondary_effects {
                 if reversible {
-                    approach(client, world, placement.at).await?;
+                    approach(client, routes, placement.at).await?;
                     use_map_action(client, world, placement, action, None, next).await?;
                     wait_face(client, placement, |(face, latest)| {
                         face == appearance && latest > next
@@ -888,7 +1008,7 @@ async fn map_action(
                         .into(),
                 );
             }
-            approach(client, world, placement.at).await?;
+            approach(client, routes, placement.at).await?;
             use_map_action(client, world, placement, action, None, next).await?;
             wait_face(client, placement, |(face, latest)| {
                 face == appearance && latest > next
@@ -911,7 +1031,7 @@ async fn map_action(
                 .into());
             }
             rows.pass("exact-authored-movement-landing");
-            approach_action(client, world, placement.at, action).await?;
+            approach_action(client, routes, placement.at, action).await?;
             use_map_action(client, world, placement, action, tool, revision).await?;
             if tile(client.world_spatial().actor_position)? != expected {
                 return Err("movement-reset-mismatch: second activation changed landing".into());
@@ -928,21 +1048,10 @@ fn adjacent(a: TilePos, b: TilePos) -> bool {
 
 async fn approach(
     client: &mut DevClientSession,
-    world: &BundleWorld,
+    routes: &SweepRoutes<'_>,
     target: TilePos,
 ) -> TestResult {
-    let start = tile(client.world_spatial().actor_position)?;
-    let path = find_route(
-        start,
-        |at| adjacent(at, target),
-        |at, direction| destination(world, at, direction),
-    )
-    .map_err(|visited| format!("no-route: {start:?} to {target:?}, visited {visited} cells"))?;
-    walk(client, world, &path).await?;
-    if !adjacent(tile(client.world_spatial().actor_position)?, target) {
-        return Err("wrong-position: client did not arrive adjacent".into());
-    }
-    Ok(())
+    approach_action(client, routes, target, MapAction::Callback).await
 }
 
 fn reading_matches(served: &str, authored: &str) -> bool {
@@ -954,16 +1063,16 @@ fn reading_matches(served: &str, authored: &str) -> bool {
 async fn read_document(
     client: &mut DevClientSession,
     rows: &mut Rows<'_>,
-    world: &BundleWorld,
+    routes: &SweepRoutes<'_>,
     placement: Placement,
     expected: &str,
 ) -> TestResult {
-    approach(client, world, placement.at).await?;
+    approach(client, routes, placement.at).await?;
     rows.pass("adjacent-to-authored-inscription");
     let selection = look::ItemLookSelection { extended: true };
     let payload = look::encode_item_look_intent_for(
         look::ItemLookIntent {
-            target: look::ItemLookTarget::WorldObject(placement.target(world)),
+            target: look::ItemLookTarget::WorldObject(placement.target(routes.world)),
         },
         selection,
     )
@@ -1030,22 +1139,35 @@ async fn use_target(
 async fn chest(
     client: &mut DevClientSession,
     rows: &mut Rows<'_>,
-    world: &BundleWorld,
+    routes: &SweepRoutes<'_>,
     items: &crate::content::item_ref::ItemDefinitionIndex,
-    placement: &BoundPlacement,
+    placements: &[BoundPlacement],
 ) -> TestResult {
-    let at = TilePos {
+    let positions = placements.iter().map(|placement| TilePos {
         x: placement.cell.x,
         y: placement.cell.y,
         floor: placement.cell.floor,
-    };
-    approach(client, world, at).await?;
+    });
+    let start = tile(client.world_spatial().actor_position)?;
+    let (goal, path) = routes.find(
+        start,
+        positions.clone().flat_map(|at| approaches(at, false)),
+    )?;
+    let (placement, at) = placements
+        .iter()
+        .zip(positions)
+        .find(|(_, at)| adjacent(goal, *at))
+        .ok_or("claim route has no authored placement at its approach")?;
+    routes.follow(client, &path).await?;
+    if tile(client.world_spatial().actor_position)? != goal {
+        return Err("wrong-position: client did not arrive adjacent to the claim".into());
+    }
     rows.pass("adjacent-to-claim-placement");
     let target = Placement {
         at,
         key: placement.bundle_placement_key,
     }
-    .target(world);
+    .target(routes.world);
     let before = inventory(client)?;
     let before_handles: std::collections::BTreeSet<_> = client
         .inventory()
@@ -1185,23 +1307,32 @@ async fn check_reward_container(
 }
 
 fn shrine_position(
-    world: &BundleWorld,
+    routes: &SweepRoutes<'_>,
     source_ids: &[NonZeroU32],
     start: TilePos,
 ) -> TestResult<TilePos> {
+    let world = routes.world;
     let facts = world.facts().pinned();
-    world.base().tiles().filter_map(|(floor, x, y, tile)| {
+    let placements: Vec<_> = world.base().tiles().filter_map(|(floor, x, y, tile)| {
         let at = TilePos { x, y, floor };
-        if start.x.abs_diff(x) > 160 || start.y.abs_diff(y) > 160 {
-            return None;
-        }
         let authored = tile.ids().iter().zip(tile.depths()).filter(|(_, depth)| **depth == 0)
             .enumerate().any(|(ordinal, (id, _))| {
                 u8::try_from(ordinal).ok().and_then(|index| facts.base_entry(at, index, *id))
                     .is_some_and(|entry| matches!(entry.definition, MapDefinition::Item(id) if source_ids.contains(&id)))
             });
-        (authored && route(world, start, |candidate| adjacent(candidate, at)).is_some()).then_some(at)
-    }).next().ok_or_else(|| "shrine-placement-missing: no reachable authored shrine in bundle".into())
+        authored.then_some(at)
+    }).collect();
+    if placements.is_empty() {
+        return Err("shrine-placement-missing: no authored shrine in bundle".into());
+    }
+    let (goal, _) = routes.find(
+        start,
+        placements.iter().flat_map(|at| approaches(*at, false)),
+    )?;
+    placements
+        .into_iter()
+        .find(|at| adjacent(goal, *at))
+        .ok_or_else(|| "shrine route has no authored placement at its approach".into())
 }
 
 async fn wall(client: &mut DevClientSession) -> TestResult<DailyRewardWall> {
@@ -1227,11 +1358,11 @@ async fn wall(client: &mut DevClientSession) -> TestResult<DailyRewardWall> {
 async fn shrine(
     client: &mut DevClientSession,
     rows: &mut Rows<'_>,
-    world: &BundleWorld,
+    routes: &SweepRoutes<'_>,
     at: TilePos,
     content: &DailyRewardContent,
 ) -> TestResult {
-    approach(client, world, at).await?;
+    approach(client, routes, at).await?;
     rows.pass("adjacent-to-authored-shrine");
     let before = wall(client).await?;
     if before.claim_enabled || before.claimed {
@@ -1287,19 +1418,16 @@ async fn session<'a>(
     slot.as_mut().ok_or_else(|| "missing sweep session".into())
 }
 
-fn bound_claim<'a>(bindings: &'a BindingReport, key: &str) -> TestResult<&'a BoundPlacement> {
+fn bound_claim<'a>(bindings: &'a BindingReport, key: &str) -> TestResult<&'a [BoundPlacement]> {
     if let Some(claim) = bindings
         .served
         .iter()
         .find(|claim| claim.key.as_str() == key)
     {
-        if let [placement] = claim.placements.as_slice() {
-            return Ok(placement);
+        if claim.placements.is_empty() {
+            return Err("claim-binding-missing: served claim has no placements".into());
         }
-        return Err(
-            "claim-placement-oracle-missing: multiple placements need isolated once-claim fixtures"
-                .into(),
-        );
+        return Ok(&claim.placements);
     }
     let reason = bindings
         .unbound
@@ -1371,6 +1499,26 @@ pub(super) async fn run(
                 .map(|(key, entry)| (family, key, entry)),
         );
     }
+    let mut connections = BTreeMap::<TilePos, Vec<RouteStep>>::new();
+    for entry in entries.values() {
+        if let Entry::Interaction(placement, action @ (MapAction::Ladder | MapAction::Sewer)) =
+            entry
+            && let Some(landing) = movement_landing(world, placement.at, *action)
+            && world.enterable(landing)
+            && world
+                .base()
+                .tile(landing.x, landing.y, landing.floor)
+                .is_some_and(|tile| tile.walkable())
+        {
+            for at in approaches(placement.at, false) {
+                connections.entry(at).or_default().push(RouteStep::Use {
+                    placement: *placement,
+                    action: *action,
+                    landing,
+                });
+            }
+        }
+    }
     let selected = selected_entries.len();
     let entries = selected_entries.into_iter();
     let items = entries
@@ -1395,6 +1543,11 @@ pub(super) async fn run(
                 },
             )?)
         });
+    let routes = SweepRoutes {
+        world,
+        exhausted: Default::default(),
+        connections,
+    };
     let mut client = None;
     let mut tallies = BTreeMap::<&str, Tally>::new();
     let began = Instant::now();
@@ -1427,7 +1580,7 @@ pub(super) async fn run(
                     read_document(
                         session(&mut client, clients).await?,
                         &mut rows,
-                        world,
+                        &routes,
                         *placement,
                         text,
                     )
@@ -1436,7 +1589,7 @@ pub(super) async fn run(
                 Entry::NestedMapDocument => Err("nested-document-harness-unavailable: requires acquiring authored container custody".into()),
                 Entry::Interaction(placement, action) => {
                     rows.pass("authored-action-placement");
-                    map_action(&mut client, clients, &mut rows, world, *placement, *action).await
+                    map_action(&mut client, clients, &mut rows, &routes, *placement, *action).await
                 }
                 Entry::Claim => {
                     let items = items
@@ -1454,7 +1607,7 @@ pub(super) async fn run(
                     chest(
                         session(&mut client, clients).await?,
                         &mut rows,
-                        world,
+                        &routes,
                         items,
                         placement,
                     )
@@ -1473,12 +1626,12 @@ pub(super) async fn run(
                         .collect::<TestResult<Vec<_>>>()?;
                     let connected = session(&mut client, clients).await?;
                     let at = shrine_position(
-                        world,
+                        &routes,
                         &candidate_ids,
                         tile(connected.world_spatial().actor_position)?,
                     )?;
                     rows.pass("authored-shrine-source-item");
-                    shrine(connected, &mut rows, world, at, content).await?;
+                    shrine(connected, &mut rows, &routes, at, content).await?;
                     release(connected).await?;
                     client = None;
                     if wall(session(&mut client, clients).await?)
