@@ -149,48 +149,77 @@ async fn first_vocation_rows(
     npcs: &oteryn_world_bundle::npc::Table,
 ) {
     use verdict::Need::Row as After;
-    character_prep::declare_seeded("S16a", "unassigned-level-1-zero-xp-birth", "first vocation and earned level progression");
-    let scope = async {
-        let dedicated = character_prep::dedicated_named_character(
-            clients, "NODE_BOOT_C11_UNASSIGNED_ACCOUNT", Some("First Vocation Candidate"),
-        ).await?;
-        dedicated.replace_slot(clients, 1)
-    }.await;
-    let (accounts, characters) = match scope {
-        Ok(scope) => scope,
-        Err(error) => {
-            Row::new("S16a", VOCATION).finish(Err(error));
-            Row::new("C20a", EXPERIENCE_LOSS).finish(Err("S16a dedicated birth unavailable".into()));
-            return;
-        }
-    };
-    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
-    let mut vocation = Row::new("S16a", VOCATION).needs(&[character_release_need(clients, 1)]);
-    let watch = vocation.0.watch();
-    let result = watch
-        .bound(
-            Duration::from_secs(420),
-            "Oressa journey deadline; remaining actions unproven",
-            first_vocation(&mut vocation, clients, world, spawns, npcs),
-        )
-        .await;
-    vocation.finish(result);
 
-    // Promotion starts from the knight the first-vocation row produces.
-    let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[character_release_need(clients, 1), After("S16a")]);
-    let watch = loss.0.watch();
-    let result = watch
-        .bound(
-            Duration::from_secs(1100),
-            "experience-loss journey deadline; remaining actions unproven",
-            experience_loss(&mut loss, clients, world, spawns, npcs),
-        )
-        .await;
-    match result {
-        Ok(Some(source)) => finish_missing_receipt(loss, source),
-        other => loss.finish(other.map(|_| ())),
+    character_prep::declare_seeded(
+        "S16a",
+        "unassigned-level-1-zero-xp-birth",
+        "first vocation and earned level progression",
+    );
+    let vocation_scope = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_C11_UNASSIGNED_ACCOUNT",
+        Some("First Vocation Candidate"),
+    )
+    .await
+    .and_then(|dedicated| dedicated.replace_slot(clients, 1));
+    let vocation = Row::new("S16a", VOCATION);
+    match vocation_scope {
+        Ok((accounts, characters)) => {
+            let scope = SeamClients {
+                accounts: &accounts,
+                characters: &characters,
+                ..*clients
+            };
+            let mut vocation = vocation.needs(&[character_release_need(&scope, 1)]);
+            let watch = vocation.0.watch();
+            let result = watch
+                .bound(
+                    Duration::from_secs(420),
+                    "Oressa journey deadline; remaining actions unproven",
+                    first_vocation(&mut vocation, &scope, world, spawns, npcs),
+                )
+                .await;
+            vocation.finish(result);
+        }
+        Err(error) => vocation.finish(Err(error)),
     }
 
+    character_prep::declare_seeded(
+        "C20a",
+        "dedicated-knight-birth",
+        "death and promotion journey with player-earned XP and gold",
+    );
+    let loss_scope = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_C11_UNASSIGNED_ACCOUNT",
+        Some("Experience Loss Candidate"),
+    )
+    .await
+    .and_then(|dedicated| dedicated.replace_slot(clients, 1));
+    let loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[After("S16a")]);
+    match loss_scope {
+        Ok((accounts, characters)) => {
+            let scope = SeamClients {
+                accounts: &accounts,
+                characters: &characters,
+                ..*clients
+            };
+            let mut loss = loss.needs(&[character_release_need(&scope, 1)]);
+            let watch = loss.0.watch();
+            let result = watch
+                .bound(
+                    Duration::from_secs(1100),
+                    "experience-loss journey deadline; remaining actions unproven",
+                    experience_loss(&mut loss, &scope, world, spawns, npcs),
+                )
+                .await;
+            match result {
+                Ok(Some(source)) => finish_missing_receipt(loss, source),
+                other => loss.finish(other.map(|_| ())),
+            }
+        }
+        Err(error) => loss.finish(Err(error)),
+    }
 }
 
 // P10 owns its connection and never borrows the fixture-provisioned character.
@@ -1808,7 +1837,7 @@ async fn experience_loss(
     let result = async {
         if !blessings(&mut client).await?.is_empty() { return Err("unblessed baseline prerequisite blocked: ordinary Character already holds blessings".into()); }
         let look = self_look(&mut client).await?;
-        if !look.contains(", knight)") { return Err(format!("promotion prerequisite blocked: first-vocation journey has not produced a knight; self LOOK={look}").into()); }
+        if !look.contains(", knight)") { return Err(format!("promotion prerequisite blocked: dedicated birth did not produce a knight; self LOOK={look}").into()); }
         // Promotion needs level 20; earn it and the later service fee through real combat.
         earn_death_prerequisites(&mut client, world, spawns, 20, 0).await?;
         row.pass("earned-nonzero-xp", progress(&mut client).await?);
