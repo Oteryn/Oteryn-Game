@@ -90,7 +90,7 @@ struct Document {
 enum Entry {
     Document(Document),
     MapDocument(Placement, String),
-    NestedMapDocument,
+    NestedMapDocument(Option<Placement>, String),
     Interaction(Placement, MapAction),
     Claim,
     Shrine(DailyRewardContent),
@@ -100,7 +100,9 @@ impl Entry {
     fn steps(&self) -> &'static [&'static str] {
         match self {
             Self::Document(_) => &["bind", "query", "text"],
-            Self::MapDocument(..) | Self::NestedMapDocument => &["bind", "walk", "open", "text"],
+            Self::MapDocument(..) | Self::NestedMapDocument(..) => {
+                &["bind", "walk", "open", "text"]
+            }
             Self::Interaction(..) | Self::Claim => &["bind", "walk", "use", "effect", "reset"],
             Self::Shrine(_) => &[
                 "bind",
@@ -120,7 +122,7 @@ impl Entry {
     fn family(&self) -> &'static str {
         match self {
             Self::Document(_) => "documents",
-            Self::MapDocument(..) | Self::NestedMapDocument => "map_documents",
+            Self::MapDocument(..) | Self::NestedMapDocument(..) => "map_documents",
             Self::Interaction(..) => "interactions",
             Self::Claim => "claims",
             Self::Shrine(_) => "shrines",
@@ -377,21 +379,27 @@ fn map_entries(
                 y: tile.y,
                 floor: sector.floor,
             };
-            for (index, item) in tile.items.iter().enumerate() {
-                if item.depth != 0
-                    && item
-                        .attrs
-                        .text
-                        .as_ref()
-                        .is_some_and(|text| !text.is_empty())
-                {
+            let top_count = tile.items.iter().filter(|item| item.depth == 0).count();
+            let nested = tile
+                .items
+                .iter()
+                .enumerate()
+                .filter(|(_, item)| item.depth != 0);
+            for (ordinal, (index, item)) in (top_count..).zip(nested) {
+                if let Some(text) = item.attrs.text.as_ref().filter(|text| !text.is_empty()) {
                     let key = format!(
                         "map-document.{:02}.{:05}.{:05}.nested-{index:03}",
                         -i16::from(at.floor),
                         at.x,
                         at.y
                     );
-                    entries.insert(key, Entry::NestedMapDocument);
+                    // The source owner numbers nested items after the top-level stack
+                    // (map/facts/source_containers.rs:18).
+                    let placement = u8::try_from(ordinal)
+                        .ok()
+                        .and_then(|ordinal| crate::map::view::placement_key(at, ordinal))
+                        .map(|key| Placement { at, key });
+                    entries.insert(key, Entry::NestedMapDocument(placement, text.clone()));
                 }
             }
             for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
@@ -1176,14 +1184,21 @@ async fn read_document(
 ) -> TestResult {
     approach(client, routes, placement.at).await?;
     rows.pass("adjacent-to-authored-inscription");
-    let selection = look::ItemLookSelection { extended: true };
-    let payload = look::encode_item_look_intent_for(
-        look::ItemLookIntent {
-            target: look::ItemLookTarget::WorldObject(placement.target(routes.world)),
-        },
-        selection,
+    let target = look::ItemLookTarget::WorldObject(placement.target(routes.world));
+    check_document_text(
+        rows,
+        &request_document_text(client, target).await?,
+        expected,
     )
-    .map_err(|error| format!("look-encode: {error:?}"))?;
+}
+
+async fn request_document_text(
+    client: &mut DevClientSession,
+    target: look::ItemLookTarget,
+) -> TestResult<String> {
+    let selection = look::ItemLookSelection { extended: true };
+    let payload = look::encode_item_look_intent_for(look::ItemLookIntent { target }, selection)
+        .map_err(|error| format!("look-encode: {error:?}"))?;
     let reply = client
         .session_mut()
         .gated_command(
@@ -1200,12 +1215,151 @@ async fn read_document(
     let look::ItemLookResult::Text(text) = result else {
         return Err(format!("look-refused: {result:?}").into());
     };
+    Ok(text)
+}
+
+fn check_document_text(rows: &mut Rows<'_>, text: &str, expected: &str) -> TestResult {
     rows.pass("accepted-item-look");
-    if !reading_matches(&text, expected) {
+    if !reading_matches(text, expected) {
         return Err("document-text-mismatch: complete authored text required".into());
     }
     rows.pass("byte-identical-authored-text");
     Ok(())
+}
+
+async fn read_nested_document(
+    client: &mut DevClientSession,
+    rows: &mut Rows<'_>,
+    routes: &SweepRoutes<'_>,
+    placement: Placement,
+    expected: &str,
+) -> TestResult {
+    use crate::map::view::{MapFacts, placement_of};
+    use oteryn_protocol_oteryn::container_tree::{ContainerViewIntent, ContainerViewOutcome};
+    use oteryn_protocol_oteryn::world_map::MapOrigin;
+
+    let facts = routes.world.facts();
+    let mut child_key = placement.key;
+    let mut path = Vec::new();
+    while let Some(child) = facts.captured_map_item(child_key) {
+        let children = facts
+            .captured_map_children(child.parent)
+            .ok_or("nested-document-binding-missing: parent source is unavailable")?;
+        let index = children
+            .iter()
+            .position(|entry| entry.placement_key == child_key)
+            .ok_or("nested-document-binding-missing: source is absent from its parent")?;
+        path.push((index, child.facts));
+        child_key = child.parent;
+    }
+    let (_, root_ordinal) = placement_of(child_key)
+        .filter(|(at, _)| *at == placement.at && !path.is_empty())
+        .ok_or("nested-document-binding-missing: no captured source path")?;
+    let tile = routes
+        .world
+        .base()
+        .tile(placement.at.x, placement.at.y, placement.at.floor)
+        .ok_or("nested-document-binding-missing: source tile is unavailable")?;
+    let (root_id, _) = tile
+        .ids()
+        .iter()
+        .zip(tile.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .nth(usize::from(root_ordinal))
+        .ok_or("nested-document-binding-missing: root stack entry is unavailable")?;
+    let root = facts
+        .pinned()
+        .base_entry(placement.at, root_ordinal, *root_id)
+        .ok_or("nested-document-binding-missing: root entry facts are unavailable")?;
+    rows.pass("authored-captured-container-path");
+    approach(client, routes, placement.at).await?;
+    rows.pass("adjacent-to-authored-container");
+
+    let snapshot = client
+        .session_mut()
+        .world_map_snapshot()
+        .ok_or("nested-document-view-missing: no map snapshot")?;
+    let visible = snapshot
+        .tiles
+        .iter()
+        .find(|tile| {
+            tile.position.x == i32::from(placement.at.x)
+                && tile.position.y == i32::from(placement.at.y)
+                && tile.position.floor == -i16::from(placement.at.floor)
+        })
+        .ok_or("nested-document-view-missing: source tile is absent from wire")?;
+    let mut handles = visible.items.iter().filter_map(|item| match item.origin {
+        MapOrigin::Handle(handle)
+            if item.definition == root.definition && item.appearance_id == root.appearance_id =>
+        {
+            Some(handle)
+        }
+        _ => None,
+    });
+    let root_handle = handles
+        .next()
+        .filter(|_| handles.next().is_none())
+        .ok_or("nested-document-view-missing: source container handle is absent or ambiguous")?;
+    let mut view_id = None;
+    let result = async {
+        let mut handle = root_handle;
+        for (index, authored) in path.into_iter().rev() {
+            // loop_move/map_sources.rs:91 projects the authored child slots in source order.
+            let opened = client
+                .session_mut()
+                .container_view(ContainerViewIntent::Open {
+                    handle,
+                    replace_view: view_id,
+                })
+                .await?;
+            if opened != Some(ContainerViewOutcome::Opened) {
+                return Err(format!("nested-document-open-refused: {opened:?}").into());
+            }
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            loop {
+                if let Some(view) = client.session_mut().container_views().and_then(|views| {
+                    views
+                        .views
+                        .iter()
+                        .find(|view| view.container_handle == handle)
+                }) {
+                    view_id = Some(view.view_id);
+                    let item = view
+                        .entries
+                        .get(index)
+                        .filter(|item| {
+                            MapDefinition::Item(item.item_definition_ref) == authored.definition
+                                && item.count.get() == authored.count
+                                && item.sub_type == authored.sub_type
+                        })
+                        .ok_or(
+                            "nested-document-entry-mismatch: exact authored child slot absent",
+                        )?;
+                    handle = item.handle;
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(
+                        "nested-document-view-missing: container view did not arrive".into(),
+                    );
+                }
+                client.service_liveness(Duration::from_millis(50)).await?;
+                client.take_events();
+            }
+        }
+        request_document_text(client, look::ItemLookTarget::Item(handle)).await
+    }
+    .await;
+    if let Some(view_id) = view_id {
+        let closed = client
+            .session_mut()
+            .container_view(ContainerViewIntent::Close { view_id })
+            .await;
+        if result.is_ok() && closed? != Some(ContainerViewOutcome::Closed) {
+            return Err("nested-document-close-refused: source view is still open".into());
+        }
+    }
+    check_document_text(rows, &result?, expected)
 }
 
 type Quantities = BTreeMap<NonZeroU32, u64>;
@@ -1692,126 +1846,159 @@ pub(super) async fn run(
         // The protocol still bounds each exchange and the entry has a finite
         // wall deadline, while reports have no walking phase.
         let deadline_seconds = match entry {
-            Entry::Document(_) | Entry::NestedMapDocument => 90,
+            Entry::Document(_) => 90,
             _ => 600,
         };
-        let result = tokio::time::timeout(Duration::from_secs(deadline_seconds), async {
-            match entry {
-                Entry::Document(document) => {
-                    let race = reports.get(key).copied().flatten().ok_or(
-                        "bestiary-race-unavailable: authored report has no canonical wire race",
-                    )?;
-                    rows.pass("authored-creature-profile-to-bestiary-race");
-                    read_report(
-                        session(&mut client, clients).await?,
-                        &mut rows,
-                        race,
-                        &document.content.join("\n"),
-                    )
-                    .await
-                }
-                Entry::MapDocument(placement, text) => {
-                    rows.pass("authored-bundle-placement-text");
-                    read_document(
+        let result =
+            tokio::time::timeout(Duration::from_secs(deadline_seconds), async {
+                match entry {
+                    Entry::Document(document) => {
+                        let race = reports.get(key).copied().flatten().ok_or(
+                            "bestiary-race-unavailable: authored report has no canonical wire race",
+                        )?;
+                        rows.pass("authored-creature-profile-to-bestiary-race");
+                        read_report(
+                            session(&mut client, clients).await?,
+                            &mut rows,
+                            race,
+                            &document.content.join("\n"),
+                        )
+                        .await
+                    }
+                    Entry::MapDocument(placement, text) => {
+                        rows.pass("authored-bundle-placement-text");
+                        read_document(
+                            session(&mut client, clients).await?,
+                            &mut rows,
+                            &routes,
+                            *placement,
+                            text,
+                        )
+                        .await
+                    }
+                    Entry::NestedMapDocument(placement, text) => read_nested_document(
                         session(&mut client, clients).await?,
                         &mut rows,
                         &routes,
-                        *placement,
+                        placement.ok_or(
+                            "nested-document-binding-missing: authored slot exceeds address budget",
+                        )?,
                         text,
                     )
-                    .await
-                }
-                Entry::NestedMapDocument => Err("nested-document-harness-unavailable: requires acquiring authored container custody".into()),
-                Entry::Interaction(placement, action) => {
-                    rows.pass(&format!("authored-action-placement: {action:?}"));
-                    map_action(&mut client, clients, &mut rows, &routes, *placement, *action).await
-                }
-                Entry::Claim => {
-                    let items = items
-                        .as_ref()
-                        .ok_or("missing claim item index")?
-                        .as_ref()
-                        .map_err(|error| format!("item-index: {error}"))?;
-                    let bindings = bindings
-                        .as_ref()
-                        .ok_or("missing claim bindings")?
-                        .as_ref()
-                        .map_err(|error| format!("claim-index: {error}"))?;
-                    let placement = bound_claim(bindings, key)?;
-                    rows.pass("server-bound-authored-chest");
-                    chest(
-                        session(&mut client, clients).await?,
-                        &mut rows,
-                        &routes,
-                        items,
-                        placement,
-                    )
-                    .await
-                }
-                Entry::Shrine(content) => {
-                    let items = items
-                        .as_ref()
-                        .ok_or("missing shrine item index")?
-                        .as_ref()
-                        .map_err(|error| format!("item-index: {error}"))?;
-                    let candidate_ids = content
-                        .shrine_source_ids
-                        .iter()
-                        .map(|&id| provisioning::item_reference(items, id))
-                        .collect::<TestResult<Vec<_>>>()?;
-                    let connected = session(&mut client, clients).await?;
-                    let at = shrine_position(
-                        &routes,
-                        &candidate_ids,
-                        tile(connected.world_spatial().actor_position)?,
-                    )?;
-                    rows.pass("authored-shrine-source-item");
-                    shrine(connected, &mut rows, &routes, at, content).await?;
-                    release(connected).await?;
-                    client = None;
-                    if wall(session(&mut client, clients).await?)
-                        .await?
-                        .claim_enabled
-                    {
-                        return Err(
+                    .await,
+                    Entry::Interaction(placement, action) => {
+                        rows.pass(&format!("authored-action-placement: {action:?}"));
+                        map_action(
+                            &mut client,
+                            clients,
+                            &mut rows,
+                            &routes,
+                            *placement,
+                            *action,
+                        )
+                        .await
+                    }
+                    Entry::Claim => {
+                        let items = items
+                            .as_ref()
+                            .ok_or("missing claim item index")?
+                            .as_ref()
+                            .map_err(|error| format!("item-index: {error}"))?;
+                        let bindings = bindings
+                            .as_ref()
+                            .ok_or("missing claim bindings")?
+                            .as_ref()
+                            .map_err(|error| format!("claim-index: {error}"))?;
+                        let placement = bound_claim(bindings, key)?;
+                        rows.pass("server-bound-authored-chest");
+                        chest(
+                            session(&mut client, clients).await?,
+                            &mut rows,
+                            &routes,
+                            items,
+                            placement,
+                        )
+                        .await
+                    }
+                    Entry::Shrine(content) => {
+                        let items = items
+                            .as_ref()
+                            .ok_or("missing shrine item index")?
+                            .as_ref()
+                            .map_err(|error| format!("item-index: {error}"))?;
+                        let candidate_ids = content
+                            .shrine_source_ids
+                            .iter()
+                            .map(|&id| provisioning::item_reference(items, id))
+                            .collect::<TestResult<Vec<_>>>()?;
+                        let connected = session(&mut client, clients).await?;
+                        let at = shrine_position(
+                            &routes,
+                            &candidate_ids,
+                            tile(connected.world_spatial().actor_position)?,
+                        )?;
+                        rows.pass("authored-shrine-source-item");
+                        shrine(connected, &mut rows, &routes, at, content).await?;
+                        release(connected).await?;
+                        client = None;
+                        if wall(session(&mut client, clients).await?)
+                            .await?
+                            .claim_enabled
+                        {
+                            return Err(
                             "shrine-reset-mismatch: claim remains enabled after fresh admission"
                                 .into(),
                         );
+                        }
+                        rows.pass("shrine-open-state-reset-on-admission");
+                        let connected = session(&mut client, clients).await?;
+                        approach(connected, &routes, at).await?;
+                        let before = wall(connected).await?;
+                        let opened = connected
+                            .session_mut()
+                            .use_object(content.entry_shrine.placement.as_bytes(), 0)
+                            .await?;
+                        if opened.disposition != UseDisposition::Committed {
+                            return Err(
+                                format!("shrine-reopen-refused: {:?}", opened.disposition).into()
+                            );
+                        }
+                        claim_daily(connected, 1).await?;
+                        let claimed = wall(connected).await?;
+                        if !claimed.claimed
+                            || claimed.claim_enabled
+                            || claimed.streak != before.streak.saturating_add(1).min(100_000)
+                        {
+                            return Err(format!(
+                                "shrine-claim-effect-mismatch: {before:?} -> {claimed:?}"
+                            )
+                            .into());
+                        }
+                        let custody = inventory(connected)?;
+                        rows.pass("daily-claim-committed-once");
+                        claim_daily(connected, 2).await?;
+                        if wall(connected).await? != claimed || inventory(connected)? != custody {
+                            return Err(
+                                "shrine-replay-mismatch: duplicate changed the wall or inventory"
+                                    .into(),
+                            );
+                        }
+                        rows.pass("duplicate-daily-claim-did-not-mutate-state");
+                        release(connected).await?;
+                        client = None;
+                        let connected = session(&mut client, clients).await?;
+                        if wall(connected).await? != claimed || inventory(connected)? != custody {
+                            return Err(
+                            "shrine-durability-mismatch: daily claim lost after fresh admission"
+                                .into(),
+                        );
+                        }
+                        rows.pass("daily-claim-persisted-across-admissions");
+                        Ok(())
                     }
-                    rows.pass("shrine-open-state-reset-on-admission");
-                    let connected = session(&mut client, clients).await?;
-                    approach(connected, &routes, at).await?;
-                    let before = wall(connected).await?;
-                    let opened = connected.session_mut().use_object(content.entry_shrine.placement.as_bytes(), 0).await?;
-                    if opened.disposition != UseDisposition::Committed {
-                        return Err(format!("shrine-reopen-refused: {:?}", opened.disposition).into());
-                    }
-                    claim_daily(connected, 1).await?;
-                    let claimed = wall(connected).await?;
-                    if !claimed.claimed || claimed.claim_enabled
-                        || claimed.streak != before.streak.saturating_add(1).min(100_000)
-                    {
-                        return Err(format!("shrine-claim-effect-mismatch: {before:?} -> {claimed:?}").into());
-                    }
-                    let custody = inventory(connected)?;
-                    rows.pass("daily-claim-committed-once");
-                    claim_daily(connected, 2).await?;
-                    if wall(connected).await? != claimed || inventory(connected)? != custody {
-                        return Err("shrine-replay-mismatch: duplicate changed the wall or inventory".into());
-                    }
-                    rows.pass("duplicate-daily-claim-did-not-mutate-state");
-                    release(connected).await?;
-                    client = None;
-                    let connected = session(&mut client, clients).await?;
-                    if wall(connected).await? != claimed || inventory(connected)? != custody {
-                        return Err("shrine-durability-mismatch: daily claim lost after fresh admission".into());
-                    }
-                    rows.pass("daily-claim-persisted-across-admissions");
-                    Ok(())
                 }
-            }
-        })
-        .await;
+            })
+            .await;
         match result {
             Ok(Ok(())) => {}
             Ok(Err(error)) => rows.fail(&error.to_string()),
