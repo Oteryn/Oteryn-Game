@@ -239,3 +239,23 @@ client could obtain a handle
 | 54414, 54415, 54678–54681 | `data/items/items.xml:89997–90008,90366–90389` |
 | 5678, 5949, 5964, 6125, 6278, 6392 | `data/items/items.xml:15444,16146,16222,17101,17314,17768` |
 | 7373, 7374, 7376, 8012 | `data/items/items.xml:19384–19404,21446` |
+
+### Batch 1400:719 combined verdict
+
+| Batch | Entries | Seed PASS | Seed FAIL | PASS rows | FAIL rows | Terminal result |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `1700:419` resume | 419 | 133 | 286 | 376 | 1,844 | `NODE_BOOT_FAIL` |
+| `1400:719` combined | 719 | 337 | 382 | 868 | 2,693 | Interrupted original, `NODE_BOOT_FAIL` on resume |
+
+The combined tally uses the resumed rows for the overlapping `tibia.i54414`.
+The resume log recorded at least 203 fixture reservations refused with
+`MainBackpackFull` before teardown. The typed `DefinitionNotFound` class above
+also includes 836, 860, 8177, 8747, 8862 and 8864
+(Crystal `data/items/items.xml:2925,2959,22827,23377,23575,23598`).
+The inspection, hand-defence and equipment-group findings from this range
+appear in their respective tables above.
+
+Across the previous narrow runs and these continuations, the union of emitted
+item keys is 2,119, equal to the selected census. Of those keys, 716 ever
+passed the seed step and 1,403 had no successful seed. A seed PASS does not
+imply that each dependent gameplay step reached its assertion.
