@@ -91,11 +91,19 @@ jobs:
         with:
           ref: ${{ env.SOURCE_SHA }}
           persist-credentials: false
+          # Experiment: leave out the largest documentation trees (about 0.8 of 2.4 GB).
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/docs/agents/
+            !/docs/reference/
+            !/qlane-meta/
       - name: Runner facts
         run: |
           nproc
           free -g
           df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP"
+          du -sh "$GITHUB_WORKSPACE"
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
       - name: Pull archive and CI image from ghcr
         env:
