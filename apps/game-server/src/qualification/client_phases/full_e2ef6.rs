@@ -1177,11 +1177,20 @@ async fn oressa_talk(
                 &payload,
             )
             .await?;
-        if reply.status != CommandStatus::Accepted {
-            return Err(format!("Oressa {text} command rejected: {reply:?}").into());
-        }
         let disposition = wire::decode_npc_intent_result(&reply.payload)
-            .map_err(|error| format!("Oressa talk result: {error:?}"))?;
+            .map_err(|error| format!("Oressa {text} talk result: {error:?}; reply={reply:?}"))?;
+        let expected_status = if disposition == wire::NpcIntentDisposition::Rejected {
+            CommandStatus::Rejected
+        } else {
+            CommandStatus::Accepted
+        };
+        if reply.status != expected_status {
+            return Err(format!(
+                "Oressa {text}: {disposition:?} requires {expected_status:?}, observed {:?}",
+                reply.status
+            )
+            .into());
+        }
         if disposition == wire::NpcIntentDisposition::RateLimited
             && tokio::time::Instant::now() < deadline
         {
