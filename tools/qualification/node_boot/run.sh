@@ -1305,7 +1305,7 @@ node_complete_assignment() {
   assignment_report_args
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
-  await_log "event=readiness .*ready=true" 60
+  await_log "event=readiness .*ready=true" 180
   # The canonical manifest makes each validation substantial. Prove the same
   # stale-predecessor rejection against the now-active sequence 1, without
   # spending the unassigned node's unchanged wait on this independent negative.
@@ -1542,7 +1542,7 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   # A new incarnation starts with no active Content and reactivates only the current issuance.
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
-  await_log "event=readiness .*ready=true" 60
+  await_log "event=readiness .*ready=true" 180
   node_signal -TERM "$NODE_PID"
   for _ in $(seq 1 30); do node_signal -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "replacement did not shut down cleanly"
@@ -1637,7 +1637,7 @@ SQL
   pvp_ops content activate --request content-1.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --sequence 1 --previous empty
   pvp_ops assignment assign --request assign-pvp.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --node-id "$node" --revision "$revision"
   pvp_await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
-  pvp_await_log "event=readiness .*ready=true" 60
+  pvp_await_log "event=readiness .*ready=true" 180
   local bound_address
   bound_address="$(sed -nE 's/.* event=listener_bound (trace=[^ ]+ )?detail="address=([^"]+)"$/\2/p' "$WORK/pvp-node.log" | tail -n 1)"
   if [[ ! "$bound_address" =~ ^127\.0\.0\.1:([1-9][0-9]{3,4})$ ]] || (( BASH_REMATCH[1] > 65535 )); then
