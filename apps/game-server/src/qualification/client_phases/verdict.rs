@@ -816,6 +816,12 @@ impl Groups {
         Ok(Self(Some(selected)))
     }
 
+    pub(super) fn only(&self, group: &str) -> bool {
+        self.0
+            .as_ref()
+            .is_some_and(|selected| selected.len() == 1 && selected.contains(group))
+    }
+
     pub(super) fn runs(&self, group: &str) -> bool {
         self.0
             .as_ref()

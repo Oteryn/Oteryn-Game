@@ -1045,6 +1045,10 @@ pub(super) async fn journeys(
         started.elapsed().as_millis()
     ));
     let groups = verdict::Groups::from_env()?;
+    if groups.only("npc_sweep") {
+        let [_, _, sweep] = extra_world_fixtures(clients, packet_clients).await?;
+        return npc_sweep::run(&sweep.clients(clients), world).await;
+    }
     // The required core keeps its ordinary pair; packet journeys own a separate pair.
     let mut client = connect_world(clients, 0x70).await?;
     let entered_at = tile(client.world_spatial().actor_position)?;
