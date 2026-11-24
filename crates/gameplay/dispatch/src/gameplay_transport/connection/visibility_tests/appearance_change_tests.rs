@@ -1,6 +1,6 @@
 //! Scripted owner outcomes through the real connection dispatch and VIS-2 interest query.
 use super::*;
-use crate::gameplay_transport::appearance_change::observation::Observation;
+use crate::gameplay_transport::appearance_change::observation::{Observation, ObservationError};
 use crate::gameplay_transport::item_view::InventoryItems;
 use oteryn_protocol_oteryn::appearance;
 use oteryn_protocol_oteryn::guild_emblem::{CAPABILITY_GUILD_EMBLEM_V1, Emblem, GuildEmblem};
@@ -15,6 +15,7 @@ struct AppearanceChannel {
     revision: Cell<u64>,
     calls: Cell<usize>,
     defer_input: bool,
+    busy_after_first_step: Cell<bool>,
 }
 impl FreshAdmissionAuthority for AppearanceChannel {
     async fn admit(
@@ -31,6 +32,25 @@ impl FreshAdmissionAuthority for AppearanceChannel {
             return Err(crate::durability::DurabilityError::RootUnavailable);
         }
         Ok(())
+    }
+
+    async fn step(&self, actor: ExactActorRef, direction: StepDirection) -> StepOutcome {
+        self.channel.step(actor, direction).await
+    }
+
+    async fn appearance_observation_projected_result(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        empty_outfit: bool,
+        entities: Vec<EntityRef>,
+    ) -> Result<Observation, ObservationError> {
+        if self.channel.own.get() == at(101, 100) && self.busy_after_first_step.replace(false) {
+            return Err(ObservationError::HolderBusy);
+        }
+        self.appearance_observation_projected(actor, session, empty_outfit, entities)
+            .await
+            .ok_or(ObservationError::Unavailable)
     }
 
     async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
@@ -165,6 +185,7 @@ async fn scenario_actor(
         revision: Cell::new(1),
         calls: Cell::new(0),
         defer_input: false,
+        busy_after_first_step: Cell::new(false),
     };
     let mut admitted = session(&[6], SessionContinuity::FRESH);
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
@@ -403,6 +424,7 @@ fn qualification_session_decodes_served_visibility_and_guarded_step() -> TestRes
                     revision: Cell::new(1),
                     calls: Cell::new(0),
                     defer_input: true,
+                    busy_after_first_step: Cell::new(false),
                 };
                 let bundle_appearance =
                     crate::gameplay_transport::appearance_change::offer::offered(
@@ -523,4 +545,83 @@ fn qualification_session_decodes_served_visibility_and_guarded_step() -> TestRes
         .join()
         .map_err(|_| "qualification join test thread panicked")?
         .map_err(Into::into)
+}
+
+#[test]
+fn busy_post_step_appearance_keeps_the_next_move_live() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| run(post_step_holder_contention()).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "post-step appearance test thread panicked")??;
+    Ok(())
+}
+
+async fn post_step_holder_contention() -> TestResult {
+    let authority = AppearanceChannel {
+        channel: Channel::new(Vec::new()),
+        outcome: None,
+        revision: Cell::new(1),
+        calls: Cell::new(0),
+        defer_input: false,
+        busy_after_first_step: Cell::new(true),
+    };
+    let mut admitted = session(&[6], SessionContinuity::FRESH);
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        PRODUCTION_OFFERED_CAPABILITIES,
+        true,
+    );
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(&offered, &[6, 25]).ok_or("capabilities")?;
+    let (mut server, mut client) = tokio::io::duplex(256 * 1024);
+    for command_id in [1, 2] {
+        let frame = encode_client_command(
+            1,
+            &ClientCommandValue {
+                command_id,
+                command_type: COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                payload: &encode_step_intent(StepDirection::East),
+            },
+        )?;
+        crate::gameplay_transport::tcp_tls::write_frame(&mut client, &frame).await?;
+    }
+    client.shutdown().await?;
+    serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+    drop(server);
+    let mut replies = Vec::new();
+    let mut spatial_revisions = Vec::new();
+    while let Ok(frame) = read_one(&mut client).await {
+        let envelope = decode_wire_envelope(&frame)?;
+        match envelope.message_type() {
+            MessageType::CommandResult => {
+                let result = decode_command_result(envelope.payload())?;
+                assert_eq!(result.status, CommandStatus::Accepted);
+                assert_eq!(result.payload, encode_step_result(StepDisposition::Moved));
+                replies.push(result.command_id);
+            }
+            MessageType::StateDelta => {
+                let delta = decode_state_delta(envelope.payload())?;
+                if delta.domain_id == STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
+                    let view = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta(delta.payload)
+                        .map_err(|error| format!("spatial delta: {error:?}"))?;
+                    assert_eq!(view.update.len(), 1);
+                    assert_eq!(view.update[0].position, view.actor_position);
+                    spatial_revisions.push((
+                        delta.base_revision,
+                        delta.new_revision,
+                        view.actor_position,
+                    ));
+                }
+            }
+            _ => {}
+        }
+    }
+    assert!(!authority.busy_after_first_step.get());
+    assert_eq!(replies, [1, 2], "holder contention closed a committed step");
+    assert_eq!(
+        spatial_revisions,
+        [(1, 2, at(101, 100)), (2, 3, at(102, 100))]
+    );
+    assert_eq!(authority.channel.own.get(), at(102, 100));
+    Ok(())
 }

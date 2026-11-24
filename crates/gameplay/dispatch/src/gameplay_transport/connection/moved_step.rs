@@ -1,5 +1,6 @@
 //! Frames published after a committed native movement step.
 use super::*;
+use crate::gameplay_transport::appearance_change::observation::ObservationError;
 
 /// The frames that follow one moved step of `actor`: with capability 6 the interest set's change
 /// (VIS-3, a resync ends the connection), without it the v1 own-actor delta; the open corpse a
@@ -43,8 +44,8 @@ where
         {
             own.position = observation.actor_position;
         }
-        let (next_sequence, next_revision) = appearances
-            .refresh(
+        match appearances
+            .refresh_result(
                 stream,
                 authority,
                 actor,
@@ -55,8 +56,25 @@ where
                 *sequence,
                 *revision,
             )
-            .await?;
-        (Vec::new(), next_sequence, next_revision)
+            .await
+        {
+            Ok((next_sequence, next_revision)) => (Vec::new(), next_sequence, next_revision),
+            Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => {
+                // The client waits for this committed step's spatial delta. Retain the
+                // published appearance mapping and leave the full interest cut for refresh.
+                let mut delta = view.move_published_observer(&channel)?;
+                appearances.attach(&mut delta.update)?;
+                visibility_frames(
+                    generation,
+                    *sequence,
+                    *revision,
+                    admitted.continuity.selected_capabilities.as_slice(),
+                    view.lights(),
+                    &VisibilityUpdate::Delta(delta),
+                )?
+            }
+            Err(ObservationError::Unavailable) => return None,
+        }
     } else {
         let (Some(delta_sequence), Some(new_revision)) =
             (sequence.checked_add(1), revision.checked_add(1))

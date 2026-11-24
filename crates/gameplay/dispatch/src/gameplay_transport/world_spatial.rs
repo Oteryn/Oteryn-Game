@@ -484,6 +484,37 @@ impl SessionVisibility {
         Ok(snapshot)
     }
 
+    /// Send the committed observer movement using its published entry. Retain the last interest
+    /// query so a later refresh still observes every pending enter, leave and metadata change.
+    pub(super) fn move_published_observer(
+        &mut self,
+        channel: &ChannelEntities,
+    ) -> Option<WorldSpatialEntitiesDelta> {
+        let (content_generation, _) = self.published?;
+        let current = channel
+            .entities
+            .iter()
+            .find(|entity| entity.identity == channel.observer)?;
+        let own = self.entities.get_mut(&channel.observer)?;
+        if channel.content_generation != content_generation
+            || current.kind != VisibleKind::Player
+            || own.kind != EntityKind::Player
+            || own.entity.generation != current.generation
+        {
+            return None;
+        }
+        own.position = current.position;
+        own.motion = self.motion.then_some(current.motion).flatten();
+        self.published = Some((content_generation, current.position));
+        Some(WorldSpatialEntitiesDelta {
+            content_generation,
+            actor_position: current.position,
+            enter: Vec::new(),
+            update: vec![*own],
+            leave: Vec::new(),
+        })
+    }
+
     /// What changed since the session was last sent its view: a delta of at most 256 entries, or
     /// a snapshot when the change is larger (or nothing was shown yet).
     pub fn refresh(

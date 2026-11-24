@@ -7,28 +7,6 @@ use oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntitiesDelta;
 
 impl SessionAppearance {
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::gameplay_transport::connection) async fn refresh<
-        S: AsyncWrite + Unpin,
-        A: FreshAdmissionAuthority,
-    >(
-        &mut self,
-        stream: &mut S,
-        authority: &A,
-        actor: ExactActorRef,
-        admitted: &mut AdmittedSession,
-        view: &mut SessionVisibility,
-        channel: &ChannelEntities,
-        items: Option<&mut SessionItemView>,
-        sequence: u64,
-        revision: u64,
-    ) -> Option<(u64, u64)> {
-        self.refresh_result(
-            stream, authority, actor, admitted, view, channel, items, sequence, revision,
-        )
-        .await
-        .ok()
-    }
-    #[allow(clippy::too_many_arguments)]
     pub(in crate::gameplay_transport::connection) async fn refresh_result<
         S: AsyncWrite + Unpin,
         A: FreshAdmissionAuthority,

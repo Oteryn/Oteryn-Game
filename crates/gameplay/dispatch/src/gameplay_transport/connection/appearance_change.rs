@@ -123,7 +123,7 @@ impl SessionAppearance {
         upserts.sort_by_key(|b| b.entity);
         Some(upserts)
     }
-    fn attach(
+    pub(super) fn attach(
         &self,
         entities: &mut [oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity],
     ) -> Option<()> {
