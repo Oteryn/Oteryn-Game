@@ -347,6 +347,7 @@ pub(crate) const TOWN: TilePos = TilePos {
 };
 
 struct QualificationWorld {
+    server_artifact_digest: [u8; 32],
     world_id: WorldId,
     channel_id: ChannelId,
     bundle: BundleWorld,
@@ -445,6 +446,7 @@ fn boot_world(
     let bundle = crate::node::serve::boot_bundle_world(checked, world, channel, Some(native))
         .map_err(|error| format!("production world loader: {error:?}"))?;
     Ok(QualificationWorld {
+        server_artifact_digest: issuance.server_artifact_digest,
         world_id: world,
         channel_id: channel,
         bundle,
@@ -3200,13 +3202,20 @@ pub(super) async fn journeys(
         && std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty());
     let transition_selected = groups.runs("transition_sweep")
         && std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty());
-    if mp_selected || sweep_selected || transition_selected {
+    if transition_selected {
+        transition_sweep::run(
+            clients,
+            world,
+            &bytes,
+            generation.server_artifact_digest,
+            generation.world_id,
+        )
+        .await?;
+    }
+    if mp_selected || sweep_selected {
         let [mp_first, mp_second, sweep] = extra_world_fixtures(clients, packet_clients).await?;
         if sweep_selected {
             creature_sweep::run(&sweep.clients(clients), world, &generation.rewards).await?;
-        }
-        if transition_selected {
-            transition_sweep::run(&sweep.clients(clients), world, &bytes).await?;
         }
         if mp_selected {
             mp::run(

@@ -144,7 +144,19 @@ and inherits the batch selectors for these opt-in groups:
 - `transition_sweep` uses `OTERYN_E2E_TRANSITION_SWEEP_BATCH=start:len` (default `0:3`).
   It selects from the key-sorted full World census of authored transitions and
   placed floor changes, ladders, holes, and doors. Its `TS.*` rows report
-  native wire outcomes with `mode=seeded` for fixture prerequisites.
+  native wire outcomes with `mode=seeded` for fixture prerequisites. Each
+  admission provisions its own disposable Platform Account and Game Character.
+  For `NODE_BOOT_WORLD_PROFILE=transition-regions`, batches that include native
+  placements need the plan generated from a full compiled World bundle:
+
+  ```bash
+  NODE_BOOT_TRANSITION_FULL_BUNDLE=/tmp/full.otbundle \
+  NODE_BOOT_TRANSITION_PLAN=/tmp/transition-plan.json \
+  cargo test -p oteryn-game-server --lib regional_batch_keeps_full_census_order
+  ```
+
+  Pass the same `NODE_BOOT_TRANSITION_PLAN` to the regional run to retain the
+  full census ordinals.
 
 The runner prints a summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
 at the path reported on stderr. It exits nonzero if any group fails.

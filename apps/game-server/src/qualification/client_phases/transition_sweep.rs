@@ -26,6 +26,10 @@ use serde::Deserialize;
 
 const GROUP: &str = "transition_sweep";
 const BATCH_VARIABLE: &str = "OTERYN_E2E_TRANSITION_SWEEP_BATCH";
+// Previous regional batches had 45 successful preparations, with a maximum of
+// 37.120 s and failures censored at 40 s. Budget for the fresh fixture's two
+// Platform calls (20 s each), Game bootstrap (30 s), join (20 s), and SQL.
+const PREPARE_BUDGET: Duration = Duration::from_secs(105);
 const DEFAULT_BATCH: (usize, usize) = (0, 3);
 const DIRECTIONS: [(StepDirection, CardinalStep); 8] = [
     (StepDirection::North, CardinalStep::North),
@@ -282,6 +286,25 @@ fn census(root: &Path, bytes: &[u8]) -> TestResult<Vec<Entry>> {
     Ok(entries)
 }
 
+type PlanEntry = (String, [u16; 2], Option<[u16; 2]>);
+
+fn planned_batch<'a>(
+    entries: &'a [Entry],
+    plan: &[PlanEntry],
+    start: usize,
+    end: usize,
+) -> TestResult<Vec<&'a Entry>> {
+    plan[start..end]
+        .iter()
+        .map(|(key, _, _)| {
+            entries
+                .binary_search_by(|entry| entry.key.cmp(key))
+                .map(|index| &entries[index])
+                .map_err(|_| format!("regional bundle is missing planned transition {key}").into())
+        })
+        .collect()
+}
+
 fn offset(at: TilePos, dx: i32, dy: i32) -> Option<TilePos> {
     Some(TilePos {
         x: (i32::from(at.x) + dx).try_into().ok()?,
@@ -302,14 +325,19 @@ fn approaches(
     world: &BundleWorld,
     at: TilePos,
 ) -> impl Iterator<Item = (TilePos, StepDirection, CardinalStep)> + '_ {
-    DIRECTIONS.into_iter().filter_map(move |(wire, step)| {
-        let (dx, dy) = step.delta();
-        let from = offset(at, -dx, -dy)?;
-        (walkable(world, from)
-            && world.facts().house_id(from).is_none()
-            && !world.floors().contains(from)
-            && world.floors().teleport(from).is_none())
-        .then_some((from, wire, step))
+    // Prefer ordinary cardinal neighbors, then ordinary diagonals. A transition
+    // tile is also a valid origin when map facts say it can be entered: the
+    // fixture spawns there and does not step onto it.
+    [false, true].into_iter().flat_map(move |transition| {
+        DIRECTIONS.into_iter().filter_map(move |(wire, step)| {
+            let (dx, dy) = step.delta();
+            let from = offset(at, -dx, -dy)?;
+            (walkable(world, from)
+                && world.facts().house_id(from).is_none()
+                && (world.floors().contains(from) || world.floors().teleport(from).is_some())
+                    == transition)
+                .then_some((from, wire, step))
+        })
     })
 }
 
@@ -397,7 +425,11 @@ impl Rows<'_> {
             );
             return None;
         }
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(40);
+        let budget = match step {
+            "prepare" | "prepare-ineligible" => PREPARE_BUDGET,
+            _ => Duration::from_secs(40),
+        };
+        let deadline = tokio::time::Instant::now() + budget;
         harness.bounded_wait(deadline, step);
         match tokio::time::timeout_at(deadline, check).await {
             Ok(Ok(value)) => {
@@ -421,7 +453,7 @@ impl Rows<'_> {
                     step,
                     "FAIL",
                     started,
-                    "step-deadline",
+                    &format!("step-deadline budget_s={}", budget.as_secs()),
                     &format!("deadline root=TS.{}.{step}", self.key),
                 );
                 None
@@ -470,39 +502,32 @@ async fn release(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-async fn fixture_connection(
-    clients: &SeamClients<'_>,
-    index: usize,
-) -> TestResult<sqlx::PgConnection> {
-    wait_character_released(clients, index).await?;
-    Ok(sqlx::PgConnection::connect(clients.url)
-        .await
-        .map_err(|_| "fixture database connection failed")?)
-}
-
-// The initial ordinary logout supplies the real frame, map and artifact digests.
-// Only the disposable released Character's last-position projection is seeded.
+// Use the same loaded pin identities as node/serve.rs:3354. The fresh
+// Character has never held a lease. Only its last-position projection is seeded.
 async fn seed_position(
     db: &mut sqlx::PgConnection,
     character: &[u8; 16],
     from: TilePos,
+    frame: &[u8; 32],
+    map: &[u8; 32],
+    artifact: &[u8; 32],
 ) -> TestResult {
-    let result = sqlx::query(
-        "UPDATE game_character_last_positions SET tile_x=$2,tile_y=$3,tile_floor=$4,
-         health=NULL,mana=NULL,rest=NULL,write_sequence=write_sequence+1
-         WHERE character_id=encode($1,'hex')::uuid
-         AND NOT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions
-             WHERE character_id=encode($1,'hex')::uuid AND session_state<>3)",
+    sqlx::query(
+        "INSERT INTO game_character_last_positions
+         (character_id,world_id,tile_x,tile_y,tile_floor,coordinate_frame_digest,
+          map_revision_digest,server_artifact_digest,character_lease_generation,write_sequence)
+         SELECT character_id,world_id,$2,$3,$4,$5,$6,$7,1,1
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
     )
     .bind(character.as_slice())
     .bind(i32::from(from.x))
     .bind(i32::from(from.y))
     .bind(-i16::from(from.floor))
+    .bind(frame.as_slice())
+    .bind(map.as_slice())
+    .bind(artifact.as_slice())
     .execute(db)
     .await?;
-    if result.rows_affected() != 1 {
-        return Err("released last-position fixture row missing".into());
-    }
     Ok(())
 }
 
@@ -648,36 +673,85 @@ fn key_appearance(number: u16) -> u32 {
 
 struct Fixture<'a> {
     clients: &'a SeamClients<'a>,
-    initialized: [bool; 2],
+    frame: [u8; 32],
+    map: [u8; 32],
+    artifact: [u8; 32],
 }
 
 impl Fixture<'_> {
     async fn admit(
-        &mut self,
-        index: usize,
+        &self,
+        eligible: bool,
         from: TilePos,
         gate: Gate,
         tool: Option<u32>,
     ) -> TestResult<DevClientSession> {
-        if !self.initialized[index] {
-            let mut client = connect_character(self.clients, 0xd8, index).await?;
-            release(&mut client).await?;
-            self.initialized[index] = true;
+        let provision = std::env::var("NODE_BOOT_TRANSITION_PROVISION")?;
+        let world = uuid_text(&self.clients.world);
+        let begun = std::time::Instant::now();
+        let result = tokio::task::spawn_blocking(move || {
+            std::process::Command::new(provision).arg(world).output()
+        })
+        .await??;
+        if !result.status.success() {
+            let reason = match result.status.code() {
+                Some(21) => "platform-account",
+                Some(22) => "platform-intent",
+                Some(23) => "game-bootstrap",
+                _ => "provision-launcher",
+            };
+            return Err(format!(
+                "{reason} failed after {:.3}s",
+                begun.elapsed().as_secs_f64()
+            )
+            .into());
         }
-        let mut db = fixture_connection(self.clients, index).await?;
-        let character = &self.clients.characters[index];
+        let account = String::from_utf8(result.stdout)?.trim().to_owned();
+        let provision_s = begun.elapsed().as_secs_f64();
+        let mut db = sqlx::PgConnection::connect(self.clients.url)
+            .await
+            .map_err(|_| "fixture database connection failed")?;
         let mut tx = db.begin().await?;
-        seed_position(&mut tx, character, from).await?;
+        let bytes: Vec<u8> = sqlx::query_scalar(
+            "SELECT uuid_send(character_id) FROM game_character_roots
+             WHERE account_id=$1::uuid AND world_id=encode($2,'hex')::uuid",
+        )
+        .bind(&account)
+        .bind(self.clients.world.as_slice())
+        .fetch_one(&mut *tx)
+        .await?;
+        let character = <[u8; 16]>::try_from(bytes.as_slice())?;
+        seed_position(
+            &mut tx,
+            &character,
+            from,
+            &self.frame,
+            &self.map,
+            &self.artifact,
+        )
+        .await?;
         if gate != Gate::Ordinary || tool.is_some() {
-            seed_requirements(&mut tx, character, gate, index == 0, tool).await?;
+            seed_requirements(&mut tx, &character, gate, eligible, tool).await?;
         }
         tx.commit().await?;
         db.close().await?;
-        let client = connect_character(self.clients, 0xd9, index).await?;
+        let seed_s = begun.elapsed().as_secs_f64() - provision_s;
+        let scoped = SeamClients {
+            accounts: &[account],
+            characters: &[character],
+            ..*self.clients
+        };
+        let client = connect_character(&scoped, 0xd9, 0).await.map_err(|error| {
+            format!("join after provision_s={provision_s:.3} seed_s={seed_s:.3}: {error}")
+        })?;
         let observed = tile(client.world_spatial().actor_position)?;
+        evidence(&format!(
+            "{GROUP} prepare_timing provision_s={provision_s:.3} seed_s={seed_s:.3} join_s={:.3}",
+            begun.elapsed().as_secs_f64() - provision_s - seed_s
+        ));
         if observed != from {
             let mut client = client;
-            release(&mut client).await?;
+            let _ = release(&mut client).await;
             return Err(format!("seeded-origin={from:?} observed={observed:?}").into());
         }
         Ok(client)
@@ -833,7 +907,7 @@ async fn committed(
 }
 
 async fn sweep_entry(
-    fixture: &mut Fixture<'_>,
+    fixture: &Fixture<'_>,
     world: &BundleWorld,
     entry: &Entry,
     tally: &mut Tally,
@@ -848,7 +922,20 @@ async fn sweep_entry(
         blocked: None,
     };
     let at = entry.at;
-    let approach = approaches(world, at).next();
+    let usable = |(from, _, direction): &(TilePos, StepDirection, CardinalStep)| match entry.action
+    {
+        Action::Floor => floor_landing(world, world.floors(), *from, *direction)
+            .is_some_and(|to| to.floor != at.floor),
+        Action::Shovel { mask, .. } => {
+            let mut floors = world.floors().clone();
+            floors.add(at, mask);
+            floor_landing(world, &floors, *from, *direction).is_some_and(|to| to.floor < at.floor)
+        }
+        _ => true,
+    };
+    let approach = approaches(world, at)
+        .find(usable)
+        .or_else(|| approaches(world, at).next());
     let (gate, tool) = match entry.action {
         Action::Door {
             ordinal,
@@ -874,7 +961,7 @@ async fn sweep_entry(
         let mut negative = rows
             .check("prepare-ineligible", async {
                 let (from, _, _) = approach.ok_or("no enterable adjacent fixture cell")?;
-                fixture.admit(1, from, gate, None).await
+                fixture.admit(false, from, gate, None).await
             })
             .await;
         rows.check("refuse", async {
@@ -895,7 +982,7 @@ async fn sweep_entry(
             let (from, _, _) = approach.ok_or("no enterable adjacent fixture cell")?;
             fixture
                 .admit(
-                    0,
+                    true,
                     from,
                     gate,
                     if matches!(gate, Gate::Key(_)) {
@@ -981,10 +1068,8 @@ async fn sweep_entry(
 
 async fn cleanup(rows: &mut Rows<'_>, step: &'static str, client: Option<DevClientSession>) {
     if let Some(mut client) = client {
-        // Cleanup still runs on an oracle failure so the next entry can admit.
-        let released = tokio::time::timeout(Duration::from_secs(15), release(&mut client)).await;
-        rows.check(step, async { released.map_err(|_| "logout deadline")? })
-            .await;
+        rows.blocked = None;
+        rows.check(step, async { release(&mut client).await }).await;
     } else {
         rows.check::<()>(step, async { Err("missing client".into()) })
             .await;
@@ -995,6 +1080,8 @@ pub(super) async fn run(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     bytes: &[u8],
+    artifact: [u8; 32],
+    world_id: crate::foundation::WorldId,
 ) -> TestResult {
     if !std::env::var("NODE_BOOT_E2E_ONLY")
         .is_ok_and(|list| list.split(',').any(|name| name.trim() == GROUP))
@@ -1004,19 +1091,28 @@ pub(super) async fn run(
     let (start, len) = batch_from_env()?;
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let entries = census(&root, bytes)?;
-    let total = entries.len();
+    let plan: Option<Vec<PlanEntry>> = std::env::var_os("NODE_BOOT_TRANSITION_PLAN")
+        .map(|path| -> TestResult<_> { Ok(serde_json::from_slice(&std::fs::read(path)?)?) })
+        .transpose()?;
+    let total = plan.as_ref().map_or(entries.len(), Vec::len);
     let end = start.saturating_add(len).min(total);
-    let batch = entries
-        .get(start..end)
-        .filter(|batch| !batch.is_empty())
-        .ok_or_else(|| format!("{BATCH_VARIABLE} start {start} is beyond {total} entries"))?;
+    if start >= end {
+        return Err(format!("{BATCH_VARIABLE} start {start} is beyond {total} entries").into());
+    }
+    let batch = match plan {
+        Some(plan) => planned_batch(&entries, &plan, start, end)?,
+        None => entries[start..end].iter().collect(),
+    };
+    let selected = batch.len();
     evidence(&format!(
         "{GROUP} census total={total} start={start} len={len} selected={} mode=seeded",
-        batch.len()
+        selected
     ));
-    let mut fixture = Fixture {
+    let fixture = Fixture {
         clients,
-        initialized: [false; 2],
+        frame: world.frame_binding_digest(world_id),
+        map: world.map_revision_digest(),
+        artifact,
     };
     let mut tally = Tally::default();
     let began = std::time::Instant::now();
@@ -1028,13 +1124,13 @@ pub(super) async fn run(
         let scenario = Box::leak(format!("TS.{key}.prepare").into_boxed_str());
         verdict::indexed(
             scenario,
-            Box::pin(sweep_entry(&mut fixture, world, entry, &mut tally)),
+            Box::pin(sweep_entry(&fixture, world, entry, &mut tally)),
         )
         .await;
     }
     evidence(&format!(
         "{GROUP} summary total={total} start={start} entries={} rows_pass={} rows_fail={} seconds={:.3} mode=seeded",
-        batch.len(),
+        selected,
         tally.pass,
         tally.fail,
         began.elapsed().as_secs_f64(),
@@ -1048,6 +1144,37 @@ pub(super) async fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn regional_batch_keeps_full_census_order() -> TestResult {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let entries = match std::env::var_os("NODE_BOOT_TRANSITION_FULL_BUNDLE") {
+            Some(bundle) => census(&root, &std::fs::read(bundle)?)?,
+            None => authored_transitions(&root)?,
+        };
+        let mut plan: Vec<PlanEntry> = entries
+            .iter()
+            .map(|entry| {
+                let to = match entry.action {
+                    Action::StepTo(to) => Some([to.x, to.y]),
+                    _ => None,
+                };
+                (entry.key.clone(), [entry.at.x, entry.at.y], to)
+            })
+            .collect();
+        plan.sort_unstable_by(|left, right| left.0.cmp(&right.0));
+        let mut local: Vec<_> = entries
+            .into_iter()
+            .filter(|entry| entry.key == plan[1].0 || entry.key == plan[2].0)
+            .collect();
+        local.sort_unstable_by(|left, right| left.key.cmp(&right.key));
+        assert_eq!(planned_batch(&local, &plan, 1, 3)?.len(), 2);
+        assert!(planned_batch(&local, &plan, 0, 2).is_err());
+        if let Some(output) = std::env::var_os("NODE_BOOT_TRANSITION_PLAN") {
+            std::fs::write(output, serde_json::to_vec(&plan)?)?;
+        }
+        Ok(())
+    }
 
     #[test]
     fn batch_requires_plain_bounded_decimal_and_positive_length() -> TestResult {

@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Wire real purpose-separated Game channels from the upstream harness report."""
 import json
+import secrets
 import subprocess
 import sys
+import time
+import uuid
 from pathlib import Path
 
 
@@ -87,6 +90,44 @@ def bootstrap(work, account, world, operation, revisions, name="Qualification Tw
         raise ValueError("intent_binding_mismatch")
 
 
+def transition_character(work, world, revisions, ops):
+    # Each attempt owns its Account and Character for the lifetime of the
+    # disposable stack, including when a previous Character remains leased.
+    def identifier():
+        data = bytearray(uuid.uuid4().bytes)
+        data[:6] = (time.time_ns() // 1_000_000).to_bytes(6, "big")
+        data[6] = (data[6] & 0x0f) | 0x70
+        return uuid.UUID(bytes=bytes(data))
+
+    account, operation = identifier(), identifier()
+    alphabet = "abcdefghijklmnopqrstuvwxyz"
+    value = account.int
+    suffix = ""
+    for _ in range(13):
+        value, letter = divmod(value, len(alphabet))
+        suffix += alphabet[letter]
+    name = "Sweep " + suffix.capitalize()
+    env = json.loads((work / "portal/secrets/env.json").read_text())
+    binary = json.loads((work / "identity.json").read_text())["portal_binary"]
+    try:
+        subprocess.run([binary, "seed", "account", json.dumps({
+            "accountId": str(account), "email": f"nb-{account}@example.invalid",
+            "password": secrets.token_urlsafe(48),
+        })], env=env, capture_output=True, timeout=20, check=True)
+    except (OSError, subprocess.SubprocessError):
+        sys.exit(21)
+    try:
+        bootstrap(work, str(account), world, str(operation), revisions, name)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        sys.exit(22)
+    try:
+        subprocess.run([*ops, "--operation-id", str(operation)],
+                       capture_output=True, timeout=30, check=True)
+    except (OSError, subprocess.SubprocessError):
+        sys.exit(23)
+    print(account)
+
+
 if __name__ == "__main__":
     try:
         if sys.argv[1] == "configure":
@@ -94,6 +135,8 @@ if __name__ == "__main__":
                       unprivileged=sys.argv[6:] == ["--unprivileged"])
         elif sys.argv[1] == "bootstrap":
             bootstrap(Path(sys.argv[2]), *sys.argv[3:6], sys.argv[6:10], *sys.argv[10:])
+        elif sys.argv[1] == "transition-character":
+            transition_character(Path(sys.argv[2]), sys.argv[3], sys.argv[4:8], sys.argv[8:])
         else:
             raise ValueError("unknown_step")
     except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError):

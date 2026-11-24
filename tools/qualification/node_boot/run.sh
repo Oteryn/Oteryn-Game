@@ -164,8 +164,12 @@ case "$NODE_BOOT_WORLD_PROFILE" in
   full) WORLD_REGIONS=all ;;
   transition-regions)
     [[ ",${selected_groups//[[:space:]]/}," == ,transition_sweep, ]] || blocked regional_profile_requires_transition_sweep
+    transition_plan_args=()
+    if [[ -n "${NODE_BOOT_TRANSITION_PLAN:-}" ]]; then
+      transition_plan_args+=("$NODE_BOOT_TRANSITION_PLAN")
+    fi
     WORLD_REGIONS="$(python3 "$GAME_SOURCE/tools/qualification/node_boot/transition_regions.py" \
-      "$GAME_SOURCE" "${OTERYN_E2E_TRANSITION_SWEEP_BATCH:-0:3}")" || blocked invalid_transition_region_batch
+      "$GAME_SOURCE" "${OTERYN_E2E_TRANSITION_SWEEP_BATCH:-0:3}" "${transition_plan_args[@]}")" || blocked invalid_transition_region_batch
     ;;
   town) WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt")" ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
@@ -1503,9 +1507,23 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       "NODE_BOOT_PVP_CHANNEL_ID=$PVP_CHANNEL_ID" "NODE_BOOT_PVP_ACCOUNT_ID=${PVP_ACCOUNT_IDS[0]}"
       "NODE_BOOT_PVP_SECOND_ACCOUNT_ID=${PVP_ACCOUNT_IDS[1]}")
   fi
+  if [[ ",${selected_groups//[[:space:]]/}," == *,transition_sweep,* ]]; then
+    local provision="$WORK/transition-provision"
+    {
+      printf '#!/usr/bin/env bash\nexec'
+      printf ' %q' python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" transition-character "$WORK"
+      printf ' "$1"'
+      printf ' %q' "${INTERPRETATION[@]}" "${as_operator[@]}" env "${NODE_GAMEPLAY_ENV[@]}" \
+        "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" character bootstrap \
+        --socket "$BASE/run/control.sock"
+      printf '\n'
+    } > "$provision"
+    chmod 700 "$provision"
+    test_env+=("NODE_BOOT_TRANSITION_PROVISION=$provision")
+  fi
   # Row selection, fail-fast and the no-progress watchdog belong to the seam harness.
   local knob
-  for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S OTERYN_E2E_TRANSITION_SWEEP_BATCH; do
+  for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S NODE_BOOT_TRANSITION_PLAN OTERYN_E2E_TRANSITION_SWEEP_BATCH; do
     [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
   done
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
