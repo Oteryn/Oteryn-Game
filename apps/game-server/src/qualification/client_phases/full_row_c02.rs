@@ -460,10 +460,12 @@ async fn fund_ranged_purchase(
         )
         .into());
     }
-    tokio::time::timeout_at(
-        approach_deadline,
-        approach_funding_rat(client, world, approach_deadline),
-    )
+    tokio::time::timeout_at(approach_deadline, async {
+        // The starter offhand has unknown weapon semantics. The server qualifies
+        // that slot first, before it can use the ranged profile on the starter wand.
+        stow_offhand(client).await?;
+        approach_funding_rat(client, world, approach_deadline).await
+    })
     .await
     .map_err(|_| format!("gold-approach-budget:observed={carried}:needed={needed}"))??;
     evidence(&format!(
@@ -705,8 +707,8 @@ async fn wait_moved_inventory(
     })?
 }
 
-async fn clear_bow_offhand(client: &mut DevClientSession) -> TestResult {
-    let inventory = client.inventory().ok_or("bow-offhand-inventory-absent")?;
+async fn stow_offhand(client: &mut DevClientSession) -> TestResult {
+    let inventory = client.inventory().ok_or("offhand-inventory-absent")?;
     let Some(offhand) = inventory
         .equipment
         .iter()
@@ -954,7 +956,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let arrow = reference(ARROW)?;
     let wand = reference(WAND)?;
     let rod = reference(ROD)?;
-    clear_bow_offhand(&mut client).await?;
+    stow_offhand(&mut client).await?;
     equip(&mut client, bow, EquipmentSlot::RightHand).await?;
     equip(&mut client, arrow, EquipmentSlot::Ammo).await?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
