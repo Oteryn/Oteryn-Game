@@ -849,6 +849,35 @@ fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler
 
 ops() { "${as_operator[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
+# f6 walks to live NPCs in the town crop. Pin the staged catalogue to the
+# same source checkout used to compile that crop.
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_WORLD_PROFILE" == town ]]; then
+  groups="${NODE_BOOT_E2E_ONLY:-}"
+  if [[ ",${groups//[[:space:]]/}," == *,f6,* ]]; then
+    python3 -B - "$GAME_SOURCE" "$WORK/npc-data" <<'PY_NPC'
+import json
+from pathlib import Path
+import sys
+
+source, destination = map(Path, sys.argv[1:])
+sys.path.insert(0, str(source / "deploy/synology-game"))
+from stage_npc_data import PIN_SCHEMA, catalogue_digest, collect_catalogue, project_files, stage
+
+content = source / "content"
+revision, project = project_files(content / "world")
+pin = destination.with_suffix(".pin.json")
+pin.write_text(json.dumps({
+    "schema": PIN_SCHEMA,
+    "project_revision": revision,
+    "project_sha256": catalogue_digest(project.items()),
+    "catalogue_sha256": catalogue_digest(collect_catalogue(content)),
+}), encoding="utf-8")
+stage(pin, source, destination)
+PY_NPC
+    "${as_operator[@]}" cp -R "$WORK/npc-data" "$BASE/npc-data"
+  fi
+fi
+
 launch_node() { # PID variable, config, log
   # Detached from the stage's output pipe, so the stage ends while it serves.
   (
@@ -860,7 +889,12 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2"
+    local -a npc_args=()
+    if [[ "$1" == NODE_PID && -f "$BASE/npc-data/PROJECT_SHA256" ]]; then
+      npc_args=(--npc-data-project "$BASE/npc-data/content/world"
+        --npc-data-sha256 "$(<"$BASE/npc-data/PROJECT_SHA256")")
+    fi
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2" "${npc_args[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
 }
