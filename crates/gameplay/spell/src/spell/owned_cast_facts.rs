@@ -323,8 +323,10 @@ impl OwnedCastFacts {
                         &item.definition.revision_ref,
                     )
                     .ok_or(OwnedFactsError::UnknownItemPolicy)?;
-                let ReferenceItemField::Known(weapon) = &policy.record().semantics.weapon else {
-                    return Err(OwnedFactsError::UnavailableEquipment);
+                let weapon = match &policy.record().semantics.weapon {
+                    ReferenceItemField::Known(weapon) => weapon,
+                    ReferenceItemField::NotApplicable => continue,
+                    _ => return Err(OwnedFactsError::UnavailableEquipment),
                 };
                 let ReferenceItemField::Known(kind) = weapon.weapon_type else {
                     return Err(OwnedFactsError::UnavailableEquipment);
@@ -370,10 +372,10 @@ impl OwnedCastFacts {
                 }
             }
         }
-        if needs_attack && attack.is_none() {
+        if spell.needs_weapon && attack.is_none() {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
-        let attack_factor = if needs_attack {
+        let attack_factor = if needs_attack && attack.is_some() {
             self.equipment
                 .combat_mode
                 .ok_or(OwnedFactsError::UnknownCombatMode)?
@@ -384,7 +386,10 @@ impl OwnedCastFacts {
         if spell.needs_shield && shield.is_none() {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
-        let (attack_skill, attack_value, melee_weapon) = attack.unwrap_or((0, 0, false));
+        // Crystal 201189f8 combat.cpp:2051,2065-2077 supplies skill 0, attack 7
+        // and factor 0 when a skill callback runs without a weapon.
+        let (attack_skill, attack_value, melee_weapon) =
+            attack.unwrap_or((0, if needs_attack { 7 } else { 0 }, false));
         let harmony = if spell.harmony_role == Some(super::HarmonyRole::Spender) {
             if let Some(monk) = &state.monk {
                 let stage = if self.has_current_wheel(now) {

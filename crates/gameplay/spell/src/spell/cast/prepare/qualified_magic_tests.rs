@@ -101,10 +101,11 @@ fn owner(
     loyalty: u32,
     proficiency: u32,
 ) -> Result<(PlayerSpellState, OwnedCastFacts), String> {
-    let (vocation, key) = if matches!(spell.name.as_str(), "Food" | "Heal Friend") {
-        (Vocation::Druid, "druid")
-    } else {
-        (Vocation::Paladin, "paladin")
+    let (vocation, key) = match spell.name.as_str() {
+        "Food" | "Heal Friend" => (Vocation::Druid, "druid"),
+        "Chained Penance" => (Vocation::Monk, "monk"),
+        "Annihilation" => (Vocation::Knight, "knight"),
+        _ => (Vocation::Paladin, "paladin"),
     };
     let mut state = PlayerSpellState::new(
         CharacterCastFacts {
@@ -364,5 +365,29 @@ fn gp001_qualified_magic_keeps_raw_build_binding_and_live_state_checks() -> Resu
             );
         }
     }
+    Ok(())
+}
+
+#[test]
+fn source_skill_formulas_without_a_weapon_use_unarmed_inputs() -> Result<(), String> {
+    let content = content()?;
+    for name in ["Chained Penance", "Ethereal Spear"] {
+        let spell = spell(&content, name)?;
+        assert!(!spell.needs_weapon, "{name}");
+        let (state, owned) = owner(&content, &spell, 0, 0)?;
+        let caster = owned
+            .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
+            .map_err(|error| format!("{name}: {error:?}"))?;
+        assert_eq!((caster.attack_skill, caster.attack_value), (0, 7), "{name}");
+        assert_eq!(caster.attack_factor, 0.0, "{name}");
+        assert!(!caster.melee_weapon, "{name}");
+    }
+    let spell = spell(&content, "Annihilation")?;
+    let (state, owned) = owner(&content, &spell, 0, 0)?;
+    assert!(spell.needs_weapon);
+    assert!(matches!(
+        owned.caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW),
+        Err(OwnedFactsError::UnavailableEquipment)
+    ));
     Ok(())
 }
