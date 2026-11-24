@@ -1398,7 +1398,17 @@ async fn ammo_attack(
             .map(|worn| worn.item.handle)
     })
     .await?;
-    let target = full_e2ef5::wild_rat(client, world, &[]).await?.entity;
+    super::creature_sweep::leave_protection_zone(client, world).await?;
+    let answer = request_spawn(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "oteryn:creature.rat".to_owned(),
+    )
+    .await?;
+    let target = parse_spawned_entity(&answer)?;
+    observe(client, |client| {
+        client.world_entities()?.get(&target).copied()
+    })
+    .await?;
     let quiver_count = |client: &mut DevClientSession| {
         let views = client.session_mut().container_views()?;
         let view = views
@@ -1443,19 +1453,23 @@ async fn ammo_attack(
 
 // RUNE_USE targets come from the native spell book; the generic direct USE
 // cannot exercise a creature or tile rune (rune_use_bridge.rs).
+fn rune_definition(key: &str) -> TestResult<&'static crate::spell::SpellDefinition> {
+    let source_item = key
+        .strip_prefix("oteryn:item.tibia.i")
+        .ok_or("rune-source-item-identity-unavailable")?
+        .parse::<u32>()?;
+    native_spell_book()?
+        .rune(source_item)
+        .ok_or_else(|| "rune-native-definition-unavailable".into())
+}
+
 async fn rune_probe(
     client: &mut DevClientSession,
     world: &BundleWorld,
     entry: ItemEntry,
     key: &str,
 ) -> TestResult<(Use, u64)> {
-    let source_item = key
-        .strip_prefix("oteryn:item.tibia.i")
-        .ok_or("rune-source-item-identity-unavailable")?
-        .parse::<u32>()?;
-    let spell = native_spell_book()?
-        .rune(source_item)
-        .ok_or("rune-native-definition-unavailable")?;
+    let spell = rune_definition(key)?;
     let from = tile(client.world_spatial().actor_position)?;
     let path = route(world, from, |at| {
         world
@@ -1812,6 +1826,22 @@ async fn sweep_item(
     };
     let build = if ammo_gear && paladin.permits(positive) {
         Some(paladin)
+    } else if rows.pending.contains(&"use")
+        && !item.attributes["rune_consumption"].is_null()
+        && let Ok(spell) = rune_definition(key)
+    {
+        VOCATIONS
+            .iter()
+            .enumerate()
+            .find_map(|(vocation, name)| {
+                let class = crate::spell::Vocation::from_key(name)?;
+                let build = Build {
+                    vocation,
+                    level: HIGH,
+                };
+                (spell.vocations.contains(&class) && build.permits(positive)).then_some(build)
+            })
+            .or_else(|| Build::supported(positive))
     } else {
         Build::supported(positive)
     };
