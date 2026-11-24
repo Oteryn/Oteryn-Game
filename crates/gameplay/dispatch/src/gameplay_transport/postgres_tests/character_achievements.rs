@@ -11,7 +11,7 @@ use crate::durability::{
 };
 use crate::gameplay_transport::{
     capabilities::{OfferedCapability, SelectedCapabilities},
-    connection::FirstEntryOutcome,
+    connection::{FirstEntryOutcome, FreshAdmissionAuthority},
 };
 use oteryn_protocol_oteryn::{
     CommandStatus,
@@ -147,6 +147,40 @@ fn scenario() -> TestResult {
                 && !row.description.is_empty()
                 && row.earned_at > 0)
         );
+        use oteryn_protocol_oteryn::account_achievements::decode_account_achievements_result;
+        assert_eq!(
+            exchange(&owner, &mut admitted, 2, 6387, &[1]).await?,
+            (CommandStatus::Rejected, Vec::new())
+        );
+        let original = admitted.continuity.selected_capabilities;
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(owner.offered_capabilities(), &[612])
+                .ok_or("completion capability")?;
+        let (status, completed) = exchange(&owner, &mut admitted, 3, 6387, &[0]).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(
+            decode_account_achievements_result(&completed).map_err(debug)?,
+            result.page
+        );
+        let (status, incomplete) = exchange(&owner, &mut admitted, 4, 6387, &[1]).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        let incomplete = decode_account_achievements_result(&incomplete).map_err(debug)?;
+        assert_eq!(incomplete.fact_count, 2);
+        assert_eq!(incomplete.total_points, result.page.total_points);
+        assert!(!incomplete.rows.is_empty());
+        assert!(incomplete.rows.iter().all(|row| row.earned_at == 0
+            && !row.secret
+            && facts.iter().all(|fact| fact.achievement_key != row.key)));
+        assert!(incomplete.rows.windows(2).all(|pair| (
+            pair[0].grade,
+            &pair[0].name,
+            &pair[0].key
+        ) < (
+            pair[1].grade,
+            &pair[1].name,
+            &pair[1].key
+        )));
+        admitted.continuity.selected_capabilities = original;
         sqlx::query(
             "INSERT INTO game_character_account_guards(account_id) VALUES(encode($1,'hex')::uuid)",
         )

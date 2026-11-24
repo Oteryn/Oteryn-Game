@@ -67,10 +67,10 @@ progress above its requirement and overlong/non-canonical race keys.
 
 The full response includes the week identity, all three balances, weekly
 progress and pending rewards, bounty offers/active progress, the historical
-`daily_reroll_at` field (always zero), preferred/unwanted lists, talisman levels/bonuses/next prices and
-shop offer data. Item identifiers in delivery/shop rows identify donor catalogue
-entries; the server resolves them against the active canonical Item catalogue
-before any custody write.
+`daily_reroll_at` field, preferred/unwanted lists, talisman levels/bonuses/next prices and shop
+offer data. Clients without capability 578 receive zero in this timestamp field
+and donor item identifiers in delivery rows. Shop identifiers continue to name
+donor catalogue entries. Custody resolves items against the active canonical Item catalogue.
 
 For an undelivered task, delivery `current` is the recorded count available from
 carried inventory, stash and depot, excluding Inbox. It may exceed `required`.
@@ -92,7 +92,7 @@ Refused commands do not spend currency or consume items.
 | 2 | Wrong board or bounty state |
 | 3 | Level below the selected difficulty's minimum |
 | 4 | Insufficient points, tokens, or other rule resources |
-| 5 | Retained legacy cooldown refusal; no new bounty reroll emits it |
+| 5 | Daily token already claimed for this reset day |
 | 6 | Progression or list limit reached |
 | 7 | Permanent offer already owned |
 | 8 | Addon requires the base outfit |
@@ -114,12 +114,12 @@ existing balances and definition pins are preserved. A reward exceeding a bound
 records arithmetic-overflow refusal atomically and returns that refusal on replay.
 
 The reroll balance uses uint64 on the wire and the existing nonnegative BIGINT
-durable owner, through `i64::MAX`. The free daily token is granted only by Daily Reward; completed
-bounties retain their earned token reward. The Winter Update 2026 client stores at most 10
+durable owner, through `i64::MAX`. Daily Reward and completed bounties retain
+their existing token grants. The Winter Update 2026 client stores at most 10
 tokens: every credit (daily claim or completed bounty) adds `min(requested, 10 - balance)`.
 A completed bounty claimed at 10 or more pays its XP and points and grants 0 tokens (the
-receipt's `reroll_tokens_granted` is 0); a daily claim at the cap writes a zero ledger
-entry. A historical balance above 10 is kept and only spending lowers it (migration 2760).
+receipt's `reroll_tokens_granted` is 0). A Daily Reward claim at the cap writes a zero
+ledger entry. A historical balance above 10 is kept and only spending lowers it (migration 2760).
 Every bounty offer reroll consumes exactly one
 token; a zero balance is refusal 4 (insufficient resources), regardless of elapsed time.
 The retired free-reroll deadline in saved board JSON is ignored when loading old boards.
@@ -171,8 +171,9 @@ The server's committed reset period is the only calendar authority.
 Reference: TibiaData v4 news 8567, fetched 2026-11-09
 (`https://api.tibiadata.com/v4/news/id/8567`, `OTHER_STRUCTURED_TIBIA_DATA`),
 reports a special Monday reward window displaying rewards and choosing the next
-difficulty. News 8998 (same fetch date and source class) retires the daily-token
-claim from the Bounty Board; Daily Reward supplies it instead. The owner's T195
+difficulty. News 8998 (same fetch date and source class) retired the original
+Bounty Board daily claim in the Winter Update. Capability 578 adds the donor
+claim under a new action for Oteryn clients. The owner's T195
 request in PR #3091 (2026-11-10) also removes the timed free offer reroll.
 Earned completed-bounty tokens retain their existing rules.
 
@@ -212,3 +213,31 @@ that key for replay even after another task is selected. Task reward XP
 and Bounty Points retain the existing claim owner. Dust uses the frozen difficulty
 and grade of the selected offer; account state is resolved by the existing Premium
 kill owner. Dust overflow keeps the existing dust limit/lost-amount ledger rules.
+
+## Daily bounty token and delivery references
+
+Capability **578** requires 72. Command **6319** takes only full action **20**
+(selection 0, empty race) and returns a full reply. Action 20 is valid only on
+6319. Action 12 stays retired and the codec rejects it on every command.
+
+Crystal `201189f8` `src/io/iobountytasks.cpp:353–376` grants one token and
+refuses a claim at the token cap before testing the deadline. Oteryn allows
+one successful claim per Character and World per committed reset day. Its
+calendar follows the World reset owner's 06:00 Europe/Berlin boundary,
+including daylight saving time. The durable board, command receipt, and token
+ledger update in the same fenced transaction. A capped balance yields refusal 6
+and leaves the day's claim available if the player spends a token. Replaying
+the same command returns its original response. This claim is separate from
+Daily Reward's existing token credit.
+
+For clients selecting 578, `daily_reroll_at` is a Unix timestamp in seconds.
+It gives the start of the current committed reset day when the daily claim
+is unused, or the scheduled start of the next reset day after a claim. Only
+a committed reset renews eligibility. The token cap applies independently.
+
+Every full reply to a client selecting 578 sends the active canonical Item
+`definition_ref` (uint32) in each delivery row's field 1. Without 578 the same
+field carries the donor identifier (uint16) in its original wire format.
+Delivery slot numbers and custody lookup are unchanged. New receipts freeze
+the canonical references with their delivery availability. Older receipts
+resolve their stored donor identifiers against the active Item catalogue.

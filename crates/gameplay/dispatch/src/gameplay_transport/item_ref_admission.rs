@@ -93,6 +93,14 @@ fn native_corpse_appearance(
         return None;
     }
     let (key, revision) = index.definition_at(reference)?;
+    native_item_appearance(native, key, revision)
+}
+
+pub(super) fn native_item_appearance(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    key: &str,
+    revision: &str,
+) -> Option<std::num::NonZeroU16> {
     let policy = native.item_policy(key, revision)?;
     if policy.source_digest() != native.source_digest() {
         return None;

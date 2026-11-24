@@ -1,0 +1,4 @@
+name=animus_mastery_xp
+commands=6388
+[route]
+routing::animus_mastery::route(authority, &session.admitted, command).await

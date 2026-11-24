@@ -430,6 +430,10 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
             admitted.continuity.selected_capabilities.contains(
                 oteryn_protocol_oteryn::personal_map_marks::CAPABILITY_PERSONAL_MAP_MARKS_V1,
             ),
+            admitted
+                .continuity
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::quest_log::CAPABILITY_QUEST_MISSION_TRACKING_V1),
         ) else {
             return Err(ServeEnd::Disconnected);
         };

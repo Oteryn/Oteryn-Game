@@ -89,8 +89,17 @@ const fn side_of(side: NpcTradeSide) -> npc_trade::NpcTradeSide {
 
 /// Whether the committed trade answered this intent: the same kind, offer, side, quantity and price
 /// (the occurrence already binds the NPC actor). A sell-all's stored quantity is the units it sold.
-fn answers(receipt: &NpcTradeReceipt, intent: &NpcTradeIntent, sell_all: bool) -> bool {
+fn answers(receipt: &NpcTradeReceipt, intent: &NpcTradeIntent, mode: Mode) -> bool {
+    let sell_all = matches!(mode, Mode::SellAll { .. });
     receipt.sell_all == sell_all
+        && receipt.packed == matches!(mode, Mode::Packed)
+        && receipt.include_equipped
+            == matches!(
+                mode,
+                Mode::SellAll {
+                    include_equipped: true
+                }
+            )
         && receipt.catalogue_revision == intent.catalogue_revision
         && receipt.offer_index == intent.offer_index
         && receipt.side == side_of(intent.side)
@@ -120,11 +129,27 @@ pub(super) async fn npc_trade(
     actor: ExactActorRef,
     command: UseCommand,
     intent: NpcTradeIntent,
+    packed: bool,
 ) -> NpcTradeStep {
-    match trade(admission, actor, command, intent, false).await {
+    match trade(
+        admission,
+        actor,
+        command,
+        intent,
+        if packed { Mode::Packed } else { Mode::Direct },
+    )
+    .await
+    {
         Ok(_) => NpcTradeStep::Traded,
         Err(step) => *step,
     }
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum Mode {
+    Direct,
+    Packed,
+    SellAll { include_equipped: bool },
 }
 
 /// One trade command: command 8 (`sell_all` false) or an NPC-TRADE-SELLALL-1 sell-all of a count-1
@@ -135,8 +160,15 @@ pub(super) async fn trade(
     actor: ExactActorRef,
     command: UseCommand,
     intent: NpcTradeIntent,
-    sell_all: bool,
+    mode: Mode,
 ) -> Result<SoldUnits, Box<NpcTradeStep>> {
+    let sell_all = matches!(mode, Mode::SellAll { .. });
+    let include_equipped = matches!(
+        mode,
+        Mode::SellAll {
+            include_equipped: true
+        }
+    );
     let session = command.game_session_id;
     // Without an item fence no trade can commit or have committed for the session.
     let (Some(fence), Ok(command_id)) = (command.item_fence, CommandId::new(command.command_id))
@@ -158,7 +190,7 @@ pub(super) async fn trade(
         )
         .await
     {
-        Ok(Some(receipt)) if answers(&receipt, &intent, sell_all) => {
+        Ok(Some(receipt)) if answers(&receipt, &intent, mode) => {
             return Ok(SoldUnits {
                 units: receipt.quantity,
                 gold: u64::from(receipt.quantity).saturating_mul(receipt.unit_price),
@@ -178,7 +210,9 @@ pub(super) async fn trade(
         Err(NpcTradeError::Unavailable(_)) => return Err(Box::new(NpcTradeStep::Unknown)),
         Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
     };
-    if !admission.states.player_trades.physical_service(session) {
+    if (hireling.is_some() && (include_equipped || matches!(mode, Mode::Packed)))
+        || !admission.states.player_trades.physical_service(session)
+    {
         return Err(Box::new(NpcTradeStep::rejected()));
     }
     let now = unix_ms_now();
@@ -364,7 +398,26 @@ pub(super) async fn trade(
         Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
     };
     let id = |tag: &[u8]| derived(tag, session, command.command_id);
+    let shopping_bag = if matches!(mode, Mode::Packed) {
+        let key = npc_trade::SHOPPING_BAG_KEY;
+        let Some(revision) = native.item_index().and_then(|index| index.revision(key)) else {
+            return Err(Box::new(NpcTradeStep::rejected()));
+        };
+        let definition = TypedDefinitionRef {
+            family: ITEM_FAMILY.to_owned(),
+            production_key: key.to_owned(),
+            revision_ref: revision.to_owned(),
+        };
+        match generation_item_facts(native, &definition) {
+            Ok(facts) => Some(facts),
+            Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
+        }
+    } else {
+        None
+    };
     let request = NpcTradeRequest {
+        shopping_bag,
+        include_equipped,
         fluid_subtype: if fluid_container {
             offer
                 .sub_type
@@ -466,7 +519,24 @@ pub(super) async fn trade(
             .commit_npc_trade(admission.character, admission.holder, fence, request)
             .await
     };
-    step_of(result)
+    let outcome = step_of(result);
+    if include_equipped && outcome.is_ok() {
+        admission
+            .states
+            .attack
+            .lock()
+            .await
+            .forget_weapon(actor, session);
+        if admission
+            .refresh_clock_equipment_effects(actor, session, fence, false)
+            .await
+            != Ok(true)
+        {
+            // The receipt is committed. Rejoin must reload equipment before the receipt is sent.
+            return Err(Box::new(NpcTradeStep::Unknown));
+        }
+    }
+    outcome
 }
 
 /// The step of a commit result: any committed outcome is `OK`; a storage failure is unknown; every

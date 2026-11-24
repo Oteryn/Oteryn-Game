@@ -56,7 +56,7 @@ SCENARIO = re.compile(
     r"SEAM_EVIDENCE e2e_all scenario=([A-Za-z0-9_.-]{1,64}) status=([A-Z0-9_-]{1,32}) "
     r"seconds=([0-9]{1,7}(?:\.[0-9]{1,6})?)(?:\s|$)"
 )
-NODE_BOOT_RESULT = re.compile(r"(?:^|\s)NODE_BOOT_RESULT=([A-Z_]{1,40})(?:\s|$)")
+NODE_BOOT_RESULT = re.compile(r"(?:^|\s)NODE_BOOT_RESULT=([A-Z_]{1,40}(?: mode=unprivileged)?)(?:\s|$)")
 GAME_PLATFORM_RESULT = re.compile(r"(?:^|\s)GAME_PLATFORM_RESULT=(PASS|FAIL|BLOCKED)(?:\s|$)")
 INCOMPLETE = re.compile(r"SEAM_EVIDENCE E2EF1_INCOMPLETE(?:\s|$)")
 

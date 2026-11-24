@@ -9,7 +9,10 @@ pub(super) async fn with_peer_liveness<T>(
     work: impl std::future::Future<Output = TestResult<T>>,
 ) -> TestResult<T> {
     super::mp::observations::while_servicing_liveness(work, async || {
-        client.service_liveness(Duration::from_millis(25)).await?;
+        client
+            .session_mut()
+            .service_liveness_discarding_events(Duration::from_millis(25))
+            .await?;
         Ok(())
     })
     .await?

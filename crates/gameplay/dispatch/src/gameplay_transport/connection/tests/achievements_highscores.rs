@@ -46,6 +46,7 @@ fn achievements_command(id: u64, query: &[u8]) -> Vec<u8> {
 fn account_achievements_query_reads_only_the_controller_account() -> Result<(), Box<dyn Error>> {
     const ACCOUNT: [u8; 16] = uuid_v7(0x55);
     let request = |page, command_id| AccountAchievementsRequest {
+        completion: oteryn_protocol_oteryn::account_achievements::AchievementCompletion::Completed,
         account_id: ACCOUNT,
         page,
         game_session_id: SESSION,

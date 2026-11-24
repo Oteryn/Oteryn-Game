@@ -721,3 +721,36 @@ fn m01_peer_operation_services_idle_client_across_three_probes() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn m01_peer_operation_drains_a_burst_of_idle_deltas() -> TestResult {
+    run_transport(|| async {
+        let completed = Arc::new(Notify::new());
+        let server_completed = Arc::clone(&completed);
+        let (mut client, peer) = connect_peer(reading(359), 8, move |mut stream| async move {
+            for revision in 1..=300 {
+                send_clock(
+                    &mut stream,
+                    revision,
+                    reading(359 + u16::try_from(revision)?),
+                )
+                .await?;
+            }
+            probe(&mut stream, 1, 300).await?;
+            server_completed.notify_one();
+            wait_for_close(&mut stream).await;
+            Ok(())
+        })
+        .await?;
+        super::super::provisioning::with_peer_liveness(&mut client, async {
+            completed.notified().await;
+            Ok(())
+        })
+        .await?;
+        assert_eq!(client.last_server_sequence(), 300);
+        assert!(client.take_events().is_empty());
+        drop(client);
+        peer.await??;
+        Ok(())
+    })
+}

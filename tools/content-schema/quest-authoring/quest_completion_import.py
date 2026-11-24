@@ -14,6 +14,7 @@ import json
 from pathlib import Path
 
 from native_talk_binding_evidence import apply_native_talk_bindings, canonical_definitions
+from quest_threatened_dreams_followup import QUEST as THREATENED_DREAMS, align_historical_associations
 
 TOOL = 'tools/content-schema/quest-authoring/'
 MAIN = 'ad7a08f96caa4e7bd0e7fa90c67b39229d637277'
@@ -190,15 +191,22 @@ def expected(root):
     stages.validate_packet(choices)
     source_stages.validate_packet(source_choices)
     events, event_followup = apply_event_corrections(root, choices, pinned(root, EVENTS, EVENTS_SHA))
+    definitions = canonical_definitions(root)
+    source_events = pinned(root, SOURCE_EVENTS, SOURCE_EVENTS_SHA)
+    recipe = definitions[THREATENED_DREAMS]["oteryn_recipe"]["payload"]["recipe"]
+    source_events["records"] = [
+        align_historical_associations(row, recipe) if row["quest_ref"]["key"] == THREATENED_DREAMS else row
+        for row in source_events["records"]
+    ]
     plan = binding_plan(
         choices,
         events,
         pinned(root, NPC, NPC_SHA),
         event_followup,
         source_choices,
-        pinned(root, SOURCE_EVENTS, SOURCE_EVENTS_SHA),
+        source_events,
     )
-    native_paths = apply_native_talk_bindings(root, plan, canonical_definitions(root))
+    native_paths = apply_native_talk_bindings(root, plan, definitions)
     refined, proof = refine.apply(root, source['quests'])
     base = dict(source, quests=refined)
     candidate = stages.merge(base, choices)
@@ -206,7 +214,7 @@ def expected(root):
     inputs = [BASE, STAGES, SOURCE_STAGES, TERMINAL_REFINEMENTS, REFINE, proof['path'],
               TOOL + 'samples/state-effect-refinements/effect_refinements.schema.json',
               EVENTS, event_followup['path'], SOURCE_EVENTS, NPC,
-              TOOL + 'quest_completion_import.py', TOOL + 'galthen_native_kills.py', TOOL + 'native_talk_binding_evidence.py', *native_paths]
+              TOOL + 'quest_completion_import.py', TOOL + 'quest_threatened_dreams_followup.py', TOOL + 'galthen_native_kills.py', TOOL + 'native_talk_binding_evidence.py', *native_paths]
     sources = [{'path': path, 'sha256': sha((root / path).read_bytes())} for path in inputs]
     sources += choices['authoring_sources']
     candidate['classification'] = 'LOCAL_SOURCE_AND_CHOSEN_IMPORT_CANDIDATE_NOT_ACTIVATED'

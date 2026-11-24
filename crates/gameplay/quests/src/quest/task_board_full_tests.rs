@@ -18,6 +18,7 @@ fn context(creatures: &[TaskBoardCreature]) -> TaskBoardContext<'_> {
         has_vocation: true,
         now_unix_seconds: 1_800_000_000,
         period: 42,
+        reset_day: Some(42),
         creatures,
         available_gold: 5_000,
         reroll_tokens: 0,

@@ -2,9 +2,13 @@ use super::*;
 
 #[test]
 fn stash_strict_codecs_and_limits() -> Result<(), Error> {
+    let handle = ItemHandle::new(1).ok_or(Error::Malformed)?;
     for action in [
         StashAction::Browse,
-        StashAction::Stow(ItemHandle::new(1).ok_or(Error::Malformed)?),
+        StashAction::Stow(handle),
+        StashAction::StowQuantity { handle, amount: 37 },
+        StashAction::StowMatching(handle),
+        StashAction::StowContents(handle),
         StashAction::Withdraw {
             row: [1; 16],
             amount: 1,
@@ -154,5 +158,37 @@ fn stash_stock_order_crosses_the_wire_without_reordering_handles() -> Result<(),
     assert_eq!(decode_stash_reply(&encode_stash_reply(&reply)?)?, reply);
     reply.rows[1].handle = reply.rows[0].handle;
     assert!(encode_stash_reply(&reply).is_err());
+    Ok(())
+}
+
+#[test]
+fn stash_row_actions_accept_only_bounded_row_versions_and_item_refs() -> Result<(), Error> {
+    for action in [
+        StashRowAction::Inspect,
+        StashRowAction::Market,
+        StashRowAction::LootAdd,
+        StashRowAction::LootRemove,
+    ] {
+        let intent = StashRowIntent {
+            row: [7; 16],
+            action,
+        };
+        let encoded = encode_stash_row_intent(intent)?;
+        assert_eq!(encoded.len(), 20);
+        assert_eq!(decode_stash_row_intent(&encoded)?, intent);
+        assert!(
+            encode_stash_row_intent(StashRowIntent {
+                row: [0; 16],
+                action
+            })
+            .is_err()
+        );
+        assert!(decode_stash_row_intent(&encoded[..19]).is_err());
+    }
+    let reference = std::num::NonZeroU32::MAX;
+    let encoded = encode_stash_row_result(reference);
+    assert_eq!(decode_stash_row_result(&encoded)?, reference);
+    assert!(decode_stash_row_result(&[8, 0]).is_err());
+    assert!(decode_stash_row_result(&[8, 1, 8, 2]).is_err());
     Ok(())
 }

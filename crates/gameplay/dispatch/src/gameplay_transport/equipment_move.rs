@@ -50,6 +50,18 @@ impl oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup
         }
         self.0.equipment_policy(key, revision)
     }
+
+    fn worn_equipment_policy(
+        &self,
+        key: &str,
+        revision: &str,
+    ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
+    {
+        if super::timed_item_content::unhosted_equipment_effect(key) {
+            return None;
+        }
+        self.0.worn_equipment_policy(key, revision)
+    }
 }
 
 /// A plain item names a Known definition with container semantics `NotApplicable`; a container

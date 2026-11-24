@@ -34,6 +34,37 @@ fn reply(disposition: u8) -> Dispatch {
     )
 }
 
+pub(super) async fn follow_state(
+    authority: &impl FreshAdmissionAuthority,
+    session: &mut ServeState,
+    payload: &[u8],
+) -> Dispatch {
+    if !payload.is_empty() {
+        return Dispatch::Reply(CommandStatus::Rejected, Vec::new());
+    }
+    let target = match &session.target_walk {
+        Some(PendingWalk {
+            target: AutoWalkTarget::Follow(target),
+            route: Some(route),
+            ..
+        }) if authority
+            .item_walk_valid(
+                session.actor,
+                session.admitted.game_session_id,
+                route.expected,
+            )
+            .await =>
+        {
+            Some(target)
+        }
+        _ => None,
+    };
+    match oteryn_protocol_oteryn::attack::encode_attack_target_intent(target) {
+        Ok(bytes) => Dispatch::Reply(CommandStatus::Accepted, bytes),
+        Err(_) => Dispatch::Reply(CommandStatus::Rejected, Vec::new()),
+    }
+}
+
 pub(super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
     session: &mut ServeState,

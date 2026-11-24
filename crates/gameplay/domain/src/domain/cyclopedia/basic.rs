@@ -121,7 +121,6 @@ impl BasicArea {
                         .iter()
                         .enumerate()
                         .any(|(i, p)| e.points[..i].contains(p))
-                    || e.points.iter().any(|p| !pool.contains(p))
             })
         {
             return Err(MapRefusal::Invalid);

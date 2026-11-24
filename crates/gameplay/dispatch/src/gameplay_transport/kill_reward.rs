@@ -4228,6 +4228,25 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         };
         let bestiary = CreatureDeathBestiaryInput {
             race: row.race.clone(),
+            corpse_source: if entry.creature == "oteryn:creature.koshei_the_deathless" {
+                // The donor amulet samples this corpse even though Koshei has no Bestiary race.
+                admission.active_generation.and_then(|generation| {
+                    generation
+                        .native_gameplay()?
+                        .creature_profiles()
+                        .records
+                        .iter()
+                        .map(|record| &record.profile.target)
+                        .find(|target| target.key == entry.creature)
+                        .map(|target| crate::durability::item_mint::TypedDefinitionRef {
+                            family: "Creature".into(),
+                            production_key: target.key.clone(),
+                            revision_ref: target.revision.clone(),
+                        })
+                })
+            } else {
+                None
+            },
             boss: row.boss.clone(),
             talisman: entry.talisman.get().cloned(),
         };

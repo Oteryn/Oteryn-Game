@@ -1,0 +1,17 @@
+{
+  "id": 594,
+  "name": "GAMEPLAY_OCCURRENCES_V1",
+  "constant": "world_object::CAPABILITY_GAMEPLAY_OCCURRENCES_V1",
+  "requires": [],
+  "acceptance_requires": true,
+  "commands": [
+    6355
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

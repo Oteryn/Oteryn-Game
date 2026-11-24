@@ -7,10 +7,23 @@
 // The event is advisory and transient. Join/resume snapshots never replay it,
 // and older clients retain the existing delta shape. The client may use the
 // event and its domain revision to trigger a boss-defeated screenshot.
+// Capability 575 adds optional category as field 6. Omission means default.
+// Category does not change presentation kind or sequencing. Snapshots omit it.
+// Staff broadcasts are GLOBAL and raid announcements are RAID. Clients selecting
+// both 75 and 575 receive SYSTEM text alongside the structured save countdown.
+// Clients may use the structured countdown for timing and the text for display.
+// Decoders accept the pre-merge field 5 varint as the legacy category encoding.
 // Text is 1..=255 UTF-8 bytes; message is at most 260 bytes. No hint IDs.
 syntax = "proto3";
 package oteryn.protocol.v1.server_messages;
 message ServerMessageV1 {
+  enum Category {
+    DEFAULT = 0;
+    GLOBAL = 1;
+    RAID = 2;
+    SYSTEM = 3;
+    TEAM_FINDER = 4;
+  }
   oneof message {
     uint32 empty = 1; // Exactly 1; snapshot only.
     string status_text = 2;
@@ -18,4 +31,5 @@ message ServerMessageV1 {
     string advance = 4; // Crystal MESSAGE_EVENT_ADVANCE, including XML type=event.
     string boss_defeated = 5;
   }
+  Category category = 6;
 }

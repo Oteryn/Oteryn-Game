@@ -873,9 +873,12 @@ impl ChannelActorCarrier {
                     }
                 };
                 let mut shields = spell_combat.arbaziloth_shields;
-                let damage = shields.as_mut().map_or(damage, |shield| {
-                    shield.limit_damage(*health, spell_combat.maximum_health, damage)
-                });
+                let damage = match shields.as_mut() {
+                    Some(shield) => {
+                        shield.limit_damage(*health, spell_combat.maximum_health, damage, now_ms)?
+                    }
+                    None => damage,
+                };
                 (damage, shields)
             }
             _ => return Err(CarrierError::NotCreature),

@@ -1,0 +1,20 @@
+{
+  "id": 579,
+  "name": "FAMILIAR_APPEARANCE_V1",
+  "constant": "appearance::familiar::CAPABILITY_FAMILIAR_APPEARANCE_V1",
+  "requires": [
+    25
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    6324,
+    6325
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

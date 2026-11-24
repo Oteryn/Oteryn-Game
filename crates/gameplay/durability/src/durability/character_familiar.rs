@@ -736,17 +736,25 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder,deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
-            let row = sqlx::query("SELECT s.state::text,s.committed_character_revision::text,r.committed_at AS checkpoint_committed_at_ms FROM game_character_familiar_state s LEFT JOIN game_character_familiar_receipts r ON r.familiar_occurrence_id=s.last_familiar_occurrence_id AND r.character_id=s.character_id AND r.committed_character_revision=s.committed_character_revision WHERE s.character_id=encode($1,'hex')::uuid")
-                .bind(character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-            let mut projection = row.as_ref().map(decode_projection).transpose()?.unwrap_or_default();
-            if let Some(row) = &row {
-                let checkpoint: Option<i64> = row.try_get("checkpoint_committed_at_ms")?;
-                projection.checkpoint_committed_at_ms = Some(checkpoint.filter(|v| *v >= 0).ok_or(DurabilityError::InvalidStoredState)?);
-            }
+            let projection = read_familiar_projection(&mut tx, character_id).await?;
             commit_semantic_transaction(tx,deadline).await?;
             Ok(Ok(projection))
         })).await?
     }
+}
+
+pub(super) async fn read_familiar_projection(
+    connection: &mut sqlx::PgConnection,
+    character_id: CharacterId,
+) -> std::result::Result<DurableFamiliarProjection, DurabilityError> {
+    let row = sqlx::query("SELECT s.state::text,s.committed_character_revision::text,r.committed_at AS checkpoint_committed_at_ms FROM game_character_familiar_state s LEFT JOIN game_character_familiar_receipts r ON r.familiar_occurrence_id=s.last_familiar_occurrence_id AND r.character_id=s.character_id AND r.committed_character_revision=s.committed_character_revision WHERE s.character_id=encode($1,'hex')::uuid")
+        .bind(character_id.as_bytes().as_slice()).fetch_optional(connection).await?;
+    let mut projection = row.as_ref().map(decode_projection).transpose()?.unwrap_or_default();
+    if let Some(row) = &row {
+        let checkpoint: Option<i64> = row.try_get("checkpoint_committed_at_ms")?;
+        projection.checkpoint_committed_at_ms = Some(checkpoint.filter(|v| *v >= 0).ok_or(DurabilityError::InvalidStoredState)?);
+    }
+    Ok(projection)
 }
 
 fn encode_state(state: &DurableFamiliarState) -> std::result::Result<String, DurabilityError> {

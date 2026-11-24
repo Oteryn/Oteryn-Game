@@ -10,7 +10,8 @@ use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use oteryn_protocol_oteryn::player_report::{
-    PlayerReportCode, PlayerReportReply, PlayerReportRequest, validate_player_report,
+    PlayerReportCode, PlayerReportReply, PlayerReportRequest, SanctionSuggestion,
+    validate_player_report,
 };
 use serde_json::{Value, json};
 use sqlx::{Postgres, Transaction};
@@ -85,7 +86,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         command: u64,
-        request: &PlayerReportRequest,
+        report: (&PlayerReportRequest, Option<SanctionSuggestion>),
         position: PlayerReportPosition,
     ) -> Result<Option<PlayerReportReply>> {
         if command == 0 {
@@ -102,7 +103,11 @@ impl DurabilityRoot {
             return Ok(None);
         };
         let node = node.clone();
-        let request = canonical(request, position);
+        let (report, suggestion) = report;
+        let mut request = canonical(report, position);
+        if let Some(suggestion) = suggestion {
+            request["client"]["suggestion"] = json!(suggestion as u8);
+        }
         let hex = |bytes: &[u8]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
         let recovery = json!({"scope":record.authority_scope_id,"generation":record.recovery_generation.to_string(),"event":uuid(&record.recovery_event_id),
             "predecessor":record.predecessor_generation.to_string(),"digest":hex(&record.predecessor_digest),"issued":record.issued_at.to_string(),"issuer":record.issuer_identity});

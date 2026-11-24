@@ -4,13 +4,18 @@ use crate::item_view::ItemHandle;
 use crate::world_interaction::WorldInteractionWireError as Error;
 
 mod browse;
+mod row;
 pub use browse::{StashFilter, decode_stash_query, encode_stash_query};
+pub use row::*;
 
 pub const CAPABILITY_STASH_V1: u32 = 62;
+pub const CAPABILITY_STASH_ACTIONS_V1: u32 = 591;
 pub const COMMAND_TYPE_STASH_INTENT: u32 = 79;
 pub const DOMAIN_STASH: u32 = 27;
 pub const MAX_STASH_UNITS: u32 = 1_000_000_000;
 pub const MAX_STASH_OUTPUTS: u32 = 20;
+/// The carried tree can contain at most 500 live instances of at most 100 units.
+pub const MAX_STASH_STOW_UNITS: u32 = 50_000;
 pub const MAX_STASH_REPLY_BYTES: usize = 36_000;
 pub const MAX_STASH_PAGE: u32 = 14_999;
 
@@ -18,11 +23,36 @@ pub const MAX_STASH_PAGE: u32 = 14_999;
 pub enum StashAction {
     Browse,
     Stow(ItemHandle),
+    StowQuantity {
+        handle: ItemHandle,
+        amount: u32,
+    },
+    StowMatching(ItemHandle),
+    StowContents(ItemHandle),
     /// Server-issued row version. The client cannot select a definition to mint.
     Withdraw {
         row: [u8; 16],
         amount: u32,
     },
+}
+
+impl StashAction {
+    pub fn stow_handle(self) -> Option<ItemHandle> {
+        match self {
+            Self::Stow(handle)
+            | Self::StowQuantity { handle, .. }
+            | Self::StowMatching(handle)
+            | Self::StowContents(handle) => Some(handle),
+            Self::Browse | Self::Withdraw { .. } => None,
+        }
+    }
+
+    pub fn needs_stash_actions(self) -> bool {
+        matches!(
+            self,
+            Self::StowQuantity { .. } | Self::StowMatching(_) | Self::StowContents(_)
+        )
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -112,6 +142,26 @@ pub fn encode_stash_intent(value: StashIntent) -> Result<Vec<u8>, Error> {
             push_varint_field(&mut out, 2, 2);
             push_varint_field(&mut out, 3, handle.get());
         }
+        StashAction::StowQuantity { handle, amount } => {
+            if !(1..=100).contains(&amount) {
+                return Err(Error::Malformed);
+            }
+            push_varint_field(&mut out, 2, 4);
+            push_varint_field(&mut out, 3, handle.get());
+            push_varint_field(&mut out, 5, u64::from(amount));
+        }
+        StashAction::StowMatching(handle) | StashAction::StowContents(handle) => {
+            push_varint_field(
+                &mut out,
+                2,
+                if matches!(value.action, StashAction::StowMatching(_)) {
+                    5
+                } else {
+                    6
+                },
+            );
+            push_varint_field(&mut out, 3, handle.get());
+        }
         StashAction::Withdraw { row, amount } => {
             if row == [0; 16] || amount == 0 {
                 return Err(Error::Malformed);
@@ -148,6 +198,16 @@ pub fn decode_stash_intent(bytes: &[u8]) -> Result<StashIntent, Error> {
         (Some(2), Some(item), None, None) => {
             StashAction::Stow(ItemHandle::new(item).ok_or(Error::Malformed)?)
         }
+        (Some(4), Some(item), None, Some(amount)) => StashAction::StowQuantity {
+            handle: ItemHandle::new(item).ok_or(Error::Malformed)?,
+            amount: u32::try_from(amount).map_err(|_| Error::Malformed)?,
+        },
+        (Some(5), Some(item), None, None) => {
+            StashAction::StowMatching(ItemHandle::new(item).ok_or(Error::Malformed)?)
+        }
+        (Some(6), Some(item), None, None) => {
+            StashAction::StowContents(ItemHandle::new(item).ok_or(Error::Malformed)?)
+        }
         (Some(3), None, Some(row), Some(amount)) => StashAction::Withdraw {
             row,
             amount: u32::try_from(amount).map_err(|_| Error::Malformed)?,
@@ -164,7 +224,7 @@ pub fn decode_stash_intent(bytes: &[u8]) -> Result<StashIntent, Error> {
 
 pub fn encode_stash_reply(value: &StashReply) -> Result<Vec<u8>, Error> {
     if value.page > MAX_STASH_PAGE
-        || value.stowed_quantity > 100
+        || value.stowed_quantity > MAX_STASH_STOW_UNITS
         || (value.stowed_quantity > 0 && value.outcome != StashOutcome::Committed)
         || value.rows.len() > 32
         || value.rows.iter().any(|r| {

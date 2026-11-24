@@ -14,3 +14,15 @@ message TargetMoveResult {
   // 1 accepted; 2 no path; 3 rejected. Accepted starts an ephemeral route, not a teleport.
   uint32 disposition = 1;
 }
+
+// Capability 605 ACTOR_LIVE_STATE_V1, command 6371 FOLLOW_STATE.
+// The request is empty. An accepted result reuses attack.AttackTargetIntentV1,
+// including its empty encoding for no target and its 31-byte bound. The target
+// is the exact visible Player or Creature identity and generation of the
+// connection's current accepted FOLLOW route. Attack Chase is independent.
+// Stop, replacement input, target loss detected by the follow cadence and
+// loss of the actor's route clear the result. A resumed connection starts
+// with no route. House custody has no FOLLOW route. Neither querying nor
+// replaying an old move starts a route.
+// Unselected capability and malformed requests are rejected with no payload.
+// Command 81 and all movement state-domain payloads keep their encoding.

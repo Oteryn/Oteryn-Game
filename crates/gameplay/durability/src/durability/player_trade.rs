@@ -64,6 +64,7 @@ impl TradeLeaf {
         };
         Ok(oteryn_protocol_oteryn::player_trade::Offer {
             definition,
+            appearance_id: None,
             count: self.definition_and_quantity()?.1,
             sub_type,
         })
