@@ -194,6 +194,17 @@ impl OwnedCastFacts {
             .filter(|p| p.current(&self.binding, now))
             .map(|p| p.value)
     }
+    pub fn elemental_stance_for_cast(
+        &self,
+        now: u64,
+    ) -> Result<super::native_combat::ElementalStance, OwnedFactsError> {
+        match &self.access.elemental_stance {
+            Some(projection) if projection.current(&self.binding, now) => Ok(projection.value),
+            Some(_) => Err(OwnedFactsError::StaleBinding),
+            // Crystal 201189f8 energy_beam.lua:46–53 uses the base element until a stance is set.
+            None => Ok(super::native_combat::ElementalStance::None),
+        }
+    }
     pub fn has_current_wheel(&self, now: u64) -> bool {
         self.access
             .wheel

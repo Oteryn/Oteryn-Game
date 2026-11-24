@@ -549,3 +549,30 @@ fn attack_spell_uses_initial_attack_mode_until_the_player_selects_one() -> Resul
     }
     Ok(())
 }
+
+#[test]
+fn elemental_stance_cast_uses_base_element_with_no_selected_stance() -> Result<(), String> {
+    use crate::spell::native_combat::ElementalStance;
+    let content = content()?;
+    let spell = spell(&content, "Energy Beam")?;
+    let (_, mut owned) = owner(&content, &spell, 0, 0)?;
+    assert_eq!(
+        owned.elemental_stance_for_cast(NOW),
+        Ok(ElementalStance::None)
+    );
+    owned.access.elemental_stance = Some(CurrentProjection {
+        binding: owned.binding().clone(),
+        authority_revision: 1,
+        valid_until_micros: NOW + 1,
+        value: ElementalStance::Flames,
+    });
+    assert_eq!(
+        owned.elemental_stance_for_cast(NOW),
+        Ok(ElementalStance::Flames)
+    );
+    assert_eq!(
+        owned.elemental_stance_for_cast(NOW + 1),
+        Err(OwnedFactsError::StaleBinding)
+    );
+    Ok(())
+}
