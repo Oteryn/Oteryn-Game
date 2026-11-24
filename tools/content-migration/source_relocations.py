@@ -18,13 +18,17 @@ import hashlib
 import re
 from pathlib import Path
 
-# The successor8 receipt checks both the original digest and byte count.
-# Preserve its exact main-branch packet alongside the live promotion.
+# Successor8 receipts check both the original digest and byte count.
+# Preserve the exact reviewed packets alongside the live promotion.
 FROZEN_COMPRESSED_SOURCES = {
     (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
         "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
     ): "tools/content-migration/historical-item-stats-promotion-v2.json.gz",
+    (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "5ef32cfa01e7a319e4ef056592df1aa66e7fbff30b6d86604f5354316436aa3d",
+    ): "tools/content-migration/historical-item-stats-promotion-v2-successor8-v17.json.gz",
 }
 
 # The reviewed spawn map revisions preserve the bound quest placements.

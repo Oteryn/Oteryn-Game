@@ -1432,6 +1432,12 @@ def main(*, items_only: bool = False) -> int:
             ],
         },
     )
+    # ITEMHOLD-Q changes shared shards, but no selected shop/potion record.
+    # Repin only after proving the old digest and every selected row against
+    # the exact pre-change base; ordinary source-capture validation stays strict.
+    import questpc2_soul_loot_items
+
+    questpc2_soul_loot_items.refresh_input_pins(ROOT)
     from grizzly_shop_profiles import refresh_canonical_input_pins
 
     # The merge regenerator seeds derived profiles from the incoming package.
