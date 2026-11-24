@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 MANIFEST = 'content/spells.manifest.json'
 FACTS = 'tools/content-schema/native-gameplay/weapon-equip-requirement-facts.json'
+SLOT_FACTS = 'content/items/equipment-requirement-facts.json'
 SCHEMA = 'OTERYN_NATIVE_WEAPON_EQUIP_REQUIREMENT_FACTS/v1'
 
 
@@ -39,7 +40,8 @@ def complete(profiles, facts, packet=False):
         patterns = equipment['value']['patterns']['value']
         if packet and len(patterns) != 1:
             continue
-        if len(patterns) != 1 or patterns[0]['primary_slot'] != {'state': 'KNOWN', 'value': 'WEAPON'}:
+        slot = fact.get('slot', 'WEAPON')
+        if len(patterns) != 1 or patterns[0]['primary_slot'] != {'state': 'KNOWN', 'value': slot}:
             raise ValueError('WEAPON_EQUIP_PATTERN_SHAPE:' + fact['key'])
         for field, value in (('level', fact['level']), ('vocations', fact['vocations'])):
             wanted = {'state': 'KNOWN', 'value': value}
@@ -110,8 +112,8 @@ def sync_packet(raw, facts):
     return layout(document).encode()
 
 
-def apply_native(root, generated, canonical):
-    facts = json.loads((root / FACTS).read_bytes())
+def apply_native(root, generated, canonical, source=FACTS):
+    facts = json.loads((root / source).read_bytes())
     raw = canonical(complete(json.loads(generated[PROFILE]), facts))
     generated[PROFILE] = raw
     manifest = json.loads(generated[MANIFEST])

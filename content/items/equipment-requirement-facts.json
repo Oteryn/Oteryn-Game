@@ -1,0 +1,1055 @@
+{
+  "schema": "OTERYN_NATIVE_WEAPON_EQUIP_REQUIREMENT_FACTS/v1",
+  "source": {
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/items/items.xml",
+    "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+    "rule": "Match each single native primary slot to the Crystal moveevent slot or the explicit backpack slotType. Omitted moveevent level and vocation use 0 and any vocation."
+  },
+  "records": [
+    {
+      "key": "oteryn:item.tibia.i406",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i645",
+      "slot": "LEGS",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i814",
+      "slot": "AMULET",
+      "level": 60,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i815",
+      "slot": "AMULET",
+      "level": 60,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i816",
+      "slot": "AMULET",
+      "level": 60,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i817",
+      "slot": "AMULET",
+      "level": 60,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i907",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i2853",
+      "slot": "CONTAINER",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i2857",
+      "slot": "CONTAINER",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i2859",
+      "slot": "CONTAINER",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i2863",
+      "slot": "CONTAINER",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i2867",
+      "slot": "CONTAINER",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3004",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3006",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3007",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3008",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3012",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3014",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3016",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3018",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3019",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3022",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3025",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3045",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3048",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3049",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3052",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3054",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3055",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3056",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3059",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": [
+        "DRUID",
+        "SORCERER"
+      ]
+    },
+    {
+      "key": "oteryn:item.tibia.i3063",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3079",
+      "slot": "FEET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3082",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3083",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3084",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3085",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3098",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3210",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": [
+        "DRUID",
+        "SORCERER"
+      ]
+    },
+    {
+      "key": "oteryn:item.tibia.i3253",
+      "slot": "CONTAINER",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3351",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3352",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3353",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3354",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3355",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3356",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3361",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3366",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": [
+        "KNIGHT",
+        "PALADIN"
+      ]
+    },
+    {
+      "key": "oteryn:item.tibia.i3367",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3369",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3374",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3376",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3378",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3379",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3380",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3383",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3384",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3385",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3386",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": [
+        "KNIGHT",
+        "PALADIN"
+      ]
+    },
+    {
+      "key": "oteryn:item.tibia.i3387",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3388",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3389",
+      "slot": "LEGS",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3391",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3392",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3397",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3404",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3408",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3409",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3410",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3411",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3414",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3416",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3418",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3419",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3420",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3424",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3425",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3426",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3428",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3430",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3431",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3432",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3433",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3434",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3435",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3436",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3439",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3440",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3441",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3442",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3550",
+      "slot": "FEET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3551",
+      "slot": "FEET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3552",
+      "slot": "FEET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3554",
+      "slot": "FEET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3556",
+      "slot": "FEET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3559",
+      "slot": "LEGS",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3561",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3562",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3567",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3573",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i3574",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i5461",
+      "slot": "FEET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i5741",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i5801",
+      "slot": "CONTAINER",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i5917",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i5918",
+      "slot": "LEGS",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i6095",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i6096",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i6131",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i6299",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i6578",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i7342",
+      "slot": "CONTAINER",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i7343",
+      "slot": "CONTAINER",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i7457",
+      "slot": "FEET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i7460",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i7461",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i7462",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i7463",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i7464",
+      "slot": "LEGS",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i8042",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": [
+        "DRUID",
+        "SORCERER"
+      ]
+    },
+    {
+      "key": "oteryn:item.tibia.i8046",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i8064",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": [
+        "DRUID",
+        "SORCERER"
+      ]
+    },
+    {
+      "key": "oteryn:item.tibia.i9013",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i9014",
+      "slot": "LEGS",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i9015",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i9017",
+      "slot": "FEET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i9215",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i9216",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i9217",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i9221",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i9302",
+      "slot": "AMULET",
+      "level": 80,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i9303",
+      "slot": "AMULET",
+      "level": 80,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i9304",
+      "slot": "AMULET",
+      "level": 80,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i9585",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i9653",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": [
+        "DRUID",
+        "SORCERER"
+      ]
+    },
+    {
+      "key": "oteryn:item.tibia.i10326",
+      "slot": "CONTAINER",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i10385",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": [
+        "KNIGHT",
+        "PALADIN"
+      ]
+    },
+    {
+      "key": "oteryn:item.tibia.i10387",
+      "slot": "LEGS",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i10412",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i10457",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i11674",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": [
+        "DRUID",
+        "SORCERER"
+      ]
+    },
+    {
+      "key": "oteryn:item.tibia.i12737",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i13990",
+      "slot": "AMULET",
+      "level": 120,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i13995",
+      "slot": "HEAD",
+      "level": 150,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i14042",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i14087",
+      "slot": "LEGS",
+      "level": 75,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i14088",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i17852",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i19358",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i19359",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i19372",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i20184",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i21166",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": [
+        "KNIGHT",
+        "PALADIN"
+      ]
+    },
+    {
+      "key": "oteryn:item.tibia.i21167",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i21170",
+      "slot": "AMULET",
+      "level": 75,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i21411",
+      "slot": "CONTAINER",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i21892",
+      "slot": "HEAD",
+      "level": 80,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i22195",
+      "slot": "AMULET",
+      "level": 60,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i22726",
+      "slot": "SHIELD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i25088",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i25698",
+      "slot": "RING",
+      "level": 50,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i28493",
+      "slot": "EXTRA",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i30197",
+      "slot": "CONTAINER",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i30275",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i30276",
+      "slot": "HEAD",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i30279",
+      "slot": "RING",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i31268",
+      "slot": "AMULET",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i32705",
+      "slot": "TORSO",
+      "level": 0,
+      "vocations": []
+    },
+    {
+      "key": "oteryn:item.tibia.i40531",
+      "slot": "LEGS",
+      "level": 0,
+      "vocations": []
+    }
+  ]
+}

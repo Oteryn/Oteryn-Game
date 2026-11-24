@@ -157,6 +157,48 @@ fn normalized_item_weight(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn native_crocodile_steak_is_admitted_to_character_inventory()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_content::content::ReferenceItemConsumption;
+        use oteryn_gameplay_content::content::native_gameplay::ItemProfileRecord;
+
+        let definition = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "oteryn:item.tibia.i10219".into(),
+            revision_ref: "definition-r1".into(),
+        };
+        let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/items/definitions/spell-native-profiles.json"
+        )))?;
+        let value = document["records"]
+            .as_array()
+            .ok_or("records")?
+            .iter()
+            .find(|row| row["production_definition"]["production_key"] == definition.production_key)
+            .ok_or("active crocodile steak profile")?;
+        let record: ItemProfileRecord = serde_json::from_value(value.clone())?;
+        let facts = profile_item_facts(
+            &record,
+            &definition,
+            NativeItemDestination::CharacterInventory,
+        )?;
+        assert_eq!(
+            facts.stack,
+            ItemStackClass::Stackable {
+                proven_maximum: Some(100)
+            }
+        );
+        assert!(matches!(
+            record.semantics.consumption,
+            ReferenceItemField::Known(ReferenceItemConsumption::Food(food))
+                if food.regeneration_seconds == 120
+        ));
+        Ok(())
+    }
+
     #[test]
     fn native_amphora_ground_facts_do_not_grant_inventory_or_immovable_admission()
     -> Result<(), Box<dyn std::error::Error>> {

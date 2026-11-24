@@ -630,32 +630,6 @@ async fn apply_resolved_equipment_in_transaction(
             let backpack_id = uuid(backpack.try_get("item_instance_id")?)?;
             if let Some(slot) = to_slot {
                 let proposed = claims(&policy, *slot)?;
-                if proposed.level > 0 || !proposed.vocations.is_empty() {
-                    let progression = sqlx::query("SELECT p.level,b.vocation FROM game_character_progression_state p LEFT JOIN game_character_build_state b USING(character_id) WHERE p.character_id=encode($1,'hex')::uuid FOR SHARE OF p")
-                        .bind(actual.character.as_slice()).fetch_optional(&mut **tx).await?.ok_or(rejected("equipment current progression"))?;
-                    let level: u64 = u64::try_from(progression.try_get::<i64, _>("level")?)
-                        .map_err(|_| rejected("equipment current level"))?;
-                    if level < u64::from(proposed.level) {
-                        return Err(rejected("equipment minimum level"));
-                    }
-                    if !proposed.vocations.is_empty() {
-                        use super::equipment_policy_abi::EquipmentBaseVocation as Base;
-                        let vocation: Option<String> = progression.try_get("vocation")?;
-                        let base = match vocation.as_deref() {
-                            Some("druid" | "elder_druid") => Base::Druid,
-                            Some("sorcerer" | "master_sorcerer") => Base::Sorcerer,
-                            Some("knight" | "elite_knight") => Base::Knight,
-                            Some("paladin" | "royal_paladin") => Base::Paladin,
-                            Some("monk" | "exalted_monk") => Base::Monk,
-                            None | Some("none") => Base::None,
-                            _ => return Err(rejected("equipment actual vocation")),
-                        };
-                        if !proposed.vocations.contains(&base) {
-                            return Err(rejected("equipment vocation requirement"));
-                        }
-                    }
-                }
-
                 for old in &actual.items {
                     let oldpolicy = content
                         .worn_equipment_policy(
@@ -842,6 +816,33 @@ async fn apply_resolved_equipment_in_transaction(
                             "stack_class":class_name(displaced_class),"quantity":old.quantity,"state_revision_before":old.state_revision,"state_revision_after":displaced_after}
                     ]);
                     swap = Some((old.clone(), replacement));
+                }
+                // Crystal player.cpp:4810-4826 checks the slot, exchange and capacity
+                // before asking the equip event to enforce level and vocation.
+                if proposed.level > 0 || !proposed.vocations.is_empty() {
+                    let progression = sqlx::query("SELECT p.level,b.vocation FROM game_character_progression_state p LEFT JOIN game_character_build_state b USING(character_id) WHERE p.character_id=encode($1,'hex')::uuid FOR SHARE OF p")
+                        .bind(actual.character.as_slice()).fetch_optional(&mut **tx).await?.ok_or(rejected("equipment current progression"))?;
+                    let level: u64 = u64::try_from(progression.try_get::<i64, _>("level")?)
+                        .map_err(|_| rejected("equipment current level"))?;
+                    if level < u64::from(proposed.level) {
+                        return Err(rejected("equipment minimum level"));
+                    }
+                    if !proposed.vocations.is_empty() {
+                        use super::equipment_policy_abi::EquipmentBaseVocation as Base;
+                        let vocation: Option<String> = progression.try_get("vocation")?;
+                        let base = match vocation.as_deref() {
+                            Some("druid" | "elder_druid") => Base::Druid,
+                            Some("sorcerer" | "master_sorcerer") => Base::Sorcerer,
+                            Some("knight" | "elite_knight") => Base::Knight,
+                            Some("paladin" | "royal_paladin") => Base::Paladin,
+                            Some("monk" | "exalted_monk") => Base::Monk,
+                            None | Some("none") => Base::None,
+                            _ => return Err(rejected("equipment actual vocation")),
+                        };
+                        if !proposed.vocations.contains(&base) {
+                            return Err(rejected("equipment vocation requirement"));
+                        }
+                    }
                 }
             } else {
                 if !actual

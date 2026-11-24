@@ -48,5 +48,22 @@ class WeaponEquipRequirements(unittest.TestCase):
                              ({'state': 'KNOWN', 'value': 0}, {'state': 'KNOWN', 'value': []}))
 
 
+class SweepEquipmentRequirements(unittest.TestCase):
+    def test_zaoan_helmet_keeps_its_vocations_with_no_minimum_level(self):
+        profiles = json.loads((weapons.ROOT / weapons.PROFILE).read_bytes())
+        facts = {'schema': weapons.SCHEMA, 'records': [
+            {'key': 'oteryn:item.tibia.i10385', 'slot': 'HEAD', 'level': 0,
+             'vocations': ['KNIGHT', 'PALADIN']},
+            {'key': 'oteryn:item.tibia.i10387', 'slot': 'LEGS', 'level': 0, 'vocations': []},
+            {'key': 'oteryn:item.tibia.i10412', 'slot': 'AMULET', 'level': 0, 'vocations': []},
+        ]}
+        keys = {fact['key'] for fact in facts['records']}
+        selected = {'records': [
+            row for row in profiles['records']
+            if row['production_definition']['production_key'] in keys
+        ]}
+        self.assertEqual(weapons.complete(selected, facts), selected)
+
+
 if __name__ == '__main__':
     unittest.main()

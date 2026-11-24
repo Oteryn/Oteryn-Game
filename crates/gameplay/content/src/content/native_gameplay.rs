@@ -4846,6 +4846,34 @@ mod equipment_projection_tests {
         ReferenceBaseVocation, ReferenceEquipmentPattern, ReferenceEquipmentSlot,
         ReferenceItemEquipment, ReferenceItemField, ReferenceItemSemantics,
     };
+
+    #[test]
+    fn shipped_crystal_armor_and_necklace_project_slot_requirements() {
+        use oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentBaseVocation::{
+            Knight, Paladin,
+        };
+        let profiles = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/items/definitions/spell-native-profiles.json");
+        let document: ItemProfilesDocument =
+            serde_json::from_slice(&std::fs::read(profiles).expect("native item profiles"))
+                .expect("native item profile JSON");
+        for (key, slot, vocations) in [
+            ("oteryn:item.tibia.i10385", 1, &[Knight, Paladin][..]),
+            ("oteryn:item.tibia.i10387", 3, &[][..]),
+            ("oteryn:item.tibia.i10412", 7, &[][..]),
+        ] {
+            let record = document
+                .records
+                .iter()
+                .find(|record| record.production_definition.production_key == key)
+                .expect("active equipped item");
+            let claims = projected_equipment_claims(&record.semantics, slot, true).expect(key);
+            assert_eq!(claims.slots, vec![slot], "{key}");
+            assert_eq!(claims.level, 0, "{key}");
+            assert_eq!(claims.vocations, vocations, "{key}");
+        }
+    }
+
     #[test]
     fn producer_preserves_source_reservations_requirements_and_unknown_ambiguity() {
         use ReferenceItemField::{Known, Unknown};

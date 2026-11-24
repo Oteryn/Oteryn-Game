@@ -544,6 +544,90 @@ def admit_consumable_profiles(root: Path, generated: dict[str, bytes]) -> None:
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
 
 
+def admit_portable_food_profiles(root: Path, items: dict) -> list[dict]:
+    """Carry already qualified World food definitions into the native provider."""
+    import build_source_item_profiles as source
+    from authored_quest_item_custody import XML_SHA256
+    from quest_reward_item_semantics import CLIENT, CLIENT_SHA
+
+    world = json.loads((root / "content/world/definitions/reference.json").read_bytes())
+    bindings = json.loads((root / "imports/crystalserver/bindings/items.json").read_bytes())
+    exact = {
+        (row["target"]["key"], row["target"]["revision"]): row
+        for row in bindings["bindings"]
+        if row["disposition"] == "EXACT" and row["target"]["family"] == "Item"
+    }
+    active = {
+        (row["production_definition"]["production_key"],
+         row["production_definition"]["revision_ref"])
+        for row in items["records"]
+    }
+    proven = {"state": "KNOWN", "value": True}
+    added = []
+    unresolved = []
+    for row in world["records"]:
+        identity = row["identity"]
+        key = (identity["key"], identity["revision"])
+        if identity["family"] != "Item" or key in active or key not in exact:
+            continue
+        semantics = row.get("semantics", {})
+        consumption = semantics.get("consumption", {})
+        physical = semantics.get("physical", {})
+        if (
+            row["materializable"] is not True
+            or row["stack_class"] not in ("StackCapable", "NonStackable")
+            or consumption.get("state") != "KNOWN"
+            or consumption["value"]["kind"] != "FOOD"
+            or physical.get("state") != "KNOWN"
+            or physical["value"].get("pickupable") != proven
+        ):
+            continue
+        movable = physical["value"].get("movable")
+        if movable != proven and movable != {"state": "UNKNOWN"}:
+            continue
+        profile = {
+            "authoring": {"item": identity},
+            "semantics": semantics,
+            "attributes": {},
+            "admission": {
+                "materializable": True,
+                "stack_class": row["stack_class"],
+                "legal_destinations": ["CharacterInventory", "Ground"],
+            },
+            "production_definition": {
+                "family": "Item",
+                "production_key": key[0],
+                "revision_ref": key[1],
+            },
+            "production_binding": exact[key],
+            "production_binding_qualification": None,
+        }
+        active.add(key)
+        if movable == proven:
+            added.append(profile)
+        else:
+            unresolved.append(profile)
+    if unresolved:
+        xml = (root / "imports/canary/items-xml/items.xml").read_bytes()
+        client = (root / CLIENT).read_bytes()
+        if (
+            hashlib.sha256(xml).hexdigest() != XML_SHA256
+            or hashlib.sha256(client).hexdigest() != CLIENT_SHA
+        ):
+            raise ValueError("PORTABLE_FOOD_SOURCE_DRIFT")
+        ids = {int(profile["production_binding"]["external_id"]) for profile in unresolved}
+        policies = {row["server_item_id"]: row for row in source.policies(client, xml, ids)}
+        for profile in unresolved:
+            facts = policies[int(profile["production_binding"]["external_id"])]
+            if facts["movable"] and facts["pickupable"] and not facts["container"]:
+                profile["semantics"] = copy.deepcopy(profile["semantics"])
+                profile["semantics"]["physical"]["value"]["movable"] = proven
+                added.append(profile)
+    items["records"].extend(added)
+    items["records"].sort(key=provider_order)
+    return added
+
+
 def admit_current_staff_profile(root: Path, generated: dict[str, bytes]) -> None:
     """Use accepted current Staff facts, preserving the pinned historical test pack."""
     key = "oteryn:item.tibia.i3289"
@@ -1760,6 +1844,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import protected_loot_yields
 
     protected_loot_yields.admit(root, items, provider_order)
+    food_items = admit_portable_food_profiles(root, items)
     # These late Item admissions belong to the base provider. Apply their
     # verified top-order facts before deriving the separate SRX-1 supplement.
     hard_items = [
@@ -1771,7 +1856,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     house_top_order = json.loads(
         (root / house_decoration_actions.PROFILES).read_bytes()
     )
-    house_decoration_actions.apply_top_order(hard_items, house_top_order)
+    house_decoration_actions.apply_top_order(hard_items + food_items, house_top_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
     import forge_item_profiles
 
@@ -1791,6 +1876,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     # Complete ranged authoring for every admitted Item, including late loot yields.
     ranged_item_profiles.apply_native(root, generated)
+    weapon_equip_requirements.apply_native(
+        root, generated, spell_import.canonical_bytes, weapon_equip_requirements.SLOT_FACTS
+    )
     # SRX-1 keeps the historical single-line provider byte-identical. The loader
     # composes only the changed records from a separately pinned small supplement.
     import srx1_profile_updates
