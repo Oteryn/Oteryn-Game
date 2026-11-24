@@ -226,7 +226,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
                 }
                 let client = session.as_mut().ok_or("fixture admission missing")?;
                 match entry.family {
-                    Family::Achievement => achievement(client, world, &mut rows).await,
+                    Family::Achievement => achievement(client, clients, world, &mut rows).await,
                     Family::Charm => {
                         charm(client, world, &mut rows, &mut unsupported_mastery).await
                     }
@@ -294,6 +294,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
 // crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:332
 async fn achievement(
     client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
     world: &BundleWorld,
     rows: &mut Rows<'_>,
 ) -> TestResult {
@@ -306,7 +307,7 @@ async fn achievement(
         return Err("harness-achievement-already-earned".into());
     }
     trigger
-        .fire(client, world, false)
+        .fire(client, clients, world, &rows.entry.key, false)
         .await
         .map_err(|error| format!("{error}-{}", rows.entry.source))?;
     rows.pass(trigger.label());
@@ -326,7 +327,9 @@ async fn achievement(
         .into());
     }
     rows.pass(&format!("points-{points}"));
-    trigger.fire(client, world, true).await?;
+    trigger
+        .fire(client, clients, world, &rows.entry.key, true)
+        .await?;
     if achievement_facts(client, &rows.entry.key).await?.1 != facts {
         return Err(format!(
             "server-repeated-trigger-changed-achievement-facts-owner-{}",
@@ -390,7 +393,9 @@ impl AchievementTrigger {
     async fn fire(
         &self,
         client: &mut DevClientSession,
+        clients: &SeamClients<'_>,
         world: &BundleWorld,
+        achievement: &str,
         replay: bool,
     ) -> TestResult {
         use oteryn_protocol_oteryn::world_object::UseDisposition;
@@ -406,11 +411,15 @@ impl AchievementTrigger {
                 let index = provisioning::item_index()?;
                 let reference = provisioning::item_reference(&index, *item)?;
                 if quantity(&inventory(client)?, reference) == 0 {
-                    full_row_i14::acquire(client, world, *item, 1)
-                        .await
-                        .map_err(|error| {
-                            format!("harness-achievement-item-prerequisite-{item}-{error}")
-                        })?;
+                    seed_item_and_readmit(
+                        client,
+                        clients,
+                        format!("progress-achievement:{achievement}"),
+                    )
+                    .await?;
+                    if quantity(&inventory(client)?, reference) == 0 {
+                        return Err("harness-seeded-achievement-item-missing".into());
+                    }
                 }
                 let reply = client.use_item(handle(client, reference)?).await?;
                 if reply.disposition != UseDisposition::Committed {

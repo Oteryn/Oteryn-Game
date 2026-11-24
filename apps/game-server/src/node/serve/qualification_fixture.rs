@@ -22,9 +22,21 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
                 "progress-baking" | "progress-charms" | "progress-charm-fee"
             ) || mastery_species(profile).is_some()
                 || proficiency_item(profile).is_some()
-                || recipe_key(profile).is_some()))
+                || recipe_key(profile).is_some()
+                || novelty_achievement_key(profile).is_some()))
         .then_some((session, profile))
     })
+}
+
+fn novelty_achievement_key(profile: &str) -> Option<&str> {
+    let key = profile.strip_prefix("progress-achievement:")?;
+    let name = key.strip_prefix("oteryn:achievement/")?;
+    (!name.is_empty()
+        && profile.len() <= 128
+        && name
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_'))
+    .then_some(key)
 }
 
 fn recipe_key(profile: &str) -> Option<&str> {
@@ -770,6 +782,27 @@ async fn prepare_build(
             native,
             deadline,
             &[(3043, 3)],
+        )
+        .await;
+    }
+    if let Some(key) = novelty_achievement_key(profile) {
+        use oteryn_gameplay_items::novelty_items::{self, NoveltyKind};
+        let item = novelty_items::rules()
+            .into_iter()
+            .flatten()
+            .find(|rule| {
+                rule.kind == NoveltyKind::ConsumeEffect && rule.achievement.as_deref() == Some(key)
+            })
+            .and_then(|rule| rule.item_ids.first().copied())
+            .ok_or("qualification achievement has no committed novelty consumable")?;
+        return prepare_items(
+            root,
+            authority,
+            proof,
+            &current,
+            native,
+            deadline,
+            &[(item, 1)],
         )
         .await;
     }
