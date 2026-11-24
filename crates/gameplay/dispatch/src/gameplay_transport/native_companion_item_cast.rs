@@ -337,7 +337,13 @@ pub(super) async fn prepare_direct(
         &restrictions,
         &excluded,
     )
-    .map_err(|_| SpellCastDisposition::TargetIllegal)?;
+    .map_err(|_reason| {
+        #[cfg(feature = "qualification-cast-evidence")]
+                {
+            eprintln!("SEAM_EVIDENCE companion_cast_refused spell={} command={} gate=acquisition_reservation reason={_reason:?}", spell.key, command.command_id().get());
+        }
+        SpellCastDisposition::TargetIllegal
+    })?;
     if reservation.consume_rune_charge() == named {
         return reject();
     }

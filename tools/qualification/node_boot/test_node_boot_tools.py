@@ -256,8 +256,9 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 11)
+        self.assertEqual(len(accounts), 24)
         self.assertEqual(len(set(accounts)), len(accounts))
+        self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
 
 class ReuseTests(unittest.TestCase):

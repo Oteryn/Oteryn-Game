@@ -72,13 +72,43 @@ boost preparation require this admitted epoch; schema installation does not crea
 
 The World client reads the join snapshot and drives real commands for town
 navigation, browse field, daily boost, depot search, combat, loot, death and
-recovery. Inventory prerequisites come from production starter grants. Missing
-equipment or forge materials are reported as explicit prerequisite skips; no
-game-table writes provide inventory. Store remains unavailable at the pinned
-Platform revision. `world_boot_seconds` measures process start through readiness;
+recovery. Declare Journey for a row that tests acquiring its prerequisite, or
+Seeded for a row that starts with prepared prerequisites. Seeded rows may
+use the qualification-only admin fixture through the durable owners. Inventory
+comes from starter grants, player commands or fenced grants, and raw game-table
+writes are prohibited. Missing equipment or forge materials are reported as
+explicit prerequisite skips. Store remains unavailable at the pinned Platform
+revision. `world_boot_seconds` measures process start through readiness;
 `world_loader` records the client's local production-loader duration. The focused
 `node_boot_qualification_world_loader` library test loads the same bundle without
 sudo and checks the temple protection zone and reachable depot.
+
+Seeded rows can request `qualify <session> item-<id>-<count>` over the
+root-only node control socket. The qualification-spawn build resolves the
+served item definition and commits a fenced reward claim into the main backpack
+for counts 1 through 20. An exact retry in the same admission replays its claim.
+Rows re-admit to observe the backpack through the normal client snapshot.
+
+C11 and C12 use dedicated World accounts. The fixture opens C11’s first
+character through the historical unassigned bootstrap shape and awards level 8
+through the progression owner. The town crop includes Oressa’s retained Dawnport
+placement. The fixture uses the movement owner to stage the dedicated character
+near Oressa, and the dialogue runs through player commands. The separate Knight buys promotion and saves his Wheel through the
+normal commands. A root-only Premium preparation request submits a bounded
+snapshot to Game’s normal Premium consumer for the dedicated Knight or Monk.
+C12 receives item 50271 through the fenced backpack grant.
+
+The f5 spell rows use dedicated Platform-created Sorcerers and a Knight. The
+node fixture awards their starting XP through the progression owner. The rune
+rows seed platinum, then walk to a served seller and buy from its live shop
+window whenever an authored seller has a reachable placement in the served
+bundle. The rune grant covers a crop with no reachable authored seller. A live
+shop refusal still fails the row.
+
+Challenge, the party-spell pair, and the Light caster use the fixture Premium
+consumer, with separate accounts for the seeded casters. S08 prepares its own
+players through the Open PvP node’s socket. P21 receives enough carried currency
+for both charges and still proves the actual debits through the imbuement owner.
 
 To qualify the preserved full spell manifest through the same topology:
 

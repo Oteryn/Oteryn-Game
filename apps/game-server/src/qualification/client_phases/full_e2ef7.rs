@@ -358,7 +358,12 @@ async fn prepare_ranking_cut(
     let published = root
         .refresh_highscore_world_within(world, catalogues, CutLimits::REGISTERED)
         .await
-        .map_err(|_| "ranking fixture cut publication failed")?;
+        .map_err(|error| {
+            evidence(&format!(
+                "E2EF7_SETUP S11 fixture-prepared-cut FAIL served_snapshot_id={served_achievement_cut} publication_error={error:?}"
+            ));
+            format!("Ranking fixture cut publication failed: {error:?}")
+        })?;
     let snapshot = published
         .iter()
         .find(|snapshot| snapshot.category == 10)
@@ -1553,6 +1558,16 @@ struct JourneyRow {
 }
 impl JourneyRow {
     fn new(id: &'static str, required: &'static [&'static str]) -> Self {
+        let seeded = match id {
+            "S08" => Some(("knight-and-sorcerer-builds,pvp-eligible-levels", "combat and protection")),
+            "S13a" | "S13b" => Some(("level-32-premium-caster,clean-peer", "party spell gates and cost")),
+            "W20b" => Some(("sorcerer-level-26,premium", "light casts, relog and expiry")),
+            "P21" => Some(("protective-charms,strike-capable-target-if-missing,fee-gold-if-needed", "Basic Strike application and persistence")),
+            _ => None,
+        };
+        if let Some((prerequisites, reason)) = seeded {
+            character_prep::declare_seeded(id, prerequisites, reason);
+        }
         Self {
             actions: verdict::Row::new("E2EF7", id, required).gap_lines(),
         }
@@ -1740,11 +1755,8 @@ async fn additional_rows(clients: &SeamClients<'_>) {
     row.finish(&result);
 
     let mut gate = JourneyRow::new("S13a", PARTY_GATE_ACTIONS);
-    let mut cost = JourneyRow {
-        actions: verdict::Row::new("E2EF7", "S13b", PARTY_COST_ACTIONS)
-            .gap_lines()
-            .sharing(&gate.actions),
-    };
+    let mut cost = JourneyRow::new("S13b", PARTY_COST_ACTIONS);
+    cost.actions = cost.actions.sharing(&gate.actions);
     let mut pair = [None, None];
     let world = qualification_world(clients);
     let watch = gate.actions.watch();
@@ -2780,7 +2792,7 @@ fn verify_party_payment(
         || before.health != after.health
         || before.soul != after.soul
     {
-        return Err(format!("prerequisite-or-cast-blocked:party observed={outcome:?};required-scaled-mana={charge};before={before:?};after={after:?};need-player-earned-level-32-class-and-premium;no-fixture-provisioning").into());
+        return Err(format!("prerequisite-or-cast-blocked:party observed={outcome:?};required-scaled-mana={charge};before={before:?};after={after:?};need-level-32-class-and-premium").into());
     }
     Ok(())
 }
@@ -2817,7 +2829,19 @@ async fn party_spell_journey(
     world: &BundleWorld,
 ) -> TestResult {
     let book = native_spell_book()?;
-    pair[0] = Some(connect_character(clients, 0xe2, 1).await?);
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_S13_ACCOUNT").await?;
+    let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
+    let scope = SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+    let peer_identity = character_prep::dedicated_character(&scope, "NODE_BOOT_S13_PEER_ACCOUNT").await?;
+    let (accounts, characters) = peer_identity.replace_slot(&scope, 0)?;
+    let scope = SeamClients { accounts: &accounts, characters: &characters, ..scope };
+    let clients = &scope;
+    const PREPARATION: character_prep::Seeded = character_prep::Seeded {
+        profile: "s13-party",
+        reason: "Party spell refusal, range and payment need an eligible caster and an ungrouped peer",
+    };
+    pair[0] = Some(PREPARATION.connect(clients, 0xe2, 1).await?);
+    character_prep::grant_premium(pair[0].as_ref().ok_or("party caster missing")?).await?;
     pair[1] = Some(connect_character(clients, 0xe3, 0).await?);
     let (caster, peer) = pair_mut(pair)?;
     if caster.join_snapshot().game_session_id == peer.join_snapshot().game_session_id
@@ -2832,30 +2856,35 @@ async fn party_spell_journey(
     }
     gate.pass("two-admissions");
     cost.pass("two-admissions");
-    // The retained server-owned ranking row carries the durable vocation.
-    // Read it rather than guessing class from a generic refusal or profile env.
-    let observed = query(caster, request(1, 0, 1, 0)).await?;
-    let own = observed
-        .own_row
-        .ok_or("party prerequisite: server ranking has no own build row")?;
-    let words = match oteryn_gameplay_progression::wheel::base_vocation(&own.vocation) {
-        Some("sorcerer") => "utori mas sio",
-        Some("druid") => "utura mas sio",
-        Some("paladin") => "utamo mas sio",
-        Some("knight") => "utito mas sio",
-        Some("monk") => "utevo mas sio",
-        _ => return Err(format!("party-prerequisite-blocked:served-vocation={};served-level={};required=class,level-32,premium;ordinary-admission-has-no-party-spell-vocation", own.vocation, own.level).into()),
-    };
+    use crate::durability::highscore_snapshot::{CutLimits, SnapshotCatalogues};
+    let root = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)?;
+    root.await_ready().await?;
+    let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
+        .map_err(|error| format!("S13 achievement catalogue: {error:?}"))?;
+    let catalogues = SnapshotCatalogues::activated(std::sync::Arc::new(achievements))
+        .map_err(|error| format!("S13 ranking catalogues: {error:?}"))?;
+    let snapshots = root.refresh_highscore_world_within(
+        wire::WorldId::decode(&clients.world)?, catalogues, CutLimits::REGISTERED,
+    ).await.map_err(|error| format!("S13 fresh ranking cut publication: {error:?}"))?;
+    let cut = snapshots.iter().find(|snapshot| snapshot.category == 10)
+        .ok_or("S13 fresh cut missing achievement category")?;
+    evidence(&format!("S13 fixture-ranking-cut snapshot_id={}", cut.snapshot_id));
+    require_current_light_premium(caster).await?;
+    let words = "utori mas sio";
     let index = qualification_spell_index(book, words)?;
     let spell = book.indexed(index).ok_or("party compiled index absent")?;
+    let level = full_e2ef5::prepare_spell_access(caster, spell).await?;
     let before = caster
         .actor_vitals()
         .copied()
         .ok_or("party initial vitals absent")?;
+    if level != 32 || before.mana < 216 {
+        return Err(format!("S13 requires Sorcerer level 32 with at least 216 mana: level={level}, mana={}", before.mana).into());
+    }
     let solo = caster.cast_spell(index, casts::SpellTarget::None, false).await
-        .map_err(|e| format!("party solo cast: {e};served-vocation={};served-level={};required-level={},premium={}", own.vocation, own.level, spell.level, spell.premium))?;
+        .map_err(|e| format!("party solo cast: {e};served-level={level};required-level={},premium={}", spell.level, spell.premium))?;
     verify_party_refusal(&solo, before, caster.actor_vitals().copied().ok_or("party solo lost vitals")?, casts::SpellCastDisposition::Rejected)
-        .map_err(|e| format!("party prerequisite-or-gate-blocked: {e};served-vocation={};served-level={};required-level={},premium={}", own.vocation, own.level, spell.level, spell.premium))?;
+        .map_err(|e| format!("party prerequisite-or-gate-blocked: {e};served-level={level};required-level={},premium={}", spell.level, spell.premium))?;
     let crate::spell::Execution::PartyBuff(buff) = &spell.execution else {
         return Err("party spell lacks party execution".into());
     };
@@ -3509,7 +3538,7 @@ use native::item_view::{ItemEntry, ItemHandle};
 use native::{attack as attacks, cyclopedia_character as character, imbuement as imbues};
 
 const PVP_ACTIONS: &[&str] = &[
-    "earned-levels",
+    "eligible-levels",
     "two-admissions",
     "expert-modes",
     "secure-refusal",
@@ -3523,7 +3552,7 @@ const PVP_ACTIONS: &[&str] = &[
     "final-logout",
 ];
 const IMBUE_ACTIONS: &[&str] = &[
-    "player-acquisition",
+    "seeded-prerequisites",
     "shrine-apply",
     "occupied-refusal",
     "worn-effect",
@@ -3721,45 +3750,6 @@ async fn player_experience(client: &mut DevClientSession) -> TestResult<u64> {
     ))
 }
 
-// Try the real starter's unarmed hunt, never a fixture build. A refused attack,
-// no damage/kill, absent spawn, or the bounded XP budget is an explicit prerequisite
-// failure. Only served level frames can end this loop successfully.
-async fn earn_pvp_level(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    acquisition_step(
-        "level",
-        earn_player_level(
-            client,
-            world,
-            oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL,
-            Duration::from_secs(150),
-        ),
-    )
-    .await
-}
-
-pub(super) async fn earn_player_level(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    required_level: u32,
-    budget: Duration,
-) -> TestResult {
-    let deadline = tokio::time::Instant::now() + budget;
-    loop {
-        let level = player_level(client).await?;
-        if level >= required_level {
-            return Ok(());
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("player-level-acquisition-blocked:served-level={level};required={required_level};ordinary-rat-hunt-budget={budget:?}").into());
-        }
-        let hunt = acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await;
-        hunt.map_err(|e| {
-            format!(
-                "player-level-acquisition-blocked:served-level={level};required={required_level};ordinary-hunt={e}"
-            )
-        })?;
-    }
-}
 fn hunt_kill_proven(alive: bool, corpse_proof: bool) -> bool {
     !alive && corpse_proof
 }
@@ -4202,18 +4192,30 @@ async fn pvp_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    // Level both through their own playable route before admitting the peer concurrently.
-    pair[0] = Some(connect_character(clients, 0xf2, 0).await?);
-    earn_pvp_level(pair[0].as_mut().ok_or("first admission")?, world).await?;
-    release_when_unlocked(
-        pair[0].as_mut().ok_or("first admission")?,
-        Duration::from_secs(70),
-    )
-    .await?;
-    pair[0] = None;
-    pair[1] = Some(connect_character(clients, 0xf3, 1).await?);
-    earn_pvp_level(pair[1].as_mut().ok_or("second admission")?, world).await?;
-    row.pass("earned-levels");
+    for (index, profile) in ["s08-knight", "s08-sorcerer"].into_iter().enumerate() {
+        let prep = character_prep::Seeded {
+            profile,
+            reason: "Open PvP tests combat and protection with two eligible players",
+        };
+        let budget = Duration::from_secs(150);
+        let deadline = tokio::time::Instant::now() + budget;
+        verdict::Harness::global().bounded_wait(deadline, "S08-eligible-build");
+        let player = tokio::time::timeout_at(deadline, async {
+            let mut player = prep.connect_at(clients, 0xf2 + u8::try_from(index)?, index, "NODE_BOOT_PVP_CONTROL_SOCKET").await?;
+            let level = player_level(&mut player).await?;
+            if level < oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL {
+                return Err(format!("S08 seeded participant {index} is ineligible at level {level}").into());
+            }
+            Ok::<_, Box<dyn std::error::Error>>(player)
+        }).await.map_err(|_| format!("S08 participant {index} preparation exceeded {budget:?}"))?
+            .map_err(|error| format!("S08 participant {index} {profile} Open PvP preparation: {error}"))?;
+        pair[index] = Some(player);
+        if index == 0 {
+            release_when_unlocked(pair[0].as_mut().ok_or("first admission")?, Duration::from_secs(70)).await?;
+            pair[0] = None;
+        }
+    }
+    row.pass("eligible-levels");
     release_when_unlocked(
         pair[1].as_mut().ok_or("second admission")?,
         Duration::from_secs(70),
@@ -4898,21 +4900,31 @@ async fn imbuement_journey(
             let present=definitions.revision(key).and_then(|rev|definitions.definition_ref("Item",key,rev)).is_some_and(|d|carried(client,d).is_ok());
             (!present,key!="oteryn:item.tibia.i3264",key.clone())
         }).ok_or("no materializable strike-capable item in pinned native policy")?;
-    let target = acquire(
-        client,
-        world,
-        &definitions,
-        &candidate.production_definition.production_key,
-        1,
-    )
-    .await?;
+    let key = &candidate.production_definition.production_key;
+    let id = character_prep::item_id(key)?;
+    let revision = definitions.revision(key).ok_or("P21 target revision absent")?;
+    let target = definitions.definition_ref("Item", key, revision).ok_or("P21 target definition absent")?;
+    if carried(client, target).is_err() {
+        character_prep::grant_item(client, id, 1).await.map_err(|error| format!("P21 target item {id}: {error}"))?;
+    }
     let basic = oteryn_gameplay_items::imbuement::imbuement_recipe(1, 1)
         .ok_or("basic Strike recipe absent")?;
     for &(key, count) in basic.materials {
-        acquire(client, world, &definitions, key, count).await?;
+        character_prep::grant_item(client, character_prep::item_id(key)?, count).await
+            .map_err(|error| format!("P21 material {key} x{count}: {error}"))?;
     }
-    row.pass("player-acquisition");
-    earn_gold(client, world, basic.apply_gold + 15_000).await?;
+    character_prep::reload(client, clients).await?;
+    carried(client, target)?;
+    let required = basic.apply_gold.checked_add(15_000).ok_or("P21 fee overflow")?;
+    let shortfall = required.saturating_sub(player_gold(client).await?);
+    if shortfall > 0 {
+        character_prep::grant_item(client, 3043, u32::try_from(shortfall.div_ceil(10_000))?).await?;
+        character_prep::reload(client, clients).await?;
+    }
+    if player_gold(client).await? < required {
+        return Err("P21 seeded currency did not cover both real fees".into());
+    }
+    row.pass("seeded-prerequisites");
     shrine(client, world).await?;
     let baseline = strike_effect(client).await?;
     let payment_before = player_gold(client).await?;
@@ -6868,7 +6880,7 @@ async fn forge_journey(
                 || value["result"] != serde_json::Value::Null
                 || client.slivers(sliver) != before
             {
-                return Err("insufficient dust refusal changed custody".into());
+                return Err(format!("insufficient dust refusal changed custody: reply={value}; slivers={before}->{}",client.slivers(sliver)).into());
             }
             row.pass("insufficient-dust-refusal");
             break;

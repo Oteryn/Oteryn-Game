@@ -2764,6 +2764,7 @@ fn readiness_publication_retryable(error: &AssignmentError) -> bool {
 }
 
 /// The closed control-socket result (D2).
+#[cfg_attr(feature = "qualification-spawn", allow(clippy::too_many_arguments))]
 async fn bootstrap_one(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -2772,6 +2773,7 @@ async fn bootstrap_one(
     intents: &ProducerDescriptor,
     capacity: &TransientCapacity,
     operation_id: [u8; 16],
+    #[cfg(feature = "qualification-spawn")] fixture: bool,
 ) -> &'static str {
     let budget = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
     // A committed result is answered without any external read.
@@ -2809,6 +2811,12 @@ async fn bootstrap_one(
         }
     };
     let account = uuid_text(intent.account_id().as_bytes());
+    #[cfg(feature = "qualification-spawn")]
+    let intent = if fixture && account == qualification_fixture::UNASSIGNED_ACCOUNT {
+        intent.into_qualification_unassigned()
+    } else {
+        intent
+    };
     // Current account security is fetched into S2 through the D4 lane; an
     // authenticated denial is accepted there and then rejects the bootstrap.
     // The refresh failure renders as fixed step/cause tokens only.
@@ -2982,6 +2990,9 @@ async fn control_loop(
     config: &NodeConfig,
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
     spawn: Option<qualification_fixture::SpawnOwners<'_>>,
+    #[cfg(feature = "qualification-spawn")] premium: Option<
+        &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    >,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -3011,7 +3022,16 @@ async fn control_loop(
                 ),
                 Some(request) if request.starts_with(b"qualify ") => (
                     Box::pin(qualification_fixture::prepare(
-                        root, authority, proof, config, native, &request,
+                        root,
+                        authority,
+                        proof,
+                        config,
+                        native,
+                        #[cfg(feature = "qualification-spawn")]
+                        premium,
+                        #[cfg(feature = "qualification-spawn")]
+                        spawn,
+                        &request,
                     ))
                     .await
                     .to_owned(),
@@ -3039,7 +3059,15 @@ async fn control_loop(
                     };
                     (
                         bootstrap_one(
-                            root, authority, proof, evidence, intents, &capacity, operation,
+                            root,
+                            authority,
+                            proof,
+                            evidence,
+                            intents,
+                            &capacity,
+                            operation,
+                            #[cfg(feature = "qualification-spawn")]
+                            config.qualification_fixture,
                         )
                         .await
                         .to_owned(),

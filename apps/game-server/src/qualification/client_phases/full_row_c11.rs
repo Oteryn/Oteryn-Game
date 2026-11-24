@@ -10,15 +10,25 @@
 //!    Harmony delta back to zero. Send it once more at zero as the refusal/zero-charge path and
 //!    require the server reply and unchanged Harmony/mana (the current owner deliberately accepts
 //!    this recorded Global-unverified path, so either disposition is recorded rather than faked).
-//! 5. Query Battle Instinct and check malformed refusal. The pinned perk is Knight-only, so
-//!    this Monk journey reports the missing separate Knight allocation and activation.
+//! 5. On a separate promoted Premium Knight, commit a Wheel allocation and verify that
+//!    Battle Instinct activates. Check malformed refusal on that same admission.
 //! 6. Logout, freshly admit the same character, and re-check the durable Monk vocation by casting
 //!    the Monk-only builder again; require its reply, mana delta, Harmony delta, and Serene state.
 
 use super::full_row_c01::admission_error;
+use super::full_row_p20::talk;
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use std::collections::BTreeSet;
+
+const ORESSA_PREPARATION: character_prep::Seeded = character_prep::Seeded {
+    profile: "c11-dawnport",
+    reason: "C11 tests Oressa’s vocation choice and Harmony after reaching level 8.",
+};
+const KNIGHT_PREPARATION: character_prep::Seeded = character_prep::Seeded {
+    profile: "c11-knight",
+    reason: "C11 tests Battle Instinct activation after committing a Knight Wheel allocation.",
+};
 
 const ACTIONS: &[&str] = &[
     "player-monk-choice",
@@ -84,9 +94,16 @@ impl Row {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    character_prep::declare_seeded("C11", "dawnport-temple,unassigned-level-8,premium-knight,wheel-fee-gold", "Oressa choice and Wheel mechanics");
     let mut row = Row::new();
     let terminal = match verdict::indexed_timeout(
-        Duration::from_secs(300), verdict::observe(journey(&mut row, clients)),
+        Duration::from_secs(300), verdict::observe(async {
+            if let Err(error) = knight_journey(&mut row, clients).await {
+                verdict::record_error(error.as_ref());
+                row.fail("battle-instinct-snapshot", error);
+            }
+            journey(&mut row, clients).await
+        }),
     ).await {
         Ok(Ok(())) => None,
         Ok(Err(error)) => {
@@ -108,24 +125,39 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let mut client = connect_world(clients, 0xcb)
+    let dedicated = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_C11_UNASSIGNED_ACCOUNT",
+        Some("Oressa Candidate"),
+    )
+    .await?;
+    let clients = &dedicated.clients(clients);
+    let mut client = ORESSA_PREPARATION
+        .connect(clients, 0xcb, 0)
         .await
         .map_err(|error| admission_error("initial-admission", error))?;
-    let (vocation, level) = admitted_vocation(&mut client).await?;
-    match monk_path(vocation, level) {
-        Some(false) => {
-            choose_monk(&mut client, world, &bytes).await
-                .map_err(|error| verdict::context(format!("step=player-monk-choice observed={error}"), error))?;
-            row.pass("player-monk-choice", "Oressa-confirmed");
-        }
-        Some(true) => row.fail("player-monk-choice", "already-Monk; need=first-vocation-transition; continuing Monk gameplay"),
-        None => {
-            row.fail("player-monk-choice", format!("vocation-id={vocation} level={level}; need=unassigned-level-8-character-for-Oressa-or-admitted-Monk-for-Harmony"));
-            battle_queries(row, &mut client).await;
-            logout(&mut client, world).await?;
-            return Ok(());
-        }
+    let (vocation, level) = admitted_build(&mut client).await?;
+    if monk_path(vocation, level) != Some(false) || level != 8 {
+        return Err(format!("Oressa candidate must first admit unassigned at level 8; observed vocation={vocation} level={level}").into());
     }
+    let temple = TilePos { x: 32064, y: 31894, floor: -6 };
+    let admitted_at = tile(client.world_spatial().actor_position)?;
+    if admitted_at != temple {
+        return Err(format!("C11 candidate admitted at {admitted_at:?}; expected Dawnport temple {temple:?}").into());
+    }
+    choose_monk(&mut client, world, &metadata.npcs)
+        .await
+        .map_err(|error| {
+            verdict::context(format!("step=player-monk-choice observed={error}"), error)
+        })?;
+    let (chosen, chosen_level) = admitted_build(&mut client).await?;
+    if !is_vocation(chosen, "monk") || chosen_level != level {
+        return Err(format!("Oressa confirmation did not persist the level-8 Monk build; observed vocation={chosen} level={chosen_level}").into());
+    }
+    row.pass("player-monk-choice", "Oressa-confirmed");
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == temple)
+        .ok_or("no player walk route from Oressa back to the initial admission tile")?;
+    walk(&mut client, world, &path).await?;
 
     if client.actor_vitals().is_some_and(|v| v.serene) {
         row.pass("solo-serene", client.actor_vitals());
@@ -175,15 +207,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
     }
 
-    battle_queries(row, &mut client).await;
     let prior = client.join_snapshot().game_session_id;
     logout(&mut client, world).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xcc)
+    let mut fresh = connect_character(clients, 0xcc, 0)
         .await
         .map_err(|error| admission_error("fresh-admission-monk", error))?;
     if fresh.join_snapshot().game_session_id == prior {
         return Err("fresh Monk admission reused the prior game session".into());
+    }
+    let (fresh_vocation, fresh_level) = admitted_build(&mut fresh).await?;
+    if !is_vocation(fresh_vocation, "monk") || fresh_level < level {
+        return Err(format!("step=fresh-admission-monk observed=vocation-id={fresh_vocation} level={fresh_level} need=durable-Monk-build").into());
     }
     let fresh_builder = async {
         select_melee_target(&mut fresh, world, &metadata.spawns).await?;
@@ -313,15 +348,90 @@ async fn wait_spell(
     Ok(())
 }
 
-async fn battle_queries(row: &mut Row, client: &mut DevClientSession) {
-    use oteryn_protocol_oteryn::battle_instinct_status as wire;
-    match client.session_mut().gated_command(wire::CAPABILITY_BATTLE_INSTINCT_STATUS_V1, wire::COMMAND_TYPE_BATTLE_INSTINCT_STATUS_QUERY, &[]).await {
-        Ok(reply) if reply.status == CommandStatus::Accepted => match wire::BattleInstinctStatus::decode(&reply.payload) {
-            Some(status) => row.fail("battle-instinct-snapshot", battle_instinct_gap(status.active)),
-            None => row.fail("battle-instinct-snapshot", format!("reply={reply:?} malformed status payload")),
-        },
-        Ok(reply) => row.fail("battle-instinct-snapshot", format!("reply={reply:?}")), Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("battle-instinct-snapshot", error) },
+async fn knight_journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    use oteryn_protocol_oteryn::{battle_instinct_status as wire, wheel};
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let dedicated = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_C11_KNIGHT_ACCOUNT",
+        Some("Wheel Knight"),
+    )
+    .await?;
+    let clients = &dedicated.clients(clients);
+    let mut client = KNIGHT_PREPARATION.connect(clients, 0xca, 0).await?;
+    character_prep::grant_item(&client, 3043, 2).await?;
+    character_prep::grant_premium(&client).await?;
+    let prior = client.join_snapshot().game_session_id;
+    let (result, detail, _, _) = logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("Knight preparation logout refused: {detail}").into());
     }
+    drop(client);
+    let mut client = connect_character(clients, 0xca, 0)
+        .await
+        .map_err(|error| admission_error("knight-preparation", error))?;
+    if client.join_snapshot().game_session_id == prior {
+        return Err("Knight preparation reused its original session".into());
+    }
+    open_castle_entrance(&mut client, world).await?;
+    let king = metadata.npcs.npcs.iter()
+        .find(|npc| npc.key == "oteryn:npc.king_tibianus")
+        .and_then(|npc| npc.placements.first())
+        .ok_or("King Tibianus is absent from the served NPC placements")?;
+    let king = walk_to_npc(
+        &mut client,
+        world,
+        TilePos { x: king.x, y: king.y, floor: king.floor },
+        "King Tibianus",
+    ).await?;
+    if talk(&mut client, king, "hi").await?.is_empty() {
+        return Err("King Tibianus returned an empty promotion greeting".into());
+    }
+    let offer = talk(&mut client, king, "promotion").await?;
+    if offer != ["Do you want to be promoted for 20000 gold coins?"] {
+        return Err(format!("King Tibianus promotion offer: {offer:?}").into());
+    }
+    let confirmation = talk(&mut client, king, "yes").await?;
+    if confirmation != ["You are now promoted."] {
+        return Err(format!("King Tibianus promotion confirmation: {confirmation:?}").into());
+    }
+
+    let (vocation, level) = admitted_build(&mut client).await?;
+    if !is_vocation(vocation, "elite_knight") || level != 625 {
+        return Err(format!("Battle Instinct requires the prepared level-625 Elite Knight; observed vocation={vocation} level={level}").into());
+    }
+    let before = battle_status(&mut client).await?;
+    if before.active || before.melee != 0 || before.shielding != 0 {
+        return Err(format!("Battle Instinct active before allocation: {before:?}").into());
+    }
+    let request = wheel::WheelAllocationRequest {
+        action: 0, occurrence: [0; 16], expected_revision: 0, points: [0; 36], vessels: None,
+    };
+    let initial = wheel_command(&mut client, &request).await?;
+    if initial.refused || initial.points != [0; 36] {
+        return Err(format!("expected clean Knight Wheel: {initial:?}").into());
+    }
+    // Pinned Knight route from core state slot 15 to Battle Instinct in state slot 1.
+    let mut points = [0; 36];
+    for (slot, capacity) in [(15, 50), (9, 75), (8, 100), (7, 150), (1, 200)] {
+        points[slot - 1] = capacity;
+    }
+    let saved = wheel_command(&mut client, &wheel::WheelAllocationRequest {
+        action: 1, occurrence: v7(0xcb, 1), expected_revision: initial.revision, points, vessels: None,
+    }).await?;
+    if saved.refused || Some(saved.revision) != initial.revision.checked_add(1) || saved.points != points
+        || wheel_command(&mut client, &request).await? != saved
+    {
+        return Err(format!("Knight Wheel allocation did not commit: {saved:?}").into());
+    }
+    let active = battle_status(&mut client).await?;
+    if !active.active || active.melee != 0 || active.shielding != 0 {
+        return Err(format!("Battle Instinct did not activate in the empty temple: {active:?}").into());
+    }
+    row.pass("battle-instinct-snapshot", (saved, before, active));
     match client
         .session_mut()
         .gated_command(
@@ -337,44 +447,141 @@ async fn battle_queries(row: &mut Row, client: &mut DevClientSession) {
         Ok(reply) => row.fail("malformed-refusal", format!("reply={reply:?}")),
         Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("malformed-refusal", error) },
     }
+    logout(&mut client, world).await
+}
+
+async fn open_castle_entrance(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    use crate::map::door::AuthoredClosedDoor;
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+    let entrance = TilePos { x: 32314, y: 32180, floor: -7 };
+    let outside = TilePos { y: 32181, ..entrance };
+    let doors = world.facts().doors();
+    let key = doors
+        .keys()
+        .find(|&key| {
+            crate::map::view::placement_of(key).is_some_and(|(at, _)| at == entrance)
+                && doors.authored_closed(key) == Some(AuthoredClosedDoor::KeyUnlocked)
+        })
+        .ok_or("King Tibianus route requires the authored unlocked castle door")?;
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = route(world, start, |at| at == outside)
+        .ok_or_else(|| format!("no player walk route from {start:?} to castle door {entrance:?}"))?;
+    walk(client, world, &path).await?;
+
+    use oteryn_protocol_oteryn::world_map::MapOrigin;
+    let (_, ordinal) = crate::map::view::placement_of(key).ok_or("invalid castle door placement")?;
+    let closed = world.base().tile(entrance.x, entrance.y, entrance.floor)
+        .and_then(|tile| tile.appearance(ordinal))
+        .ok_or("castle door lacks an authored appearance")?;
+    let open = crate::map::door::open_of(u32::from(closed)).ok_or("castle door lacks an open form")?;
+    let basis = spatial_basis::current(client)?;
+    let map = client.session_mut().world_map_snapshot().ok_or("castle door requires a served map view")?;
+    let item = map.tiles.iter()
+        .find(|tile| tile.position == basis.position(entrance))
+        .and_then(|tile| tile.items.iter().find(|item| {
+            matches!(item.origin, MapOrigin::BaseOrdinal { ordinal: seen, .. } if seen == ordinal)
+        }))
+        .ok_or("castle door missing from served tile at its authored stack ordinal")?;
+    let MapOrigin::BaseOrdinal { object_revision, .. } = item.origin else {
+        return Err("castle door map origin changed".into());
+    };
+    if item.appearance_id == closed {
+        let mut placement = map.header.bundle_digest.to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let outcome = client.use_object(&placement, object_revision).await?;
+        if outcome.status != CommandStatus::Accepted || outcome.disposition != UseDisposition::Committed {
+            return Err(format!(
+                "castle door USE refused at {entrance:?} ordinal={ordinal} appearance={closed} revision={object_revision}: {outcome:?}"
+            ).into());
+        }
+    } else if u32::from(item.appearance_id) != open {
+        return Err(format!("unexpected castle door appearance at {entrance:?}: {item:?}").into());
+    }
+    evidence(&format!(
+        "C11_CASTLE_DOOR position={entrance:?} ordinal={ordinal} observed_appearance={} revision={object_revision}",
+        item.appearance_id
+    ));
+    // The immutable route model still has the authored closed pose. Check this
+    // single step against the door cell before resuming normal floor routing.
+    walk_with_landings(client, &[StepDirection::North], |at, direction| {
+        (at == outside && direction == StepDirection::North).then_some(entrance)
+    })
+    .await
+}
+
+async fn battle_status(client: &mut DevClientSession) -> TestResult<oteryn_protocol_oteryn::battle_instinct_status::BattleInstinctStatus> {
+    use oteryn_protocol_oteryn::battle_instinct_status as wire;
+    let reply = client.session_mut().gated_command(wire::CAPABILITY_BATTLE_INSTINCT_STATUS_V1, wire::COMMAND_TYPE_BATTLE_INSTINCT_STATUS_QUERY, &[]).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("Battle Instinct query refused: {reply:?}").into());
+    }
+    wire::BattleInstinctStatus::decode(&reply.payload).ok_or_else(|| "invalid Battle Instinct payload".into())
+}
+
+async fn wheel_command(client: &mut DevClientSession, request: &oteryn_protocol_oteryn::wheel::WheelAllocationRequest) -> TestResult<oteryn_protocol_oteryn::wheel::WheelAllocationReply> {
+    use oteryn_protocol_oteryn::wheel;
+    let payload = wheel::encode_wheel_request(request).map_err(|error| format!("Wheel request: {error:?}"))?;
+    let reply = client.session_mut().gated_command(wheel::CAPABILITY_WHEEL_ALLOCATION_V1, wheel::COMMAND_TYPE_WHEEL_ALLOCATION, &payload).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("Wheel command refused: {reply:?}").into());
+    }
+    wheel::decode_wheel_reply(&reply.payload).map_err(|error| format!("Wheel reply: {error:?}").into())
+}
+
+async fn walk_to_npc(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    placement: TilePos,
+    name: &str,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let start = tile(client.world_spatial().actor_position)?;
+    // Both NPCs can wander two tiles. Stay within two tiles of their placement
+    // before resolving the live actor, and require an actual movement step.
+    let path = route(world, start, |at| {
+        at != start && at.floor == placement.floor
+            && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 2
+    })
+    .ok_or_else(|| format!("no player walk route from {start:?} to {name} at {placement:?}"))?;
+    walk(client, world, &path).await?;
+    let basis = spatial_basis::current(client)?;
+    let origin = basis.position(placement);
+    client.world_entities().and_then(|entities| {
+        entities.iter().find(|npc| {
+            npc.kind == oteryn_dev_client::EntityKind::Npc
+                && npc.position.floor == origin.floor
+                && npc.position.x.abs_diff(origin.x).max(npc.position.y.abs_diff(origin.y)) <= 2
+                && npc.display_name.is_some_and(|display| {
+                    display.as_str().is_ok_and(|observed| observed.eq_ignore_ascii_case(name))
+                })
+        })
+    }).map(|npc| npc.entity).ok_or_else(|| format!("{name} not visible near {placement:?}").into())
 }
 
 async fn choose_monk(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    bytes: &[u8],
+    npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
     use oteryn_dev_client::client_runtime::npc_shop;
     use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
-    let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
-    let npc = metadata
-        .npcs
-        .npcs
-        .iter()
-        .find(|n| n.key == "oteryn:npc.oressa")
-        .ok_or("Oressa absent from served NPC table; need=reachable-oteryn:npc.oressa-placement")?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        npc.placements
-            .iter()
-            .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-    })
-    .ok_or("no player walk route to Oressa")?;
-    walk(client, world, &path).await?;
-    let basis = spatial_basis::current(client)?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|e| {
-                e.kind == oteryn_dev_client::EntityKind::Npc
-                    && npc.placements.iter().any(|p| {
-                        e.position.x == i32::from(p.x)
-                            && e.position.y == i32::from(p.y)
-                            && e.position.floor == basis.floor(p.floor)
-                    })
-            })
-        })
-        .map(|e| e.entity)
-        .ok_or("Oressa not visible")?;
+
+    const ORESSA: TilePos = TilePos {
+        x: 32064,
+        y: 31892,
+        floor: -6,
+    };
+    if !npcs.npcs.iter().any(|npc| {
+        npc.key == "oteryn:npc.oressa"
+            && npc
+                .placements
+                .iter()
+                .any(|p| (p.x, p.y, p.floor) == (ORESSA.x, ORESSA.y, ORESSA.floor))
+    }) {
+        return Err("Oressa absent from the served NPC table at 32064,31892,6".into());
+    }
+    let actor = walk_to_npc(client, world, ORESSA, "Oressa").await?;
+    let mut offer = Vec::new();
     for text in ["hi", "monk", "yes"] {
         client.take_events();
         let disposition = npc_shop::talk(
@@ -401,7 +608,10 @@ async fn choose_monk(
                     .iter()
                     .any(|line| line == "Your vocation is now monk."))
         {
-            return Err(format!("player command={text} disposition={disposition:?} replies={lines:?}; need=unassigned-level-8-character-and-confirmed-Oressa-Monk-offer").into());
+            return Err(format!("player command={text} disposition={disposition:?} replies={lines:?} offer={offer:?}; need=unassigned-level-8-character-and-confirmed-Oressa-Monk-offer").into());
+        }
+        if text == "monk" {
+            offer = lines;
         }
     }
     Ok(())
@@ -432,16 +642,26 @@ fn gap(action: &str, failures: &[String]) -> String {
         .map_or_else(|| format!("C11_GAP step={action} unproven"), |failure| format!("C11_GAP {failure}"))
 }
 
-async fn admitted_vocation(client: &mut DevClientSession) -> TestResult<(u8, u32)> {
+async fn admitted_build(client: &mut DevClientSession) -> TestResult<(u8, u32)> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
-    let reply = client.session_mut().gated_command(wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
-        wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, &[1, 0, 0, 1]).await?;
-    if reply.status != CommandStatus::Accepted || reply.payload.first() != Some(&1) {
-        return Err(format!("step=player-monk-choice observed={reply:?} need=admitted-vocation-and-level").into());
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[wire::CharacterTab::GeneralStats as u8, 0, 0, 1],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("GeneralStats refused: {reply:?}").into());
     }
     let vocation = general_stats::validate(&reply.payload, general_stats::selected(client))?
-        .ok_or("step=player-monk-choice observed=vocation-extension-missing")?;
+        .ok_or("GeneralStats missing vocation")?;
     Ok((vocation, u32::from_le_bytes(reply.payload[9..13].try_into()?)))
+}
+
+fn is_vocation(vocation: u8, key: &str) -> bool {
+    oteryn_protocol_oteryn::cyclopedia_character::vocation_id(key) == Some(vocation)
 }
 
 fn monk_path(vocation: u8, level: u32) -> Option<bool> {
@@ -453,12 +673,6 @@ fn monk_path(vocation: u8, level: u32) -> Option<bool> {
     } else {
         None
     }
-}
-
-// The pinned Wheel catalog places this conviction on the Knight graph only.
-// Neither a starter snapshot nor a Monk execution can prove player acquisition.
-fn battle_instinct_gap(active: bool) -> String {
-    format!("active={active}; need=separate-eligible-Knight-and-inactive-to-active-committed-Wheel-allocation")
 }
 
 fn require_spender_harmony(client: &DevClientSession, expected: u32) -> TestResult {
@@ -489,9 +703,7 @@ mod tests {
         assert_eq!(monk_path(1, 7), None);
         assert_eq!(monk_path(1, 8), Some(false));
         assert_eq!(monk_path(10, 1), Some(true));
-        for active in [false, true] {
-            assert!(battle_instinct_gap(active).contains("need=separate-eligible-Knight-and-inactive-to-active-committed-Wheel-allocation"));
-        }
+
     }
 
 

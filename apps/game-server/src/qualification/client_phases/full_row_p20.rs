@@ -116,7 +116,7 @@ async fn promotion(clients: &SeamClients<'_>) -> TestResult<Option<String>> {
     Ok(purchase)
 }
 
-async fn approach_npc(
+pub(super) async fn approach_npc(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
@@ -211,7 +211,7 @@ async fn talk_with(
     }
 }
 
-async fn talk(
+pub(super) async fn talk(
     client: &mut DevClientSession,
     npc: oteryn_dev_client::EntityRef,
     text: &str,
