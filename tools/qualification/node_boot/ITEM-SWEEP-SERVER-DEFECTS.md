@@ -200,3 +200,19 @@ owner uses command 6246 with an item handle
 (`crates/protocol-oteryn/src/item_inscription.rs:6`,
 `gameplay_transport/item_inscription.rs:59–101`). The sweep did not send
 that command, so these rows leave the text behavior unverified.
+
+### Batch 100:400 combined verdict
+
+| Batch | Entries | Seed PASS | Seed FAIL | PASS rows | FAIL rows | Terminal result |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `442:58` resume | 58 | 56 | 2 | 109 | 105 | `NODE_BOOT_FAIL` |
+| `100:400` combined | 400 | 237 | 163 | 623 | 985 | Interrupted original, `NODE_BOOT_FAIL` on resume |
+
+The combined count replaces the original rows for overlapping
+`tibia.i2821` with its resume rows. The original run also recorded an
+expired-grace release timeout. The resume extended the established backpack
+destination class to 2853, 2854, 2857, 2859, 2863 and 2867
+(`item_view.rs:316–328`, Crystal `items.xml:5951–6032`). The new hand-defence
+evidence is recorded above. The glider crank 21902 produced a malformed
+overlay during direct USE (`crates/session/src/domain_dispatch.rs:263–272`,
+Crystal `items.xml:43460–43464`). That wire symptom remains unresolved.
