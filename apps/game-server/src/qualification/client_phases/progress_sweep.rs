@@ -1347,24 +1347,27 @@ async fn craft(
     let index = provisioning::item_index()?;
     let plan = craft_oracle(recipe, &index)?;
     let source = reference(&index, &recipe["input_item"])?;
+    let mut required = Quantities::new();
     for operand in list(&recipe["operands"])? {
-        if map_operand(recipe, operand) {
-            continue;
+        if !map_operand(recipe, operand) {
+            let item = reference(&index, &operand["item_id"])?;
+            *required.entry(item).or_default() += i64::from(number(&operand["count"])?);
         }
-        let item = reference(&index, &operand["item_id"])?;
-        let count = number(&operand["count"])?;
-        let existing = quantity(&inventory(client)?, item);
-        if existing < i64::from(count) {
-            let id = item_id(string(&operand["item_id"]["key"])?)?;
-            let missing = u32::try_from(i64::from(count) - existing)?;
-            if id == 3604 && missing == 1 {
-                seed_item_and_readmit(client, clients, "progress-baking".into()).await?;
-                if quantity(&inventory(client)?, item) < i64::from(count) {
-                    return Err("harness-seeded-dough-missing-after-admission".into());
-                }
-            } else {
-                full_row_i14::acquire(client, world, id, missing).await?;
-            }
+    }
+    let sufficient = |items: &Quantities| {
+        required
+            .iter()
+            .all(|(&item, &count)| quantity(items, item) >= count)
+    };
+    if !sufficient(&inventory(client)?) {
+        seed_item_and_readmit(
+            client,
+            clients,
+            format!("progress-recipe:{}", rows.entry.key),
+        )
+        .await?;
+        if !sufficient(&inventory(client)?) {
+            return Err("harness-seeded-recipe-inputs-missing".into());
         }
     }
     let target = &recipe["target"];
@@ -1524,9 +1527,6 @@ fn station(
     let mut stations = BTreeMap::new();
     oteryn_world_bundle::bundle::visit(&world_bytes()?, |manifest, sector| {
         for tile in sector.tiles {
-            if here.x.abs_diff(tile.x) > 161 || here.y.abs_diff(tile.y) > 161 {
-                continue;
-            }
             for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
                 if manifest.palette[item.palette as usize].key == key
                     && let Ok(ordinal) = u8::try_from(ordinal)

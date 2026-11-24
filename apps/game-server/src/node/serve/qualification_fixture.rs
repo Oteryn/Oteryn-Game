@@ -21,9 +21,66 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
                 profile,
                 "progress-baking" | "progress-charms" | "progress-charm-fee"
             ) || mastery_species(profile).is_some()
-                || proficiency_item(profile).is_some()))
+                || proficiency_item(profile).is_some()
+                || recipe_key(profile).is_some()))
         .then_some((session, profile))
     })
+}
+
+fn recipe_key(profile: &str) -> Option<&str> {
+    let key = profile.strip_prefix("progress-recipe:")?;
+    let name = key.strip_prefix("oteryn:item-conversion.")?;
+    (!name.is_empty()
+        && profile.len() <= 128
+        && name.bytes().all(|byte| {
+            byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'-' | b'_')
+        }))
+    .then_some(key)
+}
+
+fn recipe_items(key: &str) -> Result<Vec<(u32, u32)>, Box<dyn std::error::Error>> {
+    use crate::content::{
+        ProjectV2ConversionRole, ProjectV2ConversionTarget, ProjectV2Declaration,
+    };
+    #[derive(serde::Deserialize)]
+    struct Catalogue {
+        records: Vec<ProjectV2Declaration>,
+    }
+    let Catalogue { records } = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../content/craft/recipes.json",
+    )))?;
+    let recipe = records
+        .into_iter()
+        .find_map(|row| match row {
+            ProjectV2Declaration::ItemConversion {
+                identity, recipe, ..
+            } if identity.key == key => Some(recipe),
+            _ => None,
+        })
+        .ok_or("qualification recipe absent from committed catalogue")?;
+    let mut items = std::collections::BTreeMap::<u32, u32>::new();
+    for operand in recipe.operands {
+        if operand.role == ProjectV2ConversionRole::Target
+            && !matches!(recipe.target, ProjectV2ConversionTarget::Carried)
+        {
+            continue;
+        }
+        if operand.sub_type.is_some() {
+            return Err("qualification recipe requires an explicit item subtype".into());
+        }
+        let id = operand
+            .item_id
+            .key
+            .strip_prefix("oteryn:item.tibia.i")
+            .ok_or("qualification recipe ingredient is not a native item")?
+            .parse()?;
+        let total = items.entry(id).or_default();
+        *total = total
+            .checked_add(u32::from(operand.count))
+            .ok_or("qualification recipe quantity overflow")?;
+    }
+    Ok(items.into_iter().collect())
 }
 
 fn proficiency_item(profile: &str) -> Option<u32> {
@@ -715,6 +772,10 @@ async fn prepare_build(
             &[(3043, 3)],
         )
         .await;
+    }
+    if let Some(key) = recipe_key(profile) {
+        let items = recipe_items(key)?;
+        return prepare_items(root, authority, proof, &current, native, deadline, &items).await;
     }
     if let Some(id) = proficiency_item(profile) {
         let source = crate::content::import_committed_weapon_proficiency_data()
