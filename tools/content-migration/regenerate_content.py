@@ -1225,6 +1225,9 @@ def main() -> int:
 
     install_buddel(ROOT, WORLD)
     project_routes(ROOT, WORLD)
+    from native_world_canonicalization import install_trade_successors
+
+    install_trade_successors(ROOT, WORLD)
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     run(["python3", "tools/content-schema/world-object-authoring/spawn_ground.py"])

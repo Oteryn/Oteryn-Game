@@ -5,11 +5,11 @@
   "inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "d6430ccc3fb7326f81a67dac87ecf34fb73f16237eba58ead903433b1e058290"
+      "sha256": "ac3b7c64f26eaaf7e011a551479e7afb545ee95052241c4255858e15089dea62"
     },
     {
       "path": "content/items/definitions/srx1-item-updates.json",
-      "sha256": "c99256be55018439a820f1f7a23dbed5cd506c7807a1e3559321618c1baa137a"
+      "sha256": "885619c2773788b9e43f3644760b860c0f3855b26e6a25d22a90b04d9e75895c"
     },
     {
       "path": "content/items/definitions/starting-loadout-profiles.json",
@@ -25,9 +25,11 @@
     "oteryn:item.tibia.i10213",
     "oteryn:item.tibia.i10214",
     "oteryn:item.tibia.i10215",
+    "oteryn:item.tibia.i10216",
     "oteryn:item.tibia.i10217",
     "oteryn:item.tibia.i10286",
     "oteryn:item.tibia.i10287",
+    "oteryn:item.tibia.i10288",
     "oteryn:item.tibia.i10290",
     "oteryn:item.tibia.i10329",
     "oteryn:item.tibia.i10338",
@@ -948,6 +950,9 @@
     "oteryn:item.tibia.i30877",
     "oteryn:item.tibia.i30878",
     "oteryn:item.tibia.i3103",
+    "oteryn:item.tibia.i3104",
+    "oteryn:item.tibia.i3105",
+    "oteryn:item.tibia.i3116",
     "oteryn:item.tibia.i31183",
     "oteryn:item.tibia.i31184",
     "oteryn:item.tibia.i31185",
@@ -1118,6 +1123,7 @@
     "oteryn:item.tibia.i32157",
     "oteryn:item.tibia.i32158",
     "oteryn:item.tibia.i32159",
+    "oteryn:item.tibia.i3216",
     "oteryn:item.tibia.i32160",
     "oteryn:item.tibia.i32161",
     "oteryn:item.tibia.i32162",
@@ -1128,6 +1134,7 @@
     "oteryn:item.tibia.i32173",
     "oteryn:item.tibia.i3219",
     "oteryn:item.tibia.i32197",
+    "oteryn:item.tibia.i3220",
     "oteryn:item.tibia.i3222",
     "oteryn:item.tibia.i32225",
     "oteryn:item.tibia.i32226",
@@ -1642,6 +1649,7 @@
     "oteryn:item.tibia.i3563",
     "oteryn:item.tibia.i35692",
     "oteryn:item.tibia.i3573",
+    "oteryn:item.tibia.i3576",
     "oteryn:item.tibia.i3579",
     "oteryn:item.tibia.i3583",
     "oteryn:item.tibia.i35851",

@@ -339,6 +339,7 @@ class NativeWorldCompletion(unittest.TestCase):
             output = Path(command[command.index("--output-root") + 1])
             self.assertEqual(source, self.repo / "content/world")
             install_buddel.assert_called_once_with(self.repo, source)
+            capture.assert_called_once_with(self.repo)
             self.assertFalse(output.exists())
             # The real writer emits exactly the managed package, not the caller's
             # unmanaged sibling. Keep production's strict output-set assertion live.
@@ -359,6 +360,7 @@ class NativeWorldCompletion(unittest.TestCase):
             patch.object(regenerate, "refresh_quest_callback_proof"),
             patch.object(regenerate, "materialize_world"),
             patch("buddel_travel.install_buddel") as install_buddel,
+            patch("import_cyclopedia_global.load_capture", return_value={}) as capture,
             patch.object(
                 regenerate, "refresh_source_cohort_extent", side_effect=measured
             ),
