@@ -138,8 +138,21 @@ Docker and the exact pinned Platform checkout are required. Set
 Pass multiple groups as separate arguments, for example
 `tools/qualification/node_boot/cloud_run.sh core f6`. The Cloud runner uses
 the bundled environment, runs every group sequentially in the same checkout
-and inherits `OTERYN_E2E_CREATURE_BATCH` for `creature_sweep`. It prints a
-summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
+and inherits the batch settings for these opt-in groups:
+
+| Group | Sorted content batch (default) |
+| --- | --- |
+| `creature_sweep` | `OTERYN_E2E_CREATURE_BATCH=start:len` (`0:3`) |
+| `cyclopedia_sweep` | `OTERYN_E2E_CYCLOPEDIA_SWEEP_BATCH=start:len` (`0:3`) |
+
+The Cyclopedia sweep orders entries by family-qualified content key. Its map
+census includes the native atlas entries present in the selected World bundle.
+Source masks without native membership do not have playable atlas entries.
+Weather rows use real World positions and the server's UTC period. An area
+without an anchor or a route in the selected bundle produces a failed visit
+and a failed dependent state row.
+
+The runner prints a summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
 at the path reported on stderr. It exits nonzero if any group fails.
 
 ## Parallel stacks, the single-row loop and diagnostics

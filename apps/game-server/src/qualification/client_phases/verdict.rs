@@ -765,6 +765,7 @@ impl Row {
 const GROUPS: &[(&str, &[&str])] = &[
     ("core", &[]),
     ("creature_sweep", &[]),
+    ("cyclopedia_sweep", &[]),
     ("f4", &[]),
     ("f5", &[]),
     ("f6", &[]),
@@ -813,6 +814,12 @@ impl Groups {
             }
         }
         Ok(Self(Some(selected)))
+    }
+
+    pub(super) fn explicitly_runs(&self, group: &str) -> bool {
+        self.0
+            .as_ref()
+            .is_some_and(|selected| selected.contains(group))
     }
 
     pub(super) fn runs(&self, group: &str) -> bool {
@@ -1210,6 +1217,10 @@ mod verdict_tests {
         let all = Groups::parse(None, GROUPS)?;
         assert!(GROUPS.iter().all(|(group, _)| all.runs(group)));
         assert!(Groups::parse(Some(" "), GROUPS)?.runs("core"));
+        assert!(!all.explicitly_runs("cyclopedia_sweep"));
+        let sweep = Groups::parse(Some("cyclopedia_sweep"), GROUPS)?;
+        assert!(sweep.explicitly_runs("cyclopedia_sweep"));
+        assert!(!sweep.runs("core"));
         let some = Groups::parse(Some("f6, f7run"), GROUPS)?;
         assert!(some.runs("f6") && some.runs("f7run"));
         assert!(!some.runs("core") && !some.runs("f7clock"));

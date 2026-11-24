@@ -223,7 +223,7 @@ struct Species {
     loot: LootBinding,
 }
 
-fn read_shards(directory: &Path, prefix: &str) -> TestResult<Vec<serde_json::Value>> {
+pub(super) fn read_shards(directory: &Path, prefix: &str) -> TestResult<Vec<serde_json::Value>> {
     let mut files = std::fs::read_dir(directory)?
         .map(|entry| entry.map(|entry| entry.path()))
         .collect::<Result<Vec<_>, _>>()?;
@@ -499,7 +499,7 @@ async fn sweep_species(
 }
 
 /// The sweep owns a dedicated classed Character and carries its progression between hunts.
-async fn ready(
+pub(super) async fn ready(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     session: &mut Option<DevClientSession>,
@@ -1368,7 +1368,9 @@ async fn prepare_player(
 }
 
 /// Experience and level from the Cyclopedia GeneralStats tab (the same panel MP09 reads).
-async fn read_stats(client: &mut DevClientSession) -> TestResult<(u64, u32, Option<u8>)> {
+pub(super) async fn read_stats(
+    client: &mut DevClientSession,
+) -> TestResult<(u64, u32, Option<u8>)> {
     let mut view = panel::CyclopediaCharacterPanel {
         selected: true,
         limit: 50,
@@ -1397,7 +1399,7 @@ async fn read_stats(client: &mut DevClientSession) -> TestResult<(u64, u32, Opti
 }
 
 /// Logout with the combat lock honoured: wait it out with keep-alive Turns, never clear it.
-async fn release(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn release(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(930);
     let mut activity_due = tokio::time::Instant::now();
     loop {

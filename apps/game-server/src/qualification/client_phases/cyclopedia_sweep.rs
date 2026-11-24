@@ -1,0 +1,1283 @@
+//! Opt-in over the native wire. Select with NODE_BOOT_E2E_ONLY=cyclopedia_sweep.
+//! The census is independent of the replies. Bestiary ordinals use the content order
+//! in gameplay/dispatch/src/gameplay_transport/charm_progression.rs:91; boss thresholds
+//! use gameplay/domain/src/domain/bosstiary.rs:33. Item names come from definition semantics
+//! as in gameplay/dispatch/src/gameplay_transport/inspection.rs:362.
+//! Map progress uses gameplay/dispatch/src/gameplay_transport/cyclopedia.rs:168.
+//! Weather uses the authored area anchors and the period owner at gameplay/weather/src/lib.rs:375,
+//! compared to the admission snapshot at gameplay/dispatch/src/gameplay_transport/connection/serve/snapshot.rs:677.
+use super::*;
+use oteryn_dev_client::{DevClientSession, client_ui::cyclopedia_character as panel};
+use oteryn_gameplay_weather::{WEATHER_SLOT_MS, WorldWeatherSource};
+use oteryn_protocol_oteryn::{
+    attack, bestiary::BestiaryRaceProgress, boss_encounter as boss, charm_progression as charm,
+    cyclopedia as map, cyclopedia_character as character, inspection, world_weather as weather,
+};
+use serde::Deserialize;
+use std::num::NonZeroU32;
+
+const BATCH: &str = "OTERYN_E2E_CYCLOPEDIA_SWEEP_BATCH";
+
+fn parse_batch(value: Option<&str>) -> TestResult<(usize, usize)> {
+    let Some(text) = value else {
+        return Ok((0, 3));
+    };
+    let number = |part: &str| {
+        if part.is_empty() || !part.bytes().all(|byte| byte.is_ascii_digit()) {
+            return None;
+        }
+        part.parse::<usize>().ok()
+    };
+    match text
+        .split_once(':')
+        .and_then(|(a, b)| Some((number(a)?, number(b)?)))
+    {
+        Some((start, len)) if len > 0 => Ok((start, len)),
+        _ => Err(format!("invalid {BATCH}={text:?}: expected start:len with len > 0").into()),
+    }
+}
+
+fn debug(error: impl std::fmt::Debug) -> String {
+    format!("{error:?}")
+}
+
+#[derive(Deserialize)]
+struct WeatherAreas {
+    areas: Vec<WeatherArea>,
+}
+
+#[derive(Deserialize)]
+struct WeatherArea {
+    key: String,
+    anchor: Option<Anchor>,
+}
+
+#[derive(Deserialize)]
+struct Anchor {
+    x: i32,
+    y: i32,
+    z: i16,
+}
+
+#[derive(Deserialize)]
+struct BasicArea {
+    area: u32,
+    name: String,
+    generated_count: u8,
+}
+
+enum Entry {
+    Bestiary {
+        ordinal: NonZeroU32,
+        name: Option<String>,
+        thresholds: [u32; 3],
+    },
+    Boss {
+        name: Option<String>,
+        category: String,
+    },
+    Character(character::CharacterTab),
+    CharacterItems,
+    Item {
+        revision: String,
+        name: String,
+    },
+    Map(BasicArea),
+    MapAtlas(oteryn_world_bundle::subarea::Area),
+    MapSpeed,
+    Weather(WeatherArea),
+}
+
+struct Content {
+    entries: BTreeMap<String, Entry>,
+    weather: WorldWeatherSource,
+}
+
+fn census(root: &Path) -> TestResult<Content> {
+    let mut names = BTreeMap::new();
+    for row in
+        creature_sweep::read_shards(&root.join("content/creatures/definitions"), "creatures-")?
+    {
+        let key = row["definition"]["identity"]["key"]
+            .as_str()
+            .ok_or("missing creature key")?;
+        if let Some(name) = row["authoring"]["profile"]["details"]["display_name"].as_str() {
+            names.insert(key.to_owned(), name.to_owned());
+        }
+    }
+    let mut entries = BTreeMap::new();
+    for (index, (race, _)) in full_row_p05::canonical_races()?.iter().enumerate() {
+        entries.insert(
+            format!("bestiary.{}", race.key()),
+            Entry::Bestiary {
+                ordinal: NonZeroU32::new(u32::try_from(index + 1)?).ok_or("zero race ordinal")?,
+                name: names.get(race.key()).cloned(),
+                thresholds: race.kill_thresholds().try_into()?,
+            },
+        );
+    }
+    let catalogue =
+        crate::content::canonical_title_catalogue(crate::content::ProjectEvidenceLimits {
+            max_documents: 5,
+            max_document_bytes: 2_500_000,
+            max_total_bytes: 8_000_000,
+            max_json_depth: 10,
+            max_decoded_fields: 65_000,
+            max_string_bytes: 1_000_000,
+            max_locator_bytes: 128,
+            max_locator_segments: 5,
+            max_reference_records: 4096,
+            max_import_records: 1,
+            max_reimport_states: 1,
+        })
+        .map_err(debug)?;
+    for boss in catalogue.bosstiary {
+        entries.insert(
+            format!("bosstiary.{}", boss.key),
+            Entry::Boss {
+                name: names.get(&boss.key).cloned(),
+                category: boss.category,
+            },
+        );
+    }
+    for tab in (1..=u8::MAX).filter_map(character::CharacterTab::from_id) {
+        entries.insert(format!("character.{tab:?}"), Entry::Character(tab));
+    }
+    entries.insert("character.Items".into(), Entry::CharacterItems);
+    for row in creature_sweep::read_shards(&root.join("content/items/definitions"), "items-")? {
+        let definition = &row["definition"];
+        if definition["client_projection"] != "ClientSafe" {
+            continue;
+        }
+        let Some(name) = definition["semantics"]["presentation"]["value"]["name"]["value"].as_str()
+        else {
+            continue;
+        };
+        let key = definition["identity"]["key"]
+            .as_str()
+            .ok_or("missing item key")?;
+        let revision = definition["identity"]["revision"]
+            .as_str()
+            .ok_or("missing item revision")?;
+        entries.insert(
+            format!("items.{key}"),
+            Entry::Item {
+                revision: revision.into(),
+                name: name.into(),
+            },
+        );
+    }
+    let area: BasicArea = serde_json::from_slice(&std::fs::read(
+        root.join("content/cyclopedia/basic-area.json"),
+    )?)?;
+    entries.insert(format!("map.{}", area.area), Entry::Map(area));
+    entries.insert("map.discovery-speed".into(), Entry::MapSpeed);
+    let weather_root = root.join("content/weather");
+    let areas = std::fs::read_to_string(weather_root.join("areas.json"))?;
+    let weather = WorldWeatherSource::from_json(
+        &std::fs::read_to_string(weather_root.join("index.json"))?,
+        &std::fs::read_to_string(weather_root.join("climates.json"))?,
+        &areas,
+    )
+    .map_err(debug)?;
+    for area in serde_json::from_str::<WeatherAreas>(&areas)?.areas {
+        entries.insert(format!("weather.{}", area.key), Entry::Weather(area));
+    }
+    Ok(Content { entries, weather })
+}
+
+#[derive(Default)]
+struct Tally {
+    pass: usize,
+    fail: usize,
+}
+
+/// One row per step, with remaining rows failed if a dependency fails.
+struct Rows<'a> {
+    key: &'a str,
+    remaining: &'a [&'a str],
+    tally: &'a mut Tally,
+    lap: std::time::Instant,
+}
+
+impl Rows<'_> {
+    fn emit(&mut self, result: TestResult<String>, cause: &str) -> bool {
+        let Some((&step, remaining)) = self.remaining.split_first() else {
+            return false;
+        };
+        self.remaining = remaining;
+        let seconds = self.lap.elapsed().as_secs_f64();
+        self.lap = std::time::Instant::now();
+        let (status, detail, reason) = match result {
+            Ok(detail) => {
+                self.tally.pass += 1;
+                ("PASS", detail, String::new())
+            }
+            Err(error) => {
+                self.tally.fail += 1;
+                ("FAIL", error.to_string(), format!(" cause={cause}"))
+            }
+        };
+        evidence(&format!(
+            "e2e_all scenario=CY.{}.{step} status={status} seconds={seconds:.3} mode=seeded evidence={}{reason}",
+            safe(self.key),
+            safe(&detail),
+        ));
+        status == "PASS"
+    }
+
+    fn finish(&mut self) {
+        while !self.remaining.is_empty() {
+            self.emit(Err("an earlier step failed".into()), "blocked");
+        }
+    }
+}
+
+fn safe(value: &str) -> String {
+    value
+        .chars()
+        .take(400)
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || "._-".contains(c) {
+                c
+            } else {
+                '-'
+            }
+        })
+        .collect()
+}
+
+impl Entry {
+    fn steps(&self) -> &'static [&'static str] {
+        match self {
+            Self::Bestiary { .. } | Self::Boss { .. } => {
+                &["query", "prepare", "spawn", "kill", "progress"]
+            }
+            Self::Map(_) => &["query", "visit", "progress"],
+            Self::MapAtlas(_) => &["query", "visit"],
+            Self::Weather(_) => &["visit", "state"],
+            Self::Item { .. } | Self::Character(_) | Self::CharacterItems | Self::MapSpeed => {
+                &["query"]
+            }
+        }
+    }
+}
+
+pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
+    let (start, len) = match std::env::var(BATCH) {
+        Ok(text) => parse_batch(Some(&text))?,
+        Err(std::env::VarError::NotPresent) => parse_batch(None)?,
+        Err(error) => return Err(error.into()),
+    };
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let Content {
+        mut entries,
+        weather,
+    } = census(&root)?;
+    let subareas = &world.base().subareas;
+    let present: std::collections::BTreeSet<_> =
+        subareas.runs.iter().map(|run| run.subarea).collect();
+    let parents: std::collections::BTreeSet<_> = subareas
+        .areas
+        .iter()
+        .filter(|area| present.contains(&area.id))
+        .filter_map(|area| area.parent)
+        .collect();
+    for area in &subareas.areas {
+        if present.contains(&area.id) || parents.contains(&area.id) {
+            entries.insert(format!("map.{}", area.key), Entry::MapAtlas(area.clone()));
+        }
+    }
+    let total = entries.len();
+    if start >= total {
+        return Err(format!("{BATCH} start {start} is beyond {total} entries").into());
+    }
+    let selected = len.min(total - start);
+    evidence(&format!(
+        "cyclopedia_sweep census total={total} start={start} len={len} selected={selected} mode=seeded"
+    ));
+    let mut tally = Tally::default();
+    let mut sweep = Sweep {
+        clients,
+        world,
+        weather: &weather,
+        reader: None,
+        hunter: None,
+        items: None,
+    };
+    for (key, entry) in entries.iter().skip(start).take(selected) {
+        verdict::Harness::global().progress("cyclopedia-sweep-entry");
+        let scenario = Box::leak(format!("CY.{}.full", safe(key)).into_boxed_str());
+        verdict::indexed(
+            scenario,
+            sweep_entry(&mut sweep, key, entry, &mut tally, scenario),
+        )
+        .await;
+    }
+    for mut client in [sweep.reader, sweep.hunter].into_iter().flatten() {
+        if let Err(error) = creature_sweep::release(&mut client).await {
+            tally.fail += 1;
+            evidence(&format!(
+                "cyclopedia_sweep release_failed error={}",
+                safe(&error.to_string())
+            ));
+        }
+    }
+    evidence(&format!(
+        "cyclopedia_sweep summary total={total} selected={selected} rows_pass={} rows_fail={} mode=seeded",
+        tally.pass, tally.fail
+    ));
+    if tally.fail != 0 {
+        return Err(format!("cyclopedia sweep: {} FAIL rows (see CY.*)", tally.fail).into());
+    }
+    Ok(())
+}
+
+async fn sweep_entry(
+    sweep: &mut Sweep<'_, '_>,
+    key: &str,
+    entry: &Entry,
+    tally: &mut Tally,
+    scenario: &str,
+) -> TestResult {
+    let started = std::time::Instant::now();
+    let failed_before = tally.fail;
+    let mut rows = Rows {
+        key,
+        remaining: entry.steps(),
+        tally,
+        lap: started,
+    };
+    let completed = tokio::time::timeout(
+        Duration::from_secs(240),
+        Box::pin(check_entry(sweep, key, entry, &mut rows)),
+    )
+    .await;
+    if completed.is_err() {
+        rows.emit(Err("entry deadline exceeded".into()), "deadline");
+        sweep.reader = None;
+        sweep.hunter = None;
+    }
+    rows.finish();
+    let failures = tally.fail - failed_before;
+    let (status, cause) = if failures == 0 {
+        ("PASS", "")
+    } else {
+        ("FAIL", " cause=step-failed")
+    };
+    evidence(&format!(
+        "e2e_all scenario={scenario} status={status} seconds={:.3} mode=seeded evidence=failed-steps:{failures}{cause}",
+        started.elapsed().as_secs_f64()
+    ));
+    if failures != 0 {
+        return Err(format!("{failures} failed steps for {}", safe(key)).into());
+    }
+    Ok(())
+}
+
+async fn command(
+    client: &mut DevClientSession,
+    cap: u32,
+    kind: u32,
+    payload: &[u8],
+) -> TestResult<Vec<u8>> {
+    let reply = client
+        .session_mut()
+        .gated_command(cap, kind, payload)
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!(
+            "capability {cap} command {kind} returned {:?}",
+            reply.status
+        )
+        .into());
+    }
+    Ok(reply.payload)
+}
+
+async fn bestiary(
+    client: &mut DevClientSession,
+    ordinal: NonZeroU32,
+) -> TestResult<Option<BestiaryRaceProgress>> {
+    let payload = charm::encode_charm_progression_request(&charm::CharmProgressionAction::Query)
+        .map_err(debug)?;
+    let reply = command(
+        client,
+        charm::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1,
+        charm::COMMAND_TYPE_CHARM_PROGRESSION,
+        &payload,
+    )
+    .await?;
+    let reply = charm::decode_charm_progression_reply(&reply).map_err(debug)?;
+    if reply.outcome != charm::CharmProgressionOutcome::Query {
+        return Err("Bestiary progress query returned the wrong outcome".into());
+    }
+    Ok(reply.bestiary.into_iter().find(|row| row.race == ordinal))
+}
+
+fn progress_oracle(
+    row: &BestiaryRaceProgress,
+    thresholds: [u32; 3],
+    kills: u32,
+) -> TestResult<String> {
+    let stage = thresholds.iter().filter(|&&goal| goal <= kills).count() as u8;
+    let next = thresholds.get(usize::from(stage)).copied();
+    if row.kill_count != kills
+        || row.kill_thresholds != thresholds
+        || row.unlocked_stage() != stage
+        || row.next_threshold() != next
+        || row.is_complete() != next.is_none()
+    {
+        return Err(format!(
+            "expected kills {kills}, stage {stage}, thresholds {thresholds:?}; observed {row:?}"
+        )
+        .into());
+    }
+    Ok(format!("kills:{kills},stage:{stage},next:{next:?}"))
+}
+
+async fn bestiary_card(
+    client: &mut DevClientSession,
+    ordinal: NonZeroU32,
+    name: &str,
+    thresholds: [u32; 3],
+) -> TestResult {
+    let race = u16::try_from(ordinal.get())?;
+    let body = charm::catalogue::encode_request(charm::catalogue::Request {
+        after: 0,
+        race,
+        category: 0,
+    })
+    .map_err(debug)?;
+    let reply = command(
+        client,
+        charm::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1,
+        charm::COMMAND_TYPE_CHARM_PROGRESSION,
+        &body,
+    )
+    .await?;
+    let page = charm::catalogue::decode_page(&reply).map_err(debug)?;
+    let expected_thresholds = format!("Discovery thresholds: {thresholds:?}");
+    if !matches!(page.cards.as_slice(), [card] if card.race == race && card.name == name && card.detail.lines().any(|line| line == expected_thresholds))
+    {
+        return Err(format!("missing Bestiary card for {race} named {name}").into());
+    }
+    Ok(())
+}
+
+async fn boss_query(
+    client: &mut DevClientSession,
+    key: &str,
+) -> TestResult<boss::catalogue::Entry> {
+    let mut after = 0;
+    loop {
+        let payload = boss::catalogue::Query {
+            after,
+            category: 0,
+            search: String::new(),
+        }
+        .encode()
+        .ok_or("invalid boss catalogue query")?;
+        let reply = command(
+            client,
+            boss::CAPABILITY_BOSS_ENCOUNTER_V1,
+            boss::COMMAND_TYPE_BOSS_COOLDOWNS,
+            &payload,
+        )
+        .await?;
+        let page = boss::catalogue::Page::decode(&reply).ok_or("invalid boss catalogue reply")?;
+        if let Some(row) = page.entries.into_iter().find(|row| row.key == key) {
+            return Ok(row);
+        }
+        after = page
+            .next
+            .filter(|&next| next > after)
+            .ok_or("boss catalogue row absent")?;
+    }
+}
+
+fn boss_oracle(
+    row: &boss::catalogue::Entry,
+    name: &str,
+    category: &str,
+    kills: u64,
+) -> TestResult<String> {
+    use crate::domain::bosstiary::{kill_thresholds, progress};
+    let thresholds = kill_thresholds(category).ok_or("missing authored boss thresholds")?;
+    let expected = progress(category, kills).ok_or("missing authored boss points")?;
+    let mut points = [0; 3];
+    for (points, threshold) in points.iter_mut().zip(thresholds) {
+        *points = progress(category, threshold)
+            .ok_or("missing authored boss points")?
+            .points;
+    }
+    if row.name != name
+        || !row.category_name().eq_ignore_ascii_case(category)
+        || row.thresholds != thresholds
+        || row.points != points
+        || row.kills != kills
+        || row.stage() != usize::from(expected.stage)
+        || row.earned_points() != expected.points
+    {
+        return Err(format!(
+            "expected {name} {category} kills {kills} thresholds {thresholds:?}; observed {row:?}"
+        )
+        .into());
+    }
+    Ok(format!(
+        "name:{name},kills:{kills},stage:{}",
+        expected.stage
+    ))
+}
+
+async fn spawn(
+    client: &mut DevClientSession,
+    key: &str,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session, key.into()).await?;
+    let target = parse_spawned_entity(&answer)?;
+    let visible = tokio::time::Instant::now() + Duration::from_secs(30);
+    while !client
+        .world_entities()
+        .is_some_and(|entities| entities.get(&target).is_some())
+    {
+        if tokio::time::Instant::now() >= visible {
+            return Err("spawned entity never appeared".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    }
+    Ok(target)
+}
+
+async fn kill(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    key: &str,
+    target: oteryn_dev_client::EntityRef,
+) -> TestResult<String> {
+    let modes = client
+        .session_mut()
+        .set_fight_modes(&attack::FightModes {
+            chase: attack::ChaseMode::Chase,
+            ..attack::FightModes::DEFAULT
+        })
+        .await?;
+    if modes.disposition != attack::AttackIntentDisposition::Ok {
+        return Err(format!("chase modes refused: {modes:?}").into());
+    }
+    let result = client.session_mut().attack_target(Some(&target)).await?;
+    if result.status != CommandStatus::Accepted
+        || result.disposition != attack::AttackIntentDisposition::Ok
+    {
+        return Err(format!("attack refused: {result:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
+    while client
+        .world_entities()
+        .is_some_and(|entities| entities.get(&target).is_some())
+    {
+        verdict::Harness::global().progress("cyclopedia-sweep-combat");
+        if tokio::time::Instant::now() >= deadline {
+            let _ = client.session_mut().attack_target(None).await;
+            return Err("spawned creature survived the combat deadline".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    }
+    committed_hunt_death(
+        client,
+        clients,
+        Some(clients.characters[0]),
+        key,
+        target,
+        tokio::time::Instant::now() + Duration::from_secs(20),
+    )
+    .await?;
+    Ok("exact-target credited death".into())
+}
+
+struct Sweep<'a, 'b> {
+    clients: &'a SeamClients<'b>,
+    world: &'a BundleWorld,
+    weather: &'a WorldWeatherSource,
+    reader: Option<DevClientSession>,
+    hunter: Option<DevClientSession>,
+    items: Option<crate::content::item_ref::ItemDefinitionIndex>,
+}
+
+async fn check_entry(sweep: &mut Sweep<'_, '_>, key: &str, entry: &Entry, rows: &mut Rows<'_>) {
+    match entry {
+        Entry::Bestiary { .. } | Entry::Boss { .. } => {
+            let key = key.split_once('.').map_or(key, |(_, key)| key);
+            if sweep.hunter.is_none() {
+                match connect_character(sweep.clients, 0xc0, 0).await {
+                    Ok(client) => sweep.hunter = Some(client),
+                    Err(error) => {
+                        rows.emit(Err(error), "admission");
+                        return;
+                    }
+                }
+            }
+            let Some(client) = &mut sweep.hunter else {
+                return;
+            };
+            let before = creature_query(client, key, entry, 0).await;
+            let kills = match before {
+                Ok((kills, detail)) => {
+                    rows.emit(Ok(detail), "catalogue");
+                    kills
+                }
+                Err(error) => {
+                    rows.emit(Err(error), "catalogue");
+                    return;
+                }
+            };
+            if !rows.emit(
+                prepare_hunter(sweep)
+                    .await
+                    .map(|()| "classed fixture outside protection zone".into()),
+                "precondition",
+            ) {
+                sweep.hunter = None;
+                return;
+            }
+            let Some(client) = &mut sweep.hunter else {
+                return;
+            };
+            let target = match spawn(client, key).await {
+                Ok(target) => {
+                    rows.emit(Ok(format!("visible:{target:?}")), "spawn");
+                    target
+                }
+                Err(error) => {
+                    rows.emit(Err(error), "spawn");
+                    return;
+                }
+            };
+            if rows.emit(kill(client, sweep.clients, key, target).await, "combat") {
+                let next = creature_query(client, key, entry, kills.saturating_add(1)).await;
+                rows.emit(next.map(|(_, detail)| detail), "progress");
+            }
+        }
+        _ => {
+            if sweep.reader.is_none() {
+                match connect_character(sweep.clients, 0xc1, 1).await {
+                    Ok(client) => sweep.reader = Some(client),
+                    Err(error) => {
+                        rows.emit(Err(error), "admission");
+                        return;
+                    }
+                }
+            }
+            let Some(client) = &mut sweep.reader else {
+                return;
+            };
+            match entry {
+                Entry::Map(area) => check_map(client, sweep.world, area, rows).await,
+                Entry::MapAtlas(area) => check_atlas(client, sweep.world, area, rows).await,
+                Entry::Weather(area) => check_weather(sweep, area, rows).await,
+                _ => {
+                    rows.emit(
+                        read_page(client, key, entry, &mut sweep.items).await,
+                        "catalogue",
+                    );
+                }
+            }
+        }
+    }
+}
+
+async fn prepare_hunter(sweep: &mut Sweep<'_, '_>) -> TestResult {
+    let client = sweep.hunter.as_mut().ok_or("hunter session absent")?;
+    let (_, level, _) = creature_sweep::read_stats(client).await?;
+    // The qualification fixture's initial build grant is level 100 even for a
+    // character that bootstrapped with a vocation (qualification_fixture.rs:683).
+    if level == 1 {
+        let client = sweep.hunter.take().ok_or("hunter session absent")?;
+        sweep.hunter = Some(provisioning::provision_fixture(client, sweep.clients, 0, 100).await?);
+    }
+    creature_sweep::ready(sweep.clients, sweep.world, &mut sweep.hunter).await
+}
+
+async fn creature_query(
+    client: &mut DevClientSession,
+    key: &str,
+    entry: &Entry,
+    kills: u64,
+) -> TestResult<(u64, String)> {
+    match entry {
+        Entry::Bestiary {
+            ordinal,
+            name,
+            thresholds,
+        } => {
+            let name = name
+                .as_deref()
+                .ok_or("missing authored creature display name")?;
+            bestiary_card(client, *ordinal, name, *thresholds).await?;
+            let row = bestiary(client, *ordinal).await?;
+            // The server projects only nonzero history (charm_native.rs:147).
+            let expected = u32::try_from(kills)?.min(thresholds[2]);
+            match row {
+                Some(row) => Ok((
+                    u64::from(row.kill_count),
+                    progress_oracle(&row, *thresholds, expected)?,
+                )),
+                None if expected == 0 => Ok((
+                    0,
+                    format!("name:{name},kills:0,stage:0,next:{}", thresholds[0]),
+                )),
+                None => Err("credited race missing from Bestiary progress".into()),
+            }
+        }
+        Entry::Boss { name, category } => {
+            let name = name
+                .as_deref()
+                .ok_or("missing authored boss display name")?;
+            let row = boss_query(client, key).await?;
+            Ok((row.kills, boss_oracle(&row, name, category, kills)?))
+        }
+        _ => Err("entry does not have creature progress".into()),
+    }
+}
+
+async fn read_page(
+    client: &mut DevClientSession,
+    key: &str,
+    entry: &Entry,
+    items: &mut Option<crate::content::item_ref::ItemDefinitionIndex>,
+) -> TestResult<String> {
+    let cap = character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1;
+    let kind = character::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB;
+    match entry {
+        Entry::Character(tab) => {
+            let mut model = panel::CyclopediaCharacterPanel {
+                selected: true,
+                limit: 1,
+                extensions: panel::TabExtensions {
+                    vocation: general_stats::selected(client),
+                    death_details: client
+                        .selected_capabilities()
+                        .contains(&character::CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1),
+                },
+                ..Default::default()
+            };
+            let req = panel::request(&mut model, panel::Intent::SelectTab(*tab))
+                .ok_or("no tab request")?;
+            let reply = client
+                .session_mut()
+                .gated_command(req.capability, req.kind, &req.payload)
+                .await?;
+            if reply.status != CommandStatus::Accepted || !panel::apply_result(&mut model, &reply) {
+                return Err(format!("tab {tab:?} refused or malformed: {:?}", reply.status).into());
+            }
+            if *tab == character::CharacterTab::GeneralStats
+                && !model.general.is_some_and(|stats| stats.level > 0)
+            {
+                return Err("GeneralStats has no positive character level".into());
+            }
+            Ok(format!("decoded:{tab:?}"))
+        }
+        Entry::CharacterItems => {
+            use character::items;
+            let body = command(client, cap, kind, &items::request(0)).await?;
+            let page = items::Page::decode(&body).map_err(debug)?;
+            if page.offset != 0 || page.rows.len() != usize::from(page.total).min(items::PAGE_SIZE)
+            {
+                return Err(format!("incorrect Character Items page: {page:?}").into());
+            }
+            Ok(format!("total:{}", page.total))
+        }
+        Entry::MapSpeed => {
+            let rules = crate::domain::cyclopedia::DiscoverySpeed::embedded()
+                .ok_or("authored discovery speed unavailable")?;
+            let body = command(
+                client,
+                map::CAPABILITY_CYCLOPEDIA_MAP_V1,
+                map::COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY,
+                &[],
+            )
+            .await?;
+            let actual = u16::from_le_bytes(body.as_slice().try_into()?);
+            let expected = rules.bonus(0, 1, false);
+            if actual != expected {
+                return Err(format!(
+                    "expected discovery speed {expected} for incomplete exploration; got {actual}"
+                )
+                .into());
+            }
+            Ok(format!("bonus:{actual}"))
+        }
+        Entry::Item { revision, name } => {
+            let key = key.strip_prefix("items.").ok_or("missing item key")?;
+            if items.is_none() {
+                *items = Some(provisioning::item_index()?);
+            }
+            let index = items.as_ref().ok_or("item index unavailable")?;
+            let reference = index
+                .definition_ref("Item", key, revision)
+                .ok_or("item missing from pinned definition index")?;
+            let payload =
+                inspection::encode_request(inspection::Request::Catalogue(reference.get()))
+                    .map_err(debug)?;
+            let body = command(
+                client,
+                inspection::CAPABILITY_INSPECTION_V1,
+                inspection::COMMAND_TYPE_INSPECTION,
+                &payload,
+            )
+            .await?;
+            let reply = inspection::decode_reply(&body).map_err(debug)?;
+            if reply.status != 1
+                || !matches!(reply.items.as_slice(), [row] if row.definition_ref == reference.get() && row.name == *name)
+            {
+                return Err(format!("expected item {reference} {name}; observed {reply:?}").into());
+            }
+            Ok(format!("name:{name},definition:{reference}"))
+        }
+        _ => Err("entry is not a static page".into()),
+    }
+}
+
+async fn map_query(
+    client: &mut DevClientSession,
+    area: u32,
+    action: Option<u8>,
+) -> TestResult<map::MapResult> {
+    let cap = map::CAPABILITY_CYCLOPEDIA_MAP_V1;
+    let bytes = if let Some(action) = action {
+        let mut payload = [0; map::MAX_REQUEST_BYTES];
+        payload[0] = action;
+        payload[1..5].copy_from_slice(&area.to_le_bytes());
+        command(client, cap, map::COMMAND_TYPE_CYCLOPEDIA_INTENT, &payload).await?
+    } else {
+        command(client, cap, map::COMMAND_TYPE_CYCLOPEDIA_QUERY, &[]).await?
+    };
+    let result = map::decode_result(&bytes).map_err(debug)?;
+    if result.code != 0 {
+        return Err(format!("map action {action:?} returned {result:?}").into());
+    }
+    Ok(result)
+}
+
+async fn check_atlas(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    area: &oteryn_world_bundle::subarea::Area,
+    rows: &mut Rows<'_>,
+) {
+    use oteryn_protocol_oteryn::cyclopedia::geometry as atlas;
+    let query = async {
+        let mut after = 0;
+        let parent = area.parent.unwrap_or(0);
+        loop {
+            let payload = atlas::encode_request(atlas::Request {
+                area: parent,
+                floor: atlas::AREA_LIST,
+                after,
+            })
+            .map_err(debug)?;
+            let body = command(
+                client,
+                map::CAPABILITY_CYCLOPEDIA_MAP_V1,
+                map::COMMAND_TYPE_CYCLOPEDIA_QUERY,
+                &payload,
+            )
+            .await?;
+            let atlas::Reply::Areas(page) = atlas::decode_reply(&body).map_err(debug)? else {
+                return Err("atlas returned geometry in response to an area list".into());
+            };
+            if page.parent != parent || page.after != after {
+                return Err("atlas cursor or parent mismatch".into());
+            }
+            if let Some(row) = page.areas.iter().find(|row| row.id == area.id) {
+                if row.name != area.name || row.parent != parent {
+                    return Err(
+                        format!("expected atlas area {} {parent}; got {row:?}", area.name).into(),
+                    );
+                }
+                return Ok(format!("name:{},id:{}", row.name, row.id));
+            }
+            after = page
+                .next
+                .filter(|&next| next > after)
+                .ok_or("authored atlas area absent")?;
+        }
+    }
+    .await;
+    if !rows.emit(query, "map-atlas") {
+        return;
+    }
+    let visit = async {
+        let table = &world.base().subareas;
+        let matches = |at: TilePos| {
+            table
+                .resolve(at.x, at.y, at.floor)
+                .is_some_and(|(parent, subarea)| {
+                    if area.parent.is_some() {
+                        subarea == area.id
+                    } else {
+                        parent == area.id
+                    }
+                })
+        };
+        let from = tile(client.world_spatial().actor_position)?;
+        let path = route(world, from, matches).ok_or("no reachable tile in authored atlas area")?;
+        walk(client, world, &path).await?;
+        let at = tile(client.world_spatial().actor_position)?;
+        let membership = table
+            .resolve(at.x, at.y, at.floor)
+            .ok_or("position outside atlas")?;
+        let got = command(
+            client,
+            map::CAPABILITY_SUBAREA_V1,
+            map::COMMAND_TYPE_SUBAREA_QUERY,
+            &[],
+        )
+        .await?;
+        if !matches(at) || got != map::encode_current_subarea(Some(membership)) {
+            return Err(format!(
+                "atlas membership at {at:?} expected {membership:?}; observed {got:?}"
+            )
+            .into());
+        }
+        Ok(format!("membership:{membership:?}"))
+    }
+    .await;
+    rows.emit(visit, "map-visit");
+}
+
+async fn check_map(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    area: &BasicArea,
+    rows: &mut Rows<'_>,
+) {
+    let before = map_query(client, area.area, None).await.and_then(|result| {
+        if result.found != 0 || result.discovered {
+            return Err(format!("expected unvisited map; got {result:?}").into());
+        }
+        Ok(format!("authored-area:{},unlocked:false", area.name))
+    });
+    if !rows.emit(before, "map-query") {
+        return;
+    }
+
+    let visit = async {
+        use crate::domain::cyclopedia::Point;
+        let from = tile(client.world_spatial().actor_position)?;
+        let table = &world.base().subareas;
+        let (_, subarea) = table
+            .resolve(from.x, from.y, from.floor)
+            .ok_or("entry has no native subarea")?;
+        let point = |at: TilePos| Point {
+            x: i32::from(at.x),
+            y: i32::from(at.y),
+            floor: i16::from(at.floor),
+        };
+        let mut state = map_query(client, area.area, None).await?;
+        // The owner hides generated POIs outside its view window. Visit reachable
+        // vantage points within the same subarea until a POI is visible.
+        let mut surveyed = Vec::new();
+        while state.visible.is_empty() && state.found == 0 {
+            let here = tile(client.world_spatial().actor_position)?;
+            surveyed.push(point(here));
+            let path = route_avoiding(
+                world,
+                here,
+                |at| surveyed.iter().all(|old| !point(at).in_window(*old)),
+                |at| {
+                    table
+                        .resolve(at.x, at.y, at.floor)
+                        .is_some_and(|(_, id)| id == subarea)
+                },
+            )
+            .ok_or("no POI visible from surveyed subarea")?;
+            walk(client, world, &path).await?;
+            state = map_query(client, area.area, None).await?;
+        }
+        if let Some(&(x, y, z)) = state.visible.first() {
+            // The MapResult uses client z; the local bundle uses its negation.
+            let target = TilePos { x, y, floor: -z };
+            let here = tile(client.world_spatial().actor_position)?;
+            let path = route_avoiding(
+                world,
+                here,
+                |at| at == target,
+                |at| {
+                    table
+                        .resolve(at.x, at.y, at.floor)
+                        .is_some_and(|(_, id)| id == subarea)
+                },
+            )
+            .ok_or("visible POI is unreachable within the subarea")?;
+            walk(client, world, &path).await?;
+        }
+        let at = tile(client.world_spatial().actor_position)?;
+        Ok(format!("visited:{at:?}"))
+    }
+    .await;
+    if rows.emit(visit, "map-visit") {
+        let progress = async {
+            let after = map_query(client, area.area, None).await?;
+            if after.found == 0
+                || after.found > area.generated_count
+                || after.discovered != (after.found == area.generated_count)
+            {
+                return Err(
+                    format!("map visit did not advance authored POI progress: {after:?}").into(),
+                );
+            }
+            Ok(format!("found:{}", after.found))
+        }
+        .await;
+        rows.emit(progress, "map-progress");
+    }
+}
+
+fn weather_now() -> TestResult<u64> {
+    crate::world_clock::now_utc_ms().ok_or_else(|| "UTC clock unavailable".into())
+}
+
+fn weather_oracle(
+    source: &WorldWeatherSource,
+    position: ActorPosition,
+    before: u64,
+    after: u64,
+    observed: weather::WorldWeather,
+) -> TestResult<String> {
+    let first = source.observe(position, before);
+    let last = source.observe(position, after);
+    if before > after
+        || after - before >= WEATHER_SLOT_MS
+        || observed == weather::WorldWeather::Unavailable
+        || (observed != first && observed != last)
+    {
+        return Err(format!(
+            "weather at {position:?} expected {first:?} or {last:?}; observed {observed:?}"
+        )
+        .into());
+    }
+    let weather::WorldWeather::Active {
+        absolute_slot,
+        kind,
+        intensity,
+        ..
+    } = observed
+    else {
+        return Err("weather observation unavailable".into());
+    };
+    Ok(format!(
+        "slot:{absolute_slot},kind:{kind},intensity:{intensity}"
+    ))
+}
+
+async fn check_weather(sweep: &mut Sweep<'_, '_>, area: &WeatherArea, rows: &mut Rows<'_>) {
+    let visit = async {
+        let anchor = area
+            .anchor
+            .as_ref()
+            .ok_or("weather area has no authored anchor")?;
+        let anchor = ActorPosition {
+            x: anchor.x,
+            y: anchor.y,
+            floor: anchor.z,
+        };
+        let client = sweep.reader.as_mut().ok_or("no reader session")?;
+        let matches_area = |pos| {
+            sweep
+                .weather
+                .area_at(pos)
+                .is_some_and(|row| row.key == area.key)
+        };
+        if !matches_area(client.world_spatial().actor_position) {
+            let from = tile(client.world_spatial().actor_position)?;
+            let path = route(sweep.world, from, |at| {
+                matches_area(ActorPosition {
+                    x: i32::from(at.x),
+                    y: i32::from(at.y),
+                    floor: -i16::from(at.floor),
+                })
+            })
+            .ok_or_else(|| format!("no route to authored weather area near {anchor:?}"))?;
+            walk(client, sweep.world, &path).await?;
+        }
+        let position = client.world_spatial().actor_position;
+        if !matches_area(position) {
+            return Err(format!("wire position {position:?} is outside weather region").into());
+        }
+        Ok(format!("region:{},position:{position:?}", area.key))
+    }
+    .await;
+    if !rows.emit(visit, "weather-region") {
+        return;
+    }
+    let state = async {
+        let mut previous = sweep.reader.take().ok_or("no reader session")?;
+        creature_sweep::release(&mut previous).await?;
+        drop(previous);
+        let before = weather_now()?;
+        let mut client = connect_character(sweep.clients, 0xc2, 1).await?;
+        let after = weather_now()?;
+        let position = client.world_spatial().actor_position;
+        let result = (|| {
+            if sweep
+                .weather
+                .area_at(position)
+                .is_none_or(|row| row.key != area.key)
+            {
+                return Err(
+                    format!("fresh wire position {position:?} is outside weather region").into(),
+                );
+            }
+            let snapshot = client
+                .session_mut()
+                .gated_snapshot(weather::STATE_DOMAIN_WORLD_WEATHER)
+                .ok_or("weather snapshot missing")?;
+            if snapshot.snapshot_type != weather::SNAPSHOT_TYPE_WORLD_WEATHER_V1 {
+                return Err("unexpected weather snapshot type".into());
+            }
+            let observed = weather::decode_world_weather(&snapshot.payload).map_err(debug)?;
+            weather_oracle(sweep.weather, position, before, after, observed)
+        })();
+        sweep.reader = Some(client);
+        result
+    }
+    .await;
+    rows.emit(state, "weather-state");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn batch_accepts_only_plain_bounded_positive_slices() -> TestResult {
+        assert_eq!(parse_batch(None)?, (0, 3));
+        assert_eq!(parse_batch(Some("0:20"))?, (0, 20));
+        for bad in [
+            "",
+            "1",
+            "1:0",
+            ":1",
+            "1:",
+            "+1:2",
+            "1:2:3",
+            " 1:2",
+            "99999999999999999999999999:1",
+        ] {
+            assert!(parse_batch(Some(bad)).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn progress_oracle_rejects_wrong_kills_and_thresholds() -> TestResult {
+        let row = BestiaryRaceProgress {
+            race: NonZeroU32::MIN,
+            kill_count: 5,
+            kill_thresholds: [2, 5, 10],
+        };
+        assert!(progress_oracle(&row, [2, 5, 10], 5)?.contains("stage:2"));
+        assert!(progress_oracle(&row, [2, 5, 10], 4).is_err());
+        assert!(progress_oracle(&row, [2, 6, 10], 5).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn boss_oracle_checks_stage_points_even_before_the_first_kill() -> TestResult {
+        let mut row = boss::catalogue::Entry {
+            key: "boss".into(),
+            name: "Boss".into(),
+            category: 3,
+            kills: 0,
+            thresholds: [1, 3, 5],
+            points: [10, 40, 100],
+            look: 0,
+            object: false,
+        };
+        assert!(boss_oracle(&row, "Boss", "nemesis", 0)?.contains("stage:0"));
+        row.kills = 1;
+        assert!(boss_oracle(&row, "Boss", "nemesis", 1)?.contains("stage:1"));
+        row.points[2] = 99;
+        assert!(boss_oracle(&row, "Boss", "nemesis", 1).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn weather_oracle_requires_the_authored_active_observation() -> TestResult {
+        let source = oteryn_gameplay_weather::shipped().ok_or("weather content absent")?;
+        let position = ActorPosition {
+            x: 32732,
+            y: 31634,
+            floor: 7,
+        };
+        let observed = source.observe(position, WEATHER_SLOT_MS);
+        assert!(
+            weather_oracle(
+                source,
+                position,
+                WEATHER_SLOT_MS,
+                WEATHER_SLOT_MS + 1,
+                observed
+            )
+            .is_ok()
+        );
+        assert!(
+            weather_oracle(
+                source,
+                position,
+                WEATHER_SLOT_MS,
+                WEATHER_SLOT_MS + 1,
+                weather::WorldWeather::Unavailable
+            )
+            .is_err()
+        );
+        assert!(
+            weather_oracle(
+                source,
+                position,
+                WEATHER_SLOT_MS * 100,
+                WEATHER_SLOT_MS * 100 + 1,
+                observed
+            )
+            .is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn authored_census_includes_all_families() -> TestResult {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let content = census(&root)?;
+        for family in [
+            "bestiary.",
+            "bosstiary.",
+            "character.",
+            "items.",
+            "map.",
+            "weather.",
+        ] {
+            assert!(
+                content.entries.keys().any(|key| key.starts_with(family)),
+                "{family}"
+            );
+        }
+        let counts = content
+            .entries
+            .keys()
+            .fold(BTreeMap::new(), |mut counts, key| {
+                *counts
+                    .entry(key.split('.').next().unwrap_or_default())
+                    .or_insert(0) += 1;
+                counts
+            });
+        eprintln!(
+            "cyclopedia_sweep census total={} {counts:?}",
+            content.entries.len()
+        );
+        Ok(())
+    }
+}
