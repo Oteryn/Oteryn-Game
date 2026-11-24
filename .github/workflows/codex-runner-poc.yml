@@ -29,19 +29,6 @@ jobs:
       SOURCE_RUN: "45369833403"
       SOURCE_SHA: 2b9bfde7e898dd7b28d017f2d172a08cf689ceb1
     steps:
-      - name: Check out the source head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ env.SOURCE_SHA }}
-          persist-credentials: false
-      - name: Pack the source tree
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/relay/tree"
-          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          git archive --format=tar HEAD | zstd -q -T0 -3 -o "$RUNNER_TEMP/relay/tree/tree.tar.zst"
-          echo "$SOURCE_SHA" > "$RUNNER_TEMP/relay/tree/head-sha"
-          ls -la "$RUNNER_TEMP/relay/tree"
       - name: Download the planner of the source run
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -65,7 +52,7 @@ jobs:
           cd "$RUNNER_TEMP/relay"
           (cd pg-selected && sha256sum -c SHA256SUMS)
           ls -la pg-planner pg-selected
-          printf 'FROM scratch\nCOPY pg-planner /pg-planner\nCOPY pg-selected /pg-selected\nCOPY tree /tree\n' > Dockerfile
+          printf 'FROM scratch\nCOPY pg-planner /pg-planner\nCOPY pg-selected /pg-selected\n' > Dockerfile
           echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
@@ -89,28 +76,44 @@ jobs:
       ARCHIVE_INDEX: ${{ matrix.index }}
       ARCHIVE_TOTAL: "5"
       CI_IMAGE: ghcr.io/oteryn/oteryn-game-ci-runner:pr-3469
-    services:
-      postgres:
-        image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
-        env:
-          POSTGRES_USER: oteryn_test_admin
-          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
     steps:
+      # The Codex Cloud environment already holds a clone of this repository, the Rust toolchain
+      # and a prepared PostgreSQL 18 test cluster, so only the test archive comes over the network.
       - name: Runner facts
         run: |
           nproc
           free -g
           df -h "$GITHUB_WORKSPACE" "$RUNNER_TEMP"
+          command -v cargo-nextest || echo 'no native cargo-nextest'
+          if unshare --user --mount --map-root-user true 2>/dev/null; then echo 'unshare ok'; else echo 'no unshare'; fi
+          git -C /workspace/Oteryn-Game rev-parse HEAD
 
-      - name: Pull archive and CI image from ghcr
+      - name: Source tree from the environment clone
+        run: |
+          set -euo pipefail
+          start=$(date +%s)
+          rm -rf "$GITHUB_WORKSPACE"
+          git clone -q --shared --no-checkout /workspace/Oteryn-Game "$GITHUB_WORKSPACE"
+          cd "$GITHUB_WORKSPACE"
+          if ! git cat-file -e "$SOURCE_SHA^{commit}" 2>/dev/null; then
+            git fetch -q --no-tags https://github.com/Oteryn/Oteryn-Game.git "$SOURCE_SHA"
+          fi
+          git checkout -q --detach "$SOURCE_SHA"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          echo "source tree took $(( $(date +%s) - start ))s"
+
+      - name: Start the environment PostgreSQL cluster
+        run: |
+          set +x
+          set -euo pipefail
+          start=$(date +%s)
+          export OTERYN_AUTO_START=0
+          source /workspace/oteryn-env/env.sh
+          bash /workspace/oteryn-env/start.sh
+          test -n "${OTERYN_TEST_POSTGRES_ADMIN_URL:-}" || { echo 'env.sh sets no OTERYN_TEST_POSTGRES_ADMIN_URL' >&2; exit 1; }
+          echo "postgres start took $(( $(date +%s) - start ))s"
+
+      - name: Pull the test archive from ghcr
         env:
           GH_TOKEN: ${{ github.token }}
           IMAGE: ghcr.io/oteryn/oteryn-game-codex-runner-poc:pg-${{ github.run_id }}-${{ github.run_attempt }}
@@ -120,28 +123,13 @@ jobs:
           # Codex Cloud keeps the home directory read-only; docker login stores its config here.
           export DOCKER_CONFIG="$RUNNER_TEMP/docker-config"
           echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-          # The CI image pull runs alongside the archive pull; neither depends on the other.
-          docker pull -q "$CI_IMAGE" > "$RUNNER_TEMP/ci-pull.log" 2>&1 &
-          ci_pull=$!
-          docker pull "$IMAGE"
+          docker pull -q "$IMAGE"
           id=$(docker create "$IMAGE" /none)
           docker cp "$id:/pg-planner" "$RUNNER_TEMP/pg-planner"
           docker cp "$id:/pg-selected" "$RUNNER_TEMP/pg-selected"
-          docker cp "$id:/tree" "$RUNNER_TEMP/tree"
           docker rm "$id"
-          wait "$ci_pull" || { cat "$RUNNER_TEMP/ci-pull.log"; exit 1; }
-          echo "pulls took $(( $(date +%s) - start ))s"
-      # Instead of a checkout: the hosted relay job packed the exact source tree into the image.
-      - name: Unpack the source tree
-        run: |
-          set -euo pipefail
-          start=$(date +%s)
-          test "$(cat "$RUNNER_TEMP/tree/head-sha")" = "$SOURCE_SHA"
-          mkdir -p "$GITHUB_WORKSPACE"
-          docker run --rm -v "$RUNNER_TEMP/tree:/in:ro" -v "$GITHUB_WORKSPACE:/out" "$CI_IMAGE" \
-            tar --zstd -xf /in/tree.tar.zst -C /out
-          du -sh "$GITHUB_WORKSPACE"
-          echo "unpack took $(( $(date +%s) - start ))s"
+          echo "archive pull took $(( $(date +%s) - start ))s"
+
       - name: Verify archive and plan the partition
         run: |
           set -euo pipefail
@@ -157,23 +145,44 @@ jobs:
           python3 "$RUNNER_TEMP/pg-planner/plan_pg_partitions.py" "$RUNNER_TEMP/pg-plan" "$ARCHIVE_INDEX" "$ARCHIVE_TOTAL" \
             tools/ci/pg_test_durations.json --optional-archives
           wc -l "$RUNNER_TEMP"/pg-plan/*.filters
+
       # The binaries read repository files through the build job's workspace path, which is
-      # read-only on Codex Cloud, so the tests run in the CI image with the checkout bound there.
+      # read-only on Codex Cloud. Natively a private mount namespace puts the checkout there;
+      # without unshare or a native nextest the tests run in the CI image instead.
       - name: Run registered PostgreSQL E2E targets
         env:
-          RUN_ID: ${{ github.run_id }}
-          RUN_ATTEMPT: ${{ github.run_attempt }}
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set +x
           set -euo pipefail
+          export OTERYN_AUTO_START=0
+          source /workspace/oteryn-env/env.sh
           mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-e2e.filters"
           test "${#filters[@]}" -gt 0
+          args=(nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
+            --workspace-remap "$BUILD_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml"
+            --no-fail-fast "${filters[@]}")
           start=$(date +%s)
           status=0
-          docker run --rm --network host \
-            -v "$GITHUB_WORKSPACE:$BUILD_WORKSPACE" -v "$RUNNER_TEMP:$RUNNER_TEMP" -w "$BUILD_WORKSPACE" \
-            -e OTERYN_TEST_POSTGRES_ADMIN_URL="postgresql://oteryn_test_admin:ci-${RUN_ID}-${RUN_ATTEMPT}@127.0.0.1:5432/postgres" \
-            "$CI_IMAGE" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \
-            --workspace-remap "$BUILD_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
-            --no-fail-fast "${filters[@]}" || status=$?
+          nextest=$(command -v cargo-nextest || true)
+          if [[ -n "$nextest" ]] && unshare --user --mount --map-root-user true 2>/dev/null; then
+            echo 'mode: native'
+            export PG_WORKSPACE="$BUILD_WORKSPACE" PG_SOURCE="$GITHUB_WORKSPACE" PG_RUN_UID="$(id -u)" PG_RUN_GID="$(id -g)"
+            unshare --user --mount --map-root-user --propagation private bash -euc '
+              mount -t tmpfs -o mode=0755 tmpfs /home
+              mkdir -p "$PG_WORKSPACE"
+              mount --bind "$PG_SOURCE" "$PG_WORKSPACE"
+              cd "$PG_WORKSPACE"
+              exec unshare --user --map-user="$PG_RUN_UID" --map-group="$PG_RUN_GID" -- "$@"
+            ' pg-run "$nextest" "${args[@]}" || status=$?
+          else
+            echo 'mode: CI image'
+            export DOCKER_CONFIG="$RUNNER_TEMP/docker-config"
+            docker pull -q "$CI_IMAGE"
+            docker run --rm --network host \
+              -v "$GITHUB_WORKSPACE:$BUILD_WORKSPACE" -v "$RUNNER_TEMP:$RUNNER_TEMP" -w "$BUILD_WORKSPACE" \
+              -e OTERYN_TEST_POSTGRES_ADMIN_URL \
+              "$CI_IMAGE" cargo-nextest "${args[@]}" || status=$?
+          fi
           echo "tests took $(( $(date +%s) - start ))s, exit $status"
           exit "$status"
