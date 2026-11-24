@@ -166,6 +166,59 @@ pub(super) async fn dedicated_named_character(
     })
 }
 
+/// Seed the retained Crystal Dawnport temple for a dedicated unassigned birth.
+pub(super) async fn newcomer_island_start(
+    scope: &SeamClients<'_>,
+    world: &BundleWorld,
+    dedicated: &DedicatedCharacter,
+) -> TestResult<TilePos> {
+    let temple = TilePos {
+        x: 32064,
+        y: 31894,
+        floor: -6,
+    };
+    if world.base().tile(temple.x, temple.y, temple.floor).is_none() {
+        return Err("Dawnport temple is absent from the qualification bundle".into());
+    }
+
+    let world_id = WorldId::decode(&scope.world)?;
+    let mut database = sqlx::PgConnection::connect(scope.url).await?;
+    let rows = sqlx::query(
+        "INSERT INTO game_character_last_positions
+          (character_id, world_id, tile_x, tile_y, tile_floor, coordinate_frame_digest,
+           map_revision_digest, server_artifact_digest, character_lease_generation, write_sequence)
+         SELECT r.character_id, r.world_id, $5, $6, $7, $8, $9, a.server_artifact_digest, 1, 1
+           FROM game_character_roots r
+           JOIN game_content_activations a ON a.world_id = r.world_id
+          WHERE current_database() = 'oteryn_node_boot'
+            AND session_user = 'oteryn_node_boot_admin'
+            AND r.character_id = encode($1,'hex')::uuid AND r.account_id = $2::uuid
+            AND r.world_id = encode($3,'hex')::uuid AND a.channel_id = encode($4,'hex')::uuid
+            AND a.activation_sequence = 1 AND r.creation_vocation IS NULL
+            AND r.character_revision = 1 AND r.lifecycle = 1
+            AND NOT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s
+                             WHERE s.character_id = r.character_id)
+         ON CONFLICT (character_id) DO NOTHING",
+    )
+    .bind(dedicated.characters[0].as_slice())
+    .bind(&dedicated.accounts[0])
+    .bind(scope.world.as_slice())
+    .bind(scope.channel.as_slice())
+    .bind(i32::from(temple.x))
+    .bind(i32::from(temple.y))
+    .bind(-i16::from(temple.floor))
+    .bind(world.frame_binding_digest(world_id).as_slice())
+    .bind(world.map_revision_digest().as_slice())
+    .execute(&mut database)
+    .await?
+    .rows_affected();
+    database.close().await?;
+    if rows != 1 {
+        return Err("Dawnport start requires a fresh dedicated unassigned birth".into());
+    }
+    Ok(temple)
+}
+
 /// Look up a named birth reserved for one row in the disposable World.
 pub(super) async fn dedicated_named_birth(
     scope: &SeamClients<'_>,

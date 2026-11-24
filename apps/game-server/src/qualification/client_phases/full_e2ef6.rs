@@ -152,19 +152,24 @@ async fn first_vocation_rows(
 
     character_prep::declare_seeded(
         "S16a",
-        "unassigned-level-1-zero-xp-birth",
+        "unassigned-level-1-zero-xp-dawnport-birth",
         "first vocation and earned level progression",
     );
-    let vocation_scope = character_prep::dedicated_named_character(
-        clients,
-        "NODE_BOOT_C11_UNASSIGNED_ACCOUNT",
-        Some("First Vocation Candidate"),
-    )
-    .await
-    .and_then(|dedicated| dedicated.replace_slot(clients, 1));
+    let vocation_scope = async {
+        let dedicated = character_prep::dedicated_named_character(
+            clients,
+            "NODE_BOOT_C11_UNASSIGNED_ACCOUNT",
+            Some("First Vocation Candidate"),
+        )
+        .await?;
+        let start = character_prep::newcomer_island_start(clients, world, &dedicated).await?;
+        let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
+        Ok((accounts, characters, start))
+    }
+    .await;
     let vocation = Row::new("S16a", VOCATION);
     match vocation_scope {
-        Ok((accounts, characters)) => {
+        Ok((accounts, characters, start)) => {
             let scope = SeamClients {
                 accounts: &accounts,
                 characters: &characters,
@@ -176,7 +181,7 @@ async fn first_vocation_rows(
                 .bound(
                     Duration::from_secs(420),
                     "Oressa journey deadline; remaining actions unproven",
-                    first_vocation(&mut vocation, &scope, world, spawns, npcs),
+                    first_vocation(&mut vocation, &scope, world, spawns, npcs, start),
                 )
                 .await;
             vocation.finish(result);
@@ -1129,7 +1134,7 @@ async fn approach_oressa(
         .ok_or("Oressa prerequisite blocked: compiled world has no oteryn:npc.oressa placement")?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         npc.placements.iter().any(|placement| placement.floor == at.floor
-            && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3)
+            && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 1)
     }).ok_or("Oressa prerequisite blocked: no player walking route to oteryn:npc.oressa within the existing town route budget")?;
     walk(client, world, &path).await?;
     client.world_entities().and_then(|entities| entities.iter().find(|entry| {
@@ -1311,6 +1316,7 @@ async fn first_vocation(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
+    start: TilePos,
 ) -> TestResult {
     use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::{Ok as Accepted, Rejected};
     let mut client = connect_world(clients, 0xe5).await?;
@@ -1322,6 +1328,10 @@ async fn first_vocation(
         }
         if initial.1 >= 8 {
             return Err(format!("underlevel refusal prerequisite blocked: ordinary character already level {}; no level reset permitted", initial.1).into());
+        }
+        let admitted = tile(client.world_spatial().actor_position)?;
+        if admitted != start {
+            return Err(format!("S16a birth position differs: expected={start:?} observed={admitted:?}").into());
         }
         let npc = approach_oressa(&mut client, world, npcs).await?;
         oressa_talk(&mut client, npc, "hi", Accepted, "Welcome. Ask about a vocation when you are ready to choose.").await?;
@@ -1367,7 +1377,7 @@ async fn first_vocation(
     let restore: TestResult = async {
         client.session_mut().attack_target(None).await?;
         let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            at == TOWN
+            at == start
         })
         .ok_or("Oressa journey return route unavailable")?;
         walk(&mut client, world, &back).await
