@@ -20,6 +20,7 @@ mod tests;
 pub(super) struct SpeechBubbles {
     texts: Texts,
     received: Option<u64>,
+    dismissals: u64,
     scope: Option<(u64, u64)>,
     entities: Vec<Entity>,
 }
@@ -62,6 +63,11 @@ pub(super) fn project(
         }
     }
     state.received = Some(panel.received);
+    let dismissals = play.view.screen_message_controls().2;
+    if state.dismissals != dismissals {
+        state.texts.clear();
+        state.dismissals = dismissals;
+    }
     state
         .texts
         .retain_visible(|name| panel.console.communication.allows(name));

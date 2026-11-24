@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorldStateParams",
+  "type": "object",
+  "properties": {
+    "expected_revision": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "kick_sessions": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "preview_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "state": {
+      "$ref": "#/$defs/WorldState"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "state"
+  ],
+  "$defs": {
+    "WorldState": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed",
+        "maintenance"
+      ]
+    }
+  }
+}

@@ -6,17 +6,72 @@ pub(crate) struct LookMessage {
 }
 
 #[cfg(bevy_shell)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum NoticeKind {
+    Boosted,
+    Hotkey,
+    OfflineTraining,
+    Private,
+    System,
+    Store,
+}
+#[cfg(bevy_shell)]
+impl NoticeKind {
+    pub(crate) fn visible(self, preferences: &crate::play::ReferencePreferences) -> bool {
+        let p = preferences.game_window;
+        match self {
+            Self::Boosted => p.boosted_messages,
+            Self::Hotkey => p.hotkey_messages,
+            Self::OfflineTraining => p.offline_training_messages,
+            Self::System => true,
+            Self::Private => p.private_messages,
+            Self::Store => p.store_messages,
+        }
+    }
+}
+#[cfg(bevy_shell)]
+#[derive(Debug)]
+pub(crate) struct WindowNotice {
+    pub kind: NoticeKind,
+    pub text: String,
+    private_receipt: Option<u64>,
+}
+#[cfg(bevy_shell)]
+impl crate::play::mailbox::Mailbox {
+    pub(in crate::play) fn window_notice(&mut self, kind: NoticeKind, text: String) {
+        // Each category contributes at most its newest notice between frames.
+        self.window_notices.retain(|notice| notice.kind != kind);
+        let private_receipt = (kind == NoticeKind::Private).then(|| {
+            self.chat.received.wrapping_add(self.chat.pending_lines).wrapping_add(1)
+        });
+        self.window_notices.push_back(WindowNotice { kind, text, private_receipt });
+    }
+}
+#[cfg(bevy_shell)]
 impl crate::play::PlayLink {
-    pub(crate) fn private_screen_message(
+    #[cfg(test)]
+    pub(crate) fn take_window_notices(&self) -> std::collections::VecDeque<WindowNotice> {
+        std::mem::take(&mut crate::play::mailbox::lock(&self.mailbox).window_notices)
+    }
+    pub(crate) fn take_screen_notices(
         &self,
         cursor: &mut Option<(u64, u64)>,
-    ) -> (bool, Option<String>) {
-        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+    ) -> (bool, std::collections::VecDeque<WindowNotice>) {
+        let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let mut notices = std::mem::take(&mut mailbox.window_notices);
         let panel = &mailbox.chat;
         let previous = cursor.replace((panel.scope, panel.received));
         let reset = previous.is_none_or(|(scope, _)| scope != panel.scope);
-        let received = previous.map_or(0, |(_, n)| n);
+        let received = previous.filter(|(scope, _)| *scope == panel.scope).map_or(0, |(_, n)| n);
         let count = usize::try_from(panel.received.wrapping_sub(received)).unwrap_or(usize::MAX);
+        let Some(receipt) = notices.iter().find_map(|notice| notice.private_receipt) else {
+            return (reset, notices);
+        };
+        // Only a published receipt can be classified by the transcript's recipient metadata.
+        let ahead = receipt.wrapping_sub(panel.received);
+        if count == 0 || (1..=panel.pending_lines).contains(&ahead) {
+            return (reset, notices);
+        }
         let start = panel.lines.len().saturating_sub(count);
         let latest = panel.lines[start..]
             .iter()
@@ -28,6 +83,7 @@ impl crate::play::PlayLink {
                         .recipients
                         .get(start + index)
                         .is_none_or(Option::is_none)
+                    && !speaker_name.eq_ignore_ascii_case(&mailbox.party.own_character_name)
                     && panel.console.communication.visible(line)
                 {
                     Some(format!("{speaker_name}: {text}"))
@@ -35,7 +91,16 @@ impl crate::play::PlayLink {
                     None
                 }
             });
-        (reset, latest)
+        // Published history carries recipient metadata for the sender’s own echoes.
+        notices.retain_mut(|notice| {
+            if notice.kind != NoticeKind::Private { return true; }
+            if let Some(text) = &latest {
+                notice.text.clone_from(text);
+                return true;
+            }
+            false
+        });
+        (reset, notices)
     }
     pub(crate) fn look_message(&self) -> Option<LookMessage> {
         crate::play::mailbox::lock(&self.mailbox)

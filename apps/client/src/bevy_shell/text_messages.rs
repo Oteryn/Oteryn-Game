@@ -30,6 +30,7 @@ struct ScreenMessage {
     text: String,
     colour: [u8; 3],
     expires: Duration,
+    kind: Option<crate::play::feature_local_text_messages::view::NoticeKind>,
 }
 #[derive(Resource, Default)]
 struct ScreenMessages {
@@ -55,6 +56,7 @@ impl ScreenMessages {
     fn show(&mut self, area: Area, text: &str, colour: [u8; 3], now: Duration) {
         self.slots[area as usize] = Some(ScreenMessage {
             text: text.into(),
+            kind: None,
             colour,
             expires: now.saturating_add(visible_time(text)),
         });
@@ -82,6 +84,7 @@ impl ScreenMessages {
                 ServerMessage::StatusText(text) => (Area::Bottom, text, [255; 3]),
                 ServerMessage::Warning(text) => (Area::Center, text, [245, 94, 94]),
                 ServerMessage::Advance(text) => (Area::Top, text, [255; 3]),
+                ServerMessage::BossDefeated(_) => continue,
             };
             self.show(area, text, colour, now);
             self.last_sequence = Some(message.server_sequence);
@@ -115,8 +118,8 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<GameRegions>) {
                     width: percent(80.),
                     top: match area {
                         Area::Loot => percent(50.),
-                        Area::Private => percent(27.),
                         Area::Top => percent(15.),
+                        Area::Private => percent(27.),
                         Area::Look => percent(40.),
                         Area::Center => percent(60.),
                         Area::Bottom => Val::Auto,
@@ -151,12 +154,31 @@ fn project(
             };
         }
         state.observe(&play.view, now);
-        let (reset, private) = play.link.private_screen_message(&mut state.chat_cursor);
-        if reset {
+        let (reset, notices) = play.link.take_screen_notices(&mut state.chat_cursor);
+        if reset
+            && state.slots[Area::Private as usize]
+                .as_ref()
+                .is_some_and(|slot| {
+                    slot.kind
+                        == Some(crate::play::feature_local_text_messages::view::NoticeKind::Private)
+                })
+        {
             state.slots[Area::Private as usize] = None;
         }
-        if let Some(text) = private {
-            state.show(Area::Private, &text, [95, 247, 247], now);
+        for notice in notices {
+            if !notice.kind.visible(&owner.settings.preferences) {
+                continue;
+            }
+            let (area, colour) = match notice.kind {
+                crate::play::feature_local_text_messages::view::NoticeKind::Private => {
+                    (Area::Private, [95, 247, 247])
+                }
+                _ => (Area::Bottom, [255; 3]),
+            };
+            state.show(area, &notice.text, colour, now);
+            if let Some(slot) = &mut state.slots[area as usize] {
+                slot.kind = Some(notice.kind);
+            }
         }
         if let Some(message) = play.link.look_message() {
             state.observe_look(&message, now);
@@ -180,9 +202,16 @@ fn project(
             Area::Loot => continue,
             Area::Top | Area::Bottom => banners,
             Area::Center => popups,
-            Area::Look | Area::Private => true,
+            Area::Look => true,
+            Area::Private => owner.settings.preferences.game_window.private_messages,
         };
-        let message = state.visible(area.0, now).filter(|_| enabled);
+        let message = state.visible(area.0, now).filter(|message| {
+            enabled
+                && owner.settings.preferences.game_window.messages
+                && message
+                    .kind
+                    .is_none_or(|kind| kind.visible(&owner.settings.preferences))
+        });
         let value = message.map_or("", |message| message.text.as_str());
         if text.0 != value {
             text.0 = value.into();

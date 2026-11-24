@@ -1,4 +1,4 @@
-use oteryn_admin_contracts::{ErrorCode as E, Request, Response, signed_bytes};
+use oteryn_admin_contracts::{ErrorCode as E, Request, Response, digest, signed_bytes};
 use sqlx::{PgConnection, PgPool, Row};
 use std::future::Future;
 
@@ -27,7 +27,7 @@ pub trait IdempotencyStore {
     fn finish(
         &mut self,
         request: &Request,
-        digest: &str,
+        replay_digest: &str,
         response: &Response,
         now: i64,
     ) -> impl Future<Output = Result<Response, E>> + Send;
@@ -79,7 +79,7 @@ impl IdempotencyStore for PostgresStore {
     async fn finish(
         &mut self,
         request: &Request,
-        digest: &str,
+        replay_digest: &str,
         response: &Response,
         now: i64,
     ) -> Result<Response, E> {
@@ -90,17 +90,18 @@ impl IdempotencyStore for PostgresStore {
             .map_err(|_| E::AdmTargetUnavailable)?;
         let result = serde_json::to_value(response).map_err(|_| E::AdmInternal)?;
         let inserted = sqlx::query("INSERT INTO admin_idempotency(admin_operation_id,params_digest,result) VALUES($1::uuid,$2,$3) ON CONFLICT DO NOTHING RETURNING admin_operation_id")
-            .bind(&request.admin_operation_id).bind(digest).bind(result).fetch_optional(&mut *tx).await.map_err(|_| E::AdmInternal)?;
+            .bind(&request.admin_operation_id).bind(replay_digest).bind(result).fetch_optional(&mut *tx).await.map_err(|_| E::AdmInternal)?;
         if inserted.is_none() {
             let row = sqlx::query("SELECT params_digest,result FROM admin_idempotency WHERE admin_operation_id=$1::uuid").bind(&request.admin_operation_id).fetch_one(&mut *tx).await.map_err(|_| E::AdmInternal)?;
             let prior: String = row.try_get("params_digest").map_err(|_| E::AdmInternal)?;
-            if prior != digest {
+            if prior != replay_digest {
                 return Err(E::AdmIdempotencyConflict);
             }
             let value: serde_json::Value = row.try_get("result").map_err(|_| E::AdmInternal)?;
             return serde_json::from_value(value).map_err(|_| E::AdmInternal);
         }
-        append_ledger(&mut tx, request, digest, response, now).await?;
+        let params_digest = digest(&request.params).map_err(|_| E::AdmInternal)?;
+        append_ledger(&mut tx, request, &params_digest, response, now).await?;
         tx.commit().await.map_err(|_| E::AdmInternal)?;
         Ok(response.clone())
     }

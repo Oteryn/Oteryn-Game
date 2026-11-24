@@ -15,7 +15,9 @@ fn a_sealed_use_carries_its_gate_message_id_only_under_capability_11() -> Result
                 disposition: UseDisposition::Sealed,
                 committed: None,
                 earned: EarnedNotice::NoneEarned,
+                reward_granted: None,
                 gate_message_id: Some(42),
+                potion_utterance: None,
                 refusal_detail: None,
             },
         };
@@ -99,7 +101,9 @@ fn prey_unoffered_command_is_refused_by_real_dispatch() -> Result<(), Box<dyn Er
                     disposition: UseDisposition::NothingToUse,
                     committed: None,
                     earned: EarnedNotice::NoneEarned,
+                    reward_granted: None,
                     gate_message_id: None,
+                    potion_utterance: None,
                     refusal_detail: None,
                 },
             };
@@ -164,7 +168,9 @@ fn depot_search_without_negotiated_capability_is_refused_by_real_dispatch()
                     disposition: UseDisposition::NothingToUse,
                     committed: None,
                     earned: EarnedNotice::NoneEarned,
+                    reward_granted: None,
                     gate_message_id: None,
+                    potion_utterance: None,
                     refusal_detail: None,
                 },
             };
@@ -234,5 +240,165 @@ fn entry_room_dev_client_selects_guild_and_party_without_bundle_mechanics()
             "unexpected entry-room mechanic {id}"
         );
     }
+    Ok(())
+}
+
+#[test]
+fn potion_utterance_only_reaches_the_negotiated_use_receipt() -> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::world_object::{
+        CAPABILITY_POTION_UTTERANCE_V1, PotionUtterance, decode_use_result_with_utterance,
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                let authority = UseAuthority {
+                    uses: RefCell::new(Vec::new()),
+                    commands: RefCell::new(Vec::new()),
+                    overlay: None,
+                    watermark: None,
+                    outcome: UseOutcome {
+                        disposition: UseDisposition::Committed,
+                        potion_utterance: Some(PotionUtterance::Restore),
+                        ..UseOutcome::rejected()
+                    },
+                };
+                let offered = [
+                    OfferedCapability {
+                        id: CAPABILITY_ITEM_USE_V1,
+                        requires: &[],
+                    },
+                    OfferedCapability {
+                        id: CAPABILITY_POTION_UTTERANCE_V1,
+                        requires: &[CAPABILITY_ITEM_USE_V1],
+                    },
+                ];
+                for (supported, expected) in [
+                    (&[CAPABILITY_ITEM_USE_V1][..], None),
+                    (
+                        &[CAPABILITY_ITEM_USE_V1, CAPABILITY_POTION_UTTERANCE_V1][..],
+                        Some(PotionUtterance::Restore),
+                    ),
+                ] {
+                    let mut admitted = positioned()?;
+                    admitted.continuity.selected_capabilities =
+                        SelectedCapabilities::select(&offered, supported)
+                            .ok_or("potion capability selection")?;
+                    let command = use_command(
+                        1,
+                        1,
+                        u64::from(COMMAND_TYPE_USE_INTENT),
+                        b"oteryn:cell/entry-door",
+                        0,
+                    );
+                    let (_, frames) = drive_session(&authority, admitted, &[command]).await?;
+                    let mut replies = 0;
+                    for frame in frames {
+                        let envelope = decode_wire_envelope(&frame)?;
+                        if envelope.message_type() == MessageType::CommandResult {
+                            let result =
+                                oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                            assert_eq!(result.status, CommandStatus::Accepted);
+                            if expected.is_none() {
+                                assert_eq!(result.payload, [0x08, 1]);
+                            }
+                            assert_eq!(
+                                decode_use_result_with_utterance(result.payload)
+                                    .map_err(|error| format!("{error:?}"))?,
+                                (UseDisposition::Committed, None, expected),
+                            );
+                            replies += 1;
+                        }
+                    }
+                    assert_eq!(replies, 1);
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "potion receipt connection panicked")??;
+    Ok(())
+}
+
+#[test]
+fn stash_row_edit_uncertainty_does_not_publish_a_terminal_refusal() -> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::stash::{
+        CAPABILITY_STASH_ACTIONS_V1, COMMAND_TYPE_STASH_ROW_ACTION, StashRowAction, StashRowIntent,
+        encode_stash_row_intent,
+    };
+    struct UncertainEdit(Cell<bool>);
+    impl FreshAdmissionAuthority for UncertainEdit {
+        async fn admit(
+            &self,
+            _: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+
+        async fn observe_character_inventory(
+            &self,
+            _: ExactActorRef,
+            _: GameSessionId,
+        ) -> Option<InventoryItems> {
+            Some(InventoryItems::default())
+        }
+
+        async fn stash_row_action(
+            &self,
+            _: ExactActorRef,
+            _: UseCommand,
+            intent: StashRowIntent,
+            _: bool,
+        ) -> Result<Option<std::num::NonZeroU32>, crate::durability::DurabilityError> {
+            assert_eq!(intent.action, StashRowAction::LootAdd);
+            self.0.set(true);
+            Err(crate::durability::DurabilityError::Unavailable)
+        }
+    }
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                let authority = UncertainEdit(Cell::new(false));
+                let mut admitted = positioned()?;
+                let offered = super::super::super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
+                admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                    offered,
+                    &[4, 6, 37, 62, 98, CAPABILITY_STASH_ACTIONS_V1],
+                )
+                .ok_or("stash actions selection")?;
+                let payload = encode_stash_row_intent(StashRowIntent {
+                    row: uuid_v7(23),
+                    action: StashRowAction::LootAdd,
+                })
+                .map_err(|error| format!("{error:?}"))?;
+                let command = oteryn_protocol_oteryn::encode_client_command(
+                    1,
+                    &oteryn_protocol_oteryn::ClientCommandValue {
+                        command_id: 1,
+                        command_type: COMMAND_TYPE_STASH_ROW_ACTION,
+                        payload: &payload,
+                    },
+                )?;
+                let (end, frames) = drive_session(&authority, admitted, &[command]).await?;
+                assert!(authority.0.get());
+                assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+                for frame in frames {
+                    assert_ne!(
+                        decode_wire_envelope(&frame)?.message_type(),
+                        MessageType::CommandResult
+                    );
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "stash row edit connection panicked")??;
     Ok(())
 }

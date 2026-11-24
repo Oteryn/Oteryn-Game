@@ -30,28 +30,38 @@ fn hex_bytes(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-pub(super) async fn connect_caster(
+pub(super) async fn connect_player_caster(
     clients: &SeamClients<'_>,
+    required_level: u32,
+    premium_required: bool,
+    hunt_budget: Duration,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    let client = connect_character(clients, 0x97, LIGHT_CHARACTER).await?;
-    let (_, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
-        "sorcerer",
-        100,
-        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
-        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
-    )
-    .ok_or("light fixture maxima unavailable")?;
-    if client
-        .actor_vitals()
-        .is_some_and(|vitals| vitals.max_mana == max_mana)
+    let mut client = connect_character(clients, 0x97, LIGHT_CHARACTER).await?;
+    if premium_required
+        && let Err(error) = full_e2ef7::require_current_light_premium(&mut client).await
     {
-        return Ok(client);
+        // The packet capture reuses this Character after the full journey.
+        let cleanup = logout_retrying_busy(&mut client).await;
+        if !matches!(cleanup, Ok((Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted), ..))) {
+            return Err(format!("{error}; personal-light preflight logout: {cleanup:?}").into());
+        }
+        return Err(error);
     }
-    provisioning::provision_profile(client, clients, LIGHT_CHARACTER, 100, "sorcerer").await
+    if full_e2ef7::player_level(&mut client).await? < required_level {
+        let world = full_e2ef7::qualification_world(clients)?;
+        full_e2ef7::earn_player_level(&mut client, world, required_level, hunt_budget).await?;
+    }
+    Ok(client)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_caster(clients).await?;
+    let spell = native_spell_book()?
+        .spoken(WORDS)
+        .ok_or("missing authored Light spell")?
+        .spell;
+    let mut client = connect_player_caster(
+        clients, spell.level, spell.premium, Duration::from_secs(60),
+    ).await?;
     let own = *client.world_entities().ok_or("step=entities absent")?.own_identity();
     let before = client
         .session_mut()
@@ -126,4 +136,21 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         )),
         Err(_) => evidence("e2e_all scenario=W20b.client status=FAIL evidence=timeout"),
     }
+}
+
+#[test]
+fn qualification_review_w20b_never_uses_privileged_profile() -> TestResult {
+    let capture = include_str!("client_row_w20b.rs");
+    let (_, journey) = include_str!("full_e2ef7.rs")
+        .split_once("async fn light_journey(")
+        .ok_or("missing W20b full journey")?;
+    let (journey, _) = journey.split_once("\nasync fn ").ok_or("missing W20b journey boundary")?;
+    assert!(!capture.contains(concat!("provisioning::", "provision_profile")));
+    assert!(!journey.contains(concat!("client_row_w20b::", "connect_caster")));
+    assert!(journey.contains(concat!("client_row_w20b::", "connect_player_caster")));
+    let (setup, packet) = capture.split_once("async fn journey(").ok_or("missing W20b packet journey")?;
+    assert!(setup.contains(concat!("full_e2ef7::", "earn_player_level")));
+    let (packet, _) = packet.split_once("pub(super) async fn run_packet(").ok_or("missing W20b runner")?;
+    assert!(packet.contains(concat!("connect_player_", "caster(")));
+    Ok(())
 }

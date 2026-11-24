@@ -94,6 +94,15 @@ fn hud_marks_and_npc_badges_are_independent_and_generation_fenced()
     preferences.hud_marks_own = true;
     play.set_preferences(preferences)?;
     assert!(play.scene().sprites().len() > marked);
+    let all = play.scene().sprites().len();
+    for (field, expected) in [("player_hud_enabled", marked), ("other_hud_enabled", baseline + all - marked)] {
+        let original = play.preferences().clone();
+        let mut saved = serde_json::to_value(&original)?;
+        saved[field] = false.into();
+        play.set_preferences(serde_json::from_value(saved)?)?;
+        assert_eq!(play.scene().sprites().len(), expected);
+        play.set_preferences(original)?;
+    }
     play.party_icons[1].entity.generation += 1;
     play.rebuild()?;
     assert_eq!(play.scene().sprites().len(), marked);

@@ -51,6 +51,9 @@ impl Row {
                 ),
             ),
         };
+        if status == "FAIL" {
+            evidence(&format!("E10_GAP {detail}"));
+        }
         evidence(&format!(
             "e2e_all scenario=E10.full status={status} seconds={:.3} evidence={detail}",
             self.started.elapsed().as_secs_f64()
@@ -60,7 +63,11 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(180),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("timeout-waiting-for-server-reply".into()),
@@ -232,7 +239,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         accepted.order_id.ok_or("accepted-order-absent")?,
     )?;
     row.at("final-logout");
-    logout(&mut fresh).await
+    logout(&mut fresh).await?;
+    row.at("entitlement-delivery");
+    Err("accepted-order-and-history-do-not-prove-delivered-entitlement; need-authorized-positive-store-delivery; source:apps/game-server/src/qualification/GAME_PLATFORM_E2E_PLAN.md:841".into())
 }
 
 fn request(

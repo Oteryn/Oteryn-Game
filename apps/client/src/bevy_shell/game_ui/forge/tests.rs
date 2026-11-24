@@ -440,7 +440,7 @@ fn forge_history_renders_all_received_rows() -> Result<(), Error> {
                 succeeded: true,
                 applied: true,
                 reason: None,
-                bonus: 0,
+                bonus: 3,
                 resources: None,
             },
         ),
@@ -465,6 +465,7 @@ fn forge_history_renders_all_received_rows() -> Result<(), Error> {
         .map(|text| text.0.as_str())
         .collect();
     assert!(lines.iter().any(|text| text.contains("History #8")));
+    assert!(lines.iter().any(|text| text.contains("No gold consumed")));
     assert!(lines.iter().any(|text| text.contains("History #7")));
     Ok(())
 }
@@ -475,5 +476,50 @@ fn forge_reopens_on_retained_transfer_tab() -> Result<(), Error> {
     p.operation = Operation::Transfer;
     let (app, _, _) = fixture(p)?;
     assert_eq!(app.world().resource::<State>().tab, Tab::Transfer);
+    Ok(())
+}
+
+#[test]
+fn forge_history_pages_received_operations() -> Result<(), Error> {
+    use oteryn_client_ui::item_forge::reply::{Receipt, Reply};
+    let mut p = panel()?;
+    p.open = true;
+    let receipt = Receipt {
+        operation: Operation::Fusion,
+        succeeded: true,
+        applied: true,
+        reason: None,
+        bonus: 0,
+        resources: None,
+    };
+    p.decoded = Some(Reply::History(
+        (1..=11)
+            .rev()
+            .map(|index| (index, receipt.clone()))
+            .collect(),
+    ));
+    let (mut app, _, outbox) = fixture(p.clone())?;
+    click(&mut app, Kind::Tab(Tab::History))?;
+    outbox.bevy_forge_test_panel(p);
+    app.update();
+    for (button, expected) in [
+        ("Next page", "History #1\n"),
+        ("Previous page", "History #11\n"),
+    ] {
+        let entity = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == button).then_some(parent.parent()))
+            .ok_or("history page control")?;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|t| t.0.starts_with(expected))
+        );
+    }
     Ok(())
 }

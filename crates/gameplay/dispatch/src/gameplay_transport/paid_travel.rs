@@ -17,6 +17,7 @@ pub(super) struct Prompt {
     opened: u64,
     route: TravelRoute,
     fare: u64,
+    storm_roll: Option<bool>,
 }
 
 fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalkOutcome {
@@ -217,11 +218,74 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (context, entry.travel_routes.clone(), fence, now, previous)
         };
         let prompt = if text == "yes" {
-            let Some(prompt) = previous else {
+            let Some(mut prompt) = previous else {
                 return ordinary;
             };
             if !prompt.matches_confirmation(intent.npc_actor, &context, fence, now) {
                 return refusal(intent, TravelRefusal::StaleQuote);
+            }
+            if prompt.route.service == "oteryn:service.travel.jack_fate"
+                && prompt.route.route.key == "thais"
+            {
+                // Crystal 201189f8, npc/jack_fate.lua:86–99. The warning and the
+                // second confirmation are part of the same fenced conversation.
+                let Some(storm) = prompt.storm_roll else {
+                    let Some(roll) = self.states.newhaven_travel.roll_jack_fate_storm() else {
+                        return refusal(intent, TravelRefusal::UnavailableRoute);
+                    };
+                    prompt.storm_roll = Some(roll);
+                    let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() else {
+                        return ordinary;
+                    };
+                    prompts.insert(session, prompt);
+                    return npc_command::NpcConversations::bank_reply(
+                        intent,
+                        "A tropical storm may wreck the ship. Do you still want to sail?".into(),
+                    );
+                };
+                // The pending travel request seals the selected arrival for reconciliation.
+                if storm && self.session_premium_gate(session).await.premium_current() {
+                    // Tibia's Goroma passage starts at level 20. Apply the
+                    // quest's Premium gate only to the shipwreck branch.
+                    let mut wreck_route = prompt.route.clone();
+                    wreck_route.route.min_level = Some(20);
+                    wreck_route.route.premium = true;
+                    let destination = &mut wreck_route.route.destination;
+                    (destination.x, destination.y, destination.floor) = (32161, 32558, 6);
+                    let Ok(Some(current)) = self.current_quest_fence(session).await else {
+                        return refusal(intent, TravelRefusal::StaleQuote);
+                    };
+                    if current.item_fence() != fence {
+                        return refusal(intent, TravelRefusal::StaleQuote);
+                    }
+                    match self
+                        .root
+                        .quote_npc_travel(
+                            self.character,
+                            self.holder,
+                            current,
+                            wreck_route.clone(),
+                            &self.premium_coordinator,
+                        )
+                        .await
+                    {
+                        Ok(Ok(_)) => prompt.route = wreck_route,
+                        Ok(Err(
+                            TravelRefusal::UnavailableRoute | TravelRefusal::PremiumRequired,
+                        )) => {}
+                        Ok(Err(cause)) => return refusal(intent, cause),
+                        Err(_) => {
+                            if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock()
+                            {
+                                prompts.insert(session, prompt);
+                            }
+                            return npc_command::NpcTalkOutcome {
+                                unknown: true,
+                                ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+                            };
+                        }
+                    }
+                }
             }
             prompt
         } else {
@@ -272,6 +336,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         opened: now,
                         route,
                         fare,
+                        storm_roll: None,
                     },
                 );
             }

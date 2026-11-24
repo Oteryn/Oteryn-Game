@@ -3,15 +3,24 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
+import os
 import re
+import shutil
+import stat
 import sys
+import tempfile
+from contextlib import contextmanager
 from datetime import datetime, timezone
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
 CONTRACT_ID = "oteryn.game-platform-catalog"
 SCHEMA_VERSION = "1.0.0"
 CONTENT_AUTHORITY_ID = "oteryn-native"
+PUBLIC_VIEW_PROFILE = "oteryn:profile.public-content-view-v1"
+PUBLIC_VIEW_EPOCH = "preproduction-unallocated"
 KNOWN_CAPABILITIES = frozenset(
     {
         "item",
@@ -34,6 +43,8 @@ MAX_NESTING_DEPTH = 16
 MAX_OBJECT_MEMBERS = 4_096
 MAX_ARRAY_ENTRIES = 200_000
 MAX_INT = (1 << 63) - 1
+MAX_U32 = (1 << 32) - 1
+MAX_U16 = (1 << 16) - 1
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 TOKEN_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
@@ -369,6 +380,206 @@ def _normalize_tombstones(
     return result
 
 
+def _public_int(
+    value: Any, name: str, minimum: int = 0, maximum: int = MAX_INT
+) -> None:
+    if type(value) is not int or not minimum <= value <= maximum:
+        raise CatalogValidationError(f"invalid public payload {name}")
+
+
+def _public_revision(value: Any) -> None:
+    revision = _require_string(value, "definition_revision")
+    lower = revision.lower()
+    if (
+        re.fullmatch(r"[!-~]{1,512}", revision) is None
+        or any(
+            marker in lower
+            for marker in ("fixture", "synthetic", "evidence", "test-only")
+        )
+        or "test" in re.split(r"[:./_-]", lower)
+    ):
+        raise CatalogValidationError("invalid public payload definition_revision")
+
+
+def _public_source_text(value: Any, name: str) -> str:
+    text = _require_string(value, name)
+    if text.strip() != text or re.search(r"[\x00-\x1f\x7f-\x9f]", text):
+        raise CatalogValidationError(f"invalid public payload {name}")
+    return text
+
+
+def _require_increasing(values: list[str], name: str) -> None:
+    if any(left >= right for left, right in pairwise(values)):
+        raise CatalogValidationError(f"public {name} must be sorted and unique")
+
+
+def _validate_public_view_payloads(
+    entities: list[dict],
+    relations: list[dict],
+    tombstones: list[dict],
+    support: dict[str, str],
+    completeness: dict[str, str],
+) -> None:
+    # These checks apply to the Game-owned public projection profile. Other v1
+    # profiles retain the generic bounded-carrier validation.
+    observed = {row["capability_id"] for row in entities + relations}
+    if observed != {cap for cap, state in support.items() if state == "supported"}:
+        raise CatalogValidationError(
+            "public view support must match emitted capabilities"
+        )
+    if set(support) != KNOWN_CAPABILITIES or any(
+        completeness[cap] == "unknown" for cap in observed
+    ):
+        raise CatalogValidationError(
+            "public view requires coverage states for all v1 capabilities"
+        )
+    if tombstones:
+        raise CatalogValidationError("public view has no native tombstone source")
+
+    core = {"payload_revision", "definition_revision"}
+    for row in entities:
+        cap, data = row["capability_id"], row["data"]
+        if row["type"] != cap or cap not in {"item", "creature", "npc"}:
+            raise CatalogValidationError("invalid public entity type or capability")
+        if cap == "item":
+            _require_exact_keys(
+                data, "item data", core | {"materializable", "stack_class"}, {"name"}
+            )
+            if type(data["materializable"]) is not bool or data["stack_class"] not in (
+                "Unknown",
+                "StackCapable",
+                "NonStackable",
+            ):
+                raise CatalogValidationError("invalid public item payload")
+            if data["materializable"] and data["stack_class"] == "Unknown":
+                raise CatalogValidationError(
+                    "public identity-only item cannot be materializable"
+                )
+            if (
+                "name" in data
+                and len(_require_string(data["name"], "name").encode("utf-8")) > 46
+            ):
+                raise CatalogValidationError("public item name exceeds 46 UTF-8 bytes")
+        elif cap == "creature":
+            stats = {"health", "experience", "speed", "armor"}
+            _require_exact_keys(
+                data,
+                "creature data",
+                core,
+                stats | {"name", "resistances", "immunities"},
+            )
+            for field in stats & data.keys():
+                _public_int(
+                    data[field],
+                    field,
+                    minimum=int(field == "health"),
+                    maximum=MAX_U32 if field in {"speed", "armor"} else MAX_INT,
+                )
+            if "name" in data:
+                _public_source_text(data["name"], "name")
+            damage_types = []
+            for entry in _require_list(
+                data.get("resistances", []), "resistances", MAX_ARRAY_ENTRIES
+            ):
+                _require_exact_keys(entry, "resistance", {"damage_type", "percent"})
+                damage_types.append(
+                    _public_source_text(entry["damage_type"], "resistance damage_type")
+                )
+                percent = _require_exact_keys(
+                    entry["percent"], "percent", {"numerator", "denominator"}
+                )
+                _public_int(percent["numerator"], "numerator", -MAX_INT - 1)
+                _public_int(percent["denominator"], "denominator", 1)
+                if math.gcd(percent["numerator"], percent["denominator"]) != 1:
+                    raise CatalogValidationError(
+                        "public resistances must use reduced ratios"
+                    )
+            _require_increasing(damage_types, "resistances")
+            immunities = _require_list(
+                data.get("immunities", []), "immunities", MAX_ARRAY_ENTRIES
+            )
+            _require_increasing(
+                [_public_source_text(value, "immunity") for value in immunities],
+                "immunities",
+            )
+        else:
+            _require_exact_keys(data, "npc data", core)
+        _public_revision(data["definition_revision"])
+        _public_int(data["payload_revision"], "payload_revision", 1, 1)
+
+    entity_kinds = {row["content_key"]: row["capability_id"] for row in entities}
+    for row in relations:
+        cap, data = row["capability_id"], row["data"]
+        source_kind = {"creature_loot": "creature", "npc_shop": "npc"}.get(cap)
+        if (
+            row["type"] != cap
+            or source_kind is None
+            or entity_kinds[row["source"]] != source_kind
+            or entity_kinds.get(row["target"]) != "item"
+        ):
+            raise CatalogValidationError(
+                "invalid public relation capability or endpoint type"
+            )
+        kind = ".loot." if cap == "creature_loot" else ".row."
+        prefix, _, ordinal = row["relation_key"].rpartition(kind)
+        if cap == "creature_loot":
+            matches_source = prefix == row["source"]
+        else:
+            shop_prefix = row["source"] + ".shop."
+            # The carrier has already checked the key alphabet. An encoded
+            # Service key must have a separator with a part on each side.
+            service_key = prefix.removeprefix(shop_prefix)
+            matches_source = prefix.startswith(shop_prefix) and "." in service_key[1:-1]
+        if not matches_source or re.fullmatch(r"0|[1-9][0-9]*", ordinal) is None:
+            raise CatalogValidationError(
+                "public relation_key must identify a source row and ordinal"
+            )
+        if cap == "creature_loot":
+            _require_exact_keys(
+                data,
+                "loot data",
+                {
+                    "payload_revision",
+                    "algorithm",
+                    "min_count",
+                    "max_count",
+                    "probability_ppm",
+                },
+            )
+            if data["algorithm"] != "IndependentBernoulliPpm":
+                raise CatalogValidationError("invalid public loot algorithm")
+            _public_int(data["min_count"], "min_count", 1, MAX_U32)
+            _public_int(data["max_count"], "max_count", data["min_count"], MAX_U32)
+            _public_int(data["probability_ppm"], "probability_ppm", 0, 1_000_000)
+        else:
+            _require_exact_keys(
+                data,
+                "shop data",
+                {
+                    "payload_revision",
+                    "direction",
+                    "unit_price",
+                    "count",
+                    "sub_type",
+                    "currency",
+                },
+            )
+            if data["direction"] not in ("BuyFromPlayer", "SellToPlayer"):
+                raise CatalogValidationError("invalid public shop direction")
+            _public_int(data["unit_price"], "unit_price")
+            if data["count"] is not None:
+                _public_int(data["count"], "count", 1, MAX_U32)
+            if data["sub_type"] is not None:
+                _public_int(data["sub_type"], "sub_type", 0, MAX_U16)
+            if data["currency"] is not None:
+                currency = _require_string(data["currency"], "currency", CONTENT_KEY_RE)
+                if entity_kinds.get(currency) != "item":
+                    raise CatalogValidationError(
+                        "public shop currency must reference an exported item"
+                    )
+        _public_int(data["payload_revision"], "payload_revision", 1, 1)
+
+
 def _normalize_source(source: Any) -> tuple[dict, str]:
     required = {
         "authority_epoch",
@@ -416,6 +627,14 @@ def _normalize_source(source: Any) -> tuple[dict, str]:
     tombstones = _normalize_tombstones(
         source["tombstones"], support, completeness, entity_keys
     )
+    if content_profile_id == PUBLIC_VIEW_PROFILE:
+        if authority_epoch != PUBLIC_VIEW_EPOCH:
+            raise CatalogValidationError(
+                f"public view authority_epoch must be {PUBLIC_VIEW_EPOCH}"
+            )
+        _validate_public_view_payloads(
+            entities, relations, tombstones, support, completeness
+        )
     semantic = {
         "contract_id": CONTRACT_ID,
         "schema_version": SCHEMA_VERSION,
@@ -527,58 +746,189 @@ def load_json_file(path: Path) -> Any:
         raise CatalogValidationError(f"input is not valid JSON: {exc.msg}") from exc
 
 
-def _atomic_write(path: Path, data: bytes) -> None:
-    if not path.parent.exists():
-        raise CatalogValidationError(f"output directory does not exist: {path.parent}")
-    temporary = path.with_name(path.name + ".tmp")
-    try:
-        temporary.write_bytes(data)
-        temporary.replace(path)
-    except OSError as exc:
-        try:
-            temporary.unlink(missing_ok=True)
-        except OSError:
-            pass
-        raise CatalogValidationError(f"cannot write output file: {path}") from exc
-
-
-def _atomic_write_snapshot(path: Path, snapshot: dict) -> str:
-    if not path.parent.exists():
-        raise CatalogValidationError(f"output directory does not exist: {path.parent}")
-    temporary = path.with_name(path.name + ".tmp")
+def _stage_snapshot(path: Path, snapshot: dict) -> str:
     digest = hashlib.sha256()
     total = 0
+    with path.open("wb") as handle:
+        for chunk in _iter_canonical_json_bytes(snapshot):
+            total += len(chunk)
+            if total + 1 > MAX_FILE_BYTES:
+                raise CatalogValidationError("snapshot exceeds file size limit")
+            handle.write(chunk)
+            digest.update(chunk)
+        handle.write(b"\n")
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+@contextmanager
+def _publication_lock(directory: Path):
+    if os.name == "nt":
+        import msvcrt
+
+        # Keep the lock file so overlapping writers always lock the same file.
+        with (directory / ".catalogue.lock").open("a+b") as lock:
+            msvcrt.locking(lock.fileno(), msvcrt.LK_LOCK, 1)
+            yield
+        return
+
+    import fcntl
+
+    parent = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
     try:
-        with temporary.open("wb") as handle:
-            for chunk in _iter_canonical_json_bytes(snapshot):
-                total += len(chunk)
-                if total + 1 > MAX_FILE_BYTES:
-                    raise CatalogValidationError("snapshot exceeds file size limit")
-                handle.write(chunk)
-                digest.update(chunk)
-            handle.write(b"\n")
-            digest.update(b"\n")
-        temporary.replace(path)
-        return digest.hexdigest()
-    except CatalogValidationError:
-        try:
-            temporary.unlink(missing_ok=True)
-        except OSError:
-            pass
-        raise
-    except OSError as exc:
-        try:
-            temporary.unlink(missing_ok=True)
-        except OSError:
-            pass
-        raise CatalogValidationError(f"cannot write output file: {path}") from exc
+        fcntl.flock(parent, fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(parent)
+
+
+def _artifact_digest(path: Path) -> str | None:
+    try:
+        if path.is_file() and path.stat().st_size <= MAX_FILE_BYTES:
+            with path.open("rb") as handle:
+                return hashlib.file_digest(handle, "sha256").hexdigest()
+    except FileNotFoundError:
+        pass
+    return None
+
+
+def _sidecar_matches(path: Path, artifact_hex: str) -> bool:
+    try:
+        return (
+            path.is_file()
+            and path.stat().st_size == 65
+            and path.read_bytes() == (artifact_hex + "\n").encode("ascii")
+        )
+    except FileNotFoundError:
+        return False
+
+
+def _activate_pair(pair: Path, storage: Path, basename: str, artifact_hex: str) -> None:
+    generation = storage / artifact_hex
+    if generation.is_symlink():
+        raise CatalogValidationError(
+            f"unexpected catalogue generation link: {generation}"
+        )
+    if not generation.exists():
+        pair.replace(generation)
+    else:
+        output = generation / basename
+        sidecar = generation / (basename + ".sha256")
+        if output.is_symlink() or _artifact_digest(output) != artifact_hex:
+            (pair / output.name).replace(output)
+        if sidecar.is_symlink() or not _sidecar_matches(sidecar, artifact_hex):
+            (pair / sidecar.name).replace(sidecar)
+    pointer = pair.parent / "activate"
+    pointer.symlink_to(generation.name, target_is_directory=True)
+    # Both public paths traverse this pointer. This is the only commit point.
+    pointer.replace(storage / "current")
+
+
+def _install_public_paths(
+    output: Path, sidecar: Path, storage: Path, pair: Path, artifact_hex: str
+) -> bool:
+    current = storage.relative_to(output.parent) / "current"
+    public_paths = {path: current / path.name for path in (output, sidecar)}
+    legacy = []
+    for path, target in public_paths.items():
+        if path.is_symlink():
+            if path.readlink() != target:
+                raise CatalogValidationError(f"unexpected catalogue link: {path}")
+        elif path.exists():
+            if not path.is_file():
+                raise CatalogValidationError(f"invalid catalogue output: {path}")
+            legacy.append(path)
+
+    recovered = False
+    if legacy:
+        # Switch legacy files to links with identical bytes before committing a
+        # new generation. A retry can continue after either link was replaced.
+        legacy_hex = _artifact_digest(output)
+        if legacy_hex is not None and _sidecar_matches(sidecar, legacy_hex):
+            legacy_pair = pair.parent / "legacy"
+            legacy_pair.mkdir()
+            for path in (output, sidecar):
+                shutil.copyfile(path, legacy_pair / path.name)
+            _activate_pair(legacy_pair, storage, output.name, legacy_hex)
+        else:
+            # An interrupted regular-file write has no valid pair to preserve.
+            _activate_pair(pair, storage, output.name, artifact_hex)
+            recovered = True
+        link = pair.parent / "alias"
+        for path in legacy:
+            link.symlink_to(public_paths[path])
+            link.replace(path)
+
+    for path, target in public_paths.items():
+        if not path.is_symlink():
+            path.symlink_to(target)
+    return recovered
+
+
+def _ensure_storage_directory(directory: Path) -> None:
+    try:
+        directory.mkdir(mode=0o755)
+    except FileExistsError:
+        pass
+    info = directory.lstat()
+    if not stat.S_ISDIR(info.st_mode) or (
+        getattr(info, "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT
+    ):
+        raise CatalogValidationError(f"unexpected catalogue storage path: {directory}")
+    if os.name == "posix" and (info.st_uid != os.geteuid() or info.st_mode & 0o022):
+        raise CatalogValidationError(
+            f"unsafe catalogue storage permissions: {directory}"
+        )
+
+
+def _publication_storage(output: Path, sidecar: Path) -> Path:
+    # Keep updating the original generation directory for existing public aliases.
+    legacy = Path(".catalogue") / output.name
+    if any(
+        path.is_symlink() and path.readlink() == legacy / "current" / path.name
+        for path in (output, sidecar)
+    ):
+        _ensure_storage_directory(output.parent / legacy.parent)
+        storage = output.parent / legacy
+    else:
+        # Keep the directory component within filesystem limits even when the
+        # basename uses the full space available alongside its .sha256 suffix.
+        basename = os.fsencode(os.path.normcase(output.name))
+        storage = output.with_name(f".catalogue.{hashlib.sha256(basename).hexdigest()}")
+    _ensure_storage_directory(storage)
+    return storage
 
 
 def write_snapshot_files(snapshot: dict, output: Path) -> None:
     verify_snapshot(snapshot)
-    artifact_hex = _atomic_write_snapshot(output, snapshot)
-    sidecar = output.with_suffix(output.suffix + ".sha256")
-    _atomic_write(sidecar, (artifact_hex + "\n").encode("ascii"))
+    output = output.parent.resolve() / output.name
+    if output.name.casefold().endswith(".sha256") or any(
+        part.casefold() == ".catalogue" or part.casefold().startswith(".catalogue.")
+        for part in output.parts
+    ):
+        raise CatalogValidationError(f"reserved catalogue output path: {output}")
+    if not output.parent.exists():
+        raise CatalogValidationError(
+            f"output directory does not exist: {output.parent}"
+        )
+    sidecar = output.with_name(output.name + ".sha256")
+    try:
+        with tempfile.TemporaryDirectory(
+            prefix=".catalogue-", dir=output.parent
+        ) as temporary:
+            staging = Path(temporary)
+            pair = staging / "pair"
+            pair.mkdir()
+            artifact_hex = _stage_snapshot(pair / output.name, snapshot)
+            (pair / sidecar.name).write_bytes((artifact_hex + "\n").encode("ascii"))
+            with _publication_lock(output.parent):
+                storage = _publication_storage(output, sidecar)
+                if not _install_public_paths(
+                    output, sidecar, storage, pair, artifact_hex
+                ):
+                    _activate_pair(pair, storage, output.name, artifact_hex)
+    except OSError as exc:
+        raise CatalogValidationError(f"cannot write output file: {output}") from exc
 
 
 def _build_parser() -> argparse.ArgumentParser:

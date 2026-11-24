@@ -443,7 +443,14 @@ fn modal_fence_context_menu_blocks_background_and_keeps_its_own_open_command() -
         .id();
     app.world_mut()
         .run_system_once(move |mut commands: Commands, skins: Res<Skins>| {
-            dialogs::context(&mut commands, &skins, slot, Vec2::ZERO, (false, false))
+            dialogs::context(
+                &mut commands,
+                &skins,
+                slot,
+                Vec2::ZERO,
+                (false, false),
+                None,
+            )
         })
         .map_err(|error| format!("context menu fixture: {error:?}"))?;
     app.world_mut().trigger(Activate { entity: outside });
@@ -796,5 +803,134 @@ fn inventory_widget_has_silhouettes_soul_and_cap_and_minimises() -> TestResult {
     app.update();
     let equipment = *named(&mut app, "Equipment").first().ok_or("equipment")?;
     assert_eq!(size(&app, equipment), Some((px(46.), px(42.))));
+    Ok(())
+}
+
+#[test]
+fn configured_direct_click_opens_the_backpack_without_a_context_menu() -> TestResult {
+    use bevy::picking::{backend::HitData, pointer::PointerButton};
+    for (scheme, button) in [
+        (crate::play::MouseScheme::Classic, PointerButton::Secondary),
+        (crate::play::MouseScheme::LeftSmart, PointerButton::Primary),
+    ] {
+        for main in [true, false] {
+            let (link, mut commands, outbox) = play_channel();
+            let item = entry(77, 1)?;
+            PlayLink::bevy_items_fixture(
+                &outbox,
+                Some(CharacterInventory {
+                    main_backpack: main.then_some(item),
+                    entries: vec![item],
+                    equipment: vec![],
+                }),
+                Some(oteryn_session::container_tree::ContainerViews {
+                    views: vec![oteryn_session::container_tree::ContainerView {
+                        view_id: 0,
+                        container_handle: item.handle,
+                        parent_handle: None,
+                        capacity: 8,
+                        entries: vec![],
+                        browse: None,
+                    }],
+                }),
+                false,
+                true,
+            );
+            let mut owner = host(link)?;
+            owner.settings.preferences.controls.scheme = scheme;
+            let slot = Slot {
+                generation: owner.generation(),
+                location: Location::Inventory,
+                item: Some(item),
+                destination: None,
+            };
+            let mut app = App::new();
+            app.insert_non_send(owner)
+                .init_resource::<InventoryUi>()
+                .insert_resource(UiScale(1.));
+            let entity = app.world_mut().spawn(slot).observe(actions::click).id();
+            app.world_mut().trigger(PointerClick {
+                entity,
+                button,
+                pointer: pointer(),
+                hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+                duration: std::time::Duration::ZERO,
+                count: 1,
+            });
+            assert!(
+                matches!(commands.try_recv()?, crate::combat_input::PlayCommand::ContainerView(oteryn_session::container_tree::ContainerViewIntent::Open {handle,..}) if handle == item.handle)
+            );
+            assert!(app.world().resource::<InventoryUi>().menu.is_none());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn left_smart_inventory_click_looks_at_a_blocking_item() -> TestResult {
+    use bevy::picking::{backend::HitData, pointer::PointerButton};
+    use oteryn_client_assets::{
+        AppearanceIndex, AssetStore, Catalog,
+        world::{MANIFEST_PATH, MANIFEST_SHA256},
+    };
+    use oteryn_client_ui::world_interaction::menu::Action;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let store = AssetStore::open_pinned(
+        &root.join("content/assets/files"),
+        &root.join(MANIFEST_PATH),
+        MANIFEST_SHA256,
+    )?;
+    let appearances = AppearanceIndex::load(&store, &Catalog::load(&store)?)?;
+    let id = appearances
+        .iter()
+        .find(|a| a.unpassable && !a.container && !a.multi_use && !a.usable)
+        .ok_or("blocking appearance")?
+        .id;
+    let item = ItemEntry {
+        appearance_id: id.try_into()?,
+        ..entry(77, 1)?
+    };
+    let (link, mut commands, outbox) = play_channel();
+    PlayLink::bevy_items_fixture(
+        &outbox,
+        Some(CharacterInventory {
+            entries: vec![item],
+            ..Default::default()
+        }),
+        None,
+        false,
+        true,
+    );
+    let mut owner = host(link)?;
+    owner.settings.preferences.controls.scheme = crate::play::MouseScheme::LeftSmart;
+    let view = &mut owner.play.as_mut().ok_or("play")?.view;
+    view.prime_icon_assets(root);
+    view.prepare_item_icons(std::iter::once(&item))?;
+    assert_eq!(
+        view.scene().smart_item_action(item.appearance_id),
+        Some(Action::Look)
+    );
+    let slot = Slot {
+        generation: owner.generation(),
+        location: Location::Inventory,
+        item: Some(item),
+        destination: None,
+    };
+    let mut app = App::new();
+    app.insert_non_send(owner)
+        .init_resource::<InventoryUi>()
+        .insert_resource(UiScale(1.));
+    let entity = app.world_mut().spawn(slot).observe(actions::click).id();
+    app.world_mut().trigger(PointerClick {
+        entity,
+        button: PointerButton::Primary,
+        pointer: pointer(),
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    assert!(
+        matches!(commands.try_recv()?,crate::combat_input::PlayCommand::WorldContext(cmd) if cmd.action==Action::Look)
+    );
     Ok(())
 }

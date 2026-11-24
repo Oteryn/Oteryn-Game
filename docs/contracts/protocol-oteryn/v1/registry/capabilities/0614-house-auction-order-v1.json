@@ -1,0 +1,15 @@
+{
+  "id": 614,
+  "name": "HOUSE_AUCTION_ORDER_V1",
+  "owner_decision": "Client server gap allocation",
+  "owner": "House management",
+  "requires": [
+    49
+  ],
+  "command_types": [
+    6390
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Offered with the House management reader."
+}

@@ -98,6 +98,16 @@ fn required(name: &str) -> Result<String, io::Error> {
     env::var(name).map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, name))
 }
 
+fn provision_python() -> std::process::Command {
+    #[cfg(feature = "qualification-unprivileged")]
+    if crate::node::qualification_operator_uid().is_some() {
+        return std::process::Command::new("python3");
+    }
+    let mut command = std::process::Command::new("sudo");
+    command.args(["-n", "python3"]);
+    command
+}
+
 fn evidence(line: &str) {
     if let Some(line) = client_world::verdict::indexed_evidence(e2e_result_line(line)) {
         println!("SEAM_EVIDENCE {line}");

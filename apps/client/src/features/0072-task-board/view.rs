@@ -12,8 +12,13 @@ impl PlayLink {
         lock(&self.mailbox).task_board.clone()
     }
     pub fn open_task_board(&self) {
+        self.open_task_board_tab(false);
+    }
+    pub fn open_task_board_tab(&self, weekly: bool) {
         self.task_board_full_request(oteryn_client_ui::task_board::FullIntent::Refresh);
-        lock(&self.mailbox).task_board.open = true;
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.task_board.open_weekly = weekly;
+        mailbox.task_board.open = true;
     }
 }
 

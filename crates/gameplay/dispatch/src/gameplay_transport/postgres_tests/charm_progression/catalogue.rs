@@ -62,6 +62,7 @@ pub(super) async fn verify(
             .iter()
             .all(|card| card.category == filtered.categories[0])
     );
+    verify_animus(owner, admitted, races).await?;
     eprintln!(
         "POSTGRES_EXECUTED T080 complete catalogue, native combat/loot detail and category filter through framed command84"
     );
@@ -111,5 +112,49 @@ pub(super) async fn verify_echo(
         assert!(page.cards.iter().all(|card| card.echo_warden_completed.is_none()));
     }
     eprintln!("POSTGRES_EXECUTED T185 Echo Warden incomplete/complete, reward replay, opt-in browse/detail and legacy-compatible cards through framed command84");
+    Ok(())
+}
+
+
+async fn verify_animus(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    races: &[BestiaryRace],
+) -> TestResult {
+    use super::super::cyclopedia_fixtures::support::exchange;
+    let query = catalogue::encode_request(Request { after: 0, race: 0, category: 0 })
+        .map_err(debug)?;
+    let id = admitted.continuity.next_command_id;
+    assert_eq!(
+        exchange(owner, admitted, id, 6389, &query).await?,
+        (CommandStatus::Rejected, Vec::new())
+    );
+    let original = admitted.continuity.selected_capabilities;
+    let offered = crate::gameplay_transport::animus_mastery::offered(
+        &crate::gameplay_transport::charm_progression::offered(
+            owner.offered_capabilities(), owner.charm_progression_available(),
+        ), true,
+    );
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(&offered, &[1, 67, 168, 613]).ok_or("Animus XP selection")?;
+    let current = crate::gameplay_transport::character_gameplay_fence::current(
+        owner, admitted.game_session_id, false,
+    ).await.ok_or("current gameplay fence")?;
+    for race in races.iter().skip(1).take(10) {
+        assert!(owner.root.complete_animus_mastery(owner.character, owner.holder, current, race.key())
+            .await.map_err(debug)?);
+    }
+    let id = admitted.continuity.next_command_id;
+    let (status, payload) = exchange(owner, admitted, id, 6389, &query).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    let (page, bonuses) = catalogue::decode_animus_xp_page(&payload).map_err(debug)?;
+    assert!(page.cards.len() >= 11);
+    for (card, bonus) in page.cards.iter().zip(bonuses) {
+        assert_eq!(bonus, if (2..=11).contains(&card.race) { 210 } else { 0 });
+    }
+    let (status, legacy) = exchange_payload(owner, admitted, query).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(catalogue::decode_page(&legacy).map_err(debug)?, page);
+    admitted.continuity.selected_capabilities = original;
     Ok(())
 }

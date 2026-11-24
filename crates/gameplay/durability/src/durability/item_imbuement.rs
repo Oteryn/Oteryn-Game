@@ -506,6 +506,76 @@ async fn apply(
 }
 
 impl DurabilityRoot {
+    /// Advisory buying power for the shrine. Observe the same direct-bag denominations and
+    /// Type 2 bank eligibility that the fee writer evaluates under lock at settlement.
+    pub async fn read_imbuement_funds(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: super::item_transfer::CurrentCharacterItemFence,
+        revisions: [String; 3],
+    ) -> std::result::Result<Option<u64>, DurabilityError> {
+        use super::bank::fee_payer_is_junior;
+        use super::character_authority::observe_recovery_fence;
+        use super::character_progression::observe_item_only_fence;
+        use super::db::{begin_observation_transaction, commit_semantic_transaction};
+        use crate::domain::currency::{BACKPACK_ENTRIES_MAX, COIN_DEFINITION_FAMILY, COIN_STACK_MAXIMUM, Coin};
+        let recovery = authority.record_for(self).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_observation_transaction(holder, deadline).await?;
+            observe_recovery_fence(&mut tx, &recovery).await?;
+            if observe_item_only_fence(&mut tx, &fence, &node).await?.is_err() {
+                return Ok(None);
+            }
+            let id = fence.character_id.as_bytes().as_slice();
+            let bank: i64 = sqlx::query_scalar(
+                "SELECT COALESCE((SELECT b.balance FROM game_account_bank_balances b
+                   JOIN game_character_roots r USING (account_id,world_id)
+                   WHERE r.character_id=encode($1,'hex')::uuid
+                     AND EXISTS(SELECT 1 FROM game_type2_audit_activation WHERE id=1)), 0)"
+            ).bind(id).fetch_one(&mut *tx).await?;
+            let keys = Coin::ALL.map(Coin::production_key);
+            let rows = sqlx::query(
+                "SELECT i.definition_production_key, i.definition_revision_ref, i.quantity
+                 FROM game_item_container_slots bag
+                 JOIN game_item_container_entries e ON e.parent_item_instance_id=bag.item_instance_id
+                 JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id
+                 WHERE bag.character_id=encode($1,'hex')::uuid AND i.lifecycle=1
+                   AND i.definition_family=$2 AND i.definition_production_key=ANY($3)
+                 LIMIT $4"
+            ).bind(id).bind(COIN_DEFINITION_FAMILY).bind(keys.as_slice())
+            .bind(i64::try_from(BACKPACK_ENTRIES_MAX + 1).map_err(|_| DurabilityError::InvalidStoredState)?)
+            .fetch_all(&mut *tx).await?;
+            if rows.len() > BACKPACK_ENTRIES_MAX {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            let mut gold = if fee_payer_is_junior(fence.character_id) {
+                0
+            } else {
+                u64::try_from(bank).map_err(|_| DurabilityError::InvalidStoredState)?
+            };
+            for row in rows {
+                let key: &str = row.try_get("definition_production_key")?;
+                let index = keys.iter().position(|expected| *expected == key)
+                    .ok_or(DurabilityError::InvalidStoredState)?;
+                let quantity = u32::try_from(row.try_get::<i64, _>("quantity")?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+                if row.try_get::<&str, _>("definition_revision_ref")? != revisions[index]
+                    || !(1..=COIN_STACK_MAXIMUM).contains(&quantity)
+                {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                gold = gold.checked_add(u64::from(quantity) * Coin::ALL[index].worth())
+                    .ok_or(DurabilityError::InvalidStoredState)?;
+            }
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Some(gold))
+        })).await
+    }
+}
+
+impl DurabilityRoot {
     /// Replay of an accepted command before any handle or content resolution.
     pub async fn read_imbuement_command(
         &self,

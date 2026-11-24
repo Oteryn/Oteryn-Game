@@ -8,6 +8,8 @@ use oteryn_client_ui::boss_encounter::{BossCategory, Intent, catalogue_cards, sl
 
 #[derive(Component)]
 struct Window;
+#[derive(Component)]
+struct BossSearch;
 #[derive(Component, Clone, Copy)]
 struct Action {
     generation: u64,
@@ -18,6 +20,9 @@ struct Action {
 enum Kind {
     Request(Intent),
     Boss(bool),
+    Search,
+    Rarity(u8),
+    Stage(u8),
     Slot,
     SlotBoss(bool),
 }
@@ -54,6 +59,7 @@ fn project(
     owner: NonSend<HostOwner>,
     skins: Res<Skins>,
     roots: Query<Entity, With<Window>>,
+    drafts: Query<&bevy::text::EditableText, With<BossSearch>>,
     mut snapshot: ResMut<Snapshot>,
 ) {
     let panel = owner
@@ -83,6 +89,15 @@ fn project(
     if snapshot.0 == panel {
         return;
     }
+    let draft = snapshot
+        .0
+        .as_ref()
+        .zip(panel.as_ref())
+        .and_then(|((old, _, _), (new, _, _))| {
+            (old == new)
+                .then(|| drafts.single().ok().map(|field| field.value().to_string()))
+                .flatten()
+        });
     snapshot.0 = panel.clone();
     for root in &roots {
         commands.entity(root).despawn();
@@ -111,6 +126,8 @@ fn project(
         ))
         .id();
     let mut text = String::from("Bosstiary\n");
+    use crate::bevy_shell::game_ui::cyclopedia_navigation::{Subject, bar};
+    bar(&mut commands, &skins, root, generation, Subject::Bosstiary);
     if let Some(page) = &panel.catalogue {
         text.push_str(&format!("Boss points: {}\n", page.points));
     }
@@ -167,7 +184,36 @@ fn project(
             ..default()
         })
         .id();
+    let search = commands
+        .spawn((
+            BossSearch,
+            bevy::ui_widgets::TextInput,
+            bevy::input_focus::tab_navigation::TabIndex(0),
+            bevy::text::EditableText::new(draft.as_deref().unwrap_or(&panel.browser_search)),
+            TextFont {
+                font: skins.font.clone().into(),
+                font_size: 15.0.into(),
+                ..default()
+            },
+            Node {
+                width: percent(100.),
+                min_height: px(24.),
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(root).add_child(search);
     for (label, kind) in [
+        ("Search by name", Kind::Search),
+        ("Bane", Kind::Rarity(1)),
+        ("Archfoe", Kind::Rarity(2)),
+        ("Nemesis", Kind::Rarity(3)),
+        ("No kills", Kind::Stage(0)),
+        ("Few kills", Kind::Stage(1)),
+        ("Prowess", Kind::Stage(2)),
+        ("Expertise", Kind::Stage(3)),
+        ("Mastery", Kind::Stage(4)),
+        ("Previous page", Kind::Request(Intent::CataloguePrevious)),
         ("Refresh", Kind::Request(Intent::CatalogueRefresh)),
         ("Next page", Kind::Request(Intent::CatalogueNext)),
         ("Hazard", Kind::Request(Intent::HazardQuery)),
@@ -197,7 +243,16 @@ fn project(
             .id();
         let caption = commands
             .spawn((
-                Text::new(label),
+                Text::new(match kind {
+                    Kind::Stage(i) if panel.hidden_stages & (1 << i) != 0 => {
+                        format!("Show {label}")
+                    }
+                    Kind::Rarity(i) if panel.hidden_rarities & (1 << i) != 0 => {
+                        format!("Show {label}")
+                    }
+                    Kind::Stage(_) | Kind::Rarity(_) => format!("Hide {label}"),
+                    _ => label.into(),
+                }),
                 TextFont {
                     font: skins.font.clone().into(),
                     font_size: 15.0.into(),
@@ -349,6 +404,7 @@ fn track(
 fn activate(
     event: On<Activate>,
     controls: Query<&Action>,
+    search: Query<&bevy::text::EditableText, With<BossSearch>>,
     owner: NonSend<HostOwner>,
     guard: WindowAccess,
 ) {
@@ -363,9 +419,24 @@ fn activate(
     {
         match action.kind {
             Kind::Request(intent) => play.link.boss_encounter_request(intent),
+            Kind::Stage(i) => play.link.boss_visibility_toggle(false, i),
+            Kind::Rarity(i) => play.link.boss_visibility_toggle(true, i),
+            Kind::Search => {
+                let Ok(search) = search.single() else { return };
+                let value = search.value().to_string();
+                if value.trim().len() <= 48 {
+                    play.link
+                        .boss_encounter_browse(value.trim(), BossCategory::All, false);
+                    play.link.boss_encounter_request(Intent::Catalogue);
+                }
+            }
             Kind::Boss(previous) => {
-                play.link
-                    .boss_encounter_browse("", BossCategory::All, previous)
+                let panel = play.link.boss_encounter_panel();
+                play.link.boss_encounter_browse(
+                    &panel.browser_search,
+                    panel.browser_category,
+                    previous,
+                )
             }
             Kind::Slot => play.link.boss_slot_select_slot(),
             Kind::SlotBoss(previous) => play.link.boss_slot_select_boss(previous),

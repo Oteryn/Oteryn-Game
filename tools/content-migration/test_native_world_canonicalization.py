@@ -228,14 +228,48 @@ class NativeWorldCompletion(unittest.TestCase):
         native.assert_called_once()
         self.assertEqual(canonical.read_documents(default_world), self.original)
 
-    def test_qualification_installs_buddel_and_trade_before_native_serialization(self):
+    def test_qualification_installs_travel_and_trades_before_native_serialization(self):
+        item = {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3361",
+            "revision": "fixture-r1",
+        }
+        service = {"key": "oteryn:service.trade.dixi", "revision": "fixture-r1"}
+        offer = {"item": item, "direction": "SellToPlayer", "unit_price": 31}
+        reference_path = self.world / "definitions/reference.json"
+        reference = json.loads(reference_path.read_bytes())
+        reference["records"].append({"kind": "Item", "identity": item})
+        self.write(reference_path, encode(reference))
+        declarations_path = self.world / "definitions/declarations.json"
+        initial = json.loads(declarations_path.read_bytes())
+        initial["records"].extend(
+            [
+                {"kind": "Service", "identity": service, "offers": [offer]},
+                {
+                    "kind": "NPC",
+                    "identity": {"key": "oteryn:npc.dixi"},
+                    "services": [service],
+                },
+            ]
+        )
+        self.write(declarations_path, encode(initial))
+
         def native(command, **kwargs):
             staging = Path(command[command.index("--input-root") + 1])
             install_buddel.assert_called_once_with(self.repo, staging)
-            declarations = json.loads(
+            project_routes.assert_called_once_with(self.repo, staging)
+            capture.assert_called_once_with(self.repo)
+            locator = "definitions/declarations.json"
+            declarations = (staging / locator).read_bytes()
+            dixi = next(
+                row for row in json.loads(declarations)["records"]
+                if row["identity"]["key"] == service["key"]
+            )
+            self.assertEqual(dixi["offers"], [dict(offer, unit_price=25)])
+            trade_document = json.loads(
                 (staging / "definitions/declarations.json").read_bytes()
             )
-            records = {row["identity"]["key"]: row for row in declarations["records"]}
+            records = {row["identity"]["key"]: row for row in trade_document["records"]}
             gamon = records["oteryn:npc.gamon"]
             linked_offers = [records[ref["key"]]["offers"] for ref in gamon["services"]]
             self.assertEqual(
@@ -245,6 +279,11 @@ class NativeWorldCompletion(unittest.TestCase):
                 ],
                 [[("oteryn:item.tibia.i2800", 30)], [("oteryn:item.tibia.i2797", 50)]],
             )
+            manifest = json.loads((staging / "manifest.json").read_bytes())
+            (seal,) = [
+                row for row in manifest["documents"] if row["locator"] == locator
+            ]
+            self.assertEqual(seal["sha256"], hashlib.sha256(declarations).hexdigest())
             return self.native_output(command, **kwargs)
 
         argv = [
@@ -257,12 +296,22 @@ class NativeWorldCompletion(unittest.TestCase):
         with (
             patch.object(sys, "argv", argv),
             patch("buddel_travel.install_buddel") as install_buddel,
+            patch("travel_route_corrections.project_routes") as project_routes,
+            patch(
+                "import_cyclopedia_global.load_capture",
+                return_value={3361: {"npc_buy_from": [{"npc": "Dixi", "price": 25}]}},
+            ) as capture,
             patch.object(canonical.subprocess, "run", side_effect=native),
         ):
             canonical.main()
         self.assertEqual(len(self.calls), 1)
 
     def test_normal_regeneration_completes_natively_before_refreshing_pins(self):
+        self.write(
+            self.repo
+            / "crates/gameplay/content/src/content/npc_catalogue/travel_routes.json",
+            encode([]),
+        )
         shutil.copytree(self.world, self.repo / "content/world")
 
         class Completed(Exception):
@@ -333,9 +382,9 @@ class NativeWorldCompletion(unittest.TestCase):
         for mutate in [missing, extra, unowned]:
             with self.subTest(mutation=mutate.__name__):
 
-                def native(command, mutate=mutate, **kwargs):
+                def native(command, *, mutation=mutate, **kwargs):
                     result = self.native_output(command, **kwargs)
-                    mutate(self.calls[-1])
+                    mutation(self.calls[-1])
                     return result
 
                 with (

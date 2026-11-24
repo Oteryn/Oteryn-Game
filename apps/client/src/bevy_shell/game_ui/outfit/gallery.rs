@@ -161,9 +161,8 @@ pub(super) fn build(
         && let Some(catalogue) = &panel.catalogue
     {
         if let Some(metadata) = state
-            .artwork
+            .metadata
             .as_ref()
-            .and_then(|art| art.mounts.as_ref())
             .filter(|m| m.digest == catalogue.context.cosmetics_digest)
         {
             let locked_outfits = metadata

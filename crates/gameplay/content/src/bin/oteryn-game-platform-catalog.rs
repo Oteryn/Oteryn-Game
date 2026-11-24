@@ -6,8 +6,12 @@ use std::{io::Write, path::Path};
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().skip(1).collect();
-    let [root, revision, generated_at] = args.as_slice() else {
-        return Err("usage: oteryn-game-platform-catalog <project-root> <source-revision|--inventory> <generated-at>".into());
+    let (root, revision, generated_at, preproduction) = match args.as_slice() {
+        [root, revision, generated_at] => (root, revision, generated_at, false),
+        [root, revision, generated_at, flag] if flag == "--preproduction" => {
+            (root, revision, generated_at, true)
+        }
+        _ => return Err("usage: oteryn-game-platform-catalog <project-root> <source-revision|--inventory> <generated-at> [--preproduction]".into()),
     };
     let root = Path::new(root);
     let parent = root
@@ -19,6 +23,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let view = public_content_view(&project)?;
     let value = if revision == "--inventory" {
         serde_json::to_value(view.field_fingerprints())?
+    } else if preproduction {
+        view.preproduction_input(revision, generated_at)
     } else {
         view.native_input(revision, generated_at)
     };

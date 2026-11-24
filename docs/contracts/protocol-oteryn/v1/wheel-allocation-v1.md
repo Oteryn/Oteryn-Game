@@ -73,3 +73,20 @@ by `content/quests/monk-pilgrimage.json`. The Wheel allocation transaction reads
 durable final-report flag under its Character lock and adds this reward to the
 existing level and gem points with checked arithmetic. Repeated reports cannot
 multiply the reward. Ordinary Wheel eligibility and allocation rules still apply.
+
+## Gift of Life activation
+
+Bundle-world capability 594 gates command 6355. Use an empty request to
+observe the current local actor's latest confirmed Gift of Life activation.
+The reply is `00` before any activation on that actor, or `01` followed by a
+16-byte opaque occurrence. The client may query after a vitals update and
+deduplicates the notice by occurrence. Repeating a query after the same
+activation returns the same occurrence.
+
+The server reads the installed vitals successor for the exact actor and
+current session generation. A cooldown restored on a new actor, a refused hit
+and an uncommitted successor do not create an occurrence. The cooldown retains
+its existing durable checkpoint semantics. The observation is scoped to the
+live actor and does not backfill historical activations on a replacement.
+
+[Crystal 201189f8, Gift of Life](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/wheel/player_wheel.cpp#L3952-L4002)

@@ -267,7 +267,10 @@ sudo() { echo "sudo $*"; }
                 helper = root / "tools/ci/shared_dispatch_archive.py"
                 helper.parent.mkdir(parents=True)
                 helper.touch()
-                shared_script = 'python3() { printf "%s\\n" "$@"; }\n' + self.step_script(step)
+                # The build runs under a 25 min stall guard; the mock checks its arguments.
+                shared_script = ('python3() { printf "%s\\n" "$@"; }\n'
+                                 'timeout() { [[ "$1" == --kill-after=60s && "$2" == 25m ]] || return 99; '
+                                 'shift 2; "$@"; }\n' + self.step_script(step))
                 env = dict(os.environ, ARCHIVE=role, RUNNER_TEMP=directory,
                            RUST_SELECTION='{"mode":"packages","packages":["first","second"]}')
                 result = subprocess.run(["bash", "-c", shared_script], cwd=root, env=env,

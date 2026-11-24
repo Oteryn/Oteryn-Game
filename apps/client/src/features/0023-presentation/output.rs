@@ -36,10 +36,22 @@ pub struct AudioOutput {
 
 impl AudioOutput {
     pub fn from_environment() -> Result<Self, String> {
-        Self::with_device("")
+        Self::open_reporting("", std::sync::mpsc::sync_channel(1).0)
     }
 
-    pub(crate) fn with_device(requested: &str) -> Result<Self, String> {
+    pub(crate) fn device_error_callback(
+        report: std::sync::mpsc::SyncSender<String>,
+    ) -> impl FnMut(rodio::cpal::StreamError) + Send + Clone + 'static {
+        move |error| {
+            let _ = report.try_send(error.to_string());
+        }
+    }
+    pub(crate) fn open_reporting(
+        requested: &str,
+        report: std::sync::mpsc::SyncSender<String>,
+    ) -> Result<Self, String> {
+        #[cfg(test)]
+        verify_audio_thread();
         let manifest = std::env::var("OTERYN_SOUND_MANIFEST")
             .map_err(|_| tr!("sound manifest not configured"))?;
         let pin = std::env::var("OTERYN_SOUND_MANIFEST_SHA256")
@@ -56,10 +68,19 @@ impl AudioOutput {
             .iter()
             .map(|device| device.name().map_err(|e| e.to_string()))
             .collect::<Result<Vec<_>, _>>()?;
+        let callback = Self::device_error_callback(report);
+        let open = |device| {
+            OutputStreamBuilder::from_device(device).and_then(|builder| {
+                builder
+                    .with_error_callback(callback.clone())
+                    .open_stream_or_fallback()
+            })
+        };
         let stream = match select_audio_device(requested, &names)? {
-            None => OutputStreamBuilder::open_default_stream(),
-            Some(index) => OutputStreamBuilder::from_device(devices[index].clone())
-                .and_then(|builder| builder.open_stream()),
+            None => OutputStreamBuilder::from_default_device()
+                .and_then(|builder| builder.with_error_callback(callback.clone()).open_stream())
+                .or_else(|error| devices.into_iter().find_map(|d| open(d).ok()).ok_or(error)),
+            Some(index) => open(devices[index].clone()),
         }
         .map_err(|e| e.to_string())?;
         Ok(Self {
@@ -70,7 +91,6 @@ impl AudioOutput {
             error: None,
         })
     }
-
 
     /// Confirmed local UI tones share the bounded voices and stop with the session.
     pub(crate) fn play_ui(&mut self, settings: AudioSettings, cues: Vec<UiSound>) {
@@ -97,6 +117,23 @@ impl AudioOutput {
                 scale: 0.15,
             });
         }
+    }
+
+    pub(crate) fn start_title(&mut self) -> Result<(), String> {
+        if let Some(bytes) = self.catalog.read_title()? {
+            let source = Decoder::try_from(Cursor::new(bytes)).map_err(|e| e.to_string())?;
+            let sink = Sink::connect_new(self.stream.mixer());
+            sink.set_volume(0.0);
+            sink.append(source);
+            self.voices.push(Voice {
+                source: PresentationSource::Global,
+                channel: SoundChannel::Music,
+                class: None,
+                sink,
+                scale: 1.0,
+            });
+        }
+        Ok(())
     }
 
     pub fn stop(&mut self) {
@@ -230,6 +267,8 @@ fn pin_audio_host() {}
 
 /// Device names for the Sound page; saved missing devices remain explicit selections.
 pub fn audio_device_names() -> Vec<String> {
+    #[cfg(test)]
+    verify_audio_thread();
     pin_audio_host();
     rodio::cpal::default_host()
         .output_devices()
@@ -240,3 +279,19 @@ pub fn audio_device_names() -> Vec<String> {
 #[cfg(test)]
 #[path = "output_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+thread_local! { static TEST_FRAME: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
+#[cfg(test)]
+fn verify_audio_thread() {
+    assert!(
+        !TEST_FRAME.get(),
+        "blocking audio operation reached the frame thread"
+    );
+}
+#[cfg(test)]
+pub(crate) fn check_audio_frame(frame: impl FnOnce()) {
+    TEST_FRAME.set(true);
+    frame();
+    TEST_FRAME.set(false);
+}

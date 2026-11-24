@@ -8,6 +8,7 @@ import os
 import stat
 import subprocess
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 from prebuilt import executable as prebuilt_executable
@@ -69,13 +70,14 @@ def complete_world_project(
     repo_root: Path,
     input_root: Path,
     *,
-    include_service_successors: bool = False,
+    include_world_successors: bool = False,
     canonicalizer_manifest: Path | None = None,
 ) -> dict[str, int | str]:
     from buddel_travel import install_buddel
     from crystal_npc_trade import install_crystal_npc_trade
     from questpc7_thaian_authoring import _install_documents
     from regenerate_content import source_cohort_extent
+    from travel_route_corrections import project_routes
 
     repo_root = repo_root.resolve(strict=True)
     input_root = input_root.absolute()
@@ -111,8 +113,17 @@ def complete_world_project(
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
         _install_documents(repo_root, staging_root)
-        if include_service_successors:
+        if include_world_successors:
+            from import_cyclopedia_global import apply_trade_source, load_capture
+
             install_buddel(repo_root, staging_root)
+            project_routes(repo_root, staging_root)
+            reference = json.loads(
+                (staging_root / "definitions/reference.json").read_bytes()
+            )
+            apply_trade_source(
+                staging_root, load_capture(repo_root), reference, Counter()
+            )
             install_crystal_npc_trade(repo_root, staging_root)
         authored_extent = source_cohort_extent(staging_root)
         # Native capture enforces the existing bounded source limits before serialization.
@@ -174,7 +185,7 @@ def main() -> None:
     extent = complete_world_project(
         args.repo_root,
         args.input_root,
-        include_service_successors=True,
+        include_world_successors=True,
         canonicalizer_manifest=args.canonicalizer_manifest,
     )
     print(

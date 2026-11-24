@@ -1,0 +1,193 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "recipe_sha256": "618aa35d432abe83cde3da72d025b596eb317d53d4a8e1a5888dc1dd337c8d42",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 16
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 16
+        }
+      ],
+      "stages": [
+        {
+          "key": "s2",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/threatened-dreams/amend-book",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "npc": "oteryn:npc.ahmet",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 5,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+                  "minimum": 0,
+                  "maximum": 16,
+                  "set": 2
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "I added the legend. Leave the book on the poachers' table where they will see it."
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ahmet.lua:129-176",
+                "https://tibia.fandom.com/index.php?curid=81363&oldid=1202454"
+              ],
+              "required_claims": [
+                "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission01.poacher_chest"
+              ],
+              "fee": {
+                "gold": 5000,
+                "include_bank": false
+              },
+              "present": [
+                {
+                  "item": "oteryn:item.tibia.i25235",
+                  "count": 1
+                }
+              ],
+              "failure_reply": [
+                "You need 5000 gold and the book with ancient legends."
+              ]
+            }
+          }
+        },
+        {
+          "key": "poacher-book-table-1",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/book-table-1",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32788,
+                  "y": 31976,
+                  "floor": -11
+                },
+                "appearance": 12648
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+                  "minimum": 0,
+                  "maximum": 16,
+                  "set": 3
+                }
+              ],
+              "offerings": [],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i25235",
+                "count": 1,
+                "selected_instance": true
+              },
+              "return_on_failure": false,
+              "failure_message": "You are not on that mission.",
+              "success_message": "You leave the book where the poachers can find it.",
+              "sources": [
+                "oteryn-authored:threatened-dreams/poacher-book",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/action_poacher_book.lua:3-19",
+                "https://tibia.fandom.com/index.php?curid=81363&oldid=1202454"
+              ]
+            }
+          }
+        },
+        {
+          "key": "poacher-book-table-2",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/book-table-2",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32788,
+                  "y": 31977,
+                  "floor": -11
+                },
+                "appearance": 12649
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 3
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+                  "minimum": 0,
+                  "maximum": 16,
+                  "set": 3
+                }
+              ],
+              "offerings": [],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i25235",
+                "count": 1,
+                "selected_instance": true
+              },
+              "return_on_failure": false,
+              "failure_message": "You are not on that mission.",
+              "success_message": "You leave the book where the poachers can find it.",
+              "sources": [
+                "oteryn-authored:threatened-dreams/poacher-book",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/action_poacher_book.lua:3-19",
+                "https://tibia.fandom.com/index.php?curid=81363&oldid=1202454"
+              ]
+            }
+          }
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ahmet.lua:129-176",
+        "https://tibia.fandom.com/index.php?curid=81363&oldid=1202454"
+      ]
+    }
+  ]
+}

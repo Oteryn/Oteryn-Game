@@ -92,7 +92,7 @@
     },
     "Service.Trade": {
       "index": "content/services/trade/index.json",
-      "records": 325
+      "records": 324
     },
     "Service.Travel": {
       "index": "content/services/travel/index.json",
@@ -634,12 +634,6 @@
       "path": "content/items/readable-profiles.json"
     },
     {
-      "path": "content/items/relations/items.json"
-    },
-    {
-      "path": "content/items/taxonomy/items.json"
-    },
-    {
       "path": "content/items/writable-profiles.json"
     },
     {
@@ -769,9 +763,6 @@
       "path": "content/services/trade/trade-00000-00323.json"
     },
     {
-      "path": "content/services/trade/trade-00324-00324.json"
-    },
-    {
       "path": "content/services/travel/index.json"
     },
     {
@@ -872,6 +863,9 @@
     },
     {
       "path": "tools/content-schema/native-gameplay/engnpc2-slug-corpse-profiles.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/galthen-global-item-details.json"
     },
     {
       "path": "tools/content-schema/native-gameplay/item-detail-weight-facts.json"
@@ -993,7 +987,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "670b5ed9f341f64f39f27f92508460be55caeb5f02731ab088aa3a4d96549d76"
+          "sha256": "1daa7a6cedf225bffb00b0e35ecbcfd63cbbb14b09265ea527650977627041a9"
         },
         {
           "creates_canonical_identities": false,
@@ -1064,7 +1058,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6612,
+          "record_count": 6657,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1072,7 +1066,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "3f1901045660035614016e193a3e5fe4ab782c7cf3a0e2aec449634a5f98345e"
+          "sha256": "d6430ccc3fb7326f81a67dac87ecf34fb73f16237eba58ead903433b1e058290"
         },
         {
           "creates_canonical_identities": false,

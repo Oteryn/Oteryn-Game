@@ -1,0 +1,7 @@
+name=combat_occurrences
+commands=6352,6354
+transport=combat_occurrences
+composed=combat_occurrences
+authority=combat_occurrences
+[route]
+routing::combat_occurrences::route(authority, &session.admitted, command).await

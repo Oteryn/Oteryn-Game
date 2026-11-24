@@ -198,11 +198,11 @@
   "outputs": [
     {
       "path": "npc.json.gz",
-      "sha256": "3fa869397e0a71bface4307d6adf50b877b10fc19bb720a72d9db9c60f549ef5"
+      "sha256": "7ecd0f9e771c14ffff18374956d9c6b5bc54fae1c86b34b9258734a75564cc25"
     },
     {
       "path": "npc-index.json",
-      "sha256": "7457e13178796685de74d3167b68403769f69bd15acd6e404c143b010cf9f612"
+      "sha256": "0e4b079adf197579e29be60d951d7f8f68bea97eac07473f2d29da5d032167ea"
     },
     {
       "path": "rewards.json.gz",
@@ -210,7 +210,7 @@
     },
     {
       "path": "npc-dependencies.json",
-      "sha256": "fe56a29e055f396da533edf791a076feb2a22595a9226469d2ea870b119cad4a"
+      "sha256": "592fbf7f57d0aa6400dddc40d21aed9f3a9e9b58a9d59c29d7c78145859ed564"
     },
     {
       "path": "gap-triage.json",
@@ -274,15 +274,15 @@
     },
     {
       "path": "components248/crosswalk.json",
-      "sha256": "d7871b7098fda89b04f75df67edfe5e75923cd3ec5828089e175f786865d524d"
+      "sha256": "f00124db0a173b7faefe42189fa932d6c327406565cafbb3af776eb4569d4c49"
     },
     {
       "path": "components248/dialogue.json.gz",
-      "sha256": "ab67fdcf37142c0b855308b8f71ddf23ad61b780682b0a9645ad6a8664dafbfe"
+      "sha256": "4cb730993aa8a1889ca075ba88ba530ce32dfe0e29956faab5fcce42ad89e3ac"
     },
     {
       "path": "components248/summary.json",
-      "sha256": "49554532fca1272cad0b43611d7eefb4720ea600c950b0ea18d3cc49592916b4"
+      "sha256": "2658a71c60d3394541de3badd65eb57f45d3b7992e77b332c00a69417c848ee4"
     },
     {
       "path": "refinements/conditions.json",
@@ -310,11 +310,11 @@
     },
     {
       "path": "refinements/dialogue.json.gz",
-      "sha256": "0e4145f77363c0df0c1ee052a760110aaf9fc90ce3bec64c8bf5866d8d5a2c22"
+      "sha256": "c8b289e8e3571d9cf3035ac71d9f38685dc608edf02a6bd5f14df052ab6c8edc"
     },
     {
       "path": "refinements/summary.json",
-      "sha256": "43c846dcab62dcba41ec65f47560fd025d793899be1477758a8bcaea15a7055f"
+      "sha256": "c1167cf77ecf7d24442d5ee5aa5d8883de14d2d57bc640116dcebfce02ab7a6f"
     }
   ],
   "quest_refinements": {
@@ -900,7 +900,7 @@
       },
       {
         "path": "dialogue.json.gz",
-        "sha256": "0e4145f77363c0df0c1ee052a760110aaf9fc90ce3bec64c8bf5866d8d5a2c22"
+        "sha256": "c8b289e8e3571d9cf3035ac71d9f38685dc608edf02a6bd5f14df052ab6c8edc"
       }
     ],
     "schema": "OTERYN_QUEST_DONOR_REFINEMENT_COVERAGE/v1",

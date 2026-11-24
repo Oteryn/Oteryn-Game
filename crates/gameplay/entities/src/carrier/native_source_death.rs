@@ -676,6 +676,28 @@ impl ChannelRuntimeV1 {
 }
 
 impl ChannelRuntimeV1 {
+    /// Crystal Creature::onIdleStatus clears the living monster's physical
+    /// damage map. Retain command high-water marks for combat replay fencing.
+    pub fn clear_source_player_damage(&mut self, actor: ExactActorRef) {
+        if self.live_creature_health(actor).is_none() || self.owner_fence().is_err() {
+            return;
+        }
+        let Ok(index) = self.carrier.validate_ref(&self.continuity, actor.0) else {
+            return;
+        };
+        if let Slot::CreatureOccupied {
+            damage_contributors,
+            ..
+        } = &mut self.carrier.slots[index]
+        {
+            damage_contributors.source_players.clear();
+            for contributor in &mut damage_contributors.entries {
+                contributor.source_player = None;
+                contributor.current_session_total = 0;
+            }
+        }
+    }
+
     /// Complete physical Player roster; reward attribution retains its independent cap.
     pub fn all_source_player_damage_shares(
         &self,

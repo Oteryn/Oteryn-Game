@@ -231,10 +231,7 @@ impl ChatRuntime {
         if let Ok(mut sessions) = self.sessions.lock()
             && let Some(entry) = sessions.get_mut(&session)
         {
-            entry.egress.push(ChatLine::Private {
-                speaker_name: "Game".into(),
-                text: text.into(),
-            });
+            entry.egress.push(ChatLine::System { text: text.into() });
         }
     }
 
@@ -625,9 +622,24 @@ impl ChatRuntime {
 
     /// The next undelivered line of `session`, oldest first. It counts against the undelivered
     /// bound until [`Self::delivered`].
-    pub fn next(&self, session: GameSessionId) -> Option<ChatLine> {
+    pub(super) fn next_line(
+        &self,
+        session: GameSessionId,
+        system_messages: bool,
+    ) -> Option<ChatLine> {
         let mut sessions = self.sessions.lock().ok()?;
-        sessions.get_mut(&session)?.egress.next_for_write()
+        match sessions.get_mut(&session)?.egress.next_for_write()? {
+            ChatLine::System { text } if !system_messages => Some(ChatLine::Private {
+                speaker_name: "Game".into(),
+                text,
+            }),
+            line => Some(line),
+        }
+    }
+
+    #[cfg(test)]
+    pub(super) fn next(&self, session: GameSessionId) -> Option<ChatLine> {
+        self.next_line(session, false)
     }
 
     /// Every undelivered line of `session`, oldest first, as if each were written at once.
@@ -641,7 +653,7 @@ impl ChatRuntime {
         lines
     }
 
-    /// The line last returned by [`Self::next`] reached the client: it no longer counts against
+    /// The line last returned by [`Self::next_line`] reached the client: it no longer counts against
     /// the session's undelivered bound.
     pub fn delivered(&self, session: GameSessionId) {
         if let Ok(mut sessions) = self.sessions.lock()

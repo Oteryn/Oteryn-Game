@@ -84,6 +84,19 @@ fn nrwicked_reconnect_grace_retains_the_fight_until_expiry() -> TestResult {
 }
 
 #[test]
+fn nrwicked_fire_deadline_is_measured_from_shield_raise() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(
+        admin,
+        "nrwicked_fire_deadline",
+        FORGE,
+        Scenario::FireDeadline,
+    )
+}
+
+#[test]
 fn nrwicked_successor_keeps_paid_cooldown_before_publication() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -113,6 +126,7 @@ enum Scenario {
     HardWin,
     Abandonment,
     ReconnectGrace,
+    FireDeadline,
     AdmissionAckLost,
     PaidBeforePublication,
     PaidAfterPublication,
@@ -210,7 +224,7 @@ fn scenario(
                 crate::spell::SpellBook::new(vec![]).map_err(debug)?,
                 if encounter { 16 } else { 2 },
             )?;
-            let recovery_source = if matches!(case, Scenario::ReconnectGrace) {
+            if matches!(case, Scenario::FireDeadline | Scenario::ReconnectGrace) {
                 deps.combat_room = Some(room.bundle_view(
                     cells.clone(),
                     pin.frame_binding_digest(),
@@ -221,6 +235,8 @@ fn scenario(
                         floor: 14,
                     },
                 ).ok_or("qualified Doomforge AI bundle room")?);
+            }
+            let recovery_source = if matches!(case, Scenario::ReconnectGrace) {
                 Some(super::house_transfer_fixtures::RecoverySource::start(&h).await?)
             } else {
                 None
@@ -637,9 +653,13 @@ async fn two_player_encounter(
         assert_eq!(changed.rows_affected(), 1);
         tx.commit().await?;
     }
+    let rod = oteryn_gameplay_items::fishing::FISHING_ROD;
+    if matches!(case, Scenario::HardWin) {
+        super::item_look_fixtures::seed_main_backpack(h, &[(rod, 1)]).await?;
+    }
     let queue = owner.states.attack.lock().await.kills().clone();
     let mut runtime = owner.runtime.lock().await;
-    let states = owner.states.spell_states.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
     for (actor, _) in players {
         assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), ARENA_ENTRY);
     }
@@ -671,6 +691,54 @@ async fn two_player_encounter(
         assert_eq!(states.encounter_phases.active.lock().map_err(|_| "phases")?.len(), 1);
         return Ok(());
     }
+    if matches!(case, Scenario::FireDeadline) {
+        let raised_at = owner.owner_ms() * 1_000;
+        raise_shield(&mut runtime, boss, raised_at, b"nrwicked-owner-fire")?;
+        drop(states);
+        drop(runtime);
+        let mut states = owner.states.spell_states.lock().await;
+        let first_ai_pass = raised_at + 1_000_000;
+        states.next_monster_ai_pass_us = first_ai_pass;
+        // The encounter's next observation precedes the next melee swing pass.
+        states.monster_melee.next_swing_pass_us = first_ai_pass + 1_000_000;
+        drop(states);
+        use super::srx3_native_source_cast_fixtures::{
+            drain_ready_monster_melee_at, settle_monster_melee_at_until,
+        };
+        assert!(
+            settle_monster_melee_at_until(owner, first_ai_pass, async || {
+                owner
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .next_monster_ai_pass_us
+                    > first_ai_pass
+            })
+            .await?,
+            "the first periodic encounter turn must run"
+        );
+        let fire_at = raised_at + 1_500_000;
+        {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            assert!(states.next_monster_ai_pass_us > fire_at);
+            assert_eq!(states.next_monster_ai_due_us(&runtime), fire_at);
+        }
+        drain_ready_monster_melee_at(owner, fire_at - 1).await?;
+        assert_eq!(
+            purple_fire_count(facts),
+            0,
+            "fire waits for the shield deadline"
+        );
+        drain_ready_monster_melee_at(owner, fire_at).await?;
+        assert_eq!(
+            purple_fire_count(facts),
+            1,
+            "the owner publishes fire between AI passes"
+        );
+        return Ok(());
+    }
     if matches!(case, Scenario::ReconnectGrace) {
         let closed = crate::map::floor::BundleDoors(facts);
         let previous = runtime.read_actor_position(other).map_err(debug)?;
@@ -691,23 +759,24 @@ async fn two_player_encounter(
             .filter_map(|(at, entry)| (entry.facts.appearance_id == 49362).then_some(at))
             .collect::<Vec<_>>()
     };
+    let mut rod_command_id = 100;
     for phase in 0..4 {
-        let health = runtime.companion_snapshot(boss).map_err(debug)?.health;
-        let occurrence = format!("nrwicked-party-{phase}");
-        let binding = format!("{occurrence}\0damage");
-        runtime
-            .borrow_exact_actor_commit()
-            .commit_damage(
-                boss,
-                OwnerDamageCommand {
-                    target: BOSS.as_bytes(),
-                    occurrence: occurrence.as_bytes(),
-                    binding: binding.as_bytes(),
-                    damage: health,
-                },
-            )
-            .map_err(debug)?;
-        encounter_phases::tick(&mut runtime, &states, 100_000);
+        let raised_at = owner.owner_ms() * 1_000;
+        raise_shield(
+            &mut runtime,
+            boss,
+            raised_at,
+            format!("nrwicked-party-{phase}").as_bytes(),
+        )?;
+        encounter_phases::tick(&mut runtime, &states, raised_at);
+        assert!(
+            purple_fire().is_empty(),
+            "the first tick precedes the fire deadline"
+        );
+        encounter_phases::tick(&mut runtime, &states, raised_at + 1_499_000);
+        assert!(purple_fire().is_empty(), "fire waits for the source delay");
+        let fire_at = raised_at + 1_500_000;
+        encounter_phases::tick(&mut runtime, &states, fire_at);
         let [fire]: [TilePos; 1] = purple_fire()
             .try_into()
             .map_err(|_| "expected exactly one production purple fire per shield")?;
@@ -774,21 +843,87 @@ async fn two_player_encounter(
                 },
             )
             .map_err(debug)?;
-        encounter_phases::tick(&mut runtime, &states, 100_000);
-        assert!(purple_fire().is_empty(), "boss crossing consumes purple fire");
+        encounter_phases::tick(&mut runtime, &states, fire_at);
         assert!(
-            runtime
-                .arbaziloth_shields_mut(boss)
-                .ok_or("bound shields")?
-                .use_rod(100, 100)
+            purple_fire().is_empty(),
+            "boss crossing consumes purple fire"
         );
+
+        // Keep the boss within far-USE range of the player at the arena entry.
+        let before = runtime.read_actor_position(boss).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(
+                boss,
+                before,
+                MovementLocalPosition {
+                    y: ARENA_ENTRY.y - 2,
+                    ..ARENA_ENTRY
+                },
+            )
+            .map_err(debug)?;
+        let visible = runtime
+            .visible_entities()
+            .creatures
+            .into_iter()
+            .find(|entry| entry.actor == boss)
+            .ok_or("visible Arbaziloth")?;
+        let intent = oteryn_protocol_oteryn::world_object::UseIntent {
+            target: oteryn_protocol_oteryn::world_object::UseTarget::Item(
+                std::num::NonZeroU64::new(2).ok_or("rod handle")?,
+            ),
+            use_with: Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                identity: boss.placement_identity(),
+                generation: visible.generation,
+            }),
+            use_with_map_item: None,
+            use_with_position: None,
+        };
+        drop(states);
+        drop(runtime);
+        owner.clock_origin -= std::time::Duration::from_millis(1_500);
+        let mut cracked = false;
+        for _ in 0..16 {
+            rod_command_id += 1;
+            let outcome = owner
+                .use_soul_war_source_items(
+                    first,
+                    UseCommand {
+                        game_session_id: session,
+                        command_id: rod_command_id,
+                        item_fence: Some(fence.item_fence()),
+                    },
+                    intent.clone(),
+                    Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(
+                        71,
+                    ))),
+                    None,
+                )
+                .await
+                .map_err(|()| "rod use authority")?
+                .ok_or("carried fishing rod use")?;
+            match outcome.disposition {
+                UseDisposition::Committed => {
+                    cracked = true;
+                    break;
+                }
+                UseDisposition::NotPossible => {
+                    // The source 50% roll may refuse; advance the real item-use gate.
+                    owner.clock_origin -= std::time::Duration::from_secs(1);
+                }
+                other => return Err(format!("rod use returned {other:?}").into()),
+            }
+        }
+        assert!(cracked, "the carried fishing rod lowers the cracked shield");
+        runtime = owner.runtime.lock().await;
+        states = owner.states.spell_states.lock().await;
         let before = runtime.read_actor_position(boss).map_err(debug)?;
         runtime
             .borrow_movement_position()
             .commit_creature_relocation(boss, before, boss_home)
             .map_err(debug)?;
     }
-    encounter_phases::tick(&mut runtime, &states, 3_100_000);
+    encounter_phases::tick(&mut runtime, &states, owner.owner_now().get() + 3_000_000);
     let enraged = runtime
         .positioned_actor_census()
         .map_err(debug)?
@@ -948,6 +1083,42 @@ fn return_to_staging(
 }
 
 
+fn raise_shield(
+    runtime: &mut crate::foundation::ChannelRuntimeV1,
+    boss: crate::foundation::ExactActorRef,
+    raised_at_us: u64,
+    occurrence: &[u8],
+) -> TestResult {
+    let health = runtime.companion_snapshot(boss).map_err(debug)?.health;
+    let binding = [occurrence, b"\0damage"].concat();
+    runtime
+        .borrow_exact_actor_commit_at(raised_at_us / 1_000)
+        .commit_damage(
+            boss,
+            crate::foundation::OwnerDamageCommand {
+                target: b"oteryn:creature.arbaziloth",
+                occurrence,
+                binding: &binding,
+                damage: health,
+            },
+        )
+        .map_err(debug)?;
+    assert!(
+        runtime
+            .arbaziloth_shields(boss)
+            .is_some_and(|shield| shield.needs_fire())
+    );
+    Ok(())
+}
+
+fn purple_fire_count(facts: &oteryn_gameplay_world::map::facts::BundleFacts) -> usize {
+    facts
+        .movement_item_entries()
+        .into_iter()
+        .filter(|(_, entry)| entry.facts.appearance_id == 49362)
+        .count()
+}
+
 async fn exercise_reconnect_grace(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -1016,34 +1187,41 @@ async fn exercise_reconnect_grace(
         Some(mark)
     );
     let facts = &owner.bundle_map().ok_or("Doomforge AI bundle")?.facts;
-    let purple_fire = || {
-        facts.movement_item_entries().into_iter()
-            .filter(|(_, entry)| entry.facts.appearance_id == 49362)
-            .count()
-    };
+    let purple_fire = || purple_fire_count(facts);
+    let raised_at = owner.owner_ms() * 1_000;
     {
         let mut runtime = owner.runtime.lock().await;
-        let health = runtime.companion_snapshot(boss).map_err(debug)?.health;
-        runtime.borrow_exact_actor_commit().commit_damage(
-            boss,
-            crate::foundation::OwnerDamageCommand {
-                target: b"oteryn:creature.arbaziloth",
-                occurrence: b"nrwicked-reconnect-shield",
-                binding: b"nrwicked-reconnect-shield\0damage",
-                damage: health,
-            },
-        ).map_err(debug)?;
+        raise_shield(&mut runtime, boss, raised_at, b"nrwicked-reconnect-shield")?;
     }
     assert_eq!(purple_fire(), 0);
-    // Advance only the AI's wall observation across the original grace boundary.
-    // The committed resume is still paused before its native restore.
+    // Run both owner deadlines across the original grace boundary while the
+    // committed resume is paused before its native restore.
     let before = super::HOST_NOW.replace(Some(mark.grace_deadline));
-    let ai = drive_encounter_ai_until(owner, async || purple_fire() == 1).await;
+    let ai: TestResult = async {
+        use super::srx3_native_source_cast_fixtures::settle_monster_melee_at;
+        settle_monster_melee_at(owner, raised_at).await?;
+        assert_eq!(purple_fire(), 0);
+        settle_monster_melee_at(owner, raised_at + 1_500_000).await?;
+        assert_eq!(
+            purple_fire(),
+            1,
+            "the owner projects fire while restore is paused"
+        );
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime
+                .player_control_facts(actor, session)
+                .map_err(debug)?
+                .control_loss,
+            Some(mark)
+        );
+        Ok(())
+    }
+    .await;
     super::HOST_NOW.set(before);
     barrier.1.notify_one();
     let resumed = resuming.await.map_err(debug)?;
     ai?;
-    assert_eq!(purple_fire(), 1, "the qualified AI phase tick projected shield fire");
     {
         let runtime = owner.runtime.lock().await;
         assert!(runtime.contains_live_creature(boss));

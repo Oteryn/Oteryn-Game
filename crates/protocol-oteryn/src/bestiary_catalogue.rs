@@ -3,7 +3,11 @@ use crate::charm_wire::{
     CyclopediaWireError as Error, push_message_field as bytes, push_varint_field as scalar,
     read_bytes, read_varint,
 };
+#[path = "bestiary_catalogue/quick_loot.rs"]
+pub mod quick_loot;
+
 type Result<T> = std::result::Result<T, Error>;
+pub const COMMAND_TYPE_BESTIARY_ANIMUS_XP_QUERY: u32 = 6389;
 pub const PAGE_SIZE: usize = 20;
 pub const MAX_CATEGORIES: usize = 64;
 pub const MAX_BYTES: usize = super::MAX_REPLY_BYTES;
@@ -137,6 +141,55 @@ pub fn encode_page(page: &Page) -> Result<Vec<u8>> {
     }
     Ok(out)
 }
+/// One bonus per card, in card order, followed by the existing catalogue page.
+pub fn encode_animus_xp_page(page: &Page, bonuses: &[u16]) -> Result<Vec<u8>> {
+    if bonuses.len() != page.cards.len()
+        || bonuses
+            .iter()
+            .any(|&bonus| !crate::animus_mastery::valid_xp_bonus(bonus))
+    {
+        return Err(Error::Malformed);
+    }
+    let encoded = encode_page(page)?;
+    let mut out = vec![u8::try_from(bonuses.len()).map_err(|_| Error::LimitExceeded)?];
+    for bonus in bonuses {
+        out.extend_from_slice(&bonus.to_le_bytes());
+    }
+    out.extend(encoded);
+    if out.len() > MAX_BYTES {
+        return Err(Error::LimitExceeded);
+    }
+    Ok(out)
+}
+
+pub fn decode_animus_xp_page(body: &[u8]) -> Result<(Page, Vec<u16>)> {
+    if body.len() > MAX_BYTES {
+        return Err(Error::LimitExceeded);
+    }
+    let (&count, body) = body.split_first().ok_or(Error::Malformed)?;
+    if usize::from(count) > PAGE_SIZE {
+        return Err(Error::LimitExceeded);
+    }
+    let (bonuses, page) = body
+        .split_at_checked(usize::from(count) * 2)
+        .ok_or(Error::Malformed)?;
+    let page = decode_page(page)?;
+    let bonuses: Vec<_> = bonuses
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|&bytes| u16::from_le_bytes(bytes))
+        .collect();
+    if bonuses.len() != page.cards.len()
+        || bonuses
+            .iter()
+            .any(|&bonus| !crate::animus_mastery::valid_xp_bonus(bonus))
+    {
+        return Err(Error::Malformed);
+    }
+    Ok((page, bonuses))
+}
+
 fn card(body: &[u8]) -> Result<Card> {
     let (mut cursor, mut seen) = (0, 0u8);
     let mut card = Card::default();

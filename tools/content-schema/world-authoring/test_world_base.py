@@ -14,6 +14,7 @@ from unittest import mock
 
 import convert_world_base as convert
 import otbm_reader
+import scoped_spawn_ground as scoped
 import test_world_authoring as fixtures
 import validate_world_base as validate
 import world_region_codec as codec
@@ -1192,6 +1193,79 @@ class ConvertAndValidateTest(unittest.TestCase):
         data[-1] ^= 1
         self.region.write_bytes(bytes(data))
         self.assertTrue(any("sha256" in e for e in self.errors()))
+
+    def test_scoped_ground_cannot_swap_with_an_ordinary_placement_of_the_same_item(
+        self,
+    ):
+        item = 100
+        raw_map = self.fill_map(
+            (7, [(1, 1, [self.item(item)]), (2, 1, [self.item(item)])])
+        )
+        out = convert.build({**self.blobs, convert.OTBM: raw_map}, ITEMS_BY_SERVER_ID)
+        root = self.install(out, raw_map)
+        capture = root / scoped.CAPTURE
+        capture.parent.mkdir(parents=True, exist_ok=True)
+        capture.write_bytes(
+            validate.canonical({"points": [{"cell": [1001, 1001, 7], "ground": item}]})
+        )
+        catalogue = root / scoped.SHARD
+        catalogue.parent.mkdir(parents=True, exist_ok=True)
+        catalogue.write_bytes(
+            validate.canonical(
+                {
+                    "records": [
+                        {
+                            "identity": {"key": f"oteryn:terrain.tibia.i{item}"},
+                            "provenance": {"route": {"reason": "scoped_spawn_ground"}},
+                        }
+                    ]
+                }
+            )
+        )
+        scoped.overlay_outputs(out, root, declared={item})
+        for path, raw in out.items():
+            (root / path).write_bytes(raw)
+        self.assertEqual(validate.validate(root), [])
+
+        index = json.loads(out[validate.INDEX])
+        ordinary_slot, scoped_slot = (
+            slot
+            for slot, entry in enumerate(index["palette"])
+            if entry["source_item_id"] == item
+        )
+        (row,) = index["regions"]
+        path = row["path"]
+        z, rx, ry, sectors = codec.decode_region(out[path])
+        ((local, tiles),) = sectors
+        for tile in tiles:
+            placement = tile[-1]
+            slot, depth, attrs = placement[0]
+            replacement = ordinary_slot if slot == scoped_slot else scoped_slot
+            placement[0] = (replacement, depth, attrs)
+        raw = codec.encode_region(
+            z,
+            rx,
+            ry,
+            {
+                local: codec.encode_sector_tiles(
+                    rx * 8 + local % 8, ry * 8 + local // 8, tiles
+                )
+            },
+        )
+        row["sha256"] = validate.hashlib.sha256(raw).hexdigest()
+        summary = self.summary(out)
+        summary["bytes_on_disk"] += len(raw) - len(out[path])
+        (root / validate.INDEX).write_bytes(validate.canonical(index))
+        (root / validate.SUMMARY).write_bytes(validate.canonical(summary))
+        (root / path).write_bytes(raw)
+        self.assertTrue(
+            any(
+                "scoped spawn ground cells differ" in err
+                for err in validate.validate(root)
+            )
+        )
+        with self.assertRaisesRegex(ValueError, "unapproved scoped spawn ground"):
+            scoped.overlay_outputs({}, root)
 
     def test_stray_and_missing_files_are_rejected(self):
         (self.root / validate.DIRECTORY / "extra.b3").write_bytes(b"x")

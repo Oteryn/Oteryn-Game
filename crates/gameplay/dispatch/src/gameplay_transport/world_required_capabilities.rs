@@ -144,7 +144,7 @@ pub fn offered_for_scope_with(
     {
         base
     } else {
-        without_entity_names(base)
+        without_native_offers(base)
     }
 }
 
@@ -175,8 +175,8 @@ pub fn with_native_map_presentation_offer(
     set
 }
 
-/// `base` without capability 286 as a `'static` slice, built once per distinct base set.
-fn without_entity_names(base: &'static [OfferedCapability]) -> &'static [OfferedCapability] {
+/// Filter native-only capabilities once per offer set.
+fn without_native_offers(base: &'static [OfferedCapability]) -> &'static [OfferedCapability] {
     type Cached = (&'static [OfferedCapability], &'static [OfferedCapability]);
     static CACHE: std::sync::Mutex<Vec<Cached>> = std::sync::Mutex::new(Vec::new());
     let mut cache = CACHE
@@ -189,7 +189,7 @@ fn without_entity_names(base: &'static [OfferedCapability]) -> &'static [Offered
         base.iter()
             .copied()
             .filter(|row| {
-                row.id != oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2
+                !matches!(row.id, oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2 | oteryn_protocol_oteryn::actor_spell_v2::CAPABILITY_ACTOR_SPELL_PARAMETERS_V2)
             })
             .collect::<Vec<_>>()
             .into_boxed_slice(),

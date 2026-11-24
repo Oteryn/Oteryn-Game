@@ -1,7 +1,7 @@
 name=quick_loot
-commands=114
+commands=114,6376,6377
 transport=quick_loot
 composed=quick_loot
 authority=quick_loot
 [route]
-match routing::quick_loot::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::Disconnected) }
+match routing::quick_loot::route(authority, &session.admitted, command, session.item_view.as_ref()).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::Disconnected) }

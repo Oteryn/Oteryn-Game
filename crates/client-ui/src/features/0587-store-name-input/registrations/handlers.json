@@ -1,0 +1,18 @@
+{
+  "mechanic": "0587-store-name-input",
+  "kind": "handlers",
+  "id": "0587-store-name-input-request",
+  "status": "unsupported",
+  "commands": [
+    6337
+  ],
+  "direction": "client_to_server",
+  "reason": "Character Name Change syntax validation awaits native client wiring.",
+  "not_applicable": {
+    "state": "This capability defines no state domain.",
+    "protocol": "Character Name Change syntax validation uses solicited command results.",
+    "view": "The native client has no view for this extension.",
+    "input": "The native client does not send these commands.",
+    "settings": "The extension defines no client settings."
+  }
+}

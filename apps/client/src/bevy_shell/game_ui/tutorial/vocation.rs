@@ -276,6 +276,19 @@ mod tests {
                     .map(|rect| (rect.min.x / 32.) as u32)
             })
             .collect();
+        for node in app.world_mut().query::<&ImageNode>().iter(app.world()) {
+            if let Some(rect) = node.rect {
+                let asset = node.image.path().ok_or("missing spell atlas path")?;
+                let sheet = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("installer/ui-assets")
+                    .join(asset.path());
+                let bytes = std::fs::read(sheet)?;
+                assert_eq!(bytes.get(..8), Some(&b"\x89PNG\r\n\x1a\n"[..]));
+                let width = u32::from_be_bytes(bytes[16..20].try_into()?);
+                let height = u32::from_be_bytes(bytes[20..24].try_into()?);
+                assert!(rect.max.x <= width as f32 && rect.max.y <= height as f32);
+            }
+        }
         icons.sort_unstable();
         assert_eq!(icons, [19, 21, 38, 41, 46, 102, 153, 155, 169, 177]);
         assert!(

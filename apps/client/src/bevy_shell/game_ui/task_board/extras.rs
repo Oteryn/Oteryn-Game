@@ -9,6 +9,88 @@ pub(super) enum Action {
     Page(u16),
 }
 pub(super) fn entries(panel: &TaskBoardPanel, tab: Tab) -> Vec<Entry> {
+    filtered(panel, tab, "", None)
+}
+pub(super) fn category_label(category: Option<u8>) -> &'static str {
+    category
+        .and_then(|c| {
+            [
+                "Harmless",
+                "Trivial",
+                "Easy",
+                "Medium",
+                "Hard",
+                "Challenging",
+            ]
+            .get(usize::from(c))
+            .copied()
+        })
+        .unwrap_or("All categories")
+}
+fn matches_fight(
+    fight: &model::task_board::soulpit::Fight,
+    search: &str,
+    category: Option<u8>,
+) -> bool {
+    fight.name.to_lowercase().contains(search) && category.is_none_or(|c| c == fight.stars)
+}
+
+pub(super) fn restart_filter(
+    link: &crate::play::PlayLink,
+    panel: &TaskBoardPanel,
+    state: &mut State,
+) {
+    if state.tab == Tab::Soulseals && state.fight_cursor != 0 {
+        if panel.fights.pending.is_some() {
+            state.restart_fights = true;
+            return;
+        }
+        state.fight_cursor = 0;
+        link.soulseal_catalogue_request(0);
+    }
+}
+
+pub(super) fn next_matching_page(
+    link: &crate::play::PlayLink,
+    panel: &TaskBoardPanel,
+    state: &mut State,
+) {
+    if panel.fights.pending.is_some() {
+        return;
+    }
+    if state.restart_fights {
+        state.restart_fights = false;
+        state.fight_cursor = 0;
+        link.soulseal_catalogue_request(0);
+        return;
+    }
+    if state.search.trim().is_empty() && state.category.is_none() {
+        return;
+    }
+    let Some(reply) = &panel.fights.reply else {
+        return;
+    };
+    let Some(after) = reply.next.filter(|next| *next > state.fight_cursor) else {
+        return;
+    };
+    let search = state.search.trim().to_lowercase();
+    if !reply
+        .entries
+        .iter()
+        .any(|f| matches_fight(f, &search, state.category))
+    {
+        state.fight_cursor = after;
+        link.soulseal_catalogue_request(after);
+    }
+}
+
+pub(super) fn filtered(
+    panel: &TaskBoardPanel,
+    tab: Tab,
+    search: &str,
+    category: Option<u8>,
+) -> Vec<Entry> {
+    let search = search.trim().to_lowercase();
     let mut rows = Vec::new();
     if tab == Tab::Soulseals {
         entry(&mut rows, &panel.fights.feedback, None);
@@ -26,7 +108,11 @@ pub(super) fn entries(panel: &TaskBoardPanel, tab: Tab) -> Vec<Entry> {
             ),
             None,
         );
-        for fight in &reply.entries {
+        for fight in reply
+            .entries
+            .iter()
+            .filter(|f| matches_fight(f, &search, category))
+        {
             entry(
                 &mut rows,
                 format!(
@@ -80,7 +166,9 @@ pub(super) fn entries(panel: &TaskBoardPanel, tab: Tab) -> Vec<Entry> {
             ),
             None,
         );
-        for race in &choices {
+        for race in choices.iter().filter(|key| {
+            key.is_empty() || model::creature_name(key).to_lowercase().contains(&search)
+        }) {
             let label = if race.is_empty() {
                 "Clear (10 bounty points)".into()
             } else {
@@ -154,17 +242,89 @@ pub(super) fn summary(panel: &TaskBoardPanel, action: &Action) -> String {
 pub(super) fn send(link: &crate::play::PlayLink, expected: &TaskBoardPanel, action: &Action) {
     match action {
         Action::Preferred(slot, race) => {
-            link.task_board_preferences_bound(expected, FullIntent::Preferred(*slot, race.clone()));
+            link.task_board_action_bound(expected, FullIntent::Preferred(*slot, race.clone()));
         }
         Action::Unwanted(slot, race) => {
-            link.task_board_preferences_bound(expected, FullIntent::Unwanted(*slot, race.clone()));
+            link.task_board_action_bound(expected, FullIntent::Unwanted(*slot, race.clone()));
         }
         Action::Unlock => {
-            link.task_board_preferences_bound(expected, FullIntent::UnlockList);
+            link.task_board_action_bound(expected, FullIntent::UnlockList);
         }
         Action::Fight(race) => {
             link.soulseal_fight_bound(expected, *race);
         }
         Action::Page(after) => link.soulseal_catalogue_request(*after),
+    }
+}
+
+pub(super) fn search_controls(
+    commands: &mut Commands,
+    skins: &Skins,
+    frame: Entity,
+    state: &State,
+    draft: &str,
+) {
+    if matches!(state.tab, Tab::Preferences | Tab::Soulseals) {
+        let mut edit = bevy::text::EditableText::new(draft);
+        edit.max_characters = Some(128);
+        let field = commands
+            .spawn((
+                SearchField(state.tab),
+                bevy::ui_widgets::TextInput,
+                edit,
+                source::font(skins.font.clone(), false),
+                TextColor(source::TEXT_COLOR),
+                bevy::input_focus::tab_navigation::TabIndex(0),
+                Node {
+                    height: px(26.),
+                    width: percent(100.),
+                    ..default()
+                },
+            ))
+            .id();
+        commands.entity(frame).add_child(field);
+        widget(
+            commands,
+            skins,
+            frame,
+            state,
+            "Search by name",
+            Some(Kind::Search),
+        );
+    }
+    if state.tab == Tab::Soulseals {
+        let label = extras::category_label(state.category);
+        widget(commands, skins, frame, state, label, Some(Kind::Category));
+    }
+}
+
+pub(super) fn shop_confirmation(
+    commands: &mut Commands,
+    skins: &Skins,
+    frame: Entity,
+    state: &State,
+    panel: &TaskBoardPanel,
+) {
+    if let Some(offer) = state.shop_selection.and_then(|id| {
+        panel
+            .weekly
+            .as_ref()?
+            .shop
+            .iter()
+            .find(|offer| offer.index == id)
+    }) {
+        widget(
+            commands,
+            skins,
+            frame,
+            state,
+            &format!(
+                "Confirm purchase of {} for {} points?",
+                model::shop_offer_text(offer, panel.weekly.as_ref().map_or(0, |r| r.points)),
+                offer.price
+            ),
+            Some(Kind::ConfirmShop(offer.index)),
+        );
+        widget(commands, skins, frame, state, "Cancel", Some(Kind::Cancel));
     }
 }

@@ -4,9 +4,12 @@ use crate::content::item_ref::ItemDefinitionIndex;
 use crate::foundation::ChannelRuntimeV1;
 use oteryn_protocol_oteryn::{
     analyser::{AnalyserFact, AnalyserImpact},
-    analyser_party::{Member, NeededPrice, Price, encode_reply},
+    analyser_party::{HuntRequest, Member, NeededPrice, Price, encode_reply},
 };
 use std::collections::BTreeMap;
+
+#[path = "analyser_party_shared.rs"]
+pub(super) mod shared;
 pub(super) type AccountingSnapshot = (u64, Totals, Option<std::sync::Arc<ItemDefinitionIndex>>);
 const MAX_ITEMS: usize = 16384;
 #[derive(Debug, Clone, Default)]
@@ -38,6 +41,13 @@ fn item(map: &mut BTreeMap<u32, u64>, id: u32, count: u64, incomplete: &mut bool
     add(map.entry(id).or_default(), count, incomplete);
 }
 impl Totals {
+    pub(super) fn missing_history() -> Self {
+        Self {
+            incomplete: true,
+            ..Self::default()
+        }
+    }
+
     pub(super) fn observe(&mut self, fact: &AnalyserFact) {
         match fact {
             AnalyserFact::Kill { .. } => add(&mut self.kills, 1, &mut self.incomplete),
@@ -85,7 +95,7 @@ impl Totals {
         elapsed_seconds: u64,
         index: Option<&ItemDefinitionIndex>,
         requester: &ItemDefinitionIndex,
-        prices: &[Price],
+        prices: &BTreeMap<u32, Price>,
     ) -> Member {
         let mut row = Member {
             handle,
@@ -101,7 +111,6 @@ impl Totals {
             healing: self.healing,
             ..Default::default()
         };
-        let prices: BTreeMap<_, _> = prices.iter().map(|p| (p.item, p)).collect();
         for (supply, items) in [(false, &self.loot), (true, &self.supplies)] {
             for (id, count) in items {
                 let identity = std::num::NonZeroU32::new(*id)
@@ -184,6 +193,7 @@ pub(super) fn project(
     if members.len() != projected.members.len() {
         return None;
     }
+    let prices = prices.iter().map(|p| (p.item, p.clone())).collect();
     let mut rows = Vec::new();
     for ((id, name), member) in members.iter().zip(&projected.members) {
         let snapshot = census.iter().find_map(|(actor, _, session)| {
@@ -201,7 +211,7 @@ pub(super) fn project(
                 seconds,
                 index.as_deref(),
                 requester,
-                prices,
+                &prices,
             ),
             None => Member {
                 handle: member.handle,
@@ -217,32 +227,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
         command_id: u64,
-        prices: &[Price],
+        command_type: u32,
+        request: HuntRequest,
         view: &mut super::party_command::SessionPartyView,
     ) -> Option<Vec<u8>> {
-        let runtime = self.runtime.lock().await;
-        if !super::battle_instinct_status::actor_is_current(&runtime, admitted) {
-            return None;
-        }
-        let index = super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
-        if prices.iter().any(|p| {
-            std::num::NonZeroU32::new(p.item).is_none_or(|id| index.definition_at(id).is_none())
-        }) {
-            return None;
-        }
-        drop(runtime);
-        view.hunt_prices = prices.to_vec();
+        view.hunt_request = Some(request);
         view.hunt_reply = None;
         let _ = self
-            .party_wire_command(
-                admitted,
-                command_id,
-                oteryn_protocol_oteryn::analyser_party::COMMAND_TYPE_ANALYSER_PARTY_QUERY,
-                &[],
-                view,
-            )
+            .party_wire_command(admitted, command_id, command_type, &[], view)
             .await;
-        view.hunt_prices.clear();
+        view.hunt_request = None;
         view.hunt_reply.take()
     }
 }
@@ -252,7 +246,8 @@ macro_rules! authority_methods {
             &self,
             _admitted: $crate::gameplay_transport::AdmittedSession,
             _command_id: u64,
-            _prices: &[oteryn_protocol_oteryn::analyser_party::Price],
+            _command_type: u32,
+            _request: oteryn_protocol_oteryn::analyser_party::HuntRequest,
             _view: &mut $crate::gameplay_transport::party_command::SessionPartyView,
         ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
             async { None }
@@ -266,10 +261,11 @@ macro_rules! composed_methods {
             &self,
             admitted: connection::AdmittedSession,
             command_id: u64,
-            prices: &[oteryn_protocol_oteryn::analyser_party::Price],
+            command_type: u32,
+            request: oteryn_protocol_oteryn::analyser_party::HuntRequest,
             view: &mut $crate::gameplay_transport::party_command::SessionPartyView,
         ) -> Option<Vec<u8>> {
-            self.analyser_party_page(admitted, command_id, prices, view)
+            self.analyser_party_page(admitted, command_id, command_type, request, view)
                 .await
         }
     };
@@ -298,7 +294,14 @@ mod tests {
             gold: 10,
         });
         totals.observe(&AnalyserFact::SupplyUsed(item(2, 3)?));
-        let missing = totals.member(1, "Scout".into(), 60, Some(&index), &index, &[]);
+        let missing = totals.member(
+            1,
+            "Scout".into(),
+            60,
+            Some(&index),
+            &index,
+            &BTreeMap::new(),
+        );
         assert_eq!(
             (
                 missing.kills,
@@ -323,18 +326,24 @@ mod tests {
             60,
             Some(&index),
             &index,
-            &[
-                Price {
-                    item: 1,
-                    loot: Some(1000),
-                    supply: None,
-                },
-                Price {
-                    item: 2,
-                    loot: Some(5),
-                    supply: Some(7),
-                },
-            ],
+            &BTreeMap::from([
+                (
+                    1,
+                    Price {
+                        item: 1,
+                        loot: Some(1000),
+                        supply: None,
+                    },
+                ),
+                (
+                    2,
+                    Price {
+                        item: 2,
+                        loot: Some(5),
+                        supply: Some(7),
+                    },
+                ),
+            ]),
         );
         assert_eq!(
             (
@@ -353,11 +362,14 @@ mod tests {
             60,
             Some(&index),
             &other,
-            &[Price {
-                item: 2,
-                loot: Some(1000),
-                supply: Some(1000),
-            }],
+            &BTreeMap::from([(
+                2,
+                Price {
+                    item: 2,
+                    loot: Some(1000),
+                    supply: Some(1000),
+                },
+            )]),
         );
         assert!(incompatible.incomplete);
         assert_eq!((incompatible.loot_value, incompatible.supply_cost), (10, 0));

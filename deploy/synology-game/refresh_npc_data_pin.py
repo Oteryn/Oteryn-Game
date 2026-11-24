@@ -14,7 +14,9 @@ from stage_npc_data import (
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("repository_root", type=Path)
+    parser.add_argument(
+        "repository_root", nargs="?", type=Path, default=Path(__file__).resolve().parents[2]
+    )
     args = parser.parse_args()
 
     content = args.repository_root / "content"

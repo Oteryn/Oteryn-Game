@@ -39,6 +39,13 @@ pub trait FreshAdmissionAuthority {
     fn client_bulletin(&self) -> impl Future<Output = Option<String>> {
         async { None }
     }
+    /// Standalone public World information. This hook never grants admission.
+    fn world_login_info(
+        &self,
+        _world: [u8; 16],
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::daily_boost::login::WorldInfo>> {
+        async { None }
+    }
     /// NX-1: current durable bans/kicks and session staff flags; independent of presentation capabilities.
     fn staff_refresh(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
         async { true }
@@ -72,6 +79,13 @@ pub trait FreshAdmissionAuthority {
     #[cfg(test)]
     fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {
         None
+    }
+
+    fn mana_shield_remaining(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<u32>> {
+        async { None }
     }
 
     fn observe_sounds(
@@ -556,6 +570,13 @@ pub trait FreshAdmissionAuthority {
         None
     }
 
+    fn take_party_membership_notices(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Vec<crate::durability::world_party::MembershipNotice>> {
+        async { Vec::new() }
+    }
+
     /// PARITY-EVENT-CALLBACKS-1: the Channel's currently due server-save countdown minute.
     fn server_save_countdown(
         &self,
@@ -577,7 +598,7 @@ pub trait FreshAdmissionAuthority {
     fn take_server_notice(
         &self,
         _admitted: AdmittedSession,
-    ) -> Option<oteryn_protocol_oteryn::zones_nologout::ServerMessage> {
+    ) -> Option<oteryn_protocol_oteryn::zones_nologout::ServerNotification> {
         None
     }
 
@@ -830,6 +851,20 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn choose_offline_training(
+        &self,
+        _admitted: AdmittedSession,
+        _family: usize,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::loop_training::TrainingResult>> {
+        async { Some(oteryn_protocol_oteryn::loop_training::TrainingResult::REFUSED) }
+    }
+    fn offline_training_skills(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::loop_training::OfflineTrainingSkills>>
+    {
+        async { None }
+    }
     fn offline_training(
         &self,
         _admitted: AdmittedSession,
@@ -1016,6 +1051,17 @@ pub trait FreshAdmissionAuthority {
             }
             self.stash(actor, command, intent, item, row_open).await
         }
+    }
+
+    fn stash_row_action(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: oteryn_protocol_oteryn::stash::StashRowIntent,
+        _row_open: bool,
+    ) -> impl Future<Output = Result<Option<std::num::NonZeroU32>, crate::durability::DurabilityError>>
+    {
+        async { Ok(None) }
     }
 
     /// Depot requests are resolved by the live Channel and fenced native item owner.
@@ -1231,6 +1277,10 @@ pub trait FreshAdmissionAuthority {
     /// QUEST-LOG-WIRE-1: the session's quest copy with the quest log content, unless the copy
     /// still has version `since` (`Unchanged`). `Unavailable` while the copy is not loaded: the
     /// domain then shows nothing new and every query is `REJECTED`.
+    fn quest_tracker_is_premium(&self, _session: GameSessionId) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     fn observe_quest_log(
         &self,
         _actor: ExactActorRef,
@@ -1484,9 +1534,19 @@ pub trait FreshAdmissionAuthority {
     /// CommandRef: replay first, then one durable NPC trade.
     fn npc_trade(
         &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+    ) -> impl Future<Output = NpcTradeStep> {
+        self.npc_trade_with_delivery(actor, command, intent, false)
+    }
+
+    fn npc_trade_with_delivery(
+        &self,
         _actor: ExactActorRef,
         _command: UseCommand,
         _intent: oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+        _packed: bool,
     ) -> impl Future<Output = NpcTradeStep> {
         async {
             NpcTradeStep::Refused(
@@ -1597,6 +1657,21 @@ pub trait FreshAdmissionAuthority {
         async move { Some(self.cast_spell(actor, session, command_id, intent).await) }
     }
 
+    fn cast_parameter_spell_completion(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _command_id: u64,
+        _intent: oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
+    ) -> impl Future<
+        Output = Option<(
+            SpellCastOutcome,
+            Option<oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult>,
+        )>,
+    > {
+        async { Some((SpellCastOutcome::rejected(), None)) }
+    }
+
     /// One `ACCOUNT_ACHIEVEMENTS_QUERY` page of the request's account's earned facts (display
     /// contract §4). The transport passes the account of the admitted controller, never one from
     /// the payload, with the session and CommandId of the request.
@@ -1643,6 +1718,7 @@ pub trait FreshAdmissionAuthority {
             HighscoresQuery,
             Option<oteryn_protocol_oteryn::highscores_catalogue::WorldType>,
         )>,
+        _include_battleye: bool,
     ) -> impl Future<Output = HighscoresReply> {
         async { HighscoresReply::Rejected }
     }
