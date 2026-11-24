@@ -771,7 +771,17 @@ async fn check_entry(sweep: &mut Sweep<'_, '_>, key: &str, entry: &Entry, rows: 
                 }
                 Err(error) => {
                     rows.emit(Err(error), "precondition");
-                    sweep.hunter = None;
+                    // The same live fixture can still serve the next catalogue
+                    // query when movement prerequisites fail. Re-admit only on
+                    // transport loss or zero health.
+                    if sweep
+                        .hunter
+                        .as_ref()
+                        .and_then(|client| client.actor_vitals())
+                        .is_some_and(|vitals| vitals.health == 0)
+                    {
+                        drop(sweep.hunter.take());
+                    }
                     return;
                 }
             };
@@ -1049,6 +1059,51 @@ async fn map_query(client: &mut DevClientSession) -> TestResult<map::MapResult> 
     Ok(result)
 }
 
+async fn verify_atlas_tile(
+    client: &mut DevClientSession,
+    area: u32,
+    at: TilePos,
+    subarea: u32,
+) -> TestResult {
+    use oteryn_protocol_oteryn::cyclopedia::geometry as atlas;
+    let floor = -at.floor;
+    let mut after = 0;
+    loop {
+        let payload =
+            atlas::encode_request(atlas::Request { area, floor, after }).map_err(debug)?;
+        let body = command(
+            client,
+            map::CAPABILITY_CYCLOPEDIA_MAP_V1,
+            map::COMMAND_TYPE_CYCLOPEDIA_QUERY,
+            &payload,
+        )
+        .await?;
+        let atlas::Reply::Geometry(page) = atlas::decode_reply(&body).map_err(debug)? else {
+            return Err("atlas returned an area list for a visited tile".into());
+        };
+        if page.area != area || page.floor != floor || page.page != after {
+            return Err("atlas geometry response does not match its requested page".into());
+        }
+        if let Some(run) = page
+            .runs
+            .iter()
+            .find(|run| run.y == at.y && (run.begin..run.end).contains(&at.x))
+        {
+            if run.subarea != subarea {
+                return Err(format!(
+                    "wire atlas labels {at:?} as {}, expected {subarea}",
+                    run.subarea
+                )
+                .into());
+            }
+            return Ok(());
+        }
+        after = page.next.filter(|&next| next > after).ok_or_else(|| {
+            format!("wire atlas geometry omits visited tile {at:?} in subarea {subarea}")
+        })?;
+    }
+}
+
 async fn check_atlas(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -1117,19 +1172,10 @@ async fn check_atlas(
         let membership = table
             .resolve(at.x, at.y, at.floor)
             .ok_or("position outside atlas")?;
-        let got = command(
-            client,
-            map::CAPABILITY_SUBAREA_V1,
-            map::COMMAND_TYPE_SUBAREA_QUERY,
-            &[],
-        )
-        .await?;
-        if !matches(at) || got != map::encode_current_subarea(Some(membership)) {
-            return Err(format!(
-                "atlas membership at {at:?} expected {membership:?}; observed {got:?}"
-            )
-            .into());
+        if !matches(at) {
+            return Err(format!("wire position {at:?} is outside the requested atlas area").into());
         }
+        verify_atlas_tile(client, area.id, at, membership.1).await?;
         Ok(format!("membership:{membership:?}"))
     }
     .await;
