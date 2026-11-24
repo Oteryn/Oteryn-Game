@@ -344,7 +344,7 @@ def stage_portability_sql(root, path):
     return result
 
 
-MIGRATION = "apps/game-server/migrations/3124_crystal_ordinary_corpse_registry.sql"
+MIGRATION = "apps/game-server/migrations/3250_crystal_ordinary_corpse_registry.sql"
 
 
 def migration(root):
@@ -459,7 +459,7 @@ if __name__ == "__main__":
     path = root / MIGRATION
     expected = migration(root)
     portable_sql = (
-        root / "apps/game-server/migrations/3128_ordinary_corpse_move_lifecycle.sql"
+        root / "apps/game-server/migrations/3254_ordinary_corpse_move_lifecycle.sql"
     )
     portable_expected = stage_portability_sql(root, portable_sql)
     if args.check:

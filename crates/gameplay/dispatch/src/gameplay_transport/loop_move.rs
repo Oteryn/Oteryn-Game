@@ -840,9 +840,17 @@ pub(super) async fn committed_loop_move(
     };
     let command_id = CommandId::new(command.command_id).ok()?;
     let command = CommandRef::new(command.game_session_id, command_id);
-    let (replay, corpse) = admission
-        .root
-        .read_item_loop_move_receipt_with_corpse(admission.character, fence.character_id, command)
+    let (replay, corpse) = super::AdmissionRetryBudget::for_command(admission.root)
+        .retry_command_guard(async || {
+            admission
+                .root
+                .read_item_loop_move_receipt_with_corpse(
+                    admission.character,
+                    fence.character_id,
+                    command,
+                )
+                .await
+        })
         .await
         .ok()?;
     // A committed Dreamer offering whose acknowledgement was lost publishes before the replay.

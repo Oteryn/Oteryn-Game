@@ -296,7 +296,7 @@ BEGIN
 END $ordinary_corpse_slice2$;
 
 -- Existing non-container source bodies use the same original lethal MINT proof.
--- Migration 2977 already admits the shared ashes. Crystal 201189f8
+-- Migration 3250 already admits the shared ashes. Crystal 201189f8
 -- items.xml:27452-27455 supplies the insect swarm.
 DO $ordinary_plain_bodies$
 DECLARE

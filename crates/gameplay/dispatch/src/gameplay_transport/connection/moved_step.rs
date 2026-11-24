@@ -28,12 +28,32 @@ where
     A: FreshAdmissionAuthority,
 {
     let (frames_out, delta_sequence, new_revision) = if let Some(view) = visibility {
-        let mut channel = crate::gameplay_transport::entity_names::observe(
+        let mut channel = match crate::gameplay_transport::entity_names::observe_result(
             authority,
             actor,
             admitted.continuity.selected_capabilities,
         )
-        .await?;
+        .await
+        {
+            Ok(channel) => channel,
+            Err(AdmissionRefusal::Unavailable) => {
+                // The naming read already used its bounded retry. The move's committed
+                // position can still publish with the exact names previously observed.
+                let without_names = admitted
+                    .continuity
+                    .selected_capabilities
+                    .without_projection(
+                        oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
+                    );
+                let mut channel = authority
+                    .observe_projected_entities(actor, without_names)
+                    .await
+                    .ok()?;
+                view.defer_unnamed_actors(&mut channel);
+                channel
+            }
+            Err(_) => return None,
+        };
         // The step's committed position is the observer's own.
         let observer = channel.observer;
         for own in channel
@@ -44,7 +64,7 @@ where
             own.position = observation.actor_position;
         }
         let (next_sequence, next_revision) = appearances
-            .refresh(
+            .refresh_result(
                 stream,
                 authority,
                 actor,
@@ -52,10 +72,11 @@ where
                 view,
                 &channel,
                 item_view.as_deref_mut(),
-                *sequence,
-                *revision,
+                (*sequence, *revision),
+                true,
             )
-            .await?;
+            .await
+            .ok()?;
         (Vec::new(), next_sequence, next_revision)
     } else {
         let (Some(delta_sequence), Some(new_revision)) =

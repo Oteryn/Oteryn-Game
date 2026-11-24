@@ -22,7 +22,7 @@ use std::sync::Arc;
 pub struct OwnerSpellReservation {
     caster: ExactActorRef,
     command: CommandRef,
-    phase: u16,
+    key: BatchReplayKey,
     canonical: Arc<[u8]>,
     destination: Option<(ExactActorRef, MovementLocalPosition)>,
     deferred: Option<super::runtime_actor_spell_types::DeferredCommitAuthority>,
@@ -50,7 +50,7 @@ impl PartialEq for OwnerSpellReservation {
     fn eq(&self, other: &Self) -> bool {
         self.caster == other.caster
             && self.command == other.command
-            && self.phase == other.phase
+            && self.key == other.key
             && self.canonical == other.canonical
             && self.destination == other.destination
             && self.deferred == other.deferred
@@ -64,10 +64,15 @@ impl OwnerSpellReservation {
     fn matches(&self, batch: &OwnerCombatBatch, binding: &[u8]) -> bool {
         self.caster == batch.caster
             && self.command == batch.command
-            && self.phase == batch.deferred.as_ref().map_or(0, |p| p.phase_ordinal())
             && self.canonical.as_ref() == binding
             && self.deferred == batch.deferred
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BatchReplayKey {
+    Spell(u16),
+    PvpSwing { ordinal: u16, target: ExactActorRef },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -75,10 +80,44 @@ struct BatchRecord {
     character: CharacterId,
     lease: u64,
     command: CommandRef,
-    phase: u16,
+    key: BatchReplayKey,
     original_batch: OwnerCombatBatch,
     charm_children: Option<[u8; 32]>,
     receipt: CombatBatchReceipt,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PvpSwingProgress {
+    lease: u64,
+    command: CommandRef,
+    ordinal: u16,
+    targets: Vec<ExactActorRef>,
+}
+
+impl PvpSwingProgress {
+    fn check(
+        &self,
+        batch: &OwnerCombatBatch,
+        ordinal: u16,
+        target: ExactActorRef,
+    ) -> Result<(), Error> {
+        if batch.current_lease_generation < self.lease {
+            return Err(Error::SupersededSession);
+        }
+        if batch.current_lease_generation != self.lease {
+            return Ok(());
+        }
+        if batch.command.game_session_id() != self.command.game_session_id() {
+            return Err(Error::SupersededSession);
+        }
+        let order = (batch.command.command_id().get(), ordinal)
+            .cmp(&(self.command.command_id().get(), self.ordinal));
+        match order {
+            std::cmp::Ordering::Less => Err(Error::StaleCommand),
+            std::cmp::Ordering::Equal if self.targets.contains(&target) => Err(Error::StaleCommand),
+            _ => Ok(()),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -136,6 +175,8 @@ pub struct ActorCombatState {
     pub(super) hazard_critical: Option<(GameSessionId, u64)>,
     pub paralysed: bool,
     records: Vec<BatchRecord>,
+    pvp_swing_records: Vec<BatchRecord>,
+    pvp_swing_progress: Option<PvpSwingProgress>,
     high_water: Option<(CharacterId, u64, GameSessionId, u64, u16)>,
     deferred_high_water: u64,
 }
@@ -151,6 +192,8 @@ impl ActorCombatState {
         self.party = super::runtime_actor_party::PartyActorState::default();
         self.hazard = None;
         self.records.clear();
+        self.pvp_swing_records.clear();
+        self.pvp_swing_progress = None;
         self.high_water = None;
         self.deferred_high_water = 0;
     }
@@ -161,12 +204,27 @@ impl ActorCombatState {
             ..Self::default()
         }
     }
+
+    fn replay_records(&self, key: BatchReplayKey) -> &[BatchRecord] {
+        match key {
+            BatchReplayKey::Spell(_) => &self.records,
+            BatchReplayKey::PvpSwing { .. } => &self.pvp_swing_records,
+        }
+    }
+
+    fn replay_records_mut(&mut self, key: BatchReplayKey) -> &mut Vec<BatchRecord> {
+        match key {
+            BatchReplayKey::Spell(_) => &mut self.records,
+            BatchReplayKey::PvpSwing { .. } => &mut self.pvp_swing_records,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct StagedSpellBatch {
     reservation: Option<Arc<OwnerSpellReservation>>,
     batch: OwnerCombatBatch,
+    key: BatchReplayKey,
     originals: Vec<(usize, Slot)>,
     replacements: Vec<(usize, Slot)>,
     companion_touch_indices: Vec<usize>,
@@ -448,7 +506,7 @@ impl StagedSpellBatch {
             for (_, slot) in &mut self.replacements {
                 let state = state_mut(slot)?;
                 if let Some(record) = state
-                    .records
+                    .replay_records_mut(self.key)
                     .iter_mut()
                     .find(|record| record.original_batch == self.batch)
                 {
@@ -815,16 +873,16 @@ impl ChannelRuntimeV1 {
         }
         let binding = canonical_binding(&staged.batch)?;
         let reservation = match &staged.reservation {
-            Some(existing) if existing.matches(&staged.batch, &binding) => existing.clone(),
+            Some(existing)
+                if existing.key == staged.key && existing.matches(&staged.batch, &binding) =>
+            {
+                existing.clone()
+            }
             Some(_) => return Err(Error::CommandConflict),
             None => Arc::new(OwnerSpellReservation {
                 caster: staged.batch.caster,
                 command: staged.batch.command,
-                phase: staged
-                    .batch
-                    .deferred
-                    .as_ref()
-                    .map_or(0, |p| p.phase_ordinal()),
+                key: staged.key,
                 canonical: Arc::from(binding),
                 destination: staged.relocation.as_ref().map(|r| (r.actor, r.destination)),
                 deferred: staged.batch.deferred.clone(),
@@ -961,7 +1019,7 @@ impl ChannelRuntimeV1 {
         if let Some(record) = owner
             .records
             .iter()
-            .find(|r| r.command == command && r.phase == 0)
+            .find(|r| r.command == command && r.key == BatchReplayKey::Spell(0))
         {
             if record.character != character || record.lease != lease_generation {
                 return Err(Error::CommandConflict);
@@ -1273,6 +1331,39 @@ impl ChannelRuntimeV1 {
         }
         Ok(staged)
     }
+
+    /// A held ATTACK owns multiple independent swings. Each target may be hit once per ordinal.
+    pub fn stage_pvp_swing_batch(
+        &self,
+        batch: &OwnerCombatBatch,
+        ordinal: u16,
+    ) -> Result<StagedSpellBatch, Error> {
+        let [effect] = batch.effects.as_slice() else {
+            return Err(Error::InvalidBatch);
+        };
+        if batch.anchor.is_some()
+            || batch.deferred.is_some()
+            || effect.sub_ordinal != 0
+            || effect.target == batch.caster
+            || !matches!(effect.change, OwnerCombatChange::Damage { .. })
+            || self.contains_live_creature(effect.target)
+        {
+            return Err(Error::InvalidBatch);
+        }
+        let lease = self.bound_attacker_lease(batch.caster, batch.command.game_session_id())?;
+        if batch.attacker != lease.character_id()
+            || batch.current_lease_generation != lease.generation()
+        {
+            return Err(Error::SupersededSession);
+        }
+        self.stage_combat_batch(
+            batch,
+            BatchReplayKey::PvpSwing {
+                ordinal,
+                target: effect.target,
+            },
+        )
+    }
     /// Read-only comparison for the joined player owner. Only the actual deferred
     /// token for this scope and exact batch retains admitted work after control loss.
     pub fn qualified_deferred_batch(&self, batch: &OwnerCombatBatch) -> bool {
@@ -1287,6 +1378,15 @@ impl ChannelRuntimeV1 {
     }
 
     fn stage_spell_batch_inner(&self, batch: &OwnerCombatBatch) -> Result<StagedSpellBatch, Error> {
+        let phase = batch.deferred.as_ref().map_or(0, |p| p.phase_ordinal());
+        self.stage_combat_batch(batch, BatchReplayKey::Spell(phase))
+    }
+
+    fn stage_combat_batch(
+        &self,
+        batch: &OwnerCombatBatch,
+        key: BatchReplayKey,
+    ) -> Result<StagedSpellBatch, Error> {
         validate_batch(batch)?;
         let caster_facts =
             self.player_control_facts(batch.caster, batch.command.game_session_id())?;
@@ -1303,10 +1403,6 @@ impl ChannelRuntimeV1 {
             .carrier
             .validate_ref(&self.continuity, batch.caster.0)?;
         let binding = canonical_binding(batch)?;
-        let phase = batch
-            .deferred
-            .as_ref()
-            .map_or(0, |authority| authority.phase_ordinal());
         let caster_state = state(&self.carrier.slots[caster_index])?;
         if caster_state.pending_source.is_some() {
             return Err(Error::SnapshotChanged);
@@ -1314,14 +1410,14 @@ impl ChannelRuntimeV1 {
         if caster_state
             .pending_owner
             .as_ref()
-            .is_some_and(|r| !r.matches(batch, &binding))
+            .is_some_and(|r| r.key != key || !r.matches(batch, &binding))
         {
             return Err(Error::SnapshotChanged);
         }
         if let Some(prior) = caster_state
-            .records
+            .replay_records(key)
             .iter()
-            .find(|r| r.command == batch.command && r.phase == phase)
+            .find(|r| r.command == batch.command && r.key == key)
         {
             if prior.character != batch.attacker
                 || prior.lease != batch.current_lease_generation
@@ -1336,6 +1432,7 @@ impl ChannelRuntimeV1 {
             return Ok(StagedSpellBatch {
                 reservation: None,
                 batch: batch.clone(),
+                key,
                 originals: vec![(caster_index, self.carrier.slots[caster_index].clone())],
                 replacements: vec![],
                 companion_touch_indices: vec![],
@@ -1384,14 +1481,20 @@ impl ChannelRuntimeV1 {
             {
                 return Err(Error::SupersededSession);
             }
-            if !deferred
+            if let BatchReplayKey::Spell(phase) = key
+                && !deferred
                 && batch.current_lease_generation == lease
                 && (batch.command.command_id().get(), phase) <= (sequence, ordinal)
             {
                 return Err(Error::StaleCommand);
             }
         }
-        self.stage_spell_successor(batch, caster_index, &binding, phase, deferred, caster_state)
+        if let BatchReplayKey::PvpSwing { ordinal, target } = key
+            && let Some(progress) = &caster_state.pvp_swing_progress
+        {
+            progress.check(batch, ordinal, target)?;
+        }
+        self.stage_spell_successor(batch, caster_index, &binding, key, caster_state)
     }
 
     pub fn commit_spell_batch(

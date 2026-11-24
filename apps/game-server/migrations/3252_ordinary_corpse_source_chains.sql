@@ -360,7 +360,7 @@ END $ordinary_corpse_cohort$;
 
 
 -- Third-quarter bodies with no container still require the original lethal
--- MINT, scope and Ground custody proof. Migration 2977 admits the shared ashes.
+-- MINT, scope and Ground custody proof. Migration 3250 admits the shared ashes.
 DO $ordinary_plain_bodies$
 DECLARE
     anchor CONSTANT TEXT := $anchor$'oteryn:item.tibia.i33792'$anchor$;
