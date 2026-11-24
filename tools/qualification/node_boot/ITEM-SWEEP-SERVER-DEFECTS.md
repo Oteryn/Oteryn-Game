@@ -403,3 +403,14 @@ cleanup rows was blocked by seed. At this checkpoint 705 of the original
 | Cause | Keys | Oteryn owner | Crystal 201189f8 | Expected and observed |
 | --- | --- | --- | --- | --- |
 | Active content admission missing | 43863, 48116, 48544 | `crates/gameplay/items/src/item_ref_admission.rs:63–74` | `data/items/items.xml:75988–75995,81432–81436,81886–81890`, `data/scripts/actions/items/foods.lua:122,133,138–151` | The fixture sent `qualify <session> item <vocation> <level> oteryn:item.tibia.i<key>`. Crystal defines an ammo-slot conch horn with ice protection and two usable foods. The active item owner refused all three before it could materialize the carried item. The equipment and food-effect requests had no live handle. |
+
+| Detached replay | Seed PASS | Seed FAIL | PASS rows | FAIL rows | Terminal result |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 26 confirmed admission refusals on fxi `cfdd0d690` | 19 | 7 | 38 | 14 | `NODE_BOOT_FAIL` |
+
+| Cause | Keys | Oteryn owner | Crystal 201189f8 | Expected and observed |
+| --- | --- | --- | --- | --- |
+| Active content admission still missing on the fxi replay | 31327, 31328, 31431, 3566, 36810, 36813, 43863 | `crates/gameplay/items/src/item_ref_admission.rs:63–74` | `data/items/items.xml:58414–58421,58764–58769,11251–11258,68551–68555,68565–68569,75988–75995` | The qualification item request for each named key still returned `DefinitionNotFound`. Crystal defines two tools, a ring, body armor, two 32-slot containers, and an ammo-slot horn. No live handle was admitted for those operations. The same request admitted the other 19 keys on fxi. |
+
+There were 724 verified seed keys and 679 pending keys out of the original
+1,403 after this replay. The results distinguish the server revisions.
