@@ -148,8 +148,17 @@ async fn walk_observing_spawn(
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
     spawn: TilePos,
 ) -> TestResult<Option<EntityRef>> {
+    let mut at = tile(client.world_spatial().actor_position)?;
+    let mut near = 0;
+    // Keep the approach as one route so the shared walker can detour around
+    // visible occupants before the exact rat can enter the client view.
+    while distance(at, spawn) > 8 && near < path.len() {
+        at = landing(at, path[near]).ok_or("planned rat approach lost its landing")?;
+        near += 1;
+    }
+    walk_with_landings(client, &path[..near], &landing).await?;
     let mut observed = visible_rat_at(client, spawn);
-    for (index, step) in path.iter().enumerate() {
+    for (index, step) in path.iter().enumerate().skip(near) {
         walk_with_landings(client, std::slice::from_ref(step), &landing).await?;
         observed = visible_rat_at(client, spawn).or(observed);
         if observed.is_some() {
