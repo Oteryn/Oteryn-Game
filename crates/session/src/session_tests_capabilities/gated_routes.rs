@@ -85,8 +85,8 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         (140, &[160], &[]),
         (146, &[168], &[]),
         (147, &[170], &[]),
-        // Wheel and Atelier are playable through the selected capability 148.
-        (148, &[161, 308, 309, 424, 6119, 6121], &[]),
+        // Capability 148 also gates Wheel inspection and Gift of Life status.
+        (148, &[161, 308, 309, 424, 6119, 6121, 6378, 6379], &[]),
         (483, &[6210, 6211, 6212, 6213, 6214], &[]),
         (497, &[6240], &[]),
         (512, &[6247, 6248, 6251], &[]),
