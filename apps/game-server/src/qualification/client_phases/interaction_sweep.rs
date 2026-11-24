@@ -1175,6 +1175,90 @@ fn reading_matches(served: &str, authored: &str) -> bool {
         .is_some_and(|(_, text)| text == authored)
 }
 
+const LOOK_TEXT_MARKER: &str = "oteryn qualification document text marker";
+
+fn matches_document_frame(served: &str, authored: &str, frame: &str) -> bool {
+    frame
+        .split_once(LOOK_TEXT_MARKER)
+        .is_some_and(|(prefix, suffix)| {
+            served
+                .strip_prefix(prefix)
+                .and_then(|text| text.strip_suffix(suffix))
+                == Some(authored)
+        })
+}
+
+fn document_frame(world: &BundleWorld, placement: Placement) -> TestResult<String> {
+    use crate::content::native_gameplay::ItemProfilesDocument;
+    static PROFILES: std::sync::OnceLock<Result<ItemProfilesDocument, String>> =
+        std::sync::OnceLock::new();
+    static ITEMS: std::sync::OnceLock<
+        Result<crate::content::item_ref::ItemDefinitionIndex, String>,
+    > = std::sync::OnceLock::new();
+    let profiles = PROFILES
+        .get_or_init(|| {
+            let input = native_input().map_err(|error| error.to_string())?;
+            let source = input
+                .item_profiles
+                .as_ref()
+                .ok_or("missing native item profiles")?;
+            serde_json::from_slice(&source.bytes).map_err(|error| error.to_string())
+        })
+        .as_ref()
+        .map_err(|error| format!("document-oracle-missing: {error}"))?;
+    let items = ITEMS
+        .get_or_init(|| provisioning::item_index().map_err(|error| error.to_string()))
+        .as_ref()
+        .map_err(|error| format!("document-oracle-missing: {error}"))?;
+    let (_, ordinal) = crate::map::view::placement_of(placement.key)
+        .ok_or("document-oracle-missing: authored placement identity")?;
+    let tile = world
+        .base()
+        .tile(placement.at.x, placement.at.y, placement.at.floor)
+        .ok_or("document-oracle-missing: authored tile")?;
+    let (id, _) = tile
+        .ids()
+        .iter()
+        .zip(tile.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .nth(usize::from(ordinal))
+        .ok_or("document-oracle-missing: authored slot")?;
+    let facts = world
+        .facts()
+        .pinned()
+        .base_entry(placement.at, ordinal, *id)
+        .ok_or("document-oracle-missing: authored item facts")?;
+    let MapDefinition::Item(reference) = facts.definition else {
+        return Err("document-oracle-missing: placement has no item definition".into());
+    };
+    let (key, revision) = items
+        .definition_at(reference)
+        .ok_or("document-oracle-missing: item definition reference")?;
+    let record = profiles
+        .records
+        .iter()
+        .find(|entry| {
+            entry.production_definition.production_key == key
+                && entry.production_definition.revision_ref == revision
+        })
+        .ok_or("document-oracle-missing: pinned item profile")?;
+    let source_id = key
+        .strip_prefix("oteryn:item.tibia.i")
+        .and_then(|id| id.parse().ok());
+    // item_look.rs:670 and items/src/look.rs:241 render authored text within
+    // the description. The marker preserves the exact boundary even when a
+    // portable book's weight or description follows its inscription.
+    oteryn_gameplay_items::look::item_text_with_reading(
+        &record.semantics,
+        NonZeroU32::new(facts.count).ok_or("document-oracle-missing: item count is zero")?,
+        1,
+        source_id,
+        LOOK_TEXT_MARKER,
+        look::MAX_ITEM_LOOK_TEXT_BYTES,
+    )
+    .ok_or_else(|| "document-oracle-missing: could not render source reading frame".into())
+}
+
 async fn read_document(
     client: &mut DevClientSession,
     rows: &mut Rows<'_>,
@@ -1185,11 +1269,13 @@ async fn read_document(
     approach(client, routes, placement.at).await?;
     rows.pass("adjacent-to-authored-inscription");
     let target = look::ItemLookTarget::WorldObject(placement.target(routes.world));
-    check_document_text(
-        rows,
-        &request_document_text(client, target).await?,
-        expected,
-    )
+    let served = request_document_text(client, target).await?;
+    rows.pass("accepted-item-look");
+    if !matches_document_frame(&served, expected, &document_frame(routes.world, placement)?) {
+        return Err("document-text-mismatch: complete authored text required".into());
+    }
+    rows.pass("byte-identical-authored-text");
+    Ok(())
 }
 
 async fn request_document_text(
@@ -2152,6 +2238,28 @@ mod tests {
         callback.success_message = Some("A second authored effect".into());
         assert_eq!(callback_teleport(&callback), None);
         Ok(())
+    }
+
+    #[test]
+    fn qualification_interaction_document_frame_preserves_exact_authored_text() {
+        let frame = format!("You see a book.\nYou read: {LOOK_TEXT_MARKER}\nIt weighs 12.00 oz.");
+        let served = "You see a book.\nYou read: First line\nSecond line\nIt weighs 12.00 oz.";
+        assert!(matches_document_frame(
+            served,
+            "First line\nSecond line",
+            &frame
+        ));
+        assert!(!matches_document_frame(served, "First line", &frame));
+        assert!(!matches_document_frame(
+            served,
+            "First line\nSecond line\n",
+            &frame
+        ));
+        assert!(!matches_document_frame(
+            served,
+            "First line\nSecond line",
+            "No inscription slot"
+        ));
     }
 
     #[test]
