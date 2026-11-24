@@ -101,9 +101,17 @@ impl Entry {
         match self {
             Self::Document(_) => &["bind", "query", "text"],
             Self::MapDocument(..) | Self::NestedMapDocument => &["bind", "walk", "open", "text"],
-            Self::Interaction(..) | Self::Claim | Self::Shrine(_) => {
-                &["bind", "walk", "use", "effect", "reset"]
-            }
+            Self::Interaction(..) | Self::Claim => &["bind", "walk", "use", "effect", "reset"],
+            Self::Shrine(_) => &[
+                "bind",
+                "walk",
+                "use",
+                "effect",
+                "reset",
+                "claim",
+                "replay",
+                "durability",
+            ],
         }
     }
 }
@@ -1355,6 +1363,31 @@ async fn wall(client: &mut DevClientSession) -> TestResult<DailyRewardWall> {
     }
 }
 
+async fn claim_daily(client: &mut DevClientSession, disposition: u8) -> TestResult {
+    let reply = client
+        .session_mut()
+        .gated_command(
+            daily::CAPABILITY_DAILY_REWARD_V2,
+            daily::COMMAND_TYPE_DAILY_REWARD_CLAIM,
+            &[],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted
+        || !matches!(
+            decode_reply(DailyRewardCommand::Claim, &reply.payload)?,
+            DailyRewardReply::Result(result)
+                if result.disposition == disposition
+                    && result.transaction_id.is_some() == (disposition == 1)
+        )
+    {
+        return Err(format!(
+            "shrine-claim-refused: expected disposition {disposition}, got {reply:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
 async fn shrine(
     client: &mut DevClientSession,
     rows: &mut Rows<'_>,
@@ -1644,6 +1677,34 @@ pub(super) async fn run(
                         );
                     }
                     rows.pass("shrine-open-state-reset-on-admission");
+                    let connected = session(&mut client, clients).await?;
+                    approach(connected, &routes, at).await?;
+                    let before = wall(connected).await?;
+                    let opened = connected.session_mut().use_object(content.entry_shrine.placement.as_bytes(), 0).await?;
+                    if opened.disposition != UseDisposition::Committed {
+                        return Err(format!("shrine-reopen-refused: {:?}", opened.disposition).into());
+                    }
+                    claim_daily(connected, 1).await?;
+                    let claimed = wall(connected).await?;
+                    if !claimed.claimed || claimed.claim_enabled
+                        || claimed.streak != before.streak.saturating_add(1).min(100_000)
+                    {
+                        return Err(format!("shrine-claim-effect-mismatch: {before:?} -> {claimed:?}").into());
+                    }
+                    let custody = inventory(connected)?;
+                    rows.pass("daily-claim-committed-once");
+                    claim_daily(connected, 2).await?;
+                    if wall(connected).await? != claimed || inventory(connected)? != custody {
+                        return Err("shrine-replay-mismatch: duplicate changed the wall or inventory".into());
+                    }
+                    rows.pass("duplicate-daily-claim-did-not-mutate-state");
+                    release(connected).await?;
+                    client = None;
+                    let connected = session(&mut client, clients).await?;
+                    if wall(connected).await? != claimed || inventory(connected)? != custody {
+                        return Err("shrine-durability-mismatch: daily claim lost after fresh admission".into());
+                    }
+                    rows.pass("daily-claim-persisted-across-admissions");
                     Ok(())
                 }
             }
