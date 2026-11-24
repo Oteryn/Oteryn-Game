@@ -18,9 +18,11 @@ summarize() {
     result=NODE_BOOT_FAIL
   fi
 
-  rows=$(awk '
+  rows=$(awk -v group="$group" '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      ($3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ ||
+        (group == "transition_sweep" && $3 ~ /^scenario=TS\.[[:alnum:]_.-]+$/)) &&
+      $4 ~ /^status=(PASS|FAIL)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -31,6 +33,7 @@ summarize() {
         if ($i ~ /^evidence=/) evidence = substr($i, 10)
       }
       reason = (cause != "" ? cause : evidence)
+      if (group == "transition_sweep" && row ~ /^TS[.]/) reason = evidence
       if (tolower(reason) ~ /password|postgres:\/\/|postgresql:\/\/|secret|token|key=/) reason = ""
       gsub(/\|/, "_", reason)
       printf "%s|%s|%s\n", row, verdict, reason

@@ -138,8 +138,15 @@ Docker and the exact pinned Platform checkout are required. Set
 Pass multiple groups as separate arguments, for example
 `tools/qualification/node_boot/cloud_run.sh core f6`. The Cloud runner uses
 the bundled environment, runs every group sequentially in the same checkout
-and inherits `OTERYN_E2E_CREATURE_BATCH` for `creature_sweep`. It prints a
-summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
+and inherits the batch selectors for these opt-in groups:
+
+- `creature_sweep` uses `OTERYN_E2E_CREATURE_BATCH=start:len`.
+- `transition_sweep` uses `OTERYN_E2E_TRANSITION_SWEEP_BATCH=start:len` (default `0:3`).
+  It selects from the key-sorted full World census of authored transitions and
+  placed floor changes, ladders, holes, and doors. Its `TS.*` rows report
+  native wire outcomes with `mode=seeded` for fixture prerequisites.
+
+The runner prints a summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
 at the path reported on stderr. It exits nonzero if any group fails.
 
 ## Parallel stacks, the single-row loop and diagnostics

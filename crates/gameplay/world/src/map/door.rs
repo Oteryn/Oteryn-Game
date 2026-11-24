@@ -82,6 +82,33 @@ impl Door {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DoorStates(Arc<[u64]>);
 
+/// The authored door family and pose, independent of placement admission or Channel state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AuthoredDoorFamily {
+    Plain,
+    Key { locked: bool },
+    Level,
+    Quest,
+}
+
+/// Classifies the original appearance, including a door sealed by its placement binding.
+pub fn authored_door(appearance: u32) -> Option<(AuthoredDoorFamily, bool)> {
+    use super::door_registry::{closed_of, key_door_of, level_door_of, open_of, quest_door_of};
+    let open = closed_of(appearance);
+    let closed = open.unwrap_or(appearance);
+    let family = if let Some((_, locked)) = key_door_of(closed) {
+        AuthoredDoorFamily::Key { locked }
+    } else if level_door_of(closed).is_some() {
+        AuthoredDoorFamily::Level
+    } else if quest_door_of(closed).is_some() {
+        AuthoredDoorFamily::Quest
+    } else {
+        open_of(closed)?;
+        AuthoredDoorFamily::Plain
+    };
+    Some((family, open.is_some()))
+}
+
 /// A closed authored door of one of the ordinary, non-quest families.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AuthoredClosedDoor {
