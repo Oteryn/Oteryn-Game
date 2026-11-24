@@ -32,6 +32,7 @@ pub(in crate::durability) struct ValueWrite<'a> {
 pub(super) async fn apply_value(
     tx: &mut Tx<'_>,
     node: &NodeIncarnationProof,
+    opening_digest: Option<&[u8; 32]>,
     write: ValueWrite<'_>,
 ) -> Result<()> {
     let mut lines = Vec::with_capacity(write.plan.lines.len());
@@ -59,13 +60,20 @@ pub(super) async fn apply_value(
         "balance_after":write.plan.balance,"escrow_before":write.plan.lines.first().map_or(write.plan.escrow,|l|l.escrow_before),
         "escrow_after":write.plan.escrow,"event":text(&event)});
     let fact = node.fact();
-    sqlx::query("SELECT game_house_value_apply($1,encode($2,'hex')::uuid,$3::text::numeric,$4,$5)")
+    let statement = if opening_digest.is_some() {
+        "SELECT game_house_first_bid_apply($1,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6)"
+    } else {
+        "SELECT game_house_value_apply($1,encode($2,'hex')::uuid,$3::text::numeric,$4,$5)"
+    };
+    let mut query = sqlx::query(statement)
         .bind(p)
         .bind(fact.node_id().as_bytes().as_slice())
         .bind(fact.registration_revision().to_string())
         .bind(node.sql_possession_secret())
-        .bind(envelope)
-        .execute(&mut **tx)
-        .await?;
+        .bind(envelope);
+    if let Some(digest) = opening_digest {
+        query = query.bind(digest.as_slice());
+    }
+    query.execute(&mut **tx).await?;
     Ok(())
 }

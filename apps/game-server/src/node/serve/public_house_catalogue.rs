@@ -1,4 +1,4 @@
-//! Public read-model metadata only; the checked map determines active physical houses.
+//! The checked map determines active physical houses for activation and public metadata.
 use super::*;
 use crate::durability::public_projections::house_catalogue::{
     PublicHouseCatalogue, PublicHouseMetadata,
@@ -40,6 +40,13 @@ struct EngineHouse {
     revision: String,
 }
 #[derive(Deserialize)]
+struct Entrance {
+    x: u16,
+    y: u16,
+    z: i8,
+}
+
+#[derive(Deserialize)]
 struct House {
     identity: Identity,
     name: String,
@@ -50,16 +57,13 @@ struct House {
     rent_gold: u64,
     provenance: Provenance,
     tiles: Vec<[u16; 3]>,
+    entrance: Entrance,
     #[serde(default)]
     retired: bool,
 }
 fn metadata(map: &crate::map::boot::BundleWorld) -> Result<Vec<PublicHouseMetadata>, ()> {
     // House catalogue owner contract §3: names/town/size/beds/rent are committed
     // client facts; engine house ids are a source join only, never public identity.
-    let mut expected = map.facts().house_ids().collect::<BTreeSet<_>>();
-    let mut keys = BTreeSet::new();
-    let mut source_ids = BTreeSet::new();
-    let mut records = Vec::new();
     let mut digest = Sha256::new();
     digest.update(b"oteryn:public-house-catalogue:v2\0");
     digest.update(map.map_revision().as_bytes());
@@ -71,6 +75,89 @@ fn metadata(map: &crate::map::boot::BundleWorld) -> Result<Vec<PublicHouseMetada
         .iter()
         .map(|b| format!("{b:02x}"))
         .collect();
+    qualified_houses(map)?
+        .into_iter()
+        .map(|h| {
+            if !crate::native_admission_source::public_projections::projection_name_valid(&h.name)
+                || h.size_sqm == 0
+                || h.rent_gold == 0
+                || h.rent_gold > i64::MAX as u64
+            {
+                return Err(());
+            }
+            Ok(PublicHouseMetadata {
+                house_key: h.identity.key,
+                name: h.name,
+                kind: h.kind,
+                town: h.town.key,
+                size_sqm: h.size_sqm,
+                beds: h.beds,
+                rent_gold: h.rent_gold,
+                content_digest: digest.clone(),
+            })
+        })
+        .collect()
+}
+
+pub(super) async fn activate_properties(
+    root: &DurabilityRoot,
+    node: &NodeIncarnationProof,
+    material: &Material,
+    generation: u64,
+    pin: &oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    map: &crate::map::boot::BundleWorld,
+) -> Result<(), super::BootError> {
+    let error = || super::BootError::ContentActivation("house property catalogue");
+    let entries = qualified_houses(map)
+        .map_err(|_| error())?
+        .into_iter()
+        .map(|house| {
+            serde_json::json!({
+                "house_key": house.identity.key,
+                "kind": house.kind,
+                "rent_gold": house.rent_gold,
+            })
+        })
+        .collect();
+    root.activate_house_catalogue(
+        node,
+        crate::durability::house_ownership::HouseCatalogueActivation {
+            world: material.world,
+            channel: material.channel,
+            generation,
+            sequence: pin.activation_sequence(),
+            digest: pin.server_artifact_digest(),
+            entries,
+        },
+    )
+    .await
+    .map_err(|_| error())
+}
+
+fn entrance_matches(map: &crate::map::boot::BundleWorld, entrance: &Entrance, house: u32) -> bool {
+    let Entrance { x, y, z } = *entrance;
+    if !(0..=15).contains(&z) {
+        return false;
+    }
+    [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        .into_iter()
+        .filter_map(|(dx, dy)| {
+            Some(crate::map::overlay::TilePos {
+                x: x.checked_add_signed(dx)?,
+                y: y.checked_add_signed(dy)?,
+                floor: -z,
+            })
+        })
+        .filter(|&tile| map.facts().house_door(tile, house).is_some())
+        .count()
+        == 1
+}
+
+fn qualified_houses(map: &crate::map::boot::BundleWorld) -> Result<Vec<House>, ()> {
+    let mut expected = map.facts().house_ids().collect::<BTreeSet<_>>();
+    let mut keys = BTreeSet::new();
+    let mut source_ids = BTreeSet::new();
+    let mut records = Vec::new();
     for raw in SHARDS {
         let shard: Shard = serde_json::from_str(raw).map_err(|_| ())?;
         for h in shard.houses {
@@ -87,7 +174,7 @@ fn metadata(map: &crate::map::boot::BundleWorld) -> Result<Vec<PublicHouseMetada
                 continue;
             }
             // A donor numeric id alone cannot select metadata for another physical address.
-            if !h.tiles.iter().any(|[x, y, z]| {
+            let layout_matches = h.tiles.iter().any(|[x, y, z]| {
                 i8::try_from(*z).ok().filter(|z| *z <= 15).is_some_and(|z| {
                     map.facts().house_id(crate::map::overlay::TilePos {
                         x: *x,
@@ -95,35 +182,22 @@ fn metadata(map: &crate::map::boot::BundleWorld) -> Result<Vec<PublicHouseMetada
                         floor: -z,
                     }) == Some(source.house_id)
                 })
-            }) {
+            });
+            // The catalogue's Crystal entrance also binds the six source
+            // houses whose official client layouts describe swapped addresses.
+            if !layout_matches && !entrance_matches(map, &h.entrance, source.house_id) {
                 return Err(());
             }
             if h.retired {
                 continue;
             }
-            if !crate::native_admission_source::public_projections::projection_name_valid(&h.name)
-                || h.size_sqm == 0
-                || h.rent_gold == 0
-                || h.rent_gold > i64::MAX as u64
-            {
-                return Err(());
-            }
-            records.push(PublicHouseMetadata {
-                house_key: h.identity.key,
-                name: h.name,
-                kind: h.kind,
-                town: h.town.key,
-                size_sqm: h.size_sqm,
-                beds: h.beds,
-                rent_gold: h.rent_gold,
-                content_digest: digest.clone(),
-            });
+            records.push(h);
         }
     }
     if !expected.is_empty() {
         return Err(());
     }
-    records.sort_unstable_by(|a, b| a.house_key.cmp(&b.house_key));
+    records.sort_unstable_by(|a, b| a.identity.key.cmp(&b.identity.key));
     Ok(records)
 }
 

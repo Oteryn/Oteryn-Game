@@ -90,20 +90,36 @@ pub(super) async fn bid_in_transaction(
     if property.try_get::<&str, _>("kind")? == "guildhall" {
         return Err(HouseOwnershipError::Ineligible);
     }
-    // Opening cannot be authorized by an anchor. The bundle lane supplies the
-    // qualified acquisition catalogue together with accepted runtime entry/exit.
-    if property.try_get::<i16, _>("state")? == 1 {
+    if property.try_get::<Vec<u8>, _>("content_digest")? != request.content_digest {
         return Err(HouseOwnershipError::CatalogueUnavailable);
     }
-    if property.try_get::<i16, _>("state")? != 2 {
-        return Err(HouseOwnershipError::AuctionClosed);
+    let state = property.try_get::<i16, _>("state")?;
+    if state == 1
+        && (!property.try_get::<bool, _>("qualified")? || property.try_get::<bool, _>("fenced")?)
+    {
+        return Err(HouseOwnershipError::CatalogueUnavailable);
     }
-    let auction=sqlx::query("SELECT uuid_send(auction_id) AS auction,first_rent,(extract(epoch FROM ends_at)*1000000)::bigint AS end_us,next_order FROM game_house_auction_lock(encode($1,'hex')::uuid,$2,NULL)")
-        .bind(world.as_bytes().as_slice()).bind(&request.house_key).fetch_optional(&mut **tx).await?
-        .ok_or(HouseOwnershipError::AuctionClosed)?;
-    let auction_id = uuid(&auction, "auction")?;
     let now = clock(tx).await?;
-    let end = bid_deadline(now, Some(auction.try_get("end_us")?))?;
+    let (auction_id, first_rent, end, next_order) = match state {
+        1 => (
+            request.operation_id,
+            gold(&property, "rent_gold")?,
+            bid_deadline(now, None)?,
+            1,
+        ),
+        2 => {
+            let auction = sqlx::query("SELECT uuid_send(auction_id) AS auction,first_rent,(extract(epoch FROM ends_at)*1000000)::bigint AS end_us,next_order FROM game_house_auction_lock(encode($1,'hex')::uuid,$2,NULL)")
+                .bind(world.as_bytes().as_slice()).bind(&request.house_key).fetch_optional(&mut **tx).await?
+                .ok_or(HouseOwnershipError::AuctionClosed)?;
+            (
+                uuid(&auction, "auction")?,
+                gold(&auction, "first_rent")?,
+                bid_deadline(now, Some(auction.try_get("end_us")?))?,
+                gold(&auction, "next_order")?,
+            )
+        }
+        _ => return Err(HouseOwnershipError::AuctionClosed),
+    };
     account_lock(tx, &account, world.as_bytes()).await?;
     let competing: bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_bids WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND state=1 AND guild_id IS NULL AND auction_id<>encode($3,'hex')::uuid)")
         .bind(account.as_slice()).bind(world.as_bytes().as_slice()).bind(auction_id.as_slice()).fetch_one(&mut **tx).await?;
@@ -139,7 +155,6 @@ pub(super) async fn bid_in_transaction(
         .map(|r| gold(r, "escrow_gold"))
         .transpose()?
         .unwrap_or(0);
-    let first_rent = gold(&auction, "first_rent")?;
     let [balance] = super::super::bank::lock_balances(tx, world, &[account]).await?[..] else {
         return Err(HouseOwnershipError::InvalidInput);
     };
@@ -152,7 +167,7 @@ pub(super) async fn bid_in_transaction(
     )?;
     let reached = match old {
         Some(old) if gold(old, "maximum")? == request.maximum => gold(old, "reached_order")?,
-        _ => gold(&auction, "next_order")?,
+        _ => next_order,
     };
     let candidate = eligibility::read(
         tx,
@@ -172,6 +187,7 @@ pub(super) async fn bid_in_transaction(
     apply_value(
         tx,
         node,
+        (state == 1).then_some(&request.content_digest),
         ValueWrite {
             operation: request.operation_id,
             auction: auction_id,

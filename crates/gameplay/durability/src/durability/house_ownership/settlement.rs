@@ -154,6 +154,7 @@ pub(super) async fn settle_in_transaction(
         apply_value(
             tx,
             node,
+            None,
             ValueWrite {
                 operation,
                 auction: request.auction,

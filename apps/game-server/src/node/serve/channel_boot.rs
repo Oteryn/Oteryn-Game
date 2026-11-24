@@ -109,6 +109,17 @@ pub(super) async fn prepare_channel(
         ),
         None => (channel_pin, movement_cells),
     };
+    if let Some(world) = &bundle {
+        public_house_catalogue::activate_properties(
+            root,
+            proof,
+            material,
+            generation,
+            &channel_pin,
+            world,
+        )
+        .await?;
+    }
     // BUNDLE-COMBAT-ENABLE-1: player auto-attack and native combat casts read the qualified
     // room; a bundle World serves them the room's bundle view, whose identities are the bundle
     // pin's. Every other `qualified_room` consumer stays closed for a bundle World (§1.2).

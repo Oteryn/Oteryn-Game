@@ -1,8 +1,9 @@
 //! HOUSE-1a transaction participants. The caller retains the Premium gate's
 //! transaction, recovery/admission locks and its commit/rollback responsibility.
-//! Opening awaits D1383's qualified catalogue producer: a VACANT row grants nothing.
+//! Fresh auctions require proof of registration by the active bundle catalogue.
 
 mod bid;
+mod catalogue;
 pub(super) mod eligibility;
 mod guildhall;
 mod premium;
@@ -14,6 +15,7 @@ use oteryn_gameplay_housing::house_auction::AuctionError;
 use sqlx::{Postgres, Row, Transaction};
 
 pub use bid::HouseBidRequest;
+pub use catalogue::HouseCatalogueActivation;
 pub use settlement::HouseSettlementRequest;
 
 #[derive(Debug)]
@@ -97,7 +99,7 @@ async fn lock_property(
     world: &[u8; 16],
     house: &str,
 ) -> Result<sqlx::postgres::PgRow> {
-    sqlx::query("SELECT kind,state,revision::text,ownership_generation::text,content_digest FROM game_house_property_lock(encode($1,'hex')::uuid,$2)")
+    sqlx::query("SELECT kind,state,revision::text,ownership_generation::text,content_digest,rent_gold,content_fence_operation IS NOT NULL AS fenced,EXISTS(SELECT 1 FROM game_house_catalogue_membership m WHERE m.world_id=p.world_id AND m.house_key=p.house_key AND m.content_digest=p.content_digest) AS qualified FROM game_house_property_lock(encode($1,'hex')::uuid,$2) p")
         .bind(world.as_slice()).bind(house).fetch_optional(&mut **tx).await?
         .ok_or(HouseOwnershipError::CatalogueUnavailable)
 }
