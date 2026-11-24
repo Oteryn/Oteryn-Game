@@ -483,6 +483,7 @@ fn scenario_with_bootstrap(
                 .bind(sqlx::types::Uuid::from_bytes(*world.as_bytes()))
                 .bind(sqlx::types::Uuid::from_bytes(*channel.as_bytes()))
                 .bind(&digest)
+                .bind(&digest)
                 .fetch_one(&harness.pool)
                 .await?;
             assert!(initialized);
