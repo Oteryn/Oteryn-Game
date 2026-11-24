@@ -140,9 +140,11 @@ Pass multiple groups as separate arguments, for example
 the bundled environment, runs every group sequentially in the same checkout
 and inherits `OTERYN_E2E_CREATURE_BATCH` for `creature_sweep` and
 `OTERYN_E2E_NPC_SWEEP_BATCH=start:len` for `npc_sweep` (default `0:3`). Both
-sweeps require explicit selection. The NPC sweep batches live placements by NPC key and placement key, reports
-unplaced definitions in a separate pinned Crystal placement census, and emits
-`NS.<npc>.<step>` evidence for placements, dialogue, offers and services. It prints a
+sweeps require explicit selection. The NPC sweep batches key-sorted NPCs with
+placements and tests every placement for each selected NPC. It uses a seeded
+fixture and checks Premium through the Platform snapshot. It reports unplaced
+definitions against the pinned Crystal placement data and emits
+`NS.<npc>.p<index>.<step>` live evidence. It prints a
 summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
 at the path reported on stderr. It exits nonzero if any group fails.
 

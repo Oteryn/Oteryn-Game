@@ -111,7 +111,8 @@ game_platform_start() {
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == native_reference && "$NODE_BOOT_WORLD" == 1 ]]; then
     reference_accounts=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID")
   fi
-  python3 "$GAME_SOURCE/tools/qualification/game_platform/prepare.py" "$WORK" "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID" \
+  PLATFORM_BUILD_REVISION="$(git -C "$PLATFORM_SOURCE" rev-parse HEAD)" \
+    python3 "$GAME_SOURCE/tools/qualification/game_platform/prepare.py" "$WORK" "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID" \
     "$WORLD_ID" "$CHANNEL_ID" "$FRESH_PUBLIC_HEX" "$RECOVERY_PUBLIC_HEX" "$FRESH_KEY_ID" "$RECOVERY_KEY_ID" "${reference_accounts[@]}" \
     || prepare_code=$?
   [[ "$prepare_code" != 3 ]] || game_platform_fail platform real_portal_binary_missing

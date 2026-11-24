@@ -183,9 +183,33 @@ placements = sorted(
     key=lambda row: (row["npc"], row["identity"]["key"]),
 )
 regions = {tuple(map(int, region.split(","))) for region in baseline.split(";")}
-for row in placements[start:start + length]:
-    cell = row["cell"]
+npc_keys = set(sorted({row["npc"] for row in placements})[start:start + length])
+selected = [row for row in placements if row["npc"] in npc_keys]
+def add_region(cell):
     regions.add((cell["x"] // 256, cell["y"] // 256))
+
+for row in selected:
+    add_region(row["cell"])
+
+def declarations(family):
+    index = json.loads((root / "content" / family / "index.json").read_text())
+    for shard in index["shards"]:
+        for row in json.loads((root / shard).read_text())["records"]:
+            yield row["declaration"]
+
+travel_services = {
+    service["key"]
+    for npc in declarations("npcs/definitions") if npc["identity"]["key"] in npc_keys
+    for service in npc["services"] if service["key"].startswith("oteryn:service.travel.")
+}
+for service in declarations("services/travel"):
+    if service["identity"]["key"] in travel_services:
+        for route in service["routes"]:
+            add_region(route["destination"])
+corrections = root / "crates/gameplay/content/src/content/npc_catalogue/travel_routes.json"
+for route in json.loads(corrections.read_text()):
+    if route["key"].split("/", 1)[0] in travel_services and not route["held"]:
+        add_region(route)
 print(";".join(f"{x},{y}" for x, y in sorted(regions)))
 PY_NPC_REGIONS
 )"
@@ -626,6 +650,14 @@ if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "
   seed_mp_accounts
 fi
 
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && ",${NODE_BOOT_E2E_ONLY:-}," == *,npc_sweep,* ]]; then
+  portal_db="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["database"])' "$WORK/portal-report.json")"
+  [[ "$portal_db" =~ ^portal_e2e_[0-9a-f]{12}$ ]] || fail "NPC sweep Premium requires a disposable Platform database"
+  # world.rs assigns the final pair to the sweep, which uses its first account.
+  docker exec -i "$GP_PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U game_platform_admin -d "$portal_db" \
+    -v accounts="${EXTRA_WORLD_ACCOUNTS[4]}" < "$GAME_SOURCE/tools/qualification/node_boot/npc_sweep_premium.sql"
+fi
+
 # Shipped binaries and the SEAM client harness.
 if [[ -z "$NODE_BOOT_LIBTEST" ]]; then
   cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
@@ -773,6 +805,25 @@ secret_to "$SERVICE_UID" "$WP5_PKI/client.key" "$BASE/node/secrets/platform-clie
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.crt" "$BASE/node/secrets/gameplay.crt"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.key" "$BASE/node/secrets/gameplay.key"
 
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && ",${NODE_BOOT_E2E_ONLY:-}," == *,npc_sweep,* ]]; then
+  mapfile -t premium_peer < <(python3 - "$WORK/portal-report.json" <<'PY_PREMIUM'
+import json, sys
+with open(sys.argv[1]) as source:
+    report = json.load(source)
+client = report["clients"]["premium"]
+print(report["baseUrls"]["internal"], report["caFile"], client["cert"], client["key"], sep="\n")
+PY_PREMIUM
+  )
+  [[ ${#premium_peer[@]} == 4 ]] || fail "Platform Premium peer configuration"
+  (umask 077; cat "${premium_peer[2]}" "${premium_peer[3]}" > "$WORK/premium-client.pem")
+  secret_to "$SERVICE_UID" "$WORK/premium-client.pem" "$BASE/node/secrets/premium-client.pem"
+  rm -- "$WORK/premium-client.pem"
+  secret_to "$SERVICE_UID" "${premium_peer[1]}" "$BASE/node/secrets/premium-ca.pem"
+  NODE_GAMEPLAY_ENV+=("OTERYN_PREMIUM_SNAPSHOT_URL=${premium_peer[0]}"
+    "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/premium-client.pem"
+    "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/premium-ca.pem")
+fi
+
 cat > "$WORK/ops.toml" <<TOML
 [operator]
 state_directory = "$BASE/state"
@@ -869,6 +920,13 @@ start_x = 32369
 start_y = 32238
 start_floor = 7''')
 PY_WORLD
+    if [[ "$NODE_BOOT_LIFECYCLE" == native_reference && ",${NODE_BOOT_E2E_ONLY:-}," == *,npc_sweep,* ]]; then
+      cat >> "$WORK/node.toml" <<'TOML'
+[premium_activation]
+activation_id = "node-boot-fixture-premium"
+switch_over_us = 1
+TOML
+    fi
   fi
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
     game_platform_config "$WORK/node.toml"

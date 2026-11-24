@@ -10,7 +10,10 @@
 //! crates/gameplay/progression/src/promotion.rs:6.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef, client_runtime::npc_shop};
-use oteryn_gameplay_content::content::blessing_catalogue::BlessingCatalogue;
+use oteryn_gameplay_content::content::{
+    blessing_catalogue::BlessingCatalogue,
+    npc_catalogue::{quest_access, quest_shops, travel as travel_catalogue},
+};
 use oteryn_protocol_oteryn::npc_service::{
     self as wire, NpcConversation, NpcConversationState, NpcIntentDisposition, NpcTradeSide,
 };
@@ -320,7 +323,7 @@ enum Action<'a> {
     Keyword(Vec<&'a Keyword>),
     Missing(&'a str),
     Offer(&'a Offer, usize),
-    Route(&'a Route),
+    Route(&'a Service, &'a Route),
     Service(&'a Service),
 }
 
@@ -377,7 +380,7 @@ fn actions<'a>(census: &'a Census, npc: &'a Definition) -> Vec<(String, Action<'
         for route in &service.routes {
             steps.push((
                 format!("service.{name}.{}", token(&route.key)),
-                Action::Route(route),
+                Action::Route(service, route),
             ));
         }
     }
@@ -477,13 +480,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
         Err(error) => return Err(error.into()),
     };
     let census = Census::load(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))?;
-    let live = census.placements.iter().flat_map(|(key, placements)| {
-        placements
-            .iter()
-            .enumerate()
-            .map(move |(index, placement)| (key, index, placement))
-    });
-    let total = live.clone().count();
+    let total = census.placements.len();
     if start >= total {
         return Err(format!("{BATCH_VARIABLE} start {start} is beyond the {total} NPCs").into());
     }
@@ -514,33 +511,35 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
     };
     let mut tally = Tally::default();
     let started = std::time::Instant::now();
-    for (key, index, placement) in live.skip(start).take(selected) {
-        verdict::Harness::global().progress("npc-sweep-entry");
+    for (key, placements) in census.placements.iter().skip(start).take(selected) {
         let npc = census
             .npcs
             .get(key)
             .ok_or("placement NPC definition missing")?;
-        let short = format!("{}.p{index}", token(key.trim_start_matches("oteryn:npc.")));
-        let mut rows = Rows {
-            npc: &short,
-            lap: std::time::Instant::now(),
-            counts: Tally::default(),
-        };
         let steps = actions(&census, npc);
-        fixture
-            .sweep_placement(&mut rows, npc, placement, &steps)
-            .await;
-        rows.emit(
-            "full",
-            "entry_failed",
-            if rows.counts.fail == 0 {
-                Ok(())
-            } else {
-                Err("see NPC step rows".into())
-            },
-        );
-        tally.pass += rows.counts.pass;
-        tally.fail += rows.counts.fail;
+        for (index, placement) in placements.iter().enumerate() {
+            verdict::Harness::global().progress("npc-sweep-entry");
+            let short = format!("{}.p{index}", token(key.trim_start_matches("oteryn:npc.")));
+            let mut rows = Rows {
+                npc: &short,
+                lap: std::time::Instant::now(),
+                counts: Tally::default(),
+            };
+            fixture
+                .sweep_placement(&mut rows, npc, placement, &steps)
+                .await;
+            rows.emit(
+                "full",
+                "entry_failed",
+                if rows.counts.fail == 0 {
+                    Ok(())
+                } else {
+                    Err("see NPC step rows".into())
+                },
+            );
+            tally.pass += rows.counts.pass;
+            tally.fail += rows.counts.fail;
+        }
     }
     evidence(&format!(
         "npc_sweep summary total={total} start={start} selected={selected} rows_pass={} rows_fail={} seconds={:.3} mode=seeded",
@@ -638,6 +637,44 @@ fn nearby(world: &BundleWorld, at: TilePos) -> TestResult<TilePos> {
     Err("no walkable fixture tile within NPC talk range".into())
 }
 
+#[derive(Deserialize)]
+struct TravelGate {
+    key: String,
+    #[serde(default)]
+    yalahar_gate: bool,
+    yalahar_town_gate: Option<String>,
+    quest_gate: Option<String>,
+    quest_clear_gate: Option<String>,
+}
+
+fn travel_quest_owner(track: &str) -> TestResult<String> {
+    let owner = track
+        .strip_prefix("oteryn:quest-progress/")
+        .and_then(|track| track.rsplit_once('/'))
+        .map(|(owner, _)| owner)
+        .ok_or("travel prerequisite has no quest owner")?;
+    Ok(format!("oteryn:{owner}"))
+}
+
+// Match the travel owner's predicates in durability/npc_travel/paid.rs:95.
+fn travel_gate_tracks(service: &Service, route: &Route) -> TestResult<Vec<(String, i64)>> {
+    let gates: Vec<TravelGate> = serde_json::from_str(travel_catalogue::revision_material())?;
+    let key = format!("{}/{}", service.identity.key, route.key);
+    let mut tracks = Vec::new();
+    if let Some(gate) = gates.into_iter().find(|gate| gate.key == key) {
+        tracks.extend(gate.quest_gate.map(|track| (track, 1)));
+        tracks.extend(gate.quest_clear_gate.map(|track| (track, 0)));
+        if gate.yalahar_gate || gate.yalahar_town_gate.is_some() {
+            let town = gate.yalahar_town_gate.as_deref().unwrap_or("ab_dendriel");
+            tracks.push((
+                format!("oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/{town}"),
+                1,
+            ));
+        }
+    }
+    Ok(tracks)
+}
+
 impl Fixture<'_> {
     async fn release(&mut self) -> TestResult {
         self.focused = false;
@@ -655,8 +692,9 @@ impl Fixture<'_> {
     async fn seed(
         &self,
         at: TilePos,
+        npc: Option<&str>,
         sell: Option<&Offer>,
-        route: Option<&Route>,
+        route: Option<(&Service, &Route)>,
         required_gold: u64,
     ) -> TestResult {
         let mut database = sqlx::PgConnection::connect(self.clients.url).await?;
@@ -701,23 +739,67 @@ impl Fixture<'_> {
         let crystal = required_gold
             .saturating_sub(u64::try_from(carried_gold)?)
             .div_ceil(10_000);
-        if let Some(route) = route {
+        let mut tracks = BTreeMap::new();
+        if let Some(npc) = npc {
+            // The shared and retained trade gates read these same tracks under the root lock.
+            for shop in quest_shops::shops()?.iter().filter(|shop| shop.npc == npc) {
+                for requirement in shop.offers.iter().flat_map(|offer| &offer.requirements) {
+                    tracks.insert(
+                        requirement.track.clone(),
+                        (requirement.quest.clone(), requirement.minimum),
+                    );
+                }
+            }
+            if let Some(rule) = quest_access::rule(npc)? {
+                tracks.insert(rule.track.clone(), (rule.quest.clone(), rule.minimum));
+                // The retained trade gate also checks the completed state
+                // (crates/gameplay/durability/src/durability/npc_trade/quest_access.rs:44).
+                sqlx::query(
+                    "INSERT INTO game_character_quest_states
+                     (character_id,quest_key,pinned_content_revision,definition_hash,
+                      started_character_revision,completed_character_revision,committed_character_revision)
+                     SELECT character_id,$2,'npc-sweep-fixture',sha256(convert_to($2,'UTF8')),
+                            character_revision,character_revision,character_revision
+                     FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
+                     ON CONFLICT(character_id,quest_key) DO UPDATE SET
+                       completed_character_revision=EXCLUDED.completed_character_revision,
+                       committed_character_revision=EXCLUDED.committed_character_revision",
+                )
+                .bind(character)
+                .bind(&rule.quest)
+                .execute(&mut *tx)
+                .await?;
+            }
+        }
+        if let Some((service, route)) = route {
             for requirement in &route.required_quest_tracks {
-                let quest = requirement
-                    .track
-                    .strip_prefix("oteryn:quest-progress/")
-                    .and_then(|track| track.rsplit_once('/'))
-                    .map(|(quest, _)| format!("oteryn:{quest}"))
-                    .ok_or("travel prerequisite has no quest owner")?;
-                sqlx::query("INSERT INTO game_character_quest_tracks
-                    (character_id,track_key,quest_key,value,committed_character_revision)
-                    SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots
-                    WHERE character_id=encode($1,'hex')::uuid
-                    ON CONFLICT(character_id,track_key) DO UPDATE
-                    SET value=EXCLUDED.value,committed_character_revision=EXCLUDED.committed_character_revision
-                    WHERE game_character_quest_tracks.quest_key=EXCLUDED.quest_key")
-                    .bind(character).bind(&requirement.track).bind(quest).bind(requirement.minimum)
-                    .execute(&mut *tx).await?;
+                tracks.insert(
+                    requirement.track.clone(),
+                    (travel_quest_owner(&requirement.track)?, requirement.minimum),
+                );
+            }
+            for (track, value) in travel_gate_tracks(service, route)? {
+                tracks.insert(track.clone(), (travel_quest_owner(&track)?, value));
+            }
+        }
+        for (track, (quest, value)) in tracks {
+            let written = sqlx::query(
+                "INSERT INTO game_character_quest_tracks
+                 (character_id,track_key,quest_key,value,committed_character_revision)
+                 SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots
+                 WHERE character_id=encode($1,'hex')::uuid
+                 ON CONFLICT(character_id,track_key) DO UPDATE
+                 SET value=EXCLUDED.value,committed_character_revision=EXCLUDED.committed_character_revision
+                 WHERE game_character_quest_tracks.quest_key=EXCLUDED.quest_key",
+            )
+            .bind(character)
+            .bind(&track)
+            .bind(quest)
+            .bind(value)
+            .execute(&mut *tx)
+            .await?;
+            if written.rows_affected() != 1 {
+                return Err(format!("fixture quest track {track} belongs to another quest").into());
             }
         }
         if sell.is_some() || crystal != 0 {
@@ -770,8 +852,9 @@ impl Fixture<'_> {
     async fn enter(
         &mut self,
         at: TilePos,
+        npc: Option<&str>,
         sell: Option<&Offer>,
-        route: Option<&Route>,
+        route: Option<(&Service, &Route)>,
         required_gold: u64,
     ) -> TestResult<&mut DevClientSession> {
         let fund = !self.classed;
@@ -782,7 +865,7 @@ impl Fixture<'_> {
             );
         }
         self.release().await?;
-        self.seed(at, sell, route, required_gold).await?;
+        self.seed(at, npc, sell, route, required_gold).await?;
         self.classed = true;
         let client = connect_character(self.clients, 0x72, CHARACTER).await?;
         let observed = tile(client.world_spatial().actor_position)?;
@@ -806,7 +889,9 @@ impl Fixture<'_> {
         let setup = within_step(async {
             let there = placement.cell.native()?;
             let at = nearby(self.world, there)?;
-            let client = self.enter(at, None, None, 100).await?;
+            let client = self
+                .enter(at, Some(&npc.identity.key), None, None, 100)
+                .await?;
             let actor = visible_npc(client, there, &name).await?;
             Ok((at, actor))
         })
@@ -818,6 +903,7 @@ impl Fixture<'_> {
             }
             Err(error) => {
                 rows.emit("placement", "placement_or_fixture", Err(error));
+                rows.emit("premium", "blocked", Err("blocked-by-placement".into()));
                 for (step, _) in steps {
                     rows.emit(step, "blocked", Err("blocked-by-placement".into()));
                 }
@@ -825,6 +911,12 @@ impl Fixture<'_> {
                 return;
             }
         };
+        let premium = within_step(async {
+            let client = self.client.as_mut().ok_or("NPC fixture client missing")?;
+            current_premium(client).await
+        })
+        .await;
+        rows.emit("premium", "premium_snapshot", premium);
         let mut failures: Vec<&str> = Vec::new();
         for (step, action) in steps {
             verdict::Harness::global().progress("npc-sweep-step");
@@ -925,6 +1017,7 @@ impl Fixture<'_> {
                 let client = self
                     .enter(
                         at,
+                        None,
                         sell,
                         None,
                         if sell.is_none() { offer.unit_price } else { 0 },
@@ -936,14 +1029,16 @@ impl Fixture<'_> {
                 self.focused = focused && result.is_ok();
                 result
             }
-            Action::Route(route) => {
-                let client = self.enter(at, None, Some(route), route.price).await?;
+            Action::Route(service, route) => {
+                let client = self
+                    .enter(at, None, None, Some((service, route)), route.price)
+                    .await?;
                 talk(client, actor, "hi").await?;
                 travel(client, actor, route).await
             }
             Action::Service(service) => {
                 let fee = service_price(&service.identity.key).map_or(100, |(_, fee)| fee.max(100));
-                let client = self.enter(at, None, None, fee).await?;
+                let client = self.enter(at, None, None, None, fee).await?;
                 talk(client, actor, "hi").await?;
                 perform_service(client, actor, clients, service).await
             }
@@ -958,10 +1053,36 @@ impl Action<'_> {
             Self::Keyword(_) => "dialogue",
             Self::Missing(_) => "missing_binding",
             Self::Offer(..) => "shop_offer",
-            Self::Route(_) => "travel",
+            Self::Route(..) => "travel",
             Self::Service(_) => "service",
         }
     }
+}
+
+async fn current_premium(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::{character_info, premium_overview};
+
+    let reply = client
+        .session_mut()
+        .gated_command(
+            character_info::CAPABILITY_CHARACTER_INFO_V1,
+            character_info::COMMAND_TYPE_CHARACTER_INFO,
+            &[premium_overview::OPERATION],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("Premium overview refused: {:?}", reply.status).into());
+    }
+    let overview = premium_overview::Overview::decode(&reply.payload)
+        .ok_or("Premium overview returned malformed evidence")?;
+    if overview.state != premium_overview::State::Active || overview.valid_for_us == 0 {
+        return Err(format!(
+            "Platform Premium is not current: state={:?} authority_revision={}",
+            overview.state, overview.authority_revision
+        )
+        .into());
+    }
+    Ok(())
 }
 
 async fn visible_npc(
