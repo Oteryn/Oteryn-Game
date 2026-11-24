@@ -4618,12 +4618,38 @@ impl oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup
         revision: &str,
     ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
     {
+        self.project_equipment_policy(key, revision, true)
+    }
+
+    fn worn_equipment_policy(
+        &self,
+        key: &str,
+        revision: &str,
+    ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
+    {
+        self.project_equipment_policy(key, revision, false)
+    }
+}
+
+impl NativeGameplayState {
+    fn project_equipment_policy(
+        &self,
+        key: &str,
+        revision: &str,
+        require_eligibility: bool,
+    ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
+    {
         use super::ReferenceItemField;
         let policy = self.item_policy(key, revision)?;
         let semantics = &policy.record().semantics;
         let claims = [1, 2, 3, 4, 5, 6, 7, 8, 10]
             .into_iter()
-            .map(|slot| (slot, projected_equipment_claims(semantics, slot)))
+            .map(|slot| {
+                (
+                    slot,
+                    projected_equipment_claims(semantics, slot, require_eligibility),
+                )
+            })
             .collect();
         let capacity = match &semantics.container {
             ReferenceItemField::Known(container) => match container.capacity {
@@ -4643,6 +4669,7 @@ impl oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup
 fn projected_equipment_claims(
     semantics: &super::ReferenceItemSemantics,
     slot: u8,
+    require_eligibility: bool,
 ) -> Result<oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentClaims, &'static str> {
     use super::{ReferenceBaseVocation, ReferenceEquipmentSlot, ReferenceItemField};
     use oteryn_gameplay_domain::domain::equipment_policy_abi::{
@@ -4682,11 +4709,16 @@ fn projected_equipment_claims(
     let ReferenceItemField::Known(groups) = &pattern.mutually_exclusive_groups else {
         return Err(rejected("unknown equipment groups"));
     };
-    let ReferenceItemField::Known(level) = pattern.level else {
-        return Err(rejected("unknown equipment required level"));
-    };
-    let ReferenceItemField::Known(vocations) = &pattern.vocations else {
-        return Err(rejected("unknown equipment required vocations"));
+    let (level, vocations) = if require_eligibility {
+        let ReferenceItemField::Known(level) = pattern.level else {
+            return Err(rejected("unknown equipment required level"));
+        };
+        let ReferenceItemField::Known(vocations) = &pattern.vocations else {
+            return Err(rejected("unknown equipment required vocations"));
+        };
+        (level, vocations.as_slice())
+    } else {
+        (0, &[][..])
     };
     let mut occupied = vec![slot];
     for value in additional {
@@ -4740,7 +4772,7 @@ mod equipment_projection_tests {
         use ReferenceItemField::{Known, Unknown};
         let mut semantics: ReferenceItemSemantics =
             serde_json::from_str("{}").expect("unknown semantics");
-        assert!(projected_equipment_claims(&semantics, 5).is_err());
+        assert!(projected_equipment_claims(&semantics, 5, true).is_err());
         let pattern = ReferenceEquipmentPattern {
             pattern_id: 1,
             primary_slot: Known(ReferenceEquipmentSlot::Weapon),
@@ -4753,25 +4785,29 @@ mod equipment_projection_tests {
         semantics.equipment = Known(ReferenceItemEquipment {
             patterns: Known(vec![pattern.clone()]),
         });
-        let claims = projected_equipment_claims(&semantics, 5).expect("qualified weapon");
+        let claims = projected_equipment_claims(&semantics, 5, true).expect("qualified weapon");
         assert_eq!(claims.slots, vec![5, 6]);
         assert_eq!(claims.level, 20);
         assert_eq!(
             claims.vocations,
             vec![oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentBaseVocation::Paladin]
         );
-        assert!(projected_equipment_claims(&semantics, 6).is_err());
+        assert!(projected_equipment_claims(&semantics, 6, true).is_err());
         let mut incomplete = pattern.clone();
         incomplete.level = Unknown;
+        incomplete.vocations = Unknown;
         semantics.equipment = Known(ReferenceItemEquipment {
             patterns: Known(vec![incomplete]),
         });
-        assert!(projected_equipment_claims(&semantics, 5).is_err());
+        assert!(projected_equipment_claims(&semantics, 5, true).is_err());
+        let worn = projected_equipment_claims(&semantics, 5, false).expect("worn reservations");
+        assert_eq!(worn.slots, vec![5, 6]);
+        assert!(projected_equipment_claims(&semantics, 6, false).is_err());
         semantics.equipment = Known(ReferenceItemEquipment {
             patterns: Known(vec![pattern.clone(), pattern]),
         });
         assert_eq!(
-            projected_equipment_claims(&semantics, 5).err(),
+            projected_equipment_claims(&semantics, 5, true).err(),
             Some("equipment ambiguous source pattern")
         );
     }
@@ -4797,7 +4833,7 @@ mod equipment_projection_tests {
                 .expect("profile record");
             let semantics: ReferenceItemSemantics =
                 serde_json::from_value(record["semantics"].clone()).expect("semantics");
-            let claims = projected_equipment_claims(&semantics, 5).expect(key);
+            let claims = projected_equipment_claims(&semantics, 5, true).expect(key);
             assert_eq!((claims.slots, claims.level), (vec![5], 0), "{key}");
             assert!(claims.vocations.is_empty(), "{key}");
         }
