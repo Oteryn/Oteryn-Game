@@ -1401,13 +1401,10 @@ async fn check_weather(sweep: &mut Sweep<'_, '_>, area: &WeatherArea, rows: &mut
                     format!("no walkable fixture tile near weather anchor {anchor:?}")
                 })?;
             let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-            let answer = request_fixture_control(
-                session,
-                "--place-weather-player",
-                format!("{},{},{}", position.x, position.y, -position.floor),
-            )
-            .await?;
-            if answer != "placed" {
+            let floor = -position.floor;
+            let coordinates = format!("{},{},{floor}", position.x, position.y);
+            let answer = request_fixture_control(session, "--place-weather-player", coordinates).await?;
+            if answer != format!("placed {} {} {floor}", position.x, position.y) {
                 return Err("qualification fixture did not place the weather reader".into());
             }
             tokio::time::timeout(Duration::from_secs(15), async {

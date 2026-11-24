@@ -626,15 +626,26 @@ async fn leave_protection_zone(client: &mut DevClientSession, world: &BundleWorl
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let answer =
         request_fixture_control(session, "--place-sweep-player", "hunting-ground".into()).await?;
-    if answer != "placed" {
+    let fields: Vec<_> = answer.split_ascii_whitespace().collect();
+    let ["placed", x, y, floor] = fields.as_slice() else {
         return Err("qualification fixture did not place the sweep player".into());
+    };
+    let target = ActorPosition {
+        x: x.parse()?,
+        y: y.parse()?,
+        floor: floor.parse()?,
+    };
+    let anchor = crate::qualification_wild_spawn::SWEEP_HUNT_POSITION;
+    if target.floor != anchor.floor
+        || target.x.abs_diff(anchor.x).max(target.y.abs_diff(anchor.y)) > 8
+    {
+        return Err("qualification fixture placed the player outside the hunting area".into());
     }
-    let target = crate::qualification_wild_spawn::SWEEP_HUNT_POSITION;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(VISIBLE_SECONDS);
     tokio::time::timeout_at(deadline, async {
         loop {
             let here = client.world_spatial().actor_position;
-            if (here.x, here.y, here.floor) == (target.x, target.y, target.floor) {
+            if here == target {
                 if !roomy(tile(here)?) {
                     return Err(
                         "qualification fixture placed the player outside open ground".into(),

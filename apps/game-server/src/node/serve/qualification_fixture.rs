@@ -182,21 +182,52 @@ pub(super) async fn place_sweep_player(
             .positioned_player_for_session(session)
             .map_err(|_| "placement_actor_conflict")?
             .ok_or("session_unknown")?;
-        wild_spawn::static_cell_refusal(owners.room, target)
-            .map_err(|_| "placement_tile_refused")?;
-        if snapshot.position() != target {
-            if !runtime.native_summon_cell_free(target) {
+        let target = if request.starts_with(b"place-weather-player ") {
+            wild_spawn::static_cell_refusal(owners.room, target)
+                .map_err(|_| "placement_tile_refused")?;
+            if snapshot.position() != target && !runtime.native_summon_cell_free(target) {
                 return Err("placement_tile_occupied");
             }
+            target
+        } else {
+            let anchor = wild_spawn::SWEEP_HUNT_POSITION;
+            let valid_tile = |position| wild_spawn::static_cell_refusal(owners.room, position).is_ok();
+            // Search a fixed, bounded neighbourhood in the loaded World. A walkable
+            // player cell alone does not guarantee space for the adjacent spawn.
+            (0_i32..=8)
+                .flat_map(|radius| {
+                    (-radius..=radius).flat_map(move |dx| {
+                        (-radius..=radius)
+                            .filter(move |dy| dx.abs().max(dy.abs()) == radius)
+                            .map(move |dy| crate::foundation::MovementLocalPosition {
+                                x: anchor.x + dx,
+                                y: anchor.y + dy,
+                                floor: anchor.floor,
+                            })
+                    })
+                })
+                .find(|&cell| {
+                    valid_tile(cell)
+                        && wild_spawn::adjacent_cells(cell)
+                            .into_iter()
+                            .take(4)
+                            .filter(|&neighbor| valid_tile(neighbor))
+                            .count()
+                            >= 3
+                        && (snapshot.position() == cell || runtime.native_summon_cell_free(cell))
+                })
+                .ok_or("placement_no_open_tile")?
+        };
+        if snapshot.position() != target {
             runtime
                 .relocate_arena_player(actor, session, snapshot, target)
                 .map_err(|_| "placement_actor_fence")?;
         }
-        Ok("placed")
+        Ok(format!("placed {} {} {}", target.x, target.y, target.floor))
     }
     .await;
     match result {
-        Ok(placed) => placed.to_owned(),
+        Ok(placed) => placed,
         Err(reason) => spawn_rejected(reason),
     }
 }

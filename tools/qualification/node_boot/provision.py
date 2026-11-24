@@ -98,9 +98,9 @@ if __name__ == "__main__":
                 raise ValueError("invalid weather fixture coordinates")
             command = f"place-weather-player {args.session} {args.place_weather_player}"
         answer = _request(args.socket, command + "\n", 64)
-        if answer != b"placed\n":
+        if not re.fullmatch(rb"placed [0-9]+ [0-9]+ [0-9]+\n", answer):
             raise RuntimeError(f"qualification sweep placement refused: {bytes(answer)!r}")
-        print("placed")
+        print(answer.decode("ascii").rstrip("\n"))
     elif args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
     elif args.inspect_damage is not None:
