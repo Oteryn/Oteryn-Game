@@ -88,6 +88,12 @@ pub(super) async fn run(
             }
             let highest = before.iter().map(|(_, level)| *level).max().ok_or("no levels")?;
             if before.iter().any(|(_, level)| u64::from(*level) * 3 < u64::from(highest) * 2) { return Err(format!("GeneralStats={before:?};Crystal party.cpp:594 requires ceil(highest*2/3)").into()); }
+            // The MP profiles change vocation but keep the birth equipment. Equip the
+            // granted melee weapon before asking these non-sorcerers to hunt in melee range.
+            let axe = provisioning::item_reference(&provisioning::item_index()?, 3276)?;
+            for index in 0..bots.len() {
+                bots::equip_axe(&mut bots, index, axe).await?;
+            }
             underlevel_party(&mut bots, world).await?;
             bots::approach(&mut bots, 1, 0, world, false).await?;
             bots::approach(&mut bots, 2, 0, world, false).await?;
@@ -256,6 +262,13 @@ pub(super) async fn run(
     }
     if admitted {
         check("relog-xp", async {
+            // An interrupted hunt can leave live creatures refreshing the combat
+            // lock. Use ordinary movement to reach cells that admit logout.
+            for index in 0..bots.len() {
+                let path = bots::route_bot(&bots, index, world, |at| is_logout_rest_tile(world, at))?
+                    .ok_or_else(|| format!("hunter {index} has no reachable logout protection tile"))?;
+                bots::walk_bot(&mut bots, index, world, &path).await?;
+            }
             let mut saved = Vec::new();
             for bot in &mut bots { saved.push((stats(bot).await?.0, bot.client()?.join_snapshot().game_session_id)); }
             bots::relog_all(&mut bots).await?;

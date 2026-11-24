@@ -595,6 +595,78 @@ pub(super) async fn invite_accept(
     Ok(())
 }
 
+// Profile provisioning grants the axe to the backpack. Equip it through the
+// admitted client and confirm the separately published inventory update.
+pub(super) async fn equip_axe(
+    bots: &mut [Bot<'_, '_>],
+    index: usize,
+    axe: std::num::NonZeroU32,
+) -> TestResult {
+    let wielded = bots[index].client()?.inventory().is_some_and(|inventory| {
+        inventory
+            .equipment
+            .iter()
+            .any(|entry| entry.item.item_definition_ref == axe)
+    });
+    if !wielded {
+        let carried = bots[index].client()?.inventory().is_some_and(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .any(|entry| entry.item_definition_ref == axe)
+        });
+        if !carried {
+            return Err("provisioning did not publish a carried axe".into());
+        }
+        let equipped = bots[index]
+            .client()?
+            .session_mut()
+            .equip_item_definition(axe)
+            .await?;
+        if equipped.status != CommandStatus::Accepted
+            || equipped.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
+        {
+            let detail = bots[index].client()?.session_mut().last_refusal_detail();
+            let observed = bots[index].client()?.inventory().map(|inventory| {
+                let carried = inventory
+                    .entries
+                    .iter()
+                    .filter(|entry| entry.item_definition_ref == axe)
+                    .map(|entry| entry.count.get())
+                    .collect::<Vec<_>>();
+                format!(
+                    "equipment={:?};backpack={:?};axe_ref={axe};axe_direct_counts={carried:?}",
+                    inventory.equipment, inventory.main_backpack,
+                )
+            });
+            return Err(format!(
+                "axe equip refused:{equipped:?};refusal_detail={detail:?};observed_inventory={observed:?}"
+            )
+            .into());
+        }
+        // The result precedes the inventory StateDelta on the wire.
+        wait_observation(
+            bots,
+            tokio::time::Instant::now() + Duration::from_secs(5),
+            &format!("axe command {} publishes equipment", equipped.command_id),
+            |bots, _| {
+                Ok(bots[index]
+                    .session
+                    .as_ref()
+                    .and_then(|client| client.inventory())
+                    .is_some_and(|inventory| {
+                        inventory
+                            .equipment
+                            .iter()
+                            .any(|entry| entry.item.item_definition_ref == axe)
+                    }))
+            },
+        )
+        .await?;
+    }
+    Ok(())
+}
+
 pub(super) async fn attack_target(bot: &mut Bot<'_, '_>, target: Option<&EntityRef>) -> TestResult {
     let outcome = bot.client()?.session_mut().attack_target(target).await?;
     if outcome.status != CommandStatus::Accepted

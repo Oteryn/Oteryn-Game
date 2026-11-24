@@ -764,6 +764,15 @@ mod e2ef1 {
                     let at = tile(client.world_spatial().actor_position)?;
                     let ObjectKind::Teleport(expected) = object.kind else { return Err("missing authored teleport".into()) };
                     let direction = teleport_entry(world, at, object).ok_or("no automatic teleport entry edge")?;
+                    if at.floor != from.floor {
+                        // The approach can descend the ordinary staircase. Let that floor
+                        // exhaust settle before proving a new one from entering the portal.
+                        let approach_exhaust = tokio::time::Instant::now()
+                            + Duration::from_micros(crate::spell::STAIRHOP_MICROS);
+                        while tokio::time::Instant::now() < approach_exhaust {
+                            pump(client).await?;
+                        }
+                    }
                     walk_with_landings(client, &[direction], |origin, step| {
                         (origin == at && step == direction).then_some(expected)
                     }).await?;
@@ -1260,7 +1269,9 @@ mod e2ef1 {
         Ok(())
     }
 
-    fn inventory_signature(client: &DevClientSession) -> TestResult<Vec<(u32, u32, u32, u8)>> {
+    type InventorySignature = Vec<(u32, u32, u32, u8)>;
+
+    fn inventory_signature(client: &DevClientSession) -> TestResult<InventorySignature> {
         let inventory = client
             .inventory()
             .ok_or("movement inventory snapshot missing")?;
@@ -1305,7 +1316,8 @@ mod e2ef1 {
             if tokio::time::Instant::now() >= deadline {
                 return Err(format!("movement logout lock did not settle: {logout:?}").into());
             }
-            pump(client).await?;
+            client.service_liveness(Duration::from_millis(250)).await?;
+            client.take_events();
         }
     }
     /// M05 cleanup after its door checks (#3373): the doors leave the actor outside the
@@ -1338,15 +1350,10 @@ mod e2ef1 {
                 client.actor_vitals()
             ));
         }
-        let protection_zone = |cell: TilePos| {
-            world
-                .base()
-                .tile(cell.x, cell.y, cell.floor)
-                .is_some_and(|tile| tile.protection_zone())
-        };
-        if !protection_zone(here) {
-            let path = route(world, here, protection_zone)
-                .ok_or("no reachable protection zone to leave the fight")?;
+        let resting_tile = |cell| is_logout_rest_tile(world, cell);
+        if !resting_tile(here) {
+            let path = route(world, here, resting_tile)
+                .ok_or("no reachable protection zone that admits logout")?;
             evidence(&format!(
                 "E2EF1_LEAVE_FIGHT from={at:?} steps={}",
                 path.len()
@@ -1358,6 +1365,32 @@ mod e2ef1 {
         }
         Ok(())
     }
+
+    struct RestingLogout {
+        position: ActorPosition,
+        inventory: InventorySignature,
+        session: crate::foundation::GameSessionId,
+    }
+
+    async fn logout_at_rest(
+        client: &mut DevClientSession,
+        world: &BundleWorld,
+    ) -> TestResult<RestingLogout> {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+        tokio::time::timeout_at(deadline, leave_fight(client, world, deadline))
+            .await
+            .map_err(|_| "movement logout cleanup exceeded deadline reaching protection")??;
+        let saved = RestingLogout {
+            position: client.world_spatial().actor_position,
+            inventory: inventory_signature(client)?,
+            session: client.join_snapshot().game_session_id,
+        };
+        tokio::time::timeout_at(deadline, logout_by(client, deadline))
+            .await
+            .map_err(|_| "movement logout cleanup exceeded deadline awaiting logout")??;
+        Ok(saved)
+    }
+
     async fn m05_independent(
         clients: &SeamClients<'_>,
         world: &BundleWorld,
@@ -1371,23 +1404,14 @@ mod e2ef1 {
         if let Err(error) = &doors {
             evidence(&format!("E2EF1_GAP row=M05 phase=doors error={error}"));
         }
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-        let (saved, inventory, previous) = tokio::time::timeout_at(deadline, async {
-            leave_fight(&mut door_client, world, deadline).await?;
-            let saved = door_client.world_spatial().actor_position;
-            let inventory = inventory_signature(&door_client)?;
-            let previous = door_client.join_snapshot().game_session_id;
-            logout_by(&mut door_client, deadline).await?;
-            TestResult::Ok((saved, inventory, previous))
-        })
-        .await
-        .map_err(|_| "M05 fight cleanup exceeded the logout deadline")??;
+        let saved = logout_at_rest(&mut door_client, world).await?;
         drop(door_client);
         let mut fresh = connect_character(clients, 0xb4, 0).await?;
-        let durable = fresh.world_spatial().actor_position == saved
-            && fresh.join_snapshot().game_session_id != previous
-            && inventory_signature(&fresh)? == inventory;
-        let back = route(world, tile(saved)?, |at| at == origin).ok_or("M05 return route")?;
+        let durable = fresh.world_spatial().actor_position == saved.position
+            && fresh.join_snapshot().game_session_id != saved.session
+            && inventory_signature(&fresh)? == saved.inventory;
+        let back =
+            route(world, tile(saved.position)?, |at| at == origin).ok_or("M05 return route")?;
         walk(&mut fresh, world, &back).await?;
         logout(&mut fresh).await?;
         if !durable {
@@ -1427,13 +1451,12 @@ mod e2ef1 {
                 ..Checks::default()
             };
             if *row == "M05" {
-                // M07 keeps its fresh primary session and the rope on that character.
-                // Door combat and logout affect only the separate M05 admission.
-                let result = super::super::full_e2ef4::keep_alive(
-                    &mut client,
-                    m05_independent(clients, world, &objects, &mut checks, &mut revisions),
-                )
-                .await;
+                // Retire the primary session before the door journey so a parked
+                // actor cannot take damage while waiting for M07.
+                let saved = logout_at_rest(&mut client, world).await?;
+                drop(client);
+                let result =
+                    m05_independent(clients, world, &objects, &mut checks, &mut revisions).await;
                 if let Err(error) = &result {
                     evidence(&format!("E2EF1_GAP row=M05 error={error}"));
                 }
@@ -1446,6 +1469,19 @@ mod e2ef1 {
                     &result,
                     result.is_ok(),
                 );
+                client = connect_world(clients, 0x94).await?;
+                if client.world_spatial().actor_position != saved.position
+                    || client.join_snapshot().game_session_id == saved.session
+                    || inventory_signature(&client)? != saved.inventory
+                {
+                    return Err(
+                        "movement primary fresh admission changed saved position or inventory"
+                            .into(),
+                    );
+                }
+                let back = route(world, tile(saved.position)?, |at| at == origin)
+                    .ok_or("movement primary has no return route")?;
+                walk(&mut client, world, &back).await?;
                 continue;
             }
             let mut peer = if matches!(*row, "M01" | "M04") {

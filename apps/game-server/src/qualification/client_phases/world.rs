@@ -899,6 +899,13 @@ async fn walk_with_landings(
     Ok(())
 }
 
+pub(super) fn is_logout_rest_tile(world: &BundleWorld, at: TilePos) -> bool {
+    world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .is_some_and(|tile| tile.protection_zone() && !tile.no_logout())
+}
+
 pub(super) async fn logout_retrying_busy(
     client: &mut oteryn_dev_client::DevClientSession,
 ) -> TestResult<(
