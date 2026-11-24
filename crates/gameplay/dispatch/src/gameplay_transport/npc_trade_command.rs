@@ -558,7 +558,10 @@ fn step_of(
             gold: trade.total_gold_units,
         }),
         Err(NpcTradeError::Unavailable(_)) => Err(Box::new(NpcTradeStep::Unknown)),
-        Err(_) => Err(Box::new(NpcTradeStep::rejected())),
+        Err(error) => {
+            eprintln!("NPC trade commit refused: {error:?}");
+            Err(Box::new(NpcTradeStep::rejected()))
+        }
     }
 }
 

@@ -433,13 +433,31 @@ async fn shop(row: &mut Row, client: &mut DevClientSession, actor: EntityRef) ->
         return Err("greet: Sam did not open the native conversation".into());
     }
     row.pass("greet", "native-conversation-open-for-Sam");
-    super::client_row_e01::talk(client, actor, "trade", None).await?;
+    // Trade can open a window without emitting a second conversation delta.
+    tokio::time::sleep(Duration::from_millis(260)).await;
+    let trade = runtime::talk(
+        client.session_mut(),
+        &wire::NpcTalkIntent {
+            npc_actor: actor,
+            text: "trade".into(),
+        },
+    )
+    .await?;
+    if trade != wire::NpcIntentDisposition::Ok {
+        return Err(format!("Sam refused trade: {trade:?}").into());
+    }
     let delta = client
         .session_mut()
         .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
         .await?;
-    let window =
-        wire::decode_npc_trade_window(&delta.payload).map_err(|e| format!("shop window: {e:?}"))?;
+    let details = client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+    let window = wire::decode_npc_trade_window_for(&delta.payload, details)
+        .map_err(|e| format!("shop window: {e:?}"))?;
+    if window.open.map(|(npc, _)| npc) != Some(actor) {
+        return Err("trade window did not open for Sam".into());
+    }
     let (index, offer) = window
         .offers
         .iter()

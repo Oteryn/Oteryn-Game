@@ -74,3 +74,13 @@ fn npc_shop_postgres_sell_all_can_include_equipped_items() -> TestResult {
         scenario_for(ShopScenario::EquippedSale)
     })
 }
+
+#[test]
+fn npc_shop_postgres_sam_look_then_buy() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("sam-look-buy", || {
+        scenario_for(ShopScenario::SamBuy)
+    })
+}
