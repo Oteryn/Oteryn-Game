@@ -867,6 +867,41 @@ async fn fight(
     Ok(position)
 }
 
+async fn verify_experience(
+    client: &mut DevClientSession,
+    creature: &str,
+    base_experience: u64,
+    selection: &oteryn_protocol_oteryn::daily_boost::DailyBoostView,
+    (before, level): (u64, u32),
+) -> Result<u64, Failure> {
+    // The free-account fixture starts with full stamina and the leader contributes the damage.
+    let pool = client_daily_boost::boosted_xp(base_experience, creature, selection)
+        .map_err(|error| failure("content", error))?;
+    let pool = i64::try_from(pool).map_err(|error| failure("content", error))?;
+    let expected = oteryn_gameplay_characters::hunting_experience::hunting_experience(
+        pool, 0, 0, 2520, false, level,
+    )
+    .map_err(|error| failure("content", format!("hunting_experience: {error:?}")))?;
+    let expected = u64::try_from(expected).map_err(|error| failure("content", error))?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    loop {
+        let (after, _, _) = creature_sweep::read_stats(client)
+            .await
+            .map_err(|error| failure("protocol", error))?;
+        if after.checked_sub(before) == Some(expected) {
+            return Ok(expected);
+        }
+        if after.saturating_sub(before) > expected || tokio::time::Instant::now() >= deadline {
+            return Err(failure(
+                "xp_mismatch",
+                format!("before:{before};after:{after};expected-delta:{expected}"),
+            ));
+        }
+        verdict::Harness::global().progress("boss-sweep-xp");
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+}
+
 async fn chest(client: &mut DevClientSession) -> TestResult<panel::RewardChest> {
     let response = client
         .session_mut()
@@ -1321,6 +1356,12 @@ async fn held_journey(
         .filter(|entity| entity.kind == EntityKind::Corpse)
         .map(|entity| entity.entity)
         .collect();
+    let baseline: TestResult<_> = async {
+        let selection = client_daily_boost::reward_selection(player).await?;
+        let (experience, level, _) = creature_sweep::read_stats(player).await?;
+        Ok((selection, (experience, level)))
+    }
+    .await;
     let position = fight(player, target)
         .await
         .map_err(|error| failure("combat", error))?;
@@ -1331,7 +1372,10 @@ async fn held_journey(
         .await
         .map_err(|error| failure("corpse_unconfirmed", error))?;
     rows.emit(None, "target-removed-with-new-pinned-corpse");
-    rows.emit(None, &loot);
+    let (selection, before) = baseline.map_err(|error| failure("protocol", error))?;
+    let expected =
+        verify_experience(player, creature, definition.experience, &selection, before).await?;
+    rows.emit(None, &format!("{loot};xp:{expected}"));
     Ok(())
 }
 
@@ -1607,25 +1651,15 @@ async fn journey(
     }
     rows.emit(None, "target-removal-with-return-and-credited-death");
 
-    let reward_result = async {
-        // The free-account fixture has full stamina and only the leader attacks. The server's hunting XP
-        // owner applies the observed boosted creature selection before stamina scaling.
-        let pool = client_daily_boost::boosted_xp(definition.experience, creature, &selection)
-            .map_err(|error| failure("content", error))?;
-        let pool = i64::try_from(pool).map_err(|error| failure("content", error))?;
-        let expected = oteryn_gameplay_characters::hunting_experience::hunting_experience(
-            pool, 0, 0, 2520, false, level,
+    let reward_result: Result<_, Failure> = async {
+        let expected = verify_experience(
+            leader,
+            creature,
+            definition.experience,
+            &selection,
+            (before_xp, level),
         )
-        .map_err(|error| failure("content", format!("hunting_experience: {error:?}")))?;
-        let (after_xp, _, _) = creature_sweep::read_stats(leader)
-            .await
-            .map_err(|error| failure("protocol", error))?;
-        if after_xp.checked_sub(before_xp) != u64::try_from(expected).ok() {
-            return Err(failure(
-                "xp_mismatch",
-                format!("before:{before_xp};after:{after_xp};expected-delta:{expected}"),
-            ));
-        }
+        .await?;
         if definition.reward_boss {
             super::full_row_w03::approach_chest(leader, clients)
                 .await
