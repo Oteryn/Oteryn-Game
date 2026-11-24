@@ -233,6 +233,8 @@ fn throwing_consumption(key: &str) -> Option<Consumption> {
         "oteryn:item.tibia.i7368" => Consumption::Break(33),
         "oteryn:item.tibia.i21158" => Consumption::Break(2),
         "oteryn:item.tibia.i25735" => Consumption::Break(40),
+        // Crystal 201189f8 items.xml:49172 registers the Royal Star as a missile.
+        "oteryn:item.tibia.i25759" => Consumption::Break(30),
         "oteryn:item.tibia.i22870" | "oteryn:item.tibia.i40535" => Consumption::Never,
         _ => return None,
     })

@@ -30,6 +30,12 @@ fn ranged_attack_postgres_wand_pays_mana_and_deals_death() -> TestResult {
     })
 }
 #[test]
+fn ranged_attack_postgres_starter_scorcher_pays_mana_and_deals_fire() -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-starter-scorcher", || {
+        scenario(21348, 3, false, 100, false, false)
+    })
+}
+#[test]
 fn ranged_attack_postgres_out_of_range_no_ammunition_and_no_mana_are_free() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-gates", || {
         scenario(3350, 7, true, 100, false, false)?;
@@ -259,7 +265,7 @@ fn scenario_with_quiver(
             channel_pin.clone(),
         )
         .map_err(debug)?;
-        if matches!(weapon, 25760 | 3287) {
+        if matches!(weapon, 21348 | 25760 | 3287) {
             // An elemental wand must pass physical immunity. This distinguishes its element
             // from a fist/physical hit through the real dispatch.
             let mut rat = native
@@ -671,7 +677,7 @@ fn scenario_with_quiver(
                 100 - shots,
                 "only broken throwing stars leave the hand"
             );
-        } else if weapon == 25760 && mana > 0 && distance <= 3 {
+        } else if matches!(weapon, 21348 | 25760) && mana > 0 && distance <= 3 {
             assert!(killed, "wand damage reaches the monster");
             let runtime = owner.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;

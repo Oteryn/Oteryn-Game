@@ -1209,7 +1209,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # is present, including the weapons sold by the source Hireling catalogue.
     import ranged_item_profiles
 
-    ranged_item_profiles.apply_native(root, generated)
+    ranged_item_profiles.apply_native(root, generated, starting_loadout_profiles.FRAGMENT)
     # Event action facts must not replace any established owner's Item semantics.
     import event_item_profiles
 
@@ -1875,7 +1875,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         spell_import.canonical_bytes,
     )
     # Complete ranged authoring for every admitted Item, including late loot yields.
-    ranged_item_profiles.apply_native(root, generated)
+    ranged_item_profiles.apply_native(root, generated, starting_loadout_profiles.FRAGMENT)
     weapon_equip_requirements.apply_native(
         root, generated, spell_import.canonical_bytes, weapon_equip_requirements.SLOT_FACTS
     )

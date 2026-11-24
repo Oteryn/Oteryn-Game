@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RANGED-CONTENT-1: deterministic, offline Item authoring from pinned Canary facts.
+"""RANGED-CONTENT-1: deterministic Item authoring from pinned Canary and Crystal facts.
 
 The imported items.xml is byte-identical at the NIGHT-W1 revision and its older
 D384 import pin. Weapon registration (mana and damage) is nested in this XML at
@@ -21,6 +21,10 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = "imports/canary/items-xml/items.xml"
 REVISION = "47dfd51f45280a59a1d3e50ba7edd573d7234446"
 SOURCE_SHA256 = "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+CRYSTAL_SOURCE = "content/items/ranged-crystal-source.xml"
+CRYSTAL_REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
+CRYSTAL_XML_SHA256 = "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+CRYSTAL_EXCERPT_SHA256 = "14759602d92ad18193a7038de58d1023866c6da7d4f08db26f2a2ef9abaef2ed"
 PROFILES = "content/items/definitions/spell-native-profiles.json"
 RANGED_PROFILES = "content/items/ranged-profiles.json"
 MANIFEST = "content/spells.manifest.json"
@@ -66,11 +70,18 @@ def build(raw):
     seen = set()
     for item in ET.fromstring(raw).findall("item"):
         nodes = item.findall("attribute")
+        script = item.findall("attribute[@key='script']/attribute")
+        # XML weapon registration declares some thrown weapons solely as missiles.
+        missile = any(
+            node.get("key", "").lower() == "weapontype"
+            and node.get("value") == "missile"
+            for node in script
+        )
         if not any(
             node.get("key", "").lower() == "weapontype"
             and node.get("value") in {"distance", "ammunition", "wand"}
             for node in nodes
-        ):
+        ) and not missile:
             continue
         top = attributes(
             nodes,
@@ -84,10 +95,10 @@ def build(raw):
                 "maxhitchance",
             },
         )
-        weapon = top.get("weapontype")
+        weapon = top.get("weapontype", "distance" if missile else None)
         if weapon not in {"distance", "ammunition", "wand"}:
             continue
-        nested = attributes(item.findall("attribute[@key='script']/attribute"))
+        nested = attributes(script)
         ammo = top.get("ammotype")
         kind = (
             (
@@ -179,7 +190,19 @@ def source_profiles(root):
     raw = (root / SOURCE).read_bytes()
     if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
         raise ValueError("RANGED_SOURCE_DIGEST")
-    return build(raw)
+    profiles, held, counts = build(raw)
+    crystal_raw = (root / CRYSTAL_SOURCE).read_bytes()
+    if hashlib.sha256(crystal_raw).hexdigest() != CRYSTAL_EXCERPT_SHA256:
+        raise ValueError("RANGED_CRYSTAL_SOURCE_DIGEST")
+    crystal, crystal_held, crystal_counts = build(crystal_raw)
+    if crystal_held or profiles.keys() & crystal.keys():
+        raise ValueError("RANGED_CRYSTAL_SOURCE_OVERLAP_OR_RANGE")
+    retained_held = [row for row in held if row["item_id"] not in crystal]
+    total_counts = Counter(counts) + Counter(crystal_counts)
+    for row in held:
+        if row["item_id"] in crystal:
+            total_counts[row["profile"]["kind"]] -= 1
+    return profiles | crystal, retained_held, dict(sorted(total_counts.items()))
 
 
 def item_rows(root):
@@ -224,7 +247,7 @@ def resolved_profile(profile, authoring):
     return profile
 
 
-def apply_authoring(root, document):
+def apply_authoring(root, *documents):
     """Annotate existing admitted policies; never expand native admission."""
     raw = (root / RANGED_PROFILES).read_bytes()
     if raw != outputs(root)[RANGED_PROFILES]:
@@ -240,24 +263,31 @@ def apply_authoring(root, document):
     for key, record in profiles.items():
         if key not in rows or record["item"] != rows[key]["definition"]["identity"]:
             raise ValueError("RANGED_PROFILE_TARGET")
-    for record in document["records"]:
-        key = record["production_binding"]["target"]["key"]
-        if key in profiles:
-            row = rows[key]
-            owner = row.get("authoring", {})
-            record["authoring"]["ranged"] = resolved_profile(
-                profiles[key]["profile"], owner
-            )
+    for document in documents:
+        for record in document["records"]:
+            key = record["production_binding"]["target"]["key"]
+            if key in profiles:
+                owner = rows[key].get("authoring", {})
+                record["authoring"]["ranged"] = resolved_profile(
+                    profiles[key]["profile"], owner
+                )
 
 
-def apply_native(root, generated):
+def apply_native(root, generated, starter_path):
+    from newhaven_starter_profiles import encode_fragment
+
     document = json.loads(generated[PROFILES])
-    apply_authoring(root, document)
+    starter = json.loads(generated[starter_path])
+    apply_authoring(root, document, starter)
     # Match the active provider's compact serialization within its existing 8 MiB bound.
     generated[PROFILES] = encode(document)
+    generated[starter_path] = encode_fragment(starter["records"])
     manifest = json.loads(generated[MANIFEST])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(
         generated[PROFILES]
+    ).hexdigest()
+    manifest["starting_loadout_item_profiles"]["sha256"] = hashlib.sha256(
+        generated[starter_path]
     ).hexdigest()
     generated[MANIFEST] = encode(manifest)
 
@@ -301,6 +331,14 @@ def outputs(root=ROOT):
                 "revision": REVISION,
                 "path": "data/items/items.xml",
                 "sha256": SOURCE_SHA256,
+            },
+            "crystal_supplement": {
+                "repository": "zimbadev/crystalserver",
+                "revision": CRYSTAL_REVISION,
+                "path": "data/items/items.xml",
+                "sha256": CRYSTAL_XML_SHA256,
+                "excerpt": CRYSTAL_SOURCE,
+                "excerpt_sha256": CRYSTAL_EXCERPT_SHA256,
             },
             "counts": counts,
             "held": held,

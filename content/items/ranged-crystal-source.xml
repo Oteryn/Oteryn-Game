@@ -1,0 +1,116 @@
+<items>
+  <!-- CrystalServer 201189f8 data/items/items.xml:82768,87325, and the crypt and moonsilver entries. Only ranged combat attributes are retained. -->
+  <item id="49522" name="inferniarch arbalest">
+    <attribute key="primarytype" value="distance weapons" />
+    <attribute key="weaponType" value="distance" />
+    <attribute key="ammotype" value="bolt" />
+    <attribute key="hitchance" value="6" />
+    <attribute key="range" value="6" />
+    <attribute key="attack" value="8" />
+  </item>
+  <item id="51760" name="refined bow">
+    <attribute key="primarytype" value="distance weapons" />
+    <attribute key="weaponType" value="distance" />
+    <attribute key="ammotype" value="arrow" />
+    <attribute key="hitchance" value="1" />
+    <attribute key="range" value="6" />
+  </item>
+  <item id="52332" name="crypt spine">
+    <attribute key="primarytype" value="distance weapons" />
+    <attribute key="weaponType" value="distance" />
+    <attribute key="ammotype" value="arrow" />
+    <attribute key="hitchance" value="5" />
+    <attribute key="range" value="6" />
+    <attribute key="attack" value="8" />
+  </item>
+  <item id="52336" name="crypt bile">
+    <attribute key="primarytype" value="wands" />
+    <attribute key="weaponType" value="wand" />
+    <attribute key="range" value="5" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="mana" value="23" />
+      <attribute key="fromDamage" value="94" />
+      <attribute key="toDamage" value="116" />
+      <attribute key="wandType" value="energy" />
+    </attribute>
+  </item>
+  <item id="52337" name="crypt jaw">
+    <attribute key="primarytype" value="rods" />
+    <attribute key="weaponType" value="wand" />
+    <attribute key="range" value="5" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="mana" value="22" />
+      <attribute key="fromDamage" value="95" />
+      <attribute key="toDamage" value="115" />
+      <attribute key="wandType" value="earth" />
+    </attribute>
+  </item>
+  <item id="53219" name="moonsilver channeler">
+    <attribute key="weaponType" value="wand" />
+    <attribute key="range" value="5" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="mana" value="40" />
+      <attribute key="fromDamage" value="150" />
+      <attribute key="toDamage" value="250" />
+      <attribute key="wandType" value="death" />
+    </attribute>
+  </item>
+  <item id="53220" name="stellar moonsilver channeler">
+    <attribute key="weaponType" value="wand" />
+    <attribute key="range" value="5" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="mana" value="40" />
+      <attribute key="fromDamage" value="150" />
+      <attribute key="toDamage" value="250" />
+      <attribute key="wandType" value="death" />
+    </attribute>
+  </item>
+  <item id="53221" name="moonsilver specre">
+    <attribute key="weaponType" value="wand" />
+    <attribute key="range" value="5" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="mana" value="40" />
+      <attribute key="fromDamage" value="150" />
+      <attribute key="toDamage" value="250" />
+      <attribute key="wandType" value="earth" />
+    </attribute>
+  </item>
+  <item id="53222" name="stellar moonsilver specre">
+    <attribute key="weaponType" value="wand" />
+    <attribute key="range" value="5" />
+    <attribute key="script" value="moveevent;weapon">
+      <attribute key="mana" value="40" />
+      <attribute key="fromDamage" value="150" />
+      <attribute key="toDamage" value="250" />
+      <attribute key="wandType" value="earth" />
+    </attribute>
+  </item>
+  <item id="53225" name="moonsilver bow">
+    <attribute key="weaponType" value="distance" />
+    <attribute key="ammotype" value="arrow" />
+    <attribute key="attack" value="10" />
+    <attribute key="hitchance" value="7" />
+    <attribute key="range" value="6" />
+  </item>
+  <item id="53226" name="stellar moonsilver bow">
+    <attribute key="weaponType" value="distance" />
+    <attribute key="ammotype" value="arrow" />
+    <attribute key="attack" value="10" />
+    <attribute key="hitchance" value="7" />
+    <attribute key="range" value="6" />
+  </item>
+  <item id="53227" name="moonsilver crossbow">
+    <attribute key="weaponType" value="distance" />
+    <attribute key="ammotype" value="bolt" />
+    <attribute key="attack" value="11" />
+    <attribute key="hitchance" value="8" />
+    <attribute key="range" value="6" />
+  </item>
+  <item id="53228" name="stellar moonsilver crossbow">
+    <attribute key="weaponType" value="distance" />
+    <attribute key="ammotype" value="bolt" />
+    <attribute key="attack" value="11" />
+    <attribute key="hitchance" value="8" />
+    <attribute key="range" value="6" />
+  </item>
+</items>

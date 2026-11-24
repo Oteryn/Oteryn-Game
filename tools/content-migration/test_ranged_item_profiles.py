@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch
 
 import ranged_item_profiles as ranged
+from starting_loadout_profiles import FRAGMENT
 
 
 def item(attributes, nested="", item_id='id="1"', name="test"):
@@ -19,9 +20,9 @@ def item(attributes, nested="", item_id='id="1"', name="test"):
 class RangedItemProfilesTest(unittest.TestCase):
     def test_pinned_categories_and_samples(self):
         profiles, held, counts = ranged.source_profiles(ranged.ROOT)
-        self.assertEqual(counts, {"DISTANCE": 58, "THROWING": 15, "AMMUNITION": 25, "WAND": 34, "ROD": 32})
-        self.assertEqual(len(profiles), 163)
-        self.assertEqual([(row['item_id'], row['profile']['range_cells']) for row in held], [(49522, 8)])
+        self.assertEqual(counts, {"DISTANCE": 64, "THROWING": 16, "AMMUNITION": 25, "WAND": 39, "ROD": 33})
+        self.assertEqual(len(profiles), 177)
+        self.assertEqual(held, [])
         for item_id, kind, attack, distance in [(3350, 'DISTANCE', 0, 6), (3349, 'DISTANCE', 0, 5), (3277, 'THROWING', 25, 3)]:
             with self.subTest(item=item_id):
                 self.assertEqual((profiles[item_id]['kind'], profiles[item_id]['attack'], profiles[item_id]['range_cells']), (kind, attack, distance))
@@ -29,6 +30,14 @@ class RangedItemProfilesTest(unittest.TestCase):
             self.assertEqual((profiles[item_id]['ammunition'], profiles[item_id]['attack'], profiles[item_id]['element']), (ammo, attack, 'PHYSICAL'))
         for item_id, kind, element, mana in [(3074, 'WAND', 'ENERGY', 1), (3066, 'ROD', 'EARTH', 2)]:
             self.assertEqual(profiles[item_id], dict(kind=kind, element=element, damage_min=8, damage_max=18, mana_per_shot=mana, range_cells=3))
+        for item_id, element in [(21348, 'FIRE'), (21350, 'ICE')]:
+            self.assertEqual(profiles[item_id], dict(kind='WAND', element=element,
+                             damage_min=4, damage_max=8, mana_per_shot=1, range_cells=3))
+        for item_id, attack, ammo in [(49522, 8, 'BOLT'), (51760, 0, 'ARROW')]:
+            self.assertEqual((profiles[item_id]['range_cells'], profiles[item_id]['attack'],
+                              profiles[item_id]['ammunition']), (6, attack, ammo))
+        self.assertEqual(profiles[25759], dict(kind='THROWING', range_cells=5, attack=64,
+                         hit_chance=0, max_hit_chance=100, element='FIRE', elemental_attack=2))
 
     def test_defaults_are_compiled_once_and_ranges_expand(self):
         raw = item({'weaponType': 'distance', 'ammoType': 'arrow'}, item_id='fromid="1" toid="2"')
@@ -81,7 +90,7 @@ class RangedItemProfilesTest(unittest.TestCase):
     def test_separate_profiles_preserve_sealed_owners_and_resolve_existing_values(self):
         rows = {row['definition']['identity']['key']: row for row in ranged.item_rows(ranged.ROOT)}
         records = json.loads((ranged.ROOT / ranged.RANGED_PROFILES).read_bytes())['records']
-        self.assertEqual(len(records), 162)
+        self.assertEqual(len(records), 176)
         for row in rows.values():
             self.assertNotIn('ranged', row.get('authoring', {}))
         seen = set()
@@ -115,10 +124,19 @@ class RangedItemProfilesTest(unittest.TestCase):
         clean = copy.deepcopy(document)
         for record in clean['records']:
             record['authoring'].pop('ranged', None)
-        generated = {ranged.PROFILES: json.dumps(clean).encode(), ranged.MANIFEST: (ranged.ROOT / ranged.MANIFEST).read_bytes()}
-        ranged.apply_native(ranged.ROOT, generated)
+        starter = (ranged.ROOT / FRAGMENT).read_bytes()
+        starter_clean = json.loads(starter)
+        for record in starter_clean['records']:
+            record['authoring'].pop('ranged', None)
+        generated = {ranged.PROFILES: json.dumps(clean).encode(),
+                     FRAGMENT: json.dumps(starter_clean).encode(),
+                     ranged.MANIFEST: (ranged.ROOT / ranged.MANIFEST).read_bytes()}
+        ranged.apply_native(ranged.ROOT, generated, FRAGMENT)
         self.assertEqual(generated[ranged.PROFILES], original)
-        self.assertEqual(json.loads(generated[ranged.MANIFEST])['item_profiles']['sha256'], hashlib.sha256(original).hexdigest())
+        self.assertEqual(generated[FRAGMENT], starter)
+        manifest = json.loads(generated[ranged.MANIFEST])
+        self.assertEqual(manifest['item_profiles']['sha256'], hashlib.sha256(original).hexdigest())
+        self.assertEqual(manifest['starting_loadout_item_profiles']['sha256'], hashlib.sha256(starter).hexdigest())
         self.assertEqual(len(document['records']), len(clean['records']))
 
     def test_native_overlay_rejects_separate_source_drift_atomically(self):
@@ -126,6 +144,7 @@ class RangedItemProfilesTest(unittest.TestCase):
         path = ranged.ROOT / ranged.RANGED_PROFILES
         source = json.loads(path.read_bytes())
         generated = {ranged.PROFILES: (ranged.ROOT / ranged.PROFILES).read_bytes(),
+                     FRAGMENT: (ranged.ROOT / FRAGMENT).read_bytes(),
                      ranged.MANIFEST: (ranged.ROOT / ranged.MANIFEST).read_bytes()}
         for mutation in ['missing', 'duplicate', 'changed']:
             changed = copy.deepcopy(source)
@@ -140,7 +159,7 @@ class RangedItemProfilesTest(unittest.TestCase):
             with self.subTest(mutation=mutation), patch.object(Path, 'read_bytes', read):
                 candidate = dict(generated)
                 with self.assertRaisesRegex(ValueError, 'RANGED_PROFILE_SOURCE_DRIFT'):
-                    ranged.apply_native(ranged.ROOT, candidate)
+                    ranged.apply_native(ranged.ROOT, candidate, FRAGMENT)
                 self.assertEqual(candidate, generated)
 
 
