@@ -407,6 +407,9 @@ impl Hunt<'_> {
                 hex_bytes(session.as_bytes()), outcome.command_id, hex_bytes(&victim.identity), victim.generation,
             );
             let paired = committed_base_damage(&self.cast_evidence_log, evidence_start, &marker, bps)?;
+            if paired.1 != damage {
+                return Err(format!("C12 owner pair does not reconcile with served damage: base_pair={paired:?} served={damage}").into());
+            }
             evidence(&format!("C12 committed_cast command={} damage={damage} base_pair={paired:?} expected_bps={bps}", outcome.command_id));
             return Ok(damage);
         }
