@@ -411,8 +411,15 @@ async fn buy_meat_from_frodo(
         .session_mut()
         .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
         .await?;
-    let window = wire::decode_npc_trade_window(&delta.payload)
+    let details_selected = client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+    let window = wire::decode_npc_trade_window_for(&delta.payload, details_selected)
         .map_err(|e| format!("trade window reply={e:?}"))?;
+    let (seller, catalogue_revision) = window.open.ok_or("trade window closed")?;
+    if seller != actor {
+        return Err("trade window belongs to a different NPC".into());
+    }
     let (index, offer) = window
         .offers
         .iter()
@@ -427,7 +434,7 @@ async fn buy_meat_from_frodo(
         client.session_mut(),
         &wire::NpcTradeIntent {
             npc_actor: actor,
-            catalogue_revision: window.open.ok_or("trade window closed")?.1,
+            catalogue_revision,
             offer_index: u32::try_from(index)?,
             side: offer.side,
             quantity: units,
