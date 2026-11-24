@@ -48382,7 +48382,7 @@
     }
   ],
   "schema": "OTERYN_NATIVE_MONSTER_CALLBACKS/v1",
-  "source_definitions_sha256": "fef1502856592e2fdda5b0e5ad5f1ed0ef0c2743f96fd5c6dce2e342d48ba2bc",
+  "source_definitions_sha256": "d0786011ad72f341d08efb8b25dc0052f718bdf8f992ae98b859e9957496f899",
   "source_events": [
     {
       "name": "OutburstCharge",

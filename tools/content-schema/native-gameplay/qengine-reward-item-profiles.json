@@ -3557,10 +3557,17 @@
           "state": "KNOWN",
           "value": {
             "allowed_family_tiers": {
-              "state": "UNKNOWN"
+              "state": "KNOWN",
+              "value": [
+                {
+                  "family": "INCREASE_CAPACITY",
+                  "tier": "Three"
+                }
+              ]
             },
             "excluded_families": {
-              "state": "UNKNOWN"
+              "state": "KNOWN",
+              "value": []
             },
             "slot_count": {
               "state": "KNOWN",
