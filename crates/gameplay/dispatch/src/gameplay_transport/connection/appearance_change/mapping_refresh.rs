@@ -85,7 +85,33 @@ impl SessionAppearance {
                 candidate.empty_outfit,
                 player_refs.clone(),
             )
-            .await?;
+            .await;
+        let observation = match observation {
+            Err(ObservationError::HolderBusy)
+                if matches!(&update, VisibilityUpdate::Delta(delta)
+                    if view.is_mount_motion_only(&staged_view, delta)) =>
+            {
+                if let VisibilityUpdate::Delta(delta) = &mut update {
+                    self.attach(&mut delta.update).ok_or(Unavailable)?;
+                }
+                let (frames, to_sequence, to_revision) = visibility_frames(
+                    generation,
+                    sequence,
+                    revision,
+                    selected.as_slice(),
+                    staged_view.lights(),
+                    &update,
+                )
+                .ok_or(Unavailable)?;
+                for frame in frames {
+                    write_frame(stream, &frame).await.map_err(|_| Unavailable)?;
+                }
+                *view = staged_view;
+                admitted.continuity.server_sequence = to_sequence;
+                return Ok((to_sequence, to_revision));
+            }
+            result => result?,
+        };
         player_refs.retain(|entity| !observation.skipped.contains(entity));
         if !observation.skipped.is_empty() {
             let mut channel = channel.clone();

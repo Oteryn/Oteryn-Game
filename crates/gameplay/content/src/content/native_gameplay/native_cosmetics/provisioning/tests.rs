@@ -144,12 +144,17 @@ fn mount_catalogue_includes_jaracal_and_radiant_nimbus() -> Result<(), Box<dyn s
     };
     let section = materialize(descriptor, &path)?;
     let catalogue = super::super::decode(&section.bytes)?.ok_or("native cosmetics unavailable")?;
-    assert_eq!(catalogue.mount_keys.len(), 275);
-    for (name, client_id) in [("jaracal", 1962), ("radiant_nimbus", 1975)] {
+    assert_eq!(catalogue.mount_keys.len(), 277);
+    for (name, client_id, premium) in [
+        ("jaracal", 1962, true),
+        ("radiant_nimbus", 1975, true),
+        ("ripptor", 1577, true),
+        ("rented_horse_marrom_escuro", 421, false),
+    ] {
         let key = format!("oteryn:content.mount.{name}");
         assert_eq!(
             catalogue.content.mount_metadata(&key),
-            Some((client_id, 10, true)),
+            Some((client_id, 10, premium)),
             "{key}"
         );
     }

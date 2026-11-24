@@ -701,6 +701,32 @@ mod tests {
     }
 
     #[test]
+    fn mount_motion_fallback_requires_a_retained_player_at_the_same_position() {
+        use oteryn_protocol_oteryn::actor_motion::ActorMotion;
+
+        let mut mounted = at(1, VisibleKind::Player, 101, 100, 7);
+        mounted.motion = Some(ActorMotion {
+            mount_look_type: 139,
+            ..ActorMotion::default()
+        });
+        let mut channel = channel([mounted]);
+        let mut view = SessionVisibility::default().with_motion(true);
+        view.snapshot(&channel, &mut no_handles).unwrap();
+        channel.entities[1].motion = Some(ActorMotion::default());
+        let mut next = view.clone();
+        let VisibilityUpdate::Delta(mut delta) = next.refresh(&channel, &mut no_handles).unwrap()
+        else {
+            panic!("unmount must produce a visibility delta");
+        };
+        assert!(view.is_mount_motion_only(&next, &delta));
+        delta.update[0].entity.generation += 1;
+        assert!(!view.is_mount_motion_only(&next, &delta));
+        delta.update[0].entity.generation -= 1;
+        delta.update[0].position.x += 1;
+        assert!(!view.is_mount_motion_only(&next, &delta));
+    }
+
+    #[test]
     fn look_shows_only_the_exact_shown_actor_generation() {
         let channel = channel([
             at(1, VisibleKind::Creature, 101, 100, 7),
