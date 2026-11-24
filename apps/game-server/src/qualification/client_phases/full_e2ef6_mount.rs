@@ -9,5 +9,7 @@
     // Keep every remaining ordinary journey before profile fixture provisioning.
     if groups.runs("f6") {
         full_e2ef6::run(clients, world, &metadata.spawns, &metadata.npcs).await;
+    } else if groups.runs("p16") {
+        full_e2ef6::run_blessing_services(clients, world, &metadata.spawns, &metadata.npcs).await;
     }
 }
