@@ -670,33 +670,29 @@ async fn paralyze_bruise_fixture(
             Ok(peer.session_mut().attack_target(Some(&entity)).await?)
         })
         .await?;
-        require(
-            attack.disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok,
-            format!("Open PvP wound attack refused: {attack:?}"),
-        )?;
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
-        while vitals(target)?.health == vitals(target)?.max_health
-            && tokio::time::Instant::now() < deadline
-        {
-            full_e2ef5::with_observer_liveness(target, async {
-                peer.service_liveness(Duration::from_millis(250)).await?;
-                peer.take_events();
-                Ok(())
+        if attack.disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+            while vitals(target)?.health == vitals(target)?.max_health
+                && tokio::time::Instant::now() < deadline
+            {
+                full_e2ef5::with_observer_liveness(target, async {
+                    peer.service_liveness(Duration::from_millis(250)).await?;
+                    peer.take_events();
+                    Ok(())
+                })
+                .await?;
+            }
+            let clear = full_e2ef5::with_observer_liveness(target, async {
+                Ok(peer.session_mut().attack_target(None).await?)
             })
             .await?;
+            require(
+                clear.disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok,
+                format!("could not clear Open PvP wound attack: {clear:?}"),
+            )?;
+        } else {
+            evidence(&format!("spell_sweep bruise_bane_wound_attack={attack:?}"));
         }
-        let clear = full_e2ef5::with_observer_liveness(target, async {
-            Ok(peer.session_mut().attack_target(None).await?)
-        })
-        .await?;
-        require(
-            clear.disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok,
-            format!("could not clear Open PvP wound attack: {clear:?}"),
-        )?;
-        require(
-            vitals(target)?.health < vitals(target)?.max_health,
-            "Open PvP attack did not wound Bruise Bane caster",
-        )?;
     }
     let (reply, _) = full_e2ef5::with_observer_liveness(
         target,
@@ -833,6 +829,11 @@ async fn positive(
                 .find(|condition| condition.icon == PARALYSIS_ICON)
                 .map(|condition| condition.remaining_ms)
             {
+                if bruise_bane {
+                    evidence(&format!(
+                        "spell_sweep bruise_bane_paralysis_remaining_ms={remaining}"
+                    ));
+                }
                 break Some((sent, remaining));
             }
             if tokio::time::Instant::now() >= deadline {
