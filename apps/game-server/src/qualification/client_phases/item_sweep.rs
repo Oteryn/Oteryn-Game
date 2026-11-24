@@ -1708,7 +1708,7 @@ fn restrictions(item: &Item) -> Vec<(&'static str, &'static str, &Value, Action)
 
 async fn sweep_item(
     fixtures: &mut Fixtures<'_>,
-    world: &BundleWorld,
+    world: &'static BundleWorld,
     index: &crate::content::item_ref::ItemDefinitionIndex,
     items: &BTreeMap<String, Item>,
     corpse_sources: &BTreeMap<String, String>,
@@ -1920,7 +1920,10 @@ fn steps(item: &Item) -> Vec<&'static str> {
     steps
 }
 
-pub(super) async fn run<'a>(scopes: [&'a SeamClients<'a>; 5], world: &BundleWorld) -> TestResult {
+pub(super) async fn run<'a>(
+    scopes: [&'a SeamClients<'a>; 5],
+    world: &'static BundleWorld,
+) -> TestResult {
     let (start, len) = match std::env::var(BATCH_VARIABLE) {
         Ok(value) => batch(Some(&value)),
         Err(std::env::VarError::NotPresent) => batch(None),

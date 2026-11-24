@@ -182,7 +182,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     let food = full_e2ef7::acquire(&mut client, world, &provisioning::item_index()?, "oteryn:item.tibia.i3577", 1)
         .await.map_err(|error| format!("step=rest-food observed={error} need=earned-edible-food"))?;
-    let BedPlan { bed, definition, house, key, entrance } = plan_bed(world, tile(client.world_spatial().actor_position)?, None)?;
+    let BedPlan { bed, definition, house, key, entrance, .. } = plan_bed(world, tile(client.world_spatial().actor_position)?, None)?;
     let to_entrance = route(world, tile(client.world_spatial().actor_position)?, |at| at == entrance)
         .ok_or("step=house-admission observed=no-route-to-catalogue-entrance")?;
     walk(&mut client, world, &to_entrance).await?;
@@ -330,6 +330,7 @@ struct BedPlan {
     house: u32,
     key: String,
     entrance: TilePos,
+    way_in: Vec<StepDirection>,
 }
 
 fn plan_bed(world: &BundleWorld, from: TilePos, exact: Option<NonZeroU32>) -> TestResult<BedPlan> {
@@ -386,7 +387,7 @@ fn plan_bed(world: &BundleWorld, from: TilePos, exact: Option<NonZeroU32>) -> Te
                         })
                     })
                 {
-                    closest = Some((path.len(), BedPlan { bed, definition, house, key: key.clone(), entrance }));
+                    closest = Some((path.len(), BedPlan { bed, definition, house, key: key.clone(), entrance, way_in: path.clone() }));
                     break;
                 }
             }
@@ -399,15 +400,21 @@ fn plan_bed(world: &BundleWorld, from: TilePos, exact: Option<NonZeroU32>) -> Te
 /// Probe one exact base-map bed through the normal house transfer and modal owners.
 pub(super) async fn sweep_bed(
     client: &mut DevClientSession,
-    world: &BundleWorld,
+    world: &'static BundleWorld,
     reference: NonZeroU32,
     rows: &mut super::item_sweep::Rows<'_>,
 ) -> TestResult {
     let start = tile(client.world_spatial().actor_position)?;
-    let BedPlan { bed, definition, house, key, entrance } = plan_bed(world, start, Some(reference))?;
-    let path = route(world, start, |at| at == entrance)
-        .ok_or("bed-fixture-no-route-to-house")?;
-    walk(client, world, &path).await?;
+    let plan = tokio::task::spawn_blocking(move || {
+        plan_bed(world, start, Some(reference)).map_err(|error| error.to_string())
+    });
+    while !plan.is_finished() {
+        verdict::Harness::global().progress("item-house-bed-route");
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    }
+    let BedPlan { bed, definition, house, key, way_in, .. } = plan.await??;
+    walk(client, world, &way_in).await?;
     enter_bed_house(client, &key).await?;
     let from = tile(client.world_spatial().actor_position)?;
     let path = route_avoiding(world, from, |at| {
