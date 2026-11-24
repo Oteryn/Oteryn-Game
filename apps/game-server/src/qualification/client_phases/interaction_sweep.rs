@@ -348,18 +348,23 @@ fn map_entries(
     use oteryn_gameplay_quests::quest::world_callbacks::{self as callbacks, Trigger};
     use oteryn_gameplay_world::terrain_tools::{TerrainTool, crystal_core_bindings};
     let terrain = crystal_core_bindings();
-    let mut authored = BTreeMap::<TilePos, Vec<callbacks::Callback>>::new();
-    let mut by_appearance = BTreeMap::<u16, Vec<callbacks::Callback>>::new();
-    for callback in callbacks::load()? {
+    let callbacks = callbacks::load()?;
+    let mut authored = BTreeMap::<TilePos, Vec<&callbacks::Callback>>::new();
+    let mut by_appearance = BTreeMap::<u16, Vec<&callbacks::Callback>>::new();
+    let mut by_action = BTreeMap::<u16, Vec<&callbacks::Callback>>::new();
+    let mut by_unique = BTreeMap::<u16, Vec<&callbacks::Callback>>::new();
+    for callback in &callbacks {
         if callback.trigger != Trigger::Use {
             continue;
         }
-        if let Some(position) = callback
+        for position in callback
             .selector
             .native
             .as_ref()
             .map(|native| native.position)
-            .or(callback.selector.position)
+            .into_iter()
+            .chain(callback.selector.position)
+            .chain(callback.selector.position_aliases.iter().copied())
         {
             let at = TilePos {
                 x: position.x,
@@ -367,7 +372,14 @@ fn map_entries(
                 floor: position.floor,
             };
             authored.entry(at).or_default().push(callback);
-        } else if let Some(appearance) = callback.selector.appearance {
+        }
+        if let Some(unique) = callback.selector.unique {
+            by_unique.entry(unique).or_default().push(callback);
+        }
+        if let Some(action) = callback.selector.action {
+            by_action.entry(action).or_default().push(callback);
+        }
+        if let Some(appearance) = callback.selector.appearance {
             by_appearance.entry(appearance).or_default().push(callback);
         }
     }
@@ -438,7 +450,22 @@ fn map_entries(
                     .get(&at)
                     .into_iter()
                     .flatten()
+                    .chain(
+                        item.attrs
+                            .unique
+                            .and_then(|id| by_unique.get(&id))
+                            .into_iter()
+                            .flatten(),
+                    )
+                    .chain(
+                        item.attrs
+                            .action
+                            .and_then(|id| by_action.get(&id))
+                            .into_iter()
+                            .flatten(),
+                    )
                     .chain(by_appearance.get(&appearance).into_iter().flatten())
+                    .copied()
                     .find(|callback| {
                         let selector = &callback.selector;
                         if let Some(native) = &selector.native
