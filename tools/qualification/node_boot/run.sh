@@ -1396,7 +1396,7 @@ SQL
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
   if [[ "$christmas_fixture" == 1 ]]; then
-    await_log 'event=seasonal_calendar reset_epoch=0 active=.*"christmas"' 60
+    await_log 'event=seasonal_calendar .*reset_epoch=0 active=.*christmas' 60
     psql_admin oteryn_node_boot <<'SQL'
 DROP TRIGGER node_boot_initialize_christmas ON game_runtime_scope_assignments;
 DROP FUNCTION node_boot_initialize_christmas();
