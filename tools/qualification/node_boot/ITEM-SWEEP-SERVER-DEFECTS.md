@@ -124,3 +124,14 @@ The five failures are the two rack USE refusals and the previously recorded
 
 These downstream seed and dependent rows measure fixture availability.
 They provide no item-specific gameplay observation.
+
+### Batch 400:1000 item inspection
+
+| Cause | Keys | Oteryn owner | Crystal 201189f8 | Expected and observed |
+| --- | --- | --- | --- | --- |
+| Elemental bond omitted from item inspection | 3289 | `gameplay_transport/inspection.rs:536–576` | `src/items/item.cpp:3257–3262`, `data/items/items.xml:8619–8629` | The sweep sent inspection command 153 using the current staff handle while equipped and again after unequipping. Both replied with the correct definition 20065 and omitted the Elemental Bond field. Oteryn's `content/items/definitions/items-20000-20499.json` declares an Earth bond. Crystal illustrates the display rule when a weapon has a bond. This pinned Crystal revision defines the staff as a club and has no staff bond, so the expected Earth label comes from Oteryn content. The runtime effect remains untested. |
+
+Wild Growth (3156) and Paralyse (3165) returned `ProtectionZone` to direct USE
+and to the low-level repeat. The fixture used the protected town entry and did
+not target a legal combat cell or actor. Those refusals leave the rune effect
+and level oracle unexercised.
