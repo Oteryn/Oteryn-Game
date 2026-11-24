@@ -17,9 +17,21 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     .then_some((session, profile))
     .or_else(|| {
         (cfg!(any(test, feature = "qualification-spawn"))
-            && matches!(profile, "progress-baking" | "progress-charms"))
+            && (matches!(profile, "progress-baking" | "progress-charms")
+                || mastery_species(profile).is_some()))
         .then_some((session, profile))
     })
+}
+
+fn mastery_species(profile: &str) -> Option<&str> {
+    let key = profile.strip_prefix("progress-mastery:")?;
+    let name = key.strip_prefix("oteryn:creature.")?;
+    (!name.is_empty()
+        && key.len() <= 128
+        && name
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_'))
+    .then_some(key)
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -669,6 +681,17 @@ async fn prepare_build(
     if profile == "progress-charms" {
         return prepare_charm_points(root, authority, proof, &current, native, deadline).await;
     }
+    if let Some(species) = mastery_species(profile) {
+        let row = native
+            .reward_table()
+            .row(species)
+            .map_err(|reason| reason.as_str())?;
+        let race = row
+            .race
+            .as_ref()
+            .ok_or("qualification creature has no Bestiary race")?;
+        return prepare_mastery(root, authority, proof, &current, deadline, race).await;
+    }
     let character = crate::domain::CharacterId::from_bytes(
         *current.current_character_lease().character_id().as_bytes(),
     )
@@ -727,6 +750,86 @@ async fn prepare_build(
         &[3276, 3003, 3457],
     )
     .await
+}
+
+/// Advance the activated Bestiary race through the fenced kill owner.
+async fn prepare_mastery(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    current: &crate::foundation::GameSessionAuthoritySnapshot<
+        crate::foundation::AuthenticatedTransportRefV1,
+    >,
+    deadline: tokio::time::Instant,
+    race: &crate::domain::bestiary::BestiaryRace,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::durability::bestiary_progress::{
+        BestiaryKillOccurrence, BestiaryKillOutcome, BestiaryKillRequest, BestiaryProgressError,
+    };
+    use crate::durability::character_progression::CurrentCharacterGameplayFence;
+    use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
+
+    let character = crate::domain::CharacterId::from_bytes(
+        *current.current_character_lease().character_id().as_bytes(),
+    )?;
+    let state = qualification_build::retry_holder(
+        Some(root),
+        deadline,
+        qualification_build::progression_busy,
+        async || root.read_character_progression(authority, character).await,
+    )
+    .await?
+    .ok_or("qualification progression absent")?;
+    let fence = CurrentCharacterGameplayFence {
+        character_id: character,
+        game_session_id: current.current_game_session_id(),
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: current.current_character_lease().generation(),
+        runtime_scope: current.current_runtime_scope(),
+        scope_ownership_generation: current.current_scope_generation(),
+        expected_character_revision: state.character_revision,
+    };
+    let busy = |error: &BestiaryProgressError| {
+        matches!(
+            error,
+            BestiaryProgressError::Unavailable(DurabilityError::RootUnavailable)
+        )
+    };
+    let progress = qualification_build::retry_holder(Some(root), deadline, busy, async || {
+        root.read_bestiary_progress(authority, character, race.key())
+            .await
+    })
+    .await?;
+    let start = progress.map_or(0, |row| row.kill_count);
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(character).await;
+    for count in start..race.final_kill_threshold() {
+        if deadline.saturating_duration_since(tokio::time::Instant::now()) < Duration::from_secs(2)
+        {
+            break;
+        }
+        let occurrence = BestiaryKillOccurrence::from_bytes(fixture_occurrence(
+            character.as_bytes(),
+            race.key(),
+            &count.to_be_bytes(),
+        ))?;
+        let request = BestiaryKillRequest {
+            occurrence,
+            race: race.clone(),
+            context: state.context.clone(),
+            policy_revision: state.policy_revision.clone(),
+            reward_revision: state.reward_revision.clone(),
+        };
+        let outcome = qualification_build::retry_holder(Some(root), deadline, busy, async || {
+            slot.commit_bestiary(root, authority, proof, fence, request.clone())
+                .await
+        })
+        .await?;
+        if matches!(outcome, BestiaryKillOutcome::Saturated { .. }) {
+            break;
+        }
+    }
+    Ok(())
 }
 
 /// Fund the disposable sweep through the Charm owner's first-species earning path.

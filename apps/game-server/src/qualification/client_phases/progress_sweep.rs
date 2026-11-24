@@ -834,26 +834,71 @@ async fn charm(
     rows.pass(&format!("stage-one-debit-{cost}"));
 
     let here = tile(client.world_spatial().actor_position)?;
-    let (race, species) = races
-        .iter()
-        .enumerate()
-        .filter_map(|(ordinal, (definition, _))| {
-            let id = NonZeroU32::new(u32::try_from(ordinal + 1).ok()?)?;
-            let mastered = unlocked
+    let mut candidates = Vec::new();
+    for (ordinal, (definition, _)) in races.iter().enumerate() {
+        let race = NonZeroU32::new(u32::try_from(ordinal + 1)?).ok_or("zero-race-id")?;
+        if unlocked
+            .charms
+            .charms
+            .iter()
+            .any(|state| state.assigned_race == Some(race))
+        {
+            continue;
+        }
+        let kills = unlocked
+            .bestiary
+            .iter()
+            .find(|row| row.race == race)
+            .map_or(0, |row| row.kill_count);
+        let threshold = definition.final_kill_threshold();
+        candidates.push((
+            threshold.saturating_sub(kills),
+            race,
+            definition.key(),
+            threshold,
+        ));
+    }
+    candidates.sort_unstable();
+    let (remaining, race, species, threshold) = candidates
+        .into_iter()
+        .find(|(_, _, species, _)| {
+            full_row_p05::has_reachable_spawn(world, here, &metadata.spawns, species)
+        })
+        .ok_or("charm-no-reachable-bestiary-creature")?;
+    if remaining != 0 {
+        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+        let mut kills = threshold - remaining;
+        for _ in 0..6 {
+            let setup = request_fixture_control(
+                session.clone(),
+                "--profile",
+                format!("progress-mastery:{species}"),
+            )
+            .await;
+            let progress = charm_command(client, Action::Query).await?;
+            let observed = progress
                 .bestiary
                 .iter()
-                .any(|row| row.race == id && row.kill_count >= definition.final_kill_threshold());
-            (mastered
-                && full_row_p05::has_reachable_spawn(
-                    world,
-                    here,
-                    &metadata.spawns,
-                    definition.key(),
-                ))
-            .then_some((id, definition.key()))
-        })
-        .next()
-        .ok_or("charm-no-reachable-mastered-creature")?;
+                .find(|row| row.race == race)
+                .map_or(0, |row| row.kill_count);
+            if observed >= threshold {
+                kills = observed;
+                break;
+            }
+            if observed <= kills {
+                return Err(
+                    format!("harness-charm-mastery-no-progress-{species}-{setup:?}").into(),
+                );
+            }
+            kills = observed;
+        }
+        if kills < threshold {
+            return Err(format!(
+                "harness-charm-mastery-incomplete-{species}-{kills}-of-{threshold}"
+            )
+            .into());
+        }
+    }
     let assigned = charm_command(client, Action::Assign { charm: id, race }).await?;
     let observed = charm_state(&assigned, id)?;
     if assigned.outcome != Outcome::Assign(CharmAssignDisposition::Assigned)
@@ -861,7 +906,10 @@ async fn charm(
     {
         return Err(format!("charm-assignment-mismatch-{:?}", assigned.outcome).into());
     }
-    rows.pass(&format!("assigned-{species}"));
+    rows.pass(&format!(
+        "assigned-{species}-mastery-{}",
+        if remaining == 0 { "existing" } else { "seeded" }
+    ));
     let effect = string(&rows.entry.content["effect"]["type"])?;
     if !observed.effect_active {
         return Err(format!("charm-content-effect-inactive-{effect}").into());

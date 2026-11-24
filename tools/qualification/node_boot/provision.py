@@ -34,7 +34,7 @@ def _request(socket_path, line, limit):
 
 def provision(socket_path, session, profile):
     identifier = uuid.UUID(session)
-    if identifier.version != 7 or str(identifier) != session or profile not in PROFILES:
+    if identifier.version != 7 or str(identifier) != session or (profile not in PROFILES and not re.fullmatch(r"progress-mastery:oteryn:creature\.[a-z0-9_]{1,112}", profile)):
         raise ValueError("invalid qualification request")
     answer = _request(socket_path, f"qualify {session} {profile}\n", 64)
     if answer != b"qualified\n":
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument("--socket", required=True)
     parser.add_argument("--session", required=True)
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--profile", choices=PROFILES)
+    group.add_argument("--profile")
     group.add_argument("--spawn", metavar="CREATURE_KEY")
     group.add_argument("--inspect-damage", metavar="TARGET")
     args = parser.parse_args()
