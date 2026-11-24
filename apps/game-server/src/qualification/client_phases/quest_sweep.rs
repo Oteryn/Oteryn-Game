@@ -169,6 +169,47 @@ fn census(root: &Path) -> TestResult<BTreeMap<String, Entry>> {
             quest.stages.extend(stages);
         }
     }
+    for name in [
+        "authored-world-callbacks.json",
+        "shared-access-callbacks.json",
+        "shared-outfit-callbacks.json",
+        "chosen-reward-callbacks.json",
+    ] {
+        let document: Value =
+            serde_json::from_slice(&std::fs::read(root.join("quests").join(name))?)?;
+        for callback in array(&document["callbacks"])? {
+            let key = text(&callback["key"])?;
+            let Some(quest) = quests.get_mut(text(&callback["quest"])?) else {
+                continue;
+            };
+            if quest.stages.iter().any(|stage| {
+                stage
+                    .trigger
+                    .callback
+                    .iter()
+                    .chain(&stage.trigger.alternatives)
+                    .any(|existing| existing["key"].as_str() == Some(key))
+            }) {
+                continue;
+            }
+            let kind = match callback["trigger"].as_str() {
+                Some("use") => "map_use",
+                Some("step_in") => "step_in",
+                None if callback["npc"].is_string() => "npc_dialogue",
+                _ => continue,
+            };
+            quest.stages.push(Stage {
+                key: row_key(key),
+                completes: callback["completes"].as_bool().unwrap_or(false),
+                trigger: Trigger {
+                    kind: kind.to_owned(),
+                    callback: Some(callback.clone()),
+                    usage: None,
+                    alternatives: Vec::new(),
+                },
+            });
+        }
+    }
     let sets: BTreeMap<String, CompletionSet> =
         serde_json::from_slice(&std::fs::read(root.join("quests/claim-sets.json"))?)?;
     for (quest, set) in sets {
@@ -642,16 +683,29 @@ impl Journey<'_, '_> {
             "map_use" | "step_in" => {
                 let selector = &callback["selector"];
                 let position = &selector["position"];
-                let target = TilePos {
-                    x: u16::try_from(position["x"].as_u64().ok_or("missing-target-x")?)?,
-                    y: u16::try_from(position["y"].as_u64().ok_or("missing-target-y")?)?,
-                    floor: i8::try_from(position["floor"].as_i64().ok_or("missing-target-floor")?)?,
+                let target = authored_tile(position)?;
+                let arrival = if callback["teleport"].is_object() {
+                    Some(authored_tile(&callback["teleport"])?)
+                } else {
+                    None
                 };
                 if stage.trigger.kind == "step_in" {
                     if tile(self.client.world_spatial().actor_position)? == target {
                         return Err("step-in-already-on-target".into());
                     }
-                    self.approach(target, 0).await?;
+                    if let Some(arrival) = arrival {
+                        let start = tile(self.client.world_spatial().actor_position)?;
+                        let mut path = route(self.world, start, |at| at == target)
+                            .ok_or("no-wire-route-in-served-bundle")?;
+                        let final_step = path.pop().ok_or("step-in-already-on-target")?;
+                        walk(self.client, self.world, &path).await?;
+                        let _ = self.client.step_retrying(final_step).await?;
+                        if tile(self.client.world_spatial().actor_position)? != arrival {
+                            return Err("access-arrival-mismatch".into());
+                        }
+                    } else {
+                        self.approach(target, 0).await?;
+                    }
                     None
                 } else {
                     let ordinal = target_ordinal(self.world, target, selector)?;
@@ -660,6 +714,11 @@ impl Journey<'_, '_> {
                     self.approach(target, 1).await?;
                     if self.use_object(placement).await? != UseDisposition::Committed {
                         return Err("map-use-refused".into());
+                    }
+                    if let Some(arrival) = arrival
+                        && tile(self.client.world_spatial().actor_position)? != arrival
+                    {
+                        return Err("access-arrival-mismatch".into());
                     }
                     Some(Replay::Use(placement))
                 }
@@ -873,6 +932,14 @@ impl Journey<'_, '_> {
         }
         self.check_log(quest).await
     }
+}
+
+fn authored_tile(position: &Value) -> TestResult<TilePos> {
+    Ok(TilePos {
+        x: u16::try_from(position["x"].as_u64().ok_or("missing-target-x")?)?,
+        y: u16::try_from(position["y"].as_u64().ok_or("missing-target-y")?)?,
+        floor: i8::try_from(position["floor"].as_i64().ok_or("missing-target-floor")?)?,
+    })
 }
 
 fn target_ordinal(world: &BundleWorld, at: TilePos, selector: &Value) -> TestResult<u8> {
