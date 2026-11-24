@@ -15,6 +15,10 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
         "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
     )
     .then_some((session, profile))
+    .or_else(|| {
+        (cfg!(any(test, feature = "qualification-spawn")) && profile == "progress-baking")
+            .then_some((session, profile))
+    })
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -658,6 +662,9 @@ async fn prepare_build(
     {
         return Err("qualification scope mismatch".into());
     }
+    if profile == "progress-baking" {
+        return prepare_items(root, authority, proof, &current, native, deadline, &[3604]).await;
+    }
     let character = crate::domain::CharacterId::from_bytes(
         *current.current_character_lease().character_id().as_bytes(),
     )
@@ -706,7 +713,16 @@ async fn prepare_build(
         deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    prepare_items(
+        root,
+        authority,
+        proof,
+        &current,
+        native,
+        deadline,
+        &[3276, 3003, 3457],
+    )
+    .await
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -737,6 +753,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
+    item_ids: &[u32],
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -809,9 +826,7 @@ async fn prepare_items(
     let index = native
         .item_index()
         .ok_or("qualification Item index missing")?;
-    // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
-    // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    for (ordinal, &id) in item_ids.iter().enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
@@ -1683,7 +1698,15 @@ mod tests {
     #[test]
     fn qualification_request_accepts_only_named_profiles_and_v7_sessions() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
-        for profile in ["explorer", "knight", "paladin", "sorcerer", "druid", "monk"] {
+        for profile in [
+            "explorer",
+            "knight",
+            "paladin",
+            "sorcerer",
+            "druid",
+            "monk",
+            "progress-baking",
+        ] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }
         for text in [

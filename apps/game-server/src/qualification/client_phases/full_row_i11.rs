@@ -106,7 +106,7 @@ async fn reach_station(
     nearby_station(arrived, &stations).ok_or_else(|| format!("step={name}-route observed=no-station-within-use-distance-after-STEP").into())
 }
 
-pub(super) async fn mill_wheat(
+async fn mill_wheat(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     bytes: &[u8],
@@ -150,7 +150,7 @@ fn oven_refusal_source(definition: u32, rope: u32) -> bool {
     definition == rope
 }
 
-pub(super) async fn mix_dough(
+async fn mix_dough(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     bytes: &[u8],

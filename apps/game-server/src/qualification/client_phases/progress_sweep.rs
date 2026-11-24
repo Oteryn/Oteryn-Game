@@ -222,7 +222,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
                 match entry.family {
                     Family::Achievement => achievement(client, world, &mut rows).await,
                     Family::Charm => charm(client, world, &mut rows).await,
-                    Family::Craft => craft(client, world, &mut rows).await,
+                    Family::Craft => craft(client, clients, world, &mut rows).await,
                     Family::Proficiency => proficiency(client, world, &root, &mut rows).await,
                 }
             }),
@@ -994,8 +994,39 @@ fn output_matches(
     })
 }
 
+async fn seed_baking_dough(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let provision = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let status = tokio::task::spawn_blocking(move || {
+        crate::qualification::provision_python()
+            .arg(provision)
+            .args([
+                "--socket",
+                &socket,
+                "--session",
+                &session,
+                "--profile",
+                "progress-baking",
+            ])
+            .status()
+    })
+    .await??;
+    if !status.success() {
+        return Err("harness-baking-dough-fixture-refused".into());
+    }
+    let (result, ..) = logout_retrying_busy(client).await?;
+    if result != Some(LogoutResult::Accepted) {
+        return Err("harness-baking-fixture-logout-refused".into());
+    }
+    *client = connect_character(clients, 0x70, 1).await?;
+    Ok(())
+}
+
 async fn craft(
     client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
     world: &BundleWorld,
     rows: &mut Rows<'_>,
 ) -> TestResult {
@@ -1016,13 +1047,10 @@ async fn craft(
         if existing < i64::from(count) {
             let id = item_id(string(&operand["item_id"]["key"])?)?;
             let missing = u32::try_from(i64::from(count) - existing)?;
-            if id == 3604 {
-                // Dough itself has no shop route in the town fixture. Use the
-                // same mill, water and mixing commands as the baking journey.
-                let bytes = world_bytes()?;
-                for _ in 0..missing {
-                    full_row_i11::mill_wheat(client, world, &bytes).await?;
-                    full_row_i11::mix_dough(client, world, &bytes, &index, item).await?;
+            if id == 3604 && missing == 1 {
+                seed_baking_dough(client, clients).await?;
+                if quantity(&inventory(client)?, item) < i64::from(count) {
+                    return Err("harness-seeded-dough-missing-after-admission".into());
                 }
             } else {
                 full_row_i14::acquire(client, world, id, missing).await?;
