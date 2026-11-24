@@ -13,3 +13,8 @@ fn inspection_postgres_unselected_capability_rejects_command() -> TestResult {
 fn inspection_postgres_trade_counterpart_requires_current_offer_and_leaf_index() -> TestResult {
     super::player_trade_fixtures::run_scenario(true)
 }
+
+#[test]
+fn inspection_postgres_cyclopedia_item_without_runtime_policy_is_refused() -> TestResult {
+    item_look::large_stack(item_look::scenario_with_missing_item_policy)
+}

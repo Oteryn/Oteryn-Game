@@ -322,10 +322,16 @@ async fn project(
     let runtime = owner.runtime.lock().await;
     runtime.owner_fence().ok()?;
     let reference = definition_ref(pinned_index(&runtime, owner.active_generation)?, definition)?;
-    let policy = owner
+    let Some(policy) = owner
         .active_generation?
         .native_gameplay()?
-        .item_policy(&definition.production_key, &definition.revision_ref)?;
+        .item_policy(&definition.production_key, &definition.revision_ref)
+    else {
+        super::operator_event(&format!(
+            "event=inspection_refused reason=missing_item_policy definition_ref={reference}"
+        ));
+        return None;
+    };
     if policy.source_digest() != runtime.content_pin().server_artifact_digest()
         || policy.record().production_definition.family != definition.family
     {

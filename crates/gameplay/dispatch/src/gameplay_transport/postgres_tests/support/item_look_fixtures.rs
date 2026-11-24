@@ -333,14 +333,22 @@ pub(super) fn scenario() -> TestResult {
 }
 
 pub(super) fn scenario_with_inspection(inspection: Option<bool>) -> TestResult {
-    scenario_inner(inspection, false)
+    scenario_inner(inspection, false, false)
 }
 
 pub(super) fn scenario_with_goblets() -> TestResult {
-    scenario_inner(None, true)
+    scenario_inner(None, true, false)
 }
 
-fn scenario_inner(inspection: Option<bool>, goblets: bool) -> TestResult {
+pub(super) fn scenario_with_missing_item_policy() -> TestResult {
+    scenario_inner(Some(true), false, true)
+}
+
+fn scenario_inner(
+    inspection: Option<bool>,
+    goblets: bool,
+    missing_item_policy: bool,
+) -> TestResult {
     run(async |admin| {
         reset();
         let harness = Harness::create_with_admission_seed(admin, "item_look", true, false).await?;
@@ -563,7 +571,28 @@ fn scenario_inner(inspection: Option<bool>, goblets: bool) -> TestResult {
                 .map_err(debug)?;
         }
         if let Some(enabled) = inspection {
-            super::inspection_fixtures::serve_inspections(&owner, admitted, own, enabled).await?;
+            let refused_reference = if missing_item_policy {
+                let key = "oteryn:item.tibia.i1000";
+                let reference = reference(key)?;
+                assert_eq!(
+                    reference.get(),
+                    2,
+                    "reference used by the live Cyclopedia row"
+                );
+                assert_eq!(index.definition_at(reference), Some((key, "definition-r1")));
+                assert!(native.item_policy(key, "definition-r1").is_none());
+                Some(reference.get())
+            } else {
+                None
+            };
+            super::inspection_fixtures::serve_inspections(
+                &owner,
+                admitted,
+                own,
+                enabled,
+                refused_reference,
+            )
+            .await?;
         } else {
             tokio::time::timeout(
                 std::time::Duration::from_secs(30),

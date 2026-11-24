@@ -1,5 +1,5 @@
-use tokio::io::AsyncWriteExt;
 use super::{TestResult, item_look_fixtures as item_look};
+use tokio::io::AsyncWriteExt;
 
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
@@ -19,6 +19,7 @@ pub(super) async fn serve_inspections(
     admitted: AdmittedSession,
     own: EntityRef,
     enabled: bool,
+    refused_reference: Option<u32>,
 ) -> TestResult {
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serve = async {
@@ -75,7 +76,11 @@ pub(super) async fn serve_inspections(
                 index: 0,
             },
         ];
-        for (index, request) in requests.into_iter().enumerate() {
+        for (index, request) in requests
+            .into_iter()
+            .chain(refused_reference.map(Request::Catalogue))
+            .enumerate()
+        {
             let bytes = protocol::encode_client_command(
                 admitted.continuity.connection_generation,
                 &protocol::ClientCommandValue {
@@ -120,6 +125,13 @@ pub(super) async fn serve_inspections(
                         assert_eq!(reply.items[0].slot, 10);
                     }
                     5 => assert_eq!(reply.status, 2),
+                    6 => {
+                        assert_eq!(
+                            reply.status, 2,
+                            "indexed definition without a runtime policy"
+                        );
+                        assert!(reply.items.is_empty());
+                    }
                     _ => unreachable!(),
                 }
                 break;
