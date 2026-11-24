@@ -631,12 +631,15 @@ pub(super) async fn run(
         let encounter = entry.key.strip_suffix(".encounter");
         let phase = encounter.and_then(room_actor);
         let scripted = encounter.and_then(scripted_room);
+        let cobra_access = encounter == Some("cobra_bastion");
         let mut rows = Rows {
             entry,
             steps: if entry.held.is_some() {
                 &["route", "spawn", "kill", "reward"]
             } else if entry.key.ends_with(".arena") && entry.lever.is_none() {
                 &["entry"]
+            } else if cobra_access {
+                &["entry", "quest_access"]
             } else if scripted.is_some() {
                 &["entry", "spawn"]
             } else if phase.is_some() {
@@ -662,6 +665,8 @@ pub(super) async fn run(
                     &mut rows,
                 )
                 .await
+            } else if cobra_access {
+                cobra_journey(clients, world, leader_index, &mut party, &mut rows).await
             } else if let Some(scripted) = scripted {
                 scripted_journey(
                     clients,
@@ -957,6 +962,74 @@ fn scripted_placement(
         }
     }
     selected.ok_or_else(|| "donor room trigger has no published placement in bundle".into())
+}
+
+async fn cobra_journey(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    index: usize,
+    party: &mut Vec<DevClientSession>,
+    rows: &mut Rows<'_>,
+) -> Result<(), Failure> {
+    // The selected step-in callback publishes an access track, with no room
+    // handoff or boss spawn (content/quests/world-callbacks.json:4009).
+    let trigger = TilePos {
+        x: 33384,
+        y: 32627,
+        floor: -7,
+    };
+    let mut connection = sqlx::PgConnection::connect(clients.url)
+        .await
+        .map_err(|error| failure("fixture", error))?;
+    let read = || {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT value FROM game_character_quest_tracks
+         WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+        )
+        .bind(clients.characters[index].as_slice())
+        .bind("oteryn:quest-progress/quest/u12_20/grave_danger/cobra_bastion/access")
+    };
+    let before = read()
+        .fetch_optional(&mut connection)
+        .await
+        .map_err(|error| failure("fixture", error))?;
+    if before.is_some_and(|value| !(-1..=0).contains(&value)) {
+        return Err(failure(
+            "fixture_quest_state",
+            format!("Cobra access already set: {before:?}"),
+        ));
+    }
+    party.push(
+        connect_character(clients, 0xb4, index)
+            .await
+            .map_err(|error| failure("fixture", error))?,
+    );
+    walk_to(&mut party[0], world, trigger)
+        .await
+        .map_err(|error| failure("entry_route", error))?;
+    rows.emit(None, "stepped-onto-authored-cobra-access-tile");
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    loop {
+        let after = read()
+            .fetch_optional(&mut connection)
+            .await
+            .map_err(|error| failure("quest_access", error))?;
+        if after == Some(1) {
+            rows.emit(None, "wire-step-committed-cobra-access-track");
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(failure(
+                "quest_access",
+                format!("Cobra access track: {before:?} -> {after:?}"),
+            ));
+        }
+        party[0]
+            .service_liveness(Duration::from_millis(50))
+            .await
+            .map_err(|error| failure("quest_access", error))?;
+        party[0].take_events();
+    }
 }
 
 async fn wait_at(client: &mut DevClientSession, landing: TilePos) -> TestResult {
