@@ -1070,7 +1070,7 @@ async fn charm(
         return Err(format!("charm-content-effect-inactive-{effect}").into());
     }
     if effect == "kill_area_damage" {
-        let (before, after) = carnage_probe(client, world, &metadata.spawns, species, race).await?;
+        let (before, after) = carnage_probe(client, world, species, race).await?;
         rows.pass(&format!(
             "untargeted-cardinal-neighbour-health-{before}-to-{after}"
         ));
@@ -1133,17 +1133,14 @@ fn charm_creature_view(
 async fn carnage_probe(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
     species: &str,
     race: NonZeroU32,
 ) -> TestResult<(u8, u8)> {
     use oteryn_dev_client::SessionEvent;
     use oteryn_protocol_oteryn::{analyser::AnalyserFact, attack::AttackIntentDisposition};
-    let first = full_row_p05::wait_for_spawn(client, world, spawns, species)
-        .await?
-        .entity;
+    creature_sweep::leave_protection_zone(client, world).await?;
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let mut creatures = vec![first];
+    let mut creatures = Vec::new();
     for _ in 0..12 {
         creatures.retain(|id| charm_creature_view(client, id).is_some());
         let mut pair = None;
@@ -1716,7 +1713,11 @@ async fn proficiency(
         if equipped.status != CommandStatus::Accepted
             || equipped.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
         {
-            return Err("proficiency-content-weapon-equip-refused".into());
+            return Err(format!(
+                "proficiency-content-weapon-equip-refused-{:?}-{:?}",
+                equipped.status, equipped.outcome
+            )
+            .into());
         }
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
