@@ -560,9 +560,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
 }
 
 async fn within_step<T>(future: impl std::future::Future<Output = TestResult<T>>) -> TestResult<T> {
-    tokio::time::timeout(STEP_DEADLINE, future)
-        .await
-        .map_err(|_| "NPC sweep step timed out")?
+    tokio::time::timeout(STEP_DEADLINE, future).await?
 }
 
 struct Fixture<'a> {
@@ -954,6 +952,15 @@ impl Fixture<'_> {
                 continue;
             }
             let result = within_step(self.step(at, actor, &name, action)).await;
+            if result
+                .as_ref()
+                .is_err_and(|error| error.is::<tokio::time::error::Elapsed>())
+            {
+                // A cancelled exchange may still have a reply on the wire.
+                // Drop this connection before the next step can send a command.
+                self.client = None;
+                self.focused = false;
+            }
             if !rows.emit(row, action.cause(), result) {
                 failures.push(step);
             }
