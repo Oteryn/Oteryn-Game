@@ -11,6 +11,16 @@ WORLD = ROOT / "content/world"
 
 
 class DawnportGround(unittest.TestCase):
+    def test_runtime_static_surface_ids_match_compiler_catalogue_order(self):
+        registry = json.loads((WORLD / "source-static-definitions.json").read_bytes())
+        terrain_keys = {
+            record["identity"]["key"]
+            for shard in (WORLD / "terrain").glob("terrain-*.json")
+            for record in json.loads(shard.read_bytes())["records"]
+        }
+        terrain_keys.update(record["identity"]["key"] for record in registry["records"])
+        self.assertEqual(registry["technical_terrain_keys"], sorted(terrain_keys))
+
     def test_donor_ground_survives_palette_projection(self):
         index = json.loads((WORLD / "placements/index.json").read_bytes())
         for x, y, z, source_ids in [
