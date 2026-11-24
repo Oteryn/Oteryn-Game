@@ -73,6 +73,13 @@ pub(crate) fn next_command_source() -> Result<u16, SpawnRefusal> {
         .map_err(|_| SpawnRefusal::Fence("qualification spawn sources exhausted".into()))
 }
 
+/// Open ground outside Thais temple used by the creature-sweep fixture.
+pub(crate) const SWEEP_HUNT_POSITION: MovementLocalPosition = MovementLocalPosition {
+    x: 32369,
+    y: 32230,
+    floor: -7,
+};
+
 /// The eight neighbours of `center` on its floor, orthogonal first, in a fixed order.
 pub(crate) fn adjacent_cells(center: MovementLocalPosition) -> Vec<MovementLocalPosition> {
     [
@@ -319,7 +326,7 @@ pub(crate) fn publish_spawn(
 }
 
 /// The qualified tile and source-metadata rules of one spawn cell.
-fn static_cell_refusal(
+pub(crate) fn static_cell_refusal(
     room: &QualifiedNativeEntryRoom,
     position: MovementLocalPosition,
 ) -> Result<(), String> {

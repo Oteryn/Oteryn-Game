@@ -3026,6 +3026,14 @@ async fn control_loop(
                     .unwrap_or_else(|| "rejected reason=damage_unavailable".to_owned()),
                     "qualification_damage",
                 ),
+                #[cfg(any(test, feature = "qualification-spawn"))]
+                Some(request) if request.starts_with(b"place-sweep-player ") => (
+                    qualification_fixture::place_sweep_player(config, spawn, &request)
+                        .await
+                        .unwrap_or("rejected reason=placement_unavailable")
+                        .to_owned(),
+                    "character_bootstrap",
+                ),
                 Some(request) if request.starts_with(b"spawn ") => (
                     Box::pin(qualification_fixture::spawn(
                         root, authority, proof, config, native, spawn, &request,
