@@ -27,7 +27,7 @@ fn mastery_species(profile: &str) -> Option<&str> {
     let key = profile.strip_prefix("progress-mastery:")?;
     let name = key.strip_prefix("oteryn:creature.")?;
     (!name.is_empty()
-        && key.len() <= 128
+        && profile.len() <= 128
         && name
             .bytes()
             .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_'))
@@ -89,7 +89,11 @@ pub(super) async fn prepare(
         Ok(()) => "qualified",
         Err(error) => {
             emit(PROCESS, &refusal_warning(&session, profile, error.as_ref()));
-            "rejected"
+            if error.to_string() == "mastery_target_unavailable" {
+                "rejected reason=mastery_target_unavailable"
+            } else {
+                "rejected"
+            }
         }
     }
 }
@@ -685,11 +689,8 @@ async fn prepare_build(
         let row = native
             .reward_table()
             .row(species)
-            .map_err(|reason| reason.as_str())?;
-        let race = row
-            .race
-            .as_ref()
-            .ok_or("qualification creature has no Bestiary race")?;
+            .map_err(|_| "mastery_target_unavailable")?;
+        let race = row.race.as_ref().ok_or("mastery_target_unavailable")?;
         return prepare_mastery(root, authority, proof, &current, deadline, race).await;
     }
     let character = crate::domain::CharacterId::from_bytes(

@@ -210,6 +210,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
     let mut pass = 0;
     let mut fail = 0;
     let mut session = None;
+    let mut unsupported_mastery = std::collections::BTreeSet::new();
     for entry in &entries[start..end] {
         verdict::Harness::global().progress("progress-sweep-entry");
         let mut rows = Rows {
@@ -226,7 +227,9 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
                 let client = session.as_mut().ok_or("fixture admission missing")?;
                 match entry.family {
                     Family::Achievement => achievement(client, world, &mut rows).await,
-                    Family::Charm => charm(client, world, &mut rows).await,
+                    Family::Charm => {
+                        charm(client, world, &mut rows, &mut unsupported_mastery).await
+                    }
                     Family::Craft => craft(client, clients, world, &mut rows).await,
                     Family::Proficiency => proficiency(client, world, &root, &mut rows).await,
                 }
@@ -815,6 +818,7 @@ async fn charm(
     client: &mut DevClientSession,
     world: &BundleWorld,
     rows: &mut Rows<'_>,
+    unsupported_mastery: &mut std::collections::BTreeSet<String>,
 ) -> TestResult {
     use oteryn_protocol_oteryn::charm::{
         CharmAssignDisposition, CharmKind, CharmUnlockDisposition,
@@ -943,46 +947,58 @@ async fn charm(
         ));
     }
     candidates.sort_unstable();
-    let (remaining, race, species, threshold) = candidates
-        .into_iter()
-        .find(|(_, _, species, _)| {
-            full_row_p05::has_reachable_spawn(world, here, &metadata.spawns, species)
-        })
-        .ok_or("charm-no-reachable-bestiary-creature")?;
-    if remaining != 0 {
-        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-        let mut kills = threshold - remaining;
-        for _ in 0..6 {
-            let setup = request_fixture_control(
-                session.clone(),
-                "--profile",
-                format!("progress-mastery:{species}"),
-            )
-            .await;
-            let progress = charm_command(client, Action::Query).await?;
-            let observed = progress
-                .bestiary
-                .iter()
-                .find(|row| row.race == race)
-                .map_or(0, |row| row.kill_count);
-            if observed >= threshold {
+    let mut target = None;
+    'targets: for (remaining, race, species, threshold) in candidates {
+        if unsupported_mastery.contains(species)
+            || !full_row_p05::has_reachable_spawn(world, here, &metadata.spawns, species)
+        {
+            continue;
+        }
+        if remaining != 0 {
+            let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+            let mut kills = threshold - remaining;
+            for _ in 0..6 {
+                let setup = request_fixture_control(
+                    session.clone(),
+                    "--profile",
+                    format!("progress-mastery:{species}"),
+                )
+                .await;
+                if setup
+                    .as_ref()
+                    .is_err_and(|reason| reason == "mastery_target_unavailable")
+                {
+                    unsupported_mastery.insert(species.to_owned());
+                    continue 'targets;
+                }
+                let progress = charm_command(client, Action::Query).await?;
+                let observed = progress
+                    .bestiary
+                    .iter()
+                    .find(|row| row.race == race)
+                    .map_or(0, |row| row.kill_count);
+                if observed >= threshold {
+                    kills = observed;
+                    break;
+                }
+                if observed <= kills {
+                    return Err(
+                        format!("harness-charm-mastery-no-progress-{species}-{setup:?}").into(),
+                    );
+                }
                 kills = observed;
-                break;
             }
-            if observed <= kills {
-                return Err(
-                    format!("harness-charm-mastery-no-progress-{species}-{setup:?}").into(),
-                );
+            if kills < threshold {
+                return Err(format!(
+                    "harness-charm-mastery-incomplete-{species}-{kills}-of-{threshold}"
+                )
+                .into());
             }
-            kills = observed;
         }
-        if kills < threshold {
-            return Err(format!(
-                "harness-charm-mastery-incomplete-{species}-{kills}-of-{threshold}"
-            )
-            .into());
-        }
+        target = Some((remaining, race, species));
+        break;
     }
+    let (remaining, race, species) = target.ok_or("charm-no-reachable-bestiary-creature")?;
     let assigned = charm_command(client, Action::Assign { charm: id, race }).await?;
     let observed = charm_state(&assigned, id)?;
     if assigned.outcome != Outcome::Assign(CharmAssignDisposition::Assigned)
