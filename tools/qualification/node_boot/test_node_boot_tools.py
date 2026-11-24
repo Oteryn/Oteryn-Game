@@ -50,17 +50,29 @@ KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
 class KnobTests(unittest.TestCase):
+    def preflight_bin(self, temporary):
+        bin_dir = Path(temporary, 'bin')
+        bin_dir.mkdir()
+        for program in ('docker', 'python3', 'node', 'openssl', 'cargo', 'psql', 'setsid', 'timeout'):
+            (bin_dir / program).symlink_to('/bin/true')
+        for program in ('bash', 'dirname', 'realpath'):
+            (bin_dir / program).symlink_to(f'/bin/{program}')
+        git = bin_dir / 'git'
+        git.write_text(textwrap.dedent(f'''\
+            #!/bin/sh
+            case "$1" in
+              rev-parse) printf "%s\\n" {str(HERE.parents[2])!r} ;;
+              -C) [ -n "${{PREFLIGHT_PLATFORM_PIN:-}}" ] || exit 1
+                  printf "%s\\n" "$PREFLIGHT_PLATFORM_PIN" ;;
+              *) exit 1 ;;
+            esac
+            '''))
+        git.chmod(0o755)
+        return bin_dir
+
     def test_runner_preflight_without_sudo_requires_explicit_opt_in(self):
         with tempfile.TemporaryDirectory() as temporary:
-            bin_dir = Path(temporary, 'bin')
-            bin_dir.mkdir()
-            for program in ('docker', 'python3', 'node', 'openssl', 'cargo', 'psql', 'setsid', 'timeout'):
-                (bin_dir / program).symlink_to('/bin/true')
-            for program in ('bash', 'realpath'):
-                (bin_dir / program).symlink_to(f'/bin/{program}')
-            git = bin_dir / 'git'
-            git.write_text(f'#!/bin/sh\n[ "$1" = rev-parse ] || exit 1\nprintf "%s\\n" {str(HERE.parents[2])!r}\n')
-            git.chmod(0o755)
+            bin_dir = self.preflight_bin(temporary)
             env = {'PATH': str(bin_dir), 'NODE_BOOT_WORLD': '0',
                    'PLATFORM_SOURCE': str(Path(temporary, 'missing-platform'))}
             for opt_in, expected in (
@@ -77,6 +89,32 @@ class KnobTests(unittest.TestCase):
                     result = bash(f'exec /bin/bash "{RUN_SH}"', env | opt_in, HERE.parents[2])
                     self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
                     self.assertEqual(result.stdout.strip(), expected)
+
+    def test_unprivileged_runner_refuses_foreign_work_ancestor_before_spell_build(self):
+        lifecycle = HERE.parent / 'game_platform' / 'lifecycle.sh'
+        pin = re.search(r'^readonly GAME_PLATFORM_SHA=([a-f0-9]{40})$', lifecycle.read_text(), re.M)
+        self.assertIsNotNone(pin)
+        with tempfile.TemporaryDirectory() as temporary:
+            bin_dir = self.preflight_bin(temporary)
+            parent = Path(temporary, 'foreign')
+            work = parent / 'owned'
+            work.mkdir(parents=True)
+            stat_tool = bin_dir / 'stat'
+            stat_tool.write_text(f'#!/bin/sh\nif [ "$4" = "$FOREIGN_WORK_ANCESTOR" ]; then\n'
+                                 f'  echo {os.geteuid() + 1}\nelse\n  echo 0\nfi\n')
+            stat_tool.chmod(0o755)
+            cargo = bin_dir / 'cargo'
+            cargo.unlink()
+            cargo.write_text('#!/bin/sh\necho UNEXPECTED_BUILD\nexit 91\n')
+            cargo.chmod(0o755)
+            env = {'PATH': str(bin_dir), 'NODE_BOOT_UNPRIVILEGED': '1',
+                   'NODE_BOOT_SPELLS': '1', 'NODE_BOOT_WORLD': '0',
+                   'RUNNER_TEMP': str(work), 'FOREIGN_WORK_ANCESTOR': str(parent),
+                   'PREFLIGHT_PLATFORM_PIN': pin[1]}
+            result = bash(f'exec /bin/bash "{RUN_SH}"', env, HERE.parents[2])
+            self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+            self.assertEqual(result.stdout.strip(),
+                             'NODE_BOOT_RESULT=BLOCKED reason=unprivileged_work_ancestor_not_owned mode=unprivileged')
 
     def knobs(self, **env):
         script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s|%s|%s|%s" "$SERVICE_USER" "$BASE" "$NODE_BOOT_KEEP_STACK" "$NODE_BOOT_REUSE_STACK"\n'

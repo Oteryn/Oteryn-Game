@@ -132,6 +132,11 @@ and the pinned Platform checkout are still required. Operator/service isolation
 checks are skipped and the output records `mode=unprivileged` so a successful
 run cannot satisfy privileged qualification.
 
+Set `RUNNER_TEMP` to a short path you own, such as `/workspace/nbtmp` (mode
+0700). The directory and each ancestor up to `/` must be owned by you or root.
+The runner checks ownership before building, including when it defaults to
+`/tmp`.
+
 Single-row loop (refused when `CI=true` or `GITHUB_ACTIONS` is set):
 
 ```sh

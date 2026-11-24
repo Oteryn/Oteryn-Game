@@ -205,6 +205,18 @@ NODE_SPAWN_FEATURES=(--features qualification-spawn)
 if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
   [[ -z "${NODE_BOOT_PREBUILT_DIR:-}" ]] || blocked unprivileged_requires_local_game_build
   NODE_SPAWN_FEATURES=(--features qualification-unprivileged)
+  work_parent="$(realpath -e -- "${RUNNER_TEMP:-/tmp}")" || blocked unprivileged_work_ancestor_not_owned
+  [[ -d "$work_parent" ]] || blocked unprivileged_work_ancestor_not_owned
+  [[ "$work_parent" != /srv && "$work_parent" != /srv/* ]] || blocked unprivileged_work_under_srv
+  # game-ops checks the full state-directory path, including its root.
+  ancestor="$work_parent"
+  while :; do
+    owner="$(stat -c %u -- "$ancestor")" || blocked unprivileged_work_ancestor_not_owned
+    [[ "$owner" == 0 || "$owner" == "$EUID" ]] || blocked unprivileged_work_ancestor_not_owned
+    [[ "$ancestor" != / ]] || break
+    ancestor="${ancestor%/*}"
+    ancestor="${ancestor:-/}"
+  done
 fi
 NODE_BOOT_LIBTEST=""
 WORLD_COMPILER=(cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler --)
@@ -253,8 +265,7 @@ if [[ "$NODE_BOOT_SPELLS" == 1 && "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
 fi
 
 if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
-  # Keep the Unix socket paths short and the deployment inside our private tree.
-  WORK="$(mktemp -d /tmp/node-boot.XXXXXX)"
+  WORK="$(mktemp -d "${work_parent%/}/node-boot.XXXXXX")"
   BASE="$WORK/deploy"
 else
   WORK="$(mktemp -d "${RUNNER_TEMP:-/tmp}/node-boot.XXXXXX")"
