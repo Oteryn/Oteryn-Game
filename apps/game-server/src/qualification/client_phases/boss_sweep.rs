@@ -79,16 +79,6 @@ struct Entry {
 }
 
 impl Entry {
-    fn needs_quest_fixture(&self) -> bool {
-        use oteryn_gameplay_quests::quest::soul_war::SoulWarBoss;
-
-        self.creature.as_deref().is_some_and(|creature| {
-            rotten_blood_minimum(creature).is_some()
-                || SoulWarBoss::from_creature(creature).is_some()
-                || self.koshei_switch()
-        })
-    }
-
     fn koshei_switch(&self) -> bool {
         self.creature.as_deref() == Some("oteryn:creature.koshei_the_deathless")
             && self
@@ -534,13 +524,6 @@ pub(super) async fn run(
     evidence(&format!(
         "boss_sweep build mode=seeded vocation=knight level={build_level} gear=i7388 supplies=rope,shovel,i7643"
     ));
-    let quest_seed = tokio::time::timeout(
-        Duration::from_secs(10),
-        seed_quest_access(clients, selected),
-    )
-    .await
-    .map_err(|_| "quest access fixture deadline".into())
-    .and_then(|result| result);
     let mut tally = Tally::default();
     for (offset, entry) in selected.iter().enumerate() {
         let leader_index = offset % clients.accounts.len();
@@ -560,11 +543,6 @@ pub(super) async fn run(
         };
         let mut party = Vec::new();
         let work = async {
-            if entry.needs_quest_fixture()
-                && let Err(error) = &quest_seed
-            {
-                return Err(failure("fixture", format!("quest access seed: {error}")));
-            }
             if let Some(held) = &entry.held {
                 held_journey(
                     clients,
@@ -1145,100 +1123,95 @@ const KOSHEI_SWITCH: TilePos = TilePos {
 const KOSHEI_ENTRY_SOURCE: &str =
     "content/quests/authored-bindings/koshei_the_deathless_journey.json:62";
 
-async fn seed_quest_access(clients: &SeamClients<'_>, selected: &[Entry]) -> TestResult {
+async fn seed_quest_access(url: &str, character: &[u8; 16], entry: &Entry) -> TestResult {
     use oteryn_gameplay_quests::quest::{
         rotten_blood::{ACCESS_TRACK, RottenBloodBoss},
         soul_war::SoulWarBoss,
     };
 
-    let creatures = || {
-        selected
-            .iter()
-            .filter_map(|entry| entry.creature.as_deref())
-    };
-    let rotten_blood = creatures().filter_map(RottenBloodBoss::from_creature_key);
-    let soul_war = creatures().filter_map(SoulWarBoss::from_creature);
-    let rotten_final = rotten_blood
-        .clone()
-        .any(|boss| boss == RottenBloodBoss::Bakragore);
-    let soul_final = soul_war
-        .clone()
-        .any(|boss| boss == SoulWarBoss::Megalomania);
-    let rotten_access = rotten_blood.count() > 0;
-    let soul_access = soul_war.count() > 0;
-    let koshei_access = selected.iter().any(Entry::koshei_switch);
+    let creature = entry.creature.as_deref().unwrap_or_default();
+    let rotten_blood = RottenBloodBoss::from_creature_key(creature);
+    let soul_war = SoulWarBoss::from_creature(creature);
+    let rotten_final = rotten_blood == Some(RottenBloodBoss::Bakragore);
+    let soul_final = soul_war == Some(SoulWarBoss::Megalomania);
+    let rotten_access = rotten_blood.is_some();
+    let soul_access = soul_war.is_some();
+    let koshei_access = entry.koshei_switch();
     if !rotten_access && !soul_access && !koshei_access {
         return Ok(());
     }
 
     // The owner tests exercise both the unseeded rejection and the accepted
     // prerequisite states in gameplay_transport/postgres_tests/boss_activity.rs:810.
-    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let mut connection = sqlx::PgConnection::connect(url).await?;
     let mut transaction = connection.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *transaction)
         .await?;
-    for character in clients.characters {
-        if rotten_access {
+    if rotten_access {
+        sqlx::query(
+            "INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
+             SELECT character_id,$2,'oteryn:quest/rotten-blood',4,character_revision
+             FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
+             ON CONFLICT DO NOTHING",
+        )
+        .bind(character.as_slice())
+        .bind(ACCESS_TRACK)
+        .execute(&mut *transaction)
+        .await?;
+    }
+    if rotten_final {
+        sqlx::query(
+            "INSERT INTO game_character_rotten_blood(character_id,child_flags)
+             VALUES(encode($1,'hex')::uuid,15) ON CONFLICT (character_id) DO UPDATE
+             SET child_flags = game_character_rotten_blood.child_flags | excluded.child_flags",
+        )
+        .bind(character.as_slice())
+        .execute(&mut *transaction)
+        .await?;
+    }
+    if koshei_access {
+        // The dispatch owner drives the complete quest in
+        // postgres_tests/support/koshei_the_deathless_journey_fixtures.rs.
+        for (track, value) in [
+            (
+                "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+                4,
+            ),
+            ("oteryn:quest-progress/qnpcfx/koshei/amulet", 2),
+        ] {
             sqlx::query(
                 "INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
-                 SELECT character_id,$2,'oteryn:quest/rotten-blood',4,character_revision
+                 SELECT character_id,$2,'oteryn:quest.koshei_the_deathless_quest',$3,character_revision
                  FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
                  ON CONFLICT DO NOTHING",
             )
             .bind(character.as_slice())
-            .bind(ACCESS_TRACK)
-            .execute(&mut *transaction)
-            .await?;
-        }
-        if rotten_final {
-            sqlx::query(
-                "INSERT INTO game_character_rotten_blood(character_id,child_flags)
-                 VALUES(encode($1,'hex')::uuid,15) ON CONFLICT DO NOTHING",
-            )
-            .bind(character.as_slice())
-            .execute(&mut *transaction)
-            .await?;
-        }
-        if koshei_access {
-            // The dispatch owner drives the complete quest in
-            // postgres_tests/support/koshei_the_deathless_journey_fixtures.rs.
-            for (track, value) in [
-                (
-                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
-                    4,
-                ),
-                ("oteryn:quest-progress/qnpcfx/koshei/amulet", 2),
-            ] {
-                sqlx::query(
-                    "INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision)
-                     SELECT character_id,$2,'oteryn:quest.koshei_the_deathless_quest',$3,character_revision
-                     FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
-                     ON CONFLICT DO NOTHING",
-                )
-                .bind(character.as_slice())
-                .bind(track)
-                .bind(i64::from(value))
-                .execute(&mut *transaction)
-                .await?;
-            }
-        }
-        if soul_access {
-            sqlx::query(
-                "INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at)
-                 VALUES(encode($1,'hex')::uuid,true,CASE WHEN $2 THEN 31 ELSE 0 END,
-                 CASE WHEN $2 THEN floor(extract(epoch FROM transaction_timestamp()))::bigint-1209601 END)
-                 ON CONFLICT DO NOTHING",
-            )
-            .bind(character.as_slice())
-            .bind(soul_final)
+            .bind(track)
+            .bind(i64::from(value))
             .execute(&mut *transaction)
             .await?;
         }
     }
+    if soul_access {
+        sqlx::query(
+            "INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at)
+             VALUES(encode($1,'hex')::uuid,true,CASE WHEN $2 THEN 31 ELSE 0 END,
+             CASE WHEN $2 THEN floor(extract(epoch FROM transaction_timestamp()))::bigint-1209601 END)
+             ON CONFLICT (character_id) DO UPDATE SET
+             defeated_bosses=excluded.defeated_bosses,
+             first_taint_at=LEAST(game_character_soul_war.first_taint_at,excluded.first_taint_at)
+             WHERE excluded.defeated_bosses=31",
+        )
+        .bind(character.as_slice())
+        .bind(soul_final)
+        .execute(&mut *transaction)
+        .await?;
+    }
     transaction.commit().await?;
     evidence(&format!(
-        "boss_sweep quest_access mode=seeded rotten_blood={rotten_access} rotten_blood_final={rotten_final} soul_war={soul_access} soul_war_final={soul_final} koshei={koshei_access} koshei_source={KOSHEI_ENTRY_SOURCE} oracle=crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:810"
+        "boss_sweep quest_access mode=seeded entry={} rotten_blood={rotten_access} rotten_blood_final={rotten_final} soul_war={soul_access} soul_war_final={soul_final} koshei={koshei_access} koshei_source={KOSHEI_ENTRY_SOURCE} oracle=crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:810",
+        entry.key
     ));
     Ok(())
 }
@@ -1265,9 +1238,21 @@ async fn seeded_knight(
     world: &BundleWorld,
     index: usize,
     level: u32,
+    entry: &Entry,
 ) -> TestResult<DevClientSession> {
     walk_to_logout_tile(&mut client, world).await?;
-    provisioning::provision_profile(client, clients, index, level, &format!("knight@{level}")).await
+    let client =
+        provisioning::provision_profile(client, clients, index, level, &format!("knight@{level}"))
+            .await?;
+    // The owner has now committed progression. Quest tracks need a real
+    // character revision >= 2 (0056_character_quest_state.sql:100).
+    tokio::time::timeout(
+        Duration::from_secs(10),
+        seed_quest_access(clients.url, &clients.characters[index], entry),
+    )
+    .await
+    .map_err(|_| "quest access fixture deadline")??;
+    Ok(client)
 }
 
 #[allow(
@@ -1306,9 +1291,16 @@ async fn held_journey(
     let player = connect_character(clients, 0xb4, leader_index)
         .await
         .map_err(|error| failure("fixture", error))?;
-    let player = seeded_knight(player, clients, world, leader_index, build_level)
-        .await
-        .map_err(|error| failure("fixture", error))?;
+    let player = seeded_knight(
+        player,
+        clients,
+        world,
+        leader_index,
+        build_level,
+        rows.entry,
+    )
+    .await
+    .map_err(|error| failure("fixture", error))?;
     party.push(player);
     let player = &mut party[0];
     let from =
@@ -1502,9 +1494,16 @@ async fn journey(
         .pop()
         .ok_or_else(|| failure("fixture", "no admitted leader"))?;
     party.push(
-        seeded_knight(leader, clients, world, leader_index, build_level)
-            .await
-            .map_err(|error| failure("fixture", error))?,
+        seeded_knight(
+            leader,
+            clients,
+            world,
+            leader_index,
+            build_level,
+            rows.entry,
+        )
+        .await
+        .map_err(|error| failure("fixture", error))?,
     );
     for offset in 1..minimum {
         let index = (leader_index + offset) % clients.accounts.len();
@@ -1512,7 +1511,7 @@ async fn journey(
             .await
             .map_err(|error| failure("fixture", error))?;
         party.push(
-            seeded_knight(member, clients, world, index, build_level)
+            seeded_knight(member, clients, world, index, build_level, rows.entry)
                 .await
                 .map_err(|error| failure("fixture", error))?,
         );
