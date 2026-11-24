@@ -106,18 +106,7 @@ pub(super) async fn run(
         .await;
     custody.finish(result);
 
-    // Purchase qualification precedes consumption: Character 0 must retain its
-    // never-aggressed low-level Adventurer eligibility for both protected deaths.
-    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[character_release_need(clients, 1), character_release_need(clients, 0)]);
-    let watch = services.0.watch();
-    let result = watch
-        .bound(
-            Duration::from_secs(1800),
-            "blessing services journey deadline; remaining actions unproven",
-            blessing_services(&mut services, clients, world, spawns, npcs),
-        )
-        .await;
-    finish_blessing_row(services, result);
+    run_blessing_services(clients, world, spawns, npcs).await;
 
     let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[character_release_need(clients, 0), character_release_need(clients, 1)]);
     let watch = consumption.0.watch();
@@ -140,6 +129,26 @@ pub(super) async fn run(
         )
         .await;
     finish_resting_row(resting, result);
+}
+
+pub(super) async fn run_blessing_services(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    npcs: &oteryn_world_bundle::npc::Table,
+) {
+    // Purchase qualification precedes consumption: Character 0 must retain its
+    // never-aggressed low-level Adventurer eligibility for both protected deaths.
+    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[character_release_need(clients, 1), character_release_need(clients, 0)]);
+    let watch = services.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(1800),
+            "blessing services journey deadline; remaining actions unproven",
+            blessing_services(&mut services, clients, world, spawns, npcs),
+        )
+        .await;
+    finish_blessing_row(services, result);
 }
 
 async fn first_vocation_rows(

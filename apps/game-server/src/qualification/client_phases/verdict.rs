@@ -774,6 +774,7 @@ const GROUPS: &[(&str, &[&str])] = &[
     ("f7forge", &[]),
     ("f7run", &[]),
     ("mp", &[]),
+    ("p16", &[]),
     ("rows", &[]),
 ];
 
@@ -1217,6 +1218,8 @@ mod verdict_tests {
         let rows = Groups::parse(Some("rows"), GROUPS)?;
         assert!(rows.runs("rows") && !rows.runs("core") && !rows.runs("f6"));
         assert!(!some.runs("rows"));
+        let blessing = Groups::parse(Some("p16"), GROUPS)?;
+        assert!(blessing.runs("p16") && !blessing.runs("f6") && !blessing.runs("core"));
         const CHAIN: &[(&str, &[&str])] = &[("a", &["b"]), ("b", &["c"]), ("c", &[]), ("d", &[])];
         let chained = Groups::parse(Some("a"), CHAIN)?;
         assert!(chained.runs("a") && chained.runs("b") && chained.runs("c") && !chained.runs("d"));
