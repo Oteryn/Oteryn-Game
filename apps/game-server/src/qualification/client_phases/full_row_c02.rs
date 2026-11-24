@@ -463,7 +463,9 @@ async fn fund_ranged_purchase(
     tokio::time::timeout_at(approach_deadline, async {
         // The starter offhand has unknown weapon semantics. The server qualifies
         // that slot first, before it can use the ranged profile on the starter wand.
-        stow_offhand(client).await?;
+        stow_offhand(client)
+            .await
+            .map_err(|error| format!("funding-offhand-item-move: {error}"))?;
         approach_funding_rat(client, world, approach_deadline).await
     })
     .await
@@ -656,12 +658,13 @@ async fn buy(
     if reply != npc::NpcIntentDisposition::Ok {
         return Err(format!("trade-buy:item={id}:reply={reply:?}").into());
     }
-    wait_count(
-        client,
-        key,
-        before + u64::from(offer.count) * u64::from(quantity),
-    )
-    .await
+    let expected = before + u64::from(offer.count) * u64::from(quantity);
+    let sequence = wait_count(client, key, expected).await?;
+    evidence(&format!(
+        "C02_PURCHASE seller={} item={id} quantity={quantity} unit_price={} inventory_before={before} inventory_after={expected} sequence={sequence}",
+        seller.key, offer.unit_price
+    ));
+    Ok(sequence)
 }
 
 fn distance(a: ActorPosition, b: ActorPosition) -> u32 {
