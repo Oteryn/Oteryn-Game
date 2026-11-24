@@ -141,6 +141,14 @@ async fn routed_market_payloads(
 }
 
 pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
+    run_scenario(bounds, population, false)
+}
+
+pub(super) fn scenario_with_price_lookup() -> TestResult {
+    run_scenario(false, false, true)
+}
+
+fn run_scenario(bounds: bool, population: bool, price_lookup: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "market_settlement", true, false).await?;
@@ -1125,7 +1133,14 @@ pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
         assert!(
             harness
                 .root
-                .market_projection(&authority, &harness.node, stale, Some(key.clone()), 0, None)
+                .market_projection(
+                    &authority,
+                    &harness.node,
+                    stale,
+                    Some(key.clone()),
+                    None,
+                    None
+                )
                 .await
                 .is_err()
         );
@@ -1187,6 +1202,122 @@ pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
             (prices.sell.trades, prices.sell.units, prices.sell.average),
             (1, 4, Some(100))
         );
+        if price_lookup {
+            let before = snapshot(&harness).await?;
+            {
+                let mut runtime = owner.runtime.lock().await;
+                let expected = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                runtime
+                    .relocate_arena_player(
+                        deps.actor,
+                        session,
+                        expected,
+                        MovementLocalPosition {
+                            x: 3,
+                            y: 0,
+                            floor: 7,
+                        },
+                    )
+                    .map_err(debug)?;
+            }
+            let next = admitted.continuity.next_command_id;
+            let offer = routed_market(&owner, &mut admitted, [(next, sell)]).await?;
+            assert_eq!(
+                decode_reply(offer.first().ok_or("off-depot offer reply")?)
+                    .map_err(debug)?
+                    .code,
+                11
+            );
+            let query = details::encode_query(&Query::Statistics {
+                definition: reference,
+            })
+            .map_err(debug)?;
+            let next = admitted.continuity.next_command_id;
+            let replies = routed_market_payloads(
+                &owner,
+                &mut admitted,
+                [
+                    (next, query.clone()),
+                    (
+                        next + 1,
+                        details::encode_query(&Query::Book {
+                            definition: reference,
+                            page: 0,
+                        })
+                        .map_err(debug)?,
+                    ),
+                    (
+                        next + 2,
+                        details::encode_query(&Query::Catalogue {
+                            filter: Filter::default(),
+                            page: 0,
+                        })
+                        .map_err(debug)?,
+                    ),
+                ],
+            )
+            .await?;
+            assert_eq!(replies.len(), 3);
+            for reply in &replies[1..] {
+                assert_eq!(
+                    details::decode_reply(reply).map_err(debug)?,
+                    Reply::Refused { code: 11 }
+                );
+            }
+            let reply =
+                details::decode_reply(replies.first().ok_or("off-depot prices")?).map_err(debug)?;
+            let Reply::Statistics(mut remote) = reply else {
+                return Err(format!("off-depot price lookup returned {reply:?}").into());
+            };
+            // Both queries use their own statement timestamp.
+            remote.as_of_us = prices.as_of_us;
+            remote.since_us = prices.since_us;
+            assert_eq!(remote, prices);
+
+            // Keep Tokio from advancing its paused clock while the SQL socket is idle.
+            let (release, wait) = std::sync::mpsc::channel::<()>();
+            let clock_guard = tokio::task::spawn_blocking(move || {
+                let _ = wait.recv();
+            });
+            tokio::time::pause();
+            let window = std::time::Duration::from_secs(1);
+            tokio::time::advance(window).await;
+            let next = admitted.continuity.next_command_id;
+            let burst = routed_market_payloads(
+                &owner,
+                &mut admitted,
+                (next..=next + 10).map(|id| (id, query.clone())),
+            )
+            .await;
+            tokio::time::advance(window).await;
+            let next = admitted.continuity.next_command_id;
+            let after_window = routed_market_payloads(&owner, &mut admitted, [(next, query)]).await;
+            tokio::time::resume();
+            drop(release);
+            clock_guard.await?;
+
+            let burst = burst?;
+            assert_eq!(burst.len(), 11);
+            for reply in &burst[..10] {
+                assert!(matches!(
+                    details::decode_reply(reply).map_err(debug)?,
+                    Reply::Statistics(_)
+                ));
+            }
+            assert_eq!(
+                details::decode_reply(&burst[10]).map_err(debug)?,
+                Reply::Refused {
+                    code: details::STATISTICS_RATE_LIMITED
+                },
+            );
+            let after_window = after_window?;
+            assert!(matches!(
+                details::decode_reply(after_window.first().ok_or("statistics after rate window")?)
+                    .map_err(debug)?,
+                Reply::Statistics(_)
+            ));
+            assert_eq!(before, snapshot(&harness).await?);
+        }
         // Privileged fixture timestamp substitution: the production read still resolves
         // current fences independently; no mutation helper is weakened for this test.
         for (offset, expected) in [
@@ -1202,7 +1333,14 @@ pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
             fixture.commit().await?;
             let projection = harness
                 .root
-                .market_projection(&authority, &harness.node, fence, Some(key.clone()), 0, None)
+                .market_projection(
+                    &authority,
+                    &harness.node,
+                    fence,
+                    Some(key.clone()),
+                    None,
+                    None,
+                )
                 .await?;
             assert_eq!(projection.statistics.trades, expected);
             assert_eq!(
@@ -1226,7 +1364,7 @@ pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
                     &harness.node,
                     wrong_world,
                     Some(key.clone()),
-                    0,
+                    None,
                     None
                 )
                 .await
