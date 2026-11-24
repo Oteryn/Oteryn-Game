@@ -777,6 +777,23 @@ fn movement_landing(world: &BundleWorld, placement: TilePos, action: MapAction) 
     })
 }
 
+// USE returns its disposition before the client necessarily receives the
+// spatial projection (session_exchange.rs:131). Wait for the wire observation.
+async fn movement_observation(
+    client: &mut DevClientSession,
+    before: TilePos,
+) -> TestResult<TilePos> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let actual = tile(client.world_spatial().actor_position)?;
+        if actual != before || tokio::time::Instant::now() >= deadline {
+            return Ok(actual);
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+}
+
 #[derive(Clone, Copy)]
 enum RouteStep {
     Walk(StepDirection),
@@ -872,10 +889,11 @@ impl SweepRoutes<'_> {
                     }
                     walking.clear();
                     let revision = map_face(client, placement).map_or(0, |(_, revision)| revision);
+                    let before = tile(client.world_spatial().actor_position)?;
                     use_map_action(client, self.world, placement, action, None, revision)
                         .await
                         .map_err(|error| format!("route-transit-refused: {error}"))?;
-                    let actual = tile(client.world_spatial().actor_position)?;
+                    let actual = movement_observation(client, before).await?;
                     if actual != landing {
                         evidence(&format!(
                             "interaction_sweep transit=redirected expected={landing:?} observed={actual:?}"
@@ -1004,6 +1022,7 @@ async fn map_action(
         return Err(format!("fixture-tool-unavailable: {tool_id:?}").into());
     }
     let before = map_face(client, placement);
+    let prior_position = tile(client.world_spatial().actor_position)?;
     let revision = before.map_or(0, |(_, revision)| revision);
     if matches!(
         action,
@@ -1107,7 +1126,7 @@ async fn map_action(
         _ => {
             let expected = movement_landing(world, placement.at, action)
                 .ok_or("movement-landing-unavailable: owner landing absent from served map")?;
-            let actual = tile(client.world_spatial().actor_position)?;
+            let actual = movement_observation(client, prior_position).await?;
             if actual != expected {
                 return Err(format!(
                     "movement-effect-mismatch: expected {expected:?}, observed {actual:?}"
@@ -1116,8 +1135,9 @@ async fn map_action(
             }
             rows.pass("exact-authored-movement-landing");
             approach_action(client, routes, placement.at, action).await?;
+            let prior_position = tile(client.world_spatial().actor_position)?;
             use_map_action(client, world, placement, action, tool, revision).await?;
-            if tile(client.world_spatial().actor_position)? != expected {
+            if movement_observation(client, prior_position).await? != expected {
                 return Err("movement-reset-mismatch: second activation changed landing".into());
             }
         }
