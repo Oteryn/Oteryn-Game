@@ -492,6 +492,11 @@ async fn sweep_species(
     ))
     .await
     {
+        if stop.cause == "player-death" {
+            // Closing the transport lets the owner settle death and release the lease.
+            // The next fresh admission goes through the existing release gate.
+            drop(session.take());
+        }
         rows.fail(stop.step, stop.cause, &stop.detail);
         rows.block_rest(stop.step);
     }
@@ -513,13 +518,17 @@ async fn ready(
     leave_protection_zone(client, world).await
 }
 
-async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
-    use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
+fn recovery_spell() -> TestResult<std::num::NonZeroU32> {
     let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
     let words = match profile.as_str() {
         "knight" | "explorer" => "exura infir ico",
         _ => "exura infir",
     };
+    client_spell_journey::spell_index(native_spell_book()?, words)
+}
+
+async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
     let mut spell_index = None;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     tokio::time::timeout_at(deadline, async {
@@ -533,7 +542,7 @@ async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
             let index = match spell_index {
                 Some(index) => index,
                 None => {
-                    let index = client_spell_journey::spell_index(native_spell_book()?, words)?;
+                    let index = recovery_spell()?;
                     spell_index = Some(index);
                     index
                 }
@@ -543,9 +552,7 @@ async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
                 && cast.disposition == SpellCastDisposition::Cast)
                 && cast.disposition != SpellCastDisposition::CoolingDown
             {
-                return Err(
-                    format!("classed sweep recovery spell {words} refused: {cast:?}").into(),
-                );
+                return Err(format!("classed sweep recovery spell refused: {cast:?}").into());
             }
             client.service_liveness(Duration::from_millis(250)).await?;
             client.take_events();
@@ -553,6 +560,44 @@ async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
     })
     .await
     .map_err(|_| "classed sweep recovery did not reach half health")?
+}
+
+async fn recover_in_combat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    target: &oteryn_dev_client::EntityRef,
+) -> TestResult {
+    use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
+
+    let cast = client
+        .cast_spell(recovery_spell()?, SpellTarget::None, false)
+        .await?;
+    if cast.status == CommandStatus::Accepted && cast.disposition == SpellCastDisposition::Cast {
+        return Ok(());
+    }
+    let Some(enemy) = client
+        .world_entities()
+        .and_then(|entities| entities.get(target))
+    else {
+        return Ok(());
+    };
+    let enemy = tile(enemy.position)?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let distance = |at: TilePos| at.x.abs_diff(enemy.x).max(at.y.abs_diff(enemy.y));
+    let retreat = [
+        StepDirection::North,
+        StepDirection::East,
+        StepDirection::South,
+        StepDirection::West,
+    ]
+    .into_iter()
+    .find(|direction| {
+        destination(world, from, *direction).is_some_and(|at| distance(at) > distance(from))
+    });
+    if let Some(direction) = retreat {
+        walk(client, world, &[direction]).await?;
+    }
+    Ok(())
 }
 
 /// The spawn needs free non-PZ cells next to the player: walk once to open ground.
@@ -778,6 +823,7 @@ async fn hunt(
         EntityDetail::Object { .. } | EntityDetail::ObjectWithAppearance { .. } => 100,
     };
     let mut damaged = false;
+    let mut next_recovery = tokio::time::Instant::now();
     client.take_events();
     let attacked = client
         .session_mut()
@@ -802,6 +848,37 @@ async fn hunt(
             .map_err(|error| failure("kill", "unkillable", format!("liveness:{error}")))?;
         verdict::Harness::global().progress("creature-sweep-combat");
         client.take_events();
+        let now = tokio::time::Instant::now();
+        let vitals = client
+            .actor_vitals()
+            .ok_or_else(|| failure("kill", "protocol", "combat vitals absent"))?;
+        if vitals.health == 0 {
+            return Err(failure(
+                "kill",
+                "player-death",
+                "player reached zero health",
+            ));
+        }
+        if now >= next_recovery && vitals.health.saturating_mul(2) < vitals.max_health {
+            next_recovery = now + Duration::from_secs(1);
+            let recovered = tokio::time::timeout_at(
+                kill_deadline,
+                recover_in_combat(client, world, &target.entity),
+            )
+            .await
+            .map_err(|_| failure("kill", "deadline", "combat recovery exceeded kill deadline"))?;
+            if client
+                .actor_vitals()
+                .is_some_and(|vitals| vitals.health == 0)
+            {
+                return Err(failure(
+                    "kill",
+                    "player-death",
+                    "player reached zero health during recovery",
+                ));
+            }
+            recovered.map_err(|error| failure("kill", "protocol", error))?;
+        }
         match client
             .world_entities()
             .and_then(|entities| entities.get(&target.entity))
