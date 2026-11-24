@@ -596,20 +596,22 @@ async fn ineligible(
             require(full_e2ef5::rune_quantity(&client, reference)? > 0,
                 format!("seeded negative rune {reference} missing after reload"))?;
         }
-        if spell.aggressive || spell.needs_target {
+        if spell.aggressive || spell.takes_target() {
             reach_ground(&mut client, world).await?;
         }
-        let target = if spell.needs_target && !spell.self_target && !rune_targets_own_tile(spell) {
+        let target = if spell.takes_target() && !spell.self_target && !rune_targets_own_tile(spell) {
             Some(spawn_target(&mut client, "deer").await?)
         } else {
             None
         };
-        select_attack_target(&mut client, rune, target, spell.needs_target).await?;
+        select_attack_target(&mut client, rune, target, spell.takes_target()).await?;
         let before = vitals(&client)?;
-        let reply = cast(&mut client, index, rune, target, spell.needs_target).await?;
-        let denied = eligibility_refusal(&reply, level < spell.level);
+        let rune_before = rune.map(|reference| full_e2ef5::rune_quantity(&client, reference)).transpose()?;
+        let reply = cast(&mut client, index, rune, target, spell.takes_target()).await?;
+        let denied = eligibility_refusal(&reply, level < spell.level, wrong_vocation);
+        let rune_after = rune.map(|reference| full_e2ef5::rune_quantity(&client, reference)).transpose()?;
         require(
-            denied && pools_unchanged(before, vitals(&client)?),
+            denied && rune_before == rune_after && pools_unchanged(before, vitals(&client)?),
             format!("expected eligibility refusal without cost, got {reply:?}"),
         )
     }
@@ -620,10 +622,10 @@ async fn ineligible(
 
 // Level precedes vocation and magic level in spell/mod.rs:514, and the
 // rune bridge projects the eligibility gate as RequirementNotMet.
-fn eligibility_refusal(reply: &Reply, underlevel: bool) -> bool {
+fn eligibility_refusal(reply: &Reply, underlevel: bool, wrong_vocation: bool) -> bool {
     match reply {
         Reply::Spell(SpellCastDisposition::LevelTooLow, false) => underlevel,
-        Reply::Spell(SpellCastDisposition::NotAvailable, false) => !underlevel,
+        Reply::Spell(SpellCastDisposition::NotAvailable, false) => wrong_vocation,
         Reply::Rune(UseDisposition::RequirementNotMet) => underlevel,
         _ => false,
     }
@@ -804,10 +806,12 @@ async fn positive(
             }
             None
         }
-        _ if spell.needs_target && !spell.self_target => Some(spawn_target(client, "deer").await?),
+        _ if spell.takes_target() && !spell.self_target => {
+            Some(spawn_target(client, "deer").await?)
+        }
         _ => None,
     };
-    select_attack_target(client, rune, target, spell.needs_target).await?;
+    select_attack_target(client, rune, target, spell.takes_target()).await?;
     let paralysis_result = if bruise_bane {
         paralyze_bruise_fixture(
             client,
@@ -881,7 +885,7 @@ async fn positive(
         .map(|id| full_e2ef5::rune_quantity(client, id))
         .transpose()?;
     let first_sent = std::time::Instant::now();
-    let reply = cast(client, index, rune, target, spell.needs_target).await?;
+    let reply = cast(client, index, rune, target, spell.takes_target()).await?;
     let first_received = std::time::Instant::now();
     require(
         matches!(
@@ -931,12 +935,20 @@ async fn positive(
     } else {
         None
     };
+    // Observe the first conjure's exact inventory delta before a retry can
+    // legally commit and add a second output.
+    let conjure_effect = if let Some(((reference, count), quantity)) = product.zip(quantity) {
+        let expected = quantity + u64::from(count);
+        Some(observe_conjure_inventory(client, reference, expected).await)
+    } else {
+        None
+    };
     let retry_sent = std::time::Instant::now();
     let retry = if has_cooldown && !controlled_cooldown {
         Some(if rune_after == Some(0) {
             Err("rune consumed its last backpack unit; cooldown retry requires another unit".into())
         } else {
-            cast(client, index, rune, target, spell.needs_target).await
+            cast(client, index, rune, target, spell.takes_target()).await
         })
     } else {
         None
@@ -951,7 +963,9 @@ async fn positive(
         first_received.duration_since(first_sent).as_micros(),
         retry_sent.duration_since(first_sent).as_micros()
     ));
-    let effect = if let Some(observation) = dispel_after {
+    let effect = if let Some(result) = conjure_effect {
+        result
+    } else if let Some(observation) = dispel_after {
         async {
             let (removed, observed) = observation?;
             paralysis_result?;
@@ -969,11 +983,6 @@ async fn positive(
         ))
     ) {
         Err("retry also committed before effect observation".into())
-    } else if let Some(((reference, count), quantity)) = product.zip(quantity) {
-        require(
-            full_e2ef5::rune_quantity(client, reference)? == quantity + u64::from(count),
-            "authored conjure inventory output absent",
-        )
     } else if let Some((icon, before)) = condition.zip(conditions_before) {
         let after = condition_status(client).await?;
         require(
@@ -1007,7 +1016,7 @@ async fn positive(
                 "authored heal did not increase caster health",
             ),
             (Some(HealthEffect::Damage), Some((entity, _))) => {
-                if rune.is_none() && spell.needs_target {
+                if rune.is_none() && spell.takes_target() {
                     Err(
                         "aggregate damage also includes the selected attack target's auto-attacks"
                             .into(),
@@ -1048,7 +1057,7 @@ async fn positive(
             let step = Duration::from_millis(cooldown_us.div_ceil(1000));
             full_e2ef7::advance_qualification_time(step)?;
             let reopened_sent = std::time::Instant::now();
-            let reopened = cast(client, index, rune, target, spell.needs_target).await?;
+            let reopened = cast(client, index, rune, target, spell.takes_target()).await?;
             let reopened_received = std::time::Instant::now();
             let owner_lower_us = reopened_sent.duration_since(first_received).as_micros() + step.as_micros();
             let owner_upper_us = reopened_received.duration_since(first_sent).as_micros() + step.as_micros();
@@ -1061,7 +1070,7 @@ async fn positive(
                 format!("post-expiry cast refused: {reopened:?}, owner_elapsed_lower_us={owner_lower_us}, authored_us={cooldown_us}"),
             )?;
             let before_retry = vitals(client)?;
-            let reply = cast(client, index, rune, target, spell.needs_target).await?;
+            let reply = cast(client, index, rune, target, spell.takes_target()).await?;
             let upper_us = reopened_sent.elapsed().as_micros();
             evidence(&format!(
                 "spell_sweep cooldown_retry key={} owner_elapsed_lower_us=0 owner_elapsed_upper_us={upper_us} authored_us={cooldown_us} result={reply:?}",
@@ -1081,7 +1090,7 @@ async fn positive(
                 rune_after != Some(0),
                 "rune consumed its last backpack unit; zero-cooldown retry requires another unit",
             )?;
-            let reply = cast(client, index, rune, target, spell.needs_target).await?;
+            let reply = cast(client, index, rune, target, spell.takes_target()).await?;
             require(
                 matches!(
                     reply,
@@ -1209,6 +1218,27 @@ async fn spawn_target(
     }
 }
 
+async fn observe_conjure_inventory(
+    client: &mut DevClientSession,
+    reference: NonZeroU32,
+    expected: u64,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let observed = full_e2ef5::rune_quantity(client, reference)?;
+        if observed == expected {
+            return Ok(());
+        }
+        require(
+            tokio::time::Instant::now() < deadline,
+            format!(
+                "authored conjure inventory output mismatch: item={reference} expected={expected} observed={observed}"
+            ),
+        )?;
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+}
+
 async fn damage_observed(
     client: &DevClientSession,
     entity: oteryn_dev_client::EntityRef,
@@ -1322,23 +1352,35 @@ mod tests {
     #[test]
     fn eligibility_needs_the_expected_wire_refusal_and_no_debit() {
         use SpellCastDisposition::{LevelTooLow, NotAvailable, NotEnoughMana};
-        assert!(eligibility_refusal(&Reply::Spell(LevelTooLow, false), true));
+        assert!(eligibility_refusal(
+            &Reply::Spell(LevelTooLow, false),
+            true,
+            false
+        ));
         assert!(eligibility_refusal(
             &Reply::Spell(NotAvailable, false),
+            true,
+            true
+        ));
+        assert!(!eligibility_refusal(
+            &Reply::Spell(NotAvailable, false),
+            true,
             false
         ));
         assert!(!eligibility_refusal(
-            &Reply::Spell(NotAvailable, false),
-            true
+            &Reply::Spell(LevelTooLow, true),
+            true,
+            false
         ));
-        assert!(!eligibility_refusal(&Reply::Spell(LevelTooLow, true), true));
         assert!(!eligibility_refusal(
             &Reply::Spell(NotEnoughMana, false),
+            true,
             true
         ));
         assert!(!eligibility_refusal(
             &Reply::Rune(UseDisposition::RequirementNotMet),
-            false
+            false,
+            true
         ));
     }
 
