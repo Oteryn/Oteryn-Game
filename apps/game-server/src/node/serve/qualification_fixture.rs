@@ -166,10 +166,7 @@ pub(super) async fn place_sweep_player(
         if !config.qualification_fixture {
             return Err("not_qualification");
         }
-        let session = request
-            .strip_prefix(b"place-sweep-player ")
-            .and_then(parse_operation_id)
-            .ok_or("malformed_request")?;
+        let (session, target) = sweep_placement(request).ok_or("malformed_request")?;
         let session =
             crate::foundation::GameSessionId::decode(&session).map_err(|_| "malformed_request")?;
         let owners = owners.ok_or("native_unavailable")?;
@@ -185,7 +182,6 @@ pub(super) async fn place_sweep_player(
             .positioned_player_for_session(session)
             .map_err(|_| "placement_actor_conflict")?
             .ok_or("session_unknown")?;
-        let target = wild_spawn::SWEEP_HUNT_POSITION;
         wild_spawn::static_cell_refusal(owners.room, target)
             .map_err(|_| "placement_tile_refused")?;
         if snapshot.position() != target {
@@ -203,6 +199,29 @@ pub(super) async fn place_sweep_player(
         Ok(placed) => placed.to_owned(),
         Err(reason) => spawn_rejected(reason),
     }
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+fn sweep_placement(request: &[u8]) -> Option<([u8; 16], crate::foundation::MovementLocalPosition)> {
+    if let Some(session) = request.strip_prefix(b"place-sweep-player ") {
+        return Some((
+            parse_operation_id(session)?,
+            wild_spawn::SWEEP_HUNT_POSITION,
+        ));
+    }
+    let text = std::str::from_utf8(request.strip_prefix(b"place-weather-player ")?).ok()?;
+    let (session, coordinates) = text.trim_end_matches('\n').split_once(' ')?;
+    let (x, yz) = coordinates.split_once(',')?;
+    let (y, z) = yz.split_once(',')?;
+    let floor = z.parse::<i16>().ok().filter(|z| (0..=15).contains(z))?;
+    Some((
+        parse_operation_id(session.as_bytes())?,
+        crate::foundation::MovementLocalPosition {
+            x: i32::from(x.parse::<u16>().ok()?),
+            y: i32::from(y.parse::<u16>().ok()?),
+            floor,
+        },
+    ))
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
@@ -1678,6 +1697,20 @@ mod tests {
             );
         }
         Ok(())
+    }
+
+    #[test]
+    fn weather_placement_accepts_only_bounded_wire_coordinates() {
+        let session = "01934f10-7c02-7001-805b-3b1122334401";
+        let request = |coords| format!("place-weather-player {session} {coords}\n");
+        let placement = sweep_placement(request("32732,31634,7").as_bytes());
+        assert_eq!(
+            placement.map(|(_, at)| (at.x, at.y, at.floor)),
+            Some((32732, 31634, 7))
+        );
+        for invalid in ["65536,3,7", "1,2,-7", "1,2,16", "1,2,7,9", "1,2"] {
+            assert!(sweep_placement(request(invalid).as_bytes()).is_none());
+        }
     }
 
     #[test]

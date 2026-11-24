@@ -148,8 +148,9 @@ and inherits the batch settings for these opt-in groups:
 The Cyclopedia sweep orders entries by family-qualified content key. Its map
 census includes the native atlas entries present in the selected World bundle.
 Source masks without native membership do not have playable atlas entries.
+Use `NODE_BOOT_WORLD_PROFILE=weather` to load the authored weather anchor regions.
 Weather rows use real World positions and the server's UTC period. An area
-without an anchor or a route in the selected bundle produces a failed visit
+without an anchor or an eligible tile in the selected bundle produces a failed visit
 and a failed dependent state row.
 
 The runner prints a summary for each group and writes private logs under `/tmp/node-boot-cloud.*`

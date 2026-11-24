@@ -1367,16 +1367,58 @@ async fn check_weather(sweep: &mut Sweep<'_, '_>, area: &WeatherArea, rows: &mut
                 .is_some_and(|row| row.key == area.key)
         };
         if !matches_area(client.world_spatial().actor_position) {
-            let from = tile(client.world_spatial().actor_position)?;
-            let path = route(sweep.world, from, |at| {
-                matches_area(ActorPosition {
-                    x: i32::from(at.x),
-                    y: i32::from(at.y),
-                    floor: -i16::from(at.floor),
+            let anchor_tile = tile(anchor)?;
+            let position = (0_i16..=24)
+                .flat_map(|distance| {
+                    (-distance..=distance).flat_map(move |dx| {
+                        let dy = distance - dx.abs();
+                        [(dx, dy), (dx, -dy)]
+                    })
                 })
+                .filter_map(|(dx, dy)| {
+                    Some(TilePos {
+                        x: anchor_tile.x.checked_add_signed(dx)?,
+                        y: anchor_tile.y.checked_add_signed(dy)?,
+                        floor: anchor_tile.floor,
+                    })
+                })
+                .find(|at| {
+                    sweep
+                        .world
+                        .base()
+                        .tile(at.x, at.y, at.floor)
+                        .is_some_and(|tile| {
+                            tile.walkable() && !tile.protection_zone() && !tile.no_logout()
+                        })
+                        && sweep.world.enterable(*at)
+                        && matches_area(ActorPosition {
+                            x: i32::from(at.x),
+                            y: i32::from(at.y),
+                            floor: -i16::from(at.floor),
+                        })
+                })
+                .ok_or_else(|| {
+                    format!("no walkable fixture tile near weather anchor {anchor:?}")
+                })?;
+            let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+            let answer = request_fixture_control(
+                session,
+                "--place-weather-player",
+                format!("{},{},{}", position.x, position.y, -position.floor),
+            )
+            .await?;
+            if answer != "placed" {
+                return Err("qualification fixture did not place the weather reader".into());
+            }
+            tokio::time::timeout(Duration::from_secs(15), async {
+                while !matches_area(client.world_spatial().actor_position) {
+                    client.service_liveness(Duration::from_millis(100)).await?;
+                    client.take_events();
+                }
+                Ok::<_, oteryn_dev_client::DevClientError>(())
             })
-            .ok_or_else(|| format!("no route to authored weather area near {anchor:?}"))?;
-            walk(client, sweep.world, &path).await?;
+            .await
+            .map_err(|_| "weather placement was not served on the wire")??;
         }
         let position = client.world_spatial().actor_position;
         if !matches_area(position) {

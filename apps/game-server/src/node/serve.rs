@@ -3027,10 +3027,15 @@ async fn control_loop(
                     "qualification_damage",
                 ),
                 #[cfg(any(test, feature = "qualification-spawn"))]
-                Some(request) if request.starts_with(b"place-sweep-player ") => (
-                    qualification_fixture::place_sweep_player(config, spawn, &request).await,
-                    "character_bootstrap",
-                ),
+                Some(request)
+                    if request.starts_with(b"place-sweep-player ")
+                        || request.starts_with(b"place-weather-player ") =>
+                {
+                    (
+                        qualification_fixture::place_sweep_player(config, spawn, &request).await,
+                        "character_bootstrap",
+                    )
+                }
                 Some(request) if request.starts_with(b"spawn ") => (
                     Box::pin(qualification_fixture::spawn(
                         root, authority, proof, config, native, spawn, &request,

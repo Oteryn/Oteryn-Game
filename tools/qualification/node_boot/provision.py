@@ -84,14 +84,20 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--profile", choices=PROFILES)
     group.add_argument("--place-sweep-player", choices=("hunting-ground",))
+    group.add_argument("--place-weather-player", metavar="X,Y,Z")
     group.add_argument("--spawn", metavar="CREATURE_KEY")
     group.add_argument("--inspect-damage", metavar="TARGET")
     args = parser.parse_args()
-    if args.place_sweep_player is not None:
+    if args.place_sweep_player is not None or args.place_weather_player is not None:
         identifier = uuid.UUID(args.session)
         if identifier.version != 7 or str(identifier) != args.session:
             raise ValueError("invalid qualification session")
-        answer = _request(args.socket, f"place-sweep-player {args.session}\n", 64)
+        command = f"place-sweep-player {args.session}"
+        if args.place_weather_player is not None:
+            if not re.fullmatch(r"[0-9]{1,5},[0-9]{1,5},[0-9]{1,2}", args.place_weather_player):
+                raise ValueError("invalid weather fixture coordinates")
+            command = f"place-weather-player {args.session} {args.place_weather_player}"
+        answer = _request(args.socket, command + "\n", 64)
         if answer != b"placed\n":
             raise RuntimeError(f"qualification sweep placement refused: {bytes(answer)!r}")
         print("placed")

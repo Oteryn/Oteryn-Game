@@ -156,6 +156,22 @@ NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
 case "$NODE_BOOT_WORLD_PROFILE" in
   # Real Thais/town outskirts and the default-start and seller regions.
   town) WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt")" ;;
+  weather)
+    WORLD_REGIONS="$(python3 - "$GAME_SOURCE/content/weather/areas.json" "$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt" <<'PY_WEATHER_REGIONS'
+import json
+from pathlib import Path
+import sys
+
+regions = {tuple(map(int, value.split(","))) for value in Path(sys.argv[2]).read_text().strip().split(";")}
+for area in json.loads(Path(sys.argv[1]).read_text())["areas"]:
+    if anchor := area["anchor"]:
+        for x in range((anchor["x"] - 24) // 256, (anchor["x"] + 24) // 256 + 1):
+            for y in range((anchor["y"] - 24) // 256, (anchor["y"] + 24) // 256 + 1):
+                regions.add((x, y))
+print(";".join(f"{x},{y}" for x, y in sorted(regions)))
+PY_WEATHER_REGIONS
+    )" || blocked invalid_weather_regions
+    ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;
 esac
@@ -669,7 +685,9 @@ MAP_REVISION=map-s3b-1
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
   compile_world=compile-regions
-  if [[ "$NODE_BOOT_WORLD_PROFILE" == town ]]; then compile_world=compile-town-qualification; fi
+  if [[ "$NODE_BOOT_WORLD_PROFILE" == town || "$NODE_BOOT_WORLD_PROFILE" == weather ]]; then
+    compile_world=compile-town-qualification
+  fi
   "${WORLD_COMPILER[@]}" "$compile_world" "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
   PIN="$WORK/world.json"
   python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
