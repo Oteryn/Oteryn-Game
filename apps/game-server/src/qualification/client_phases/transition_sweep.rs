@@ -18,8 +18,8 @@ use crate::movement::CardinalStep;
 use oteryn_dev_client::DevClientSession;
 use oteryn_gameplay_world::terrain_tools::{TerrainTool, crystal_core_bindings};
 use oteryn_protocol_oteryn::world_object::{
-    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
-    encode_item_use_intent,
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
+    decode_use_result_with_gate, encode_item_use_intent,
 };
 use oteryn_world_bundle::bundle::{Family, TerrainKind};
 use serde::Deserialize;
@@ -774,6 +774,16 @@ fn object(
     })
 }
 
+fn decode_tool_result(payload: &[u8]) -> TestResult<UseDisposition> {
+    // The USE result owner appends the negotiated refusal detail
+    // (connection/serve/result.rs:118, 134).
+    let (payload, _) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(payload)
+        .map_err(|error| format!("USE-WITH refusal detail {error:?}"))?;
+    let (disposition, _) = decode_use_result_with_gate(payload)
+        .map_err(|error| format!("USE-WITH decode {error:?}"))?;
+    Ok(disposition)
+}
+
 async fn use_target(
     client: &mut DevClientSession,
     target: WorldObjectTarget,
@@ -805,8 +815,7 @@ async fn use_target(
     })
     .map_err(|error| format!("USE-WITH encode {error:?}"))?;
     let reply = client.session_mut().world_context_use(&payload).await?;
-    let disposition =
-        decode_use_result(&reply.payload).map_err(|error| format!("USE-WITH decode {error:?}"))?;
+    let disposition = decode_tool_result(&reply.payload)?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!(
             "USE-WITH status={:?} disposition={disposition:?}",
@@ -1146,6 +1155,27 @@ pub(super) async fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tool_result_reads_negotiated_refusal_detail() -> TestResult {
+        use oteryn_protocol_oteryn::refusal_detail::{
+            CAPABILITY_REFUSAL_DETAIL_V1, RefusalDetail, append_refusal_detail,
+        };
+        use oteryn_protocol_oteryn::world_object::encode_use_result;
+
+        let mut payload = encode_use_result(UseDisposition::TooFar)
+            .map_err(|error| format!("USE fixture encode {error:?}"))?;
+        let base_size = payload.len();
+        append_refusal_detail(
+            &mut payload,
+            &[CAPABILITY_REFUSAL_DETAIL_V1],
+            RefusalDetail::of_use(UseDisposition::TooFar),
+        );
+        assert!(payload.len() > base_size);
+        assert_eq!(decode_tool_result(&payload)?, UseDisposition::TooFar);
+        assert!(decode_tool_result(&[0xff]).is_err());
+        Ok(())
+    }
 
     #[test]
     fn regional_batch_keeps_full_census_order() -> TestResult {
