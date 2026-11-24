@@ -985,6 +985,7 @@ async fn positive(
     } else {
         None
     };
+    let retry_before = vitals(client);
     let retry_sent = std::time::Instant::now();
     let retry = if has_cooldown && !controlled_cooldown {
         Some(if rune_after == Some(0) {
@@ -1074,13 +1075,15 @@ async fn positive(
     if let Some(retry) = retry {
         let cooldown = async {
             let reply = retry?;
+            let before = retry_before?;
+            let after = retry_vitals?;
             let expected = matches!(
                 reply,
                 Reply::Spell(SpellCastDisposition::CoolingDown, false)
                     | Reply::Rune(UseDisposition::Exhausted)
-            ) && pools_unchanged(after, retry_vitals?);
+            ) && pools_unchanged(before, after);
             require(expected, format!(
-                "cooldown reply={reply:?} elapsed_lower_us={lower_us} elapsed_upper_us={upper_us} authored_us={cooldown_us} classification={}",
+                "cooldown reply={reply:?} retry_before={before:?} retry_after={after:?} elapsed_lower_us={lower_us} elapsed_upper_us={upper_us} authored_us={cooldown_us} classification={}",
                 if upper_us < u128::from(cooldown_us) { "within-window" }
                 else { "inconclusive-wire-timing" }
             ))
@@ -1120,7 +1123,8 @@ async fn positive(
             ));
             require(
                 matches!(reply, Reply::Spell(SpellCastDisposition::CoolingDown, false))
-                    && pools_unchanged(before_retry, vitals(client)?),
+                    && pools_unchanged(before_retry, vitals(client)?)
+                    && upper_us < u128::from(cooldown_us),
                 format!("post-reset cooldown reply={reply:?}, owner_elapsed_upper_us={upper_us}, authored_us={cooldown_us}"),
             )
         }.await;
@@ -1246,7 +1250,30 @@ async fn spawn_target(
         match request_spawn(session, format!("oteryn:creature.{species}")).await {
             Ok(answer) => break parse_spawned_entity(&answer)?,
             Err(error) if error == "no_free_tile" && tried.len() < 3 => {
-                tried.insert(tile(client.world_spatial().actor_position)?);
+                let position = client.world_spatial().actor_position;
+                if species == "deer" {
+                    // Earlier entries can leave a live target in this same room.
+                    let existing = client.world_entities().and_then(|entities| {
+                        entities.iter().find(|actor| {
+                            actor.kind == oteryn_dev_client::EntityKind::Creature
+                                && actor.position.floor == position.floor
+                                && actor.position.x.abs_diff(position.x) <= 1
+                                && actor.position.y.abs_diff(position.y) <= 1
+                                && actor.display_name.as_ref().is_some_and(|name| {
+                                    name.as_str()
+                                        .is_ok_and(|name| name.eq_ignore_ascii_case("deer"))
+                                })
+                        })
+                    });
+                    if let Some(actor) = existing {
+                        evidence(&format!(
+                            "spell_sweep target_reused entity={:?} species={species}",
+                            actor.entity
+                        ));
+                        return Ok((actor.entity, actor.position));
+                    }
+                }
+                tried.insert(tile(position)?);
                 walk_to_fixture_tile(
                     client,
                     world,
