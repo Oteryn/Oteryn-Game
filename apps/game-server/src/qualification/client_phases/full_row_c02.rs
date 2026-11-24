@@ -363,8 +363,8 @@ async fn hunt_with_damage_receipt(
     use std::io::{BufRead, BufReader, Seek, SeekFrom};
 
     let session = format!(
-        "session={:?}",
-        client.join_snapshot().game_session_id.as_bytes()
+        "session={}",
+        uuid_text(client.join_snapshot().game_session_id.as_bytes())
     );
     let server_log = std::env::var_os("NODE_BOOT_CAST_EVIDENCE_LOG")
         .and_then(|path| std::fs::File::open(path).ok())

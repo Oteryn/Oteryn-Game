@@ -2042,9 +2042,15 @@ pub(super) fn select_swing(
             entry.target_ref = None;
             return None;
         }
-        SwingPoll::NoTarget | SwingPoll::Waiting(_) | SwingPoll::NotDue { .. } => {
+        SwingPoll::Waiting(_reason) => {
+            #[cfg(feature = "qualification-cast-evidence")]
+            super::qualification_attack_stage(
+                entry.session,
+                &format!("swing_waiting reason={_reason:?}"),
+            );
             return None;
         }
+        SwingPoll::NoTarget | SwingPoll::NotDue { .. } => return None,
     };
     // The ordinal advances on every swing, a zero draw included, so every swing has its
     // own RNG occurrence; the lineage ends at the last ordinal.

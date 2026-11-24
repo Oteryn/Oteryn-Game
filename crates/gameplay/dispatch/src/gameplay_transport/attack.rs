@@ -195,8 +195,8 @@ struct WeaponFacts {
 #[cfg(feature = "qualification-cast-evidence")]
 fn qualification_attack_stage(session: GameSessionId, stage: &str) {
     super::operator_event(&format!(
-        "event=qualification_auto_attack session={:?} stage={stage}",
-        session.as_bytes()
+        "event=qualification_auto_attack session={} stage={stage}",
+        super::format_connection_trace(*session.as_bytes())
     ));
 }
 

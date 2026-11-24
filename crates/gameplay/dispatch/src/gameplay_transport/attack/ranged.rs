@@ -605,7 +605,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 #[cfg(feature = "qualification-cast-evidence")]
                                 super::qualification_attack_stage(
                                     session,
-                                    &format!("ranged_prepare_sight_tile_unavailable cell={cell:?}"),
+                                    &format!(
+                                        "ranged_prepare_sight_tile_unavailable cell={},{},{}",
+                                        cell.x, cell.y, cell.floor
+                                    ),
                                 );
                                 DurabilityError::Unavailable
                             })?
@@ -614,7 +617,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             #[cfg(feature = "qualification-cast-evidence")]
                             super::qualification_attack_stage(
                                 session,
-                                &format!("ranged_prepare_sight_blocked cell={cell:?}"),
+                                &format!(
+                                    "ranged_prepare_sight_blocked cell={},{},{}",
+                                    cell.x, cell.y, cell.floor
+                                ),
                             );
                             return Err(DurabilityError::Unavailable);
                         }
