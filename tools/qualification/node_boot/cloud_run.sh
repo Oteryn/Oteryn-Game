@@ -20,7 +20,8 @@ summarize() {
 
   rows=$(awk '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      ($3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ ||
+       $3 ~ /^scenario=HS\.[[:alnum:]_.-]+$/) && $4 ~ /^status=(PASS|FAIL)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -30,7 +31,7 @@ summarize() {
         if ($i ~ /^cause=/) cause = substr($i, 7)
         if ($i ~ /^evidence=/) evidence = substr($i, 10)
       }
-      reason = (cause != "" ? cause : evidence)
+      reason = (row ~ /^HS\./ && cause != "" ? cause ":" evidence : (cause != "" ? cause : evidence))
       if (tolower(reason) ~ /password|postgres:\/\/|postgresql:\/\/|secret|token|key=/) reason = ""
       gsub(/\|/, "_", reason)
       printf "%s|%s|%s\n", row, verdict, reason
