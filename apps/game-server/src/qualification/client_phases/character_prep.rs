@@ -306,11 +306,64 @@ except (OSError, KeyError, ValueError, subprocess.SubprocessError):
     })
 }
 
+/// Wait for the same two real Platform publications as the native gateway
+/// qualification before requesting a grant for a freshly created row character.
+async fn wait_row_gateway_ready(clients: &SeamClients<'_>) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+    let path =
+        Path::new(&required("NODE_BOOT_PLATFORM_GRANT_DIR")?).join("portal/secrets/env.json");
+    let settings: serde_json::Value = serde_json::from_slice(&std::fs::read(path)?)?;
+    let url = settings["OTERYN_DATABASE_URL"]
+        .as_str()
+        .ok_or("disposable Platform database address absent")?;
+    tokio::time::timeout_at(deadline, async {
+        let mut database = sqlx::PgConnection::connect(url)
+            .await
+            .map_err(|_| "disposable Platform readiness database unavailable")?;
+        loop {
+            let (projected, ready): (bool, bool) = sqlx::query_as(
+                "SELECT EXISTS(SELECT 1 FROM account_characters
+                   WHERE account_id=$1::uuid AND character_id=encode($2,'hex')::uuid
+                     AND world_id=encode($3,'hex')::uuid AND availability='AVAILABLE'),
+                 EXISTS(SELECT 1 FROM native_runtime_status_reports
+                   WHERE world_id=encode($3,'hex')::uuid AND channel_id=encode($4,'hex')::uuid
+                     AND NOT invalid AND content_json::jsonb->>'ready'='true'
+                     AND observed_at >= extract(epoch FROM clock_timestamp())::bigint - 10)",
+            )
+            .bind(&clients.accounts[0])
+            .bind(clients.characters[0].as_slice())
+            .bind(clients.world.as_slice())
+            .bind(clients.channel.as_slice())
+            .fetch_one(&mut database)
+            .await
+            .map_err(|_| "read exact Platform projection and runtime readiness failed")?;
+            if projected && ready {
+                return database
+                    .close()
+                    .await
+                    .map_err(|_| "close Platform readiness database failed");
+            }
+            if tokio::time::Instant::now() + Duration::from_millis(100) >= deadline {
+                return Err(match (projected, ready) {
+                    (true, false) => "Platform runtime status stayed unavailable before row admission",
+                    (false, true) => "Platform character projection absent before row admission",
+                    _ => "Platform character projection and runtime status absent before row admission",
+                });
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    })
+    .await
+    .map_err(|_| "Platform row admission readiness deadline expired")?
+    .map_err(Into::into)
+}
+
 /// Admit a row-owned character with an actual Platform grant on every entry.
 pub(super) async fn connect_row_character(
     clients: &SeamClients<'_>,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     wait_character_released(clients, 0).await?;
+    wait_row_gateway_ready(clients).await?;
     let token = platform_row_grant(clients, 0).await?;
     let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
         address: clients.address,

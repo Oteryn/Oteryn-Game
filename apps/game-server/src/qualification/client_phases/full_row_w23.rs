@@ -505,7 +505,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     let clients = &identity.clients(clients);
-    let mut provisioned = character_prep::connect_row_character(clients).await?;
+    let mut provisioned = connect_character(clients, 0xd8, 0).await?;
     request_fixture_control(
         uuid_text(provisioned.join_snapshot().game_session_id.as_bytes()),
         "--profile",
@@ -515,7 +515,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     character_prep::grant_item(&provisioned, 3035, coins).await?;
     accepted_logout(&mut provisioned).await?;
     drop(provisioned);
-    let mut client = character_prep::connect_row_character(clients).await?;
+    let mut client = connect_character(clients, 0xd9, 0).await?;
 
     use sqlx::Connection as _;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
@@ -561,7 +561,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=logout observed={logout:?} need=accepted").into());
     }
     drop(client);
-    let mut fresh = character_prep::connect_row_character(clients).await?;
+    let mut fresh = connect_character(clients, 0xda, 0).await?;
     if fresh.world_spatial().actor_position != expected_position {
         return Err(format!(
             "step=fresh-admission observed={:?} need=durable-home-temple-{expected_position:?}",
@@ -622,7 +622,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "positive Svargrond citizenship after the live refusal",
     );
     seed_barbarian_test(clients, &mut database).await?;
-    let mut qualified = character_prep::connect_row_character(clients).await?;
+    let mut qualified = connect_character(clients, 0xdb, 0).await?;
     let direction = approach_svargrond_portal(&mut qualified, world, svargrond.at).await?;
     qualified.take_events();
     let outcome = step_onto(&mut qualified, direction).await?;

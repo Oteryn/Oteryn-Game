@@ -204,7 +204,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     )
     .await?;
     let clients = &identity.clients(clients);
-    let mut client = character_prep::connect_row_character(clients).await?;
+    let mut client = connect_character(clients, 0xb1, 0).await?;
     progress.begin("initial-spawn");
     let from = tile(client.world_spatial().actor_position)?;
     // Restrict travel to the streets and sewers around the Thais temple.
@@ -434,7 +434,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.pass("logout", "Accepted");
     drop(client);
     progress.begin("fresh-admission");
-    let mut fresh = character_prep::connect_row_character(clients).await?;
+    let mut fresh = connect_character(clients, 0xb2, 0).await?;
     if fresh.join_snapshot().game_session_id == previous_session {
         return Err("fresh W01b admission reused the original session".into());
     }
