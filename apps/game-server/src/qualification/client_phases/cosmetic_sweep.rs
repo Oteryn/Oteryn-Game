@@ -87,6 +87,8 @@ struct Grant {
     target: Target,
     compatible_provenance: Vec<String>,
     sex: Option<String>,
+    #[serde(default)]
+    outfit_aliases: Vec<String>,
 }
 
 #[derive(Deserialize, PartialEq, Eq)]
@@ -100,8 +102,20 @@ enum Target {
 #[derive(Deserialize)]
 struct Taming {
     item_key: String,
+    creature_key: String,
+    target_item_key: Option<String>,
+    success_text: String,
+    failures: Vec<TamingFailure>,
+    #[serde(default)]
+    required_items: Vec<String>,
+    required_equipment: Option<String>,
     grant_key: String,
     mount_key: String,
+}
+
+#[derive(Deserialize)]
+struct TamingFailure {
+    text: String,
 }
 
 impl Taming {
@@ -200,22 +214,36 @@ fn addon_mask(addon: u8) -> u8 {
     if addon == 0 { 0 } else { 1 << (addon - 1) }
 }
 
+impl Grant {
+    fn applies_to(&self, target: &Target) -> bool {
+        self.sex.as_deref().is_none_or(|sex| sex == "female")
+            && (self.target == *target
+                || match (&self.target, target) {
+                    (Target::Outfit { .. }, Target::Outfit { outfit_key }) => {
+                        self.outfit_aliases.contains(outfit_key)
+                    }
+                    (Target::Addon { addon: source, .. }, Target::Addon { outfit_key, addon }) => {
+                        source == addon && self.outfit_aliases.contains(outfit_key)
+                    }
+                    _ => false,
+                })
+    }
+}
+
 fn grant<'a>(
     content: &'a Content,
     target: &Target,
     only: Option<&str>,
 ) -> Option<(&'a str, &'a str)> {
     content.grant_mappings.iter().find_map(|grant| {
-        (grant.target == *target
-            && grant.sex.as_deref().is_none_or(|sex| sex == "female")
-            && only.is_none_or(|key| key == grant.grant_key))
-        .then(|| {
-            Some((
-                grant.grant_key.as_str(),
-                grant.compatible_provenance.first()?.as_str(),
-            ))
-        })
-        .flatten()
+        (grant.applies_to(target) && only.is_none_or(|key| key == grant.grant_key))
+            .then(|| {
+                Some((
+                    grant.grant_key.as_str(),
+                    grant.compatible_provenance.first()?.as_str(),
+                ))
+            })
+            .flatten()
     })
 }
 
@@ -281,7 +309,11 @@ impl Rows<'_> {
     fn fail(&mut self, error: &dyn std::error::Error) {
         let step = self.steps[self.next];
         let detail = error.to_string();
-        let cause = if detail.contains("no admitted appearance definition") {
+        let cause = if let Some((cause, _)) = detail.split_once(": ")
+            && (cause.starts_with("harness-") || cause.starts_with("server-"))
+        {
+            cause
+        } else if detail.contains("no admitted appearance definition") {
             "unadmitted-definition"
         } else if detail.contains("no authored grant mapping") {
             "missing-grant-mapping"
@@ -309,7 +341,11 @@ impl Rows<'_> {
     }
 }
 
-pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
+pub(super) async fn run(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult {
     if !opted_in() {
         return Ok(());
     }
@@ -320,9 +356,31 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
     };
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/cosmetics");
     let content = content(&root)?;
+    let obtain = ObtainContent::load(&root.join("../.."))?;
     let taming: Vec<Taming> =
         serde_json::from_slice(&std::fs::read(root.join("taming-native.json"))?)?;
     let entries = census(&content, &taming, &root)?;
+    let family = std::env::var("OTERYN_E2E_COSMETIC_SWEEP_FAMILY").unwrap_or_else(|_| "all".into());
+    if !matches!(
+        family.as_str(),
+        "all" | "outfits" | "addons" | "mounts" | "taming"
+    ) {
+        return Err(format!("unknown cosmetic sweep family {family}").into());
+    }
+    let entries: Vec<_> = entries
+        .iter()
+        .filter(|(key, entry)| {
+            family == "all"
+                || family
+                    == match entry {
+                        Entry::Outfit(_, 0) => "outfits",
+                        Entry::Outfit(..) => "addons",
+                        Entry::Mount(_, Some(_)) => "taming",
+                        Entry::Unadmitted if key.starts_with("oteryn:taming.") => "taming",
+                        _ => "mounts",
+                    }
+        })
+        .collect();
     let total = entries.len();
     evidence(&format!("cosmetic_sweep census total={total}"));
     if start >= total {
@@ -331,7 +389,23 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
     let selected = len.min(total - start);
     let mut pass = 0;
     let mut fail = 0;
-    for (key, entry) in entries.iter().skip(start).take(selected) {
+    let mut mounts_seen = std::collections::BTreeSet::new();
+    for index in 0..2 {
+        let mut actor = connect_character(clients, 0xc8, index).await?;
+        logout(&mut actor).await?;
+    }
+    let accounts = [clients.accounts[1].clone(), clients.accounts[0].clone()];
+    let characters = [clients.characters[1], clients.characters[0]];
+    let alternate = SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
+    for (key, entry) in entries.into_iter().skip(start).take(selected) {
+        let clients = match entry {
+            Entry::Mount(mount, Some(_)) if !mounts_seen.insert(mount.key.as_str()) => &alternate,
+            _ => clients,
+        };
         verdict::Harness::global().progress("cosmetic-sweep-entry");
         let steps: &[&str] = match entry {
             Entry::Outfit(..) => &["unlock", "equip", "observer", "relog"],
@@ -346,14 +420,21 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
             failed: 0,
             last: std::time::Instant::now(),
         };
-        if let Err(error) = journey(&mut rows, clients, world, &content, entry).await {
-            rows.block_rest(error.as_ref());
+        let mut items = Vec::new();
+        let result = journey(
+            &mut rows, clients, world, &content, entry, &obtain, npcs, &mut items,
+        )
+        .await;
+        let cleanup = retire_fixture_items(clients, &items).await;
+        match result.and(cleanup) {
+            Ok(()) => rows.pass("fresh admission retained selected look, colours and unlock"),
+            Err(error) => rows.block_rest(error.as_ref()),
         }
         pass += rows.next - rows.failed;
         fail += rows.failed;
     }
     evidence(&format!(
-        "cosmetic_sweep summary total={total} start={start} selected={selected} rows_pass={pass} rows_fail={fail}"
+        "cosmetic_sweep summary family={family} total={total} start={start} selected={selected} rows_pass={pass} rows_fail={fail}"
     ));
     if fail != 0 {
         return Err(format!("cosmetic sweep: {fail} FAIL rows").into());
@@ -361,42 +442,634 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
     Ok(())
 }
 
-async fn prepare(
+#[derive(Deserialize)]
+struct NpcReward {
+    npc: String,
+    keywords: Vec<String>,
+    topic: u32,
+    next_topic: u32,
+    quest: Option<String>,
+    #[serde(default)]
+    take: Vec<RequiredItem>,
+    outfit: Option<RewardOutfit>,
+    #[serde(default)]
+    outfits: Vec<RewardOutfit>,
+}
+
+#[derive(Deserialize)]
+struct RequiredItem {
+    item: String,
+    count: i64,
+}
+
+#[derive(Deserialize)]
+struct RewardOutfit {
+    outfit: String,
+    addons: u8,
+    sex: Option<String>,
+}
+
+struct ObtainContent {
+    callbacks: Vec<NpcReward>,
+    item_rules: serde_json::Value,
+}
+
+impl ObtainContent {
+    fn load(root: &Path) -> TestResult<Self> {
+        let mut callbacks = Vec::new();
+        for directory in ["npc-callbacks", "authored-bindings"] {
+            let mut files = std::fs::read_dir(root.join("content/quests").join(directory))?
+                .collect::<Result<Vec<_>, _>>()?;
+            files.sort_by_key(|entry| entry.file_name());
+            for file in files {
+                if file
+                    .path()
+                    .extension()
+                    .and_then(|extension| extension.to_str())
+                    != Some("json")
+                {
+                    continue;
+                }
+                let value: serde_json::Value =
+                    serde_json::from_slice(&std::fs::read(file.path())?)?;
+                let direct = value["callbacks"].as_array().into_iter().flatten();
+                let staged = value["quests"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .flat_map(|quest| quest["stages"].as_array().into_iter().flatten())
+                    .map(|stage| &stage["trigger"]["callback"])
+                    .filter(|callback| callback.is_object());
+                for callback in direct.chain(staged) {
+                    if callback["npc"].is_string()
+                        && callback["keywords"].is_array()
+                        && let Ok(callback) = serde_json::from_value(callback.clone())
+                    {
+                        callbacks.push(callback);
+                    }
+                }
+            }
+        }
+        let item_rules = serde_json::from_slice(&std::fs::read(
+            root.join("tools/content-schema/native-gameplay/item-cosmetic-actions-native.json"),
+        )?)?;
+        Ok(Self {
+            callbacks,
+            item_rules,
+        })
+    }
+
+    fn npc_route(&self, target: &Target) -> TestResult<Option<Vec<&NpcReward>>> {
+        let Some(reward) = self.callbacks.iter().find(|callback| {
+            callback
+                .outfit
+                .iter()
+                .chain(&callback.outfits)
+                .any(|reward| {
+                    reward
+                        .sex
+                        .as_deref()
+                        .is_none_or(|sex| sex.eq_ignore_ascii_case("female"))
+                        && match target {
+                            Target::Outfit { outfit_key } => outfit_key == &reward.outfit,
+                            Target::Addon { outfit_key, addon } => {
+                                outfit_key == &reward.outfit
+                                    && reward.addons & addon_mask(*addon) != 0
+                            }
+                            Target::Mount { .. } => false,
+                        }
+                })
+        }) else {
+            return Ok(None);
+        };
+        let mut steps = vec![reward];
+        let mut topic = reward.topic;
+        let mut seen = std::collections::BTreeSet::new();
+        while topic != 0 {
+            if !seen.insert(topic) {
+                return Err("harness-obtain-path: NPC topic cycle".into());
+            }
+            let previous = self
+                .callbacks
+                .iter()
+                .find(|callback| {
+                    callback.npc == reward.npc
+                        && callback.quest == reward.quest
+                        && callback.next_topic == topic
+                        && callback.topic != topic
+                })
+                .ok_or("harness-obtain-path: NPC topic predecessor missing")?;
+            steps.push(previous);
+            topic = previous.topic;
+        }
+        steps.reverse();
+        Ok(Some(steps))
+    }
+
+    fn direct_item(&self, grant: &str) -> Option<String> {
+        self.item_rules["rules"]
+            .as_array()?
+            .iter()
+            .find_map(|rule| {
+                let choices = rule["choices"].as_array()?;
+                let choice = choices.first()?;
+                (choices.len() == 1
+                    && !rule["premium"].as_bool().unwrap_or(false)
+                    && choice["grants"]
+                        .as_array()?
+                        .iter()
+                        .any(|key| key.as_str() == Some(grant)))
+                .then(|| Some(format!("oteryn:item.tibia.i{}", rule["item_id"].as_u64()?)))
+                .flatten()
+            })
+    }
+}
+
+enum ObtainAction<'a> {
+    Npc(Target, Vec<&'a NpcReward>),
+    Item(Target, String),
+    Tame(&'a Taming),
+    OwnedTame(Taming),
+}
+
+impl Target {
+    fn owned(&self, catalogue: &appearance::Catalogue) -> bool {
+        match self {
+            Self::Outfit { outfit_key } => catalogue
+                .outfits
+                .iter()
+                .any(|outfit| outfit.key == *outfit_key),
+            Self::Addon { outfit_key, addon } => catalogue.outfits.iter().any(|outfit| {
+                outfit.key == *outfit_key && outfit.permitted_addons & addon_mask(*addon) != 0
+            }),
+            Self::Mount { mount_key } => catalogue.mounts.contains(mount_key),
+        }
+    }
+}
+
+async fn wait_target(
+    client: &mut DevClientSession,
+    state: &mut appearance::Snapshot,
+    target: &Target,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::Appearance(delta) = event {
+                apply_appearance(state, delta.value);
+            }
+        }
+        if target.owned(&state.catalogue) {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("server-unlock-wire: obtain action did not publish its entitlement".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+}
+
+async fn return_to(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    home: TilePos,
+) -> TestResult {
+    let here = tile(client.world_spatial().actor_position)?;
+    let path =
+        route(world, here, |at| at == home).ok_or("harness-obtain-path: return route absent")?;
+    walk(client, world, &path).await
+}
+
+async fn obtain_npc(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+    steps: &[&NpcReward],
+    target: &Target,
+    state: &mut appearance::Snapshot,
+) -> TestResult {
+    use oteryn_dev_client::{client_runtime::npc_shop, client_ui::npc_shop as ui};
+    let first = steps
+        .first()
+        .ok_or("harness-obtain-path: NPC dialogue empty")?;
+    let npc = npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == first.npc)
+        .ok_or_else(|| {
+            format!(
+                "harness-obtain-path: NPC {} absent from town bundle",
+                first.npc
+            )
+        })?;
+    let home = tile(client.world_spatial().actor_position)?;
+    let basis = spatial_basis::current(client)?;
+    let path = route(world, home, |at| {
+        npc.placements.iter().any(|placement| {
+            placement.floor == at.floor
+                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 2
+        })
+    })
+    .ok_or_else(|| {
+        format!(
+            "harness-obtain-path: NPC {} unreachable in town bundle",
+            first.npc
+        )
+    })?;
+    walk(client, world, &path).await?;
+    let entity = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|entity| {
+                entity.kind == oteryn_dev_client::EntityKind::Npc
+                    && npc.placements.iter().any(|placement| {
+                        entity.position.x == i32::from(placement.x)
+                            && entity.position.y == i32::from(placement.y)
+                            && entity.position.floor == basis.floor(placement.floor)
+                    })
+            })
+        })
+        .map(|entry| entry.entity)
+        .ok_or("harness-obtain-path: NPC actor not visible at authored placement")?;
+    for text in std::iter::once("hi").chain(
+        steps
+            .iter()
+            .filter_map(|step| step.keywords.first().map(String::as_str)),
+    ) {
+        let result = npc_shop::talk(
+            client.session_mut(),
+            &ui::npc_service::NpcTalkIntent {
+                npc_actor: entity,
+                text: text.into(),
+            },
+        )
+        .await?;
+        if result != ui::NpcIntentDisposition::Ok {
+            return Err(format!("server-npc-dialogue: {text} returned {result:?}").into());
+        }
+    }
+    wait_target(client, state, target).await?;
+    return_to(client, world, home).await
+}
+
+async fn prepare<'a>(
     clients: &SeamClients<'_>,
     content: &Content,
     outfit: &Outfit,
     addon: u8,
-    mount: Option<(&Mount, Option<&Taming>)>,
-) -> TestResult<String> {
+    mount: Option<(&Mount, Option<&'a Taming>)>,
+    obtain: &'a ObtainContent,
+    items: &mut Vec<Vec<u8>>,
+) -> TestResult<(String, Vec<ObtainAction<'a>>)> {
     wait_character_released(clients, 0).await?;
-    let mut sources = Vec::new();
-    let base = target(outfit, 0);
+    let mut targets = Vec::new();
     if !outfit.starter_female {
-        sources.push(grant(content, &base, None).ok_or("outfit has no authored grant mapping")?);
+        targets.push(target(outfit, 0));
     }
     if addon != 0 && outfit.starter_addons_female & addon_mask(addon) == 0 {
-        let target = target(outfit, addon);
-        sources.push(grant(content, &target, None).ok_or("addon has no authored grant mapping")?);
+        targets.push(target(outfit, addon));
     }
-    if let Some((mount, tame)) = mount {
-        let target = Target::Mount {
+    if let Some((mount, None)) = mount {
+        targets.push(Target::Mount {
             mount_key: mount.key.clone(),
-        };
-        sources.push(
-            grant(content, &target, tame.map(|tame| tame.grant_key.as_str()))
-                .ok_or("mount has no authored grant mapping for this source")?,
-        );
+        });
     }
-    let mut keys = Vec::new();
-    for (key, provenance) in sources {
+    let mut seeded = Vec::new();
+    let mut actions = Vec::new();
+    for target in targets {
+        if let Some(steps) = obtain.npc_route(&target)? {
+            for item in steps.iter().flat_map(|step| &step.take) {
+                seed_item(clients, &item.item, item.count, items).await?;
+            }
+            actions.push(ObtainAction::Npc(target, steps));
+            continue;
+        }
+        let candidates = content
+            .grant_mappings
+            .iter()
+            .filter(|grant| grant.applies_to(&target));
+        if let Some(item) = candidates
+            .clone()
+            .find_map(|grant| obtain.direct_item(&grant.grant_key))
+        {
+            seed_item(clients, &item, 1, items).await?;
+            actions.push(ObtainAction::Item(target, item));
+            continue;
+        }
+        if let Target::Mount { mount_key } = &target
+            && let Some(binding) = obtain_taming_binding(mount_key)?
+        {
+            // The explicit taming slice owns binding-specific attempts. Mount journeys
+            // load the same authored binding before attempting the selected mount.
+            seed_taming_prerequisites(clients, &binding, items).await?;
+            actions.push(ObtainAction::OwnedTame(binding));
+            continue;
+        }
+        let (key, provenance) = grant(content, &target, None)
+            .ok_or("content cosmetic has no authored grant mapping")?;
+        if key.contains("/quest-grant") || key.contains("/npc-grant") || key.contains("/quest/") {
+            return Err(format!("harness-obtain-path: quest/NPC journey missing for {key}").into());
+        }
         seed(clients, key, provenance).await?;
-        keys.push(key);
+        seeded.push(key);
     }
-    Ok(if keys.is_empty() {
-        "mode=starter".to_owned()
+    if let Some((_, Some(binding))) = mount {
+        seed_taming_prerequisites(clients, binding, items).await?;
+        actions.push(ObtainAction::Tame(binding));
+    }
+    let mode = if !seeded.is_empty() {
+        format!(
+            "mode=seeded reason=no-supported-direct-obtain-path grants:{}",
+            seeded.join(",")
+        )
+    } else if actions.is_empty() {
+        "mode=starter".into()
     } else {
-        format!("mode=seeded grants:{}", keys.join(","))
+        "mode=wire prerequisites=seeded-items-and-optional-spawn".into()
+    };
+    Ok((mode, actions))
+}
+
+fn obtain_taming_binding(mount: &str) -> TestResult<Option<Taming>> {
+    let path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/cosmetics/taming-native.json");
+    let bindings: Vec<Taming> = serde_json::from_slice(&std::fs::read(path)?)?;
+    Ok(bindings
+        .into_iter()
+        .find(|binding| binding.mount_key == mount))
+}
+
+// Disposable inventory setup uses the same migration-owned fixture approach as
+// gameplay_transport/postgres_tests/support/item_look_fixtures.rs:592.
+async fn seed_item(
+    clients: &SeamClients<'_>,
+    key: &str,
+    count: i64,
+    items: &mut Vec<Vec<u8>>,
+) -> TestResult {
+    let index = provisioning::item_index()?;
+    let revision = index.revision(key).ok_or("content taming item absent")?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let mut tx = sqlx::Connection::begin(&mut db).await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    let placed: Vec<Vec<u8>> = sqlx::query_scalar(
+        "WITH backpack AS (
+            SELECT character_id, world_id, item_instance_id
+            FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid
+        ), minted AS (
+            INSERT INTO game_item_instances(item_instance_id, world_id, definition_family,
+                definition_production_key, definition_revision_ref, quantity, lifecycle, minted_transaction_id)
+            SELECT game_character_uuid_v7(), world_id, 'Item', $2, $3, 1, 1, game_character_uuid_v7()
+            FROM backpack CROSS JOIN generate_series(1, $4::bigint)
+            RETURNING item_instance_id, world_id, minted_transaction_id
+        )
+        INSERT INTO game_item_container_entries(character_id, world_id, parent_item_instance_id,
+            item_instance_id, placement_ordinal, placed_transaction_id)
+        SELECT b.character_id, m.world_id, b.item_instance_id, m.item_instance_id,
+            COALESCE((SELECT max(e.placement_ordinal) FROM game_item_container_entries e
+                WHERE e.parent_item_instance_id=b.item_instance_id), 0) + row_number() OVER (),
+            m.minted_transaction_id
+        FROM minted m CROSS JOIN backpack b
+        RETURNING uuid_send(item_instance_id)",
+    ).bind(clients.characters[0].as_slice()).bind(key).bind(revision).bind(count)
+        .fetch_all(&mut *tx).await?;
+    if placed.len() != usize::try_from(count)? {
+        return Err(format!(
+            "harness-taming-fixture: expected {count} items, placed {}",
+            placed.len()
+        )
+        .into());
+    }
+    tx.commit().await?;
+    items.extend(placed);
+    Ok(())
+}
+
+async fn seed_taming_prerequisites(
+    clients: &SeamClients<'_>,
+    binding: &Taming,
+    items: &mut Vec<Vec<u8>>,
+) -> TestResult {
+    if binding.required_items.is_empty() {
+        let attempts = if binding.creature_key.is_empty() {
+            1
+        } else {
+            12
+        };
+        seed_item(clients, &binding.item_key, attempts, items).await?;
+    } else {
+        for key in &binding.required_items {
+            seed_item(clients, key, 1, items).await?;
+        }
+    }
+    if let Some(key) = &binding.required_equipment {
+        seed_item(clients, key, 1, items).await?;
+    }
+    Ok(())
+}
+
+// Keep the disposable backpack below the protocol inventory cap. Retire only
+// this row's remaining fixture items after the ordinary session has released.
+async fn retire_fixture_items(clients: &SeamClients<'_>, items: &[Vec<u8>]) -> TestResult {
+    if items.is_empty() {
+        return Ok(());
+    }
+    wait_character_released(clients, 0).await?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let mut tx = sqlx::Connection::begin(&mut db).await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "WITH backpack AS (
+            DELETE FROM game_item_container_entries
+            WHERE character_id=encode($1,'hex')::uuid AND uuid_send(item_instance_id)=ANY($2::bytea[])
+            RETURNING item_instance_id
+        ), equipment AS (
+            DELETE FROM game_character_equipment_slots
+            WHERE character_id=encode($1,'hex')::uuid AND uuid_send(item_instance_id)=ANY($2::bytea[])
+            RETURNING item_instance_id
+        )
+        UPDATE game_item_instances SET quantity=0, lifecycle=2, last_transaction_id=game_character_uuid_v7()
+        WHERE item_instance_id IN (
+            SELECT item_instance_id FROM backpack UNION ALL SELECT item_instance_id FROM equipment
+        )",
+    ).bind(clients.characters[0].as_slice()).bind(items).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+fn item_ref(key: &str) -> TestResult<std::num::NonZeroU32> {
+    let index = provisioning::item_index()?;
+    index
+        .revision(key)
+        .and_then(|revision| index.definition_ref("Item", key, revision))
+        .ok_or_else(|| format!("content item definition absent: {key}").into())
+}
+
+fn carried_handle(
+    client: &DevClientSession,
+    reference: std::num::NonZeroU32,
+) -> TestResult<oteryn_protocol_oteryn::world_object::UseTarget> {
+    client
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .find(|item| item.item_definition_ref == reference)
+        })
+        .map(|item| oteryn_protocol_oteryn::world_object::UseTarget::Item(item.handle))
+        .ok_or_else(|| "harness-item-custody: seeded item absent from wire inventory".into())
+}
+
+async fn use_cosmetic_item(client: &mut DevClientSession, key: &str) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::{self, UseDisposition, UseIntent};
+    let payload = world_object::encode_item_use_intent(&UseIntent {
+        target: carried_handle(client, item_ref(key)?)?,
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
     })
+    .map_err(|error| format!("harness-cosmetic-item: {error:?}"))?;
+    let reply = client.session_mut().world_context_use(&payload).await?;
+    let (outcome, _) = world_object::decode_use_result_with_gate(&reply.payload)
+        .map_err(|error| format!("server-cosmetic-item: {error:?}"))?;
+    if reply.status != CommandStatus::Accepted || outcome != UseDisposition::Committed {
+        return Err(format!("server-cosmetic-item: {:?}/{outcome:?}", reply.status).into());
+    }
+    Ok(())
+}
+
+async fn obtain_taming(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    binding: &Taming,
+    state: &mut appearance::Snapshot,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::{self, UseDisposition, UseIntent, UseTarget};
+    if state.catalogue.mounts.contains(&binding.mount_key) {
+        return Err("harness-taming-fixture: mount already unlocked on sweep account".into());
+    }
+    let reference = item_ref(&binding.item_key)?;
+    if let Some(key) = &binding.required_equipment {
+        let equipment = item_ref(key)?;
+        if !client.inventory().is_some_and(|inventory| {
+            inventory
+                .equipment
+                .iter()
+                .any(|slot| slot.item.item_definition_ref == equipment)
+        }) {
+            let result = client
+                .session_mut()
+                .equip_item_definition(equipment)
+                .await?;
+            if result.status != CommandStatus::Accepted
+                || result.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
+            {
+                return Err("harness-taming-equipment: prerequisite equip refused".into());
+            }
+        }
+    }
+    let home = tile(client.world_spatial().actor_position)?;
+    if !binding.creature_key.is_empty() {
+        creature_sweep::leave_protection_zone(client, world).await?;
+    } else if binding.target_item_key.as_deref() != Some(binding.item_key.as_str()) {
+        return Err("harness-obtain-path: construction needs multiple carried components".into());
+    }
+    let mut previous = None;
+    for _ in 0..12 {
+        verdict::Harness::global().progress("cosmetic-taming-attempt");
+        let target = if binding.creature_key.is_empty() {
+            None
+        } else if let Some(entity) = previous
+            && client
+                .world_entities()
+                .is_some_and(|view| view.get(&entity).is_some())
+        {
+            Some(entity)
+        } else {
+            let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+            let reply = request_spawn(session, binding.creature_key.clone())
+                .await
+                .map_err(|error| format!("harness-taming-spawn: {error}"))?;
+            let entity = parse_spawned_entity(&reply)?;
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            while !client
+                .world_entities()
+                .is_some_and(|view| view.get(&entity).is_some())
+            {
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(
+                        "harness-taming-spawn: spawned creature never became visible".into(),
+                    );
+                }
+                client.service_liveness(Duration::from_millis(50)).await?;
+            }
+            Some(entity)
+        };
+        previous = target;
+        client.take_events();
+        let payload = world_object::encode_item_use_intent(&UseIntent {
+            target: if binding.required_items.len() > 1 {
+                carried_handle(client, reference)?
+            } else {
+                UseTarget::ItemByDefinition(reference)
+            },
+            use_with: target,
+            use_with_map_item: None,
+            use_with_position: None,
+        })
+        .map_err(|error| format!("harness-taming-encode: {error:?}"))?;
+        let reply = client.session_mut().world_context_use(&payload).await?;
+        let (outcome, _) = world_object::decode_use_result_with_gate(&reply.payload)
+            .map_err(|error| format!("server-taming-reply: {error:?}"))?;
+        if reply.status != CommandStatus::Accepted || outcome != UseDisposition::Committed {
+            return Err(format!("server-taming-use: {:?}/{outcome:?}", reply.status).into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+        let mut success = false;
+        let mut feedback = false;
+        loop {
+            for event in client.take_events() {
+                match event {
+                    SessionEvent::Appearance(delta) => apply_appearance(state, delta.value),
+                    SessionEvent::ChatLine(delta) => {
+                        if let oteryn_dev_client::ChatLine::Private { speaker_name, text } =
+                            delta.value
+                            && speaker_name == "Game"
+                        {
+                            feedback |= binding.failures.iter().any(|failure| failure.text == text);
+                            success |= text == binding.success_text;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            let removed = target.is_none_or(|entity| {
+                client
+                    .world_entities()
+                    .is_some_and(|view| view.get(&entity).is_none())
+            });
+            if success && removed && state.catalogue.mounts.contains(&binding.mount_key) {
+                return_to(client, world, home).await?;
+                return Ok(());
+            }
+            if feedback && !success {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(
+                    "server-taming-outcome: committed use lacked expected feedback or unlock delta"
+                        .into(),
+                );
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
+    }
+    Err("taming-roll-budget: exhausted twelve committed attempts".into())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -407,12 +1080,16 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn journey(
     rows: &mut Rows<'_>,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     content: &Content,
     entry: &Entry<'_>,
+    obtain: &ObtainContent,
+    npcs: &oteryn_world_bundle::npc::Table,
+    items: &mut Vec<Vec<u8>>,
 ) -> TestResult {
     let (outfit, addon, mount) = match entry {
         Entry::Outfit(outfit, addon) => (*outfit, *addon, None),
@@ -428,33 +1105,83 @@ async fn journey(
             return Err("no admitted appearance definition for this content key".into());
         }
     };
-    let mode = prepare(clients, content, outfit, addon, mount).await?;
+    let (mode, actions) = prepare(clients, content, outfit, addon, mount, obtain, items).await?;
     let mut client = connect_character(clients, 0xc9, 0).await?;
+    let home = tile(client.world_spatial().actor_position)?;
     let mut observer = None;
-    let result = exercise(
-        rows,
-        &mut client,
-        &mut observer,
-        clients,
-        world,
-        content,
-        outfit,
-        addon,
-        mount,
-        &mode,
-    )
+    let result = async {
+        let mut state = snapshot(&mut client)?;
+        for action in actions {
+            match action {
+                ObtainAction::Npc(target, steps) => {
+                    if !target.owned(&state.catalogue) {
+                        obtain_npc(&mut client, world, npcs, &steps, &target, &mut state).await?;
+                    }
+                }
+                ObtainAction::Item(target, key) => {
+                    if !target.owned(&state.catalogue) {
+                        use_cosmetic_item(&mut client, &key).await?;
+                        wait_target(&mut client, &mut state, &target).await?;
+                    }
+                }
+                ObtainAction::Tame(binding) => {
+                    obtain_taming(&mut client, world, binding, &mut state).await?
+                }
+                ObtainAction::OwnedTame(binding) => {
+                    obtain_taming(&mut client, world, &binding, &mut state).await?
+                }
+            }
+        }
+        let mount_key = mount.map(|(mount, _)| mount.key.as_str());
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            for event in client.take_events() {
+                if let SessionEvent::Appearance(delta) = event {
+                    apply_appearance(&mut state, delta.value);
+                }
+            }
+            if has_unlock(&state.catalogue, outfit, addon_mask(addon), mount_key) {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!(
+                    "server-unlock-wire: {mode} expected {} addon {addon} mount {mount_key:?}",
+                    outfit.key
+                )
+                .into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
+        exercise(
+            rows,
+            &mut client,
+            &mut observer,
+            clients,
+            world,
+            content,
+            outfit,
+            addon,
+            mount,
+            &mode,
+            state,
+        )
+        .await
+    }
     .await;
-    let observer_release = if let Some(mut observer) = observer {
-        logout(&mut observer).await
+    // Acquisition can fail after a walk. Return even on failure so the next
+    // entry starts beside its observer rather than outside the temple.
+    let actor_return = return_to(&mut client, world, home).await;
+    let observer_release = if let Some((mut observer, home)) = observer {
+        let back = return_to(&mut observer, world, home).await;
+        back.and(logout(&mut observer).await)
     } else {
         Ok(())
     };
     let release = logout(&mut client).await;
     result?;
+    actor_return?;
     observer_release?;
-    release?;
-    rows.pass("fresh admission retained selected look, colours and unlock");
-    Ok(())
+    release
 }
 
 fn has_unlock(
@@ -477,7 +1204,7 @@ fn has_unlock(
 async fn exercise(
     rows: &mut Rows<'_>,
     client: &mut DevClientSession,
-    observer: &mut Option<DevClientSession>,
+    observer: &mut Option<(DevClientSession, TilePos)>,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     content: &Content,
@@ -485,16 +1212,29 @@ async fn exercise(
     addon: u8,
     mount: Option<(&Mount, Option<&Taming>)>,
     mode: &str,
+    mut state: appearance::Snapshot,
 ) -> TestResult {
-    let mut state = snapshot(client)?;
     let mount_key = mount.map(|(mount, _)| mount.key.as_str());
     let addons = addon_mask(addon);
-    if !has_unlock(&state.catalogue, outfit, addons, mount_key) {
-        return Err(format!("{mode} expected outfit look {}, addon mask {addons} and mount {mount_key:?} in wire catalogue", outfit.female.id).into());
-    }
     rows.pass(mode);
-    *observer = Some(connect_character(clients, 0xca, 1).await?);
-    let observer = observer.as_mut().ok_or("observer fixture missing")?;
+    let peer = connect_character(clients, 0xca, 1).await?;
+    let peer_home = tile(peer.world_spatial().actor_position)?;
+    *observer = Some((peer, peer_home));
+    let (observer, _) = observer.as_mut().ok_or("observer fixture missing")?;
+    let actor_position = tile(client.world_spatial().actor_position)?;
+    let near = |at: TilePos| {
+        at.floor == actor_position.floor
+            && at
+                .x
+                .abs_diff(actor_position.x)
+                .max(at.y.abs_diff(actor_position.y))
+                <= 3
+    };
+    if !near(peer_home) {
+        let path = route(world, peer_home, near)
+            .ok_or("harness-observer-route: no route into actor sight range")?;
+        walk(observer, world, &path).await?;
+    }
     let mut observer_state = snapshot(observer)?;
     let previous_colours = state
         .catalogue
