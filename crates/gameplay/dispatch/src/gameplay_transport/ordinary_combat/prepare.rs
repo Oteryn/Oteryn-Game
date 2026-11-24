@@ -593,6 +593,7 @@ async fn prepare_spatial(
         );
         candidates.insert(target);
     }
+    let mut visual_tiles = BTreeSet::new();
     let explicit_chain_target = match intent.target {
         SpellTarget::AttackTarget => attack_target_tile,
         SpellTarget::Position(_) => Some(origin),
@@ -630,6 +631,7 @@ async fn prepare_spatial(
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
         candidates.extend(search.tiles.into_iter().map(cast_position));
+        visual_tiles.extend(search.visual_tiles.into_iter().map(cast_position));
         for (from, to) in search.sight {
             let (from, to) = (cast_position(from), cast_position(to));
             paths.insert((from, to), sight_steps(from, to)?);
@@ -638,7 +640,8 @@ async fn prepare_spatial(
     for steps in paths.values() {
         candidates.extend(steps.iter().map(|(p, _)| *p));
     }
-    if candidates.len() > MAX_WORLD_TILES {
+    visual_tiles.retain(|position| !candidates.contains(position));
+    if candidates.len() + visual_tiles.len() > MAX_WORLD_TILES {
         return reject();
     }
     #[cfg(test)]
@@ -649,6 +652,13 @@ async fn prepare_spatial(
             p,
             read_tile(tx, authority, room, runtime, objects, p).await?,
         );
+    }
+    for p in visual_tiles {
+        if let Some(tile) =
+            super::super::read_chain_visual_tile(tx, authority, room, runtime, objects, p).await?
+        {
+            tiles.insert(p, tile);
+        }
     }
     let caster_tile = tiles
         .get(&caster_position)

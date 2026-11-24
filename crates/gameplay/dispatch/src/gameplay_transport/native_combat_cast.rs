@@ -1711,6 +1711,41 @@ pub(in crate::gameplay_transport) async fn read_tile(
     objects: &LocalObjectRuntime,
     position: TilePosition,
 ) -> Result<TileFlags, SpellCastDisposition> {
+    read_cast_tile(tx, authority, room, runtime, objects, position)
+        .await
+        .map_err(|_| SpellCastDisposition::Rejected)
+}
+
+pub(in crate::gameplay_transport) async fn read_chain_visual_tile(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    room: &QualifiedNativeEntryRoom,
+    runtime: &ChannelRuntimeV1,
+    objects: &LocalObjectRuntime,
+    position: TilePosition,
+) -> Result<Option<TileFlags>, SpellCastDisposition> {
+    match read_cast_tile(tx, authority, room, runtime, objects, position).await {
+        Ok(tile) => Ok(Some(tile)),
+        // Crystal 201189f8 combat.cpp:1329–1344 still emits the destination effect when
+        // it cannot find a walking path. This tile cannot be used for combat or sight.
+        Err(CastTileError::MissingMetadata) => Ok(None),
+        Err(CastTileError::Unavailable) => reject(),
+    }
+}
+
+enum CastTileError {
+    MissingMetadata,
+    Unavailable,
+}
+
+async fn read_cast_tile(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    room: &QualifiedNativeEntryRoom,
+    runtime: &ChannelRuntimeV1,
+    objects: &LocalObjectRuntime,
+    position: TilePosition,
+) -> Result<TileFlags, CastTileError> {
     let cells = room.movement_cells();
     let logical = crate::content::LogicalCell {
         x: position.x,
@@ -1727,7 +1762,7 @@ pub(in crate::gameplay_transport) async fn read_tile(
                 present: false,
             });
         }
-        Err(SpellTileLookupError::ScopeMismatch) => return reject(),
+        Err(SpellTileLookupError::ScopeMismatch) => return Err(CastTileError::Unavailable),
         // Mutable source placements require same-transaction initialization receipts;
         // the source index alone intentionally leaves these cells unknown.
         Err(SpellTileLookupError::Unknown) | Ok(_) => {}
@@ -1741,12 +1776,17 @@ pub(in crate::gameplay_transport) async fn read_tile(
         cell(position),
     )
     .await
-    .map_err(|_| SpellCastDisposition::Rejected)?;
+    .map_err(|error| match error {
+        crate::spell::world_execution::WorldRelocationError::MissingTileMetadata => {
+            CastTileError::MissingMetadata
+        }
+        _ => CastTileError::Unavailable,
+    })?;
     let target = SpellGroundTarget::for_native_tile_read(room, runtime, cell(position))
-        .map_err(|_| SpellCastDisposition::Rejected)?;
+        .map_err(|_| CastTileError::Unavailable)?;
     let actual = read_spell_tile_in_transaction(tx, authority, &target)
         .await
-        .map_err(|_| SpellCastDisposition::Rejected)?;
+        .map_err(|_| CastTileError::Unavailable)?;
     Ok(TileFlags {
         projectile: static_tile.block_projectile()
             || actual.items.iter().any(|i| i.blocks_projectile),

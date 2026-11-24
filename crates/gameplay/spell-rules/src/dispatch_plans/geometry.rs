@@ -122,6 +122,7 @@ fn add_chain_path_tiles(
 pub struct ChainSearch {
     pub tiles: BTreeSet<TilePosition>,
     pub sight: BTreeSet<(TilePosition, TilePosition)>,
+    pub visual_tiles: BTreeSet<TilePosition>,
 }
 
 /// Crystal 201189f8 combat.cpp:1881 searches around the current bounce, and
@@ -149,6 +150,7 @@ pub fn ordinary_chain_search(
     let mut result = ChainSearch {
         tiles: frontier.clone(),
         sight: frontier.iter().map(|&to| (caster, to)).collect(),
+        visual_tiles: BTreeSet::new(),
     };
     let depth = match spec.shape {
         ChainShape::Sequential => spec.max_targets,
@@ -183,7 +185,7 @@ pub fn ordinary_chain_search(
             .map(|&(from, _)| from)
             .collect::<BTreeSet<_>>();
         for from in origins {
-            add_chain_path_tiles(&mut result.tiles, from)?;
+            add_chain_path_tiles(&mut result.visual_tiles, from)?;
         }
     }
     Ok(result)
@@ -204,6 +206,27 @@ mod chain_search_tests {
         cast_tiles.extend(search.tiles);
         assert_eq!(cast_tiles, BTreeSet::from([caster, target]));
         assert!(search.sight.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn optional_chain_visual_tiles_are_not_required_hit_geometry() -> Result<(), PlanRejected> {
+        let caster = (32369, 32230, 7);
+        let first = (32369, 32229, 7);
+        let missing_visual = (32360, 32235, 7);
+        let spec = ChainSpec {
+            max_targets: 4,
+            range_tiles: 7,
+            initial_range_tiles: 7,
+            shape: oteryn_gameplay_combat_rules::chain::ChainShape::Sequential,
+            damage_step_percent: -5,
+            asset_binding: Some("chain".into()),
+        };
+        let search = ordinary_chain_search(Some(&spec), caster, None, BTreeSet::from([first]))?;
+        assert_eq!(search.sight, BTreeSet::from([(caster, first)]));
+        assert_eq!(search.tiles, BTreeSet::from([first]));
+        assert!(!search.tiles.contains(&missing_visual));
+        assert!(search.visual_tiles.contains(&missing_visual));
         Ok(())
     }
 
@@ -233,10 +256,12 @@ mod chain_search_tests {
             search.sight,
             BTreeSet::from([(caster, first), (first, bounce)])
         );
-        assert!(search.tiles.contains(&(91, 100, 7)));
-        assert!(search.tiles.contains(&(116, 100, 7)));
+        assert!(search.visual_tiles.contains(&(91, 100, 7)));
+        assert!(search.visual_tiles.contains(&(116, 100, 7)));
         assert!(!search.tiles.contains(&beyond_fork));
         assert!(!search.tiles.contains(&spectator));
+        assert!(!search.visual_tiles.contains(&beyond_fork));
+        assert!(!search.visual_tiles.contains(&spectator));
         Ok(())
     }
 }
