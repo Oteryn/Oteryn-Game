@@ -39,7 +39,7 @@
 //! TRANSFER. The fence is the B3-1 TRANSFER fence
 //! ([`super::item_transfer::character_item_fence_is_current`]).
 //!
-//! [`DurabilityRoot::read_map_item_mint_placements`] lists the taken entries
+//! [`DurabilityRoot::read_map_item_mint_placement_states`] lists the taken entries
 //! of one (World, Channel, digest, reset epoch) for the overlay rebuild,
 //! which re-hides every one of them.
 
@@ -53,7 +53,7 @@ use super::db::{
 use super::item_mint::uuid_text;
 use super::item_mint_audit::{
     self as mint_audit, AuditError, ITEM_LIFECYCLE_LIVE, OneItemGroundV1, OneItemStateV1,
-    RL08_RETRY_WORK_UNITS_MAX, SelectedType2Tuple,
+    RL08_RETRY_WORK_UNITS_MAX, SelectedType2Tuple, Type2Transaction,
 };
 use super::item_transfer::{
     CurrentCharacterItemFence, ItemDefinitionFacts, ItemTransferError, ItemTransferRefusal,
@@ -84,6 +84,9 @@ const INTENT_BINDING_VERSION: u8 = 1;
 const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
 /// The only definition family a map entry mints.
 const ITEM_FAMILY: &str = "Item";
+
+/// The Ground-only strong health cask admitted by map-base Flask USE-WITH.
+pub const MAP_DISPENSER_KEY: &str = "oteryn:item.tibia.i25880";
 
 /// The native tile and top-level ordinal a `placement_key` names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -332,7 +335,7 @@ fn plan_admission(
 }
 
 /// Owned copy of the frozen candidate moved into one database pass.
-struct FrozenMint {
+pub(super) struct FrozenMint {
     request: MapItemMintRequest,
     character_id: CharacterId,
     transaction_id: [u8; 16],
@@ -343,7 +346,11 @@ struct FrozenMint {
 }
 
 impl FrozenMint {
-    fn of(candidate: &MapItemMintCandidate) -> Self {
+    pub(super) fn placement(&self) -> Option<MapItemPlacement> {
+        MapItemPlacement::of_key(self.request.placement_key)
+    }
+
+    pub(super) fn of(candidate: &MapItemMintCandidate) -> Self {
         Self {
             request: candidate.request.clone(),
             character_id: candidate.character_id,
@@ -563,17 +570,15 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let permit: &SpellLanePermit = permit;
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
-                    let outcome = commit_frozen_map_item_mint(
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let result = commit_frozen_in_transaction(
                         &mut tx, permit, &recovery, &node, &fence, &frozen,
                     )
-                    .await;
-                    if outcome.is_ok() {
+                    .await?;
+                    if result.is_ok() {
                         tx.commit(deadline).await?;
                     }
-                    match outcome {
-                        Err(MapItemMintError::Unavailable(error)) => Err(error),
-                        result => Ok(result),
-                    }
+                    Ok(result)
                 })
             })
             .await?
@@ -652,12 +657,30 @@ impl DurabilityRoot {
             .await?
     }
 
-    /// The `placement_key` of every entry taken in this World, Channel, base
-    /// bundle and reset epoch, ascending: the origins the overlay rebuild
-    /// re-hides. Read-only. More than `max_entries` (the bundle's entry
-    /// count) is an invalid state, reported as `CapacityExceeded`, never
-    /// truncated.
-    pub async fn read_map_item_mint_placements(
+    /// Taken placement keys in this World, Channel, bundle and reset epoch, in
+    /// ascending order, with a flag for retired blocking casks. More than
+    /// `max_entries` is reported as `CapacityExceeded`.
+    pub async fn read_map_item_mint_placement_states(
+        &self,
+        world_id: WorldId,
+        channel_id: ChannelId,
+        base_bundle_digest: [u8; 32],
+        reset_epoch: u64,
+        max_entries: usize,
+    ) -> Result<Vec<(u64, bool)>> {
+        self.read_placement_states(
+            world_id,
+            channel_id,
+            base_bundle_digest,
+            reset_epoch,
+            max_entries,
+            false,
+        )
+        .await
+    }
+
+    /// Read only the placements whose authored blocker has been retired.
+    pub async fn read_retired_map_cask_placements(
         &self,
         world_id: WorldId,
         channel_id: ChannelId,
@@ -665,25 +688,57 @@ impl DurabilityRoot {
         reset_epoch: u64,
         max_entries: usize,
     ) -> Result<Vec<u64>> {
+        Ok(self
+            .read_placement_states(
+                world_id,
+                channel_id,
+                base_bundle_digest,
+                reset_epoch,
+                max_entries,
+                true,
+            )
+            .await?
+            .into_iter()
+            .map(|(key, _)| key)
+            .collect())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn read_placement_states(
+        &self,
+        world_id: WorldId,
+        channel_id: ChannelId,
+        base_bundle_digest: [u8; 32],
+        reset_epoch: u64,
+        max_entries: usize,
+        only_retired_casks: bool,
+    ) -> Result<Vec<(u64, bool)>> {
         let limit = i64::try_from(max_entries.saturating_add(1)).unwrap_or(i64::MAX);
         let keys = self
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    let keys: Vec<String> = sqlx::query_scalar(
-                        "SELECT placement_key::text FROM game_map_item_mint_receipts \
-                          WHERE world_id = encode($1,'hex')::uuid \
-                            AND channel_id = encode($2,'hex')::uuid \
-                            AND base_bundle_digest = $3 \
-                            AND reset_epoch = $4::text::numeric(20,0) \
-                          ORDER BY placement_key LIMIT $5",
+                    let keys: Vec<(String, bool)> = sqlx::query_as(
+                        "SELECT placement_key::text, retired_cask FROM (
+                           SELECT m.placement_key, m.definition_production_key=$6 AND EXISTS (
+                              SELECT 1 FROM game_item_instances i WHERE i.item_instance_id=m.item_instance_id
+                                AND i.world_id=m.world_id AND i.lifecycle=2) AS retired_cask
+                           FROM game_map_item_mint_receipts m
+                           WHERE world_id = encode($1,'hex')::uuid
+                             AND channel_id = encode($2,'hex')::uuid
+                             AND base_bundle_digest = $3
+                             AND reset_epoch = $4::text::numeric(20,0)
+                         ) placements WHERE NOT $7 OR retired_cask
+                         ORDER BY placement_key LIMIT $5",
                     )
                     .bind(world_id.as_bytes().as_slice())
                     .bind(channel_id.as_bytes().as_slice())
                     .bind(base_bundle_digest.as_slice())
                     .bind(reset_epoch.to_string())
                     .bind(limit)
+                    .bind(MAP_DISPENSER_KEY)
+                    .bind(only_retired_casks)
                     .fetch_all(&mut *tx)
                     .await?;
                     commit_semantic_transaction(tx, deadline).await?;
@@ -695,71 +750,60 @@ impl DurabilityRoot {
             return Err(MapItemMintError::CapacityExceeded);
         }
         keys.iter()
-            .map(|key| {
+            .map(|(key, retired_cask)| {
                 key.parse::<u64>()
+                    .map(|key| (key, *retired_cask))
                     .map_err(|_| DurabilityError::InvalidStoredState.into())
             })
             .collect()
     }
 }
 
-/// Materialize a reserved source inside the caller's custody transaction.
+/// Materialize a reserved source inside the caller's scene custody transaction.
 pub(super) async fn commit_reserved_map_item_mint(
-    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    tx: &mut Type2Transaction<'_>,
     permit: &SpellLanePermit,
     recovery: &CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
     candidate: &MapItemMintCandidate,
 ) -> Result<CommittedMapItemMint> {
-    match commit_frozen_map_item_mint(
-        tx,
-        permit,
-        recovery,
-        node,
-        fence,
-        &FrozenMint::of(candidate),
-    )
-    .await?
+    assert_recovery_fence(tx, recovery).await?;
+    match commit_frozen_in_transaction(tx, permit, recovery, node, fence, &FrozenMint::of(candidate))
+        .await??
     {
-        MapItemMintOutcome::Committed(mint) | MapItemMintOutcome::AlreadyCommitted(mint) => {
-            Ok(mint)
-        }
+        MapItemMintOutcome::Committed(mint) | MapItemMintOutcome::AlreadyCommitted(mint) => Ok(mint),
     }
 }
 
-async fn commit_frozen_map_item_mint(
-    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+// A caller that composes the mint with a fill owns the final commit.
+pub(super) async fn commit_frozen_in_transaction(
+    tx: &mut Type2Transaction<'_>,
     permit: &SpellLanePermit,
     recovery: &CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
     frozen: &FrozenMint,
-) -> Result<MapItemMintOutcome> {
-    assert_recovery_fence(tx, recovery).await?;
+) -> Pass<MapItemMintOutcome> {
     lock_admission_relations(tx).await?;
     let command = frozen.request.command;
     lock_cause(tx, command).await?;
 
     if let Some(row) = load_receipt(tx, command).await? {
-        let stored: Vec<u8> = row
-            .try_get("intent_binding")
-            .map_err(DurabilityError::from)?;
+        let stored: Vec<u8> = row.try_get("intent_binding")?;
         if stored != frozen.intent_binding {
-            return Err(MapItemMintError::ConflictingCause);
+            return Ok(Err(MapItemMintError::ConflictingCause));
         }
         let committed = decode_receipt(&row)?;
-        return Ok(MapItemMintOutcome::AlreadyCommitted(committed));
+        return Ok(Ok(MapItemMintOutcome::AlreadyCommitted(committed)));
     }
 
     let Some(row) = load_reservation(tx, command).await? else {
-        return Err(MapItemMintError::ConflictingCandidate);
+        return Ok(Err(MapItemMintError::ConflictingCandidate));
     };
-    let stored: Vec<u8> = row
-        .try_get("intent_binding")
-        .map_err(DurabilityError::from)?;
+    let stored: Vec<u8> = row.try_get("intent_binding")?;
     if stored != frozen.intent_binding {
-        return Err(MapItemMintError::ConflictingCause);
+        return Ok(Err(MapItemMintError::ConflictingCause));
     }
     let reservation = decode_reservation(&row)?;
     if reservation.transaction_id != frozen.transaction_id
@@ -768,7 +812,7 @@ async fn commit_frozen_map_item_mint(
         || reservation.occurred_at_unix_ms != frozen.occurred_at_unix_ms
         || reservation.character_id != frozen.character_id
     {
-        return Err(MapItemMintError::ConflictingCandidate);
+        return Ok(Err(MapItemMintError::ConflictingCandidate));
     }
     let identity_reused: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_map_item_mint_receipts \
@@ -786,13 +830,14 @@ async fn commit_frozen_map_item_mint(
     .bind(frozen.event_id.as_slice())
     .bind(frozen.item_instance_id.as_slice())
     .fetch_one(&mut ***tx)
-    .await
-    .map_err(DurabilityError::from)?;
+    .await?;
     if identity_reused {
-        return Err(MapItemMintError::ConflictingCandidate);
+        return Ok(Err(MapItemMintError::ConflictingCandidate));
     }
 
-    admit(tx, node, fence, &frozen.request, &reservation).await??;
+    if let Err(error) = admit(tx, node, fence, &frozen.request, &reservation).await? {
+        return Ok(Err(error));
+    }
     let ground = ground_of(&frozen.request, &reservation, fence);
     // Keep actual session/source admission and receipt replay above;
     // one new MINT creates one physical root, independent of quantity.
@@ -813,11 +858,11 @@ async fn commit_frozen_map_item_mint(
     )
     .await
     {
-        return Err(error.into_map_item_mint_error());
+        return Ok(Err(error.into_map_item_mint_error()));
     }
     let message = mint_message(frozen, &reservation, fence, ground.clone());
     let tuple = tx.tuple();
-    let envelope = audit::encode_map_item_mint_event(
+    let envelope = match audit::encode_map_item_mint_event(
         MapItemMintEventIdentity {
             event_id: frozen.event_id,
             transaction_id: frozen.transaction_id,
@@ -826,9 +871,12 @@ async fn commit_frozen_map_item_mint(
         },
         message,
         tuple.tuple(),
-    )?;
+    ) {
+        Ok(envelope) => envelope,
+        Err(error) => return Ok(Err(error.into())),
+    };
     let committed = apply_mint(tx, permit, frozen, &reservation, &ground, &envelope, tuple).await?;
-    Ok(MapItemMintOutcome::Committed(committed))
+    Ok(Ok(MapItemMintOutcome::Committed(committed)))
 }
 
 /// The complete current fence (shared with B3-1 TRANSFER, ending with the
