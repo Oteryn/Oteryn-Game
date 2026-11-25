@@ -1130,6 +1130,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 EXISTS(SELECT 1 FROM game_item_mint_receipts cm WHERE cm.item_instance_id=i.item_instance_id AND cm.loot_purpose_key='CORPSE_MATERIALIZATION') AS native_corpse, \
                 game_elemental_corpse_ground_source(i.item_instance_id) AS altar_corpse_source, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) AS loop_drop, \
+                i.definition_production_key=$2 AND game_item_loop_map_mint_source(i.item_instance_id) AS fixed_map_cask, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
                 OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) AS loop_pickup, \
                 game_item_loop_native_corpse_source(i.item_instance_id) AS native_corpse \
@@ -1142,6 +1143,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
           WHERE i.item_instance_id = encode($1,'hex')::uuid",
     )
     .bind(request.item.as_slice())
+    .bind(super::map_item_mint::MAP_DISPENSER_KEY)
     .fetch_one(&mut **tx)
     .await?;
     let entry_character = optional_uuid(row.try_get("entry_character")?)?;
@@ -1222,6 +1224,10 @@ async fn apply_loop_move<C: ItemLoopContent>(
             || ground_instance != instance
         {
             return refuse(LoopMoveRefusal::Stale);
+        }
+        // Materializing a static dispenser for charges does not grant Ground relocation.
+        if row.try_get::<bool, _>("fixed_map_cask")? {
+            return refuse(LoopMoveRefusal::NotSupported);
         }
         let native_corpse = row.try_get::<bool, _>("native_corpse")?;
         if native_corpse && !matches!(request.destination, LoopDestination::Ground(_)) {
