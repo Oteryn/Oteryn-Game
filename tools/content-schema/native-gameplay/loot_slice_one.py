@@ -125,6 +125,7 @@ def admit_native(root, generated, profile_path, starter_path, order, canonical):
     import encounter_loot_item_admissions as donor
     import house_decoration_actions
     from build_full_spell_artifact import native_loot_yield_facts
+    from writing_item_admission import ids as writing_ids
 
     source = donor.source
     client = (root / donor.CLIENT).read_bytes()
@@ -145,7 +146,9 @@ def admit_native(root, generated, profile_path, starter_path, order, canonical):
     if str(soil) in identities:
         raise ValueError("Spirited Soil binding already exists")
     identities[str(soil)] = soil_binding
-    selected = set(xml)
+    # SRX-1 owns the source-qualified writing attributes. Final loot projection
+    # reads those admissions from the composed provider, as for CLOOT2.
+    selected = set(xml) - set(writing_ids(root))
     appearances = source.engine_items.load_appearance_objects(client)
     physics = {
         row["server_item_id"]: row for row in source.policies(client, raw_xml, selected)

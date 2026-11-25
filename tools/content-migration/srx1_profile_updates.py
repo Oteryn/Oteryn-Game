@@ -15,11 +15,12 @@ def omit_unknown_attributes(row):
 
 
 def exact_source_keys(packet):
-    from lion_trial_item_profiles import SOURCE_RECORDS
+    from floor_assembly_profiles import IDS as floor_assembly_ids
+    from lion_trial_item_profiles import SOURCE_RECORDS as lion_trial_ids
 
     return {row['production_definition']['production_key']
             for group in ('records', 'custody_promotions') for row in packet[group]} | {
-                f'oteryn:item.tibia.i{item_id}' for item_id in SOURCE_RECORDS
+                f'oteryn:item.tibia.i{item_id}' for item_id in floor_assembly_ids | lion_trial_ids.keys()
             }
 
 
@@ -64,7 +65,7 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
     exact_keys = exact_source_keys(json.loads(generated[qengine_reward_item_profiles.PROOF]))
     # Omit redundant nulls after the exact source comparisons. Rust reads either
     # representation as Unknown and keeps the composed provider within 16 MiB.
-    # Quest and NPC source proofs compare the complete QENGINE and Lion Trial rows.
+    # The QENGINE, Lion Trial and floor assembly proofs compare complete source rows.
     for profile_document in (original_document, enriched):
         for row in profile_document['records']:
             if row['production_definition']['production_key'] not in exact_keys:

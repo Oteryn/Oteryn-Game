@@ -22,6 +22,9 @@ ITEM_PREFIX = "oteryn:item.tibia.i"
 # Transcendence Potion page identify 49271, corroborated by Crystal items.xml.
 # Preserve the authored rolls and replace only these tables' stale identities.
 REPLACEMENTS = {
+    # Crystal Lloyd rolls 3100 (data-global/monster/quests/forgotten_knowledge/
+    # bosses/lloyd.lua:78). src/items/item.cpp:56,107-109 creates the inactive 3098.
+    "oteryn:loot.creature.lloyd": {3100: 3098},
     "oteryn:loot.creature.megasylvan_yselda": {51302: 49271},
     "oteryn:loot.creature.muglex_clan_chief": {7618: 266, 7620: 268},
 }
