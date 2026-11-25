@@ -45,6 +45,39 @@ command's `[world_bundle]` loader. First entry starts at Thais temple
 `(32369, 32238, -7)`. Each pass creates and cleans up its own preproduction
 Platform, PostgreSQL and node topology.
 
+## Measuring the World pass under a 35-minute cap
+
+Run basic once with `NODE_BOOT_WORLD=0`. For repeated World measurements, use
+`NODE_BOOT_SKIP_BASIC=1` and leave the row and group selectors unset for the
+same World workload as the reference run. Keep builds outside the timed runs.
+The World pass still runs the PostgreSQL spawn proof and all its own readiness
+checks. The bootstrap evidence age check in `seam_stages` also stays in place.
+
+On game revision `ad973b4a`, the combined reference run hit the cap during
+C09. Its 18 completed row timings totalled 1,059.214 seconds, excluding
+unreported cleanup and setup. The largest measured costs were:
+
+| Row | Wall seconds | Last observed blocker |
+| --- | ---: | --- |
+| C20d | 330.021 | Lethal damage and respawn receipt wait after the in-fight logout refusal |
+| P19 | 170.440 | Walks to forge spawn candidates before a route with no available step |
+| W20a | 120.005 | Full clock cycle did not complete within the row budget |
+| C20b | 97.437 | Level 9 prerequisite with no reachable rat route |
+
+C12 was the last row with a terminal timing. C09 reported no walk route to
+Frodo within talk range before the runner interrupted the seam stage.
+
+For a capped reference campaign, use the existing `matrix.py plan --set custom` to
+separate these journeys from the indexed rows. Start with
+`--groups 'core,mp;f4,f5;f6,p16;f7clock;f7forge;f7add,f7cont,f7run'`
+and run `--rows all --batch 6` for the indexed coverage. In this split, f6
+retains P16 alongside its own journeys, the two measured f6 rows alone account
+for 427.458 seconds, and the clock and forge shards each carry their own long
+wait. Keep the basic and full-manifest spell passes as separate shards. Those
+figures are measured row costs. Include stack startup and fixture release in
+each shard's wall-time measurement before choosing a final partition. Explicit
+extensions such as `thaisroutes` still have their own targeted run.
+
 W20a/W20b use an explicitly disposable `qualification-clock` build by default.
 The World UTC clock and dispatch's monotonic owner clock share an atomic file
 offset. W20a advances 75 game seconds per observed sample; W20b advances one
