@@ -280,6 +280,24 @@ fn outside_protection(world: &BundleWorld, at: TilePos) -> bool {
         .is_some_and(|ground| !ground.protection_zone())
 }
 
+fn hunt_landing(world: &BundleWorld, from: TilePos, direction: StepDirection) -> Option<TilePos> {
+    // The live node refused this landing on the route past the depleted spawn.
+    let blocked = TilePos { x: 32472, y: 32221, floor: -7 };
+    destination(world, from, direction).filter(|at| *at != blocked)
+}
+
+async fn walk_hunt(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    let world = world.clone();
+    walk_with_landings(client, path, move |at, direction| {
+        hunt_landing(&world, at, direction)
+    })
+    .await
+}
+
 fn baseline_route(
     world: &BundleWorld,
     from: TilePos,
@@ -317,7 +335,7 @@ fn baseline_route(
     find_route(
         from,
         |at| approaches.contains(&at) && available(at),
-        |at, direction| destination(world, at, direction).filter(|next| available(*next)),
+        |at, direction| hunt_landing(world, at, direction).filter(|next| available(*next)),
     )
     .ok()
 }
@@ -339,7 +357,7 @@ async fn reachable_monster(
             &searched,
         )
         .ok_or_else(|| format!("no reachable compiled monster approach from {from:?}; prior approaches={searched:?}"))?;
-        walk(client, world, &path).await?;
+        walk_hunt(client, world, &path).await?;
         searched.push(tile(client.world_spatial().actor_position)?);
         if let Some(target) = visible_monster(client, world).await? {
             return Ok(target);
@@ -354,8 +372,7 @@ fn live_approach_route(
     target: TilePos,
     occupied: &BTreeSet<TilePos>,
 ) -> Option<Vec<StepDirection>> {
-    route_avoiding(
-        world,
+    route_with_landings(
         from,
         |cell| {
             cell != target
@@ -364,6 +381,7 @@ fn live_approach_route(
                 && cell.x.abs_diff(target.x).max(cell.y.abs_diff(target.y)) <= 1
         },
         |cell| full_e2ef3::route_available(cell) && cell != target && !occupied.contains(&cell),
+        |at, direction| hunt_landing(world, at, direction),
     )
 }
 
@@ -402,7 +420,7 @@ async fn visible_monster(
                 let occupied = full_e2ef3::occupied_tiles(client);
                 let path = live_approach_route(world, here, at, &occupied);
                 if let Some(direction) = path.and_then(|path| path.first().copied()) {
-                    walk(client, world, &[direction]).await?;
+                    walk_hunt(client, world, &[direction]).await?;
                 }
             }
         }
@@ -1009,6 +1027,15 @@ mod tests {
             ChannelId::decode(&v7(1, 3))?,
         )?
         .bundle;
+        let mut hunt_cell = TilePos { x: 32461, y: 32227, floor: -7 };
+        let blocked_landing = TilePos { x: 32472, y: 32221, floor: -7 };
+        let hunt_path = baseline_route(world, hunt_cell, &metadata.spawns, full_e2ef3::route_available, &[hunt_cell])
+            .ok_or("C03 follow-on hunt has no compiled route")?;
+        for step in hunt_path {
+            hunt_cell = destination(world, hunt_cell, step).ok_or("C03 hunt route has invalid step")?;
+            assert_ne!(hunt_cell, blocked_landing, "live server refused this landing in both C03 runs");
+        }
+
         let initial = baseline_route(world, TOWN, &metadata.spawns, |_| true, &[])
             .ok_or("C03 baseline could not reach a compiled town spawn")?;
         eprintln!("C03 compiled {} approach uses {} steps", COMBAT_TARGET.1, initial.len());
