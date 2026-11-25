@@ -222,12 +222,21 @@ pub(super) async fn send_at(
     slot: Option<u32>,
 ) -> TestResult {
     let payload = encode_depot_intent_at(intent, slot).map_err(debug)?;
+    send_command(client, command_id, COMMAND_TYPE_DEPOT_INTENT, &payload).await
+}
+
+pub(super) async fn send_command(
+    client: &mut tokio::io::DuplexStream,
+    command_id: u64,
+    command_type: u32,
+    payload: &[u8],
+) -> TestResult {
     let frame = oteryn_protocol_oteryn::encode_client_command(
         1,
         &oteryn_protocol_oteryn::ClientCommandValue {
             command_id,
-            command_type: COMMAND_TYPE_DEPOT_INTENT,
-            payload: &payload,
+            command_type,
+            payload,
         },
     )?;
     client.write_u32(u32::try_from(frame.len())?).await?;
@@ -247,6 +256,17 @@ pub(super) async fn read_reply(
     client: &mut tokio::io::DuplexStream,
     command_id: u64,
 ) -> TestResult<DepotReply> {
+    read_command_reply(client, command_id, |payload| {
+        decode_depot_reply(payload).map_err(debug)
+    })
+    .await
+}
+
+pub(super) async fn read_command_reply<T>(
+    client: &mut tokio::io::DuplexStream,
+    command_id: u64,
+    decode: impl FnOnce(&[u8]) -> TestResult<T>,
+) -> TestResult<T> {
     loop {
         let frame = read_frame(client).await?;
         let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?;
@@ -257,7 +277,7 @@ pub(super) async fn read_reply(
                 result.status,
                 oteryn_protocol_oteryn::CommandStatus::Accepted
             );
-            return decode_depot_reply(result.payload).map_err(debug);
+            return decode(result.payload);
         }
     }
 }

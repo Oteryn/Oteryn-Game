@@ -666,3 +666,9 @@ mod qb_outfit_npcs;
 
 #[path = "npcs/travel_origins.rs"]
 mod travel_origins;
+
+#[path = "npcs/regional_placements.rs"]
+mod regional_placements;
+
+#[path = "npcs/regional_population.rs"]
+mod regional_population;
