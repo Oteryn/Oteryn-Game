@@ -484,9 +484,12 @@ async fn prepare_svargrond_travel(client: &mut DevClientSession, price: u64) -> 
         request_fixture_control(session.clone(), "--profile", "sorcerer".into())
             .await
             .map_err(|error| format!("step=levitate-eligibility {error}"))?;
-        request_fixture_control(session, "--profile", format!("item-3035-{coins}"))
+        request_fixture_control(session.clone(), "--profile", format!("item-3035-{coins}"))
             .await
             .map_err(|error| format!("step=boat-fare {error}"))?;
+        request_fixture_control(session, "--profile", "premium".into())
+            .await
+            .map_err(|error| format!("step=boat-premium {error}"))?;
         Ok(())
     };
     tokio::pin!(prepare);
@@ -596,8 +599,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let boat = svargrond_boat()?;
     character_prep::declare_seeded(
         "W23",
-        "character,boat-fare,levitate-eligibility",
-        "dedicated character, travel funds and spell eligibility",
+        "character,boat-fare,boat-premium,levitate-eligibility",
+        "dedicated character, travel funds, Premium, and spell eligibility",
     );
     let identity = character_prep::bootstrap_row_character(
         clients,
