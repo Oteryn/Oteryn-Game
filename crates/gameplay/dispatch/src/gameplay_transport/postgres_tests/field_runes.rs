@@ -1216,10 +1216,10 @@ async fn field_scenario_inner(
     let crate::gameplay_transport::world_map::MapUpdate::Snapshot(baseline) = baseline else {
         return Err("map baseline snapshot".into());
     };
-    let map_header =
+    let baseline =
         oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&baseline.payload)
-            .map_err(debug)?
-            .header;
+            .map_err(debug)?;
+    let map_header = baseline.header;
     let inventory_definition = |id| -> TestResult<std::num::NonZeroU32> {
         let key = format!("oteryn:item.tibia.i{id}");
         let index = native.item_index().ok_or("inventory index")?;
@@ -1963,10 +1963,26 @@ async fn field_scenario_inner(
                 &delta.payload,
             )
             .map_err(debug)?;
+            let original_stack_size = if thais {
+                baseline
+                    .tiles
+                    .iter()
+                    .find(|tile| {
+                        tile.position.x == cast_x
+                            && tile.position.y == start.y
+                            && tile.position.floor == start.floor
+                    })
+                    .ok_or("Thais cast tile in baseline")?
+                    .items
+                    .len()
+            } else {
+                1
+            };
             assert!(
-                delta.tiles.iter().any(|tile| tile.position.x == start.x + 1
+                delta.tiles.iter().any(|tile| tile.position.x == cast_x
                     && tile.position.y == start.y
-                    && tile.items.len() == 1),
+                    && tile.position.floor == start.floor
+                    && tile.items.len() == original_stack_size),
                 "expiry invalidates the cache and sends a leave on the converted floor"
             );
         }
