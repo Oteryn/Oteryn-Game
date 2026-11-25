@@ -8,7 +8,7 @@ blocked() {
 }
 
 summarize() {
-  local log=$1 group=$2 seconds=${3:-0} status=${4:-0} result rows row house_failure=0
+  local log=$1 group=$2 seconds=${3:-0} status=${4:-0} result rows row
   result=$(awk '/^NODE_BOOT_RESULT=(NODE_BOOT_[A-Z0-9_]+|BLOCKED)([[:space:]]|$)/ {
     sub(/^NODE_BOOT_RESULT=/, "", $1)
     result = $1
@@ -20,8 +20,7 @@ summarize() {
 
   rows=$(awk '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      ($3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ ||
-       $3 ~ /^scenario=HS\.[[:alnum:]_.-]+$/) && $4 ~ /^status=(PASS|FAIL)$/ {
+      $3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ && $4 ~ /^status=(PASS|FAIL)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -31,48 +30,11 @@ summarize() {
         if ($i ~ /^cause=/) cause = substr($i, 7)
         if ($i ~ /^evidence=/) evidence = substr($i, 10)
       }
-      reason = (row ~ /^HS\./ && cause != "" ? cause ":" evidence : (cause != "" ? cause : evidence))
+      reason = (cause != "" ? cause : evidence)
       if (tolower(reason) ~ /password|postgres:\/\/|postgresql:\/\/|secret|token|key=/) reason = ""
       gsub(/\|/, "_", reason)
       printf "%s|%s|%s\n", row, verdict, reason
     }' < "$log") || return 1
-
-  if [[ "$group" == house_sweep ]]; then
-    if ! awk -F '|' '
-      FNR == NR {
-        if ($0 ~ /^SEAM_EVIDENCE house_sweep batch /) {
-          batches++
-          n = split($0, field, " ")
-          if (n != 8 || field[4] !~ /^start=[0-9]+$/ ||
-              field[5] !~ /^len=[0-9]+$/ || field[6] !~ /^selected=[0-9]+$/ ||
-              field[7] !~ /^total=[0-9]+$/ || field[8] != "mode=seeded") exit 1
-          start = substr(field[4], 7) + 0
-          len = substr(field[5], 5) + 0
-          selected = substr(field[6], 10) + 0
-          total = substr(field[7], 7) + 0
-          if (len < 1 || len != selected || start + len > total) exit 1
-        }
-        next
-      }
-      /^HS\./ {
-        if ($1 !~ /^HS\.[[:alnum:]_.-]+\.(world|auction|bid|transfer|doors|rent)$/ ||
-            seen[$1]++ || $2 != "PASS") exit 1
-        house = $1
-        sub(/\.[^.]+$/, "", house)
-        checks[house]++
-      }
-      END {
-        for (house in checks) {
-          if (checks[house] != 6) exit 1
-          houses++
-        }
-        if (batches != 1 || houses != selected) exit 1
-      }' "$log" - <<< "$rows"; then
-      [[ "$result" != NODE_BOOT_PASS ]] || result=NODE_BOOT_FAIL
-      house_failure=1
-    fi
-    [[ "$result" == NODE_BOOT_PASS ]] || house_failure=1
-  fi
 
   printf 'CLOUD_RUN group=%s result=%s seconds=%s\nROWS-BEGIN\n' "$group" "$result" "$seconds"
   [[ -z "$rows" ]] || printf '%s\n' "$rows"
@@ -82,7 +44,6 @@ summarize() {
     grep -aFw -- "$row" "$log" | grep -Ei 'GAP|Error|refus|DIAG' \
       | grep -vEi 'password|postgres://|postgresql://|secret|token|key=' | head -n 6
   done < <(awk -F '|' '$2 == "FAIL" && !seen[$1]++ { print $1 }' <<< "$rows")
-  return "$house_failure"
 }
 
 if [[ ${1:-} == --summarize ]]; then

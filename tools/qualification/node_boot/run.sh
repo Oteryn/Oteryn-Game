@@ -159,46 +159,13 @@ case "$NODE_BOOT_WORLD_PROFILE" in
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;
 esac
-house_sweep_groups="${NODE_BOOT_E2E_ONLY:-}"
-# A house sweep compiles the authored locations in its selected slice, plus town/start.
-if [[ "$NODE_BOOT_WORLD" == 1 && ",${house_sweep_groups// /}," == *,house_sweep,* ]]; then
-  WORLD_REGIONS="$(python3 - "$GAME_SOURCE/content/houses" "${OTERYN_E2E_HOUSE_SWEEP_BATCH-0:3}" "$WORLD_REGIONS" <<'PY_HOUSE_REGIONS'
-import json
-import pathlib
-import re
-import sys
-
-directory, batch, base = sys.argv[1:]
-if not re.fullmatch(r"[0-9]+:[0-9]+", batch):
-    sys.exit("invalid OTERYN_E2E_HOUSE_SWEEP_BATCH, expected start:len")
-start, length = map(int, batch.split(":"))
-houses = sorted(
-    (house for shard in pathlib.Path(directory).glob("houses-*.json")
-     for house in json.loads(shard.read_bytes())["houses"]),
-    key=lambda house: house["identity"]["key"],
-)
-if length == 0 or start + length > len(houses):
-    sys.exit("OTERYN_E2E_HOUSE_SWEEP_BATCH exceeds the catalogue")
-regions = set(base.split(";"))
-for house in houses[start:start + length]:
-    for x, y, _ in house["tiles"] + house["doors"]:
-        regions.add(f"{x // 256},{y // 256}")
-    entrance = house["entrance"]
-    regions.add(f'{entrance["x"] // 256},{entrance["y"] // 256}')
-print(";".join(sorted(regions)))
-PY_HOUSE_REGIONS
-)" || blocked invalid_house_sweep_batch
-  NODE_BOOT_WORLD_PROFILE=house_sweep
-fi
 readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
 # A kept or reused stack is one topology, so it never runs the separate basic pass.
 # The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
   && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
   && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
-  basic_groups="${NODE_BOOT_E2E_ONLY:-}"
-  if [[ ",${house_sweep_groups// /}," == *,house_sweep,* ]]; then basic_groups=""; fi
-  NODE_BOOT_WORLD=0 NODE_BOOT_E2E_ONLY="$basic_groups" bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
+  NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")

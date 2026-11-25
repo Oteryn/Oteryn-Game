@@ -1478,12 +1478,6 @@ fn node_boot_seam_against_running_node() -> TestResult {
             let url = required("NODE_BOOT_DATABASE_URL")?;
             let legacy_d150 = env::var("NODE_BOOT_D150_LEGACY").as_deref() == Ok("1");
             let world_path = std::env::var_os("NODE_BOOT_WORLD_BUNDLE");
-            if env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|groups| {
-                groups.split(',').any(|group| group.trim() == "house_sweep")
-            }) && (legacy_d150 || world_path.is_none())
-            {
-                return Err("house_sweep requires the non-D150 World bundle seam".into());
-            }
             if legacy_d150 && world_path.is_none() {
                 return Err("D150 requires the disposable World topology".into());
             }

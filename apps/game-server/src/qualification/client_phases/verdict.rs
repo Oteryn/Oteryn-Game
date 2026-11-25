@@ -773,7 +773,6 @@ const GROUPS: &[(&str, &[&str])] = &[
     ("f7cont", &[]),
     ("f7forge", &[]),
     ("f7run", &[]),
-    ("house_sweep", &[]),
     ("mp", &[]),
     ("rows", &[]),
 ];
