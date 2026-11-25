@@ -1,5 +1,8 @@
 use crate::combat_input::PlayCommand;
-use crate::play::{PlayLink, mailbox::lock};
+use crate::play::{
+    PlayLink,
+    mailbox::{Mailbox, lock},
+};
 
 impl PlayLink {
     /// Shared presentation uses the same server catalogue request as the native window.
@@ -118,7 +121,10 @@ impl PlayLink {
     }
 
     pub fn store_request(&self, command_type: u32, payload: Vec<u8>) {
-        let mut mailbox = lock(&self.mailbox);
+        self.store_request_locked(&mut lock(&self.mailbox), command_type, payload);
+    }
+
+    fn store_request_locked(&self, mailbox: &mut Mailbox, command_type: u32, payload: Vec<u8>) {
         if matches!(command_type, 6187 | 6188) && !mailbox.store.token_supported {
             return;
         }
@@ -148,9 +154,20 @@ impl PlayLink {
         }
     }
 
-    pub(crate) fn store_inbox_refresh(&self) {
-        use oteryn_client_runtime::cui3::store::{COMMAND_TYPE_STORE_INBOX_CLAIM, STORE_INBOX_QUERY};
-        self.store_request(COMMAND_TYPE_STORE_INBOX_CLAIM, STORE_INBOX_QUERY.to_vec());
+    #[cfg(bevy_shell)]
+    pub(crate) fn store_inbox_query(&self, after: Option<[u8; 16]>) {
+        self.store_inbox_query_locked(&mut lock(&self.mailbox), after);
+    }
+
+    pub(in crate::play) fn store_inbox_query_locked(
+        &self,
+        mailbox: &mut Mailbox,
+        after: Option<[u8; 16]>,
+    ) {
+        use oteryn_client_runtime::cui3::store::{COMMAND_TYPE_STORE_INBOX_CLAIM, StoreInboxQuery};
+        if let Ok(payload) = (StoreInboxQuery { after }).encode() {
+            self.store_request_locked(mailbox, COMMAND_TYPE_STORE_INBOX_CLAIM, payload);
+        }
     }
 
     pub fn store_payment(&self, tokens: bool) -> bool {

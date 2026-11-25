@@ -166,3 +166,177 @@ fn store_inbox_unavailable_session_and_stale_controls_send_nothing() -> TestResu
     assert!(rx.try_recv().is_err());
     Ok(())
 }
+
+fn store_command(rx: &mut Receiver) -> Result<(u32, Vec<u8>), Box<dyn std::error::Error>> {
+    let PlayCommand::ServerMechanic(command) = rx.try_recv()? else {
+        return Err("expected Store command".into());
+    };
+    assert_eq!(command.capability, wire::CAPABILITY_STORE_V1);
+    Ok((command.command_type, command.payload))
+}
+
+fn item_reply(outbox: &Outbox, payload: Vec<u8>) {
+    use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
+    outbox.bevy_store_reply(&ServerMechanicResponse {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload,
+    });
+}
+
+fn inbox_entry(key: [u8; 16], item_id: u8) -> Vec<u8> {
+    let mut row = vec![10, 20, 10, 16];
+    row.extend(key);
+    row.extend([16, item_id]);
+    row
+}
+
+fn inbox_key(ordinal: u8) -> [u8; 16] {
+    [0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, ordinal]
+}
+
+#[test]
+fn store_inbox_loads_claim_button_after_delayed_store_browse() -> TestResult {
+    let (mut app, mut rx, outbox) = fixture(false)?;
+    outbox.bevy_store_initialize();
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        link.store_inbox_set_open(false);
+        link.store_set_open(true);
+        assert_eq!(store_command(&mut rx)?.0, wire::browse::COMMAND_TYPE);
+        link.store_set_open(false);
+        link.store_inbox_set_open(true);
+    }
+    app.update();
+    assert!(rx.try_recv().is_err());
+    assert!(button(&mut app, Kind::Claim(0)).is_err());
+
+    let browse = wire::browse::Page {
+        categories: Vec::new(),
+        products: Vec::new(),
+        next: String::new(),
+        total: 0,
+        transferable: 0,
+        transferable_known: true,
+    };
+    item_reply(&outbox, browse.encode().map_err(|e| format!("{e:?}"))?);
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let play = owner.play.as_mut().ok_or("play")?;
+        play.view.tick(&play.link).map_err(|_| "play tick")?;
+    }
+    assert!(
+        matches!(store_command(&mut rx), Ok((186, payload)) if payload == wire::STORE_INBOX_QUERY),
+        "opening the Inbox during a browse must query claim entries after the browse reply"
+    );
+    item_reply(&outbox, inbox_entry(inbox_key(1), 42));
+    app.update();
+    let claim = button(&mut app, Kind::Claim(0))?;
+    assert!(app.world().get::<InteractionDisabled>(claim).is_none());
+    assert!(texts(&mut app).iter().any(|title| title == "Claim item 42"));
+
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        link.store_inbox_set_open(false);
+        link.store_set_open(true);
+        assert_eq!(store_command(&mut rx)?.0, wire::browse::COMMAND_TYPE);
+        link.store_set_open(false);
+        link.store_inbox_set_open(true);
+    }
+    app.update();
+    click(&mut app, Kind::Close)?;
+    item_reply(&outbox, browse.encode().map_err(|e| format!("{e:?}"))?);
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let play = owner.play.as_mut().ok_or("play")?;
+        play.view.tick(&play.link).map_err(|_| "play tick")?;
+    }
+    assert!(
+        rx.try_recv().is_err(),
+        "closing the Inbox must cancel its queued query"
+    );
+    Ok(())
+}
+
+#[test]
+fn store_inbox_next_claim_page_selects_the_item_after_twenty_deliveries() -> TestResult {
+    let (mut app, mut rx, outbox) = fixture(false)?;
+    outbox.bevy_store_initialize();
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .store_inbox_set_open(true);
+    assert_eq!(
+        store_command(&mut rx)?,
+        (186, wire::STORE_INBOX_QUERY.to_vec())
+    );
+    let first_page = (1..=20)
+        .flat_map(|ordinal| inbox_entry(inbox_key(ordinal), 43))
+        .chain([18, 16])
+        .chain(inbox_key(20))
+        .collect();
+    item_reply(&outbox, first_page);
+    app.update();
+    let button = app
+        .world_mut()
+        .query::<(Entity, &Control, &Children)>()
+        .iter(app.world())
+        .find(|(_, _, children)| {
+            children.iter().any(|child| {
+                app.world()
+                    .get::<Text>(child)
+                    .is_some_and(|text| text.0 == "Next claim page")
+            })
+        })
+        .map(|(entity, _, _)| entity);
+    assert!(
+        button.is_some(),
+        "the Inbox must offer a separate next claim page"
+    );
+    let entity = button.ok_or("next claim page")?;
+    assert!(app.world().get::<InteractionDisabled>(entity).is_none());
+    app.world_mut().trigger(Activate { entity });
+    assert_eq!(
+        store_command(&mut rx)?,
+        (
+            186,
+            [wire::STORE_INBOX_QUERY, &[26, 16], &inbox_key(20)].concat()
+        )
+    );
+    item_reply(&outbox, inbox_entry(inbox_key(21), 42));
+    app.update();
+    assert!(texts(&mut app).iter().any(|title| title == "Claim item 42"));
+    assert!(!texts(&mut app).iter().any(|title| title == "Claim item 43"));
+    click(&mut app, Kind::Claim(0))?;
+    let (kind, payload) = store_command(&mut rx)?;
+    assert_eq!(kind, wire::COMMAND_TYPE_STORE_INBOX_CLAIM);
+    let claim = wire::decode_inbox_claim_request(&payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        claim.fulfilment_unit_id,
+        "00000000-0000-7000-8000-000000000015"
+    );
+    item_reply(
+        &outbox,
+        wire::encode_claim_receipt(&wire::StoreClaimReceipt {
+            operation_id: inbox_key(22),
+            fulfilment_unit_id: claim.fulfilment_unit_id,
+            result: wire::StoreClaimCode::Committed,
+            recovery_generation: 1,
+            decided_at_unix_ms: 1,
+        })
+        .map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    click(&mut app, Kind::FirstClaimPage)?;
+    assert_eq!(
+        store_command(&mut rx)?,
+        (186, wire::STORE_INBOX_QUERY.to_vec())
+    );
+    Ok(())
+}

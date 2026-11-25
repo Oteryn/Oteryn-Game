@@ -106,12 +106,55 @@ pub fn decode_claim_receipt(i: &[u8]) -> Result<StoreClaimReceipt, StoreWireErro
 
 /// A projection uses the existing Store capability and a request field distinct from a claim.
 pub const STORE_INBOX_QUERY: &[u8] = &[16, 1];
-const MAX_INBOX_ENTRIES: usize = 20;
+pub const MAX_INBOX_ENTRIES: usize = 20;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StoreInboxQuery {
+    pub after: Option<[u8; 16]>,
+}
+
+impl StoreInboxQuery {
+    pub fn encode(self) -> Result<Vec<u8>, StoreWireError> {
+        let mut output = STORE_INBOX_QUERY.to_vec();
+        if let Some(cursor) = self.after {
+            as_uuid(&cursor)?;
+            push_message_field(&mut output, 3, &cursor);
+        }
+        Ok(output)
+    }
+
+    pub fn decode(input: &[u8]) -> Result<Self, StoreWireError> {
+        if input.len() > MAX_STORE_REQUEST_BYTES {
+            return Err(StoreWireError::LimitExceeded);
+        }
+        let rest = input
+            .strip_prefix(STORE_INBOX_QUERY)
+            .ok_or(StoreWireError::Malformed)?;
+        if rest.is_empty() {
+            return Ok(Self { after: None });
+        }
+        let mut offset = 0;
+        if read_varint(rest, &mut offset)? != 26 {
+            return Err(StoreWireError::Malformed);
+        }
+        let after = as_uuid(read_bytes(rest, &mut offset)?)?;
+        if offset != rest.len() {
+            return Err(StoreWireError::Malformed);
+        }
+        Ok(Self { after: Some(after) })
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StoreInboxEntry {
     pub fulfilment_unit_id: [u8; 16],
     pub item_id: u16,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct StoreInboxPage {
+    pub entries: Vec<StoreInboxEntry>,
+    pub next_cursor: Option<[u8; 16]>,
 }
 
 impl StoreInboxEntry {
@@ -146,17 +189,38 @@ pub fn encode_inbox_entries(entries: &[StoreInboxEntry]) -> Result<Vec<u8>, Stor
 }
 
 pub fn decode_inbox_entries(input: &[u8]) -> Result<Vec<StoreInboxEntry>, StoreWireError> {
+    decode_inbox_page(input).map(|page| page.entries)
+}
+
+pub fn encode_inbox_page(page: &StoreInboxPage) -> Result<Vec<u8>, StoreWireError> {
+    let mut output = encode_inbox_entries(&page.entries)?;
+    if let Some(cursor) = page.next_cursor {
+        as_uuid(&cursor)?;
+        push_message_field(&mut output, 2, &cursor);
+    }
+    Ok(output)
+}
+
+pub fn decode_inbox_page(input: &[u8]) -> Result<StoreInboxPage, StoreWireError> {
     if input.len() > MAX_STORE_REQUEST_BYTES {
         return Err(StoreWireError::LimitExceeded);
     }
-    let mut entries = Vec::new();
+    let mut page = StoreInboxPage::default();
     let mut cursor = 0;
     while cursor < input.len() {
-        if entries.len() == MAX_INBOX_ENTRIES {
-            return Err(StoreWireError::LimitExceeded);
+        let tag = read_varint(input, &mut cursor)?;
+        if tag == 18 {
+            page.next_cursor = Some(as_uuid(read_bytes(input, &mut cursor)?)?);
+            if cursor != input.len() {
+                return Err(StoreWireError::Malformed);
+            }
+            break;
         }
-        if read_varint(input, &mut cursor)? != 10 {
+        if tag != 10 {
             return Err(StoreWireError::Malformed);
+        }
+        if page.entries.len() == MAX_INBOX_ENTRIES {
+            return Err(StoreWireError::LimitExceeded);
         }
         let row = read_bytes(input, &mut cursor)?;
         let mut field = 0;
@@ -172,10 +236,10 @@ pub fn decode_inbox_entries(input: &[u8]) -> Result<Vec<StoreInboxEntry>, StoreW
         if item_id == 0 || field != row.len() {
             return Err(StoreWireError::Malformed);
         }
-        entries.push(StoreInboxEntry {
+        page.entries.push(StoreInboxEntry {
             fulfilment_unit_id,
             item_id,
         });
     }
-    Ok(entries)
+    Ok(page)
 }

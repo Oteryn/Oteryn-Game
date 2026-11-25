@@ -39,6 +39,8 @@ enum Kind {
     Refresh,
     Previous,
     Next,
+    FirstClaimPage,
+    NextClaimPage,
     Claim(usize),
 }
 pub(super) fn install(app: &mut App) {
@@ -85,8 +87,19 @@ fn perform(owner: &HostOwner, state: &State, control: Control) {
         }
         return;
     }
-    if control.kind == Kind::Refresh && store.selected && !store.pending {
-        play.link.store_inbox_refresh();
+    if store.selected && !store.pending {
+        match control.kind {
+            Kind::Refresh => play.link.store_inbox_query(None),
+            Kind::FirstClaimPage if store.inbox_page_cursor.is_some() => {
+                play.link.store_inbox_query(None);
+            }
+            Kind::NextClaimPage => {
+                if let Some(cursor) = store.inbox_next_cursor {
+                    play.link.store_inbox_query(Some(cursor));
+                }
+            }
+            _ => {}
+        }
     }
     if !panel.selected || panel.pending || panel.blessings.pending {
         return;
@@ -95,7 +108,7 @@ fn perform(owner: &HostOwner, state: &State, control: Control) {
         Kind::Refresh => Intent::Items,
         Kind::Previous => Intent::ItemsPrevious,
         Kind::Next => Intent::ItemsNext,
-        Kind::Close | Kind::Claim(_) => return,
+        Kind::Close | Kind::FirstClaimPage | Kind::NextClaimPage | Kind::Claim(_) => return,
     });
 }
 fn activate(
@@ -291,6 +304,16 @@ fn project(
         buttons.push((Kind::Claim(index), caption, store_disabled));
     }
     buttons.extend([
+        (
+            Kind::FirstClaimPage,
+            "First claim page".into(),
+            store_disabled || store.inbox_page_cursor.is_none(),
+        ),
+        (
+            Kind::NextClaimPage,
+            "Next claim page".into(),
+            store_disabled || store.inbox_next_cursor.is_none(),
+        ),
         (Kind::Refresh, "Refresh".into(), disabled && store_disabled),
         (
             Kind::Previous,

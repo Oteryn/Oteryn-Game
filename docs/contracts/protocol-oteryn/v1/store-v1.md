@@ -64,10 +64,12 @@ Command 185 has exactly six results: `ACCEPTED`, `STALE_QUOTE`, `OFFER_UNAVAILAB
 
 Command 186 request: one pending Store fulfilment-unit key. It neither represents nor reconstructs a purchase.
 
-A request containing only varint field 2 with value 1 queries the admitted buyer's
-Store Inbox. It projects the buyer's retained item deliveries still held in the
-current Character's Inbox. Game resolves the Account, Character and World from
-the session. The query does not submit a claim.
+A request beginning with varint field 2 with value 1 queries the admitted buyer's
+Store Inbox. Omit field 3 for the first page, or pass the previous reply's opaque
+16-byte continuation cursor in length-delimited field 3 for the next page. Game
+resolves the Account, Character and World from the session and scopes both the
+cursor and the projected Inbox deliveries to those identities. The query does
+not submit a claim.
 
 ## StoreInboxClaimReceiptV1
 
@@ -76,6 +78,8 @@ Command 186 response: immutable Platform operation UUIDv7, fulfilment-unit key, 
 For a query request, the reply is a repeated length-delimited field 1 with up to 20
 entries. Each entry has a 16-byte fulfilment-unit UUIDv7 in field 1 and a nonzero
 item client ID (uint16) in field 2. An empty Inbox returns an empty result payload.
+The optional trailing length-delimited field 2 carries the continuation cursor
+when more deliveries follow in fulfilment-unit and delivery-operation order.
 The client renders each entry as a claim action and formats its UUID as the key for
 a separate claim request. Claims and receipt replies retain their existing wire form.
 
