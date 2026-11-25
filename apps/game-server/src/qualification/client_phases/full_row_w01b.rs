@@ -246,25 +246,31 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 
 async fn logout_after_observation(
     client: &mut DevClientSession,
-    retreat: TilePos,
+    spawn: TilePos,
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
 ) -> TestResult {
     use oteryn_protocol_oteryn::logout::LogoutResult;
-    let first = client.session_mut().logout().await?;
-    let Some(LogoutResult::InFight { retry_after_ms }) = first.result else {
-        return if first.result == Some(LogoutResult::Accepted) {
-            Ok(())
-        } else {
-            Err(format!("logout reply={first:?}").into())
+    loop {
+        let reply = client.session_mut().logout().await?;
+        let Some(LogoutResult::InFight { retry_after_ms }) = reply.result else {
+            return if reply.result == Some(LogoutResult::Accepted) {
+                Ok(())
+            } else {
+                Err(format!("logout reply={reply:?}").into())
+            };
         };
-    };
-    let safe_at = tokio::time::Instant::now() + Duration::from_millis(u64::from(retry_after_ms));
-    walk_rat_route(client, retreat, landing, None, false).await?;
-    verdict::Harness::global().bounded_wait(safe_at, "combat-logout-lock");
-    while tokio::time::Instant::now() < safe_at {
-        client.service_liveness(Duration::from_millis(100)).await?;
+        let until = tokio::time::Instant::now() + Duration::from_millis(u64::from(retry_after_ms));
+        let origin = tile(client.world_spatial().actor_position)?;
+        let path = route_with_landings(origin, |at| distance(at, spawn) >= 10, |_| true, &landing)
+            .ok_or("no safe escape from the rat while logout is combat locked")?;
+        let refuge = path.into_iter().try_fold(origin, |at, direction| landing(at, direction))
+            .ok_or("combat logout escape landing disappeared")?;
+        walk_rat_route(client, refuge, &landing, None, false).await?;
+        verdict::Harness::global().bounded_wait(until, "combat-logout-lock");
+        while tokio::time::Instant::now() < until {
+            client.service_liveness(Duration::from_millis(100)).await?;
+        }
     }
-    logout(client).await
 }
 
 async fn seed_rat_retreat(clients: &SeamClients<'_>) -> TestResult {
@@ -574,7 +580,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.begin("logout");
     let observation_tile = tile(client.world_spatial().actor_position)?;
     let previous_session = client.join_snapshot().game_session_id;
-    logout_after_observation(&mut client, retreat, landing).await?;
+    logout_after_observation(&mut client, spawn, landing).await?;
     progress.pass("logout", "Accepted");
     drop(client);
     progress.begin("fresh-admission");
@@ -603,7 +609,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     }
     progress.pass("fresh-admission-state", replacement);
     progress.begin("final-logout");
-    logout_after_observation(&mut fresh, retreat, landing).await?;
+    logout_after_observation(&mut fresh, spawn, landing).await?;
     progress.pass("final-logout", "Accepted");
     Ok(())
 }
