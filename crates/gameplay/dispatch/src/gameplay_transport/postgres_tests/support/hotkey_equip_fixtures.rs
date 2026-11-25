@@ -1,5 +1,5 @@
-use tokio::io::AsyncWriteExt;
 use super::fixture::{Harness, debug, id, run};
+use tokio::io::AsyncWriteExt;
 
 use super::{Dependencies, TestResult, item_look_fixtures, prepare_current_session};
 
@@ -26,6 +26,10 @@ pub(super) fn coalescing_scenario() -> TestResult {
 #[derive(Clone, Copy)]
 pub(super) enum ScenarioMode {
     Normal,
+    ExplicitHead {
+        vocation: &'static str,
+        expected: ItemMoveOutcome,
+    },
     Coalescing,
     Pouch,
     ForeignPouch,
@@ -71,13 +75,18 @@ pub(super) fn scenario_options_impl(
             .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
-            super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                world,
+                "content-1",
+            )?;
         let generation = controller.active().ok_or("active")?;
         let native = generation.native_gameplay().ok_or("native")?;
         let item_key = if let ScenarioMode::Hands { incoming, .. } = mode {
             incoming
         } else if matches!(mode, ScenarioMode::Ammo { .. }) {
             "oteryn:item.tibia.i3447"
+        } else if matches!(mode, ScenarioMode::ExplicitHead { .. }) {
+            "oteryn:item.tibia.i10385"
         } else if started {
             "oteryn:item.tibia.i6529"
         } else {
@@ -146,6 +155,17 @@ pub(super) fn scenario_options_impl(
             entries.resize(20, ("oteryn:item.tibia.i3031", 1));
         }
         item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
+        if let ScenarioMode::ExplicitHead { vocation, .. } = mode {
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,$2,0,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,2,encode($3,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET vocation=EXCLUDED.vocation")
+                .bind(id(41).as_slice()).bind(vocation).bind(id(112).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_progression_state VALUES(encode($1,'hex')::uuid,2,50,1000000,'profile-1','ruleset-1','content-1','simulation-1','evidence-1','declaration-1','policy-1','reward-1') ON CONFLICT(character_id) DO UPDATE SET level=EXCLUDED.level,total_experience=EXCLUDED.total_experience")
+                .bind(id(41).as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+        }
         if matches!(mode, ScenarioMode::Hands { .. } | ScenarioMode::Ammo { .. }) {
             let mut tx = harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
@@ -329,6 +349,38 @@ pub(super) fn scenario_options_impl(
                 if envelope.message_type() == protocol::MessageType::SnapshotCommit {
                     break;
                 }
+            }
+            if let ScenarioMode::ExplicitHead { expected, .. } = mode {
+                use protocol::item_view::{
+                    COMMAND_TYPE_ITEM_MOVE_INTENT, EquipmentSlot, ItemHandle, ItemMoveDestination,
+                    ItemMoveIntent, ItemMoveSelection, encode_item_move_intent_for,
+                };
+                let payload = encode_item_move_intent_for(
+                    &ItemMoveIntent {
+                        source: ItemHandle::new(2).ok_or("seeded helmet handle")?,
+                        destination: ItemMoveDestination::Equipment(EquipmentSlot::Head),
+                    },
+                    ItemMoveSelection {
+                        equip_drop: true,
+                        ..Default::default()
+                    },
+                )
+                .map_err(debug)?;
+                let actual = send_kind(
+                    &mut client,
+                    1,
+                    COMMAND_TYPE_ITEM_MOVE_INTENT,
+                    &payload,
+                    protocol::CommandStatus::Accepted,
+                )
+                .await?;
+                assert_eq!(actual, expected);
+                assert_eq!(
+                    equipped_count(pool).await?,
+                    i64::from(expected == ItemMoveOutcome::Moved)
+                );
+                client.shutdown().await?;
+                return Ok(());
             }
             if matches!(mode, ScenarioMode::Hands { .. } | ScenarioMode::Ammo { .. }) {
                 let expected = match mode {
@@ -606,6 +658,13 @@ pub(super) fn scenario_options_impl(
             connection.await??;
         }
         drop(paused_clock);
+        if matches!(mode, ScenarioMode::ExplicitHead { .. }) {
+            drop(owner_clock);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         // A newly composed owner reads the stored item by identity, independent of the wire view.
         let mut reloaded = deps.owner(&harness, &authority);
         reloaded.active_generation = Some(generation);
@@ -852,11 +911,28 @@ async fn send(
     payload: &[u8],
     expected_status: protocol::CommandStatus,
 ) -> TestResult<ItemMoveOutcome> {
+    send_kind(
+        client,
+        id,
+        protocol::hotkey_equip::COMMAND_TYPE_HOTKEY_EQUIP,
+        payload,
+        expected_status,
+    )
+    .await
+}
+
+async fn send_kind(
+    client: &mut tokio::io::DuplexStream,
+    id: u64,
+    command_type: u32,
+    payload: &[u8],
+    expected_status: protocol::CommandStatus,
+) -> TestResult<ItemMoveOutcome> {
     let frame = protocol::encode_client_command(
         1,
         &protocol::ClientCommandValue {
             command_id: id,
-            command_type: protocol::hotkey_equip::COMMAND_TYPE_HOTKEY_EQUIP,
+            command_type,
             payload,
         },
     )
