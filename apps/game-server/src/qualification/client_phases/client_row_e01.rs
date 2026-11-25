@@ -128,6 +128,48 @@ async fn interaction(client: &mut DevClientSession, actor: EntityRef) -> TestRes
     Ok(expected)
 }
 
+const INTERACTION_BUDGET: Duration = Duration::from_secs(90);
+const CAPTURE_CAP: Duration = Duration::from_secs(240);
+
+fn route_budget(client: &DevClientSession, path: &[StepDirection]) -> TestResult<Duration> {
+    if path.is_empty() {
+        return Ok(Duration::ZERO);
+    }
+    let entities = client
+        .world_entities()
+        .ok_or("E01 movement projection absent")?;
+    let motion = entities
+        .iter()
+        .find(|entity| &entity.entity.identity == entities.own_identity())
+        .and_then(|entity| entity.motion)
+        .ok_or("E01 own movement forecast absent")?;
+    paced_route_budget(path, motion.prewalk_ms)
+}
+
+fn paced_route_budget(path: &[StepDirection], prewalk_ms: [u32; 8]) -> TestResult<Duration> {
+    // The bundle movement owner forecasts an engineering-ground step at the
+    // admitted actor's live speed. Crystal 201189f8 creature.cpp:1492-1504
+    // floors ground/speed, rounds to SERVER_BEAT, and triples diagonal time.
+    let cardinal = prewalk_ms[..4]
+        .iter()
+        .copied()
+        .chain(prewalk_ms[4..].iter().map(|ms| ms / 3))
+        .max()
+        .filter(|&ms| ms != 0)
+        .ok_or("E01 no paced step in own movement forecast")?;
+    let step = Duration::from_millis(u64::from(cardinal));
+    let retry = oteryn_dev_client::native_session::STEP_RETRY_INITIAL_BACKOFF
+        * ((1 << (oteryn_dev_client::native_session::STEP_RETRY_ATTEMPTS - 1)) - 1);
+    Ok(path
+        .iter()
+        .map(|direction| step * if direction.is_diagonal() { 3 } else { 1 } + retry)
+        .sum())
+}
+
+fn capture_budget(travel: Duration) -> Duration {
+    INTERACTION_BUDGET.saturating_add(travel).min(CAPTURE_CAP)
+}
+
 pub(super) async fn run_packet(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -136,13 +178,28 @@ pub(super) async fn run_packet(
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    let result = verdict::observe(async {
+    let started = tokio::time::Instant::now();
+    let result: TestResult<String> = verdict::indexed_timeout(CAPTURE_CAP, async {
         let mut client = connect_platform_character(clients, 1).await?;
-        // The enclosing indexed row guards travel by observed movement progress.
-        let actor = super::full_e2ef4::approach_sam(&mut client, world, npcs).await?;
-        verdict::indexed_timeout(Duration::from_secs(90), interaction(&mut client, actor)).await?
+        let (npc, path) = super::full_e2ef4::sam_route(&client, world, npcs)?;
+        let travel = route_budget(&client, &path)?;
+        let budget = capture_budget(travel);
+        evidence(&format!(
+            "E01_CLIENT_BUDGET route_steps={} travel_ms={} total_ms={}",
+            path.len(),
+            travel.as_millis(),
+            budget.as_millis()
+        ));
+        let remaining = budget.saturating_sub(started.elapsed());
+        verdict::indexed_timeout(remaining, async {
+            walk(&mut client, world, &path).await?;
+            let actor = super::full_e2ef4::visible_sam(&mut client, npc)?;
+            verdict::indexed_timeout(INTERACTION_BUDGET, interaction(&mut client, actor)).await?
+        })
+        .await?
     })
-    .await;
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
     match result {
         Ok(expected) => evidence(&format!(
             "e2e_all scenario=E01.client status=CAPTURED evidence={expected:?}"
@@ -151,6 +208,19 @@ pub(super) async fn run_packet(
             "e2e_all scenario=E01.client status=FAIL evidence={error}"
         )),
     }
+}
+
+#[cfg(test)]
+#[test]
+fn e01_route_budget_uses_live_pacing_and_diagonal_cost() -> TestResult {
+    let forecasts = [400, 0, 0, 0, 1200, 0, 0, 0];
+    let cardinal = paced_route_budget(&[StepDirection::North], forecasts)?;
+    let longer = paced_route_budget(&[StepDirection::North, StepDirection::NorthEast], forecasts)?;
+    assert_eq!(longer - cardinal * 2, Duration::from_millis(800));
+    assert!(paced_route_budget(&[StepDirection::North], [0; 8]).is_err());
+    assert_eq!(capture_budget(Duration::ZERO), INTERACTION_BUDGET);
+    assert_eq!(capture_budget(Duration::MAX), CAPTURE_CAP);
+    Ok(())
 }
 
 #[cfg(test)]

@@ -432,12 +432,21 @@ async fn shop_row(
     (result.and(back), reusable)
 }
 
-pub(super) async fn approach_sam(
+async fn approach_sam(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<EntityRef> {
-    let basis = spatial_basis::current(client)?;
+    let (npc, path) = sam_route(client, world, npcs)?;
+    walk(client, world, &path).await?;
+    visible_sam(client, npc)
+}
+
+pub(super) fn sam_route<'a>(
+    client: &DevClientSession,
+    world: &BundleWorld,
+    npcs: &'a oteryn_world_bundle::npc::Table,
+) -> TestResult<(&'a oteryn_world_bundle::npc::Npc, Vec<StepDirection>)> {
     let npc = npcs
         .npcs
         .iter()
@@ -450,38 +459,44 @@ pub(super) async fn approach_sam(
             .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 1)
     })
     .ok_or("content:oteryn:npc.sam unreachable")?;
-    walk(client, world, &path).await?;
+    Ok((npc, path))
+}
+
+pub(super) fn visible_sam(
+    client: &mut DevClientSession,
+    npc: &oteryn_world_bundle::npc::Npc,
+) -> TestResult<EntityRef> {
+    let basis = spatial_basis::current(client)?;
     let entities = client.world_entities().ok_or("native entities absent")?;
-    let near: Vec<_> = entities
-        .iter()
-        .filter(|entity| {
-            entity.kind == oteryn_dev_client::EntityKind::Npc
-                && npc.placements.iter().any(|p| {
-                    entity.position.floor == basis.floor(p.floor)
-                        && entity.position.x.abs_diff(i32::from(p.x)) <= SAM_WANDER_RADIUS
-                        && entity.position.y.abs_diff(i32::from(p.y)) <= SAM_WANDER_RADIUS
-                })
-        })
-        .collect();
-    let named: Vec<_> = near
-        .iter()
-        .copied()
-        .filter(|entity| {
-            entity
+    named_sam(entities.iter(), npc, basis)
+}
+
+fn named_sam<'a>(
+    entities: impl Iterator<
+        Item = &'a oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity,
+    >,
+    npc: &oteryn_world_bundle::npc::Npc,
+    basis: spatial_basis::Basis,
+) -> TestResult<EntityRef> {
+    let mut named = entities.filter(|entity| {
+        entity.kind == oteryn_dev_client::EntityKind::Npc
+            && entity
                 .display_name
                 .as_ref()
                 .is_some_and(|name| name.as_str().is_ok_and(|name| name == "Sam"))
-        })
-        .collect();
-    match (near.as_slice(), named.as_slice()) {
-        ([sam], _) | (_, [sam]) => Ok(sam.entity),
-        ([], _) => Err("Sam actor not visible within his authored wander radius".into()),
-        _ => Err(format!(
-            "{} NPC actors within Sam's wander radius and none uniquely named Sam",
-            near.len()
-        )
-        .into()),
+            && npc.placements.iter().any(|p| {
+                entity.position.floor == basis.floor(p.floor)
+                    && entity.position.x.abs_diff(i32::from(p.x)) <= SAM_WANDER_RADIUS
+                    && entity.position.y.abs_diff(i32::from(p.y)) <= SAM_WANDER_RADIUS
+            })
+    });
+    let sam = named
+        .next()
+        .ok_or("NPC named Sam not visible within his authored wander radius")?;
+    if named.next().is_some() {
+        return Err("multiple NPCs named Sam within his authored wander radius".into());
     }
+    Ok(sam.entity)
 }
 
 async fn shop(row: &mut Row, client: &mut DevClientSession, actor: EntityRef) -> TestResult {
@@ -2024,6 +2039,57 @@ async fn wait_heard(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sam_requires_a_unique_named_npc_in_the_authored_radius() -> TestResult {
+        use oteryn_protocol_oteryn::{
+            entity_names::EntityDisplayName,
+            world_spatial_entities::{EntityDetail, EntityKind, WorldSpatialEntity},
+        };
+        let npc = oteryn_world_bundle::npc::Npc {
+            key: "oteryn:npc.sam".into(),
+            placements: vec![oteryn_world_bundle::npc::Placement {
+                x: 10,
+                y: 20,
+                floor: -7,
+                direction: oteryn_world_bundle::npc::Direction::North,
+            }],
+        };
+        let actor = |name, x, floor, kind| -> TestResult<WorldSpatialEntity> {
+            Ok(WorldSpatialEntity {
+                motion: None,
+                display_name: Some(EntityDisplayName::new(name).map_err(|err| format!("{err:?}"))?),
+                kind,
+                entity: EntityRef {
+                    identity: [1; 16],
+                    generation: 1,
+                },
+                position: ActorPosition { x, y: 20, floor },
+                detail: EntityDetail::Actor {
+                    direction: StepDirection::North,
+                    appearance_ref: 1,
+                    health_percent: 100,
+                },
+            })
+        };
+        let basis = spatial_basis::Basis::Native;
+        let sam = actor("Sam", 12, 7, EntityKind::Npc)?;
+        for wrong in [
+            actor("Naji", 10, 7, EntityKind::Npc)?,
+            actor("Sam", 13, 7, EntityKind::Npc)?,
+            actor("Sam", 10, 8, EntityKind::Npc)?,
+            actor("Sam", 10, 7, EntityKind::Player)?,
+            WorldSpatialEntity {
+                display_name: None,
+                ..sam
+            },
+        ] {
+            assert!(named_sam([wrong].iter(), &npc, basis).is_err());
+            assert_eq!(named_sam([wrong, sam].iter(), &npc, basis)?, sam.entity);
+        }
+        assert!(named_sam([sam, sam].iter(), &npc, basis).is_err());
+        Ok(())
+    }
 
     #[test]
     fn speech_requires_fresh_login_evidence() {
