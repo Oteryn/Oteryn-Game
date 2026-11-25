@@ -29644,6 +29644,11 @@
               "invisible",
               "paralyze"
             ],
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i48401",
+              "revision": "definition-r1"
+            },
             "critical_chance_ppm": 0,
             "death_residue": {
               "fluid_type": "slime",
@@ -29799,6 +29804,11 @@
               "invisible",
               "paralyze"
             ],
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i48396",
+              "revision": "definition-r1"
+            },
             "critical_chance_ppm": 0,
             "death_residue": {
               "fluid_type": "slime",

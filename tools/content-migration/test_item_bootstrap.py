@@ -14,8 +14,13 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import boss_conditional_item_reference as conditional
+import fourth_quarter_corpses as fourth_quarter
 import item_tree_index
+import ordinary_corpse_cohort as third_quarter
+import ordinary_corpse_profiles as first_quarter
+import ordinary_corpse_slice2 as second_quarter
 import ranged_item_profiles as ranged
+from qengine_reward_item_profiles import CLIENT
 
 TOOL = Path(__file__).with_name("world_project_v2_to_tree.py")
 spec = importlib.util.spec_from_file_location("item_bootstrap_converter", TOOL)
@@ -52,6 +57,26 @@ def fixture(root):
     (root / capture).mkdir(parents=True)
     for name in ("items.jsonl", "manifest.json", "weight-corrections.json"):
         shutil.copyfile(TOOL.parents[2] / capture / name, root / capture / name)
+    # Exercise the real corpse providers with the same sealed inputs as the
+    # production writer.
+    repo = TOOL.parents[2]
+    membership = Path("imports/official/appearance-membership")
+    admitted = membership / "admitted.json"
+    selections = json.loads((repo / admitted).read_bytes())["files"]
+    client = next(
+        row["manifest"] for row in selections if row["label"] == "client-15.30"
+    )
+    for relative in (
+        fourth_quarter.SOURCE,
+        f"{first_quarter.CAPTURE}/creature-bindings.json",
+        second_quarter.CAPTURE,
+        third_quarter.PACKET,
+        CLIENT,
+        admitted,
+        membership / client,
+    ):
+        (root / relative).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(repo / relative, root / relative)
     records = [
         {"kind": "Item", "identity": identity(number), "materializable": False}
         for number in (1, 2, 3)
@@ -154,6 +179,7 @@ def input_helpers(root, *, real_conditional=False):
         ("engclaim_item_profiles", "apply_admissions"),
     ):
         modules[name] = SimpleNamespace(**{function: admission(name)})
+    modules["boss_conditional_item_reference"].definition = conditional.definition
     if real_conditional:
         modules["boss_conditional_item_reference"] = conditional
     modules["primal_reference_overlay"] = SimpleNamespace(
@@ -228,10 +254,13 @@ class ItemBootstrapTests(unittest.TestCase):
             index = json.loads((root / "content/items/index.json").read_bytes())
             expected_shards = [
                 "content/items/definitions/items-00000-00001.json",
-                "content/items/definitions/items-00002-00002.json",
+                "content/items/definitions/items-00002-00003.json",
+                "content/items/definitions/items-00004-00005.json",
+                "content/items/definitions/items-00006-00007.json",
+                "content/items/definitions/items-00008-00009.json",
             ]
             self.assertEqual(index["shards"], expected_shards)
-            self.assertEqual(index["record_count"], 3)
+            self.assertEqual(index["record_count"], 10)
             self.assertEqual(
                 index["legacy_source"]["git_blob_sha"],
                 converter.git_blob_sha(
@@ -253,7 +282,21 @@ class ItemBootstrapTests(unittest.TestCase):
             ]
             self.assertEqual(
                 [row["definition"]["identity"] for row in rows],
-                [identity(1), identity(2), identity(3)],
+                [
+                    identity(number)
+                    for number in (
+                        1,
+                        2,
+                        3,
+                        35136,
+                        35686,
+                        48109,
+                        49120,
+                        48340,
+                        48401,
+                        48396,
+                    )
+                ],
             )
             self.assertTrue(rows[0]["definition"]["materializable"])
             self.assertEqual(rows[0]["editor"], editor["entries"][0])

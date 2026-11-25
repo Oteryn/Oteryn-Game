@@ -195,6 +195,11 @@ class RetainedQn3CensusTests(unittest.TestCase):
                     expected_rows = complete_rows if has_taxonomy else house_rows
                 else:
                     expected_rows = taxonomy_rows if has_taxonomy else rows
+                if path == profiles.NATIVE:
+                    from native_profile_composition import compact_item_profile
+
+                    owner_rows = [compact_item_profile(row) for row in owner_rows]
+                    expected_rows = [compact_item_profile(row) for row in expected_rows]
                 self.assertEqual(owner_rows, expected_rows)
         self.assertEqual(packet, before)
         self.assertFalse(packet['runtime_enabled'])

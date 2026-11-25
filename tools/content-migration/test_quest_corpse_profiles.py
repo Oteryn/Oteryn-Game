@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 from unittest.mock import patch
 
 import quest_corpse_profiles as corpse
+from native_profile_composition import compact_item_profile
 
 UNKNOWN_CLASSIFICATION_ITEMS = {f'oteryn:item.tibia.i{number}' for number in [
     3987, 3989, 3991, 3992, 4007, 4008, 4009, 4137, 4139, 4291, 4292,
@@ -61,8 +62,11 @@ class CorpseQualification(unittest.TestCase):
             expected = self.plan.records[key]['semantics']['container']['value']['capacity']['value']
             self.assertTrue(facts[key]['materializable'], key)
             self.assertEqual(facts[key]['container_capacity'], expected, key)
-        for number in (5967, 5999, 6031, 25814):
+        for number in (5999, 6031):
             self.assertTrue(facts[f'oteryn:item.tibia.i{number}']['ordinary_corpse_only'])
+        # Rottie and Raxias also have exact private-reward bindings to these bodies.
+        for number in (5967, 25814):
+            self.assertNotIn('ordinary_corpse_only', facts[f'oteryn:item.tibia.i{number}'])
 
     def test_exact_source_capacities_and_complete_decay_chains(self):
         self.assertEqual(self.plan.roots, {
@@ -261,8 +265,9 @@ class CorpseQualification(unittest.TestCase):
         self.assertEqual(set(after) - set(before), set(self.plan.records) - set(before))
         for key, record in self.plan.records.items():
             self.assertEqual(record['semantics']['classification']['state'], 'KNOWN', key)
-            self.assertEqual(after[key]['semantics']['classification'],
-                             record['semantics']['classification'], key)
+            self.assertEqual(
+                compact_item_profile(after[key])['semantics']['classification'],
+                compact_item_profile(record)['semantics']['classification'], key)
 
         conflict = copy.deepcopy(generated)
         document = json.loads(conflict[profile])

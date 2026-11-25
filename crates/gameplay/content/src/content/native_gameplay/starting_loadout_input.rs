@@ -40,8 +40,7 @@ pub(super) fn merge(
     }
     drop(keys);
     items.records.extend(extra.records);
-    let bytes =
-        serde_json::to_vec(&items).map_err(|_| invalid("starting loadout Item encoding"))?;
+    let bytes = super::encode_composed_item_profiles(&items, "starting loadout Item encoding")?;
     super::bounded(&bytes, MAX_ITEM_PROFILES)?;
     Ok(Some(PinnedGameplayBytes {
         sha256: hex(sha256(&bytes)),

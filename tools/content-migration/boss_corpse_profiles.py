@@ -238,7 +238,9 @@ def admit(root, generated, destination, manifest_path, order, canonical):
                 for name in ('always_on_top', 'always_on_top_order'):
                     if name in decorated['attributes']:
                         expected['attributes'][name] = decorated['attributes'][name]
-            if previous != expected:
+            from native_profile_composition import compact_item_profile
+
+            if previous != expected and previous != compact_item_profile(expected):
                 raise ValueError(f'BOSS_CORPSE_PROFILE_CONFLICT:{key}')
         else:
             document['records'].append(record)

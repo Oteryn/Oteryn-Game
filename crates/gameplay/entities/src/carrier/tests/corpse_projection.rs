@@ -246,3 +246,31 @@ fn instance_corpse_binding_preserves_scope_generation_replay_and_current_owner()
     assert!(bind(&mut runtime, actor, uuid_v7(30)).is_err());
     assert_eq!(runtime.carrier.bound_corpses(None), before);
 }
+
+#[test]
+fn ground_timer_preserves_carried_binding_for_pinned_settlement_replay() {
+    for published_pickup in [true, false] {
+        let mut channel = runtime(4);
+        let projection = corpse_projection_at(&channel.continuity, 1);
+        let actor = projection.occurrence.actor;
+        channel.carrier.retain_corpse_projection(projection);
+        channel.pin_corpse_projection(actor).expect("pending settlement");
+        let item = uuid_v7(1);
+        channel
+            .bind_corpse_item(actor, item, "Item", "fixture:corpse", "r1")
+            .expect("bind committed MINT");
+        assert_eq!(channel.carrier.bound_corpses(None).len(), 1);
+        if published_pickup {
+            channel
+                .set_corpse_item_ground_position(item, None)
+                .expect("publish carried custody");
+        }
+        channel
+            .retain_live_corpse_items(&[])
+            .expect("Ground timer observed no corpse");
+        channel
+            .bind_corpse_item(actor, item, "Item", "fixture:corpse", "r1")
+            .expect("replay committed MINT");
+        assert!(channel.carrier.bound_corpses(None).is_empty());
+    }
+}

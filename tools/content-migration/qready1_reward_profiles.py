@@ -6,6 +6,7 @@ from copy import deepcopy
 
 import forge_item_profiles
 import quest_callback_profiles as accepted
+from native_profile_composition import compact_item_profile
 
 PACKET = "tools/content-schema/native-gameplay/qready1-reward-item-profiles.json"
 IDS = {3068, 3323, 3383, 3579, 3734, 4871}
@@ -60,12 +61,12 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             raise ValueError("QREADY1_NATIVE_REWARD_CANONICAL_DRIFT:" + key)
         accepted.complete_native_stack(root, record, definition, binding)
         if key in present:
-            if present[key] != record:
+            if compact_item_profile(present[key]) != compact_item_profile(record):
                 successor = deepcopy(record)
                 forge_item_profiles.project(
                     {"records": [successor]}, forge_item_profiles.owners(root)
                 )
-                if present[key] != successor:
+                if compact_item_profile(present[key]) != compact_item_profile(successor):
                     raise ValueError("QREADY1_NATIVE_REWARD_CONFLICT:" + key)
             continue
         present[key] = record

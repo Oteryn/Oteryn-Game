@@ -16,6 +16,7 @@ from pathlib import Path
 import first_dragon_item_profiles
 import m01c_key_door_equipment_pin
 import qengine_reward_equipment_pin
+from native_profile_composition import compact_item_profile
 import qready1_clock_equipment_pin
 import qready1_cradle_equipment_pin
 import qready1_craft_equipment_pin
@@ -393,7 +394,7 @@ def coowner_equivalent(source, qualified):
         ):
             return False
         normalized["authoring"]["item"] = copy.deepcopy(accepted)
-    return normalized == qualified
+    return qualified == normalized or qualified == compact_item_profile(normalized)
 
 
 def keys(document):
@@ -714,7 +715,8 @@ def regenerate(
         added_keys.update(new)
         for row in document["records"]:
             key = row["production_definition"]["production_key"]
-            if key in new and actual_rows.get(key) != row:
+            actual_row = actual_rows.get(key)
+            if key in new and actual_row != row and actual_row != compact_item_profile(row):
                 diagnostic = {
                     "cohort": name,
                     "key": key,

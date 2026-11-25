@@ -13,6 +13,7 @@ import import_spell_families as producer
 import item_detail_source_facts as item_details
 import monster_seven_spell_overlay as overlay
 import qengine_reward_item_profiles as qengine
+from native_profile_composition import compact_item_profile
 import register_spell_families as registration
 import soul_war_appearance_profiles as source_appearances
 
@@ -220,9 +221,11 @@ class AcceptedOverlayTests(unittest.TestCase):
             self.assertEqual(
                 by_key[key]["production_binding"], row["production_binding"]
             )
-            self.assertEqual(by_key[key]["semantics"], row["semantics"])
-            for field, value in row["attributes"].items():
-                self.assertEqual(by_key[key]["attributes"][field], value, (key, field))
+            active = compact_item_profile(by_key[key])
+            source = compact_item_profile(row)
+            self.assertEqual(active["semantics"], source["semantics"], key)
+            for field, value in source["attributes"].items():
+                self.assertEqual(active["attributes"][field], value, (key, field))
         self.assertIn("tools/content-schema/native-gameplay/loot-tables.json", actual)
         self.assertIn("content/items/authored-static-admissions.json", actual)
         for cohort in ("marsh", "slug"):

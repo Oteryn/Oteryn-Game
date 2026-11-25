@@ -14,9 +14,10 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 import grizzly_shop_profiles as accepted
+
 sys.path.insert(0, str(ROOT / 'tools/content-schema/quest-authoring'))
-import qmech_m39
 import m07_lion_flower_profile as lion_flower
+import qmech_m39
 import questl2_ready
 
 IDS = {21897, 21898, 21899, 21901, 21902, 21905, 21906, 30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 16167, 16242, 12517, 12413, 16128, 16129, 20275, 20276, 5903, 5947, 133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
@@ -297,11 +298,19 @@ def reconcile(existing, observed):
         if previous is None:
             attributes[key] = value
     merged['attributes'] = attributes
-    if existing.keys() != observed.keys():
+    # Native encoding omits null qualification; a non-null qualification
+    # still has to agree exactly across both sources.
+    qualification = 'production_binding_qualification'
+    if existing.keys() - {qualification} != observed.keys() - {qualification}:
         raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:shape')
-    for key in existing.keys() - {'authoring', 'attributes', 'semantics'}:
-        if existing[key] != observed[key]:
+    for key in (existing.keys() | observed.keys()) - {'authoring', 'attributes', 'semantics'}:
+        if existing.get(key) != observed.get(key):
             raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:' + key)
+    from native_profile_composition import compact_item_profile
+
+    # Requalifying a compact provider must preserve its existing encoding.
+    if compact_item_profile(merged) == compact_item_profile(existing):
+        return dict(existing)
     return merged
 
 

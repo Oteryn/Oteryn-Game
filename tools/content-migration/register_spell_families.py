@@ -1702,10 +1702,34 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
-    # Crystal201189f koshei_the_deathless.lua:19 and action_boss.lua:4
-    # select the fresh body, with its full admitted Ground decay chain.
+    import ordinary_corpse_profiles
+    ordinary_corpse_profiles.admit(
+        root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    corpse_creatures = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
+    corpse_document = json.loads(generated[corpse_creatures])
+    ordinary_corpse_profiles.bind_creatures(root, corpse_document)
+    generated[corpse_creatures] = spell_import.canonical_bytes(corpse_document)
+    del corpse_document
+    import ordinary_corpse_cohort
+    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
+    item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
+    creatures = json.loads(generated[creature_path])
+    items = json.loads(generated[item_path])
+    ordinary_corpse_cohort.apply(root, creatures, items, provider_order)
+    generated[creature_path] = spell_import.canonical_bytes(creatures)
+    generated[item_path] = spell_import.canonical_bytes(items)
+    # Later admitted creature overlays (for example forge eligibility) change
+    # Creature roots. Bind executable closures only after those policies settle.
+    import fourth_quarter_corpses
+    import ordinary_corpse_slice2
+    from bind_monster_source_definitions import bind_definitions
     creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     creatures = json.loads(generated[creature_path])
+    ordinary_corpse_slice2.bind_creatures(root, creatures)
+    fourth_quarter_corpses.bind_creatures(root, creatures)
+    # Crystal201189f koshei_the_deathless.lua:19 and action_boss.lua:4
+    # select the fresh body, with its full admitted Ground decay chain.
     koshei = next(row for row in creatures["records"]
                   if row["profile"]["target"]["key"] == "oteryn:creature.koshei_the_deathless")
     details = koshei["profile"]["data"]["profile"]["details"]
@@ -1713,10 +1737,6 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         raise ValueError("KOSHEI_CORPSE_SOURCE_CHANGED")
     details["corpse_item"]["key"] = "oteryn:item.tibia.i7535"
     generated[creature_path] = spell_import.canonical_bytes(creatures)
-    # Later admitted creature overlays (for example forge eligibility) change
-    # Creature roots. Bind executable closures only after those policies settle.
-    from bind_monster_source_definitions import bind_definitions
-
     generated = bind_definitions(root, generated)
     # W11 source callback outfits share the registered native appearance provider.
     import soul_war_appearance_profiles
@@ -1773,6 +1793,14 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
+    ordinary_ids = set(ordinary_corpse_profiles.read(root, 'item-ids'))
+    ordinary_ids.update(map(int, ordinary_corpse_cohort.packet(root)['items']))
+    # The native goal admits the staged body as part of Koshei's fresh chain.
+    ordinary_ids.add(7538)
+    ordinary_corpse_slice2.admit_items(root, items, provider_order, ordinary_ids)
+    ordinary_ids.update(int(record['production_binding']['external_id'])
+                        for record in ordinary_corpse_slice2.capture(root)['records'])
+    fourth_quarter_corpses.apply_items(root, items, provider_order, ordinary_ids)
     import forge_item_profiles
 
     forge_item_profiles.project(items, forge_item_profiles.owners(root))

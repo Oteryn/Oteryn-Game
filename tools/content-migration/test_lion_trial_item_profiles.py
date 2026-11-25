@@ -331,6 +331,7 @@ class LionTrialItemProfiles(unittest.TestCase):
         import house_decoration_actions as house
         import quest_callback_profiles as provider
         import quick_loot_item_profiles as quick_loot
+        from native_profile_composition import compact_item_profile
         from qualification_inputs import appearance_input_scope
 
         keys = {f'oteryn:item.tibia.i{item_id}' for item_id in profiles.SOURCE_RECORDS}
@@ -418,7 +419,7 @@ class LionTrialItemProfiles(unittest.TestCase):
                     self.assertEqual(attributes['always_on_top_order'], orders[item_id])
                     expected['attributes'].update(always_on_top=orders[item_id] != 0,
                                                   always_on_top_order=orders[item_id])
-                self.assertEqual(current, expected)
+                self.assertEqual(compact_item_profile(current), compact_item_profile(expected))
                 replacements[key] = raw
             outside_before = {key: copy.deepcopy(row) for key, row in prior_rows.items()
                               if key not in keys}
