@@ -26,15 +26,17 @@ pub fn greeted_npc(speaker: ChatPosition, text: &str, npcs: &[GreetingNpc<'_>]) 
     npcs.iter()
         .filter_map(|npc| {
             let distance = speaker.distance(npc.position)?;
-            (distance <= npc.talk_range
-                && npc
-                    .greetings
-                    .iter()
-                    .any(|greeting| contains_words(&said, &words(greeting))))
-            .then_some((distance, npc.actor_id))
+            (distance <= npc.talk_range && matches_greeting(&said, npc.greetings))
+                .then_some((distance, npc.actor_id))
         })
         .min()
         .map(|(_, actor_id)| actor_id)
+}
+
+pub(super) fn matches_greeting(said: &[String], greetings: &[String]) -> bool {
+    greetings
+        .iter()
+        .any(|greeting| contains_words(said, &words(greeting)))
 }
 
 /// Lower-cased words: runs of letters and digits.

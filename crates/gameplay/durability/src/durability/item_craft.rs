@@ -978,7 +978,7 @@ async fn write<C: ItemLoopContent>(
         if let Some(placement) = &ground_output {
             sculpture::place_ground(tx, fence, &output, placement).await?;
         } else if drop.is_some() {
-            event_containers::place_drop(tx, &output).await?;
+            event_containers::place_drop(tx, permit, &output).await?;
         } else if nested_destination.is_some() {
             sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,($1->>'nested_parent')::uuid,($1->>'ordinal')::numeric,$3::uuid)")
                 .bind(&output).bind(world.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
