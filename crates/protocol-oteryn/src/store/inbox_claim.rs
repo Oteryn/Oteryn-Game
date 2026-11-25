@@ -103,3 +103,79 @@ pub fn decode_claim_receipt(i: &[u8]) -> Result<StoreClaimReceipt, StoreWireErro
     encode_claim_receipt(&receipt)?;
     Ok(receipt)
 }
+
+/// A projection uses the existing Store capability and a request field distinct from a claim.
+pub const STORE_INBOX_QUERY: &[u8] = &[16, 1];
+const MAX_INBOX_ENTRIES: usize = 20;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StoreInboxEntry {
+    pub fulfilment_unit_id: [u8; 16],
+    pub item_id: u16,
+}
+
+impl StoreInboxEntry {
+    pub fn claim_key(&self) -> String {
+        let hex = format!("{:032x}", u128::from_be_bytes(self.fulfilment_unit_id));
+        format!(
+            "{}-{}-{}-{}-{}",
+            &hex[..8],
+            &hex[8..12],
+            &hex[12..16],
+            &hex[16..20],
+            &hex[20..]
+        )
+    }
+}
+
+pub fn encode_inbox_entries(entries: &[StoreInboxEntry]) -> Result<Vec<u8>, StoreWireError> {
+    if entries.len() > MAX_INBOX_ENTRIES {
+        return Err(StoreWireError::LimitExceeded);
+    }
+    let mut output = Vec::new();
+    for entry in entries {
+        if !valid_uuid_v7(&entry.fulfilment_unit_id) || entry.item_id == 0 {
+            return Err(StoreWireError::Malformed);
+        }
+        let mut row = Vec::new();
+        push_message_field(&mut row, 1, &entry.fulfilment_unit_id);
+        push_varint_field(&mut row, 2, u64::from(entry.item_id));
+        push_message_field(&mut output, 1, &row);
+    }
+    Ok(output)
+}
+
+pub fn decode_inbox_entries(input: &[u8]) -> Result<Vec<StoreInboxEntry>, StoreWireError> {
+    if input.len() > MAX_STORE_REQUEST_BYTES {
+        return Err(StoreWireError::LimitExceeded);
+    }
+    let mut entries = Vec::new();
+    let mut cursor = 0;
+    while cursor < input.len() {
+        if entries.len() == MAX_INBOX_ENTRIES {
+            return Err(StoreWireError::LimitExceeded);
+        }
+        if read_varint(input, &mut cursor)? != 10 {
+            return Err(StoreWireError::Malformed);
+        }
+        let row = read_bytes(input, &mut cursor)?;
+        let mut field = 0;
+        if read_varint(row, &mut field)? != 10 {
+            return Err(StoreWireError::Malformed);
+        }
+        let fulfilment_unit_id = as_uuid(read_bytes(row, &mut field)?)?;
+        if read_varint(row, &mut field)? != 16 {
+            return Err(StoreWireError::Malformed);
+        }
+        let item_id =
+            u16::try_from(read_varint(row, &mut field)?).map_err(|_| StoreWireError::Malformed)?;
+        if item_id == 0 || field != row.len() {
+            return Err(StoreWireError::Malformed);
+        }
+        entries.push(StoreInboxEntry {
+            fulfilment_unit_id,
+            item_id,
+        });
+    }
+    Ok(entries)
+}

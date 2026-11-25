@@ -51,6 +51,9 @@ enum Regression {
     OfflinePaid,
     OfflineLockOrder,
     OfflineLostAnswer,
+    LegacyItem { worker: bool },
+    Inbox,
+    RestoreReservations,
     Transfer,
     Earned,
     AccountOwnedToken,
@@ -96,6 +99,29 @@ fn coin_cosmetic_worker_recovers_a_lost_platform_answer() -> TestResult {
 }
 
 #[test]
+fn store_review_legacy_item_replays_through_confirmation() -> TestResult {
+    regression("cosmetic-legacy-item-confirmation", Regression::LegacyItem { worker: false })
+}
+
+#[test]
+fn store_review_legacy_item_replays_through_worker() -> TestResult {
+    regression("cosmetic-legacy-item-worker", Regression::LegacyItem { worker: true })
+}
+
+#[test]
+fn store_review_inbox_projects_entitlement_independent_of_delivery_and_claim() -> TestResult {
+    regression("store-inbox-entitlement", Regression::Inbox)
+}
+
+#[test]
+fn store_review_restore_conflict_retires_accepted_reservations() -> TestResult {
+    regression("store-restore-reservations", Regression::RestoreReservations)
+}
+
+#[path = "cosmetic_tokens/restore_reservations.rs"]
+mod restore_reservations;
+
+#[test]
 fn coin_cosmetic_stays_with_the_paid_account_after_transfer() -> TestResult {
     regression("cosmetic-transfer", Regression::Transfer)
 }
@@ -134,7 +160,7 @@ fn scenario(tokens: bool, previous_revision: bool, regression: Option<Regression
             .await
             .map_err(debug)?;
         let deps = Dependencies::new()?;
-        let (controller, _) =
+        let (controller, pin) =
             crate::content::native_gameplay::test_support::activated_with_loot_tables(
                 deps.admitted.world_id,
                 None,
@@ -223,8 +249,18 @@ fn scenario(tokens: bool, previous_revision: bool, regression: Option<Regression
                 wire::encode_purchase_request(request).map_err(debug)?,
             ))
         };
+        if matches!(regression, Some(Regression::RestoreReservations)) {
+            restore_reservations::prepare(&harness, &owner, &mut admitted, &ledger, &request).await?;
+            drop(owner);
+            drop(authority);
+            let predecessor = seal.record().recovery_generation;
+            let issued_at = seal.record().issued_at.checked_add(1).ok_or("issued at")?;
+            drop(seal);
+            restore_reservations::reconcile(&harness, &ledger, predecessor, issued_at).await?;
+            return harness.cleanup().await;
+        }
         if let Some(case) = regression {
-            cosmetic_regression(case, &harness, &owner, &mut admitted, &ledger, request).await?;
+            cosmetic_regression(case, &harness, &owner, &mut admitted, &ledger, request, pin.frame_binding().digest()).await?;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -682,6 +718,7 @@ async fn cosmetic_regression(
     admitted: &mut AdmittedSession,
     ledger: &Arc<SyncMutex<Ledger>>,
     mut request: wire::StorePurchaseRequest,
+    frame_digest: [u8; 32],
 ) -> TestResult {
     use super::store_fixtures::purchase;
     let command = |request: &wire::StorePurchaseRequest| -> TestResult<_> {
@@ -690,6 +727,137 @@ async fn cosmetic_regression(
     let character = *admitted.item_fence.ok_or("fence")?.character_id.as_bytes();
     let account = admitted.controller.ok_or("controller")?.account_id;
     match case {
+        Regression::RestoreReservations => return Err("restore needs the recovery transition fixture".into()),
+        Regression::Inbox => {
+            let entitlement = id(201);
+            {
+                let mut platform = ledger.lock().map_err(|_| "ledger")?;
+                platform.advertise_claims = true;
+                platform.entitlement_override = Some(uuid(&entitlement));
+            }
+            let paid = purchase(owner, admitted, super::store_fixtures::purchase_request(
+                81, "store:exercise-sword", 25,
+            )?).await?;
+            assert_eq!(paid.code, wire::StorePurchaseCode::Accepted);
+            let delivery = paid.operation_id.ok_or("delivery")?;
+            let claim = id(113);
+            assert_ne!(delivery, entitlement);
+            assert_ne!(claim, entitlement);
+            assert_ne!(claim, delivery);
+            let query = (wire::COMMAND_TYPE_STORE_INBOX_CLAIM, vec![16, 1]);
+            let replies = serve(owner, admitted, &[query]).await?;
+            assert_eq!(replies[0].0, CommandStatus::Accepted, "the Store Inbox must project the buyer's claim key");
+            let mut expected = vec![10, 22, 10, 16];
+            expected.extend_from_slice(&entitlement);
+            expected.extend([16, 0x88, 0xdf, 0x01]); // Exercise Sword (28552).
+            assert_eq!(replies[0].1, expected);
+            super::item_look_fixtures::seed_main_backpack(harness, &[]).await?;
+            sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
+                .bind(admitted.world_id.as_bytes().as_slice())
+                .bind(admitted.channel_id.as_bytes().as_slice())
+                .execute(&harness.pool).await?;
+            let generation = owner.active_generation.ok_or("native generation")?;
+            sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+                .bind(admitted.world_id.as_bytes().as_slice())
+                .bind(admitted.channel_id.as_bytes().as_slice())
+                .bind(generation.identity().server_artifact_digest().as_slice())
+                .bind(generation.identity().client_artifact_digest().as_slice())
+                .bind(frame_digest.as_slice())
+                .execute(&harness.pool).await?;
+            let claim_request = wire::StoreInboxClaimRequest { fulfilment_unit_id: uuid(&entitlement) };
+            let claimed = serve(owner, admitted, &[(
+                wire::COMMAND_TYPE_STORE_INBOX_CLAIM,
+                wire::encode_inbox_claim_request(&claim_request).map_err(debug)?,
+            )]).await?;
+            assert_eq!(claimed[0].0, CommandStatus::Accepted);
+            let receipt = wire::decode_claim_receipt(&claimed[0].1).map_err(debug)?;
+            assert_eq!(receipt.operation_id, claim);
+            assert_eq!(receipt.fulfilment_unit_id, claim_request.fulfilment_unit_id);
+            assert_eq!(receipt.result, wire::StoreClaimCode::Committed);
+            let empty = serve(owner, admitted, &[
+                (wire::COMMAND_TYPE_STORE_INBOX_CLAIM, vec![16, 1]),
+            ]).await?;
+            assert_eq!(empty, [(CommandStatus::Accepted, Vec::new())]);
+        }
+        Regression::LegacyItem { worker } => {
+            use crate::durability::store::{PurchaseRequest, PurchaseRequestState};
+            use crate::native_admission_source::store::{PurchaseResult, PurchaseStoreOffer};
+            use oteryn_gameplay_economy::store as rules;
+
+            let mut document: serde_json::Value = serde_json::from_slice(include_bytes!(
+                "../../../../../../rulesets/economy/store/predecessors/cosmetics.json"
+            ))?;
+            let legacy = document["offers"].as_array().ok_or("legacy offers")?
+                .iter().find(|offer| offer["key"] == FIELD_SURGEON).ok_or("legacy Field Surgeon")?;
+            let price = legacy["price"].as_u64().ok_or("legacy price")?;
+            document.sort_all_objects();
+            let revision = super::store_fixtures::sha256(&serde_json::to_vec(&document)?);
+            let binding = rules::PurchaseStoreOffer {
+                purchase_request_id: rules::PurchaseRequestId::from_bytes(request.purchase_request_id).map_err(debug)?,
+                account_id: crate::domain::AccountId::from_bytes(account).map_err(debug)?,
+                character_id: crate::domain::CharacterId::from_bytes(character).map_err(debug)?,
+                offer_key: request.offer_key.clone(),
+                catalog_revision: revision.clone(),
+                price,
+                currency: rules::CurrencyKind::TibiaCoin,
+            };
+            let journal = PurchaseRequest {
+                purchase_request_id: request.purchase_request_id,
+                account_id: account,
+                character_id: character,
+                binding: binding.binding_digest().to_vec(),
+            };
+            assert_eq!(owner.root.record_purchase_request(journal.clone()).await.map_err(debug)?, PurchaseRequestState::Sent);
+            let fence = crate::gameplay_transport::character_gameplay_fence::current(
+                owner, admitted.game_session_id, false,
+            ).await.ok_or("gameplay fence")?;
+            let cosmetics = owner.active_generation.and_then(|g| g.native_gameplay())
+                .and_then(|g| g.cosmetics()).ok_or("cosmetics")?;
+            assert!(owner.root.reserve_store_cosmetic(
+                owner.character, owner.holder, fence, journal, request.offer_key.clone(), cosmetics.clone(),
+            ).await.map_err(debug)?);
+
+            let mut client = StoreClient::new(
+                Box::new(FakePlatform(ledger.clone())), "oteryn-game/store-consumer".into(),
+            );
+            {
+                let mut platform = ledger.lock().map_err(|_| "ledger")?;
+                platform.unit_kind_override = Some("ITEM");
+                platform.advertise_deliveries = true;
+            }
+            let answer = client.purchase(&PurchaseStoreOffer {
+                purchase_request_id: uuid(&request.purchase_request_id),
+                account_id: uuid(&account),
+                character_id: uuid(&character),
+                world_id: uuid(admitted.world_id.as_bytes()),
+                catalog_revision: revision,
+                offer_key: request.offer_key.clone(),
+                unit_price: price.to_string(),
+                quantity: 1,
+                currency: "COINS".into(),
+            }, "ITEM").await.map_err(debug)?;
+            assert!(matches!(answer, PurchaseResult::Accepted { .. }));
+            // The legacy Game node lost the reply after Platform committed the debit.
+            if worker {
+                let ready = ledger.lock().map_err(|_| "ledger")?.receipt_ready.clone();
+                tokio::select! {
+                    () = crate::gameplay_transport::run_store_receipt_outbox(owner.root, owner.character, client) => {
+                        return Err("Store worker stopped before publishing the legacy ITEM grant".into());
+                    }
+                    result = tokio::time::timeout(std::time::Duration::from_secs(10), ready.notified()) => {
+                        result.map_err(|_| "Store worker did not publish the legacy ITEM grant")?;
+                    }
+                }
+            } else {
+                request.purchase_request_id = id(81);
+                let accepted = purchase(owner, admitted, command(&request)?).await?;
+                assert_eq!(accepted.code, wire::StorePurchaseCode::Accepted);
+            }
+            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM store_delivery_receipts")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(receipts, 1);
+            assert_eq!(ledger.lock().map_err(|_| "ledger")?.debits, [price]);
+        }
         Regression::Earned => {
             use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, UnlockFact};
             let key = "store:mount:armoured-war-horse";

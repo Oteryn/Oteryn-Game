@@ -180,6 +180,8 @@ pub fn request(
     }
     panel.pending = true;
     panel.pending_action = command.command_type;
+    panel.inbox_query_pending = command.command_type == COMMAND_TYPE_STORE_INBOX_CLAIM
+        && command.payload == STORE_INBOX_QUERY;
     panel.feedback = None;
     Some(command)
 }
@@ -191,6 +193,7 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
 
     panel.pending = false;
     let coin_history = std::mem::take(&mut panel.coin_history.pending);
+    let inbox_query = std::mem::take(&mut panel.inbox_query_pending);
     if !matches!(
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
@@ -228,8 +231,22 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
         COMMAND_TYPE_STORE_HISTORY_PAGE => {
             store::decode_history_page(&result.payload).map(|v| panel.history = Some(v))
         }
+        COMMAND_TYPE_STORE_INBOX_CLAIM if inbox_query => {
+            store::decode_inbox_entries(&result.payload)
+                .map(|entries| panel.inbox_entries = entries)
+        }
         COMMAND_TYPE_STORE_INBOX_CLAIM => {
-            store::decode_claim_receipt(&result.payload).map(|v| panel.claim = Some(v))
+            store::decode_claim_receipt(&result.payload).map(|receipt| {
+                if matches!(
+                    receipt.result,
+                    StoreClaimCode::Committed | StoreClaimCode::Revoked
+                ) {
+                    panel
+                        .inbox_entries
+                        .retain(|entry| entry.claim_key() != receipt.fulfilment_unit_id);
+                }
+                panel.claim = Some(receipt);
+            })
         }
         _ => store::decode_purchase_result(&result.payload).map(|v| {
             panel.confirmed_purchase = None;

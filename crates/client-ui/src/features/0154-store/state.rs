@@ -1,5 +1,5 @@
 use oteryn_client_runtime::cui3::store::{
-    StoreCataloguePage, StoreClaimReceipt, StoreHistoryPage, StorePurchaseResult,
+    StoreCataloguePage, StoreClaimReceipt, StoreHistoryPage, StoreInboxEntry, StorePurchaseResult,
 };
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum StorePage {
@@ -46,6 +46,8 @@ pub struct StorePanel {
     pub history: Option<StoreHistoryPage>,
     pub purchase: Option<StorePurchaseResult>,
     pub claim: Option<StoreClaimReceipt>,
+    pub inbox_entries: Vec<StoreInboxEntry>,
+    pub inbox_query_pending: bool,
     pub feedback: Option<String>,
 }
 
