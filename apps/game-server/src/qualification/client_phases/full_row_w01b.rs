@@ -150,14 +150,22 @@ async fn walk_rat_route(
     stop_on_spawn: bool,
 ) -> TestResult<Option<EntityRef>> {
     let mut blocked = BTreeSet::new();
+    let mut retried_chokepoints = BTreeSet::new();
     let mut observed = spawn.and_then(|site| visible_rat_at(client, site));
     'replan: loop {
         let from = tile(client.world_spatial().actor_position)?;
-        let path =
-            route_with_landings(from, |at| at == goal, |at| !blocked.contains(&at), &landing)
-                .ok_or_else(|| {
-                    format!("no safe rat route from {from:?} to {goal:?} avoiding {blocked:?}")
-                })?;
+        let Some(path) = route_with_landings(from, |at| at == goal, |at| !blocked.contains(&at), &landing) else {
+            // A roaming actor can briefly occupy the only doorway on the authored route.
+            // Retry that native STEP once after servicing liveness, with the same movement proof.
+            let retry = blocked.iter().copied().find(|at| !retried_chokepoints.contains(at));
+            if let Some(chokepoint) = retry {
+                retried_chokepoints.insert(chokepoint);
+                blocked.remove(&chokepoint);
+                client.service_liveness(Duration::from_secs(2)).await?;
+                continue 'replan;
+            }
+            return Err(format!("no safe rat route from {from:?} to {goal:?} avoiding {blocked:?}").into());
+        };
         for direction in path {
             let before = client.world_spatial().actor_position;
             let expected =
