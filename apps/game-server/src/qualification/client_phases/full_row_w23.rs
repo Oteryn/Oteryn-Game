@@ -345,6 +345,51 @@ fn carried_gold(client: &DevClientSession) -> TestResult<u64> {
         .sum())
 }
 
+fn dock_ledge(
+    world: &BundleWorld,
+    origin: TilePos,
+    placements: &[oteryn_world_bundle::npc::Placement],
+) -> Option<(TilePos, StepDirection, TilePos, TilePos)> {
+    let range = i16::try_from(wire::TALK_RANGE_TILES).ok()?;
+    let mut ledges = std::collections::BTreeMap::new();
+    for p in placements {
+        for dx in -range..=range {
+            for dy in -range..=range {
+                let Some((x, y)) = p.x.checked_add_signed(dx).zip(p.y.checked_add_signed(dy)) else {
+                    continue;
+                };
+                let upper = TilePos { x, y, floor: p.floor };
+                if (dx == 0 && dy == 0) || !world.enterable(upper) {
+                    continue;
+                }
+                for direction in [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West] {
+                    let (dx, dy) = direction.delta();
+                    let Ok((dx, dy)) = i16::try_from(dx).and_then(|dx| i16::try_from(dy).map(|dy| (dx, dy))) else {
+                        continue;
+                    };
+                    let Some((x, y)) = upper.x.checked_add_signed(-dx).zip(upper.y.checked_add_signed(-dy)) else {
+                        continue;
+                    };
+                    let Some((prior_x, prior_y)) = x.checked_add_signed(-dx).zip(y.checked_add_signed(-dy)) else {
+                        continue;
+                    };
+                    let cast_from = TilePos { x, y, floor: upper.floor - 1 };
+                    let facing = TilePos { x: prior_x, y: prior_y, ..cast_from };
+                    if world.base().tile(x, y, upper.floor).is_none()
+                        && destination(world, facing, direction) == Some(cast_from)
+                    {
+                        ledges.entry(facing).or_insert((direction, cast_from, upper));
+                    }
+                }
+            }
+        }
+    }
+    let path = route(world, origin, |at| ledges.contains_key(&at))?;
+    let facing = path.into_iter().try_fold(origin, |at, step| destination(world, at, step))?;
+    let (direction, cast_from, upper) = ledges.remove(&facing)?;
+    Some((facing, direction, cast_from, upper))
+}
+
 async fn travel_to_svargrond(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -356,12 +401,10 @@ async fn travel_to_svargrond(
         .iter()
         .find(|entry| entry.key == CAPTAIN)
         .ok_or("step=svargrond-travel Captain Bluebear absent from the compiled bundle")?;
-    // The captain stands on the upper dock. Face west from the east shore
-    // and land on the dock within native talk range.
-    let facing = TilePos { x: 32316, y: 32208, floor: -7 };
-    let cast_from = TilePos { x: 32315, ..facing };
-    let dock = TilePos { x: 32314, floor: -6, ..facing };
-    levitate_to_ledge(client, world, facing, StepDirection::West, cast_from, dock).await?;
+    let origin = tile(client.world_spatial().actor_position)?;
+    let (facing, direction, cast_from, dock) = dock_ledge(world, origin, &captain.placements)
+        .ok_or("step=svargrond-travel no reachable native Levitate ledge near Captain Bluebear")?;
+    levitate_to_ledge(client, world, facing, direction, cast_from, dock).await?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         captain.placements.iter().any(|p| {
             p.floor == at.floor
