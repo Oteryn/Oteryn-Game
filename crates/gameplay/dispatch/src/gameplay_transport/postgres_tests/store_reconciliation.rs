@@ -17,7 +17,7 @@ const BACKLOG: u64 = 8_000;
 struct PremiumPlatform {
     intent: Value,
     backlog: u64,
-    generation: u64,
+    generation: String,
     receipts: tokio::sync::mpsc::UnboundedSender<Value>,
     reads: tokio::sync::mpsc::UnboundedSender<()>,
 }
@@ -81,7 +81,7 @@ impl StoreTransport for PremiumPlatform {
                 assert_eq!(request["operation_id"], self.intent["operation_id"]);
                 assert_eq!(request["outcome"], "COMMITTED");
                 assert_eq!(request["delivered_quantity"], self.intent["quantity"]);
-                if request["recovery_generation"] != self.generation.to_string() {
+                if request["recovery_generation"] != self.generation.as_str() {
                     return Box::pin(async { Err(TransportFailure::Conflict) });
                 }
                 self.receipts.send(request).expect("receipt subscriber");
@@ -131,7 +131,7 @@ fn registration(backlog: u64, restored: bool) -> TestResult {
                 Box::new(PremiumPlatform {
                     intent: intent.clone(),
                     backlog,
-                    generation,
+                    generation: generation.to_string(),
                     receipts: tx.clone(),
                     reads: read.clone(),
                 }),
