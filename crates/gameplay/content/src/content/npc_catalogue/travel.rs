@@ -13,6 +13,10 @@ use std::sync::OnceLock;
 mod return_policy;
 pub use return_policy::TravelReturnRequirement;
 
+/// The donor storage advanced by each settled Postman tour passage.
+pub const POSTMAN_TOUR_TRACK: &str =
+    "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01";
+
 /// A paid ticket's purchase time is a Quest-owned Unix-second track.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -111,13 +115,13 @@ fn corrections() -> &'static [Correction] {
 }
 
 impl TravelRoute {
-    /// Expected Postman mission 1 stage before paying for this exact tour leg.
-    pub fn postman_tour_stage(&self) -> Option<i64> {
+    /// The before and after Postman stages for the exact route settled by paid travel.
+    pub fn postman_tour_passage(&self) -> Option<(i64, i64)> {
         match (self.service.as_str(), self.route.key.as_str()) {
-            ("oteryn:service.travel.captain_bluebear", "carlin") => Some(1),
-            ("oteryn:service.travel.uzon", "edron") => Some(2),
-            ("oteryn:service.travel.captain_seahorse", "venore") => Some(3),
-            ("oteryn:service.travel.brodrosch", "cormaya") => Some(4),
+            ("oteryn:service.travel.captain_bluebear", "carlin") => Some((1, 2)),
+            ("oteryn:service.travel.uzon", "edron") => Some((2, 3)),
+            ("oteryn:service.travel.captain_seahorse", "venore") => Some((3, 4)),
+            ("oteryn:service.travel.brodrosch", "cormaya") => Some((4, 5)),
             _ => None,
         }
     }
@@ -287,27 +291,43 @@ mod tests {
                     .ok_or("Postman stage")?
                     .parse()?)
             };
-            if npc == "brodrosch" {
-                // The admitted service offers Gnomprona, and has no Cormaya route.
-                assert_eq!(destination, "cormaya");
-                assert!(production_route(&model, npc, destination)?.is_none());
-                continue;
-            }
             let route = production_route(&model, npc, destination)?.ok_or("Postman route")?;
-            let callback = route
-                .partial_quest_callback
-                .ok_or("missing Postman callback")?;
+            let (before, after) = (stage("condition")?, stage("effect")?);
             assert_eq!(
-                callback.track,
-                "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01"
+                route.postman_tour_passage(),
+                Some((before, after)),
+                "{npc}/{destination}"
             );
+            let legacy_callback = route
+                .partial_quest_callback
+                .as_ref()
+                .map(|callback| (callback.track.as_str(), callback.stage, callback.next_stage));
             assert_eq!(
-                (callback.stage, callback.next_stage),
-                (stage("condition")?, stage("effect")?)
+                legacy_callback,
+                (npc == "captain_bluebear").then_some((super::POSTMAN_TOUR_TRACK, before, after)),
+                "{npc}/{destination} legacy receipt metadata"
+            );
+            let fare = source["condition"]
+                .as_str()
+                .and_then(|condition| condition.split_once(";travel koszt"))
+                .and_then(|(_, fare)| fare.split_once(' '))
+                .ok_or("Postman donor fare")?
+                .0
+                .parse::<u64>()?;
+            let cell = &route.route.destination;
+            let landing = format!(
+                "Mission01={after};podróż do{},{},{}",
+                cell.x, cell.y, cell.floor
+            );
+            assert_eq!(source["effect"], landing, "{npc}/{destination}");
+            assert_eq!(route.route.price, fare, "{npc}/{destination}");
+            assert!(
+                route.postman && !route.held && !route.route.premium,
+                "{npc}/{destination}"
             );
             callbacks += 1;
         }
-        assert_eq!(callbacks, 3);
+        assert_eq!(callbacks, 4);
         Ok(())
     }
 
@@ -753,7 +773,7 @@ mod tests {
         let mut routes = Vec::new();
         for (key, npc) in model.npcs() {
             for route in super::resolve(&model, &key.key, &npc.services) {
-                if let Some(stage) = route.postman_tour_stage() {
+                if let Some((stage, _)) = route.postman_tour_passage() {
                     routes.push((stage, route.route.premium));
                 }
             }

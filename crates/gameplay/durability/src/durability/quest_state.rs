@@ -772,14 +772,15 @@ pub(super) async fn credit_postman_passage(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
-    stage: i64,
+    passage: (i64, i64),
 ) -> StoredResult<CharacterRevision> {
+    use oteryn_gameplay_content::content::npc_catalogue::travel::POSTMAN_TOUR_TRACK;
     use oteryn_gameplay_quests::quest::{
         QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
     };
 
     const QUEST: &str = "oteryn:quest.the_postman_missions_quest";
-    const TRACK: &str = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01";
+    let (stage, next_stage) = passage;
     let state = sqlx::query(
         "SELECT q.pinned_content_revision, q.definition_hash
          FROM game_character_quest_states q
@@ -789,7 +790,7 @@ pub(super) async fn credit_postman_passage(
     )
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(QUEST)
-    .bind(TRACK)
+    .bind(POSTMAN_TOUR_TRACK)
     .bind(stage)
     .fetch_optional(&mut **tx)
     .await?;
@@ -805,9 +806,9 @@ pub(super) async fn credit_postman_passage(
         key: "oteryn:quest-transition/postman/complete-tour-passage".into(),
         quest: QUEST.into(),
         effects: vec![QuestEffect {
-            track: TRACK.into(),
+            track: POSTMAN_TOUR_TRACK.into(),
             from: QuestComparison::Eq(stage),
-            effect: QuestEffectKind::Add(1),
+            effect: QuestEffectKind::Add(next_stage - stage),
         }],
         completes: false,
         experience: None,
@@ -828,9 +829,9 @@ pub(super) async fn credit_postman_passage(
             pin: &pin,
             hash: &hash,
             changes: &[QuestTrackChange {
-                track: TRACK.into(),
+                track: POSTMAN_TOUR_TRACK.into(),
                 before: stage,
-                after: stage + 1,
+                after: next_stage,
             }],
             binding: &binding,
             state_exists: true,

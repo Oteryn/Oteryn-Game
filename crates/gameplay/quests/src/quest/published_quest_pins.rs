@@ -20,6 +20,9 @@ const fn hash(hex: &[u8; 64]) -> DefinitionHash {
     output
 }
 
+const PUBLISHED_GRAVE_DANGER_LIVE: DefinitionHash =
+    hash(b"286f3e0a4fdaff0ae2a14494889fe2d3492c5bbd4d8668a4f9b2cdaa48e37e7e");
+
 // A canonical citation can change when a different quest in its definition shard is
 // edited. For these exact citation-only refreshes, keep the published save identity.
 const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
@@ -123,6 +126,68 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
         hash(b"2a0e84e7f04fe4eafff4c3824de035250c01f8c9317feb2773ba11391678e00b"),
         hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
     ),
+    // Canonical Quest shard citations refreshed by the combined Crystal NPC content.
+    (
+        "oteryn:quest.ferumbras_ascension_quest",
+        hash(b"87fac0d81843121fb8e0555c18f0497b81c9ab311058ab0547683c50200d602c"),
+        hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
+    ),
+    (
+        "oteryn:quest.forgotten_knowledge_quest",
+        hash(b"e3b513a35624575283574370f7be62eb6b4edd46954d77fd99d8338fa437e569"),
+        hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+    ),
+    (
+        "oteryn:quest.formogar_mine_hoist",
+        hash(b"2534afd2b057d81dce6c819eb3287d0a3e5c2f45de5e566278dd4960a1db1911"),
+        hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
+    ),
+    (
+        "oteryn:quest.giant_smithhammer_quest",
+        hash(b"a5a9171709a883b61fe485bf7f11f04cdd7cf3bad7c3af22c2a977627ac0c3c6"),
+        hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
+    ),
+    (
+        "oteryn:quest.goblin_merchant_quest",
+        hash(b"3b0c0bf62b5e6e48922f569a845c4362af96e45e7ed1d5861a61bdc95eead228"),
+        hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
+    ),
+    (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"69f766380778b7206750fdb0c61124d6b2efba92d7001502012d7fa1d040b1d0"),
+        PUBLISHED_GRAVE_DANGER_LIVE,
+    ),
+    (
+        "oteryn:quest.grimvale_quest",
+        hash(b"efd7667dbc0334f5c4213ce9bff5f53edd9d090007eb9f4c6a0f998fd9e5fcfc"),
+        hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
+    ),
+    (
+        "oteryn:quest.heart_of_destruction_quest",
+        hash(b"2848fd802cce5c88b001f01289c0dac7af6b769c3529b9ac3fd3278ef056a405"),
+        hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
+    ),
+    (
+        "oteryn:quest.hero_of_rathleton_quest",
+        hash(b"1338afbd82ba65494e5565ecdcf420ee35945e6bb146e54bccbda05d2e039791"),
+        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
+    ),
+    (
+        "oteryn:quest.hidden_threats_quest",
+        hash(b"1350f740c2780c11c22786cd4e0449c79f22fd245a47803bfaff85c44ecae2ae"),
+        hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
+    ),
+    (
+        "oteryn:quest.hydra_egg_quest",
+        hash(b"4410ec5c32a8a9991447e39703d77bcfb0145cb09c909765ff571789938ac534"),
+        hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
+    ),
+    // The same citation refresh before the Zelos questline effect.
+    (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"5605ff5538ecb520e1a22c62ec5d64f8e6b7ffef27712b0c1492174247b9ee74"),
+        hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
+    ),
 ];
 
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
@@ -186,7 +251,11 @@ mod tests {
         let catalogue = loaded.catalogue();
         let grave = "oteryn:quest.grave_danger_quest";
         let main = hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab");
-        assert_ne!(catalogue.definition_hash(grave), Some(main));
+        assert_eq!(
+            catalogue.definition_hash(grave),
+            Some(PUBLISHED_GRAVE_DANGER_LIVE)
+        );
+        assert_ne!(PUBLISHED_GRAVE_DANGER_LIVE, main);
         assert!(npc_rules::legacy_defaults(catalogue, grave, &main).is_some());
         assert!(
             npc_rules::legacy_defaults(
@@ -207,9 +276,10 @@ mod tests {
 
         for &(quest, refreshed, published) in CITATION_REFRESHES {
             assert_eq!(published_hash(quest, refreshed), published, "{quest}");
-            if quest == "oteryn:quest.grave_danger_quest" {
-                // Zelos credit changes the live definition. Both exact citation
-                // variants still resolve to the published predecessor.
+            if quest == "oteryn:quest.grave_danger_quest"
+                && published != PUBLISHED_GRAVE_DANGER_LIVE
+            {
+                // Pre-Zelos citation variants resolve to the published predecessor.
                 assert_ne!(catalogue.definition_hash(quest), Some(published));
                 assert!(npc_rules::legacy_defaults(catalogue, quest, &published).is_some());
             } else {

@@ -102,7 +102,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let postman_tour = matches!(
             &route,
-            newhaven_travel::Departure::Paid(request) if request.route.postman_tour_stage().is_some()
+            newhaven_travel::Departure::Paid(request) if request.route.postman_tour_passage().is_some()
         );
         if !committed {
             let result = match route {

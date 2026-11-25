@@ -94,32 +94,32 @@ async fn check_source_quotes(h: &Harness) -> TestResult {
             .quote_npc_travel(&authority, &h.node, fence, route, &Premium)
     };
     let postman_routes = [
-        ("captain_bluebear", "carlin"),
-        ("uzon", "edron"),
-        ("captain_seahorse", "venore"),
+        ("captain_bluebear", "carlin", (1, 2)),
+        ("uzon", "edron", (2, 3)),
+        ("captain_seahorse", "venore", (3, 4)),
+        ("brodrosch", "cormaya", (4, 5)),
     ];
-    for (npc, destination) in postman_routes {
+    for (npc, destination, passage) in postman_routes {
         let passenger_route = route(npc, destination)?;
+        assert_eq!(passenger_route.postman_tour_passage(), Some(passage));
         assert_eq!(
-            premium_quote(passenger_route.clone()).await.map_err(debug)?,
+            quote(passenger_route.clone()).await.map_err(debug)?,
             Ok(passenger_route.route.price),
             "{npc}/{destination} with no Postman stage"
         );
     }
-    for (npc, destination) in postman_routes {
+    for (npc, destination, (before, after)) in postman_routes {
         let passenger_route = route(npc, destination)?;
-        let callback = passenger_route
-            .partial_quest_callback
-            .as_ref()
-            .ok_or("Postman callback")?;
-        for (value, expected) in [
-            (callback.stage, Err(TravelRefusal::UnavailableRoute)),
-            (callback.next_stage, Ok(passenger_route.route.price)),
-        ] {
-            seed_track("oteryn:quest.the_postman_missions_quest", &callback.track, value).await?;
+        for value in [before, after] {
+            seed_track(
+                "oteryn:quest.the_postman_missions_quest",
+                oteryn_gameplay_content::content::npc_catalogue::travel::POSTMAN_TOUR_TRACK,
+                value,
+            )
+            .await?;
             assert_eq!(
-                premium_quote(passenger_route.clone()).await.map_err(debug)?,
-                expected,
+                quote(passenger_route.clone()).await.map_err(debug)?,
+                Ok(passenger_route.route.price),
                 "{npc}/{destination} at Postman stage {value}"
             );
         }

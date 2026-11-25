@@ -5,7 +5,7 @@ use crate::durability::db::begin_type2_transaction;
 use crate::durability::item_fee_burn::{FeeBurnError, FeeBurnRequest, burn_fee_in_transaction};
 use crate::durability::item_mint_audit::Type2Transaction;
 use crate::durability::quest_state::credit_postman_passage;
-use oteryn_gameplay_content::content::npc_catalogue::travel::TravelRoute;
+use oteryn_gameplay_content::content::npc_catalogue::travel::{POSTMAN_TOUR_TRACK, TravelRoute};
 use sha2::{Digest, Sha256};
 
 #[path = "clear_gate.rs"]
@@ -78,8 +78,12 @@ async fn quote(
             return Ok(Err(TravelRefusal::UnavailableRoute));
         }
     }
-    if let Some(callback) = &route.partial_quest_callback {
-        // Only the donor stage that needs quest settlement is unavailable.
+    if let Some(callback) = &route.partial_quest_callback
+        && (callback.track != POSTMAN_TOUR_TRACK
+            || route.postman_tour_passage() != Some((callback.stage, callback.next_stage)))
+    {
+        // Keep unfinished donor callbacks held. The settled Postman passage still
+        // carries legacy callback metadata in the receipt binding.
         let needs_settlement: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks
               WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=$3)",
@@ -308,8 +312,8 @@ impl DurabilityRoot {
             // The quest writer owns the next Character revision. The item-only fare
             // binds to that revision and commits with the quest receipt and arrival.
             let mut fee_fence = fence;
-            if let Some(stage) = route.postman_tour_stage() {
-                fee_fence.expected_character_revision = credit_postman_passage(&mut tx, fence, request.command, stage).await?;
+            if let Some(passage) = route.postman_tour_passage() {
+                fee_fence.expected_character_revision = credit_postman_passage(&mut tx, fence, request.command, passage).await?;
             }
             if fare>0 {
                 match burn_fee_in_transaction(&mut tx,&fee_fence,&request.fee).await {
