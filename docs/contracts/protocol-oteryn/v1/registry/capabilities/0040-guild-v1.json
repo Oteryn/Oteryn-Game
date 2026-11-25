@@ -6,7 +6,8 @@
   "requires": [],
   "command_types": [
     40,
-    41
+    41,
+    6391
   ],
   "state_domains": [],
   "offered": true,

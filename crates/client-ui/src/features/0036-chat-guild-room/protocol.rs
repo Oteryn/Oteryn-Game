@@ -28,6 +28,7 @@ pub fn replace_state(panel: &mut ChatPanel, selected: bool, guild: GuildRoomStat
     panel.guild = guild;
     if !available(panel) {
         panel.guild_open = false;
+        panel.guild_motd_notice = None;
         panel.console.drop_channel(&crate::chat::ChannelTab::Guild);
     }
 }

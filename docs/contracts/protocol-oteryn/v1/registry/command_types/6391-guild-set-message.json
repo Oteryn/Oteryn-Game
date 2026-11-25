@@ -1,0 +1,10 @@
+{
+  "id": 6391,
+  "name": "GUILD_SET_MESSAGE",
+  "owner_decision": "GMOTD owner direction 2026-11-25",
+  "capability": 40,
+  "payload_schema": "guild_v1.proto#GuildSetMessage",
+  "result_schema": "guild_v1.proto#GuildIntentResult",
+  "max_payload_bytes": 287,
+  "max_result_payload_bytes": 128
+}

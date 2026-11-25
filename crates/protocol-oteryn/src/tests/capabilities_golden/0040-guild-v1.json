@@ -6,7 +6,8 @@
   "acceptance_requires": false,
   "commands": [
     40,
-    41
+    41,
+    6391
   ],
   "domains": [],
   "supersedes": [],

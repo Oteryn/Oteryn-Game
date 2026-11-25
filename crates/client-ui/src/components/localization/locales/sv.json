@@ -1,4 +1,8 @@
 {
+ "Message of the Day: {motd}": "Dagens meddelande: {motd}",
+ "Only the Guild Leader can change the message of the day": "Bara gillesledaren kan ändra dagens meddelande",
+ "Use up to 255 bytes of text without control characters, or type !setmotd alone to clear": "Använd högst 255 byte text utan kontrolltecken eller skriv bara !setmotd för att rensa",
+ "The Guild changed. Send !setmotd again to retry": "Gillet har ändrats. Skicka !setmotd igen för att försöka på nytt",
  "Assign at least one live spell or carried object.\n{}": "Tilldela minst en tillgänglig besvärjelse eller ett buret föremål.\n{}",
  "Multiaction saved": "Multiåtgärd sparad",
  "A multiaction holds at most three actions.": "En multiåtgärd rymmer högst tre åtgärder.",

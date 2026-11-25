@@ -44,6 +44,7 @@ impl SessionIngress {
         self.ingress.terminalize(command, outcome, || {}).ok()?;
         self.retained = Some(frame);
         self.result_sequence_floor = pending.sequence;
+        self.retained_guild_message = pending.guild_message;
         self.pending_delivery = None;
         self.reconciled_sequence = Some(pending.sequence);
         Some(())

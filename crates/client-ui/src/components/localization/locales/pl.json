@@ -1,4 +1,8 @@
 {
+ "Message of the Day: {motd}": "Wiadomość dnia: {motd}",
+ "Only the Guild Leader can change the message of the day": "Tylko przywódca gildii może zmienić wiadomość dnia",
+ "Use up to 255 bytes of text without control characters, or type !setmotd alone to clear": "Użyj do 255 bajtów tekstu bez znaków sterujących lub wpisz samo !setmotd, aby ją usunąć",
+ "The Guild changed. Send !setmotd again to retry": "Gildia uległa zmianie. Wyślij ponownie !setmotd, aby spróbować jeszcze raz",
  "Assign at least one live spell or carried object.\n{}": "Przypisz co najmniej jedno dostępne zaklęcie lub noszony przedmiot.\n{}",
  "Multiaction saved": "Zapisano multiakcję",
  "A multiaction holds at most three actions.": "Multiakcja może zawierać najwyżej trzy akcje.",

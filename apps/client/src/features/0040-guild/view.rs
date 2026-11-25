@@ -54,7 +54,7 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
         submit: |mailbox, commands, action, values| {
             use crate::play::feature_0115_mail::view::form::field;
             if action == 11 {
-                if !crate::play::feature_0036_chat_guild_room::input::open_locked(mailbox) {
+                if !crate::play::feature_0036_chat_guild_room::input::open_locked(mailbox, commands) {
                     mailbox.guild.feedback =
                         Some(tr!("Guild chat unavailable or waiting for the server").into());
                 }

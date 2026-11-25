@@ -38,10 +38,8 @@ impl GuildTextAuditProposal {
             if self.text.chars().count() > 29 || self.text.contains('\0') {
                 return None;
             }
-        } else if crate::durability::chat_text::ChatText::parse(&self.text)
-            .ok()?
-            .as_str()
-            != self.text
+        } else if !oteryn_protocol_oteryn::guild::valid_guild_message(&self.text)
+            || self.text.trim() != self.text
         {
             return None;
         }

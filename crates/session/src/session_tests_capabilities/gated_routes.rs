@@ -17,7 +17,7 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         (39, &[38], &[]),
         (57, &[72, 73, 6178], &[]),
         (134, &[155], &[]),
-        (40, &[40, 41], &[]),
+        (40, &[40, 41, oteryn_protocol_oteryn::guild::COMMAND_TYPE_GUILD_SET_MESSAGE], &[]),
         (42, &[45, 46], &[]),
         (43, &[48, 49, 50], &[]),
         (53, &[64], &[]),

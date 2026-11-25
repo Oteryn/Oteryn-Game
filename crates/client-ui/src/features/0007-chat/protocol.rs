@@ -263,8 +263,13 @@ pub fn close_current(
             }
             command
         }
+        ChannelTab::Guild => {
+            chat.console.close_current();
+            chat.guild_open = false;
+            chat.guild_motd_notice = None;
+            None
+        }
         ChannelTab::Conversation(_)
-        | ChannelTab::Guild
         | ChannelTab::Loot
         | ChannelTab::ServerLog
         | ChannelTab::Npc => {

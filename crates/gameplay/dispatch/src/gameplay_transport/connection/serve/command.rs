@@ -74,12 +74,23 @@ where
     } else {
         session.integrity.admit().await
     };
-    match session.commands.begin(
-        command.command_id,
-        session.generation,
-        session.sequence,
-        buffered_original,
-    ) {
+    let action =
+        if command.command_type == oteryn_protocol_oteryn::guild::COMMAND_TYPE_GUILD_SET_MESSAGE {
+            session.commands.begin_guild_message(
+                command.command_id,
+                session.generation,
+                session.sequence,
+                command.payload,
+            )
+        } else {
+            session.commands.begin(
+                command.command_id,
+                session.generation,
+                session.sequence,
+                buffered_original,
+            )
+        };
+    match action {
         Err((error, expected)) => {
             let _ = match encode_command_protocol_error(
                 error,

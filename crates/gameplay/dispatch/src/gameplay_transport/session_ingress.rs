@@ -34,6 +34,7 @@ struct SessionIngress {
     ingress: CommandIngress,
     market_statistics: Option<LookWindow>,
     retained: Option<Vec<u8>>,
+    retained_guild_message: Option<[u8; 32]>,
     result_sequence_floor: u64,
     active: bool,
     activity_recovery: bool,
@@ -49,6 +50,7 @@ struct PendingDelivery {
     selected: SelectedCapabilities,
     proven_native: Option<ProvenNativeReply>,
     buffered_step: bool,
+    guild_message: Option<[u8; 32]>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -462,6 +464,33 @@ impl SessionCommandStream {
         sequence: u64,
         buffered_original: bool,
     ) -> Result<CommandAction, (FoundationProtocolError, u64)> {
+        self.begin_bound(command, generation, sequence, buffered_original, None)
+    }
+
+    pub(super) fn begin_guild_message(
+        &mut self,
+        command: u64,
+        generation: u64,
+        sequence: u64,
+        payload: &[u8],
+    ) -> Result<CommandAction, (FoundationProtocolError, u64)> {
+        self.begin_bound(
+            command,
+            generation,
+            sequence,
+            false,
+            Some(Sha256::digest(payload).into()),
+        )
+    }
+
+    fn begin_bound(
+        &mut self,
+        command: u64,
+        generation: u64,
+        sequence: u64,
+        buffered_original: bool,
+        guild_message: Option<[u8; 32]>,
+    ) -> Result<CommandAction, (FoundationProtocolError, u64)> {
         use FoundationProtocolError::{CommandOutcomeExpired, CommandSequenceGap};
         let unavailable = (CommandOutcomeExpired, 0);
         sequence.checked_add(1).ok_or(unavailable)?;
@@ -481,10 +510,13 @@ impl SessionCommandStream {
         let identity = semantic(id).ok_or(unavailable)?;
         match state.ingress.classify_duplicate(id, &identity) {
             DuplicateDisposition::PendingOriginal => {
+                let pending = state.pending_delivery.as_mut().ok_or(unavailable)?;
+                if pending.guild_message != guild_message {
+                    return Err(unavailable);
+                }
                 return Ok(if buffered_original {
                     // Taking the original out of its pacing buffer is not terminal proof.
                     // Before any execution await, stop treating it as never dispatched.
-                    let pending = state.pending_delivery.as_mut().ok_or(unavailable)?;
                     if pending.command != command {
                         return Err(unavailable);
                     }
@@ -495,6 +527,9 @@ impl SessionCommandStream {
                 });
             }
             DuplicateDisposition::ReplayRetainedOutcome(_) => {
+                if state.retained_guild_message != guild_message {
+                    return Err(unavailable);
+                }
                 let frame = encode_duplicate_replay(
                     generation,
                     sequence.checked_add(1).ok_or(unavailable)?,
@@ -520,6 +555,7 @@ impl SessionCommandStream {
                     selected: self.selected,
                     proven_native: None,
                     buffered_step: false,
+                    guild_message,
                 });
                 state.reconciled_sequence = None;
                 Ok(CommandAction::Execute)
@@ -639,7 +675,10 @@ impl SessionCommandStream {
                     *result_sequence_floor = envelope.server_sequence();
                 })
                 .ok()?;
-            state.pending_delivery = None;
+            state.retained_guild_message = state
+                .pending_delivery
+                .take()
+                .and_then(|pending| pending.guild_message);
             state.reconciled_sequence = None;
         } else {
             effect();

@@ -38,9 +38,13 @@ impl Stepper for Peer {
     }
     async fn guild(&mut self, command: &GuildCommand) -> Result<GuildReply, SessionError> {
         match command {
-            GuildCommand::Query(query) => {
+            GuildCommand::Query(_) | GuildCommand::ChatOwn => {
+                let query = match command {
+                    GuildCommand::Query(query) => *query,
+                    _ => guild::GuildQuery::Own,
+                };
                 let bytes =
-                    guild::encode_guild_query(query).map_err(|_| SessionError::SessionUnusable)?;
+                    guild::encode_guild_query(&query).map_err(|_| SessionError::SessionUnusable)?;
                 let decoded =
                     guild::decode_guild_query(&bytes).map_err(|_| SessionError::SessionUnusable)?;
                 let result = match decoded {
@@ -88,6 +92,16 @@ impl Stepper for Peer {
                         guild::decode_guild_query_result(&reply)
                             .map_err(|_| SessionError::SessionUnusable)?,
                     ),
+                })
+            }
+            GuildCommand::SetMessage(edit) => {
+                let bytes = guild::encode_guild_set_message(edit).map_err(|_| SessionError::SessionUnusable)?;
+                let edit = guild::decode_guild_set_message(&bytes).map_err(|_| SessionError::SessionUnusable)?;
+                Ok(GuildReply::Intent {
+                    status: CommandStatus::Accepted,
+                    result: Some(guild::GuildIntentResult {
+                        code: 2, guild: edit.guild, revision: Some(edit.expected_revision),
+                    }),
                 })
             }
             GuildCommand::Intent(intent) => {

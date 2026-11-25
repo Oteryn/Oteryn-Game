@@ -98,6 +98,10 @@ impl PlayLink {
     }
     /// Open the channel a channel-list row names.
     pub fn chat_open_entry(&self, entry: &ChannelEntry) {
+        if *entry == ChannelEntry::Local(oteryn_client_ui::chat::ChannelTab::Guild) {
+            self.open_guild_chat();
+            return;
+        }
         self.chat_channel_command(|mailbox| {
             oteryn_client_ui::chat::open_entry(
                 &mut mailbox.chat,
@@ -361,6 +365,9 @@ pub(in crate::play) fn dialog_confirm(
         oteryn_client_ui::chat_guild_room::available(&mailbox.chat),
     );
     match mailbox.chat.console.dialog.confirm(&entries) {
+        Some(DialogAction::Entry(ChannelEntry::Local(oteryn_client_ui::chat::ChannelTab::Guild))) => {
+            crate::play::feature_0036_chat_guild_room::input::open_locked(mailbox, commands)
+        }
         Some(DialogAction::Entry(entry)) => {
             channel_command(mailbox, commands, |mailbox| {
                 oteryn_client_ui::chat::open_entry(

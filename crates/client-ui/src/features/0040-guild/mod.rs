@@ -78,6 +78,27 @@ pub fn request(panel: &mut GuildPanel, intent: Intent) -> Option<GuildCommand> {
     Some(command)
 }
 
+pub fn request_message(
+    own: &guild::GuildSummary,
+    text: &str,
+) -> Result<GuildCommand, &'static str> {
+    if own.own_rank != 1 {
+        return Err(tr!(
+            "Only the Guild Leader can change the message of the day"
+        ));
+    }
+    if !guild::valid_guild_message(text) {
+        return Err(tr!(
+            "Use up to 255 bytes of text without control characters, or type !setmotd alone to clear"
+        ));
+    }
+    Ok(GuildCommand::SetMessage(guild::GuildSetMessage {
+        guild: own.guild,
+        expected_revision: own.revision,
+        text: text.into(),
+    }))
+}
+
 pub fn apply_result(panel: &mut GuildPanel, reply: &GuildReply) {
     panel.pending = false;
     match reply {

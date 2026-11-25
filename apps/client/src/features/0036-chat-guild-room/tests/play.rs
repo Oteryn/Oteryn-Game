@@ -108,8 +108,10 @@ fn guild_panel_opens_chat_and_send_reaches_session_and_transcript() -> Result<()
                 let (link, incoming, outbox) = play_channel();
                 let task = tokio::spawn(run_session(peer, incoming, outbox));
                 wait_for(&link, oteryn_client_ui::chat_guild_room::available).await?;
+                assert!(!link.chat_panel().console.channels.contains(&oteryn_client_ui::chat::ChannelTab::Guild));
                 assert!(link.open_guild_chat());
                 assert!(link.chat_panel().open);
+                assert!(panel_text(&link.chat_panel()).contains("Message of the Day: Welcome"));
                 link.chat_text("hello guild".into());
                 link.chat_request(Mode::Guild, "");
                 wait_for(&link, |panel| !panel.lines.is_empty()).await?;

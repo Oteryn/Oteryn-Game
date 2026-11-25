@@ -51,6 +51,9 @@ pub(in crate::play) fn enqueue(
     mode: Mode,
     recipient: &str,
 ) {
+    if crate::play::feature_0036_chat_guild_room::input::setmotd(mailbox, commands) {
+        return;
+    }
     // A selected channel tab receives the composer text; the fixed tabs use the speech modes.
     let intent = if mailbox.chat.console.current.is_some() {
         oteryn_client_ui::chat::channel_request(&mut mailbox.chat)

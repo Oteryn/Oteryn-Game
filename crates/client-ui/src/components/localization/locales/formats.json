@@ -87,7 +87,7 @@
  "Filter: {:?}", "First authorize self-inspection to activate your staff role.\nInspect, ban/unban, teleport/to player, bring, notify/broadcast, ghost/invisible, mute/unmute, kick.\n{}", "Food: {} s",
  "Fragments carried and in Supply Stash: {} basic; {} supreme.", "Free main-backpack slots: {free}", "Furniture updated (revision {revision}). Refresh the list",
  "Gold: {} carried; {} in bank.", "Guild action refused (code {})", "Guild bank\r\n{}\r\n{}",
- "Guild wars\r\n{}\r\n{}", "Guild — {motd}", "Guildhall leadership\r\n{}\r\n{}",
+ "Message of the Day: {motd}", "Guild wars\r\n{}\r\n{}", "Guild — {motd}", "Guildhall leadership\r\n{}\r\n{}",
  "HP [{}] {}/{}   MP [{}] {}/{}   Soul: {}   Harmony: {}/5   Serene: {}", "Hazard: {selected} | Unlocked: {unlocked}", "Healing analyser\r\nHealing: {}",
  "Health: {health} (last saved)\nMana: {mana} (last saved)", "Highscores — {} / {}", "Hotkey Equip\nSelected item: {}",
  "House move-out\r\n{}\r\n{}", "House podium\r\n{preview}\r\n{}\r\n{}", "House transfer\r\n{}\r\n{}",

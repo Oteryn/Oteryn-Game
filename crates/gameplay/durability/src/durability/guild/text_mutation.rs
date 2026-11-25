@@ -21,7 +21,7 @@ impl LockedGuild<'_> {
             GuildCommand::SetTitle(_) => {
                 acting.as_ref().is_some_and(|m| m.rank == 1) && subject.is_some()
             }
-            GuildCommand::SetMessage => acting.as_ref().is_some_and(|m| m.rank <= 2),
+            GuildCommand::SetMessage => acting.as_ref().is_some_and(|m| m.rank == 1),
             _ => return Err(GuildError::InvalidInput),
         };
         let refusal = if !allowed {

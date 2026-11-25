@@ -152,7 +152,7 @@ expected guild `revision` (`STALE_REVISION` on mismatch).
 | `set_rank {character, level}` | member at level `a` | target level `t`, new level `n`: `a < t` and `a < n` (`NOT_ALLOWED`); into level 2 needs the target's Account free (`ACCOUNT_HAS_POSITION`) and Premium once activated; deadline gate | level moved; leadership rows follow; may activate or set or clear the vice deficit |
 | `edit_ranks {names[3..20]}` | level 1 | names valid and pairwise distinct by `name_key` (`NAME_TAKEN`); revision | ranks replaced; members of a removed level move to the new lowest level |
 | `set_title {character, title}` | level 1 | target is a member; title ≤ 29 characters, CHAT-0 text rules (`NAME_INVALID`) | title set |
-| `set_message {text}` | level 1 or 2 | ≤ 255 characters, CHAT-0 text rules (`NAME_INVALID`); revision | message set |
+| `set_message {text}` | level 1 | ≤ 255 UTF-8 bytes as received, no control characters or nonempty whitespace-only text; revision | message set or cleared by empty input |
 | `resign {successor}` | level 1 | successor is a level-2 member that is not junior (`NOT_ALLOWED`, `JUNIOR`) and, once Premium is activated, `Current` (`NOT_PREMIUM`) | levels 1 and 2 swap; leadership rows follow |
 | `disband {confirm}` | level 1 | `confirm` equals the guild name (the GUILD-0 §3.2 confirmation, `NOT_ALLOWED` otherwise) | state `DISBANDING`; the disband job runs |
 | `deposit`, `withdraw`, `claim_disband_payout` | — | reserved for GUILD-BANK-1 | — |

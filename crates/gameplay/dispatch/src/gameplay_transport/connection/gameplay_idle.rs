@@ -181,6 +181,9 @@ pub(super) fn meaningful(
             oteryn_protocol_oteryn::daily_reward::DailyRewardClaim::decode(command.payload).is_ok()
         }
         40 => oteryn_protocol_oteryn::guild::decode_guild_intent(command.payload).is_ok(),
+        oteryn_protocol_oteryn::guild::COMMAND_TYPE_GUILD_SET_MESSAGE => {
+            oteryn_protocol_oteryn::guild::decode_guild_set_message(command.payload).is_ok()
+        }
         45 => oteryn_protocol_oteryn::party::decode_party_intent(command.payload).is_ok_and(
             |intent| {
                 !matches!(

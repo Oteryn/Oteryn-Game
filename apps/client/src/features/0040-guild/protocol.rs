@@ -7,8 +7,11 @@ impl Outbox {
             channel_names: std::mem::take(&mut mailbox.guild.channel_names),
             ..Default::default()
         };
-        mailbox.chat.guild_selected = false;
-        mailbox.chat.guild = oteryn_session::GuildRoomState::Unavailable;
+        oteryn_client_ui::chat_guild_room::replace_state(
+            &mut mailbox.chat,
+            false,
+            oteryn_session::GuildRoomState::Unavailable,
+        );
     }
 
     /// Refresh membership views after opening or an accepted membership change.
@@ -18,6 +21,9 @@ impl Outbox {
         command: &oteryn_client_runtime::guild::GuildCommand,
     ) -> Result<(), oteryn_session::SessionError> {
         use oteryn_client_runtime::guild::{GuildCommand, GuildReply, guild};
+        if matches!(command, GuildCommand::ChatOwn | GuildCommand::SetMessage(_)) {
+            return self.guild_motd_run(session, command).await;
+        }
         let reply = session.guild(command).await?;
         let refresh =
             matches!(&reply, GuildReply::Intent { result: Some(result), .. } if result.code == 1);

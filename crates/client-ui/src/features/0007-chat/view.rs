@@ -50,6 +50,13 @@ fn tab_text(
     {
         text.push_str(&crate::chat_guild_room::panel_text(panel));
     }
+    if channel == Some(&super::ChannelTab::Guild)
+        && show_messages
+        && panel.console.show_server_messages
+        && let Some(notice) = crate::chat_guild_room::motd_notice_text(panel)
+    {
+        let _ = writeln!(text, "{notice}");
+    }
     let presentation = &panel.console.presentation;
     for (index, line) in panel.lines.iter().enumerate().skip(
         panel

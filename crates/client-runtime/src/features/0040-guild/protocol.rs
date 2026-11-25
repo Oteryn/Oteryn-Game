@@ -6,6 +6,8 @@ use oteryn_session::{Session, SessionError, SessionStream};
 pub enum GuildCommand {
     Intent(guild::GuildIntent),
     Query(guild::GuildQuery),
+    ChatOwn,
+    SetMessage(guild::GuildSetMessage),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,6 +31,14 @@ pub async fn send<S: SessionStream>(
             guild::COMMAND_TYPE_GUILD_INTENT,
             guild::encode_guild_intent(value),
         ),
+        GuildCommand::ChatOwn => (
+            guild::COMMAND_TYPE_GUILD_QUERY,
+            guild::encode_guild_query(&guild::GuildQuery::Own),
+        ),
+        GuildCommand::SetMessage(value) => (
+            guild::COMMAND_TYPE_GUILD_SET_MESSAGE,
+            guild::encode_guild_set_message(value),
+        ),
         GuildCommand::Query(value) => (
             guild::COMMAND_TYPE_GUILD_QUERY,
             guild::encode_guild_query(value),
@@ -45,14 +55,14 @@ pub async fn send<S: SessionStream>(
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     );
     match command {
-        GuildCommand::Intent(_) => Ok(GuildReply::Intent {
+        GuildCommand::Intent(_) | GuildCommand::SetMessage(_) => Ok(GuildReply::Intent {
             status: reply.status,
             result: accepted
                 .then(|| guild::decode_guild_intent_result(&reply.payload))
                 .transpose()
                 .map_err(|_| SessionError::SessionUnusable)?,
         }),
-        GuildCommand::Query(_) => Ok(GuildReply::Query {
+        GuildCommand::Query(_) | GuildCommand::ChatOwn => Ok(GuildReply::Query {
             status: reply.status,
             result: accepted
                 .then(|| guild::decode_guild_query_result(&reply.payload))

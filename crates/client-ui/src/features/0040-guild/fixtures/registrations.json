@@ -44,5 +44,20 @@
     "not_applicable": {
       "settings": "Guild state is persisted by the server; no local authority settings."
     }
+  },
+  {
+    "mechanic": "0040-guild",
+    "kind": "handlers",
+    "id": "0040-guild-set-message",
+    "status": "supported",
+    "commands": [
+      6391
+    ],
+    "direction": "client_to_server",
+    "capability": 40,
+    "entry": "mod.rs::request_message",
+    "not_applicable": {
+      "settings": "Guild state is persisted by the server; no local authority settings."
+    }
   }
 ]

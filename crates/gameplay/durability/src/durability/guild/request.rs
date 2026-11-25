@@ -121,16 +121,16 @@ impl GuildTextRequest {
         }
         let text = match common.operation {
             // GUILD0 specifies only the 29-scalar title bound, not the 0022 name grammar.
-            // Empty title is bounded DATA; no empty-message/clear exception is introduced.
             GuildCommand::SetTitle(_)
                 if received.chars().count() <= 29 && !received.contains('\0') =>
             {
                 received.to_owned()
             }
-            GuildCommand::SetMessage => crate::durability::chat_text::ChatText::parse(received)
-                .map_err(|_| GuildError::InvalidInput)?
-                .as_str()
-                .to_owned(),
+            GuildCommand::SetMessage
+                if oteryn_protocol_oteryn::guild::valid_guild_message(received) =>
+            {
+                received.trim().to_owned()
+            }
             _ => return Err(GuildError::InvalidInput),
         };
         Ok(Self {

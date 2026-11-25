@@ -7,7 +7,7 @@ use crate::domain::{
 };
 use crate::durability::guild::{
     GuildCommand, GuildError, GuildFoundRequest, GuildOperationIdentity, GuildOutcome,
-    GuildRankRequest, GuildRequest,
+    GuildRankRequest, GuildRequest, GuildTextRequest,
 };
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::guild::{self as wire, GuildIntent};
@@ -96,15 +96,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .guildhall_leadership(admitted, command_id, payload)
                 .await;
         }
-        if command_type != wire::COMMAND_TYPE_GUILD_INTENT {
-            return GuildReply::Rejected;
-        }
-        let Ok(intent) = wire::decode_guild_intent(payload) else {
-            return GuildReply::Rejected;
-        };
-        if wire::encode_guild_intent(&intent).is_err() {
-            return GuildReply::Rejected;
-        }
         let Ok(id) = CommandId::new(command_id) else {
             return GuildReply::Rejected;
         };
@@ -125,6 +116,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             occurred_at_unix_ms: now,
             wire_digest: Some(Sha256::digest(payload).into()),
         };
+        if command_type == wire::COMMAND_TYPE_GUILD_SET_MESSAGE {
+            if !admitted.continuity.selected_capabilities.contains(
+                oteryn_protocol_oteryn::chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1,
+            ) {
+                return GuildReply::Rejected;
+            }
+            let Ok(edit) = wire::decode_guild_set_message(payload) else {
+                return GuildReply::Rejected;
+            };
+            let Ok(guild_id) = GuildId::from_bytes(edit.guild) else {
+                return GuildReply::Rejected;
+            };
+            let request = GuildRequest {
+                identity,
+                command,
+                guild_id,
+                operation: GuildCommand::SetMessage,
+            };
+            let Ok(text) = GuildTextRequest::new(request, edit.expected_revision, &edit.text) else {
+                return GuildReply::Rejected;
+            };
+            return outcome_reply(
+                self.root.commit_guild_text(self.character, self.holder, fence, text).await,
+                edit.guild,
+            );
+        }
+        if command_type != wire::COMMAND_TYPE_GUILD_INTENT {
+            return GuildReply::Rejected;
+        }
+        let Ok(intent) = wire::decode_guild_intent(payload) else {
+            return GuildReply::Rejected;
+        };
+        if wire::encode_guild_intent(&intent).is_err() {
+            return GuildReply::Rejected;
+        }
         let guild = match &intent {
             GuildIntent::Found { .. } => derived(b"oteryn:guild-wire-guild:v1"),
             GuildIntent::Invite { guild, .. }
@@ -226,6 +252,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
             }
         };
+        outcome_reply(outcome, guild)
+    }
+}
+
+fn outcome_reply(outcome: Result<GuildOutcome, GuildError>, guild: [u8; 16]) -> GuildReply {
         match outcome {
             Ok(GuildOutcome::Committed(receipt) | GuildOutcome::Replayed(receipt)) => {
                 let Ok(code) = u8::try_from(receipt.result.code() + 1) else {
@@ -240,7 +271,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(error) => failure(error),
         }
-    }
 }
 fn failure(error: GuildError) -> GuildReply {
     match error {
