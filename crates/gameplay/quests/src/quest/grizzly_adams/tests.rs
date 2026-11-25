@@ -941,10 +941,15 @@ fn non_paw_and_fur_tasks_load_with_native_counters_and_journals() -> Result<(), 
             sex: 0,
             outfits: &BTreeMap::new(),
         };
-        let ask = format!("can I take the {} hunt?", task.replace('-', " "));
+        // Crystal matches "task" within a phrase and Budrik uses the exact "mission" opener.
+        let ask = if task == "minotaurs" {
+            "mission"
+        } else {
+            "can I take the task?"
+        };
         let quote = programme
             .plan_storage(&crate::quest::npc_rules::NpcRuleInput {
-                message: &ask,
+                message: ask,
                 topic: 0,
                 ..input
             })
