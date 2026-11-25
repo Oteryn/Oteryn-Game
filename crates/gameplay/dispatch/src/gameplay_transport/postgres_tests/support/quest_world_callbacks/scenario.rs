@@ -1609,12 +1609,19 @@ fn scenario_case(
                 },
                 generation.native_gameplay().ok_or("Elvenbane policies")?,
             )?
-        } else if cursed_crystal_stairs || sarina_vine {
-            let landing = if sarina_vine {
-                callback.teleport.ok_or("Sarina vine landing")?
-            } else {
-                stateless_destination.ok_or("Cursed Crystal stair landing")?
+        } else if cursed_crystal_stairs {
+            let landing = stateless_destination.ok_or("Cursed Crystal stair landing")?;
+            let tile = |position: Position| crate::map::overlay::TilePos {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
             };
+            super::super::source_world_crop::compiled_step_passage(
+                [tile(start), tile(trigger), tile(landing)],
+                generation.native_gameplay().ok_or("Cursed Crystal policies")?,
+            )?
+        } else if sarina_vine {
+            let landing = callback.teleport.ok_or("Sarina vine landing")?;
             let minimum = crate::map::overlay::TilePos {
                 x: start.x.min(landing.x),
                 y: start.y.min(landing.y),
@@ -1893,8 +1900,21 @@ fn scenario_case(
             owner.rooms =
                 crate::gameplay_transport::SeamRooms::new(native_crop.then_some(room), Some(room));
         }
-        let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-            .map_err(debug)?;
+        use oteryn_gameplay_quests::quest::{authored_bindings::Bindings, loader};
+        let lowered = if eroth_mirror {
+            // This crop exercises the legacy mirror route without the authored
+            // journey's offer and mountain approach.
+            loader::load_embedded_quest_state_with_bindings(
+                "content-1",
+                &Bindings {
+                    schema: 1,
+                    quests: Vec::new(),
+                },
+            )
+        } else {
+            loader::load_embedded_quest_state("content-1")
+        }
+        .map_err(debug)?;
         owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
         if koshei || alawars_vault || (frontier && !recover_bait) {
             let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;

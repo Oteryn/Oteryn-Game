@@ -974,6 +974,15 @@ pub async fn refresh_world_party_presence_for_scope_actor_in_transaction(
     observe_world_party(tx, current.world, current.character).await
 }
 
+/// The principal's observed World party state on the lethal turn.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SourceDeathParty {
+    pub id: [u8; 16],
+    pub observed_revision: u64,
+    pub shared_xp_enabled: bool,
+    pub captured_at_unix_micros: i64,
+}
+
 impl super::DurabilityRoot {
     /// Genuine bounded World cleanup source pass. Unknown COMMIT is retried by the same
     /// expired-row predicate; no command occurrence, artificial caster or user payment exists.
@@ -1014,17 +1023,19 @@ impl super::DurabilityRoot {
             .await
             .map_err(SpellItemError::from)
     }
-    /// Freeze the native kill's roster on its first durable settlement pass.
-    /// The World lock orders the read with membership and shared-XP writes in
-    /// every Channel, and the queued death retains the result across retries.
+    /// Check current membership for the party frozen at death. History can advance
+    /// a stale Channel flag only as far as the lethal turn, across all Channels.
     pub async fn read_source_death_party(
         &self,
         recovery: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
         node: &super::runtime_scope_assignment::NodeIncarnationProof,
         fence: super::item_transfer::CurrentCharacterItemFence,
         died_at_unix_ms: u64,
+        frozen: SourceDeathParty,
     ) -> std::result::Result<Vec<[u8; 16]>, super::DurabilityError> {
-        let record = recovery.record_for(self).map_err(|_| super::DurabilityError::Unavailable)?;
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| super::DurabilityError::Unavailable)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| {
             Box::pin(async move {
@@ -1036,28 +1047,35 @@ impl super::DurabilityRoot {
                 let principal = *fence.character_id.as_bytes();
                 sqlx::query("SELECT pg_advisory_xact_lock(45,hashtext(encode($1::bytea,'hex')))")
                     .bind(world.as_slice()).execute(&mut *tx).await?;
-                let party = observe_world_party(&mut tx, world, principal)
-                    .await.map_err(|_| super::DurabilityError::Unavailable)?;
-                let roster = if let Some(party_id) = party.party_id.filter(|_| party.shared_xp_enabled) {
-                    // A player who joined between death and the first pass cannot
-                    // use an earlier lethal snapshot as proof of membership.
-                    sqlx::query_scalar::<_, Vec<u8>>(
-                        "SELECT uuid_send(member.character_id) FROM game_party_members member \
-                         JOIN game_party_members principal USING (party_id) \
-                         WHERE member.party_id=encode($1,'hex')::uuid \
-                           AND principal.character_id=encode($2,'hex')::uuid \
-                           AND floor(extract(epoch FROM principal.joined_at)*1000) <= $3::text::numeric \
-                           AND floor(extract(epoch FROM member.joined_at)*1000) <= $3::text::numeric \
-                         ORDER BY member.seq LIMIT 50",
-                    )
-                    .bind(party_id.as_slice()).bind(principal.as_slice()).bind(died_at_unix_ms.to_string())
-                    .fetch_all(&mut *tx).await?
-                    .into_iter()
-                    .map(|id| id.try_into().map_err(|_| super::DurabilityError::InvalidStoredState))
-                    .collect::<std::result::Result<Vec<_>, _>>()?
-                } else {
-                    Vec::new()
-                };
+                let roster = sqlx::query_scalar::<_, Vec<u8>>(
+                    "SELECT uuid_send(member.character_id) FROM game_party_members member \
+                     JOIN game_party_members principal USING (party_id) \
+                     JOIN game_parties party USING (party_id) \
+                     WHERE member.party_id=encode($1,'hex')::uuid \
+                       AND principal.character_id=encode($2,'hex')::uuid \
+                       AND party.world_id=encode($3,'hex')::uuid \
+                       AND floor(extract(epoch FROM principal.joined_at)*1000) <= $4::text::numeric \
+                       AND floor(extract(epoch FROM member.joined_at)*1000) <= $4::text::numeric \
+                       AND COALESCE(( \
+                           SELECT CASE WHEN history.revision > $6::text::numeric THEN history.enabled ELSE $7 END \
+                           FROM game_party_shared_xp_history history \
+                           WHERE history.party_id=encode($1,'hex')::uuid \
+                             AND history.changed_at <= TIMESTAMPTZ 'epoch' + $5::bigint * INTERVAL '1 microsecond' \
+                           ORDER BY history.changed_at DESC, history.revision DESC LIMIT 1 \
+                       ), $7) \
+                     ORDER BY member.seq LIMIT 50",
+                )
+                .bind(frozen.id.as_slice())
+                .bind(principal.as_slice())
+                .bind(world.as_slice())
+                .bind(died_at_unix_ms.to_string())
+                .bind(frozen.captured_at_unix_micros)
+                .bind(frozen.observed_revision.to_string())
+                .bind(frozen.shared_xp_enabled)
+                .fetch_all(&mut *tx).await?
+                .into_iter()
+                .map(|id| id.try_into().map_err(|_| super::DurabilityError::InvalidStoredState))
+                .collect::<std::result::Result<Vec<_>, _>>()?;
                 super::db::commit_semantic_transaction(tx, deadline).await?;
                 Ok(roster)
             })

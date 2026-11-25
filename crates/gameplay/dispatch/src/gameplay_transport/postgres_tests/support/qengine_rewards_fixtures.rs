@@ -1330,10 +1330,25 @@ pub(super) async fn exercise(
                 preserve: true,
             });
     }
-    if key != "outfox-helmet" {
-        seed(owner, admitted, &setup, 9000).await?;
-    }
-    let [npc] = super::classic_quests_fixtures::install(owner, admitted, [callback.npc.as_str()]).await?;
+    let (npc, amanda) = if key == "hallowed-holy-water" {
+        // The grave callbacks protect this track against generic quest writes.
+        // Enter Costello's exchange through Amanda's actual acceptance.
+        let [costello, amanda] = super::classic_quests_fixtures::install(
+            owner,
+            admitted,
+            [callback.npc.as_str(), "oteryn:npc.amanda"],
+        )
+        .await?;
+        (costello, Some(amanda))
+    } else {
+        if key != "outfox-helmet" {
+            seed(owner, admitted, &setup, 9000).await?;
+        }
+        let [npc] =
+            super::classic_quests_fixtures::install(owner, admitted, [callback.npc.as_str()])
+                .await?;
+        (npc, None)
+    };
     let mut selected = admitted
         .continuity
         .selected_capabilities
@@ -1352,6 +1367,32 @@ pub(super) async fn exercise(
     assert!(admitted.continuity.selected_capabilities.contains(3));
     assert!(admitted.continuity.selected_capabilities.contains(6));
     assert!(admitted.continuity.selected_capabilities.contains(25));
+    if let Some(amanda) = amanda {
+        let acceptance = oteryn_gameplay_quests::quest::reward_callbacks::load()?
+            .into_iter()
+            .find(|row| row.key == "oteryn:quest-reward/tibia-tales/hallowed-accept")
+            .ok_or("Amanda's Hallowed Ground acceptance")?;
+        assert_eq!(
+            wire_conversation(
+                owner,
+                admitted,
+                amanda,
+                &acceptance,
+                false,
+                vec!["hi", "mission", "yes", "bye"],
+            )
+            .await?
+            .0,
+            NpcIntentDisposition::Ok,
+        );
+        for state in &callback.storage {
+            assert_eq!(
+                super::classic_quests_fixtures::progress(owner, admitted, authority, &state.track)
+                    .await?,
+                state.minimum,
+            );
+        }
+    }
     let first = admitted.continuity.next_command_id;
     assert_eq!(
         talk(owner, admitted, npc, first, "hi").await?,

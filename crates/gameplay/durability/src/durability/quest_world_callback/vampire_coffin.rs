@@ -180,7 +180,8 @@ async fn previous_spawn_ended(
 
 /// The hunt-stage writer determines the variant. For saves published before
 /// the exact death ID was stored, the character's later Count reward chest
-/// supplies the durable completion evidence.
+/// supplies the durable completion evidence. The ordinary Count uses the
+/// immutable corpse MINT receipt, whose definition key is its corpse item.
 pub(super) async fn pending_encounter(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
@@ -194,6 +195,13 @@ pub(super) async fn pending_encounter(
          AND r.quest_key=t.quest_key AND t.value=9 \
          AND NOT EXISTS (SELECT 1 FROM game_boss_death_settlements d \
                          WHERE d.world_id=c.world_id AND d.death_id=p.death_id) \
+         AND NOT EXISTS (SELECT 1 FROM game_item_mint_receipts m \
+                         WHERE m.death_world_id=c.world_id AND m.death_scope_key=p.spawn_scope \
+                           AND m.death_scope_ownership_generation=p.spawn_scope_generation \
+                           AND m.death_actor_local_id=p.spawn_actor_id \
+                           AND m.death_actor_local_generation=p.spawn_actor_generation \
+                           AND m.loot_table_production_key='oteryn:item.tibia.i8109' \
+                           AND m.loot_purpose_key='CORPSE_MATERIALIZATION') \
          AND (p.death_id IS NOT NULL OR NOT EXISTS ( \
              SELECT 1 FROM game_character_boss_reward_chests b \
              WHERE b.character_id=c.character_id AND b.world_id=c.world_id \

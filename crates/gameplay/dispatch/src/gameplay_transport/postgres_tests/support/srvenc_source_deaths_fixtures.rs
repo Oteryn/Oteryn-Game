@@ -356,6 +356,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     let kicked_by_leader = mode == "nomad_excludes_member_kicked_by_leader";
     let shared_xp_disabled = mode == "nomad_respects_leader_disabling_shared_xp";
     let remote_shared_xp_disabled = mode == "nomad_ignores_shared_xp_disabled_in_the_world_owner";
+    let enabled_after_death = mode == "nomad_shared_xp_enabled_after_death";
+    let disabled_after_death = mode == "nomad_shared_xp_disabled_after_death";
     let leader_changed_party = kicked_by_leader || shared_xp_disabled;
     let mut death_peers = Vec::new();
     let peer_source = if nomad || rule.creature.ends_with("_overlord") {
@@ -475,8 +477,15 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         )
         .bind(id(81).as_slice())
         .bind(owner.world_id.as_bytes().as_slice())
-        .bind(if leader_changed_party { death_peers[2].2 } else { id(41) }.as_slice())
-        .bind(!remote_shared_xp_disabled && !shared_xp_disabled)
+        .bind(
+            if leader_changed_party {
+                death_peers[2].2
+            } else {
+                id(41)
+            }
+            .as_slice(),
+        )
+        .bind(!remote_shared_xp_disabled && !shared_xp_disabled && !enabled_after_death)
         .execute(&mut *tx)
         .await?;
         let characters = std::iter::once(id(41))
@@ -638,7 +647,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     party_id: Some(id(81)),
                     revision: Some(1),
                     leader: Some(leader),
-                    shared_xp_enabled: true,
+                    shared_xp_enabled: !enabled_after_death,
                     members,
                     observed_database_micros: 1,
                 };
@@ -943,6 +952,12 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 sqlx::query(statement).execute(&h.pool).await?;
             }
         }
+        if enabled_after_death || disabled_after_death {
+            sqlx::query("UPDATE game_parties SET shared_xp_enabled=$1, revision=revision+1")
+                .bind(enabled_after_death)
+                .execute(&h.pool)
+                .await?;
+        }
         let drained = owner.drain_kill_rewards(drain_session).await;
         if drained != DrainOutcome::Drained {
             let roots: Vec<(String, String)> = sqlx::query_as(
@@ -1080,6 +1095,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     || left_party
                     || shared_xp_disabled
                     || remote_shared_xp_disabled
+                    || enabled_after_death
                     || (kicked_by_leader && index == 1)
                 {
                     Some(before)
@@ -1160,6 +1176,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     || left_party
                     || shared_xp_disabled
                     || remote_shared_xp_disabled
+                    || enabled_after_death
                 {
                     0
                 } else if mode == "overlordcr_seventeen" {

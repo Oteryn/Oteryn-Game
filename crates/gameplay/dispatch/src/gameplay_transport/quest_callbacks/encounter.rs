@@ -248,6 +248,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         };
         let count = *count;
+        // Once this ID is sent to PostgreSQL, an uncertain commit must never
+        // let a different creature inherit it from the original carrier.
+        if staged.native.retain_spawn_generation(count).is_err() {
+            return UseDisposition::Rejected;
+        }
         let native = &mut staged.native;
         let delivery = self
             .root
@@ -263,10 +268,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 move |previous| native.retains_creature(previous),
             )
             .await;
-        let published = matches!(delivery, Ok(true));
-        if published {
-            self.publish_staged_encounter(staged, states, map, coffin, Some(reservation));
-        }
         #[cfg(test)]
         let delivery = if matches!(delivery, Ok(true))
             && self
@@ -279,15 +280,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             delivery
         };
-        if published {
-            if let Err(error) = delivery {
-                eprintln!("COFFIN_DELIVERY_ACK_UNCONFIRMED {error:?}");
-            }
+        if matches!(delivery, Ok(true)) {
+            self.publish_staged_encounter(staged, states, map, coffin, Some(reservation));
             UseDisposition::Committed
         } else {
-            // A definite refusal leaves the payment available for a fresh use.
-            if matches!(delivery, Ok(false))
-                && let Ok(mut pending) = self.states.quest_callbacks.records.lock()
+            // The payment is durable. A fresh use may recover it after an
+            // abandoned delivery, including when its identity write committed.
+            if matches!(
+                delivery,
+                Ok(false) | Err(crate::durability::DurabilityError::CommitOutcomeUnknown)
+            ) && let Ok(mut pending) = self.states.quest_callbacks.records.lock()
             {
                 pending.remove(&session);
             }

@@ -59,7 +59,10 @@ pub(super) async fn settle(
             && oteryn_gameplay_quests::quest::source_deaths::rule(&recipient.death.transition)
                 .is_some_and(|rule| rule.top_damage_party)
     };
-    if frozen.source_party.get().is_none() && frozen.native.iter().any(needs_peer_admission) {
+    if frozen.source_party.get().is_none()
+        && frozen.native.iter().any(needs_peer_admission)
+        && let Some(party_at_death) = frozen.source_party_at_death
+    {
         let party = match owner.current_quest_fence(principal.session).await {
             Ok(Some(fence))
                 if fence.character_id.as_bytes() == principal.character.as_bytes()
@@ -75,6 +78,7 @@ pub(super) async fn settle(
                         owner.holder,
                         fence.item_fence(),
                         entry.facts.died_at_unix_ms,
+                        party_at_death,
                     )
                     .await
                 else {

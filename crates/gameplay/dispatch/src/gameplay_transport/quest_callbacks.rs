@@ -177,6 +177,9 @@ fn callbacks() -> &'static [Callback] {
 }
 // A shared native station may author disjoint stages. The session copy selects
 // a candidate only; the durable Quest owner rechecks every gate before effects.
+const EROTH_AUTHORED_MIRROR: &str = "oteryn:quest-callback/to-blind-the-enemy/mirror";
+const EROTH_LEGACY_MIRROR: &str = "oteryn:quest-callback/elvenbane-mirror-crystal";
+
 fn unique_eligible<'a>(
     candidates: impl IntoIterator<Item = &'a Callback>,
     tracks: &std::collections::BTreeMap<String, i64>,
@@ -194,17 +197,19 @@ fn unique_eligible<'a>(
     if eligible.next().is_some() {
         return None;
     }
-    // These are two source bindings for the same skull sacrifice. The authored
-    // route adds its story proof once eligible. Earlier players keep the old route.
+    // Each pair shares a source object. Use the authored route when both stages
+    // are eligible, matching the NPC owners' choice for an active authored journey.
     match (selected.key.as_str(), other.key.as_str()) {
         (
             "oteryn:quest-callback/paradox-skulls",
             "oteryn:quest-callback/paradox-tower/native-skulls",
-        ) => Some(other),
+        )
+        | (EROTH_LEGACY_MIRROR, EROTH_AUTHORED_MIRROR) => Some(other),
         (
             "oteryn:quest-callback/paradox-tower/native-skulls",
             "oteryn:quest-callback/paradox-skulls",
-        ) => Some(selected),
+        )
+        | (EROTH_AUTHORED_MIRROR, EROTH_LEGACY_MIRROR) => Some(selected),
         _ => None,
     }
 }
@@ -331,6 +336,15 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         return false;
     }
     if let Some(binding) = &callback.selector.native {
+        // Eroth's authored route shares the donor crystal's retained AID with
+        // the legacy route. Require the exact source action and native placement.
+        let eroth_crystal = callback.key == EROTH_AUTHORED_MIRROR
+            && callback.selector.action.is_some_and(|action| {
+                map.facts
+                    .quest_callback_matches(key, None, Some(action), Some(binding.appearance))
+            })
+            && !map.facts.house_tile(pos)
+            && !map.facts.base_hidden(key);
         let matched = tile(binding.position) == pos
             && ordinal == binding.ordinal
             && map
@@ -346,8 +360,10 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                         .map(|(id, _)| *id)
                 })
                 .is_some_and(|id| {
-                    map.facts
-                        .quest_callback_native_object(key, id, binding.appearance)
+                    eroth_crystal
+                        || map
+                            .facts
+                            .quest_callback_native_object(key, id, binding.appearance)
                 });
         // Counterpart adapters retain a separately authoritative legacy route.
         // Native-only selectors must never become an unconstrained fallback.

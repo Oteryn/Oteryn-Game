@@ -22,6 +22,12 @@ fn nomad_ignores_shared_xp_disabled_in_the_world_owner() -> TestResult {
 }
 
 #[test]
+fn ctrain_two_nomad_uses_shared_xp_at_death() -> TestResult {
+    scenario("nomad_shared_xp_disabled_after_death", "nomad")?;
+    scenario("nomad_shared_xp_enabled_after_death", "nomad")
+}
+
+#[test]
 fn inquisition_coffin_does_not_replace_a_live_count_after_losing_local_reservation() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -37,4 +43,19 @@ fn inquisition_coffin_does_not_replace_a_live_count_after_losing_local_reservati
             false,
         )
     })
+}
+
+#[test]
+fn ctrain_two_coffins_recover_paid_count_after_unknown_delivery_commit() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    use super::inquisition_coffin_recovery_fixtures::{FOREIGN_GENERATION, RESTART};
+    for name in [RESTART, FOREIGN_GENERATION] {
+        super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
+            let trigger = fixture::callback(name)?.selector.position.ok_or("coffin")?;
+            fixture::scenario(&format!("{name}#lost_delivery_ack"), trigger, false)
+        })?;
+    }
+    Ok(())
 }

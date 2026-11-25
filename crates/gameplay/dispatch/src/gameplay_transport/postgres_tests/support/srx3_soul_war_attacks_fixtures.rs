@@ -36,7 +36,9 @@ pub(super) async fn actual_source_suffix(
     // Purple's 35-Think attack clock gives the 2 s ordinary spells and the
     // 7 s source callback only two shared phases per cycle. Sample several
     // cycles because repinning the native artifact changes both chance draws.
-    'turns: for turn in 0..210_u64 {
+    // Leave enough shared phases for a real hit and a source cast under a new pin.
+    const MAX_SEARCH_TURNS: u64 = 35 * 28;
+    'turns: for turn in 0..MAX_SEARCH_TURNS {
         let now = start
             .checked_add(turn.checked_mul(7_000_000).ok_or("native turn interval")?)
             .ok_or("native turn time")?;

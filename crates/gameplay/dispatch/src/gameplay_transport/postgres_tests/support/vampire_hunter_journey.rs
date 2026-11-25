@@ -62,7 +62,11 @@ pub(super) async fn dust(
         owner,
         fence.item_fence(),
         &Offering {
-            position: Position { x: 33294, y: 31677, floor: -15 },
+            position: Position {
+                x: 33294,
+                y: 31677,
+                floor: -15,
+            },
             item: "oteryn:item.tibia.i5905".into(),
             count: 20,
         },
@@ -70,7 +74,9 @@ pub(super) async fn dust(
         true,
     )
     .await?;
-    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     let first = admitted.continuity.next_command_id;
     for (offset, (word, expected)) in [
         ("hi", None),
