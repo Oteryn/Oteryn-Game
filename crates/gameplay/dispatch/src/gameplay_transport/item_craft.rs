@@ -586,7 +586,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return disposition(UseDisposition::Rejected);
         }
         let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
-        let affects_ground = sculpture_ground.is_some();
+        // Invalidate even when the write's reply is lost or the task is
+        // cancelled. The next projection waits for the physical owner.
+        let ground_change = sculpture_ground
+            .as_ref()
+            .map(|_| self.states.loop_ground.sculpture_change());
         let result = if let Some(ground) = sculpture_ground {
             self.root
                 .craft_item_on_ground(
@@ -615,9 +619,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
         }
         .ok()??;
-        if result == UseDisposition::Committed && affects_ground {
-            self.states.loop_ground.invalidate();
-        }
+        drop(ground_change);
         drop(_permit);
         if result == UseDisposition::Committed {
             self.refresh_terrain_tools().await;

@@ -372,6 +372,7 @@ enum SculptureSetup {
     FullBackpackDirectMaterial,
     NestedTool,
     Dropped,
+    DroppedIceLostAck,
     FullBackpack,
     Overweight,
     Offered,
@@ -434,6 +435,11 @@ fn review_nested_sculpture_tool_commits() -> TestResult {
 #[test]
 fn review_dropped_sculpture_material_commits() -> TestResult {
     run_gathering_at(5942, 10426, None, Some(10429), true, false, SculptureSetup::Dropped)
+}
+
+#[test]
+fn dropped_ice_browse_reconciles_lost_sculpture_ack() -> TestResult {
+    run_gathering_at(5908, 7441, Some(7442), None, true, false, SculptureSetup::DroppedIceLostAck)
 }
 
 #[test]
@@ -515,7 +521,7 @@ fn gathering_scenario(
     );
     let dropped = matches!(
         setup,
-        SculptureSetup::Dropped | SculptureSetup::FullBackpackNestedDropped
+        SculptureSetup::Dropped | SculptureSetup::FullBackpackNestedDropped | SculptureSetup::DroppedIceLostAck
     );
     let carried = nested
         || matches!(
@@ -703,14 +709,15 @@ fn gathering_scenario(
                 // Moving an instance target out of the main backpack frees a slot.
                 entries.resize(20 + usize::from(item_target), ("oteryn:item.tibia.i3031", 1));
             }
-            SculptureSetup::ObtainBag => entries.push((bag, 1)),
+            SculptureSetup::ObtainBag => entries.extend([(bag, 1), (bag, 1)]),
             SculptureSetup::FullBackpackQuiver | SculptureSetup::FullBackpackConfiguredQuiver => {
                 entries.push(("oteryn:item.tibia.i35562", 1));
                 entries.resize(20, ("oteryn:item.tibia.i3031", 1));
             }
             SculptureSetup::FullBackpack | SculptureSetup::FullBackpackDirectMaterial => entries.resize(20, ("oteryn:item.tibia.i3031", 1)),
             SculptureSetup::Overweight => entries.resize(10, ("oteryn:item.tibia.i3578", 100)),
-            SculptureSetup::NestedMaterial | SculptureSetup::ConfiguredObtain | SculptureSetup::NestedTool => entries.push((bag, 1)),
+            SculptureSetup::ConfiguredObtain => entries.extend([(bag, 1), (bag, 1)]),
+            SculptureSetup::NestedMaterial | SculptureSetup::NestedTool => entries.push((bag, 1)),
             _ => {}
         }
         let source_handle = if (fallback && !carried)
@@ -726,13 +733,6 @@ fn gathering_scenario(
             2
         };
         super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
-        if matches!(setup, SculptureSetup::ObtainBag | SculptureSetup::ConfiguredObtain | SculptureSetup::FullBackpackConfiguredQuiver) {
-            sqlx::query("INSERT INTO game_character_quick_loot_settings
-                (character_id,unassigned_container_id,committed_character_revision)
-                SELECT character_id,encode($1,'hex')::uuid,character_revision FROM game_character_roots
-                WHERE character_id=encode($2,'hex')::uuid")
-                .bind(id(73).as_slice()).bind(id(41).as_slice()).execute(&harness.pool).await?;
-        }
         if nested {
             let item = if setup == SculptureSetup::NestedTool { 71 } else { 72 };
             let mut tx = harness.pool.begin().await?;
@@ -767,6 +767,59 @@ fn gathering_scenario(
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
                 .ok_or("craft offer selectable")?;
+        let (consumer, clock, activation, _) =
+            crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+        let premium = crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+            consumer, Some(clock), Some(activation.clone()), Some(harness.root.clone()),
+        );
+        if matches!(setup, SculptureSetup::ObtainBag | SculptureSetup::ConfiguredObtain | SculptureSetup::FullBackpackConfiguredQuiver) {
+            use oteryn_protocol_oteryn::quick_loot::{
+                QuickLootAction, QuickLootCategory, QuickLootRecipient, QuickLootRequest, encode_quick_loot_request,
+            };
+            harness.root.latch_premium_activation(
+                &activation.activation_id, activation.switch_over_us, activation.switch_over_us + 60_000_000,
+            ).await.map_err(debug)?;
+            owner.runtime.lock().await.bind_attacker_lease(
+                deps.actor,
+                admitted.game_session_id,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                    fence.character_lease_generation,
+                ).map_err(debug)?,
+            ).map_err(debug)?;
+            owner.premium_coordinator = Some(&premium);
+            owner.admit_premium(id(40), admitted.game_session_id);
+            admitted.continuity.selected_capabilities =
+                SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18, 98, 607])
+                    .ok_or("craft and Obtain offers selectable")?;
+            let request = |action, recipient, category| QuickLootRequest {
+                action,
+                corpse: None,
+                category,
+                recipient: Some(QuickLootRecipient::Container),
+                recipient_id: Some(id(recipient)),
+                fallback_to_main: false,
+                filter_mode: None,
+                filter_definition_ref: None,
+            };
+            let mut requests = vec![request(
+                QuickLootAction::AssignObtain, 73,
+                (setup == SculptureSetup::ConfiguredObtain).then_some(QuickLootCategory::Decoration),
+            )];
+            if setup != SculptureSetup::FullBackpackConfiguredQuiver {
+                requests.push(request(QuickLootAction::AssignLoot, 74, None));
+            }
+            let commands = requests.iter().map(|request| {
+                Ok((request.action.command_type(), encode_quick_loot_request(request).map_err(debug)?))
+            }).collect::<TestResult<Vec<_>>>()?;
+            let (replies, _) = super::parameter_spell_fixtures::exchange(
+                &owner, &mut admitted, &commands, false, false,
+            ).await?;
+            assert_eq!(replies.len(), commands.len());
+            for ((kind, _), (status, _)) in commands.iter().zip(&replies) {
+                assert_eq!(*status, crate::foundation::CommandStatus::Accepted, "quick-loot command {kind}");
+            }
+        }
         let mut placement = map.base().digest().to_vec();
         let target_pos = crate::map::overlay::TilePos {
             x: start.x + 1,
@@ -802,6 +855,24 @@ fn gathering_scenario(
                 assert_eq!(occupied, 20);
             }
         }
+        let observer = if setup == SculptureSetup::DroppedIceLostAck {
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&harness).await?;
+            let session = super::boss_rewards_fixtures::privacy::admit_gameplay_peer(
+                &harness, &evidence.evidence, 1,
+            ).await?;
+            let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+                harness.root.clone(),
+            ).current_session_at(session).await?.0;
+            let peer_fence = crate::gameplay_transport::item_fence_of(current).ok_or("observer fence")?;
+            let mut runtime = owner.runtime.lock().await;
+            let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+            let peer = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            let at = runtime.read_actor_position(deps.actor).map_err(debug)?.position();
+            runtime.initialize_pinned_test_position(peer, at).map_err(debug)?;
+            Some((peer, peer_fence))
+        } else {
+            None
+        };
         let intent = UseIntent {
             target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("source")?),
             use_with: None,
@@ -813,7 +884,7 @@ fn gathering_scenario(
             use_with_position: None,
         };
         // A pickup may already be prepared when the tool changes/removes the map item.
-        let mut stale_pickup = if target_id == 7441 && !carried {
+        let mut stale_pickup = if target_id == 7441 && !item_target {
             let definition = crate::gameplay_transport::item_look::typed_definition(
                 index,
                 reference(water).ok_or("ice")?,
@@ -862,11 +933,11 @@ fn gathering_scenario(
         );
         let started = std::time::Instant::now();
         let session = admitted.game_session_id;
+        let command_id = admitted.continuity.next_command_id;
         // Resume after a valid prior handle history. The next inventory snapshot issues the
-        // carried tool at the third handle, as in the existing fishing fixture. Command 1
-        // remains the first command; only the server-issued view handles vary. The carried
+        // carried tool at the third handle, as in the existing fishing fixture. The carried
         // sculpture material is issued the second handle, ahead of the tool.
-        let counter = (0_u64..100_000)
+        let counter = (admitted.continuity.item_view.handle_counter..).take(100_000)
             .find(|counter| {
                 let mut candidate = intent.clone();
                 candidate.target = UseTarget::Item(
@@ -883,7 +954,7 @@ fn gathering_scenario(
                 let digest = Sha256::new()
                     .chain_update(b"oteryn.fishing.catch.v1")
                     .chain_update(session.as_bytes())
-                    .chain_update(1_u64.to_be_bytes())
+                    .chain_update(command_id.to_be_bytes())
                     .chain_update(&actual)
                     .finalize();
                 let mut occurrence = [0; 16];
@@ -905,7 +976,7 @@ fn gathering_scenario(
                 let roll = crate::gameplay_transport::item_craft::gathering_roll(
                     native.source_digest(),
                     session,
-                    1,
+                    command_id,
                     &actual,
                 )
                 .unwrap_or(0);
@@ -933,7 +1004,6 @@ fn gathering_scenario(
         }
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
         admitted.continuity.item_view.handle_counter = counter;
-        let command_id = 1;
         let (next, result, actual) = if nested || dropped || setup == SculptureSetup::Offered {
             use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey};
             if setup == SculptureSetup::Offered {
@@ -943,13 +1013,50 @@ fn gathering_scenario(
             }
             intent.target = UseTarget::Item(std::num::NonZeroU64::new(counter + source_handle).ok_or("source handle")?);
             let actual = encode_item_use_intent(&intent).map_err(debug)?;
-            let result = owner.use_craft(
+            let craft = owner.use_craft(
                 deps.actor,
                 UseCommand { game_session_id: session, command_id, item_fence: Some(fence) },
                 intent.clone(),
                 Some(ItemKey::Instance(id(71))),
                 Some(ItemKey::Instance(id(72))),
-            ).await.ok_or("sculpture dispatch returned no outcome");
+            );
+            let result = if let Some((peer, peer_fence)) = observer {
+                use crate::gameplay_transport::container_view::ContainerObservation;
+                let field = ItemKey::BrowseField {
+                    x: i32::from(target_pos.x),
+                    y: i32::from(target_pos.y),
+                    floor: -i16::from(target_pos.floor),
+                };
+                let first = owner.observe_container(peer, Some(peer_fence), field).await;
+                let Some(ContainerObservation::BrowseField { entries, .. }) = first else {
+                    return Err("second session could not browse dropped ice".into());
+                };
+                assert!(entries.iter().any(|entry| entry.key == ItemKey::Instance(id(72))));
+                assert!(crate::durability::item_craft::lose_ground_sculpture_ack(craft).await.is_none());
+                assert_eq!(
+                    sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
+                        .fetch_one(&harness.pool).await?,
+                    1,
+                    "only the acknowledgement was lost",
+                );
+                if owner.root.has_ready_demand() {
+                    owner.root.maintain_ready_once().await.map_err(debug)?;
+                }
+                let observed = owner.observe_container(peer, Some(peer_fence), field).await;
+                let Some(ContainerObservation::BrowseField { entries, .. }) = observed else {
+                    return Err("second session could not browse after lost acknowledgement".into());
+                };
+                assert!(!entries.iter().any(|entry| entry.key == ItemKey::Instance(id(72))));
+                assert!(entries.iter().any(|entry| entry.appearance_id == 7442));
+                let (_, replay, _) = exchange(&owner, admitted, command_id, &actual, None).await?;
+                assert_eq!(replay, UseDisposition::Committed);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return harness.cleanup().await;
+            } else {
+                craft.await
+            }.ok_or("sculpture dispatch returned no outcome");
             if setup == SculptureSetup::Offered {
                 assert_eq!(result?.disposition, UseDisposition::Rejected);
                 assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records").fetch_one(&harness.pool).await?, 0);

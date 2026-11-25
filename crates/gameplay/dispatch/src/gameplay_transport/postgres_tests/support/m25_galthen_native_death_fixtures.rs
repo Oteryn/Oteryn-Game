@@ -321,6 +321,8 @@ async fn assert_mitmah_reward_grant_boundary(
     sqlx::query("DROP TRIGGER reject_mitmah_award ON game_account_achievement_grant_requests")
         .execute(&h.pool)
         .await?;
+    // Discard the process-local kill queue before the successor's first drain.
+    *owner.states.attack.lock().await = Default::default();
     super::qengine_kill_stories_fixtures::drain_deaths(owner, admitted, &[]).await?;
     assert_eq!(rewards().await?, settled, "grant retry cannot duplicate death rewards");
     assert_eq!(

@@ -596,6 +596,7 @@ impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
 
 #[derive(Debug, Default)]
 struct CacheState {
+    synchronize_sculpture: bool,
     epoch: u64,
     current: Option<Arc<LoopGroundOverlay>>,
     cask_collision: Option<CaskCollisionPin>,
@@ -628,7 +629,24 @@ impl Drop for GroundChange<'_> {
     }
 }
 
+/// A failed or cancelled write may still commit Ground custody.
+pub(super) struct SculptureGroundChange<'a>(&'a LoopGroundCache);
+
+impl Drop for SculptureGroundChange<'_> {
+    fn drop(&mut self) {
+        if let Ok(mut state) = self.0.state.lock() {
+            state.synchronize_sculpture = true;
+            state.epoch = state.epoch.wrapping_add(1);
+            state.current = None;
+        }
+    }
+}
+
 impl LoopGroundCache {
+    pub(super) fn sculpture_change(&self) -> SculptureGroundChange<'_> {
+        SculptureGroundChange(self)
+    }
+
     /// A drop or pickup may have changed the Ground: the next read rebuilds.
     pub fn invalidate(&self) {
         if let Ok(mut state) = self.state.lock() {
@@ -686,11 +704,17 @@ impl LoopGroundCache {
         }
     }
 
-    fn cached(&self) -> (u64, Option<Arc<LoopGroundOverlay>>) {
+    fn cached(&self) -> (u64, Option<Arc<LoopGroundOverlay>>, bool) {
         self.state
             .lock()
-            .map(|state| (state.epoch, state.current.clone()))
-            .unwrap_or((0, None))
+            .map(|state| {
+                (
+                    state.epoch,
+                    state.current.clone(),
+                    state.synchronize_sculpture,
+                )
+            })
+            .unwrap_or((0, None, false))
     }
 
     fn store(&self, epoch: u64, built: &Arc<LoopGroundOverlay>) {
@@ -698,6 +722,7 @@ impl LoopGroundCache {
             && state.epoch == epoch
         {
             state.current = Some(built.clone());
+            state.synchronize_sculpture = false;
         }
     }
 }
@@ -817,7 +842,7 @@ pub async fn loop_ground(
             ),
         )
     };
-    let (epoch, cached) = admission.states.loop_ground.cached();
+    let (epoch, cached, synchronize_sculpture) = admission.states.loop_ground.cached();
     if let Some(cached) = cached.filter(|cached| {
         cached.field_pin == field_pin
             && cached.overlay.runtime_scope() == scope
@@ -827,7 +852,16 @@ pub async fn loop_ground(
     }
     let index = index?;
     let items = projection_read(
-        || admission.root.read_item_loop_ground_for_scope(scope),
+        || async {
+            if synchronize_sculpture {
+                admission
+                    .root
+                    .read_item_loop_ground_after_sculpture(scope)
+                    .await
+            } else {
+                admission.root.read_item_loop_ground_for_scope(scope).await
+            }
+        },
         |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
     )
     .await?;

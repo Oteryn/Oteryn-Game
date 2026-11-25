@@ -74,6 +74,15 @@ enum CraftVariant<'a, 'attempt> {
     Sculpture(sculpture::GroundContext<'a>),
 }
 
+#[cfg(feature = "test-support")]
+tokio::task_local! { static LOSE_GROUND_SCULPTURE_ACK: (); }
+
+/// Simulate an acknowledgement lost after the real sculpture COMMIT.
+#[cfg(feature = "test-support")]
+pub async fn lose_ground_sculpture_ack<T>(craft: impl std::future::Future<Output = T>) -> T {
+    LOSE_GROUND_SCULPTURE_ACK.scope((), craft).await
+}
+
 impl DurabilityRoot {
     /// Probe or commit a basic cooking command. A probe needs no current handles or station;
     /// an exact historical receipt is returned before live custody checks after a restart.
@@ -263,6 +272,10 @@ impl DurabilityRoot {
                 return Ok(Some(UseDisposition::Rejected));
             };
             let variant = if let Some(operand) = ground.as_ref() {
+                // Serialize the next Ground read with this transaction,
+                // including when the command's COMMIT outcome is unknown.
+                super::spell_item_transaction::lock_ground_scope(&mut tx, fence.runtime_scope)
+                    .await?;
                 CraftVariant::Sculpture(sculpture::GroundContext {
                     operand, recovery: &record, node: &node,
                 })
@@ -277,7 +290,13 @@ impl DurabilityRoot {
             if result == UseDisposition::Committed {
                 if let Some(window) = context.2.as_mut() {
                     super::pvp_live::commit_live_pvp_transaction(tx.into_inner(), deadline, window).await?;
-                } else { tx.commit(deadline).await?; }
+                } else {
+                    tx.commit(deadline).await?;
+                    #[cfg(feature = "test-support")]
+                    if ground.is_some() && LOSE_GROUND_SCULPTURE_ACK.try_with(|()| ()).is_ok() {
+                        return Err(DurabilityError::CommitOutcomeUnknown);
+                    }
+                }
             }
             Ok(Some(result))
         })).await

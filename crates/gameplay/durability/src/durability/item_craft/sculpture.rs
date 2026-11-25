@@ -137,23 +137,18 @@ pub(super) async fn nested_marble_destination<C: ItemLoopContent>(
 ) -> Result<Option<(String, u64)>, DurabilityError> {
     use oteryn_gameplay_items::quick_loot::Recipient;
 
-    let settings = super::super::character_quick_loot::load(tx, character.as_bytes()).await?;
-    let key = &output.production_key;
-    let managed = if settings.accept_only {
-        settings.accepted_items.is_empty() || settings.accepted_items.contains(key)
-    } else {
-        !settings.skipped_items.contains(key)
-    };
+    let targets = super::super::character_quick_loot::load_obtain(tx, character.as_bytes()).await?;
     let main: [u8; 16] = backpack.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
     let target = |recipient| match recipient {
         Recipient::Container(id) => Some(id),
         Recipient::MainContainer => Some(main),
         Recipient::GoldPouch(_) => None,
     };
-    let category = managed
-        .then(|| settings.category_targets.get(&content.loot_category(output)).copied().and_then(target))
-        .flatten();
-    let unassigned = managed.then(|| target(settings.unassigned_target)).flatten();
+    let category = super::super::item_loop_move::preferred_category(content, output, |category| {
+        targets.contains_key(&Some(category))
+    });
+    let category = targets.get(&Some(category)).copied().and_then(target);
+    let unassigned = targets.get(&None).copied().and_then(target);
     if main_has_room && category.or(unassigned).is_none_or(|id| id == main) {
         return Ok(None);
     }
@@ -180,14 +175,13 @@ pub(super) async fn nested_marble_destination<C: ItemLoopContent>(
                 i.definition_family, i.definition_production_key, i.definition_revision_ref
            FROM tree JOIN game_item_instances i ON i.item_instance_id=tree.item CROSS JOIN preferred
           WHERE i.lifecycle=1
-          ORDER BY CASE WHEN preferred.item=ANY(path) THEN 0 WHEN $4 THEN 1 ELSE 2 END,
-                   CASE WHEN preferred.item=ANY(path) OR $4 THEN 0 ELSE cardinality(ordinals) END,
+          ORDER BY CASE WHEN preferred.item=ANY(path) THEN 0 ELSE 1 END,
+                   CASE WHEN preferred.item=ANY(path) THEN 0 ELSE cardinality(ordinals) END,
                    ordinals LIMIT 501",
     )
     .bind(backpack)
     .bind(category.as_ref().map(<[u8; 16]>::as_slice))
     .bind(unassigned.as_ref().map(<[u8; 16]>::as_slice))
-    .bind(managed && settings.fallback_to_main)
     .fetch_all(&mut ***tx)
     .await?;
     for row in rows {

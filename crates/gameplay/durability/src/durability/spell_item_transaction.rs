@@ -1076,6 +1076,14 @@ async fn lock_runtime_items(
     scope: crate::foundation::RuntimeScopeRefV1,
 ) -> Result<()> {
     permit.check_scope(scope)?;
+    lock_ground_scope(tx, scope).await?;
+    Ok(())
+}
+
+pub(super) async fn lock_ground_scope(
+    tx: &mut Transaction<'_, Postgres>,
+    scope: crate::foundation::RuntimeScopeRefV1,
+) -> std::result::Result<(), sqlx::Error> {
     match scope {
         crate::foundation::RuntimeScopeRefV1::Channel {
             world_id,

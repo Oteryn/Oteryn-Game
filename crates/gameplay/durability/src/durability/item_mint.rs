@@ -1102,6 +1102,7 @@ impl DurabilityRoot {
                 top_damage_character_id,
                 boss,
                 None,
+                None,
             )
             .await?;
         outcomes.pop().ok_or(ItemMintError::InvalidInput)
@@ -1123,6 +1124,7 @@ impl DurabilityRoot {
         top_damage_character_id: [u8; 16],
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
         tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
+        achievement: Option<(crate::foundation::CreatureDeathOccurrenceKey, super::account_achievement::BossDeathAchievementWork)>,
     ) -> Result<Vec<ItemMintOutcome>> {
         self.commit_kill_loot_mints_inner(
             permit,
@@ -1133,6 +1135,7 @@ impl DurabilityRoot {
             Some(top_damage_character_id),
             boss,
             tutorial_corruptor,
+            achievement,
             None,
         )
         .await
@@ -1155,6 +1158,7 @@ impl DurabilityRoot {
                 node,
                 candidate,
                 &mut [],
+                None,
                 None,
                 None,
                 None,
@@ -1184,6 +1188,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
             Some(source),
         )
         .await
@@ -1203,6 +1208,7 @@ impl DurabilityRoot {
         top_damage_character_id: Option<[u8; 16]>,
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
         tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
+        achievement: Option<(crate::foundation::CreatureDeathOccurrenceKey, super::account_achievement::BossDeathAchievementWork)>,
         source: Option<source_death::SourceCorpseMintProof<'_>>,
     ) -> Result<Vec<ItemMintOutcome>> {
         if candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY {
@@ -1296,6 +1302,16 @@ impl DurabilityRoot {
                         _ => true,
                     }
                 })
+            {
+                return Err(ItemMintError::InvalidInput);
+            }
+        }
+        if let Some((death, _)) = &achievement {
+            let cause = candidate.request.cause.death;
+            if death.runtime_scope() != cause.runtime_scope
+                || death.scope_ownership_generation() != cause.scope_ownership_generation
+                || death.actor_local_id() != cause.actor_local_id
+                || death.actor_local_generation() != cause.actor_local_generation
             {
                 return Err(ItemMintError::InvalidInput);
             }
@@ -1509,6 +1525,9 @@ impl DurabilityRoot {
                     if let Some(claim) = &tutorial_corruptor {
                         super::tutorial_corruptor::consume_in_transaction(&mut tx, &node, claim)
                             .await?;
+                    }
+                    if let Some((death, work)) = achievement {
+                        work.retain(&mut tx, death).await?;
                     }
                     let committed = CommittedItemMint {
                         transaction_id: frozen.transaction_id,

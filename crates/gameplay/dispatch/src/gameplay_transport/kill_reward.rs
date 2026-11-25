@@ -32,7 +32,7 @@ use crate::combat::{
 use crate::content::character_progression_content::CHARACTER_EXPERIENCE_TABLE_LEVELS;
 use crate::content::creature_reward::{CreatureRewardRow, CreatureRewardTable};
 use crate::durability::account_achievement::{
-    BossDeathAchievementRecipient, BossDeathAchievements,
+    BossDeathAchievementRecipient, BossDeathAchievementWork, BossDeathAchievements,
 };
 use crate::durability::bestiary_progress::{BestiaryKillOutcome, BestiaryProgressError};
 use crate::durability::character_progression::CharacterProgressionError;
@@ -208,6 +208,21 @@ pub(super) fn tracks_native_progression(creature: &str) -> bool {
 }
 
 impl PendingKillSettlement {
+    pub(super) async fn retain_boss_achievements_without_corpse(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        if self
+            .row
+            .as_ref()
+            .is_none_or(|row| row.corpse_item.is_none())
+            && let Some(achievement) = self.boss_achievements.as_ref()
+        {
+            achievement.work.retain(tx, self.facts.death).await?;
+        }
+        Ok(())
+    }
+
     pub(super) fn experience(&self) -> Option<oteryn_simulation_determinism::ExactI64> {
         self.soulpit_experience
             .or_else(|| self.row.as_ref().map(|row| row.xp_amount))
@@ -3272,9 +3287,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return DrainOutcome::Deferred;
         }
         for _ in 0..KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
-            let principal = match self.states.attack.lock().await.kills().ordered_principal() {
+            let principal = self.states.attack.lock().await.kills().ordered_principal();
+            let principal = match principal {
                 Ok(Some(principal)) => principal,
-                Ok(None) => return DrainOutcome::Drained,
+                Ok(None) => return self.reconcile_boss_achievement_queue().await,
                 Err(()) => return DrainOutcome::Deferred,
             };
             let fence = match self.current_quest_fence(principal.0).await {
@@ -3374,6 +3390,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             DrainOutcome::Drained
         }
     }
+    async fn reconcile_boss_achievement_queue(&self) -> DrainOutcome {
+        use std::sync::atomic::Ordering;
+        let reconciled = &self.states.boss_achievement_reconciled;
+        if reconciled.load(Ordering::Acquire) {
+            return DrainOutcome::Drained;
+        }
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return DrainOutcome::Deferred;
+        };
+        if reconciled.load(Ordering::Acquire) {
+            return DrainOutcome::Drained;
+        }
+        if self.states.attack.lock().await.kills().has_pending() {
+            return DrainOutcome::Deferred;
+        }
+        let binding = self.runtime.lock().await.binding();
+        for _ in 0..KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
+            match self
+                .root
+                .reconcile_boss_death_achievement(
+                    self.character,
+                    self.holder,
+                    binding.runtime_scope(),
+                    binding.scope_generation(),
+                )
+                .await
+            {
+                Ok(true) => {
+                    reconciled.store(true, Ordering::Release);
+                    return DrainOutcome::Drained;
+                }
+                Ok(false) => {}
+                Err(_) => return DrainOutcome::Deferred,
+            }
+        }
+        DrainOutcome::Deferred
+    }
+
     /// Drain earlier deaths even for a non-damaging shared member before its
     /// terminal release. A prior committing mark only reconciles its own outcome.
     pub(super) async fn seal_kill_rewards(&self, session: GameSessionId) -> KillRelease {
@@ -3451,8 +3505,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 #[derive(Debug)]
 struct BossAchievementSettlement {
-    boss: BossDeathAchievements,
-    recipients: Vec<BossDeathAchievementRecipient>,
+    work: BossDeathAchievementWork,
     // Once the rewards resolve, a grant-only retry does not need the live corpse.
     settled_rewards: OnceLock<SettleReport>,
 }
@@ -3509,8 +3562,7 @@ fn capture_boss_achievements(
         .collect();
     (!recipients.is_empty()).then(|| {
         Arc::new(BossAchievementSettlement {
-            boss,
-            recipients,
+            work: BossDeathAchievementWork { boss, recipients },
             settled_rewards: OnceLock::new(),
         })
     })
@@ -3569,13 +3621,16 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
                 .grant_boss_death_achievements(
                     self.admission.character,
                     self.admission.holder,
-                    achievement.recipients.clone(),
                     entry.facts.death,
-                    achievement.boss,
+                    achievement.work.clone(),
                 )
                 .await
                 .is_err()
         {
+            self.admission
+                .states
+                .boss_achievement_reconciled
+                .store(false, std::sync::atomic::Ordering::Release);
             report.verdict = SettleVerdict::Retry;
         }
         self.admission
@@ -4287,6 +4342,11 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         }
         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
             tutorial_corruptor,
+            boss_achievement: entry
+                .boss_achievements
+                .as_ref()
+                .filter(|_| party_xp.as_ref().is_none_or(boss_xp_settled))
+                .map(|achievement| achievement.work.clone()),
             corpse_item: row.corpse_item.clone(),
             loot_table_ref: row.loot_table_ref.clone(),
             loot_table,
