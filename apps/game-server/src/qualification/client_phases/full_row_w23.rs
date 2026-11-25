@@ -419,6 +419,18 @@ async fn travel_to_svargrond(
         })
         .ok_or("step=svargrond-travel Captain Bluebear not visible at his authored position")?
         .entity;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let grant = grant_w23_premium(&session);
+    tokio::pin!(grant);
+    loop {
+        tokio::select! {
+            outcome = &mut grant => {
+                outcome.map_err(|error| format!("step=boat-premium {error}"))?;
+                break;
+            }
+            result = client.service_liveness(Duration::from_millis(100)) => { result?; }
+        }
+    }
     captain_talk(
         client,
         actor,
@@ -433,10 +445,8 @@ async fn travel_to_svargrond(
         tokio::time::Instant::now() + Duration::from_secs(8),
     )
     .await?;
-    if !quote
-        .iter()
-        .any(|line| line.contains("Svargrond") && line.contains(&boat.price.to_string()))
-    {
+    let expected_quote = format!("Do you seek a passage to {} for {} gold?", boat.key, boat.price);
+    if !quote.iter().any(|line| line.eq_ignore_ascii_case(&expected_quote)) {
         return Err(
             format!("step=svargrond-travel missing destination and fare quote: {quote:?}").into(),
         );
@@ -501,12 +511,9 @@ async fn prepare_svargrond_travel(client: &mut DevClientSession, price: u64) -> 
         request_fixture_control(session.clone(), "--profile", "sorcerer".into())
             .await
             .map_err(|error| format!("step=levitate-eligibility {error}"))?;
-        request_fixture_control(session.clone(), "--profile", format!("item-3035-{coins}"))
+        request_fixture_control(session, "--profile", format!("item-3035-{coins}"))
             .await
             .map_err(|error| format!("step=boat-fare {error}"))?;
-        grant_w23_premium(&session)
-            .await
-            .map_err(|error| format!("step=boat-premium {error}"))?;
         Ok(())
     };
     tokio::pin!(prepare);
