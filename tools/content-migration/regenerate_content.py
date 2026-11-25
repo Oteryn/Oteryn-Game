@@ -160,6 +160,7 @@ CHECKS = (
         "tools/content-schema/world-object-authoring/spawn_map_ground.py",
         "--check",
     ],
+    ["python3", "tools/content-schema/world-object-authoring/crystal_delta_ground.py", "--check"],
     ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
@@ -184,6 +185,7 @@ CHECKS = (
         "tools/content-schema/world-object-authoring/feroxa_static.py",
         "--check",
     ],
+    ["python3", "tools/content-schema/world-object-authoring/crystal_spawn_ground.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/npc-authoring/convert_placements.py", "--check"],
     [
@@ -207,6 +209,7 @@ CHECKS = (
     ["python3", "tools/content-schema/validate_materialized_game_tree.py"],
     ["python3", "tools/content-schema/test_materialized_authored_props.py"],
     ["python3", "tools/content-census/item_key_references.py"],
+    ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     *(["python3", tool, "content", "--check"] for tool in AUTHORING_TOOLS),
     ["python3", "tools/content-schema/item-authoring/test_engine_items.py"],
     [
@@ -737,38 +740,6 @@ def literal(length: int, previous: str) -> str:
     return f"{length:_}" if "_" in previous or length >= 10_000 else str(length)
 
 
-def canonicalize_world() -> None:
-    """Serialize installed successors through the same typed writer used by recapture."""
-    with tempfile.TemporaryDirectory() as temp:
-        output = Path(temp) / "world"
-        run(
-            [
-                "cargo",
-                "run",
-                "--locked",
-                "-p",
-                "oteryn-game-server",
-                "--example",
-                "materialize_content_world_project_v2",
-                "--",
-                "--output-root",
-                str(output),
-                "--canonicalize-root",
-                str(WORLD),
-            ]
-        )
-        produced = sorted(
-            p.relative_to(output).as_posix() for p in output.rglob("*") if p.is_file()
-        )
-        expected = sorted(document_locators())
-        if produced != expected:
-            raise SystemExit(
-                f"canonical writer produced {produced}, expected {expected}"
-            )
-        for locator in produced:
-            shutil.copyfile(output / locator, WORLD / locator)
-
-
 def refresh_nomads_window(*, check: bool) -> None:
     profile_path = ROOT / NOMADS_WINDOW
     profile = json.loads(profile_path.read_bytes())
@@ -930,19 +901,17 @@ def source_cohort_extent(world: Path) -> dict[str, int | str]:
     }
 
 
-def refresh_source_cohort_extent() -> None:
-    """Keep strict native source bounds and repository fixtures at the exact cohort."""
-    measured = source_cohort_extent(WORLD)
+def rewrite_source_cohort_field(path: Path, pattern: str, replacement: str) -> None:
+    text, count = re.subn(pattern, replacement, path.read_text(encoding="utf-8"))
+    if count != 1:
+        raise SystemExit(f"{path.name}: expected one source-cohort field, found {count}")
+    path.write_text(text, encoding="utf-8", newline="\n")
 
-    def rewrite(path: Path, pattern: str, replacement: str) -> None:
-        text, count = re.subn(pattern, replacement, path.read_text(encoding="utf-8"))
-        if count != 1:
-            raise SystemExit(
-                f"{path.name}: expected one source-cohort field, found {count}"
-            )
-        path.write_text(text, encoding="utf-8", newline="\n")
 
-    catalogue = ROOT / "crates/gameplay/content/src/content/npc_catalogue.rs"
+def refresh_source_catalogue_limits(world: Path = WORLD, root: Path = ROOT) -> dict[str, int | str]:
+    """Size the typed writer for the exact staged cohort."""
+    measured = source_cohort_extent(world)
+    catalogue = root / "crates/gameplay/content/src/content/npc_catalogue.rs"
     catalogue_text = catalogue.read_text(encoding="utf-8")
     catalogue_text = re.sub(
         r"\bCW2_B1_FULL_ITEM_FAMILY_COUNT,\s*", "", catalogue_text, count=1
@@ -958,52 +927,22 @@ def refresh_source_cohort_extent() -> None:
         flags=re.DOTALL,
     )
     catalogue.write_text(catalogue_text, encoding="utf-8", newline="\n")
-    rewrite(
-        catalogue,
-        r"max_reference_records: [^,\n]+,",
-        f"max_reference_records: {measured['references']:_},",
-    )
-    rewrite(
-        catalogue,
-        r"max_import_records: [^,\n]+,",
-        f"max_import_records: {measured['sources']:_},",
-    )
-    for name, key in (
-        ("CREATURES", "creatures"),
-        ("CREATURE_RECORDS", "creature_records"),
-        ("CREATURE_PROFILES", "creature_profiles"),
-        ("NPC_RECORDS", "npc_records"),
-    ):
-        rewrite(
-            PIN_TEST,
-            rf"const {name}: usize = [\d_]+;",
-            f"const {name}: usize = {measured[key]:_};",
-        )
-    rewrite(
-        PIN_TEST,
-        r"max_import_records: [^,\n]+,",
-        f"max_import_records: {measured['sources']:_},",
-    )
-    rewrite(
-        PIN_TEST,
-        r"assert_eq!\(project\.imports\(\)\.len\(\), [\d_]+\);",
-        f"assert_eq!(project.imports().len(), {measured['imports']});",
-    )
-    rewrite(
-        PIN_TEST,
-        r"assert_eq!\(v2\.sources\.len\(\), [\d_]+\);",
-        f"assert_eq!(v2.sources.len(), {measured['sources']});",
-    )
-    for path, receiver in (
-        (PIN_TEST, "project"),
-        (ROOT / "apps/game-server/tests/content_npc_catalogue.rs", "catalogue"),
-    ):
-        rewrite(
-            path,
-            rf'({receiver}\.project_revision\(\),\s*")[^"]+("\s*\))',
-            rf"\g<1>{measured['project_revision']}\g<2>",
-        )
+    rewrite_source_cohort_field(catalogue, r"max_reference_records: [^,\n]+,", f'max_reference_records: {measured["references"]:_},')
+    rewrite_source_cohort_field(catalogue, r"max_import_records: [^,\n]+,", f'max_import_records: {measured["sources"]:_},')
+    return measured
 
+
+def refresh_source_cohort_extent(world: Path = WORLD, root: Path = ROOT) -> None:
+    """Keep the repository fixtures at the canonicalized source cohort."""
+    measured = refresh_source_catalogue_limits(world, root)
+    pin_test = root / PIN_PATH
+    for name, key in (("CREATURES", "creatures"), ("CREATURE_RECORDS", "creature_records"), ("CREATURE_PROFILES", "creature_profiles"), ("NPC_RECORDS", "npc_records")):
+        rewrite_source_cohort_field(pin_test, rf"const {name}: usize = [\d_]+;", f'const {name}: usize = {measured[key]:_};')
+    rewrite_source_cohort_field(pin_test, r"max_import_records: [^,\n]+,", f'max_import_records: {measured["sources"]:_},')
+    rewrite_source_cohort_field(pin_test, r"assert_eq!\(project\.imports\(\)\.len\(\), [\d_]+\);", f'assert_eq!(project.imports().len(), {measured["imports"]});')
+    rewrite_source_cohort_field(pin_test, r"assert_eq!\(v2\.sources\.len\(\), [\d_]+\);", f'assert_eq!(v2.sources.len(), {measured["sources"]});')
+    for path, receiver in ((pin_test, "project"), (root / "apps/game-server/tests/content_npc_catalogue.rs", "catalogue")):
+        rewrite_source_cohort_field(path, rf'({receiver}\.project_revision\(\),\s*")[^"]+("\s*\))', rf'\g<1>{measured["project_revision"]}\g<2>')
 
 def unresolved_worktree_paths() -> list[str]:
     """Workers resolve files without staging the coordinator's pending merge."""
@@ -1226,22 +1165,6 @@ def main() -> int:
         ]
     )
     materialize_world()
-    import questpc7_thaian_authoring
-
-    # install completes authoring through the native writer; no pins name staged Python bytes.
-    questpc7_thaian_authoring.install(ROOT)
-    from buddel_travel import install_buddel
-
-    install_buddel(ROOT, WORLD)
-    project_routes(ROOT, WORLD)
-    from native_world_canonicalization import install_trade_successors
-
-    install_trade_successors(ROOT, WORLD)
-    from regional_npc_prices import install as install_regional_npc_prices
-    install_regional_npc_prices(ROOT, WORLD)
-    from regional_npc_dialogue import install as install_regional_npc_dialogue
-    install_regional_npc_dialogue(ROOT, WORLD)
-    canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     run(["python3", "tools/content-schema/world-object-authoring/spawn_ground.py"])
     run(["python3", "tools/content-schema/world-authoring/scoped_spawn_ground.py"])
@@ -1262,13 +1185,9 @@ def main() -> int:
         "build_srx3_w01_prepare_death.py",
     ):
         run(["python3", native + name])
-    run(
-        [
-            "python3",
-            native + "build_srx3_soul_war_death_events.py",
-            "--refresh-native-pin",
-        ]
-    )
+    run(["python3", native + "build_srx3_soul_war_death_events.py", "--refresh-native-pin"])
+    run(["python3", "tools/content-schema/world-object-authoring/crystal_delta_ground.py"])
+    run(["python3", "tools/content-schema/world-object-authoring/crystal_spawn_ground.py"])
     run(["python3", "tools/content-schema/world-object-authoring/alawar_static.py"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
     run(["python3", "tools/content-schema/world-authoring/quest_startup_bindings.py", "--apply"])

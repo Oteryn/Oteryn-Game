@@ -1,4 +1,4 @@
-"""Refresh strict inventory pins for the exact, source-qualified Cake successor."""
+"""Refresh strict inventory pins for source-qualified Creature and raid additions."""
 import argparse
 from collections import Counter
 import json
@@ -6,14 +6,17 @@ from pathlib import Path
 import re
 
 import cake_native_successor as cake
+import crystal_creature_parity as crystal
+from cyclopedia_creatures import inventory as cyclopedia_inventory
 import raid_catalogue
+from crystal_spawn_creatures import KEYS as CRYSTAL_SPAWN_KEYS
 from world_project_v2_to_tree import CREATURE_FAMILIES, git_blob_sha
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def validate_inventory(root, rows, native, schedules):
-    """Retain main's exact cohort while qualifying the branch's one Thaian."""
+    """Validate each source cohort before repinning the combined inventory."""
     from questpc7_thaian_authoring import PACKET
     packet, _ = cake.read_canonical(root / PACKET)
     if packet['source']['page_id'] != 48123 or packet['source']['revision'] != 445240:
@@ -68,13 +71,73 @@ def validate_inventory(root, rows, native, schedules):
     extra_native += elemental_native
     extra_schedules += elemental_schedules
     from nrwicked_profiles import inventory_extension as nrwicked_inventory
-    nrwicked_native, nrwicked_schedules = nrwicked_inventory(root, native)
-    extra_native += nrwicked_native
+    _, nrwicked_schedules = nrwicked_inventory(root, native)
     extra_schedules += nrwicked_schedules
-    if (len(rows) - 1 != 1863 + 1 or len(native) != len(rows) + extra_native
-            or schedules - 1 != 7201 + 4 + extra_schedules):
+    additions, added_schedules, _, _ = cyclopedia_inventory(root, rows, native)
+    from crystal_spawn_creatures import qualify
+    reference = cake.read_project_document(root, 'definitions/reference.json')
+    _, _, _, delta = qualify(root, reference['records'])
+    crystal_keys = CRYSTAL_SPAWN_KEYS
+    crystal_rows = {row['definition']['identity']['key']: row for row in rows
+                    if row['definition']['identity']['key'] in crystal_keys}
+    crystal_native = {row['profile']['target']['key']: row for row in native
+                      if row['profile']['target']['key'] in crystal_keys}
+    if crystal_rows.keys() != crystal_keys or crystal_native.keys() != crystal_keys:
+        raise ValueError('Crystal placement Creature inventory is incomplete')
+    crystal_schedules = 0
+    crystal_attacks = Counter()
+    for creature in crystal_keys:
+        definition = delta.records['Creature', creature]
+        authoring = cake.source_profile(delta.profiles['Creature', creature])['data']
+        for field in ('abilities', 'resistances'):
+            if authoring['profile'].get(field) == []:
+                del authoring['profile'][field]
+        authoring['profile']['details'].setdefault('reference_level', None)
+        behavior = delta.profiles['Behavior', definition['behavior']['key']]
+        if (crystal_rows[creature]['definition'] != definition
+                or crystal_rows[creature]['authoring'] != authoring
+                or crystal_native[creature]['profile']['data'] != authoring
+                or crystal_native[creature]['behavior'] != behavior):
+            raise ValueError('Crystal placement Creature inventory changed: ' + creature)
+        schedule = behavior['data']['profile']
+        crystal_schedules += sum(len(schedule.get(key, [])) for key in ('attacks', 'defenses'))
+        for attack in schedule.get('attacks', []):
+            ability = delta.profiles['Ability', attack['ability']['key']]
+            crystal_attacks[ability['data']['profile']['details']['kind']] += 1
+    if crystal_schedules != 10:
+        raise ValueError('Crystal spawn schedule inventory')
+    packet, _ = crystal.read_packet(root)
+    canonical = {crystal.identity(row['definition']['identity']): row for row in rows}
+    active = {crystal.identity(row['profile']['target']): row for row in native}
+    prior = crystal.prior_cohort_keys(root)
+    parity_schedules = parity_creatures = 0
+    for entry in packet['definitions']:
+        key = crystal.identity(entry['identity'])
+        definition = next(row for row in entry['records'] if row['identity'] == entry['identity'])
+        authored = next(row for row in entry['profiles'] if row['target'] == definition['behavior'])
+        if (key not in active or key not in canonical
+                or canonical[key]['definition'] != definition
+                or canonical[key]['source_bindings'].count(entry['binding']) != 1):
+            raise ValueError(f'Crystal Creature inventory mismatch: {key}')
+        parity_creatures += key[1] not in prior
+        if key[1] in crystal.ACTIVE_ENCOUNTER_KEYS:
+            continue
+        if active[key]['behavior'] != authored:
+            raise ValueError(f'Crystal Creature Behavior inventory mismatch: {key}')
+        if key[1] not in prior:
+            parity_schedules += sum(len(authored['data']['profile'].get(group, []))
+                                    for group in ('attacks', 'defenses'))
+    for entry in packet['schedules']:
+        key = crystal.identity(entry['creature'])
+        behavior = active[key]['behavior']['data']['profile']
+        if behavior.get(entry['group'], []).count(entry['schedule']) != 1:
+            raise ValueError(f'Crystal schedule inventory mismatch: {key}')
+        parity_schedules += 1
+    if (len(rows) - 1 - additions - len(crystal_keys) != 1863 + 1 + parity_creatures
+            or len(native) != len(rows) + extra_native
+            or schedules - 1 - added_schedules - crystal_schedules != 7201 + 4 + extra_schedules + parity_schedules):
         raise ValueError('Non-seasonal canonical inventory changed; review its source first')
-    return 1
+    return 1, crystal_attacks
 
 
 def generated(root):
@@ -101,7 +164,8 @@ def generated(root):
         raise ValueError('Cake source schedule inventory')
     schedules = sum(len(row['behavior']['data']['profile'].get(key, []))
                     for row in native for key in ('attacks', 'defenses'))
-    thaian_melee = validate_inventory(root, rows, native, schedules)
+    thaian_melee, crystal_attacks = validate_inventory(root, rows, native, schedules)
+    _, _, cyclopedia_melee, cyclopedia_spells = cyclopedia_inventory(root, rows, native)
     from engenc_elemental_profiles import inventory_extension as elemental_inventory
     elemental_native, _ = elemental_inventory(native)
     result = {}
@@ -121,18 +185,43 @@ def generated(root):
     # Greater Fire adds two CreateItem occurrences; Greater Energy adds none.
     # Their exact, source-qualified two-profile cohort adds two occurrences.
     # Keep the source-census assertion exact for that complete cohort.
+    source_item_additions = sum(
+        entry.get('owner') == 'source_item'
+        for entry in crystal.read_packet(root)[0]['schedules']
+    )
     replace('crates/gameplay/content/src/content/native_gameplay.rs',
             r'assert_eq!\(\(create, remove\), \([0-9_]+, [0-9_]+\)\);',
-            f'assert_eq!((create, remove), ({62 + elemental_native}, 20));')
-    # Crystal cake_golem.lua:77-81 adds one melee and two native spell slots.
-    # Keep the pre-existing unsupported set at116: no new source gap is admitted.
+            f'assert_eq!((create, remove), ({62 + elemental_native}, {20 + source_item_additions}));')
+    parity, _ = crystal.read_packet(root)
+    counts = Counter()
+    abilities = {crystal.identity(row['target']): row['data']['profile'].get('details')
+                 for row in declarations['authoring_profiles'] if row['target']['family'] == 'Ability'}
+    prior = crystal.prior_cohort_keys(root)
+    for entry in parity['definitions']:
+        if entry['identity']['key'] in prior:
+            continue
+        body = next(row['data']['profile'] for row in entry['profiles']
+                    if row['target']['family'] == 'Behavior')
+        for attack in body.get('attacks', []):
+            details = abilities[crystal.identity(attack['ability'])]
+            counts[details['kind']] += 1
+    for entry in parity['schedules']:
+        if entry['group'] != 'attacks':
+            continue
+        if entry.get('owner') == 'source_item':
+            counts['SourceItem'] += 1
+        else:
+            counts['Spell'] += 1
+
+    # The generic spell constructor intentionally leaves source Item casts to
+    # their existing Item owner. The parser census still counts those slots.
     path = 'crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane.rs'
     replace(path, r'\("melee:Ok\(\(\)\)", [0-9_]+\)',
-            f'("melee:Ok(())", {1689 + 1 + thaian_melee})')
+            f'("melee:Ok(())", {1689 + 1 + thaian_melee + counts["Melee"] + cyclopedia_melee + crystal_attacks["Melee"]})')
     replace(path, r'\("spell:Ok\(\(\)\)", [0-9_]+\)',
-            f'("spell:Ok(())", {4198 + len(behavior["attacks"]) - 1})')
-    if '("spell:Err(UnsupportedShape)", 116)' not in result[path]:
-        raise ValueError('Existing native source gap pin changed')
+            f'("spell:Ok(())", {4198 + len(behavior["attacks"]) - 1 + counts["Spell"] + cyclopedia_spells + crystal_attacks["Spell"]})')
+    replace(path, r'\("spell:Err\(UnsupportedShape\)", [0-9_]+\)',
+            f'("spell:Err(UnsupportedShape)", {116 + counts["SourceItem"]})')
 
     # Crystal cake_golem.lua:11-19: [2,3,5],30 => easy / very rare.
     histogram = Counter()
@@ -160,7 +249,9 @@ def generated(root):
         raise ValueError('Regenerate the source-qualified raid index first')
     raids = json.loads(outputs[raid_catalogue.CATALOGUE])['records']
     active = sum(row['active'] for row in raids)
-    if len(raids) != 239 + 1 or active != 136 + 1:
+    held = raid_catalogue.GLOBAL_RAID_HOLDS.keys() | raid_catalogue.HALLOWEEN.keys()
+    inactive = {row['key'] for row in raids if not row['active']}
+    if len(raids) != 239 + 1 or active != 138 or not held <= inactive:
         raise ValueError('Non-seasonal raid inventory changed; review its source first')
     path = 'crates/gameplay/encounter-rules/src/raid/catalogue.rs'
     replace(path, r'assert_eq!\(catalogue.records\(\).len\(\), [0-9_]+\);',

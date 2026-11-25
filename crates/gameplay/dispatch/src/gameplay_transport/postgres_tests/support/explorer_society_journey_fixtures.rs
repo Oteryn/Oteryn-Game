@@ -27,7 +27,8 @@ const QUEST: &str = "oteryn:quest.the_explorer_society_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u7_6/explorer_society/";
 const ANGUS: Position = position(32670, 32730, -7);
 const UZGOD: Position = position(32664, 31894, -9);
-const MAX: Position = position(32298, 32895, -6);
+// The authored placement keeps the ferry's return cell at (32298, 32895) open.
+const MAX: Position = position(32298, 32896, -6);
 const CALASSA: Position = position(31911, 32710, -6);
 const BROOCH: Position = position(32598, 31934, -15);
 const ICE: Position = position(32133, 31688, -9);
@@ -222,6 +223,14 @@ async fn step(
         encode_step_intent(dir),
     )
     .await?;
+    assert_position(owner, session, at).await
+}
+
+async fn assert_position(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: &AdmittedSession,
+    at: Position,
+) -> TestResult {
     let actor = session.runtime_actor.ok_or("player")?;
     assert_eq!(
         owner
@@ -453,7 +462,6 @@ async fn door(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     session: &mut AdmittedSession,
     at: Position,
-    direction: StepDirection,
 ) -> TestResult {
     owner
         .refresh_quest_session(session.game_session_id, false)
@@ -462,7 +470,8 @@ async fn door(
         map_use(owner, session, at).await?,
         UseDisposition::Committed
     );
-    step(owner, session, direction, at).await
+    // The source quest door moves onto the doorway as part of USE.
+    assert_position(owner, session, at).await
 }
 
 async fn assert_journal(
@@ -589,13 +598,7 @@ pub(super) async fn exercise(
     );
     state(h, 2, Some((joining, 2)), &[]).await?;
     relocate(owner, session, position(32598, 31932, -15)).await?;
-    door(
-        owner,
-        session,
-        position(32598, 31933, -15),
-        StepDirection::South,
-    )
-    .await?;
+    door(owner, session, position(32598, 31933, -15)).await?;
     assert_eq!(
         map_use(owner, session, BROOCH).await?,
         UseDisposition::Committed
@@ -682,13 +685,7 @@ pub(super) async fn exercise(
     );
     state(h, 15, Some((urn, 27)), &[4872]).await?;
     relocate(owner, session, position(32957, 32836, -8)).await?;
-    door(
-        owner,
-        session,
-        position(32957, 32835, -8),
-        StepDirection::North,
-    )
-    .await?;
+    door(owner, session, position(32957, 32835, -8)).await?;
     assert_eq!(
         map_use(owner, session, URN).await?,
         UseDisposition::Committed
@@ -706,13 +703,7 @@ pub(super) async fn exercise(
     );
     state(h, 18, Some((poetry, 36)), &[4872]).await?;
     relocate(owner, session, position(32702, 31605, -14)).await?;
-    door(
-        owner,
-        session,
-        position(32703, 31605, -14),
-        StepDirection::East,
-    )
-    .await?;
+    door(owner, session, position(32703, 31605, -14)).await?;
     assert_eq!(
         map_use(owner, session, POETRY).await?,
         UseDisposition::Committed

@@ -46,7 +46,7 @@ CRYSTAL_HASHES = {
  'data/libs/functions/boss_lever.lua': '0a91d34c17c8fb2a20cdfddd3bb57df23d52ddafbc2053b03c938ee9162edd03',
  'data/scripts/creaturescripts/monster/boss_lever_death.lua': '25155bf01a3b717408842c593af196bd19011ba5012d6e23a3380c3534ffbcf7',
 }
-CAPTURE_SHA256 = '037cf9c089dcdd19783fad8215f15c8739b02dcdb76bff0d1459473e0f675618'
+CAPTURE_SHA256 = 'b4ee39b6c75b93d27643c052bddbb1156bcaeb21124d9ef6b0d07c3c6385fc2b'
 
 
 def canonical(value):

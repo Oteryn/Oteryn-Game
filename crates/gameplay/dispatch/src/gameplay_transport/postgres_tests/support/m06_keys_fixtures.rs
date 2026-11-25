@@ -91,6 +91,18 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             ),
         );
         let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+        if level_gate {
+            let tiles = &mut data.sectors.first_mut().ok_or("door sector")?.tiles;
+            let mut next_door = tiles.iter().find(|tile| tile.x == 6)
+                .and_then(|tile| tile.items.last()).ok_or("origin door")?.clone();
+            next_door.attrs.action = Some(key_action);
+            let next_tile = tiles.iter_mut().find(|tile| tile.x == 5).ok_or("adjacent door tile")?;
+            next_tile.items.truncate(1);
+            next_tile.items.push(next_door);
+            let coin = tiles.iter().find(|tile| tile.x == 7)
+                .and_then(|tile| tile.items.last()).ok_or("coin")?.clone();
+            tiles.iter_mut().find(|tile| tile.x == 6).ok_or("origin tile")?.items.push(coin);
+        }
         let entry = data
             .sectors
             .iter_mut()
@@ -98,7 +110,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             .find(|tile| tile.x == 6)
             .ok_or("door tile")?
             .items
-            .last_mut()
+            .get_mut(1)
             .ok_or("door entry")?;
         entry.attrs.action = source.is_none().then_some(4321);
         if source.is_some() {
@@ -174,15 +186,16 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             );
         }
         let cells = map
-            .movement_cells(deps.room.movement_cells())
+            .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
+        let frame = map.frame_binding_digest(deps.admitted.world_id);
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
             pin.identity().client_artifact_digest(),
-            pin.frame_binding().digest(),
-            pin.qualified_room().map_revision_digest(),
+            frame,
+            map.map_revision_digest(),
             (
                 i32::from(door_x + 1),
                 i32::from(door_y),
@@ -231,7 +244,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         }
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
-        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&harness.pool).await?;
         if !level_gate {
             super::item_look_fixtures::seed_main_backpack(&harness, &[(key_item, 1), (wrong_key, 1)])
                 .await?;
@@ -311,6 +324,15 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
                 admitted = next;
                 assert_eq!(map.enterable(station_pos), level == 50);
                 if level == 50 {
+                    assert_eq!(
+                        owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
+                        MovementLocalPosition {
+                            x: i32::from(door_x),
+                            y: i32::from(door_y),
+                            floor: -i16::from(door_floor),
+                        },
+                        "source expertise door USE enters the doorway"
+                    );
                     assert_eq!(map.facts().doors().revision(placement_key), 1);
                     let (next, result, _) =
                         super::item_craft_fixtures::exchange(&owner, admitted, command, &replay, None)
@@ -319,6 +341,30 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
                     assert_eq!(result, UseDisposition::Committed);
                     assert_eq!(map.facts().doors().revision(placement_key), 1);
                 }
+            }
+            let adjacent = crate::map::overlay::TilePos { x: door_x - 1, ..station_pos };
+            let adjacent_key = crate::map::view::placement_key(adjacent, 1).ok_or("adjacent door")?;
+            let mut placement = map.base().digest().to_vec();
+            placement.extend_from_slice(&adjacent_key.to_be_bytes());
+            let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(
+                &WorldObjectTarget { placement, expected_revision: 0 },
+            ).map_err(debug)?;
+            owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+            let command = admitted.continuity.next_command_id;
+            for _ in 0..2 {
+                let (next, result, _) =
+                    super::item_craft_fixtures::exchange(&owner, admitted, command, &payload, None).await?;
+                admitted = next;
+                assert_eq!(result, UseDisposition::Committed);
+                assert_eq!(map.facts().doors().revision(placement_key), 2, "the vacated door closes");
+                assert!(!map.enterable(station_pos));
+                assert!(map.enterable(adjacent));
+                let moved: Vec<Vec<u8>> = sqlx::query_scalar(
+                    "SELECT g.spatial_position FROM game_map_item_mint_receipts m JOIN game_item_ground_locations g USING (item_instance_id) WHERE m.definition_production_key='oteryn:item.tibia.i3031'",
+                ).fetch_all(&harness.pool).await?;
+                assert_eq!(moved.len(), 1, "move the doorway coin exactly once");
+                let cell = crate::durability::spell_items_abi::decode_ground_cell(&moved[0]).map_err(debug)?;
+                assert_eq!((cell.x, cell.y, cell.z), (i32::from(door_x + 1), i32::from(door_y), i32::from(door_floor)));
             }
             eprintln!(
                 "POSTGRES_CASE_COMPLETED fibula_source_level50_gate duration={:?}",

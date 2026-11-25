@@ -9,6 +9,7 @@ from pathlib import Path
 
 import d289_holds
 from engine_items import decode_appearance_object, protobuf_fields
+from packet_rust_pin import sync_rust_digest
 
 ROOT = Path(__file__).resolve().parents[3]
 COMPILER = "tools/content-schema/item-authoring/lower_client_physical_packet.py"
@@ -21,6 +22,11 @@ CLIENT = f"content/assets/files/appearances-{CLIENT_SHA}.dat"
 BINDINGS = "imports/crystalserver/bindings/items.json"
 WIKI = "imports/tibiawiki/facts/items-stats.json"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261001-item-physical-promotion-v1.json"
+
+
+RUST_CONSUMER = ROOT / (
+    "crates/gameplay/content-promotion/src/content/item_physical_promotion.rs"
+)
 
 
 def sha(data):
@@ -219,10 +225,12 @@ def main():
         json.dumps(packet, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
         + "\n"
     ).encode()
-    if args.check:
-        if OUTPUT.read_bytes() != data:
-            raise SystemExit("physical packet drift")
-    else:
+    if args.check and OUTPUT.read_bytes() != data:
+        raise SystemExit("physical packet drift")
+    sync_rust_digest(
+        RUST_CONSUMER, "ITEM_PHYSICAL_PACKET_SHA256", data, check=args.check
+    )
+    if not args.check:
         OUTPUT.write_bytes(data)
     print(json.dumps(packet["counts"]))
 

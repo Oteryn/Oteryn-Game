@@ -5,6 +5,10 @@ from __future__ import annotations
 import argparse
 import copy
 import importlib
+import first_dragon_item_profiles
+import imbuement_item_profiles
+import m01c_key_door_equipment_pin
+import qengine_reward_equipment_pin
 import json
 import os
 import re
@@ -67,7 +71,7 @@ SRX3_SOURCES = (
 
 
 def registered_source_document(root, document):
-    """Replay the later guarded House stage, retaining only this owner's keys."""
+    """Replay later source policies, retaining only this owner's keys."""
     proven = keys(document)
     generated = {
         "profiles": json.dumps(document).encode(),
@@ -93,6 +97,31 @@ def registered_source_document(root, document):
     }
     if keys(result) != proven:
         raise ValueError("source registration changed the qualified identity set")
+    # For example, boss loot already admits 23545. The food action adds only
+    # consumption, and the cohort still checks the complete composed row.
+    import crystal_ordinary_items
+    crystal_ordinary_items.apply_food_policies(
+        {row['production_definition']['production_key']: row for row in result['records']},
+        crystal_ordinary_items.source_records(root),
+    )
+    # Replay the late equipped facts on the independent source rows so the
+    # census still compares complete profiles, including combat and Forge.
+    import build_source_item_profiles as source
+    import equipped_combat_forge_profiles as equipped
+    from forge_item_profiles import project
+
+    packet = equipped.load_facts(root)
+    capture = equipped.load_capture(root)
+    rows = equipped.records(result)
+    for fact in packet['combat']:
+        key = f'{equipped.PREFIX}{fact["id"]}'
+        if key in rows:
+            equipped.apply_combat(rows[key], fact, source, capture)
+    forge = [fact for fact in packet['forge'] if f'{equipped.PREFIX}{fact["id"]}' in rows]
+    if forge:
+        admitted = equipped.forge_owners(root, forge)
+        project({'records': [rows[key] for key in admitted]}, admitted)
+    imbuement_item_profiles.apply_crystal_audit(root, result, require_all=False)
     return result
 
 

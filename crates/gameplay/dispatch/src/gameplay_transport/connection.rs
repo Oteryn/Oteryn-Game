@@ -31,6 +31,28 @@ pub(super) async fn test_analyser_route(
     }
 }
 
+#[cfg(test)]
+pub(super) async fn test_use_frame(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    frame: &[u8],
+    items: &mut Option<SessionItemView>,
+) -> Option<UseOutcome> {
+    let command = crate::foundation::decode_wire_envelope(frame)
+        .ok()?
+        .client_command(admitted.continuity.connection_generation)
+        .ok()?;
+    if command.command_type != oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT {
+        return None;
+    }
+    let actor = admitted.runtime_actor?;
+    match routing::use_item::route(owner, actor, admitted, command, items, &mut None, &None).await?
+    {
+        routing::Dispatch::Use(outcome) => Some(outcome),
+        _ => None,
+    }
+}
+
 mod serve;
 use crate::combat_pickup::GroundPickupError;
 use routing::Dispatch;

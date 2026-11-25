@@ -10,8 +10,23 @@ pub fn is_rope_spot_item(source_id: u32, ground: bool) -> bool {
     if ground {
         ROPE_GROUND.contains(&source_id)
     } else {
-        source_id == 12935
+        source_id == ROPE_OVERLAY
     }
+}
+
+const ROPE_OVERLAY: u32 = 12935;
+
+/// Whether a resolved tile has a ground or top-level rope spot.
+pub fn is_bundle_rope_spot(tile: &crate::map::view::ComposedTile) -> bool {
+    let Some((ground_index, ground)) = tile.entries.iter().enumerate().find(|(_, entry)| {
+        entry.facts.terrain_kind == Some(oteryn_world_bundle::bundle::TerrainKind::Ground)
+    }) else {
+        return false;
+    };
+    is_rope_spot_item(u32::from(ground.facts.appearance_id), true)
+        || tile.entries.iter().enumerate().any(|(index, entry)| {
+            index != ground_index && is_rope_spot_item(u32::from(entry.facts.appearance_id), false)
+        })
 }
 
 // Accepted §6.3 order: south, north, east, west, then the diagonals.
@@ -122,29 +137,17 @@ impl RopeProof<'_> {
         {
             return Err(MovementError::NotQualified);
         }
-        if let Some((map, target)) = self.ladder {
+        let NativeMovementCollisionIndex::Bundle(collision) = self.cells.index() else {
+            return Err(MovementError::NotQualified);
+        };
+        let map = collision.map();
+        let position = crate::content::bundle_spell_tiles::tile_pos(self.spot)
+            .ok_or(MovementError::NotQualified)?;
+        if let Some((ladder_map, target)) = self.ladder {
             use crate::map::view::MapFacts;
-            let NativeMovementCollisionIndex::Bundle(collision) = self.cells.index() else {
-                return Err(MovementError::NotQualified);
-            };
-            if !std::ptr::eq(collision.map(), map) {
+            if !std::ptr::eq(map, ladder_map) {
                 return Err(MovementError::NotQualified);
             }
-            let position = TilePos {
-                x: self
-                    .spot
-                    .x
-                    .try_into()
-                    .map_err(|_| MovementError::NotQualified)?,
-                y: self
-                    .spot
-                    .y
-                    .try_into()
-                    .map_err(|_| MovementError::NotQualified)?,
-                floor: (-self.spot.z)
-                    .try_into()
-                    .map_err(|_| MovementError::NotQualified)?,
-            };
             let entry = match target {
                 LadderTarget::Base { key, revision } => {
                     let (pos, ordinal) =
@@ -189,20 +192,10 @@ impl RopeProof<'_> {
                 return Err(MovementError::NotQualified);
             }
         } else {
-            let tile = self
-                .cells
-                .spell_tiles()
-                .lookup(self.cells.scope(), self.spot)
+            // Spell tile facts are deliberately unknown when a pickupable item covers the ground.
+            let tile = crate::map::view::compose_tile(&map.overlay, &map.facts.pinned(), position)
                 .map_err(|_| MovementError::NotQualified)?;
-            if !tile.ground_present()
-                || !(tile
-                    .ground_source_id()
-                    .is_some_and(|id| is_rope_spot_item(id, true))
-                    || tile
-                        .top_source_ids()
-                        .iter()
-                        .any(|&id| is_rope_spot_item(id, false)))
-            {
+            if !tile.as_ref().is_some_and(is_bundle_rope_spot) {
                 return Err(MovementError::NotQualified);
             }
         }

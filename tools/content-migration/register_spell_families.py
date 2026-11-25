@@ -873,15 +873,10 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         spell_import.canonical_bytes,
     )
     import imbuement_item_profiles
-
-    imbuement_item_profiles.admit(
-        root,
-        generated,
-        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
-        NATIVE_MANIFEST,
-        provider_order,
-        spell_import.canonical_bytes,
-    )
+    imbuement_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import crystal_raid_items
+    crystal_raid_items.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+                             NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import item_transform_profiles
 
     item_transform_profiles.admit(
@@ -1558,14 +1553,13 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # W18 source recipes use admitted Item identities and retain earlier owners'
     # policies; only qualified rotation/USE and top-order facts are enriched.
     import first_dragon_item_profiles
-
-    first_dragon_item_profiles.admit(
-        root,
-        generated,
-        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
-        NATIVE_MANIFEST,
-        provider_order,
-        spell_import.canonical_bytes,
+    first_dragon_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import crystal_creature_parity
+    parity, _ = crystal_creature_parity.read_packet(root)
+    qengine_reward_item_profiles.admit_records(
+        root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST,
+        provider_order, spell_import.canonical_bytes,
+        [row['record'] for row in parity['item_admissions']],
     )
     import house_decoration_actions
 
@@ -1715,9 +1709,16 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     generated[creature_path] = spell_import.canonical_bytes(creatures)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
+    import cyclopedia_creatures
+    cyclopedia_creatures.apply(root, generated)
+    crystal_creature_parity.apply_native(root, generated)
     from bind_monster_source_definitions import bind_definitions
 
     generated = bind_definitions(root, generated)
+    presentation_path = spell_import.PROVIDER_DESTINATIONS["presentation_profiles"]
+    manifest = json.loads(generated[NATIVE_MANIFEST])
+    manifest["presentation_profiles"]["sha256"] = hashlib.sha256(generated[presentation_path]).hexdigest()
+    generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
     # W11 source callback outfits share the registered native appearance provider.
     import soul_war_appearance_profiles
 
@@ -1742,15 +1743,15 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     generated[creature_path] = spell_import.canonical_bytes(creatures)
 
-    # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
-    # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     items = json.loads(generated[item_path])
-    energy = next(
-        row
-        for row in items["records"]
-        if row["production_definition"]["production_key"] == "oteryn:item.tibia.i2122"
-    )
+    import crystal_ordinary_items
+    crystal_ordinary_items.apply(root, items, provider_order)
+    crystal_raid_items.admit_ranged_equipment(root, items, parity)
+    # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
+    # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
+    energy = next(row for row in items["records"]
+                  if row["production_definition"]["production_key"] == "oteryn:item.tibia.i2122")
     energy["semantics"]["temporal"]["value"]["duration"]["value"] = 100_000
     # HEALPAR: Great Mana Potion is for all vocations on Global (TibiaWiki rev 1190635).
     import healing_global_overrides
@@ -1773,6 +1774,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
+    import portable_container_profiles
+    portable_container_profiles.admit(root, items, provider_order)
     # These boss drops and corpse stages join after the main appearance pass.
     # Apply the same client top-order facts in the base Item provider so the
     # separate SRX update section remains reserved for its specialized rows.
@@ -1808,6 +1811,16 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
 
     # The Crystal equipment admissions do not extend the existing Forge policy.
     forge_item_profiles.project(existing_items, forge_item_profiles.owners(root))
+    import equipped_combat_forge_profiles
+    equipped_combat_forge_profiles.apply(root, items, generated, NATIVE_MANIFEST,
+                                        provider_order, spell_import.canonical_bytes)
+    # Qualify each audited Item in its owning provider, including mage hat in
+    # the starter fragment. SRX-1 updates then inherit the same base allowances.
+    starter_items = json.loads(generated[starting_loadout_profiles.FRAGMENT])
+    imbuement_item_profiles.apply_crystal_audit(root, items, starter_items)
+    native_manifest = json.loads(generated[NATIVE_MANIFEST])
+    starting_loadout_profiles.write_fragment(generated, native_manifest, starter_items["records"])
+    generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
@@ -1961,6 +1974,10 @@ def main() -> int:
         import forge_sql_admission
 
         forge_sql_admission.check()
+        import crystal_raid_items
+
+        if (ROOT / crystal_raid_items.CORPSE_SQL).read_text() != crystal_raid_items.corpse_sql(ROOT):
+            raise SystemExit("Crystal raid corpse SQL projection drift")
     else:
         for path, data in generated.items():
             destination = ROOT / path

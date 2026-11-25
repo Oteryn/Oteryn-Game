@@ -34,6 +34,53 @@ fn at(x: i32, y: i32, floor: i16) -> MovementLocalPosition {
 }
 
 pub(super) async fn scenario(admin: String, case: u8, use_bundle: bool) -> TestResult {
+    run(admin, case, use_bundle, None).await
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum RopeUse {
+    Climb,
+    CoveredObject,
+    CoveredHandle,
+    GroundHandle,
+    GroundHandleExplicit,
+    Jam,
+    DistantObject,
+    DistantHandle,
+}
+
+impl RopeUse {
+    fn climbs(self) -> bool {
+        matches!(self, Self::Climb | Self::CoveredObject | Self::CoveredHandle) || self.ground_handle()
+    }
+
+    fn ground_handle(self) -> bool {
+        matches!(self, Self::GroundHandle | Self::GroundHandleExplicit)
+    }
+
+    fn covered(self) -> bool {
+        matches!(self, Self::CoveredObject | Self::CoveredHandle)
+    }
+
+    fn is_distant(self) -> bool {
+        matches!(self, Self::DistantObject | Self::DistantHandle)
+    }
+}
+
+pub(super) async fn physical_rope(admin: String, tool: &str, appearance: u32) -> TestResult {
+    run(admin, 3, true, Some((tool, appearance, RopeUse::Climb))).await
+}
+
+pub(super) async fn agent_rope(
+    admin: String,
+    tool: &str,
+    appearance: u32,
+    action: RopeUse,
+) -> TestResult {
+    run(admin, 3, true, Some((tool, appearance, action))).await
+}
+
+async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32, RopeUse)>) -> TestResult {
     let h =
         Harness::create_with_admission_seed(admin, &format!("vertical_move_{case}"), false, false)
             .await?;
@@ -55,10 +102,23 @@ pub(super) async fn scenario(admin: String, case: u8, use_bundle: bool) -> TestR
     let active = controller.active().ok_or("active")?;
     let native = active.native_gameplay().ok_or("native")?;
     let bundle = use_bundle.then(|| {
-        crate::map::spell_tiles::tests::vertical_movement::world(
-            world,
-            crate::foundation::ChannelId::decode(&id(43)).expect("fixture channel"),
-        )
+        use crate::map::spell_tiles::tests::vertical_movement;
+        let channel = crate::foundation::ChannelId::decode(&id(43)).expect("fixture channel");
+        match tool {
+            Some((_, appearance, action)) => {
+                let bundle = vertical_movement::world_with_rope_spot(
+                    world, channel, appearance, action.is_distant(), action.covered(), action.ground_handle(),
+                );
+                if action.ground_handle() {
+                    let gate = oteryn_world_bundle::bundle::placement_key(-8, 10, 10, 1)
+                        .expect("rope doorway placement");
+                    assert!(matches!(bundle.facts().doors().toggle(gate, 0, false, 20, true),
+                        Some(crate::map::door::DoorUse::Toggled { open: true, .. })));
+                }
+                bundle
+            }
+            None => vertical_movement::world(world, channel),
+        }
     });
     let bundle_room = bundle.as_ref().map(|bundle| {
         pin.qualified_room()
@@ -234,6 +294,212 @@ pub(super) async fn scenario(admin: String, case: u8, use_bundle: bool) -> TestR
         .bind(id(42).as_slice()).bind(id(43).as_slice())
         .bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice())
         .bind(room.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+    if let (Some((tool, _, action)), Some(bundle)) = (tool, &bundle) {
+        use crate::gameplay_transport::connection::UseCommand;
+        use crate::gameplay_transport::item_view::{
+            ItemKey, SessionItemView, inventory_from_backpack,
+        };
+        use oteryn_protocol_oteryn::item_view::decode_character_inventory;
+        use oteryn_protocol_oteryn::world_object::{
+            MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
+        };
+
+        let distant = action.is_distant();
+        let repetitions = if action == RopeUse::Jam { 10 } else { 1 };
+        let mut entries = vec![(tool, 1); repetitions];
+        if action.ground_handle() {
+            entries.push(("oteryn:item.tibia.i3031", 1));
+        }
+        super::item_look_fixtures::seed_main_backpack(&h, &entries).await?;
+        if action.ground_handle() {
+            use crate::gameplay_transport::item_move::{LoopMove, LoopMoveResult, LoopTarget};
+            let fence = current_fence(&owner, session).await?.item_fence();
+            let backpack = h.root.read_character_backpack(&authority, fence.character_id)
+                .await?.ok_or("rope backpack")?;
+            let coin = backpack.entries.iter().find(|entry| entry.item.definition.production_key.ends_with(".i3031"))
+                .ok_or("ground target coin")?.item.item_instance_id;
+            assert_eq!(owner.move_loop_item(
+                actor,
+                UseCommand { game_session_id: session, command_id: 10_001, item_fence: Some(fence) },
+                LoopMove { item: ItemKey::Instance(coin), count: None,
+                    target: LoopTarget::Ground(oteryn_protocol_oteryn::item_view::WorldTilePosition {
+                        x: 10, y: 10, floor: -8,
+                    }), slot: None },
+            ).await, LoopMoveResult::Committed);
+        }
+        let index = native.item_index().ok_or("item index")?;
+        let definition = index
+            .definition_ref("Item", tool, "definition-r1")
+            .ok_or("tool reference")?;
+        let digest = bundle.base().digest();
+        let target_x = if distant { 12 } else { 10 };
+        let spot = oteryn_world_bundle::bundle::placement_key(-8, target_x, 10, u8::from(action.covered()))
+            .ok_or("rope spot placement")?;
+        let mut view = SessionItemView::resume(Default::default()).with_map_view();
+        let map_target = if matches!(action, RopeUse::DistantHandle | RopeUse::CoveredHandle) {
+            use crate::gameplay_transport::world_map::{MapUpdate, SessionMapView};
+            use oteryn_protocol_oteryn::world_map::{MapOrigin, decode_world_map_snapshot};
+
+            let mut map_view = SessionMapView::default();
+            let update = crate::gameplay_transport::bundle_map_position::observe(
+                &owner, actor, &mut map_view, &mut view,
+            )
+            .await
+            .ok_or("bundle map view")?
+            .map_err(debug)?;
+            let Some(MapUpdate::Snapshot(snapshot)) = update else {
+                return Err("initial bundle map snapshot".into());
+            };
+            let map = decode_world_map_snapshot(&snapshot.payload).map_err(debug)?;
+            let handle = map.tiles.iter()
+                .find(|tile| tile.position.x == i32::from(target_x) && tile.position.y == 10 && tile.position.floor == 8)
+                .and_then(|tile| tile.items.iter().filter(|item| item.appearance_id == 3031).find_map(|item| match item.origin {
+                    MapOrigin::Handle(handle) => Some(handle),
+                    _ => None,
+                }))
+                .ok_or("visible covering item handle")?;
+            MapUseTarget::Item(handle)
+        } else {
+            let mut placement = digest.to_vec();
+            placement.extend_from_slice(&spot.to_be_bytes());
+            MapUseTarget::Object(WorldObjectTarget { placement, expected_revision: 0 })
+        };
+        let jam_inventory = if action == RopeUse::Jam {
+            let character = current_fence(&owner, session).await?.character_id;
+            let backpack = h.root.read_character_backpack(&authority, character).await?;
+            let items = inventory_from_backpack(backpack.as_ref(), |definition| {
+                index.definition_ref(
+                    &definition.family,
+                    &definition.production_key,
+                    &definition.revision_ref,
+                )
+            })
+            .ok_or("qualified backpack items")?;
+            let [snapshot, _] = view.snapshot(items, None).map_err(debug)?;
+            Some(decode_character_inventory(&snapshot.payload).map_err(debug)?)
+        } else {
+            None
+        };
+        let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+            .current_session_at(session).await?.0;
+        let mut previous_command = 0;
+        for offset in 0..repetitions {
+            let item = id(71 + u8::try_from(offset)?);
+            let source = if let Some(inventory) = &jam_inventory {
+                let handle = inventory.entries.iter()
+                    .find(|entry| view.resolve(entry.handle) == Some(ItemKey::Instance(item)))
+                    .ok_or("Secret Agent inventory handle")?
+                    .handle;
+                UseTarget::Item(handle)
+            } else {
+                UseTarget::ItemByDefinition(definition)
+            };
+            let command_id = (previous_command + 1..=previous_command + 10_000)
+                .find(|&command_id| {
+                    oteryn_gameplay_items::secret_agent::jams(
+                        *session.as_bytes(), command_id, item,
+                    ) == !action.climbs()
+                })
+                .ok_or("Secret Agent test roll")?;
+            previous_command = command_id;
+            let intent = UseIntent {
+                target: source,
+                use_with: None,
+                use_with_position: None,
+                use_with_map_item: Some(map_target.clone()),
+            };
+            if action.ground_handle() {
+                assert_eq!(command_id, admitted.continuity.next_command_id);
+                use crate::gameplay_transport::capabilities::SelectedCapabilities;
+                use crate::gameplay_transport::connection::FirstEntryOutcome;
+                admitted.runtime_actor = Some(actor);
+                admitted.first_entry = FirstEntryOutcome::Positioned;
+                admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+                admitted.continuity.selected_capabilities =
+                    SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
+                        .ok_or("rope capability offer")?;
+                let payload = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent)
+                    .map_err(debug)?;
+                let (_, disposition, _) = super::item_craft_fixtures::exchange_with_map_item(
+                    &owner,
+                    admitted,
+                    command_id,
+                    &payload,
+                    (action == RopeUse::GroundHandleExplicit).then_some(definition),
+                    0,
+                    Some((10, 10, 8, 3031)),
+                ).await?;
+                assert_eq!(disposition, UseDisposition::Committed, "{tool}");
+                continue;
+            }
+            let outcome = crate::gameplay_transport::item_craft::dispatch(
+                &owner,
+                actor,
+                UseCommand {
+                    game_session_id: session,
+                    command_id,
+                    item_fence: crate::gameplay_transport::item_fence_of(current),
+                },
+                intent,
+                Some(&view),
+            )
+            .await
+            .ok_or("rope dispatch")?;
+            assert_eq!(
+                outcome.disposition,
+                if distant { UseDisposition::TooFar } else { UseDisposition::Committed },
+                "{tool}"
+            );
+        }
+        let expected = if action.climbs() { at(10, 11, 7) } else { at(10, 10, 8) };
+        assert_eq!(deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+                   expected, "{tool}");
+        if action.ground_handle() {
+            let gate = oteryn_world_bundle::bundle::placement_key(-8, 10, 10, 1)
+                .ok_or("rope doorway placement")?;
+            assert_eq!(bundle.facts().doors().revision(gate), 2, "climbing closes the vacated gate");
+            let moved: Vec<Vec<u8>> = sqlx::query_scalar(
+                "SELECT spatial_position FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid",
+            ).bind(id(72).as_slice()).fetch_all(&h.pool).await?;
+            assert_eq!(moved.len(), 1);
+            let cell = crate::durability::spell_items_abi::decode_ground_cell(&moved[0]).map_err(debug)?;
+            assert_eq!((cell.x, cell.y, cell.z), (11, 10, -8));
+            let moves: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_loop_move_receipts")
+                .fetch_one(&h.pool).await?;
+            assert_eq!(moves, 2, "one initial drop and one doorway relocation");
+        }
+        let schedules: Vec<(String, i64)> = sqlx::query_as(
+            "SELECT definition_production_key, duration_millis FROM game_spell_item_temporal_schedules WHERE target_production_key=$1",
+        )
+        .bind(tool).fetch_all(&h.pool).await?;
+        if action == RopeUse::Jam {
+            use oteryn_protocol_oteryn::chat::ChatLine;
+            let id: u32 = tool.rsplit(".i").next().ok_or("tool id")?.parse()?;
+            assert_eq!(schedules, vec![(format!("oteryn:item.tibia.i{}", id + 1), 60_000); repetitions]);
+            let progress: Option<i64> = sqlx::query_scalar(
+                "SELECT progress FROM game_character_achievement_progress WHERE achievement_key='oteryn:achievement/bad_timing'",
+            ).fetch_optional(&h.pool).await?;
+            let granted: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key='oteryn:achievement/bad_timing')",
+            ).fetch_one(&h.pool).await?;
+            let feedback = owner.states.chat.drain(session);
+            assert_eq!(
+                (progress, granted, feedback.iter().filter(|line|
+                    matches!(line, ChatLine::Private { text, .. } if text == "Oh no! Your tool is jammed and can't be used for a minute.")
+                ).count()),
+                (Some(i64::try_from(repetitions)?), true, repetitions),
+            );
+        } else {
+            assert!(schedules.is_empty());
+            if distant {
+                assert!(owner.states.chat.drain(session).is_empty());
+            }
+        }
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
     if case >= 3 && !use_bundle {
         seed_rope_blockers(&h, &deps, room, native, case == 4).await?;
     }

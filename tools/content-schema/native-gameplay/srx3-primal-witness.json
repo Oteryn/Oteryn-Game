@@ -13077,6 +13077,15 @@
                 ],
                 "armor": 100,
                 "details": {
+                  "bosstiary": {
+                    "category": "archfoe",
+                    "expertise_kills": 20,
+                    "expertise_points": 30,
+                    "mastery_kills": 60,
+                    "mastery_points": 60,
+                    "prowess_kills": 5,
+                    "prowess_points": 10
+                  },
                   "condition_immunities": [
                     "drunk",
                     "invisible",
@@ -13770,6 +13779,15 @@
             ],
             "armor": 100,
             "details": {
+              "bosstiary": {
+                "category": "archfoe",
+                "expertise_kills": 20,
+                "expertise_points": 30,
+                "mastery_kills": 60,
+                "mastery_points": 60,
+                "prowess_kills": 5,
+                "prowess_points": 10
+              },
               "condition_immunities": [
                 "drunk",
                 "invisible",
@@ -14040,5 +14058,5 @@
       }
     }
   ],
-  "source_definitions_sha256": "d4daafa301a9da17fdfc17f15cbd683382d2d0a66bd75d0b1630b397bfb96436"
+  "source_definitions_sha256": "0539b0d66973546fc595d9de6bd81924742186257c2fdf9563651515b4a0a58f"
 }

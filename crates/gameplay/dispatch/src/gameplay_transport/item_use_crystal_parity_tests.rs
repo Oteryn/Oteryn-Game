@@ -420,3 +420,131 @@ fn i03_crystal_spellbook_has_vocation_filtered_spell_list() -> Result<(), &'stat
     assert!(text.contains(" - "));
     Ok(())
 }
+
+#[test]
+fn crystal_ordinary_food_profiles_supply_the_dispatch_duration() {
+    let controller = native();
+    let state = controller
+        .active()
+        .and_then(|active| active.native_gameplay())
+        .expect("native gameplay");
+    // Crystal 201189f8 data/scripts/actions/items/foods.lua:1-156.
+    for (id, seconds) in [
+        (169, 108),
+        (229, 24),
+        (836, 48),
+        (901, 720),
+        (904, 108),
+        (3580, 204),
+        (3581, 48),
+        (3582, 360),
+        (3584, 60),
+        (3585, 72),
+        (3586, 156),
+        (3588, 12),
+        (3591, 24),
+        (3592, 108),
+        (3599, 24),
+        (3600, 120),
+        (3601, 36),
+        (3726, 360),
+        (3727, 108),
+        (3728, 72),
+        (3729, 144),
+        (3730, 36),
+        (3731, 432),
+        (3732, 60),
+        (5678, 96),
+        (6125, 96),
+        (6277, 120),
+        (6278, 180),
+        (6392, 144),
+        (6393, 180),
+        (6500, 240),
+        (6541, 72),
+        (6542, 72),
+        (6543, 72),
+        (6544, 72),
+        (6545, 72),
+        (7373, 24),
+        (7374, 24),
+        (7376, 24),
+        (8012, 12),
+        (8019, 132),
+        (8177, 84),
+        (10219, 120),
+        (10453, 36),
+        (11459, 240),
+        (11460, 120),
+        (11461, 96),
+        (11462, 108),
+        (11681, 660),
+        (11683, 24),
+        (12310, 240),
+        (13992, 660),
+        (14084, 168),
+        (14085, 180),
+        (14681, 720),
+        (17457, 120),
+        (17820, 180),
+        (17821, 144),
+        (20310, 48),
+        (21143, 120),
+        (21144, 180),
+        (21145, 180),
+        (21146, 300),
+        (22185, 96),
+        (22187, 300),
+        (23545, 360),
+        (24382, 240),
+        (24383, 120),
+        (24396, 720),
+        (24948, 120),
+        (25692, 180),
+        (30198, 480),
+        (30202, 180),
+        (32069, 180),
+        (37530, 120),
+        (37531, 60),
+        (37532, 180),
+        (37533, 720),
+        (48116, 420),
+        (48251, 300),
+        (48252, 540),
+        (48253, 540),
+        (48254, 780),
+    ] {
+        let policy = policy_of(state, id).unwrap_or_else(|| panic!("food {id} missing"));
+        let record = policy.record();
+        assert!(record.admission.materializable, "food {id}");
+        assert!(
+            record.admission.legal_destinations.contains(
+                &crate::content::native_gameplay::NativeItemDestination::CharacterInventory
+            ),
+            "food {id}"
+        );
+        let ReferenceItemField::Known(ReferenceItemConsumption::Food(food)) =
+            &record.semantics.consumption
+        else {
+            panic!("food {id} has no use profile");
+        };
+        assert_eq!(food.regeneration_seconds, seconds, "food {id}");
+    }
+}
+
+#[test]
+fn crystal_elvenhair_rope_has_a_carried_native_profile() {
+    let controller = native();
+    let state = controller
+        .active()
+        .and_then(|active| active.native_gameplay())
+        .expect("native gameplay");
+    let rope = policy_of(state, 646).expect("elvenhair rope is admitted");
+    assert!(rope.record().admission.materializable);
+    assert!(
+        rope.record()
+            .admission
+            .legal_destinations
+            .contains(&crate::content::native_gameplay::NativeItemDestination::CharacterInventory)
+    );
+}

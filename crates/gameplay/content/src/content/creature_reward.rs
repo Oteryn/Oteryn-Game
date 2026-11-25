@@ -1451,6 +1451,44 @@ mod protected_loot_tests {
     }
 
     #[test]
+    fn crystal_boss_loot_resolves_named_source_items() -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let rewards = CreatureRewardTable::from_pin(&creatures, Some(&loot));
+        for (creature, item, chance) in [
+            (
+                "ayana_the_crimson_curse",
+                "oteryn:item.tibia.i3039",
+                263_600,
+            ),
+            (
+                "ayana_the_crimson_curse",
+                "oteryn:item.tibia.i43888",
+                178_300,
+            ),
+            ("malvaroth", "oteryn:item.tibia.i49909", 70_000),
+        ] {
+            let reward = rewards
+                .row(&format!("oteryn:creature.{creature}"))
+                .map_err(NoSettlementReason::as_str)?;
+            let entry = reward
+                .loot_table
+                .entries
+                .iter()
+                .find(|entry| entry.item.production_key == item)
+                .ok_or_else(|| format!("{creature} lacks admitted {item}"))?;
+            assert_eq!(
+                (entry.probability_ppm, entry.min_count, entry.max_count),
+                (Some(chance), 1, 1)
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn arbaziloth_loads_admitted_crystal_loot() -> Result<(), Box<dyn std::error::Error>> {
         let (creatures, _) = documents()?;
         let loot = LootTablesSection::decode(

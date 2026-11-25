@@ -1100,6 +1100,20 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
                          {'oteryn:quest-reward/chosen/trader/buy-sword',
                           'oteryn:quest-reward/chosen/trader/sword'})
 
+    def test_crimson_sword_cohort_checks_crystal_imbuement_allowances(self):
+        _, expected, _ = self.cohort
+        allowances = self.row(expected)['semantics']['imbuement']['value']['allowed_family_tiers']
+        self.assertEqual(allowances, {'state': 'KNOWN', 'value': [
+            {'family': family, 'tier': 'Three'} for family in
+            ('CRITICAL_HIT', 'ELEMENTAL_DAMAGE', 'LIFE_LEECH', 'MANA_LEECH', 'SKILL_SWORD')
+        ]})
+        stale = copy.deepcopy(self.actual)
+        self.row(stale)['semantics']['imbuement']['value']['allowed_family_tiers'] = {
+            'state': 'UNKNOWN',
+        }
+        with self.assertRaisesRegex(ValueError, 'SRX3 source profile differs: SRX3-BOSS-YIELDS'):
+            self.generate(stale)
+
     def test_requested_membership_and_unique_canonical_identity_are_required(self):
         requested, authored, callbacks = copy.deepcopy(self.requests)
         requested.remove(self.KEY)
@@ -1209,6 +1223,20 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError,
                         'SRX3 source profile differs: SRX3-BOSS-YIELDS/oteryn:item.tibia.i7385'):
                     self.generate(actual)
+
+    def test_energy_drink_adds_exact_food_policy_without_relaxing_yield_proof(self):
+        key = 'oteryn:item.tibia.i23545'
+        actual = copy.deepcopy(self.actual)
+        row = next(row for row in actual['records']
+                   if row['production_definition']['production_key'] == key)
+        food = row['semantics']['consumption']
+        self.assertEqual(food, {'state': 'KNOWN', 'value': {
+            'kind': 'FOOD', 'value': {'regeneration_seconds': 360},
+        }})
+        self.generate(actual)
+        food['value']['value']['regeneration_seconds'] = 30
+        with self.assertRaisesRegex(ValueError, f'SRX3 source profile differs: SRX3-BOSS-YIELDS/{key}'):
+            self.generate(actual)
 
 
 

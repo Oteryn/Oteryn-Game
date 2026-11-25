@@ -723,7 +723,7 @@ impl ChannelSpellStates {
 impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
     /// M06-CLOSE: run while the successful step still owns the Channel lane. The runtime
     /// census is taken after leaving; durable item moves finish before the door transition.
-    pub(super) async fn close_departed_door(
+    pub(in crate::gameplay_transport) async fn close_departed_door(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         actor: ExactActorRef,

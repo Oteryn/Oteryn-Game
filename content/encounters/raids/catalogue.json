@@ -670,14 +670,10 @@
       "boss_names": [],
       "end": {
         "despawn_after_ms": null,
-        "kind": "unknown"
+        "kind": "until_reset"
       },
       "inactive_reasons": [
-        "calendar_firing_rule_unresolved",
-        "message_kind_or_timing_unresolved",
-        "native_wave_area_unknown",
-        "waves_unknown",
-        "wiki_donor_identity_unresolved"
+        "calendar_firing_anchor_unbound:immediate_post_save"
       ],
       "key": "oteryn:raid.kazordoon_raids.the_halloween_hare",
       "kind": "calendar",
@@ -689,6 +685,7 @@
           "date": "October 31",
           "frequency": "annual"
         },
+        "repeat": false,
         "window": {
           "end_day": 31,
           "end_month": 10,
@@ -698,7 +695,68 @@
       },
       "sources": [],
       "variant_group": null,
-      "variants": [],
+      "variants": [
+        {
+          "announcements": [
+            {
+              "delay_ms": 0,
+              "kind": "advance",
+              "source": {
+                "evidence": "TIBIAWIKI_STRUCTURED",
+                "selector": "The Halloween Hare / Raid Message",
+                "source": "wiki:20165:1135570"
+              },
+              "text": "Beware, beware the halloween hare."
+            }
+          ],
+          "key": "raid-anchor:32624_32018_7-32624_32018_7",
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32624,
+                      "y": 32018
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x127-y125.b3",
+                        "sha256": "790ff25f2c686362115bc59cd66ea14aa99f0599ed565c9aa5745aca91901659"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32624,
+                      "y": 32018
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32624_32018_7-32624_32018_7",
+                  "boss": false,
+                  "creature": "oteryn:creature.the_halloween_hare",
+                  "source": {
+                    "evidence": "TIBIAWIKI_STRUCTURED",
+                    "selector": "Mapper Coords",
+                    "source": "wiki:20165:1135570"
+                  },
+                  "source_name": "The Halloween Hare",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "wiki_area": "Kazordoon",
       "wiki_records": [
         "oteryn:raid.kazordoon_raids.the_halloween_hare"
@@ -1015,20 +1073,16 @@
       ],
       "end": {
         "despawn_after_ms": null,
-        "kind": "unknown"
+        "kind": "until_reset"
       },
       "inactive_reasons": [
-        "calendar_firing_rule_unresolved",
-        "message_kind_or_timing_unresolved",
-        "native_wave_area_unknown",
-        "waves_unknown",
-        "wiki_donor_identity_unresolved"
+        "calendar_firing_anchor_unbound:server_open"
       ],
       "key": "oteryn:raid.northern_darama_raids.the_mutated_pumpkin",
       "kind": "calendar",
       "name": "The Mutated Pumpkin",
       "schedule": {
-        "interval_ms": 14400000,
+        "interval_ms": null,
         "kind": "calendar",
         "observations": {
           "end": "November 3 server save",
@@ -1036,6 +1090,7 @@
           "interval_hours": 4,
           "start": "October 31 server save"
         },
+        "repeat": false,
         "window": {
           "end_day": 2,
           "end_month": 11,
@@ -1045,7 +1100,188 @@
       },
       "sources": [],
       "variant_group": null,
-      "variants": [],
+      "variants": [
+        {
+          "announcements": [
+            {
+              "delay_ms": 0,
+              "kind": "advance",
+              "source": {
+                "evidence": "TIBIAWIKI_STRUCTURED",
+                "selector": "The Mutated Pumpkin / Raid Message",
+                "source": "wiki:20158:1135815"
+              },
+              "text": "Oh noes! It's a mutated pumpkin!"
+            }
+          ],
+          "key": "raid-anchor:33115_32398_7-33115_32398_7",
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 33115,
+                      "y": 32398
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x129-y126.b3",
+                        "sha256": "262b52f541732e301dbe5c44ef79806a71f47c91b6b3dcf38fb595c75b29d362"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 33115,
+                      "y": 32398
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:33115_32398_7-33115_32398_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.the_mutated_pumpkin",
+                  "source": {
+                    "evidence": "TIBIAWIKI_STRUCTURED",
+                    "selector": "Mapper Coords",
+                    "source": "wiki:29889:1139122"
+                  },
+                  "source_name": "The Mutated Pumpkin",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "announcements": [
+            {
+              "delay_ms": 0,
+              "kind": "advance",
+              "source": {
+                "evidence": "TIBIAWIKI_STRUCTURED",
+                "selector": "The Mutated Pumpkin / Raid Message",
+                "source": "wiki:20158:1135815"
+              },
+              "text": "Oh noes! It's a mutated pumpkin!"
+            }
+          ],
+          "key": "raid-anchor:33095_32381_7-33095_32381_7",
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 33095,
+                      "y": 32381
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x129-y126.b3",
+                        "sha256": "262b52f541732e301dbe5c44ef79806a71f47c91b6b3dcf38fb595c75b29d362"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 33095,
+                      "y": 32381
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:33095_32381_7-33095_32381_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.the_mutated_pumpkin",
+                  "source": {
+                    "evidence": "TIBIAWIKI_STRUCTURED",
+                    "selector": "Mapper Coords",
+                    "source": "wiki:29889:1139122"
+                  },
+                  "source_name": "The Mutated Pumpkin",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "announcements": [
+            {
+              "delay_ms": 0,
+              "kind": "advance",
+              "source": {
+                "evidence": "TIBIAWIKI_STRUCTURED",
+                "selector": "The Mutated Pumpkin / Raid Message",
+                "source": "wiki:20158:1135815"
+              },
+              "text": "Oh noes! It's a mutated pumpkin!"
+            }
+          ],
+          "key": "raid-anchor:33092_32418_7-33092_32418_7",
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 33092,
+                      "y": 32418
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x129-y126.b3",
+                        "sha256": "262b52f541732e301dbe5c44ef79806a71f47c91b6b3dcf38fb595c75b29d362"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 33092,
+                      "y": 32418
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:33092_32418_7-33092_32418_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.the_mutated_pumpkin",
+                  "source": {
+                    "evidence": "TIBIAWIKI_STRUCTURED",
+                    "selector": "Mapper Coords",
+                    "source": "wiki:29889:1139122"
+                  },
+                  "source_name": "The Mutated Pumpkin",
+                  "spawn_mode": "single"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "wiki_area": "Northern Darama",
       "wiki_records": [
         "oteryn:raid.northern_darama_raids.the_mutated_pumpkin"
@@ -11804,7 +12040,7 @@
         "kind": "until_reset"
       },
       "inactive_reasons": [
-        "global_raid_membership_unproven:donor_chayenne_has_no_archived_global_identity"
+        "global_raid_membership_unproven:historical_unavailable"
       ],
       "key": "raid:abdendriel.chayenne",
       "kind": "boss",
@@ -27845,8 +28081,8 @@
         }
       ],
       "inactive_reasons": [
-        "creature_unbound:Cublarc The Plunderer",
-        "global_broadcast_sequence_conflict:oteryn:raid.zao_raids.orcs_raid_on_zzaion"
+        "global_broadcast_sequence_conflict:oteryn:raid.zao_raids.orcs_raid_on_zzaion",
+        "global_siege_trigger_and_gate_transition_unbound"
       ],
       "key": "raid:farmine.zulazzathecorruptor",
       "kind": "boss",
@@ -32992,10 +33228,10 @@
         "kind": "until_reset"
       },
       "inactive_reasons": [
-        "creature_unbound:The Ravenger"
+        "global_oramond_catacombs_quest_trigger_unbound"
       ],
       "key": "raid:oramond.ravenger",
-      "kind": "area",
+      "kind": "boss",
       "name": "oramond.ravenger",
       "schedule": {
         "interval_s": 86400,
@@ -33069,9 +33305,9 @@
                     "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
                   },
                   "area_anchor": "raid-anchor:33418_32114_10-33418_32114_10",
-                  "boss": false,
+                  "boss": true,
                   "boss_source": null,
-                  "creature": "oteryn:creature.the_ravenger",
+                  "creature": "oteryn:creature.the_ravager",
                   "source": {
                     "evidence": "OTS_HYPOTHESIS_ONLY",
                     "line": 4,
@@ -35511,10 +35747,10 @@
         "kind": "until_reset"
       },
       "inactive_reasons": [
-        "creature_unbound:Gorga"
+        "global_regular_spawn_has_no_public_raid"
       ],
       "key": "raid:porthope.gorga",
-      "kind": "area",
+      "kind": "boss",
       "name": "porthope.gorga",
       "schedule": {
         "interval_s": 86400,
@@ -35588,7 +35824,7 @@
                     "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
                   },
                   "area_anchor": "raid-anchor:32867_32829_1-32867_32829_1",
-                  "boss": false,
+                  "boss": true,
                   "boss_source": null,
                   "creature": "oteryn:creature.gorga",
                   "source": {
@@ -48449,15 +48685,13 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
       },
-      "inactive_reasons": [
-        "creature_unbound:Orc Sam Backpack"
-      ],
+      "inactive_reasons": [],
       "key": "raid:venore.orcsambackpack",
       "kind": "area",
       "name": "venore.orcsambackpack",
@@ -48539,7 +48773,7 @@
                   "area_anchor": "raid-anchor:32964_31735_7-32981_31756_7",
                   "boss": false,
                   "boss_source": null,
-                  "creature": "oteryn:creature.orc_sam_backpack",
+                  "creature": "oteryn:creature.orc_sambackpack",
                   "source": {
                     "evidence": "OTS_HYPOTHESIS_ONLY",
                     "line": 4,
@@ -48761,6 +48995,7 @@
       ],
       "inactive_reasons": [
         "global_broadcast_time_unit_unresolved:oteryn:raid.venore_raids.giant_spider_raid_on_plains_of_havoc",
+        "global_raid_clock_unregistered",
         "schedule_unknown"
       ],
       "key": "raid:venore.the_old_widow",
@@ -50640,12 +50875,12 @@
   "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
   "totals": {
     "area": {
-      "active": 34,
-      "total": 102
+      "active": 35,
+      "total": 100
     },
     "boss": {
       "active": 70,
-      "total": 86
+      "total": 88
     },
     "calendar": {
       "active": 2,

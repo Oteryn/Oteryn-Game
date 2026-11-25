@@ -30,6 +30,8 @@ class ForgeSqlAdmissionTests(unittest.TestCase):
                 ("oteryn:item.tibia.i37110", "definition-r1"),
             ],
         )
+        self.assertEqual(by_key['oteryn:item.tibia.i7774'], ('definition-r1', 1, 1, 'hand'))
+        self.assertEqual(by_key['oteryn:item.tibia.i25973'], ('definition-r1', 1, 1, 'hand'))
         self.assertIn((4, 1, 8_000_000, 1, 55_000_000, 65_000_000), prices)
         self.assertIn(
             (4, 10, 15_000_000_000, 85, 125_000_000_000, 300_000_000_000), prices

@@ -15,11 +15,11 @@ import hashlib
 import json
 import re
 import sys
-
-import seasonal_raids
-import feroxa_raid
 from pathlib import Path
 from xml.parsers import expat
+
+import feroxa_raid
+import seasonal_raids
 
 ROOT = Path(__file__).resolve().parents[2]
 REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
@@ -40,6 +40,24 @@ CITY_NAMES = {"ab'dendriel", "ankrahmun", "carlin", "darashia", "edron", "kazord
               "liberty bay", "port hope", "rookgaard", "svargrond", "thais", "venore", "yalahar"}
 MAX_CREATURES = 500  # Crystal yalahar/vampires.xml:6-12; RAIDS-GLOBAL 2026-11-01.
 MAX_WAVES = 50  # Crystal oramond/walkers.xml:4-53, 50 separately scheduled spawns.
+
+
+# Global admission requires the owning encounter or world-state prerequisite.
+GLOBAL_RAID_HOLDS = {
+    "raid:abdendriel.chayenne": "global_raid_membership_unproven:historical_unavailable",
+    "raid:farmine.zulazzathecorruptor": "global_siege_trigger_and_gate_transition_unbound",
+    "raid:oramond.ravenger": "global_oramond_catacombs_quest_trigger_unbound",
+    "raid:porthope.gorga": "global_regular_spawn_has_no_public_raid",
+    "raid:venore.the_old_widow": "global_raid_clock_unregistered",
+}
+
+# Crystal registers identical Orc bodies in data-global and data-crystal;
+# the catalogue has the compact spelling used by the latter registration.
+# The Oramond XML misspells the only Dark Trails boss in the donor monster tree.
+CRYSTAL_CREATURE_ALIASES = {
+    "orc_sam_backpack": "orc_sambackpack",
+    "the_ravenger": "the_ravager",
+}
 
 
 def encoded(value: object) -> bytes:
@@ -191,7 +209,8 @@ def xml_variant(source: dict, creatures: dict[str, bool], wiki_bosses: set[str],
         entries = []
         for monster in ([event] if tag == "singlespawn" else event["children"]):
             values = monster["attributes"]
-            creature = "oteryn:creature." + slug(values["name"])
+            name = slug(values["name"])
+            creature = "oteryn:creature." + CRYSTAL_CREATURE_ALIASES.get(name, name)
             low = high = 1
             if tag == "areaspawn":
                 low, high = int(values.get("minamount", 0)), int(values.get("maxamount", 0))
@@ -392,6 +411,50 @@ def calendar_schedule(observation: dict) -> dict:
     return result
 
 
+# Terrain cells from the archived Mapper Coords (region * 256 + cell offset).
+# Pumpkin's creature page gives three alternatives for the four-hour firing.
+HALLOWEEN = {
+    "oteryn:raid.kazordoon_raids.the_halloween_hare": (
+        24 * 3_600_000, [(32624, 32018, 7)], "wiki:20165:1135570"),
+    "oteryn:raid.northern_darama_raids.the_mutated_pumpkin": (
+        4 * 3_600_000, [(33115, 32398, 7), (33095, 32381, 7), (33092, 32418, 7)], "wiki:29889:1139122"),
+}
+
+
+def halloween_variant(record: dict, facts: dict) -> None:
+    interval, cells, cell_ref = HALLOWEEN[record["key"]]
+    name, = facts["creatures"]["value"]
+    observation = facts["schedule"]["value"]
+    timeline = facts["broadcast_timeline"]["value"]
+    if any(wiki_milliseconds(event["offset"]) != index * interval
+           or event["message"] != timeline[0]["message"] for index, event in enumerate(timeline)):
+        raise ValueError("HALLOWEEN_ARCHIVE_TIMELINE")
+    schedule = calendar_schedule(observation)
+    if not schedule["window"] or (schedule["interval_ms"] or interval) != interval:
+        raise ValueError("HALLOWEEN_ARCHIVE_SCHEDULE")
+    anchor = (
+        "immediate_post_save"
+        if record["key"].endswith(".the_halloween_hare") else "server_open"
+    )
+    # Preserve the observed dates and waves for an owner that can prove the anchor.
+    schedule.update(interval_ms=None, repeat=False)
+    record.update(schedule=schedule, end={"kind": "until_reset", "despawn_after_ms": None},
+                  inactive_reasons=[f"calendar_firing_anchor_unbound:{anchor}"], variants=[])
+    message_source = {"evidence": "TIBIAWIKI_STRUCTURED", **facts["broadcast_timeline"]["sources"][0]}
+    location_source = {"evidence": "TIBIAWIKI_STRUCTURED", "source": cell_ref, "selector": "Mapper Coords"}
+    for x, y, floor in cells:
+        cell = {"x": x, "y": y, "floor": floor}
+        area = {"from": dict(cell), "to": dict(cell)}
+        record["variants"].append({
+            "key": area_anchor(area), "announcements": [{"delay_ms": 0, "text": timeline[0]["message"],
+                "kind": "advance", "source": message_source}], "unresolved": [],
+            "waves": [{"delay_ms": 0, "entries": [{"creature": "oteryn:creature." + slug(name),
+                "source_name": name, "amount": {"min": 1, "max": 1}, "area_anchor": area_anchor(area),
+                "area": area, "boss": name in record["boss_names"], "spawn_mode": "single",
+                "source": location_source}]}],
+        })
+
+
 def lua_sugar(source: dict, creatures: dict[str, bool]) -> dict:
     text = source["text"]
     bounds = re.findall(r"Position\((\d+),\s*(\d+),\s*(\d+)\)", text)
@@ -425,6 +488,14 @@ def lua_sugar(source: dict, creatures: dict[str, bool]) -> dict:
                           "sources": [citation(source, 1)], "waves": [{"delay_ms": 0, "raw_delay_ms": 0,
                           "entries": [{"creature": creature, "source_name": "Sugar Mommy", "amount": {"min": 1, "max": 1},
                                        "area_anchor": area_anchor(area), "area": area, "spawn_mode": "zone", "boss": True, "source": citation(source, 14)}]}]}]}
+
+
+def xml_schedule(node: dict, ordinal: int) -> dict:
+    attrs = node["attributes"]
+    return {"kind": "legacy_xml", "interval_s": int(attrs["interval2"]) * 60,
+            "margin_ms": int(attrs.get("margin", 0)) * 60_000,
+            "repeat": attrs.get("repeat", "false").lower() in {"true", "1", "yes"},
+            "source_order": ordinal}
 
 
 def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict,
@@ -487,9 +558,7 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
         if entry:
             ordinal, node = entry
             attrs = node["attributes"]
-            schedule = {"kind": "legacy_xml", "interval_s": int(attrs["interval2"]) * 60,
-                        "margin_ms": int(attrs.get("margin", 0)) * 60_000,
-                        "repeat": attrs.get("repeat", "false").lower() in {"true", "1", "yes"}, "source_order": ordinal}
+            schedule = xml_schedule(node, ordinal)
             key = "raid:badger" if path.endswith("/abdendriel/badgers.xml") else "raid:" + re.sub(r"[^a-zA-Z0-9:._/-]", "_", attrs["name"])
             refs = [citation(source, 1), citation(sources[REGISTRY], node["line"])]
         else:
@@ -518,8 +587,8 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
             record["world_change_binding"] = "EVENTS-WORLD-1 W6/W10; WORLD-SRC-1105 native activation"
         for identity in identities:
             reconcile_global(record, wiki[identity])
-        if key == "raid:abdendriel.chayenne":
-            record["inactive_reasons"].append("global_raid_membership_unproven:donor_chayenne_has_no_archived_global_identity")
+        if key in GLOBAL_RAID_HOLDS:
+            record["inactive_reasons"].append(GLOBAL_RAID_HOLDS[key])
         qualify(record, creatures, placements)
         records.append(record)
     for key, observed in sorted(wiki.items()):
@@ -536,6 +605,8 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
                   "inactive_reasons": ["wiki_donor_identity_unresolved", "native_wave_area_unknown", "message_kind_or_timing_unresolved"]}
         if calendar:
             record["inactive_reasons"].append("calendar_firing_rule_unresolved")
+        if key in HALLOWEEN:
+            halloween_variant(record, facts)
         if key.endswith("dryad_invasion"):
             source = sources["data-global/scripts/raids/world_changes/flower_month.lua"]
             record["sources"] = [citation(source, 1)]

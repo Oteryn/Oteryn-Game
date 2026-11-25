@@ -383,6 +383,11 @@ fn scenario(
         let (next, result, _) =
             super::item_craft_fixtures::exchange(&owner, next, 2, &payload, None).await?;
         assert_eq!(result, UseDisposition::Committed);
+        assert_eq!(
+            owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
+            MovementLocalPosition { x: 6, y: 0, floor: 7 },
+            "quest door USE enters the doorway"
+        );
         assert!(map.enterable(station_pos));
         assert_eq!(
             map.facts()
@@ -578,10 +583,12 @@ fn scenario(
                     );
                 }
                 PlayerGroundCase::Refused => {
-                    // x=1 is a real tile beyond reach; x=8 is in reach but absent from the bundle.
-                    for (command_id, x, expected) in [
-                        (101, 1, LoopMoveResult::TooFar),
-                        (102, 8, LoopMoveResult::Refused(LoopMoveRefusal::Blocked)),
+                    // Door USE placed the actor at (6, 0). The absent cell is adjacent.
+                    assert!(map.base().tile(1, 0, -7).is_some());
+                    assert!(map.base().tile(6, 1, -7).is_none());
+                    for (command_id, target, expected) in [
+                        (101, cell(1), LoopMoveResult::TooFar),
+                        (102, WorldTilePosition { y: 1, ..cell(6) }, LoopMoveResult::Refused(LoopMoveRefusal::Blocked)),
                     ] {
                         assert_eq!(
                             owner
@@ -591,7 +598,7 @@ fn scenario(
                                     LoopMove {
                                         item,
                                         count: None,
-                                        target: LoopTarget::Ground(cell(x)),
+                                        target: LoopTarget::Ground(target),
                                         slot: None,
                                     }
                                 )
@@ -869,9 +876,8 @@ fn scenario(
                 oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&joined.payload)
                     .map_err(debug)?
                     .header;
-            let next = step_exchange(&owner, next, 3, StepDirection::West).await?;
             assert!(map.enterable(station_pos), "occupied door remains open");
-            let _next = step_exchange(&owner, next, 4, StepDirection::West).await?;
+            let _next = step_exchange(&owner, next, 3, StepDirection::West).await?;
             if authored {
                 assert_eq!(
                     owner
@@ -1167,6 +1173,8 @@ async fn vampire_gate(
         .await
         .map_err(debug)?;
     let key = crate::map::boot::tests::door_key();
+    let mut opening_payload = payload.to_vec();
+    let mut unqualified_route = false;
     for (command, level, expected) in [
         (1, 69, UseDisposition::Locked),
         (2, 70, UseDisposition::Committed),
@@ -1237,20 +1245,40 @@ async fn vampire_gate(
 
         owner.clock_origin -= std::time::Duration::from_secs(1);
         let (next, result, _) =
-            super::item_craft_fixtures::exchange(owner, admitted, command, payload, None).await?;
+            super::item_craft_fixtures::exchange(owner, admitted, command, &opening_payload, None).await?;
         assert_eq!(result, expected, "source level{level}");
-        assert_eq!(
-            map.facts().doors().revision(key),
-            if level == 69 { 0 } else { 1 }
-        );
+        let doors = map.facts().doors();
+        if level == 69 {
+            assert_eq!(doors.revision(key), 0);
+            // Model the open pose left by a qualified player while this actor is level 69.
+            assert!(matches!(doors.toggle(key, 0, false, 70, false),
+                Some(crate::map::door::DoorUse::Toggled { open: true, .. })));
+            unqualified_route = owner.item_walk_route(
+                actor,
+                next.game_session_id,
+                crate::gameplay_transport::AutoWalkTarget::Cell(
+                    oteryn_protocol_oteryn::world_spatial::ActorPosition { x: 6, y: 0, floor: 7 },
+                ),
+            ).await.is_ok_and(|route| route.is_some_and(|route| !route.steps.is_empty()));
+            assert!(matches!(doors.toggle(key, 1, false, 70, false),
+                Some(crate::map::door::DoorUse::Toggled { open: false, .. })));
+            let mut target = oteryn_protocol_oteryn::world_object::decode_use_intent(payload).map_err(debug)?;
+            target.expected_revision = 2;
+            opening_payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
+        } else {
+            assert_eq!(doors.revision(key), 3);
+        }
         admitted = next;
     }
-    let (next, result, _) = super::item_craft_fixtures::exchange(owner, admitted, 2, payload, None).await?;
+    let position = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
+    assert_eq!((position.x, unqualified_route), (6, false),
+        "qualified USE must enter the doorway, and auto-walk must reject the same open door at level 69");
+    let (next, result, _) = super::item_craft_fixtures::exchange(owner, admitted, 2, &opening_payload, None).await?;
     assert_eq!(result, UseDisposition::Committed);
-    assert_eq!(map.facts().doors().revision(key), 1, "replay toggled twice");
+    assert_eq!(map.facts().doors().revision(key), 3, "replay toggled twice");
     owner.clock_origin -= std::time::Duration::from_secs(1);
-    let (_, result, _) = super::item_craft_fixtures::exchange(owner, next, 3, payload, None).await?;
+    let (_, result, _) = super::item_craft_fixtures::exchange(owner, next, 3, &opening_payload, None).await?;
     assert_eq!(result, UseDisposition::StaleState);
-    assert_eq!(map.facts().doors().revision(key), 1);
+    assert_eq!(map.facts().doors().revision(key), 3);
     Ok(())
 }

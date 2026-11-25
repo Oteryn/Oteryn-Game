@@ -84,6 +84,10 @@ def complete_world_project(
     materializer: Path | None = None,
 ) -> dict[str, int | str]:
     from buddel_travel import install_buddel
+    from crystal_creature_parity import PACKET as PARITY_PACKET
+    from crystal_creature_parity import install_documents as install_parity
+    from crystal_spawn_creatures import PATH as SPAWN_PACKET
+    from crystal_spawn_creatures import install as install_spawn_creatures
     from questpc7_thaian_authoring import _install_documents
     from regenerate_content import source_cohort_extent
     from travel_route_corrections import project_routes
@@ -102,7 +106,7 @@ def complete_world_project(
             str(prebuilt_executable("canonicalizer", canonicalizer_manifest, repo_root))
         ]
     elif use_materializer:
-        command = [str(materializer)]
+        command = [str(materializer.resolve(strict=True))]
     else:
         command = [
             "cargo",
@@ -125,6 +129,10 @@ def complete_world_project(
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
         _install_documents(repo_root, staging_root)
+        if (repo_root / SPAWN_PACKET).is_file():
+            install_spawn_creatures(repo_root, staging_root)
+        if (repo_root / PARITY_PACKET).is_file():
+            install_parity(repo_root, staging_root)
         if include_world_successors:
             from questpc7_world_seal import refresh
             from regional_npc_dialogue import install as install_dialogue

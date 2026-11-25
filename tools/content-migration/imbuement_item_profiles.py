@@ -17,12 +17,19 @@ from pathlib import Path
 
 from native_profile_composition import encode_native_profile
 
-CANARY = "imports/canary/items-xml/items.xml"
-CANARY_SHA256 = "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
-CRYSTAL_FACTS = "imports/crystalserver/facts/items-imbuement-slots.json"
-CRYSTAL_REVISION = "ff7ede593c69d4c658b382c97443e8155926924a"
-CRYSTAL_SHA256 = "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
-PROFILES = "content/items/definitions/spell-native-profiles.json"
+CANARY = 'imports/canary/items-xml/items.xml'
+CANARY_SHA256 = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
+CRYSTAL_FACTS = 'imports/crystalserver/facts/items-imbuement-slots.json'
+CRYSTAL_REVISION = 'ff7ede593c69d4c658b382c97443e8155926924a'
+CRYSTAL_SHA256 = 'c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb'
+AUDIT_FACTS = 'imports/crystalserver/facts/items-imbuement-parity-201189f8.json'
+AUDIT_SOURCE = {
+    'path': 'data/items/items.xml',
+    'repository': 'zimbadev/crystalserver',
+    'revision': '201189f871d23597b82caf88fd611454a2ddefb8',
+    'sha256': '8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509',
+}
+PROFILES = 'content/items/definitions/spell-native-profiles.json'
 # items.xml `imbuementslot` child keys (Canary src/items/functions/item/item_parse.cpp) to
 # the content family names.
 FAMILIES = {
@@ -334,6 +341,45 @@ def apply_equipment_audit(root, document):
                 else known([]),
             }
         )
+
+
+def apply_crystal_audit(root, *providers, require_all=True):
+    """Apply the two audited cohorts to their already admitted Item owners."""
+    facts = json.loads((root / AUDIT_FACTS).read_bytes())
+    if (facts['schema'] != 'OTERYN_CRYSTAL_ITEM_IMBUEMENT_SLOT_FACTS/v1'
+            or facts['source'] != AUDIT_SOURCE):
+        raise ValueError('IMBUEMENT_AUDIT_SOURCE')
+    rows = facts['records']
+    seen = set()
+    for document in providers:
+        for record in document['records']:
+            key = record['production_definition']['production_key']
+            item_id = key.removeprefix('oteryn:item.tibia.i')
+            if item_id not in rows:
+                continue
+            binding = record['production_binding']
+            if (item_id in seen or not record['admission']['materializable']
+                    or not binding or binding['external_id'] != item_id
+                    or binding['source_key'] != 'oteryn:source.crystalserver'
+                    or binding['identity_namespace'] != 'ots/item_server_id'
+                    or binding['disposition'] != 'EXACT'):
+                raise ValueError(f'IMBUEMENT_AUDIT_ITEM_BINDING {key}')
+            seen.add(item_id)
+            row = rows[item_id]
+            families = row['families']
+            if not 1 <= row['slot_count'] <= 3 or not families or families.keys() - set(ORDER):
+                raise ValueError(f'IMBUEMENT_AUDIT_ITEM_PROFILE {key}')
+            # XML children form the complete allowlist. An unlisted family is
+            # ineligible without a separate exclusion overriding the allowlist.
+            record['semantics']['imbuement'] = {'state': 'KNOWN', 'value': {
+                'slot_count': {'state': 'KNOWN', 'value': row['slot_count']},
+                'allowed_family_tiers': {'state': 'KNOWN', 'value': [
+                    {'family': family, 'tier': TIERS[families[family]]}
+                    for family in ORDER if family in families]},
+                'excluded_families': {'state': 'KNOWN', 'value': []},
+            }}
+    if require_all and (missing := rows.keys() - seen):
+        raise ValueError(f'IMBUEMENT_AUDIT_MISSING_ITEMS {sorted(missing)}')
 
 
 def main():

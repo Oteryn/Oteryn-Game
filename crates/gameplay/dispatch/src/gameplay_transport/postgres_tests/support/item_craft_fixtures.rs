@@ -32,6 +32,18 @@ pub(super) async fn exchange_selected(
     current_source: Option<std::num::NonZeroU32>,
     source_offset: usize,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+    exchange_with_map_item(owner, admitted, command_id, payload, current_source, source_offset, None).await
+}
+
+pub(super) async fn exchange_with_map_item(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+    current_source: Option<std::num::NonZeroU32>,
+    source_offset: usize,
+    map_item: Option<(i32, i32, i16, u16)>,
+) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
     exchange_selected_operands(
         owner,
         admitted,
@@ -40,6 +52,7 @@ pub(super) async fn exchange_selected(
         current_source,
         source_offset,
         None,
+        map_item,
     )
     .await
 }
@@ -60,6 +73,7 @@ pub(super) async fn exchange_carried(
         current_source,
         0,
         current_target,
+        None,
     )
     .await
 }
@@ -72,12 +86,15 @@ async fn exchange_selected_operands(
     current_source: Option<std::num::NonZeroU32>,
     source_offset: usize,
     current_target: Option<std::num::NonZeroU32>,
+    map_item: Option<(i32, i32, i16, u16)>,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+    use oteryn_protocol_oteryn::world_map::{MapOrigin, STATE_DOMAIN_WORLD_MAP_VIEW, decode_world_map_snapshot};
+    use oteryn_protocol_oteryn::world_object::MapUseTarget;
     if owner.root.has_ready_demand() {
         owner.root.maintain_ready_once().await.map_err(debug)?;
     }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let client_task = async {
+    let client_task = async move {
         let mut source = None;
         let mut target = None;
         loop {
@@ -106,18 +123,28 @@ async fn exchange_selected_operands(
                             .find(|entry| Some(entry.item_definition_ref) == current_target)
                             .map(|entry| entry.handle);
                     }
+                    if domain.domain_id == STATE_DOMAIN_WORLD_MAP_VIEW
+                        && let Some((x, y, floor, appearance)) = map_item
+                    {
+                        let map = decode_world_map_snapshot(domain.payload).map_err(debug)?;
+                        target = map.tiles.iter()
+                            .find(|tile| tile.position.x == x && tile.position.y == y && tile.position.floor == floor)
+                            .and_then(|tile| tile.items.iter().filter(|item| item.appearance_id == appearance).find_map(|item| match item.origin {
+                                MapOrigin::Handle(handle) => Some(handle),
+                                _ => None,
+                            }));
+                    }
                 }
             }
             if envelope.message_type() == crate::foundation::MessageType::SnapshotCommit { break; }
         }
-        let actual = if current_source.is_some() {
+        let actual = if current_source.is_some() || current_target.is_some() || map_item.is_some() {
             let mut intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(admitted.continuity.selected_capabilities.as_slice(), payload).map_err(debug)?;
-            intent.target = UseTarget::Item(source.ok_or("current source handle")?);
-            if current_target.is_some() {
-                intent.use_with_map_item =
-                    Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(
-                        target.ok_or("current target handle")?,
-                    ));
+            if current_source.is_some() {
+                intent.target = UseTarget::Item(source.ok_or("current source handle")?);
+            }
+            if current_target.is_some() || map_item.is_some() {
+                intent.use_with_map_item = Some(MapUseTarget::Item(target.ok_or("current map item handle")?));
             }
             encode_item_use_intent(&intent).map_err(debug)?
         } else { payload.to_vec() };
@@ -162,8 +189,8 @@ async fn exchange_selected_operands(
         if end.is_some() && result.is_some() { Poll::Ready(Ok(())) } else { Poll::Pending }
     })).await??;
     let end = end.ok_or("server did not finish")?;
-    let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else { return Err(format!("{end:?}").into()); };
     let (result, actual) = result.ok_or("client did not finish")??;
+    let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else { return Err(format!("{end:?}").into()); };
     Ok((admitted, result, actual))
 }
 

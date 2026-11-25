@@ -384,7 +384,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     | "oteryn:creature.the_old_widow"
             )
         }) {
-            // Retained native-goal, Hireling and BossYield owners qualify these Items.
+            // Native-goal, Hireling, BossYield and Forge owners qualify these Items.
             // Every remaining unavailable yield still refuses the complete table.
             for key in [
                 "oteryn:item.tibia.i3061",
@@ -393,6 +393,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 "oteryn:item.tibia.i3002",
                 "oteryn:item.tibia.i3069",
                 "oteryn:item.tibia.i3070",
+                "oteryn:item.tibia.i3309",
                 "oteryn:item.tibia.i7416",
             ] {
                 let facts = loot
@@ -408,7 +409,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 "oteryn:creature.the_old_widow" => {
                     ("oteryn:item.tibia.i5977", &["oteryn:item.tibia.i12320"])
                 }
-                _ => ("oteryn:item.tibia.i4097", &["oteryn:item.tibia.i3309"]),
+                _ => ("oteryn:item.tibia.i4097", &["oteryn:item.tibia.i3116"]),
             };
             assert_eq!(corpse.key, body);
             let binding = loot
@@ -680,7 +681,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 259, 32, 46)
+        (52, 257, 37, 50)
     );
     assert_eq!(
         admitted,
@@ -694,6 +695,9 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.bakragore",
             "oteryn:creature.chagorz",
             "oteryn:creature.chayenne",
+            "oteryn:creature.clubarc_the_plunderer",
+            "oteryn:creature.cublarc_the_plunderer",
+            "oteryn:creature.deep_terror",
             "oteryn:creature.count_vlarkorth",
             "oteryn:creature.demodras",
             "oteryn:creature.dragonking_zyrtarch",
@@ -703,6 +707,9 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.enraged_arbaziloth",
             "oteryn:creature.eradicator",
             "oteryn:creature.eradicator2",
+            "oteryn:creature.glooth_fairy",
+            "oteryn:creature.gorga",
+            "oteryn:creature.gorgo",
             "oteryn:creature.goshnar_s_cruelty",
             "oteryn:creature.goshnar_s_greed",
             "oteryn:creature.goshnar_s_hatred",
@@ -711,17 +718,21 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.goshnar_s_megalomania_green",
             "oteryn:creature.goshnar_s_megalomania_purple",
             "oteryn:creature.goshnar_s_spite",
+            "oteryn:creature.gralvalon",
             "oteryn:creature.grand_mother_foulscale",
             "oteryn:creature.ice_overlord",
             "oteryn:creature.ichgahal",
             "oteryn:creature.king_zelos",
             "oteryn:creature.koshei_the_deathless",
+            "oteryn:creature.malvaroth",
             "oteryn:creature.lord_azaram",
             "oteryn:creature.magma_bubble",
             "oteryn:creature.lord_azaram",
             "oteryn:creature.mitmah_vanguard",
+            "oteryn:creature.morbol",
             "oteryn:creature.murcion",
             "oteryn:creature.outburst",
+            "oteryn:creature.professor_maxxen",
             "oteryn:creature.rupture",
             "oteryn:creature.sir_baeloc",
             "oteryn:creature.sugar_daddy",
@@ -731,6 +742,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.the_percht_queen",
             "oteryn:creature.the_primal_menace",
             "oteryn:creature.the_scion_of_havoc",
+            "oteryn:creature.twisterror",
             "oteryn:creature.vemiath",
         ]
     );
@@ -744,13 +756,15 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.ferumbras",
             "oteryn:creature.ferumbras_mortal_shell",
             "oteryn:creature.glooth_fairy",
+            "oteryn:creature.king_zelos",
+            "oteryn:creature.lord_azaram",
             "oteryn:creature.lord_retro",
-            "oteryn:creature.professor_maxxen",
             "oteryn:creature.scarlett_etzel",
             "oteryn:creature.sharpclaw",
             "oteryn:creature.the_blazing_time_guardian",
             "oteryn:creature.the_freezing_time_guardian",
             "oteryn:creature.the_time_guardian",
+            "oteryn:creature.weakened_arbaziloth",
         ]
     );
     shared_body.sort_unstable();
@@ -776,7 +790,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.the_weakened_count",
         ]
     );
-    assert_eq!(bosses.len(), 389);
+    assert_eq!(bosses.len(), 396);
     let before = source.reward_table().row("oteryn:creature.rat").unwrap();
     let before_policy = source
         .policies()
@@ -1147,4 +1161,74 @@ fn srx3_actual_rotten_reward_yields_have_source_inventory_profiles() -> Result<(
             if physical.movable==F::Known(true) && physical.pickupable==F::Known(true)));
     }
     Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn crystal_portable_containers_load_with_exact_inventory_capacities()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+            use super::super::{NativeItemDestination, NativeItemStackClass};
+            use crate::content::ReferenceItemField::Known;
+
+            let world = test_source(1)
+                .map_err(|error| format!("source world: {error:?}"))?
+                .world_id;
+            let (controller, _) = try_activate_input(world, &manifest_input())
+                .map_err(|error| format!("activate native content: {error:?}"))?;
+            let native = controller
+                .active()
+                .and_then(|generation| generation.native_gameplay())
+                .ok_or("active native gameplay")?;
+            // The verified definition has 22 slots and is held by the ordinary container owner.
+            assert!(native.item_policy_for_source_id(53074).is_none());
+            // Crystal 201189f8 data/items/items.xml and its container/take appearance flags.
+            for (capacity, source_ids) in [
+                (1, &[6104][..]),
+                (2, &[37561]),
+                (5, &[4282, 6509]),
+                (8, &[2858, 2860, 2861, 2862, 2864, 5950, 8861, 9603, 10325]),
+                (10, &[24861, 24862]),
+                (15, &[2481, 2482, 14674]),
+                (
+                    20,
+                    &[
+                        2865, 2866, 2868, 2869, 2870, 2871, 2872, 5949, 8860, 9602, 9604, 9605,
+                        10202, 10324, 10327, 14248, 14249, 16099, 16100, 19159, 21292, 21411,
+                        22084, 24395, 35577, 37536,
+                    ],
+                ),
+            ] {
+                for &id in source_ids {
+                    let profile = native
+                        .item_policy_for_source_id(id)
+                        .ok_or_else(|| format!("missing native Item profile for {id}"))?;
+                    let record = profile.record();
+                    assert!(record.admission.materializable, "Item {id}");
+                    assert_eq!(
+                        record.admission.stack_class,
+                        NativeItemStackClass::NonStackable,
+                        "Item {id}"
+                    );
+                    assert_eq!(
+                        record.admission.legal_destinations,
+                        [
+                            NativeItemDestination::CharacterInventory,
+                            NativeItemDestination::Ground,
+                        ],
+                        "Item {id}"
+                    );
+                    assert!(
+                        matches!(&record.semantics.container,
+                        Known(container) if container.capacity == Known(capacity)),
+                        "Item {id}"
+                    );
+                }
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "container activation test panicked")?
 }

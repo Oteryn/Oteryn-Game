@@ -181,6 +181,8 @@ fn scenario(rabbit: bool) -> TestResult {
             ("oteryn:item.tibia.i3469", 1),
             (bag, 1),
             ("oteryn:item.tibia.i12171", 1),
+            ("oteryn:item.tibia.i9594", 1),
+            ("oteryn:item.tibia.i9598", 1),
         ];
         super::item_look_fixtures::seed_main_backpack(
             &harness,
@@ -190,13 +192,18 @@ fn scenario(rabbit: bool) -> TestResult {
 
         if rabbit {
             let mut admitted = deps.admitted;
+            admitted.runtime_actor = Some(deps.actor);
             super::qengine_outfit_stories_fixtures::seed_production_progression_context(
                 &harness, &owner, admitted.game_session_id,
             ).await?;
             owner.admit_progression_session(&mut admitted).await;
             assert!(owner.progression_binding(admitted.game_session_id).is_some());
             nest_rabbit_knives(&harness).await?;
-            let result = exercise_rabbit(&owner, &harness, native, fence, deps.actor).await;
+            let result = async {
+                exercise_rabbit(&owner, &harness, native, fence, deps.actor).await
+                    .map_err(|error| format!("rabbit skinning fixture: {error}"))?;
+                rabbit_jam_wire(&owner, &harness, native, admitted, fence).await
+            }.await;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -1439,6 +1446,73 @@ async fn exercise_rabbit(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!((retained_knives, nested_receipts), (2, 3));
+    Ok(())
+}
+
+async fn rabbit_jam_wire(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+) -> TestResult {
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+    let race = native.reward_table().row("oteryn:creature.rabbit").map_err(debug)?.race.clone().ok_or("rabbit race")?;
+    let corpse = mint_corpse(owner, h, native, 6017, Some(race), 903).await
+        .map_err(|error| format!("wire rabbit mint: {error}"))?;
+    advance_rabbit_decay(owner, h, corpse, 11_000).await
+        .map_err(|error| format!("wire rabbit decay: {error}"))?;
+    // The fixture's corpse is a genuine durable mint. Bind that instance to a
+    // session handle and pass an encoded command through production USE routing.
+    let target = ItemKey::Instance(corpse);
+    let mut view = crate::gameplay_transport::item_view::SessionItemView::resume(Default::default()).with_map_view();
+    let handle = view.map_view(&[target], |table| Ok(table.handle(&target)))
+        .map_err(debug)?.ok_or("mature rabbit handle")?;
+    let mut items = Some(view);
+    admitted.first_entry = FirstEntryOutcome::Positioned;
+    admitted.item_fence = Some(fence);
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18]).ok_or("rabbit capability offer")?;
+    let index = native.item_index().ok_or("item index")?;
+    for (command, seed) in [(1, 76), (2, 77)] {
+        super::item_look_fixtures::force_seeded_tool_jam(h, admitted.game_session_id, command, seed).await?;
+    }
+    for (command_id, appearance) in [(1, 9594), (2, 9598)] {
+        let key = format!("oteryn:item.tibia.i{appearance}");
+        let definition = index.definition_ref("Item", &key, "definition-r1").ok_or("tool")?;
+        let payload = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&UseIntent {
+            target: UseTarget::ItemByDefinition(definition),
+            use_with_map_item: Some(MapUseTarget::Item(handle)),
+            ..skinning_intent()?
+        }).map_err(debug)?;
+        let frame = oteryn_protocol_oteryn::encode_client_command(
+            admitted.continuity.connection_generation,
+            &oteryn_protocol_oteryn::ClientCommandValue {
+                command_id,
+                command_type: oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT,
+                payload: &payload,
+            },
+        )?;
+        for _ in 0..2 {
+            let outcome = tokio::select! {
+                result = crate::gameplay_transport::connection::test_use_frame(owner, &mut admitted, &frame, &mut items) => {
+                    result.ok_or("rabbit USE dispatch")?
+                }
+                result = super::item_craft_fixtures::maintain_ready(owner) => {
+                    result?;
+                    return Err("rabbit readiness driver ended".into());
+                }
+            };
+            assert_eq!(outcome.disposition, UseDisposition::Committed);
+        }
+        let definition: String = sqlx::query_scalar("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(corpse.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(definition, "oteryn:item.tibia.i4301", "a jam leaves the rabbit unskinned");
+        let timers: Vec<(String, i64)> = sqlx::query_as(
+            "SELECT definition_production_key, duration_millis FROM game_spell_item_temporal_schedules WHERE target_production_key=$1",
+        ).bind(key).fetch_all(&h.pool).await?;
+        assert_eq!(timers, [(format!("oteryn:item.tibia.i{}", appearance + 1), 60_000)]);
+    }
     Ok(())
 }
 

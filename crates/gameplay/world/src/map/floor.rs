@@ -54,7 +54,10 @@ pub use quest_callback::{
     prepare_quest_encounter_ejection, prepare_quest_encounter_member,
 };
 pub use quest_callback_scene::{PreparedSceneRelocations, prepare_scene_relocations};
-pub use rope::{LadderTarget, is_rope_spot_item, prepare_bundle_ladder, prepare_bundle_rope};
+pub use rope::{
+    LadderTarget, is_bundle_rope_spot, is_rope_spot_item, prepare_bundle_ladder,
+    prepare_bundle_rope,
+};
 pub use scripted_teleport::prepare_scripted_quest_teleport_facing;
 use std::collections::{BTreeMap, BTreeSet};
 use {
@@ -258,6 +261,11 @@ pub type Cell = (i32, i32, i32);
 /// per step.
 pub trait CellBlocker: Sync {
     fn blocks(&self, cell: LogicalCell) -> bool;
+    /// Player door predicates default to fail-closed without admitted Character facts.
+    fn admits_door_entry(&self, _requirement: super::door::DoorEntryRequirement) -> bool {
+        false
+    }
+
     /// An exact, unambiguous conditional callback owns this native portal's landing.
     /// Default movement retains the bundle teleport. Rechecked with the sealed proof.
     fn suppresses_native_teleport(&self, _cell: LogicalCell) -> bool {
@@ -750,6 +758,18 @@ fn qualify_origin_control(
     Ok(())
 }
 
+/// Whether a player's live prerequisites rule out an open door at the candidate cell.
+pub fn player_door_entry_blocked(
+    cells: &NativeEntryMovementCells,
+    cell: LogicalCell,
+    access: &dyn CellBlocker,
+) -> bool {
+    matches!(cells.index(), NativeMovementCollisionIndex::Bundle(index)
+    if pos(cell.x, cell.y, cell.z).is_some_and(|tile| index.map().facts.blocks_player_entry(
+        tile, |requirement| access.admits_door_entry(requirement),
+    )))
+}
+
 fn destination(
     doomforge_open: bool,
     cells: &NativeEntryMovementCells,
@@ -765,11 +785,14 @@ fn destination(
     // teleport destination.
     let ground = ground_of(cells);
     let ground = |cell: Cell| {
-        if closed.blocks(LogicalCell {
+        let at = LogicalCell {
             x: cell.0,
             y: cell.1,
             z: cell.2,
-        }) || (!doomforge_open && is_doomforge_portal(cells, cell))
+        };
+        if closed.blocks(at)
+            || player_door_entry_blocked(cells, at, closed)
+            || (!doomforge_open && is_doomforge_portal(cells, cell))
         {
             Ground::Blocked
         } else {

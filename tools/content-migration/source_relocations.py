@@ -39,7 +39,7 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
         "86d294671104ff928bc6070e4fab19b68c2f1598fbddbf9e0496ee37eee33197",
     ): (
         "content/world/placements/index.json",
-        "913224199f55c3f82920d4f1f8c554208501f338b9eea95394e64f13ceedffd8",
+        "6da9692ec73c8c14d791ce77662c907a502edaf62a3264de3fcb0b2bbc0babf1",
     ),
     (
         "content/world/placements/region-z07-x130-y127.b3",
@@ -79,14 +79,14 @@ RELOCATIONS = {
         "ce986ca83b92f5ea2b7aeaa5bdc75b591cb28d63ab1a93dce0077215ce90979f",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "0e2f30d08b271e43d8bc051c61d7e5e54512b3cfa751978cfa8ad9e195d5d4e6",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "96b24f0cbedb168d73aeca26644536693d97b7fe2d2f49ecbd150bdfd4f3037b",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "d402b42c69b28728850cd21a5414d5b4c75134098d14442892bc97d7deaaa97e",
     ),
     # The source-qualified Anomaly ground retains its pre-existing Item route;
     # the complete terrain row otherwise remains byte-identical.
@@ -104,7 +104,7 @@ RELOCATIONS = {
         "704991a60238795986358b6d2bcb7ac25f2172a04723b541e3f959a50eb9d768",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "0e2f30d08b271e43d8bc051c61d7e5e54512b3cfa751978cfa8ad9e195d5d4e6",
     ),
     (
         "content/world/terrain/terrain-05500-05999.json",
@@ -118,7 +118,7 @@ RELOCATIONS = {
         "db9150a3639c4d6bcd596c040b7d2ad39047fbc3f51c925761bebfbb6def26fd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "d402b42c69b28728850cd21a5414d5b4c75134098d14442892bc97d7deaaa97e",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
@@ -149,14 +149,14 @@ RELOCATIONS = {
         "82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "3d36cc4c70fabeeeec1fb46a9074d7020a6e09e88a243e7fa61992dd63d95d4f",
+        "e9bc93fa8a8513dc101d23f4c7d1deabeeb0cd7eb918d973f703f0e4975bb051",
     ),
     (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
         "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "3d36cc4c70fabeeeec1fb46a9074d7020a6e09e88a243e7fa61992dd63d95d4f",
+        "e9bc93fa8a8513dc101d23f4c7d1deabeeb0cd7eb918d973f703f0e4975bb051",
     ),
     # Numeric17 reuses the Mantra/Bond compiler's source readers. Their behavior
     # is unchanged by the exact Global overlay check on live Mantra/Bond rows.
@@ -174,21 +174,21 @@ RELOCATIONS = {
         "a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9",
     ): (
         "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-        "2442cec4dabda2c89593259138ed41e41a6e5edf59ab8bd9abdc2340fb6e7539",
+        "7fb14dab6c42456ca7470f26747bb8c087fcf40f615d2566c480839c035fc8c2",
     ),
     (
         "crates/gameplay/content/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "29c05a9d6a5dbee23213ed047510efc41cbdb2723e38a787da64b8d0c9856502",
+        "eb0c18d4159a7726187256d9abb3525916f45d4c04bb0ec50a255dde6611e090",
     ),
     (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "29c05a9d6a5dbee23213ed047510efc41cbdb2723e38a787da64b8d0c9856502",
+        "eb0c18d4159a7726187256d9abb3525916f45d4c04bb0ec50a255dde6611e090",
     ),
     # QMINT3's tree-first reference view changes only the Forge289 compiler and
     # mapper fingerprints. All454 binding rows and289 literal promotions are
@@ -240,42 +240,42 @@ RELOCATIONS = {
         "0549b3567749436b9e6f91f79751d32d9ea4431fe6b1be7505566d50b797e27d",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "0e2f30d08b271e43d8bc051c61d7e5e54512b3cfa751978cfa8ad9e195d5d4e6",
     ),
     (
         "content/world/terrain/index.json",
         "22cb600cca441ac68526501c8e3576ec9c1dd07f77b276db470c70b996028fec",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "0e2f30d08b271e43d8bc051c61d7e5e54512b3cfa751978cfa8ad9e195d5d4e6",
     ),
     (
         "content/world/terrain/index.json",
         "360e65beb939450179cb6c99b5c19a0e2842051fd9c3beaf21e6366b9c9245a4",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "0e2f30d08b271e43d8bc051c61d7e5e54512b3cfa751978cfa8ad9e195d5d4e6",
     ),
     (
         "content/world/terrain/index.json",
         "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "0e2f30d08b271e43d8bc051c61d7e5e54512b3cfa751978cfa8ad9e195d5d4e6",
     ),
     (
         "content/world/terrain/index.json",
         "abffe2dd83dfec1ce1afd657bd0fcaae3760a10a509f8e1034e35834a714ba79",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "0e2f30d08b271e43d8bc051c61d7e5e54512b3cfa751978cfa8ad9e195d5d4e6",
     ),
     (
         "content/world/terrain/index.json",
         "baf9f79b334c9478895ae824c67aad32e06eb4e7b09435570389dd64ad455836",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "0e2f30d08b271e43d8bc051c61d7e5e54512b3cfa751978cfa8ad9e195d5d4e6",
     ),
     (
         "content/world/terrain/terrain-08614-08668.json",
@@ -289,21 +289,21 @@ RELOCATIONS = {
         "00878d28eb56c84f57734956505f60eb1fe7d248b7d1002c19209172a5125cfd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "d402b42c69b28728850cd21a5414d5b4c75134098d14442892bc97d7deaaa97e",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "8e41e838db44b527e4a243d4be1dc5245fe74def7145d9a68cdfc1436d609d5c",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "d402b42c69b28728850cd21a5414d5b4c75134098d14442892bc97d7deaaa97e",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "ae1a4f2c09345efbda4293eee96a93f9054bb33e40f658ab483b8b0c88027477",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "d402b42c69b28728850cd21a5414d5b4c75134098d14442892bc97d7deaaa97e",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",

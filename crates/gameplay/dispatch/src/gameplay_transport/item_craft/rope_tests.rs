@@ -17,7 +17,7 @@ fn id(n: u8) -> [u8; 16] {
     [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
 }
 fn index() -> crate::content::item_ref::ItemDefinitionIndex {
-    crate::content::item_ref::ItemDefinitionIndex::decode(br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i2854","definition-r1"],["oteryn:item.tibia.i3003","definition-r1"],["oteryn:item.tibia.i646","definition-r1"]]}"#).unwrap()
+    crate::content::item_ref::ItemDefinitionIndex::decode(br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i2854","definition-r1"],["oteryn:item.tibia.i3003","definition-r1"],["oteryn:item.tibia.i646","definition-r1"],["oteryn:item.tibia.i9594","definition-r1"],["oteryn:item.tibia.i9596","definition-r1"],["oteryn:item.tibia.i9598","definition-r1"]]}"#).unwrap()
 }
 fn inventory() -> crate::durability::item_use::ItemUseInventory {
     use crate::durability::item_transfer::{BackpackEntry, CharacterBackpack, InventoryItem};
@@ -257,7 +257,7 @@ impl Owner {
             .position()
     }
     fn apply(&self, intent: &UseIntent, target: Option<ItemKey>) -> UseDisposition {
-        rope_in_channel(
+        match rope_in_channel(
             &mut self.runtime.borrow_mut(),
             &mut self.states.borrow_mut(),
             &self.cells,
@@ -272,7 +272,12 @@ impl Owner {
             0,
             SemanticTimeMicros::from_micros(100),
             None,
-        )
+            || false,
+        ) {
+            RopeTurn::Refused(disposition) => disposition,
+            RopeTurn::Moved { .. } => UseDisposition::Committed,
+            RopeTurn::Jam => panic!("test rope should not jam"),
+        }
     }
 }
 impl FreshAdmissionAuthority for Owner {
@@ -423,9 +428,15 @@ fn tools_rope_spot_wire_dispatch_moves_and_emits_spatial_delta() -> TestResult {
             use crate::gameplay_transport::capabilities::{
                 OfferedCapability, SelectedCapabilities,
             };
-            for (selected_tool_capability, use_handle) in
-                [(true, false), (true, true), (false, false)]
-            {
+            for (selected_tool_capability, use_handle, tool_id, tool_index) in [
+                (true, false, 3003, 2),
+                (true, true, 3003, 2),
+                (false, false, 3003, 2),
+                (true, false, 646, 3),
+                (true, false, 9594, 4),
+                (true, true, 9596, 5),
+                (true, false, 9598, 6),
+            ] {
                 let owner = Owner::new();
                 let offered = [
                     OfferedCapability {
@@ -467,6 +478,17 @@ fn tools_rope_spot_wire_dispatch_moves_and_emits_spatial_delta() -> TestResult {
                     },
                 };
                 let mut intent = owner.intent(10, 0);
+                owner
+                    .inventory
+                    .borrow_mut()
+                    .backpack
+                    .as_mut()
+                    .unwrap()
+                    .entries[0]
+                    .item
+                    .definition
+                    .production_key = format!("oteryn:item.tibia.i{tool_id}");
+                intent.target = UseTarget::ItemByDefinition(NonZeroU32::new(tool_index).unwrap());
                 if use_handle {
                     // Snapshot allocation: main backpack first, then its one rope entry.
                     intent.target = UseTarget::Item(NonZeroU64::new(2).unwrap());
@@ -675,9 +697,10 @@ fn tools_rope_spot_hidden_target_epoch_and_pz_landing() {
             None,
             0,
             now,
-            Some(&overlay)
+            Some(&overlay),
+            || false,
         ),
-        UseDisposition::StaleState
+        RopeTurn::Refused(UseDisposition::StaleState)
     );
     let mut handled = intent;
     handled.use_with_map_item = Some(MapUseTarget::Item(NonZeroU64::new(9).unwrap()));
@@ -697,9 +720,10 @@ fn tools_rope_spot_hidden_target_epoch_and_pz_landing() {
             Some(key),
             0,
             now,
-            None
+            None,
+            || false,
         ),
-        UseDisposition::StaleState
+        RopeTurn::Refused(UseDisposition::StaleState)
     );
     assert_eq!(runtime.read_actor_position(owner.actor).unwrap(), before);
     assert!(

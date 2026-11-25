@@ -120,15 +120,17 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
         raise ValueError("SRX1_ITEM_PROVIDER_SIZE")
     generated[profile_path] = base
     data = (
-        '{\n  "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",\n'
-        '  "base_sha256": "' + hashlib.sha256(base).hexdigest() + '",\n'
-        '  "records": [\n'
-        + ",\n".join(
-            "    "
-            + json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-            for row in sorted(updates, key=order)
+        json.dumps(
+            {
+                "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",
+                "base_sha256": hashlib.sha256(base).hexdigest(),
+                "records": sorted(updates, key=order),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
         )
-        + "\n  ]\n}\n"
+        + "\n"
     ).encode()
     if len(data) > 200_000:
         raise ValueError("SRX1_ITEM_UPDATE_SIZE")

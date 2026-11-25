@@ -1329,6 +1329,24 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                     Ok((binding.external_id.clone(), binding))
                 })
                 .collect::<Result<_, ContentError>>()?;
+        let crystal_doors: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../imports/crystalserver/bindings/ordinary-doors.json"
+        ))
+        .map_err(|_| invalid("Crystal door item binding table"))?;
+        for value in crystal_doors["bindings"]
+            .as_array()
+            .ok_or_else(|| invalid("Crystal door item bindings"))?
+        {
+            let binding: super::project::ProjectV2SourceIdentityBinding =
+                serde_json::from_value(value.clone())
+                    .map_err(|_| invalid("Crystal door item binding"))?;
+            if admitted
+                .insert(binding.external_id.clone(), binding)
+                .is_some()
+            {
+                return Err(invalid("Crystal door item binding conflict"));
+            }
+        }
         // ITEMHOLD-Q: this existing canonical identity has no Crystal row. Its
         // own Wiki itemid/revision and admitted 15.30 appearance bind it exactly;
         // never fabricate a Crystal identity or admit a numeric-id fallback.
@@ -2342,6 +2360,168 @@ mod tests {
     };
     use serde_json::Value;
     #[test]
+    fn crystal_delta_creatures_activate_with_native_policies_and_reward_rows()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::{
+            ProjectV2RangedWeapon, ReferenceAmmoType, ReferenceItemField, ReferenceItemTarget,
+            ReferenceMilliseconds,
+        };
+
+        let world = test_source(1)?.world_id;
+        let supplied = NativeGameplayInput::from_manifest(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json"),
+        )?;
+        let (controller, _) = test_support::try_activate_input(world, &supplied)?;
+        let active = controller
+            .active()
+            .ok_or_else(|| invalid("Crystal delta active content"))?;
+        let native = active
+            .native_gameplay()
+            .ok_or_else(|| invalid("Crystal delta native content"))?;
+        for name in [
+            "common_beetle",
+            "cublarc_the_plunderer",
+            "gorga",
+            "grove_guardian",
+            "herd_weevil",
+            "rootthing_cocoon",
+        ] {
+            let key = format!("oteryn:creature.{name}");
+            assert!(native.creature_profile_fingerprint(&key).is_some(), "{key}");
+        }
+        for name in ["cublarc_the_plunderer", "gorga"] {
+            let key = format!("oteryn:creature.{name}");
+            assert!(native.reward_table().row(&key).is_ok(), "{key}");
+        }
+        for chain in [[9607, 9608, 9609, 9610], [10337, 10334, 10335, 10332]] {
+            for (index, (number, duration_ms)) in chain
+                .iter()
+                .zip([10_000, 300_000, 300_000, 60_000])
+                .enumerate()
+            {
+                let key = format!("oteryn:item.tibia.i{number}");
+                let item = native
+                    .item_policy(&key, "definition-r1")
+                    .ok_or_else(|| invalid("Crystal raid corpse policy"))?;
+                let ReferenceItemField::Known(temporal) = &item.record().semantics.temporal else {
+                    return Err(invalid("Crystal raid corpse decay").into());
+                };
+                assert_eq!(
+                    temporal.duration,
+                    ReferenceItemField::Known(ReferenceMilliseconds(duration_ms))
+                );
+                let target =
+                    chain
+                        .get(index + 1)
+                        .map_or(ReferenceItemField::NotApplicable, |next| {
+                            ReferenceItemField::Known(ReferenceItemTarget {
+                                key: format!("oteryn:item.tibia.i{next}"),
+                                revision: "definition-r1".to_owned(),
+                            })
+                        });
+                assert_eq!(temporal.decay_target, target);
+            }
+        }
+        let bow = native
+            .item_policy("oteryn:item.tibia.i8029", "definition-r1")
+            .ok_or_else(|| invalid("Crystal raid loot weapon policy"))?;
+        assert_eq!(
+            bow.record().admission.legal_destinations,
+            [
+                NativeItemDestination::CharacterInventory,
+                NativeItemDestination::Ground,
+            ]
+        );
+        assert!(matches!(
+            bow.record().authoring.ranged,
+            Some(ProjectV2RangedWeapon::Distance {
+                range_cells: 6,
+                hit_chance: 3,
+                ammunition: ReferenceAmmoType::Arrow,
+                ..
+            })
+        ));
+        let ReferenceItemField::Known(imbuement) = &bow.record().semantics.imbuement else {
+            return Err(invalid("Silkweaver Bow imbuement policy").into());
+        };
+        assert_eq!(imbuement.slot_count, ReferenceItemField::Known(3));
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_creature_admissions_activate_exact_source_health()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world = test_source(1)?.world_id;
+        let supplied = NativeGameplayInput::from_manifest(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json"),
+        )?;
+        let (controller, _) = test_support::try_activate_input(world, &supplied)
+            .map_err(|error| format!("{error:?}"))?;
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("active NativeGameplay")?;
+        let packet: Value = serde_json::from_slice(include_bytes!(
+            "../../../../../imports/crystalserver/creature-parity-201189f.json"
+        ))?;
+        let mut missing = Vec::new();
+        for row in packet["definitions"]
+            .as_array()
+            .ok_or("Crystal Creature definitions")?
+        {
+            let identity: ProjectV2DefinitionRef = serde_json::from_value(row["identity"].clone())?;
+            let source = row["profiles"]
+                .as_array()
+                .ok_or("source profiles")?
+                .iter()
+                .find(|profile| profile["target"] == row["identity"])
+                .ok_or("exact source Creature profile")?;
+            let loaded = native
+                .creature_profiles()
+                .records
+                .iter()
+                .find(|record| record.profile.target == identity);
+            let Some(loaded) = loaded else {
+                missing.push(identity.key);
+                continue;
+            };
+            let ProjectV2AuthoringProfileData::Creature(profile) = &loaded.profile.data else {
+                return Err("native Creature profile".into());
+            };
+            assert_eq!(
+                profile.health,
+                source["data"]["profile"]["health"].as_u64(),
+                "{}",
+                identity.key
+            );
+        }
+        assert!(
+            missing.is_empty(),
+            "missing Creature definitions: {missing:?}"
+        );
+        let items: std::collections::HashMap<_, _> = native
+            .item_profiles()
+            .map(|record| (record.production_definition.production_key.as_str(), record))
+            .collect();
+        for row in packet["item_admissions"]
+            .as_array()
+            .ok_or("Crystal Item admissions")?
+        {
+            let source: ItemProfileRecord = serde_json::from_value(row["record"].clone())?;
+            let key = source.production_definition.production_key.as_str();
+            let admitted = items.get(key).ok_or_else(|| format!("missing {key}"))?;
+            assert_eq!(admitted.admission, source.admission, "{key}");
+            if source.admission.legal_destinations == [NativeItemDestination::Ground] {
+                assert_eq!(
+                    admitted.semantics.temporal, source.semantics.temporal,
+                    "{key}"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn crystal_equipment_first_quarter_loads_weapon_and_armor_claims() -> Result<(), ContentError> {
         use crate::content::ReferenceItemField as F;
         use oteryn_gameplay_domain::domain::equipment_policy_abi::{
@@ -2646,6 +2826,80 @@ mod tests {
         ] {
             assert!(admitted.item_policy(corpse, "definition-r1").is_some());
         }
+        Ok(())
+    }
+
+    #[test]
+    fn admitted_imbuement_profiles_match_crystal_slots_and_families() -> Result<(), ContentError> {
+        use super::super::{
+            ReferenceImbuementAllowance, ReferenceImbuementTier, ReferenceItemField as Field,
+        };
+
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let supplied =
+            NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))?;
+        let world = test_source(1)?.world_id;
+        let (controller, _) = try_activate_input(world, &supplied)
+            .map_err(|_| invalid("imbuement parity activation"))?;
+        let generation = controller
+            .active()
+            .ok_or_else(|| invalid("active content"))?;
+        let native = generation
+            .native_gameplay()
+            .ok_or_else(|| invalid("native content"))?;
+        let source: Value = serde_json::from_str(include_str!(
+            "../../../../../imports/crystalserver/facts/items-imbuement-parity-201189f8.json"
+        ))
+        .unwrap();
+        let rows = source["records"].as_object().unwrap();
+        assert_eq!(rows.len(), 217);
+        let mut wrong_slots = Vec::new();
+        let mut wrong_families = Vec::new();
+        for (id, donor) in rows {
+            let key = format!("oteryn:item.tibia.i{id}");
+            let policy = native
+                .item_policy(&key, "definition-r1")
+                .unwrap_or_else(|| panic!("missing admitted imbuement item {key}"));
+            assert!(policy.record().admission.materializable, "{key}");
+            let Field::Known(profile) = &policy.record().semantics.imbuement else {
+                wrong_slots.push(id);
+                wrong_families.push(id);
+                continue;
+            };
+            let slots = u8::try_from(donor["slot_count"].as_u64().unwrap()).unwrap();
+            if profile.slot_count != Field::Known(slots) {
+                wrong_slots.push(id);
+            }
+            let Field::Known(allowances) = &profile.allowed_family_tiers else {
+                wrong_families.push(id);
+                continue;
+            };
+            let mut expected: Vec<_> = donor["families"]
+                .as_object()
+                .unwrap()
+                .iter()
+                .map(|(family, tier)| ReferenceImbuementAllowance {
+                    family: serde_json::from_value(Value::String(family.clone())).unwrap(),
+                    tier: match tier.as_str().unwrap() {
+                        "2" => ReferenceImbuementTier::Two,
+                        "3" => ReferenceImbuementTier::Three,
+                        "10" => ReferenceImbuementTier::Ten,
+                        value => panic!("unexpected donor tier {value} on {key}"),
+                    },
+                })
+                .collect();
+            assert!(!expected.is_empty(), "{key}");
+            expected.sort_unstable();
+            let mut actual = allowances.clone();
+            actual.sort_unstable();
+            if actual != expected || profile.excluded_families != Field::Known(vec![]) {
+                wrong_families.push(id);
+            }
+        }
+        assert!(
+            wrong_slots.is_empty() && wrong_families.is_empty(),
+            "wrong slot counts: {wrong_slots:?}, wrong family allowances: {wrong_families:?}"
+        );
         Ok(())
     }
 
@@ -4891,6 +5145,76 @@ mod tests {
         assert_eq!(boss.category.as_str(), "nemesis");
     }
     #[test]
+    fn crystal_spawn_delta_creatures_and_gorga_corpse_load_from_native_manifest()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use super::super::{ReferenceItemField as F, ReferenceMilliseconds};
+        let world = test_source(1)?.world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("missing active native gameplay")?;
+        for (slug, hp, speed, outfit, object) in [
+            ("common_beetle", 3700, 120, 1770, None),
+            ("gorga", 15000, 140, 330, None),
+            ("grove_guardian", 20000, 100, 1767, None),
+            ("herd_weevil", 3700, 120, 1770, None),
+            ("rootthing_cocoon", 5000, 0, 0, Some(45600)),
+        ] {
+            let key = format!("oteryn:creature.{slug}");
+            let policy = native
+                .policies()
+                .policies()
+                .iter()
+                .find(|policy| policy.definition_key == key)
+                .ok_or_else(|| format!("missing Crystal Creature policy {key}"))?;
+            assert_eq!(policy.maximum_health, hp, "{key}");
+            assert_eq!(policy.base_speed, speed, "{key}");
+            assert_eq!(policy.outfit_look_type, outfit, "{key}");
+            assert_eq!(policy.object_look_type, object, "{key}");
+        }
+        let reward = native
+            .reward_table()
+            .row("oteryn:creature.gorga")
+            .map_err(|reason| format!("Gorga reward row: {reason:?}"))?;
+        assert_eq!(reward.loot_table.entries.len(), 12);
+        let corpse = native
+            .reward_table()
+            .reward_boss_corpse("oteryn:creature.gorga")
+            .ok_or("missing Gorga reward corpse")?;
+        assert_eq!(
+            corpse
+                .corpse_item
+                .as_ref()
+                .map(|item| item.production_key.as_str()),
+            Some("oteryn:item.tibia.i9607"),
+        );
+        for (id, duration) in [
+            (9607, 10_000),
+            (9608, 300_000),
+            (9609, 300_000),
+            (9610, 60_000),
+        ] {
+            let policy = native
+                .item_policy_for_source_id(id)
+                .ok_or("missing Gorga decay stage")?;
+            let F::Known(temporal) = &policy.record().semantics.temporal else {
+                return Err(format!("missing Gorga decay policy for {id}").into());
+            };
+            assert_eq!(temporal.duration, F::Known(ReferenceMilliseconds(duration)));
+            if id == 9610 {
+                assert_eq!(temporal.decay_target, F::NotApplicable);
+            } else {
+                let F::Known(target) = &temporal.decay_target else {
+                    return Err(format!("missing Gorga decay target for {id}").into());
+                };
+                assert_eq!(target.key, format!("oteryn:item.tibia.i{}", id + 1));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn outfit_tokens_are_in_admitted_native_boss_loot() -> Result<(), Box<dyn std::error::Error>> {
         let (controller, _) = activated_with_loot_tables(test_source(1)?.world_id, None);
         let generation = controller.active().ok_or("generation")?;
@@ -6087,6 +6411,63 @@ mod equipment_projection_tests {
         );
     }
 
+    #[test]
+    fn crystal_ranged_loot_projects_two_handed_equipment_claims()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentBaseVocation;
+
+        let world = oteryn_protocol_oteryn::WorldId::decode(&[
+            1, 1, 1, 1, 1, 1, 0x70, 1, 0x80, 1, 1, 1, 1, 1, 1, 1,
+        ])
+        .map_err(|error| format!("{error:?}"))?;
+        let (controller, _) = super::test_support::activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|a| a.native_gameplay())
+            .ok_or("native content")?;
+        let ids = [8029, 30393, 35518];
+        let capture = std::fs::read_to_string(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../docs/reference/content-prep/item-cyclopedia-capture-1/items.jsonl"),
+        )?;
+        let mut levels = BTreeMap::new();
+        for line in capture.lines() {
+            let row: serde_json::Value = serde_json::from_str(line)?;
+            if let Some(id) = row["id"].as_u64().and_then(|id| u32::try_from(id).ok())
+                && ids.contains(&id)
+            {
+                let level: u16 = row["basic"]["Required Level"]
+                    .as_str()
+                    .ok_or("Global equip level")?
+                    .parse()?;
+                levels.insert(id, level);
+            }
+        }
+        for id in ids {
+            let level = *levels.get(&id).ok_or("Global ranged loot level")?;
+            let record = native
+                .item_policy_for_source_id(id)
+                .ok_or("ranged loot profile")?
+                .record();
+            let claims = projected_equipment_claims(&record.semantics, 5, true)?;
+            assert_eq!(
+                (claims.slots, claims.level),
+                (vec![5, 6], level),
+                "Item {id}"
+            );
+            assert_eq!(
+                claims.vocations,
+                [EquipmentBaseVocation::Paladin],
+                "Item {id}"
+            );
+            assert!(
+                projected_equipment_claims(&record.semantics, 6, true).is_err(),
+                "Item {id}"
+            );
+        }
+        Ok(())
+    }
+
     /// MP01: hatchet (3276) and axe (3274) carry no Crystal level or vocation, so the shipped
     /// native profile must project level 0 with any vocation instead of an unknown pattern.
     #[test]
@@ -6350,7 +6731,7 @@ mod source_item_closure_tests {
                 }
             }
         }
-        assert_eq!((create, remove), (64, 20));
+        assert_eq!((create, remove), (64, 21));
         Ok(())
     }
     #[test]

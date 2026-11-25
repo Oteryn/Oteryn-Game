@@ -140,6 +140,8 @@ mod first_entry_tests;
 mod offence_tests;
 #[path = "equipment_effects_owner_tests/postgres_scenario.rs"]
 mod postgres_scenario;
+#[path = "equipment_effects_owner_tests/source_parity_tests.rs"]
+mod source_parity_tests;
 
 #[test]
 fn dmg3_installed_protection_tiers_expiry_custody_and_catalogue() -> TestResult {

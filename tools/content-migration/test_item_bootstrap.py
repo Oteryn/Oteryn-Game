@@ -143,6 +143,7 @@ def fixture(root):
         "content/creatures/definitions/creatures-00000-00001.json",
     ):
         write(root, relative, {"preserved": relative})
+    write(root, "imports/crystalserver/bindings/ordinary-doors.json", {"bindings": []})
     write(root, "fixture/census.json", {"family_assignments": {}})
     write(root, "fixture/wave.json", {})
     return reference, declarations, editor, sources

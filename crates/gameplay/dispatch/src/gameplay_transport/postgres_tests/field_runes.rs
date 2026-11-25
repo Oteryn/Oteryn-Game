@@ -217,6 +217,18 @@ fn field_runes_postgres_secret_agent_tool_removes_wild_growth() -> TestResult {
 }
 
 #[test]
+fn field_runes_postgres_secret_agent_jam_preserves_wild_growth() -> TestResult {
+    large_stack(|| {
+        run(async |admin| {
+            for tool in [9594, 9596, 9598] {
+                field_scenario(admin.clone(), 3156, 1, 2130, true, false, false, Scenario::SecretJam(tool)).await?;
+            }
+            Ok(())
+        })
+    })
+}
+
+#[test]
 fn field_runes_postgres_missing_extension_cannot_pay_or_create() -> TestResult {
     large_stack(|| run(async |admin| field_case(admin, 3164, 0, 2135, false, false, false).await))
 }
@@ -313,6 +325,7 @@ enum Scenario {
     SelfHardcore,
     SelfOpen,
     SecretMachete,
+    SecretJam(u32),
     NoPvp,
     PzTick,
     NoPvpTick,
@@ -1051,18 +1064,14 @@ async fn field_scenario_inner(
         tx.commit().await?;
     }
     let mut inventory = vec![(format!("oteryn:item.tibia.i{rune}"), 3)];
+    let machete_id = match scenario {
+        Scenario::SecretMachete => 9594,
+        Scenario::SecretJam(tool) => tool,
+        _ => 3308,
+    };
+    let jam = matches!(scenario, Scenario::SecretJam(_));
     if matches!(output, 2128 | 2130) {
-        inventory.push((
-            format!(
-                "oteryn:item.tibia.i{}",
-                if scenario == Scenario::SecretMachete {
-                    9594
-                } else {
-                    3308
-                }
-            ),
-            1,
-        ));
+        inventory.push((format!("oteryn:item.tibia.i{machete_id}"), 1));
     }
     if destroy_scenario(scenario) {
         inventory.push(("oteryn:item.tibia.i3148".into(), 3));
@@ -1075,6 +1084,10 @@ async fn field_scenario_inner(
             .collect::<Vec<_>>(),
     )
     .await?;
+    if jam {
+        // Cast, step in, move out and back, then use the tool on command 8.
+        super::item_look_fixtures::force_seeded_tool_jam(&harness, session, 8, 72).await?;
+    }
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
@@ -1147,11 +1160,6 @@ async fn field_scenario_inner(
             .ok_or_else(|| "inventory definition".into())
     };
     let rune_definition = inventory_definition(rune)?;
-    let machete_id = if scenario == Scenario::SecretMachete {
-        9594
-    } else {
-        3308
-    };
     let machete_definition = inventory_definition(machete_id)?;
     let destroy_definition = inventory_definition(3148)?;
     let casting = async {
@@ -1607,11 +1615,8 @@ async fn field_scenario_inner(
                     let envelope = decode_wire_envelope(&frame).map_err(debug)?;
                     if envelope.message_type() == MessageType::CommandResult {
                         let result = decode_command_result(envelope.payload()).map_err(debug)?;
-                        assert_eq!(
-                            decode_use_result(result.payload).map_err(debug)?,
-                            UseDisposition::TargetIllegal,
-                            "machete reach is checked before any Item removal"
-                        );
+                        assert_eq!(decode_use_result(result.payload).map_err(debug)?, UseDisposition::TargetIllegal,
+                            "machete reach is checked before any Item removal");
                         break;
                     }
                 }
@@ -1647,7 +1652,16 @@ async fn field_scenario_inner(
                     }
                 }
             }
-            if matches!(output, 2128 | 2130) {
+            if jam {
+                let timers: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT definition_production_key, duration_millis FROM game_spell_item_temporal_schedules WHERE target_production_key=$1",
+                ).bind(format!("oteryn:item.tibia.i{machete_id}")).fetch_all(&harness.pool).await?;
+                assert_eq!(timers, [(format!("oteryn:item.tibia.i{}", machete_id + 1), 60_000)]);
+                let field: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING (item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i2130' AND i.lifecycle=1)",
+                ).fetch_one(&harness.pool).await?;
+                assert!(field, "a jam leaves the durable field in place");
+            } else if matches!(output, 2128 | 2130) {
                 let tool:(i16,i64)=sqlx::query_as("SELECT lifecycle,quantity::bigint FROM game_item_instances WHERE definition_production_key=$1").bind(format!("oteryn:item.tibia.i{machete_id}")).fetch_one(&harness.pool).await?;
                 assert_eq!(
                     tool,
@@ -1660,11 +1674,11 @@ async fn field_scenario_inner(
                 .await?;
             assert_eq!(
                 removals,
-                i64::from(matches!(output, 10181 | 10182 | 2130)),
+                i64::from(!jam && matches!(output, 10181 | 10182 | 2130)),
                 "safe entry and machete retire the exact barrier once"
             );
         }
-        if matches!(output, 10181 | 10182 | 2130) {
+        if !jam && matches!(output, 10181 | 10182 | 2130) {
             let delta = owner
                 .observe_world_map(actor, &mut map_view, &mut map_items)
                 .await
@@ -1774,7 +1788,7 @@ async fn field_scenario_inner(
     // Reload durable Ground custody independently of the runtime's physical installation.
     let ground: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_ground_locations g JOIN game_spell_item_lines l USING(item_instance_id) WHERE l.transaction_id IN(SELECT transaction_id FROM game_spell_item_receipts WHERE game_session_id=encode($1,'hex')::uuid)")
         .bind(id(50).as_slice()).fetch_one(&harness.pool).await?;
-    let remaining_count = if committed && matches!(output, 10181 | 10182 | 2130) {
+    let remaining_count = if committed && !jam && matches!(output, 10181 | 10182 | 2130) {
         0
     } else {
         count
