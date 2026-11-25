@@ -291,16 +291,12 @@ impl Rows<'_> {
 struct Fixtures<'a> {
     scopes: [&'a SeamClients<'a>; 5],
     prepared: [bool; 10],
+    seed_only: bool,
     socket: String,
 }
 
 impl Fixtures<'_> {
     fn fixture(&self, build: Build) -> (&SeamClients<'_>, usize) {
-        if build.vocation == NO_VOCATION {
-            // The packet scope's third Account is distinct from the two
-            // classified characters and retains its fresh vocationless build.
-            return (self.scopes[4], 2);
-        }
         (
             self.scopes[build.vocation],
             usize::from(build.level == HIGH),
@@ -319,13 +315,8 @@ impl Fixtures<'_> {
     ) -> TestResult<DevClientSession> {
         let index = build.vocation * 2 + usize::from(build.level == HIGH);
         let (scope, character) = self.fixture(build);
-        let requested_level = if build.vocation == NO_VOCATION || self.prepared[index] {
-            0
-        } else {
-            build.level
-        };
-        // The qualification owner treats level 0 as item custody only.
-        let provision_vocation = VOCATIONS.get(build.vocation).copied().unwrap_or("knight");
+        let requested_level = if self.prepared[index] { 0 } else { build.level };
+        let provision_vocation = VOCATIONS[build.vocation];
         for (ordinal, key) in std::iter::once(key).chain(gear.iter().copied()).enumerate() {
             // The qualification owner freezes one reward cause per admitted
             // session. Distinct gear proposals need distinct sessions.
@@ -389,9 +380,7 @@ impl Fixtures<'_> {
             let _ = release_fixture(client, scope, character).await;
             return Err(error);
         }
-        if build.vocation != NO_VOCATION {
-            self.prepared[index] = true;
-        }
+        self.prepared[index] = true;
         Ok(client)
     }
 }
@@ -1915,11 +1904,27 @@ async fn sweep_item(
     } else {
         Build::supported(positive)
     };
-    let Some(build) = build else {
+    let Some(mut build) = build else {
         rows.emit("seed", Err("eligible-build-unavailable".into()));
         rows.blocked("seed");
         return;
     };
+    if build.vocation == NO_VOCATION {
+        // Platform bootstrap requires a playable vocation. Seed-only replay
+        // proves custody independently of the equipment eligibility oracle.
+        if !fixtures.seed_only {
+            rows.emit(
+                "seed",
+                Err("fixture-vocationless-bootstrap-unavailable".into()),
+            );
+            rows.blocked("seed");
+            return;
+        }
+        build = Build {
+            vocation: 0,
+            level: HIGH,
+        };
+    }
     let gear = if ammo_gear { AMMO_GEAR.as_slice() } else { &[] };
     let mut client = match fixtures.seed_with_gear(key, build, gear).await {
         Ok(client) => client,
@@ -2092,6 +2097,7 @@ pub(super) async fn run<'a>(
     let mut fixtures = Fixtures {
         scopes,
         prepared: [false; 10],
+        seed_only,
         socket: required("NODE_BOOT_CONTROL_SOCKET")?,
     };
     let custody_deadline = Duration::from_secs(20);
