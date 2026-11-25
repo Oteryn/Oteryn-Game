@@ -133,7 +133,7 @@ impl GrizzlyCaptureCache {
 
 /// Select only the observed source roster. Cache absence is unavailable, never an
 /// invented solo group. Mutation authority is qualified separately at settlement.
-fn participants(source: &PartySnapshot, principal: [u8; 16]) -> Option<Vec<[u8; 16]>> {
+pub(super) fn participants(source: &PartySnapshot, principal: [u8; 16]) -> Option<Vec<[u8; 16]>> {
     if source.character != principal || !source.is_well_formed() {
         return None;
     }

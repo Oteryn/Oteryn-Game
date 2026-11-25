@@ -1,6 +1,6 @@
 //! Source boss-death quest continuations on the existing captured lethal queue.
 //! Crystal 201189f HeartBossDeath:26-138; CourtWarlock:323-329;
-//! MagmaBubbleDeath:12-23 and GoblinLeaderDeath:3-8. Never infer social-party credit.
+//! MagmaBubbleDeath:12-23 and GoblinLeaderDeath:3-8.
 //! Herald's qualified local recipient is the present most-damage player only.
 use super::{kill_reward::PendingKillSettlement, quest_kills::Recipient};
 use crate::durability::quest_state::{
@@ -28,7 +28,14 @@ pub(super) fn capture(
     principal_present: bool,
     snapshots: impl Iterator<Item = Snapshot>,
 ) -> Vec<Recipient> {
-    if !source_deaths::tracks_creature(&entry.creature) {
+    let Ok(rules) = source_deaths::rules() else {
+        return Vec::new();
+    };
+    let mut rules = rules
+        .iter()
+        .filter(|rule| rule.matches_creature(&entry.creature))
+        .peekable();
+    if rules.peek().is_none() {
         return Vec::new();
     }
     let Ok(census) = runtime.positioned_melee_census() else {
@@ -40,6 +47,40 @@ pub(super) fn capture(
     if runtime.binding().runtime_scope() != scope || runtime.owner_fence().is_err() {
         return Vec::new();
     }
+    // Use the newest observed roster for this party, including the leader's
+    // projection when neither the top damager nor the kicked member has refreshed.
+    let principal_view = if principal_present && rules.any(|rule| rule.top_damage_party) {
+        runtime
+            .cached_world_party(principal.actor, principal.session)
+            .ok()
+            .flatten()
+            .filter(|party| party.character == *principal.character.as_bytes())
+    } else {
+        None
+    };
+    let party = principal_view
+        .and_then(|principal_view| {
+            let party_id = principal_view.party_id?;
+            census
+                .iter()
+                .filter_map(|(actor, _, session)| {
+                    let session = (*session)?;
+                    let view = runtime.cached_world_party(*actor, session).ok()??;
+                    let lease = runtime.bound_attacker_lease(*actor, session).ok()?;
+                    (view.party_id == Some(party_id)
+                        && lease.character_id().as_bytes() == &view.character)
+                        .then_some(view)
+                })
+                .chain(std::iter::once(principal_view))
+                .max_by_key(|view| (view.revision, view.observed_database_micros))
+        })
+        .filter(|party| {
+            party.shared_xp_enabled
+                && party
+                    .members
+                    .iter()
+                    .any(|member| &member.character == principal.character.as_bytes())
+        });
     let mut recipients = Vec::new();
     for snapshot in snapshots {
         if snapshot.observed_revision == 0
@@ -65,12 +106,27 @@ pub(super) fn capture(
                 && share.session == Some(snapshot.session)
                 && share.lease_generation == Some(snapshot.lease_generation)
         });
+        let in_top_damage_party = principal_view
+            .is_some_and(|view| view.character == snapshot.character)
+            || party.is_some_and(|party| {
+                party
+                    .members
+                    .iter()
+                    .any(|member| member.character == snapshot.character)
+                    && runtime
+                        .cached_world_party(snapshot.actor, snapshot.session)
+                        .ok()
+                        .flatten()
+                        .is_some_and(|view| {
+                            view.character == snapshot.character && view.party_id == party.party_id
+                        })
+            });
         for key in &snapshot.objectives {
             let Some(rule) = source_deaths::rule(key) else {
                 continue;
             };
-            if rule.creature != entry.creature
-                || !rule.recipient(position, damaged)
+            if !rule.matches_creature(&entry.creature)
+                || !rule.recipient_with_party(position, damaged, in_top_damage_party)
                 || (rule.top_damage_only
                     && (!principal_present
                         || principal.actor != snapshot.actor
@@ -98,8 +154,7 @@ pub(super) fn capture(
                         lease_generation: snapshot.lease_generation,
                         position,
                         dealt_damage: damaged,
-                        top_damage_character: rule
-                            .top_damage_only
+                        top_damage_character: (rule.top_damage_only || rule.top_damage_party)
                             .then_some(*principal.character.as_bytes()),
                     }),
                 },

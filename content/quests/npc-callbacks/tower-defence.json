@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "tracks": [],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/tower-defence-parcel",
+      "quest": "oteryn:quest.tower_defence_quest",
+      "npc": "oteryn:npc.bunny_bonecrusher",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires": [],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i140",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I am not sure if I should be glad now or not but anyway ... you will get a password so I will know if you just threw it away or actually delivered it. Here is the parcel. See you ....or not."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bunny_bonecrusher.lua:66-67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bunny_bonecrusher.lua:75-75"
+      ]
+    }
+  ]
+}

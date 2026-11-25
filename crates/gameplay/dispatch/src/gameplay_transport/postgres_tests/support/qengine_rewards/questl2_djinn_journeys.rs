@@ -1,7 +1,7 @@
 //! Both exclusive factions run from enlistment through the real lamp callbacks.
 
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use super::questl2_journeys::{quantity, use_at};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
 use super::*;
 
@@ -48,6 +48,8 @@ pub(super) async fn exercise(
         "the_orc_king",
         "haroun",
         "nah_bob",
+        "melchior",
+        "ubaid",
     ];
     let refs = keys.map(|k| format!("oteryn:npc.{k}"));
     let npcs = super::super::questl2_fixture::install_at(
@@ -56,11 +58,22 @@ pub(super) async fn exercise(
         refs.each_ref().map(String::as_str),
         // Every actor owns a distinct, reachable cell; leave callback cells clear.
         [
-            (33291, 31675), (33292, 31675), (33293, 31675),
-            (33294, 31675), (33295, 31675), (33291, 31676),
-            (33292, 31676), (33293, 31676), (33294, 31676),
-            (33295, 31676), (33291, 31677), (33295, 31677),
-        ].map(|(x, y)| Position { x, y, floor: -15 }),
+            (33291, 31675),
+            (33292, 31675),
+            (33293, 31675),
+            (33294, 31675),
+            (33295, 31675),
+            (33291, 31676),
+            (33292, 31676),
+            (33293, 31676),
+            (33294, 31676),
+            (33295, 31676),
+            (33291, 31677),
+            (33295, 31677),
+            (33290, 31677),
+            (33290, 31676),
+        ]
+        .map(|(x, y)| Position { x, y, floor: -15 }),
     )
     .await?;
     let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
@@ -88,6 +101,43 @@ pub(super) async fn exercise(
                 suffix = $suffix
             );
         }};
+    }
+    if efreet {
+        assert!(!door_is_open(owner, admitted, 40432)?);
+        // These direct NPC service calls precede a separate framed connection.
+        let first = 19_100;
+        assert_eq!(
+            talk(owner, admitted, npcs[13], first, "hi").await?,
+            NpcIntentDisposition::NoConversation,
+        );
+        assert_eq!(
+            talk(owner, admitted, npcs[12], first + 1, "hi").await?,
+            NpcIntentDisposition::Ok
+        );
+        assert_eq!(
+            talk(owner, admitted, npcs[12], first + 2, "word of greeting").await?,
+            NpcIntentDisposition::Ok
+        );
+        for (offset, word) in ["djanni'hah", "passage", "no", "yes", "yes"]
+            .into_iter()
+            .enumerate()
+        {
+            assert_eq!(
+                talk(
+                    owner,
+                    admitted,
+                    npcs[13],
+                    first + 3 + u64::try_from(offset)?,
+                    word
+                )
+                .await?,
+                NpcIntentDisposition::Ok,
+                "{word}"
+            );
+        }
+        assert!(door_is_open(owner, admitted, 40432)?);
+        assert!(!door_is_open(owner, admitted, 40431)?);
+        assert!(!door_is_open(owner, admitted, 40445)?);
     }
     let merchant = if efreet { npcs[3] } else { npcs[10] };
     let merchant_key = if efreet {
@@ -183,6 +233,11 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 3231).await?, 1);
     act!(faction, "lamp-issue", NpcIntentDisposition::Rejected);
     assert_eq!(quantity(h, 3231).await?, 1, "lamp issued exactly once");
+    if efreet {
+        assert!(door_is_open(owner, admitted, 40445)?);
+        assert!(door_is_open(owner, admitted, 40446)?);
+    }
+
     use_at(owner, admitted, wrong, UseDisposition::Rejected).await?;
     assert_eq!(quantity(h, 3231).await?, 1, "wrong faction preserves lamp");
     use_at(owner, admitted, right, UseDisposition::Committed).await?;
@@ -383,7 +438,12 @@ async fn shop(
     drop(runtime);
     let first = admitted.continuity.next_command_id;
     let mut commands = Vec::new();
-    for (offset, text) in ["hi", "trade"].into_iter().enumerate() {
+    let greeting = if npc_key == "oteryn:npc.alesar" {
+        "djanni'hah"
+    } else {
+        "hi"
+    };
+    for (offset, text) in [greeting, "trade"].into_iter().enumerate() {
         let payload = oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(&NpcTalkIntent {
             npc_actor: npc,
             text: text.into(),
@@ -403,8 +463,7 @@ async fn shop(
     let id = first + 2;
     commands.push((id, 8, payload.clone()));
     commands.push((id, 8, payload));
-    let results =
-        super::super::questl2_fixture::wire_sequence(owner, admitted, commands).await?;
+    let results = super::super::questl2_fixture::wire_sequence(owner, admitted, commands).await?;
     assert_eq!(results.len(), 4);
     assert_eq!(
         oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(&results[2])
@@ -413,4 +472,21 @@ async fn shop(
     );
     assert_eq!(results[3], results[2], "literal shop replay");
     Ok(())
+}
+
+fn door_is_open(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    action: u16,
+) -> TestResult<bool> {
+    let sessions = owner
+        .states
+        .quest_sessions
+        .lock()
+        .map_err(|_| "quest sessions")?;
+    let copy = sessions
+        .get(&admitted.game_session_id)
+        .and_then(|state| state.copy.as_ref())
+        .ok_or("quest copy")?;
+    Ok(copy.meets_door_storage(action))
 }

@@ -230,9 +230,6 @@ pub(super) fn declarations(
             key: shop.service.clone(),
             revision: "definition-r1".into(),
         };
-        if records.iter().any(|(r, _)| **r == service) {
-            continue;
-        }
         let mut npc = (**declaration).clone();
         let ProjectV2Declaration::Npc { services, .. } = &mut npc else {
             continue;
@@ -253,6 +250,19 @@ pub(super) fn declarations(
                 additions.push(((**reference).clone(), declaration));
             }
         }
+        let offers = shop.offers.iter().map(Offer::project).collect();
+        if let Some((_, existing)) = records.iter().find(|(r, _)| **r == service) {
+            // A protected merchant may already own this service in the base
+            // catalogue. Publish only the reviewed offers with matching gates.
+            let mut existing = (**existing).clone();
+            if let ProjectV2Declaration::Service { offers: stock, .. } = &mut existing
+                && services.contains(&service)
+            {
+                *stock = offers;
+                additions.push((service, existing));
+            }
+            continue;
+        }
         services.push(service.clone());
         additions.push(((**reference).clone(), npc));
         additions.push((
@@ -263,7 +273,7 @@ pub(super) fn declarations(
                     revision: "definition-r1".into(),
                 },
                 bank: false,
-                offers: shop.offers.iter().map(Offer::project).collect(),
+                offers,
                 recipes: Vec::new(),
                 routes: Vec::new(),
                 fields: Vec::new(),
@@ -276,6 +286,51 @@ pub(super) fn declarations(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn black_bert_retained_stock_requires_the_completed_guild_track()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let model = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?
+        .service_model_for_project()?;
+        let npc_key = "oteryn:npc.black_bert";
+        let (_, npc) = model
+            .npcs()
+            .iter()
+            .find(|(reference, _)| reference.key == npc_key)
+            .ok_or("Black Bert")?;
+        let service = npc
+            .services
+            .iter()
+            .find(|key| key.key == "oteryn:service.trade.black_bert")
+            .and_then(|key| model.services().get(key))
+            .ok_or("Black Bert's shop")?;
+        assert_eq!(service.offers.len(), 127);
+        for offer in &service.offers {
+            let guard = required(
+                shops()?,
+                npc_key,
+                &offer.item,
+                offer.direction,
+                offer.unit_price,
+                offer.count.unwrap_or(1),
+            )?
+            .ok_or("unguarded Black Bert offer")?;
+            assert!(!eligible(guard, |_| None));
+            assert!(!eligible(guard, |_| Some(8)));
+            assert!(eligible(guard, |requirement| {
+                assert_eq!(
+                    requirement.track,
+                    "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline"
+                );
+                Some(9)
+            }));
+        }
+        Ok(())
+    }
 
     #[test]
     fn alesar_catalogue_matches_crystal_after_efreet_mission03()

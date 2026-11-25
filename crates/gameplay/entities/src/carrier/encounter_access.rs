@@ -16,6 +16,22 @@ pub struct StagedQuestEncounter<'owner, T> {
 }
 
 impl<'owner, T> StagedQuestEncounter<'owner, T> {
+    pub(super) fn new(
+        runtime: &'owner mut ChannelRuntimeV1,
+        carrier: ChannelActorCarrier,
+        output: (Vec<MovementPositionSnapshot>, T),
+    ) -> Self {
+        Self {
+            runtime,
+            carrier,
+            output,
+        }
+    }
+
+    pub fn prepared(&self) -> &T {
+        &self.output.1
+    }
+
     pub fn publish(
         self,
     ) -> (

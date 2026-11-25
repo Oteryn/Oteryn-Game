@@ -576,31 +576,37 @@ struct Document {
 
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/classic-missions.json"),
+    include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
-    include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m09-rookie.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m20-cursed-crystal-recipes.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m39-stories.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
-    // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
+    include_str!("../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
+    include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/quest-contacts.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
-    include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
-    include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/tibia-tales.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/too-hot-to-handle.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/tower-defence.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/vampire-hunter.json"),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
@@ -679,7 +685,75 @@ fn parse_documents(sources: &[&str]) -> Result<Document, String> {
         combined.callbacks.extend(document.callbacks);
     }
     colours_peer::append_after_opening(&mut combined)?;
+    append_storkus_dust_deposits(&mut combined.callbacks)?;
     validate_document_with_capacity(combined, maximum)
+}
+
+// Storkus follows Crystal's counter convention: stored 1 means the collection
+// has started, and stored 21 means twenty dust were paid. Keep the published
+// full deposit and lower the remaining cases to the existing fenced exchanges.
+fn append_storkus_dust_deposits(callbacks: &mut Vec<RewardCallback>) -> Result<(), String> {
+    let Some(full) = callbacks
+        .iter()
+        .find(|row| row.key == "oteryn:quest-reward/inquisition-vampire-hunt-dust")
+        .cloned()
+    else {
+        return Ok(());
+    };
+    let [questline, mission, dust] = full.storage.as_slice() else {
+        return Err("Storkus dust storage".into());
+    };
+    let [payment] = full.take.as_slice() else {
+        return Err("Storkus dust payment".into());
+    };
+    if dust.minimum != 0
+        || dust.maximum != 0
+        || dust.set != i64::from(payment.count) + 1
+        || !(1..=20).contains(&payment.count)
+    {
+        return Err("Storkus dust counter bounds".into());
+    }
+    for saved in dust.minimum..dust.set {
+        let remaining = payment
+            .count
+            .min(u16::try_from(dust.set - saved).map_err(|e| e.to_string())?);
+        for count in 1..=remaining {
+            if saved == dust.minimum && count == payment.count {
+                continue;
+            }
+            let mut deposit = full.clone();
+            deposit.key = format!("{}/deposit-{saved}-{count}", full.key);
+            deposit.take[0].count = count;
+            let finished = count == remaining;
+            deposit.inventory = vec![InventoryRequirement {
+                item: payment.item.clone(),
+                minimum: u32::from(count),
+                maximum: if finished { u32::MAX } else { u32::from(count) },
+            }];
+            deposit.storage[2].minimum = saved;
+            deposit.storage[2].maximum = saved;
+            if !finished {
+                deposit.storage[0].preserve = true;
+                deposit.storage[0].set = questline.minimum;
+                deposit.storage[1].preserve = true;
+                deposit.storage[1].set = mission.minimum;
+                deposit.storage[2].set = saved.max(1) + i64::from(count);
+                deposit.reply = vec!["Bring me more vampire dust when you have it.".into()];
+            }
+            callbacks.push(deposit);
+        }
+    }
+    let paid_value = dust.set;
+    let mut paid = full;
+    paid.key.push_str("/already-paid");
+    paid.keywords = vec!["mission".into()];
+    paid.topic = 0;
+    paid.storage[2].minimum = paid_value;
+    paid.storage[2].maximum = paid_value;
+    paid.take.clear();
+    paid.inventory.clear();
+    callbacks.push(paid);
+    Ok(())
 }
 
 pub(crate) fn validate_callbacks(callbacks: &[RewardCallback]) -> Result<(), String> {
@@ -2479,9 +2553,22 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing and 31 QB routes. The final two terms are
-        // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12);
+        // The shards, Colours peer and Kingsday journal contribute 514 callbacks.
+        // Crystal 201189f8 storkus.lua:60-72,121-141 adds 229 partial-deposit
+        // variants around the published full deposit and one already-paid callback.
+        let callbacks = load()?;
+        assert_eq!(callbacks.len(), 514 + 230);
+        assert_eq!(
+            callbacks
+                .iter()
+                .filter(|callback| {
+                    callback
+                        .key
+                        .starts_with("oteryn:quest-reward/inquisition-vampire-hunt-dust/")
+                })
+                .count(),
+            230
+        );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -3603,4 +3690,70 @@ mod outfit_reward_predecessor_tests {
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn too_hot_intake_and_white_gem_require_earned_crypt_progress() -> Result<(), String> {
+    let loaded = super::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = load_for(catalogue)?;
+    let find = |suffix| {
+        callbacks
+            .iter()
+            .find(|row| row.key.strip_prefix("oteryn:quest-reward/too-hot-") == Some(suffix))
+            .ok_or_else(|| format!("missing Too Hot callback {suffix}"))
+    };
+    let request = find("investigation")?;
+    let mut tracks = BTreeMap::new();
+    assert_eq!(request.npc, "oteryn:npc.gnomystery");
+    assert_eq!(request.keywords, ["yes"]);
+    assert!(
+        request
+            .requires
+            .iter()
+            .any(|guard| !guard.holds(catalogue, &tracks))
+    );
+    tracks.insert(
+        "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line_complete".into(),
+        2,
+    );
+    assert!(
+        request
+            .requires
+            .iter()
+            .all(|guard| guard.holds(catalogue, &tracks))
+    );
+
+    let commission = find("repair-commission")?;
+    assert_eq!(commission.npc, "oteryn:npc.brodraem_orcbeard");
+    assert_eq!(commission.storage[0].minimum, 1);
+    let report = find("repair-report")?;
+    assert_eq!(report.npc, commission.npc);
+    assert_eq!(report.storage[0].minimum, 2);
+    for (track, count) in [
+        ("oteryn:quest-progress/too-hot/sarcophagus-total", 5),
+        ("oteryn:quest-progress/m07/too_hot/columns_repaired", 3),
+        ("oteryn:quest-progress/too-hot/marble-total", 4),
+    ] {
+        let guard = report
+            .requires
+            .iter()
+            .find(|guard| guard.track == track)
+            .ok_or(track)?;
+        tracks.insert(track.into(), count - 1);
+        assert!(!guard.holds(catalogue, &tracks));
+        tracks.insert(track.into(), count);
+        assert!(guard.holds(catalogue, &tracks));
+    }
+    assert_eq!(
+        report
+            .give
+            .as_ref()
+            .map(|reward| (reward.item.as_str(), reward.count)),
+        Some(("oteryn:item.tibia.i32769", 1))
+    );
+    assert!(!report.completes);
+    Ok(())
 }

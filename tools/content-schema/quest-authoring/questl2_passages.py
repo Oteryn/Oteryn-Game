@@ -45,6 +45,11 @@ def append(add, state, callbacks, offers, inputs, pin):
         take=[(3212, 1)], give=(3214, 1), topic=2, requires=friendship)
     callbacks[-1].update(sources=[witness('costello', '63-93')],
         reply=["You have done our order a great favour by giving this diary to me! Take this blessed Ankh."])
+    callbacks[-1].update(completes=True, required_receipts=[{
+        'transition': 'oteryn:quest-callback/white-raven-monks-diary',
+        'track': root + 'diary_retrieved',
+        'value': 1,
+    }])
     offer('costello', ['diary'], 0, 2,
           [state(root + 'diary', 1, 1, preserve=True)],
           'Do you want me to inspect a diary?', friendship)

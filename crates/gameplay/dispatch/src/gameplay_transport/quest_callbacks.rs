@@ -34,6 +34,7 @@ mod rotten_flame;
 mod scene;
 mod scene_actors;
 mod scene_items;
+mod serpentine_lever;
 mod shared_gate;
 mod soul_war_reward;
 mod source_transforms;
@@ -56,7 +57,9 @@ use crate::map::{
     overlay::TilePos,
     view::{MapFacts, placement_key},
 };
-use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, Position, Trigger};
+use oteryn_gameplay_quests::quest::world_callbacks::{
+    self, Callback, Position, Trigger, VampireCoffinKind,
+};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::OnceLock;
 
@@ -103,6 +106,11 @@ struct ObservedWorldCallback {
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
+    scene_item_receipts: scene_items::SceneItemReceipts,
+    #[cfg(test)]
+    pub(super) delay_scene_commit_ack: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) lose_coffin_delivery_ack: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub(super) lose_source_boss_commit_ack: std::sync::atomic::AtomicBool,
     #[cfg(test)]
@@ -572,11 +580,28 @@ pub(super) fn step_command(
         .map(|id| CommandRef::new(session, id))
 }
 
+/// Once a callback starts a bounded commit whose result drives publication,
+/// keep its reserved world state alive until that result is resolved.
+async fn finish_quest_use(
+    deadline: tokio::time::Instant,
+    publication: &std::sync::atomic::AtomicBool,
+    operation: impl Future<Output = UseDisposition>,
+) -> UseDisposition {
+    let mut operation = Box::pin(operation);
+    match tokio::time::timeout_at(deadline, operation.as_mut()).await {
+        Ok(result) => result,
+        Err(_) if publication.load(std::sync::atomic::Ordering::Relaxed) => operation.await,
+        Err(_) => UseDisposition::Rejected,
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Resolve a closed transport's reserved USE before the session stream can reopen.
     /// Historical receipt recovery does not grant player control or install a projection.
     pub(super) async fn reconcile_quest_callback_receipts(&self, session: GameSessionId) -> bool {
-        if !self.reconcile_soul_war_reward_receipts(session).await {
+        if !self.reconcile_scene_receipts_for_session(session).await
+            || !self.reconcile_soul_war_reward_receipts(session).await
+        {
             return false;
         }
         let pending = match self.states.quest_callbacks.records.lock() {
@@ -713,8 +738,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         true
     }
 
+    #[cfg(test)]
+    pub(super) fn forget_coffin_projection_for_test(
+        &self,
+        session: GameSessionId,
+    ) -> Result<(), &'static str> {
+        let mut pending = self
+            .states
+            .quest_callbacks
+            .records
+            .lock()
+            .map_err(|_| "pending")?;
+        pending
+            .remove(&session)
+            .ok_or("no interrupted projection")?;
+        Ok(())
+    }
+
     pub(super) fn has_pending_quest_callback(&self, session: GameSessionId) -> bool {
-        if self.states.grizzly_boss.has_pending(session) {
+        if self.states.grizzly_boss.has_pending(session)
+            || self
+                .states
+                .quest_callbacks
+                .scene_item_receipts
+                .has_session(session)
+        {
             return true;
         }
         self.states
@@ -949,6 +997,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         optional_pvp,
                         None,
                         pending.selected_tool.as_ref(),
+                        None,
                     ))
                     .await
                 }
@@ -1074,6 +1123,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             super::world_map::resolve_map_target(&source, target, |_| None::<()>).ok()?
         };
+        if !self
+            .reconcile_pending_scene_items(map, resolved.placement_key)
+            .await
+        {
+            return Some(UseOutcome::rejected());
+        }
         let mut selected = self
             .callback_content()
             .iter()
@@ -1145,6 +1200,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut selection_permit = None;
         let mut selection_deadline = None;
+        if let [first, second] = selected.as_slice()
+            && let Some((ordinary, weakened)) =
+                if first.vampire_coffin_fallback() == Some(second.key.as_str()) {
+                    Some((*second, *first))
+                } else if second.vampire_coffin_fallback() == Some(first.key.as_str()) {
+                    Some((*first, *second))
+                } else {
+                    None
+                }
+        {
+            let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
+            let selection = tokio::time::timeout_at(deadline, async {
+                let permit = self.spell_lane_permit().await?;
+                let (index, generation, content, placement) = {
+                    let runtime = self.runtime.lock().await;
+                    permit.check_scope(runtime.binding().runtime_scope()).ok()?;
+                    (
+                        super::item_ref_admission::pinned_index(&runtime, self.active_generation)?,
+                        runtime.binding().scope_generation().get(),
+                        format!("sha256:{}", hex(&runtime.content_pin().server_artifact_digest())),
+                        runtime.content_pin().frame_binding_digest(),
+                    )
+                };
+                let pending = self.root.read_pending_vampire_coffin(
+                    self.character, command.item_fence?.character_id,
+                ).await.ok()?;
+                if let Some(kind) = pending {
+                    return Some((permit, match kind {
+                        VampireCoffinKind::Ordinary => ordinary,
+                        VampireCoffinKind::Weakened => weakened,
+                    }));
+                }
+                let ground = super::loop_move::loop_ground(self, map.overlay.base(), Some(index)).await?;
+                let has_garlic = weakened.offerings.iter().all(|input| {
+                    ground.overlay().tile(tile(input.position)).is_some_and(|tile| {
+                        tile.added().iter().any(|item| {
+                            matches!(item.item(), crate::map::overlay::AddedItem::Ground(item)
+                                if item.runtime_scope_ownership_generation == generation
+                                    && item.ground.content_revision == content
+                                    && item.ground.native_room_placement_context == placement
+                                    && item.definition.production_key == input.item
+                                    && item.quantity >= u32::from(input.count)
+                                    && item.ground.corpse_ref.starts_with(
+                                        crate::durability::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX))
+                        })
+                    })
+                });
+                // The durable participant rechecks the selected variant and its inputs.
+                Some((permit, if has_garlic { weakened } else { ordinary }))
+            }).await;
+            let Ok(Some((permit, callback))) = selection else {
+                return Some(UseOutcome::rejected());
+            };
+            selected = vec![callback];
+            selection_permit = Some(permit);
+            selection_deadline = Some(deadline);
+        }
         if selected.len() > 1
             && selected.iter().all(|callback| {
                 !callback.requires_live_premium()
@@ -1180,7 +1292,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             selection_deadline = Some(deadline);
         }
         let callback = if let [callback] = selected.as_slice() {
-            *callback
+            self.serpentine_journey_opening(callback, map, &resolved, command.game_session_id)
+                .await
+                .unwrap_or(callback)
         } else {
             if selected.is_empty() {
                 return None;
@@ -1219,7 +1333,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let deadline = selection_deadline
             .unwrap_or_else(|| tokio::time::Instant::now() + std::time::Duration::from_secs(10));
-        let result = tokio::time::timeout_at(deadline, async {
+        let publication = std::sync::atomic::AtomicBool::new(false);
+        let result = finish_quest_use(deadline, &publication, async {
             let permit = match selection_permit {
                 Some(permit) => permit,
                 None => match self.spell_lane_permit().await {
@@ -1290,11 +1405,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-            if !self.prepare_scene_items(&permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence).await {
-                return UseDisposition::Rejected;
-            }
-            let mut runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
+            let runtime = self.runtime.lock().await;
             let Ok(expected) = runtime.read_actor_position(actor) else {
                 return UseDisposition::Rejected;
             };
@@ -1323,6 +1434,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 directional.teleport=Some(destination);
                 &directional
             } else { callback };
+            drop(runtime);
+            let scene_items = match self.prepare_scene_items(
+                &permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence,
+            ).await {
+                Ok(items) => items,
+                Err(disposition) => return disposition,
+            };
+            let mut runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            if scene_items.is_some() || VampireCoffinKind::for_callback(&callback.key).is_some() {
+                publication.store(true, std::sync::atomic::Ordering::Relaxed);
+            }
+            let mut scene_publication = None;
+            let original_use = CommandRef::new(command.game_session_id, id);
             let result = Box::pin(self.execute_quest_callback(
                 &permit,
                 &mut runtime,
@@ -1333,18 +1458,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 callback,
                 resolved.placement_key,
                 target.expected_revision,
-                QuestCause::Use(CommandRef::new(command.game_session_id, id)),
+                QuestCause::Use(original_use),
                 fence,
                 slot.as_mut(),
                 observation.as_ref(),
                 optional_pvp,
                 read_only_gate.as_ref(),
                 selected_tool.as_ref(),
+                scene_items.as_ref().map(|_| &mut scene_publication),
             ))
             .await;
             drop(states);
             drop(runtime);
             drop(slot);
+            if let (Some(items), Some(scene)) = (scene_items, scene_publication) {
+                return self.commit_scene_items(
+                    permit, map, callback, resolved.placement_key, actor, original_use, optional_pvp, items, scene,
+                ).await;
+            }
             if matches!(result, UseDisposition::Committed | UseDisposition::Rejected)
                 && let Some(fence) = fence
                 && let Some(delivery) = self.deliver_monk_reward(actor, command, callback, fence).await
@@ -1359,8 +1490,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             result
         })
-        .await
-        .unwrap_or(UseDisposition::Rejected);
+        .await;
         Some(UseOutcome {
             disposition: result,
             ..UseOutcome::rejected()
@@ -1631,6 +1761,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         observation.as_ref(),
                         optional_pvp,
                         read_only_gate.as_ref(),
+                        None,
                         None,
                     ))
                     .await

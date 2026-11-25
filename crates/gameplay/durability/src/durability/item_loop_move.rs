@@ -21,7 +21,10 @@
 mod dreamer_ring;
 pub use dreamer_ring::DreamerRingTarget;
 mod altar_arrival;
-pub use altar_arrival::{AltarFieldRead, AltarArrivalReceipt, AltarArrivalTarget, PendingAltarBoss, PendingAltarRealization};
+pub use altar_arrival::{
+    AltarArrivalReceipt, AltarArrivalTarget, AltarFieldRead, PendingAltarBoss,
+    PendingAltarRealization,
+};
 
 mod elemental_arrival;
 pub use elemental_arrival::{ElementalArrivalProbe, ElementalArrivalTarget};
@@ -38,8 +41,12 @@ pub use floor_assembly::FloorAssemblyTarget;
 
 mod house;
 mod seed_drop;
+mod source_scene;
 mod subtree;
 pub use seed_drop::{SeedDropProbe, SeedDropTarget};
+pub use source_scene::{SourceSceneItemMove, SourceSceneReceipt};
+#[cfg(feature = "test-support")]
+pub use source_scene::with_lost_source_scene_commit_ack;
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_equipment::{EquipmentError, assert_current_equipment_in_transaction};
@@ -650,11 +657,15 @@ async fn read_carried_weight(
                 c.cycle \
            FROM carried c JOIN game_item_instances i USING (item_instance_id) \
           ORDER BY i.item_instance_id FOR UPDATE OF i";
-    let sql = if lock { sql } else { sql.trim_end_matches(" FOR UPDATE OF i") };
+    let sql = if lock {
+        sql
+    } else {
+        sql.trim_end_matches(" FOR UPDATE OF i")
+    };
     let rows = sqlx::query(sql)
-    .bind(character.as_bytes().as_slice())
-    .fetch_all(&mut **tx)
-    .await?;
+        .bind(character.as_bytes().as_slice())
+        .fetch_all(&mut **tx)
+        .await?;
     let mut seen = std::collections::BTreeSet::new();
     let mut total = 0_u64;
     for row in rows {
@@ -1083,6 +1094,33 @@ async fn apply_loop_move<C: ItemLoopContent>(
     search: Option<i16>,
     house: Option<&house::HouseLoopContext>,
 ) -> LoopResult<LoopMoveReceipt> {
+    apply_loop_move_with_source_policy(
+        tx, permit, record, node, fence, command, content, request, intent, depot, batch, search,
+        house, false,
+    )
+    .await
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one transaction binds the source, destination, session and custody policy"
+)]
+async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
+    tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
+    record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    content: &C,
+    request: &LoopMoveRequest,
+    intent: &[u8],
+    depot: Option<DepotMove>,
+    batch: Option<MoveBatch>,
+    search: Option<i16>,
+    house: Option<&house::HouseLoopContext>,
+    source_scene: bool,
+) -> LoopResult<LoopMoveReceipt> {
     let character = fence.character_id;
     let scope = fence.runtime_scope;
     let world = *scope.world_id().as_bytes();
@@ -1233,7 +1271,10 @@ async fn apply_loop_move<C: ItemLoopContent>(
         if native_corpse && !matches!(request.destination, LoopDestination::Ground(_)) {
             return refuse(LoopMoveRefusal::NotSupported);
         }
-        if !row.try_get::<bool, _>("loop_pickup")? && !native_corpse && !row.try_get::<bool, _>("altar_corpse_source")? {
+        if !row.try_get::<bool, _>("loop_pickup")?
+            && !native_corpse
+            && !row.try_get::<bool, _>("altar_corpse_source")?
+        {
             return refuse(LoopMoveRefusal::NotSupported);
         }
         let source_plain_corpse: bool = row.try_get("source_plain_corpse")?;
@@ -1251,20 +1292,31 @@ async fn apply_loop_move<C: ItemLoopContent>(
             let loop_drop: bool = row.try_get("loop_drop")?;
             // A corpse MINT binds the native pin's revision-string digest.
             // Its first loop drop binds the underlying bundle revision instead.
-            let native_map = (native_corpse && !loop_drop) || source_plain_corpse
-
-                && source_map
-                    == format!(
-                        "sha256:{}",
-                        sha2::Sha256::digest(to.map_revision.as_bytes())
-                            .iter()
-                            .map(|byte| format!("{byte:02x}"))
-                            .collect::<String>()
-                    );
+            let native_map = (native_corpse && !loop_drop)
+                || source_plain_corpse
+                    && source_map
+                        == format!(
+                            "sha256:{}",
+                            sha2::Sha256::digest(to.map_revision.as_bytes())
+                                .iter()
+                                .map(|byte| format!("{byte:02x}"))
+                                .collect::<String>()
+                        );
+            let source_content: String = row.try_get("ground_content")?;
+            let source_context: Vec<u8> = row.try_get("ground_context")?;
+            // Same-map ordinary Ground items stay in the overlay across a content-only repin.
+            // The scene requalifies their exact definition against current Content,
+            // and this move writes the destination under the current pins.
+            let retained_drop = source_scene
+                && !native_corpse
+                && !source_plain_corpse
+                && source_map == to.map_revision
+                && source_content != to.content_revision;
             if (source_map != to.map_revision && !native_map)
-                || row.try_get::<String, _>("ground_content")? != to.content_revision
-                || ((loop_drop || native_corpse || source_plain_corpse)
-                    && row.try_get::<Vec<u8>, _>("ground_context")? != to.placement_context)
+                || (!retained_drop
+                    && (source_content != to.content_revision
+                        || ((loop_drop || native_corpse || source_plain_corpse)
+                            && source_context != to.placement_context)))
             {
                 return refuse(LoopMoveRefusal::Stale);
             }
@@ -1280,7 +1332,9 @@ async fn apply_loop_move<C: ItemLoopContent>(
     {
         return refuse(LoopMoveRefusal::Stale);
     }
-    let facts = if row.try_get::<bool, _>("native_corpse")? { content.loop_native_corpse_facts(&definition) } else if source == SourceKind::Ground
+    let facts = if row.try_get::<bool, _>("native_corpse")? {
+        content.loop_native_corpse_facts(&definition)
+    } else if source == SourceKind::Ground
         && matches!(request.destination, LoopDestination::Ground(_))
     {
         content.loop_ground_facts(&definition)
@@ -2097,7 +2151,8 @@ impl DurabilityRoot {
                         }
                         let slot = load_slot(&mut tx, character_id).await?;
                         let main = slot.is_some_and(|slot| slot.item_instance_id == container);
-                        if !main && !matches!(loop_owner(&mut tx, container).await?,
+                        if !main
+                            && !matches!(loop_owner(&mut tx, container).await?,
                             Some((owner, depth)) if owner == *character_id.as_bytes()
                                 && (0..=ITEM_LOOP_DEPTH_MAX).contains(&depth))
                         {
@@ -2432,24 +2487,36 @@ impl DurabilityRoot {
 
 #[cfg(test)]
 mod split_capacity_tests {
+    use super::super::item_transfer::ItemStackClass;
     use super::*;
     use crate::bestiary_postgres_harness as harness;
-    use super::super::item_transfer::ItemStackClass;
 
     struct Content;
     impl ItemWeightLookup for Content {
-        fn generation_digest(&self) -> [u8; 32] { [1; 32] }
-        fn weight_of(&self, _: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> { Ok(1) }
+        fn generation_digest(&self) -> [u8; 32] {
+            [1; 32]
+        }
+        fn weight_of(&self, _: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
+            Ok(1)
+        }
     }
     impl ItemLoopContent for Content {
-        fn loop_content_digest(&self) -> [u8; 32] { [1; 32] }
+        fn loop_content_digest(&self) -> [u8; 32] {
+            [1; 32]
+        }
         fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
             Some(ItemDefinitionFacts {
-                definition: definition.clone(), weight: Some(1),
+                definition: definition.clone(),
+                weight: Some(1),
                 stack: if definition.production_key == "fixture:split.coin" {
-                    ItemStackClass::Stackable { proven_maximum: Some(100) }
-                } else { ItemStackClass::NonStackable },
-                container_capacity: (definition.production_key == "fixture:split.bag").then_some(20),
+                    ItemStackClass::Stackable {
+                        proven_maximum: Some(100),
+                    }
+                } else {
+                    ItemStackClass::NonStackable
+                },
+                container_capacity: (definition.production_key == "fixture:split.bag")
+                    .then_some(20),
                 container_slot_equip_pattern: true,
             })
         }
@@ -2457,7 +2524,9 @@ mod split_capacity_tests {
 
     #[test]
     fn external_split_planner_counts_one_incoming_leaf_at_tree_limit() -> harness::TestResult {
-        let Some(admin) = harness::configured_admin() else { return Ok(()); };
+        let Some(admin) = harness::configured_admin() else {
+            return Ok(());
+        };
         std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
             let run = || -> harness::TestResult {
                 harness::runtime()?.block_on(async move {
