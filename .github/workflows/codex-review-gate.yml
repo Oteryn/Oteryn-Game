@@ -125,21 +125,34 @@ jobs:
               context = 'codex-review-gate' if base == 'main' else f'codex-review-gate ({base})'
               if base == 'main' and any(label['name'] == 'heavy-tests' for label in pr.get('labels') or []):
                   head_ref = pr['head']['ref']
-                  if head_ref == 'staging':
+                  same_repo = (pr['head'].get('repo') or {}).get('full_name') == repo
+                  if head_ref == 'staging' and same_repo:
                       reason = 'staging promotion'
                   elif '-ctrain-' in head_ref:
                       reason = None
-                  else:
+                  elif not 0 < pr.get('changed_files', 0) < 3000:
                       # GitHub lists at most 3000 files; a PR at that limit is not
                       # treated as data-only.
+                      reason = None
+                  else:
                       files = pages(f'pulls/{number}/files')
-                      data_only = 0 < len(files) < 3000 and all(
-                          f['filename'].startswith('content/')
-                          and (f.get('previous_filename') or 'content/').startswith('content/')
+                      code_suffixes = ('.py', '.rs', '.sh', '.js', '.mjs', '.ts', '.lua', '.ps1', '.cmd')
+
+                      def is_data(path):
+                          return path.startswith('content/') and not path.endswith(code_suffixes)
+
+                      data_only = len(files) == pr['changed_files'] and all(
+                          is_data(f['filename'])
+                          and (f.get('status') != 'renamed' or is_data(f.get('previous_filename') or ''))
                           for f in files
                       )
                       reason = 'data-only' if data_only else None
                   if reason:
+                      # The head may move while the files are listed; publish only for
+                      # the head that was classified (a synchronize event re-evaluates).
+                      if call(f'https://api.github.com/repos/{repo}/pulls/{number}')['head']['sha'] != head:
+                          print(f'PR #{number}: head moved during evaluation; nothing published')
+                          return
                       print(f'PR #{number} head={head} state=success (heavy-tests label, {reason}: gate skipped)')
                       call(f'https://api.github.com/repos/{repo}/statuses/{head}', {
                           'state': 'success',
