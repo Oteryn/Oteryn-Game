@@ -174,6 +174,20 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
                     && (entry.min_count, entry.max_count, entry.probability_ppm)
                         == (1, 5, Some(1_000_000))
             }));
+            for entry in &row.loot_table.entries {
+                let definition = crate::durability::item_mint::TypedDefinitionRef {
+                    family: entry.item.family.clone(),
+                    production_key: entry.item.production_key.clone(),
+                    revision_ref: entry.item.revision_ref.clone(),
+                };
+                let facts = crate::gameplay_transport::item_ref_admission::generation_item_facts(
+                    native,
+                    &definition,
+                )
+                .map_err(|error| format!("{creature} loot {definition:?}: {error:?}"))?;
+                oteryn_gameplay_items::stacking::stack_maximum(facts.stack)
+                    .map_err(|error| format!("{creature} loot {definition:?}: {error:?}"))?;
+            }
         }
     }
     let objective = death_objectives::load()
@@ -543,11 +557,16 @@ async fn prepare_player(
     let definition_hash = catalogue
         .definition_hash(&objective.quest)
         .ok_or("Grave Danger quest definition")?;
+    let initial_stage = catalogue
+        .track(&objective.stage)
+        .ok_or("stage track")?
+        .initial;
+    let initial_counter = catalogue
+        .track(&objective.counter)
+        .ok_or("counter track")?
+        .initial;
     // Model a save that reached the fight through the authored callbacks.
     let mut save = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *save)
-        .await?;
     let revision = sqlx::query(
         "WITH advanced AS (
              UPDATE game_character_roots SET character_revision=character_revision+1
@@ -556,13 +575,46 @@ async fn prepare_player(
          )
          UPDATE game_character_progression_state AS progression
          SET character_revision=advanced.character_revision
-         FROM advanced WHERE progression.character_id=advanced.character_id",
+         FROM advanced WHERE progression.character_id=advanced.character_id
+             AND progression.character_revision=advanced.character_revision-1",
     )
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(fence.expected_character_revision.get().to_string())
     .execute(&mut *save)
     .await?;
     assert_eq!(revision.rows_affected(), 1);
+    let receipt = sqlx::query(
+        "INSERT INTO game_character_quest_receipts
+            (character_id, cause_kind, cause_id, cause_ordinal, transition_key, quest_key,
+             request_binding, pinned_content_revision, definition_hash, completes,
+             track_keys, values_before, values_after, original_character_revision,
+             committed_character_revision, level_before, level_after, experience_before,
+             experience_after, profile_revision, ruleset_revision, content_revision,
+             simulation_revision, evidence_revision, declaration_revision, policy_revision,
+             reward_revision, committed_at)
+         SELECT character_id, 'command', encode($2,'hex')::uuid, 1,
+             'oteryn:quest-transition/grave-danger/fixture-prerequisites', $3,
+             convert_to('grave-boss-settlement-fixture','UTF8'), $4, $5, false,
+             ARRAY[$6::text, $7::text], ARRAY[$8::bigint, $9::bigint], ARRAY[$10::bigint, 0::bigint],
+             character_revision-1, character_revision, level, level, total_experience,
+             total_experience, profile_revision, ruleset_revision, content_revision,
+             simulation_revision, evidence_revision, declaration_revision, policy_revision,
+             reward_revision, floor(extract(epoch FROM statement_timestamp())*1000)::bigint
+         FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(session.as_bytes().as_slice())
+    .bind(&objective.quest)
+    .bind(catalogue.content_revision())
+    .bind(definition_hash.as_slice())
+    .bind(&objective.stage)
+    .bind(&objective.counter)
+    .bind(initial_stage)
+    .bind(initial_counter)
+    .bind(objective.stage_value)
+    .execute(&mut *save)
+    .await?;
+    assert_eq!(receipt.rows_affected(), 1);
     let state = sqlx::query(
         "INSERT INTO game_character_quest_states
             (character_id, quest_key, pinned_content_revision, definition_hash,

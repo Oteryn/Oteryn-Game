@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[3]
 # Completing these existing personal boss tables admits the outfit tokens.
 # Every co-drop must have native custody for the table to settle.
 OUTFIT_BOSS_LOOT = {
-    12543, 31577, 31578, 31579, 31580, 31581, 31582, 31583,
+    2852, 12543, 31577, 31578, 31579, 31580, 31581, 31582, 31583,
     39147, 39148, 39149, 39150, 39151, 39152, 39153, 39154, 39177,
     39179, 39180, 39182, 39183, 39185, 39186, 39188, 39543, 39544,
     39545, 50147, 50149, 50188, 50260,
