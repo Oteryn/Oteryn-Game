@@ -2,7 +2,8 @@
 //!
 //! Concrete player scenario derived from the C05 audit/matrix row and its chat,
 //! parameter-cast, Exiva-preference, and PostgreSQL owner tests:
-//! 1. Admit two ordinary node-boot characters and obtain the target's served name.
+//! 1. Prepare the dedicated caster at level 8, then admit it and the ordinary target.
+//!    Obtain the target's served name.
 //! 2. As the target, send the player Exiva-settings command to allow all locates;
 //!    assert the accepted result frame and persisted settings-list delta/reply.
 //! 3. As the caster, say `exiva "<target>"`; assert an accepted chat result, the
@@ -82,10 +83,29 @@ async fn cast(client: &mut DevClientSession, target: &str) -> TestResult<(oteryn
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut caster = connect_character(clients, 0xc5, 0)
-        .await
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_EXIVA_ACCOUNT_ID").await?;
+    let caster_clients = identity.clients(clients);
+    let target_identity = character_prep::dedicated_character(clients, "NODE_BOOT_C05_TARGET_ACCOUNT").await?;
+    let target_clients = target_identity.clients(clients);
+    let mut caster = connect_character(&caster_clients, 0xc5, 0).await
         .map_err(|error| admission_error("caster-admission", error))?;
-    let mut target = connect_character(clients, 0xc6, 1)
+    let world = full_e2ef7::qualification_world(&caster_clients)?;
+    full_e2ef7::earn_player_level(&mut caster, world, 8, Duration::from_secs(60)).await?;
+    if full_e2ef7::player_level(&mut caster).await? != 8 {
+        return Err("Exiva caster did not reach level 8".into());
+    }
+    let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        8,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    ).ok_or("level-8 Sorcerer has no source vitals")?;
+    if !caster.actor_vitals().is_some_and(|vitals| {
+        vitals.max_health == max_health && vitals.max_mana == max_mana && vitals.mana >= 20
+    }) {
+        return Err(format!("earned level-8 Exiva caster did not have Sorcerer vitals: {:?}", caster.actor_vitals()).into());
+    }
+    let mut target = connect_character(&target_clients, 0xc6, 0)
         .await
         .map_err(|error| admission_error("target-admission", error))?;
     let target_name = own_name(&target)?;
@@ -108,7 +128,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if reply.status != CommandStatus::Accepted || reply.disposition != ChatDisposition::Ok
         || before.mana.checked_sub(20) != Some(after.mana)
         || !messages.iter().any(|line| line.starts_with(&format!("{target_name} ")))
-    { return Err(format!("locate step observed status={:?} disposition={:?} mana={}->{} replies={messages:?}", reply.status, reply.disposition, before.mana, after.mana).into()); }
+    { return Err(format!("locate step command={} observed status={:?} disposition={:?} mana={}->{} replies={messages:?}", reply.command_id, reply.status, reply.disposition, before.mana, after.mana).into()); }
     evidence(&format!("C05_CHECK {} PASS locate-reply-and-mana-delta", ACTIONS[1]));
 
     if setting(&mut target, &[0, 0]).await? != [1] { return Err("deny step missing committed [1] reply".into()); }
@@ -132,7 +152,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let old_session = target.join_snapshot().game_session_id;
     if target.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Err("fresh-admission step logout refused".into()); }
     drop(target);
-    let mut target = connect_character(clients, 0xc7, 1)
+    let mut target = connect_character(&target_clients, 0xc7, 0)
         .await
         .map_err(|error| admission_error("target-readmission", error))?;
     if target.join_snapshot().game_session_id == old_session { return Err("fresh-admission step reused game session".into()); }
@@ -152,7 +172,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 fn locate_eligibility(entries: &[oteryn_protocol_oteryn::actor_spell_catalog::SpellCatalogEntry]) -> Option<String> {
     match entries.iter().find(|entry| entry.words.eq_ignore_ascii_case("exiva")) {
         Some(entry) if entry.available => None,
-        Some(entry) => Some(format!("step=locate-eligibility observed=exiva-unavailable required-level={} learned={} need=player-earned-exiva-eligibility", entry.level, entry.learned)),
+        Some(entry) => Some(format!("step=locate-eligibility observed=exiva-unavailable required-level={} learned={} need=prepared-exiva-eligibility", entry.level, entry.learned)),
         None => Some("step=locate-eligibility observed=exiva-absent-from-vocation-catalogue need=served-exiva-for-admitted-vocation".into()),
     }
 }

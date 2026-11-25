@@ -6,6 +6,20 @@ from report import combat_results, map_results, matrix_rows, results, summary, s
 
 
 class ReportTests(unittest.TestCase):
+    def test_only_exact_dawnport_exclusions_complete(self):
+        evidence = "Dawnport_owner-excluded"
+        exclusion = ("OUT_OF_SCOPE", 0, evidence)
+        for row in ("S16a", "C11"):
+            line = f"SEAM_EVIDENCE e2e_all scenario={row}.full status=OUT_OF_SCOPE seconds=0 evidence={evidence}"
+            self.assertTrue(summary([(row, row)], results(line))[1])
+        self.assertFalse(summary([("P20", "Promotion")], {"P20.full": exclusion})[1])
+        self.assertFalse(summary([("S16a", "Vocation")], {
+            "S16a.full": ("OUT_OF_SCOPE", 0, "other_reason"),
+        })[1])
+        self.assertFalse(summary([("C11", "Monk")], {
+            "C11.full": exclusion, "C11.other": exclusion,
+        })[1])
+
     def test_client_capture_does_not_emit_a_full_journey_verdict(self):
         root = Path(__file__).resolve().parents[3]
         phases = root / "apps/game-server/src/qualification/client_phases"

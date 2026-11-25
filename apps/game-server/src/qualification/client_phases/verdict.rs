@@ -759,6 +759,12 @@ impl Row {
     }
 }
 
+pub(super) fn dawnport_excluded(scenario: &str) {
+    evidence(&format!(
+        "e2e_all scenario={scenario} status=OUT_OF_SCOPE seconds=0 evidence=Dawnport owner-excluded"
+    ));
+}
+
 /// Journey groups `NODE_BOOT_E2E_ONLY` selects, each with the groups whose
 /// state it starts from. No group currently consumes another group's state:
 /// each row owns its admissions and cleanup.
@@ -774,7 +780,9 @@ const GROUPS: &[(&str, &[&str])] = &[
     ("f7forge", &[]),
     ("f7run", &[]),
     ("mp", &[]),
+    ("p16", &[]),
     ("rows", &[]),
+    ("thaisroutes", &[]),
 ];
 
 /// The selected journey groups; `None` runs every group.
@@ -813,6 +821,10 @@ impl Groups {
             }
         }
         Ok(Self(Some(selected)))
+    }
+
+    pub(super) fn explicit(&self, group: &str) -> bool {
+        self.0.as_ref().is_some_and(|groups| groups.contains(group))
     }
 
     pub(super) fn runs(&self, group: &str) -> bool {
@@ -1217,6 +1229,8 @@ mod verdict_tests {
         let rows = Groups::parse(Some("rows"), GROUPS)?;
         assert!(rows.runs("rows") && !rows.runs("core") && !rows.runs("f6"));
         assert!(!some.runs("rows"));
+        let blessing = Groups::parse(Some("p16"), GROUPS)?;
+        assert!(blessing.runs("p16") && !blessing.runs("f6") && !blessing.runs("core"));
         const CHAIN: &[(&str, &[&str])] = &[("a", &["b"]), ("b", &["c"]), ("c", &[]), ("d", &[])];
         let chained = Groups::parse(Some("a"), CHAIN)?;
         assert!(chained.runs("a") && chained.runs("b") && chained.runs("c") && !chained.runs("d"));

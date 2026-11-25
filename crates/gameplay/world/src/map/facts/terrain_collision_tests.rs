@@ -2,6 +2,39 @@
 use super::*;
 
 #[test]
+fn source_bookstands_preserve_walkable_boss_staging() -> Result<(), String> {
+    let reference = NonZeroU32::new(1).ok_or("Item definition reference")?;
+    for (key, solid) in [
+        ("oteryn:item.tibia.i28142", false),
+        ("oteryn:item.tibia.i28144", false),
+        ("oteryn:item.tibia.i28891", false),
+        ("oteryn:item.tibia.i28143", true),
+    ] {
+        let entry = PaletteEntry {
+            key: key.to_owned(),
+            family: Family::Item,
+            id: 0,
+            terrain: None,
+        };
+        let facts = |native_solid| {
+            palette_facts(&entry, &|_| {
+                Some(ItemDefinition {
+                    reference,
+                    solid: native_solid,
+                    blocks_projectile: true,
+                    pickupable: false,
+                    door: false,
+                })
+            })
+            .map_err(|error| format!("{key}: {error:?}"))
+        };
+        assert_eq!(facts(None)?.solid, solid, "{key} source collision");
+        assert!(facts(Some(true))?.solid, "{key} explicit native policy");
+    }
+    Ok(())
+}
+
+#[test]
 fn cleared_terrain_releases_only_its_own_blocker_and_regrowth_restores_it() {
     use crate::map::boot::tests as fixture;
     for other_blocker in [false, true] {

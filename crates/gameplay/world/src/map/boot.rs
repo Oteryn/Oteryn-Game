@@ -146,7 +146,7 @@ pub fn native_item_definition(
 
 /// A Channel booted from a world bundle: the shared base, its empty overlay, the start tile and
 /// the walkable tiles a wall or a solid item blocks.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct BundleWorld {
     source_bases: Arc<crate::content::QualifiedBundleSourceBases>,
     daily: Option<super::daily::DailyMap>,
@@ -809,6 +809,15 @@ impl BundleWorld {
             .facts
             .quest_callback_blocked(&self.base, pos, self.blocked.contains(&pos))
             && !self.map.facts.doors().blocks(pos)
+    }
+
+    /// Whether this cell would be enterable with one specific door open.
+    pub fn enterable_with_open_door(&self, pos: TilePos, key: u64) -> bool {
+        !self
+            .map
+            .facts
+            .quest_callback_blocked(&self.base, pos, self.blocked.contains(&pos))
+            && !self.map.facts.doors().blocks_except(pos, Some(key))
     }
 
     /// The ground speed a step onto `pos` uses. This is the one switch point: Engineering 150

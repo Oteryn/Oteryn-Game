@@ -358,7 +358,12 @@ async fn prepare_ranking_cut(
     let published = root
         .refresh_highscore_world_within(world, catalogues, CutLimits::REGISTERED)
         .await
-        .map_err(|_| "ranking fixture cut publication failed")?;
+        .map_err(|error| {
+            evidence(&format!(
+                "E2EF7_SETUP S11 fixture-prepared-cut FAIL served_snapshot_id={served_achievement_cut} publication_error={error:?}"
+            ));
+            format!("Ranking fixture cut publication failed: {error:?}")
+        })?;
     let snapshot = published
         .iter()
         .find(|snapshot| snapshot.category == 10)
@@ -1553,6 +1558,16 @@ struct JourneyRow {
 }
 impl JourneyRow {
     fn new(id: &'static str, required: &'static [&'static str]) -> Self {
+        let seeded = match id {
+            "P21" => Some((
+                "dedicated-character-birth",
+                "Basic Strike application and persistence",
+            )),
+            _ => None,
+        };
+        if let Some((prerequisites, reason)) = seeded {
+            character_prep::declare_seeded(id, prerequisites, reason);
+        }
         Self {
             actions: verdict::Row::new("E2EF7", id, required).gap_lines(),
         }
@@ -1623,7 +1638,7 @@ fn light_premium_is_current(overview: &oteryn_protocol_oteryn::premium_overview:
         && overview.valid_for_us > 0
 }
 
-pub(super) async fn require_current_light_premium(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn require_current_premium(client: &mut DevClientSession) -> TestResult {
     use oteryn_protocol_oteryn::{character_info, premium_overview};
     let reply = client.session_mut().gated_command(
         character_info::CAPABILITY_CHARACTER_INFO_V1,
@@ -1631,13 +1646,13 @@ pub(super) async fn require_current_light_premium(client: &mut DevClientSession)
         &[premium_overview::OPERATION],
     ).await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("personal-light Premium preflight refused: {:?}", reply.status).into());
+        return Err(format!("native Premium preflight refused: {:?}", reply.status).into());
     }
     let overview = premium_overview::Overview::decode(&reply.payload)
-        .ok_or("personal-light Premium preflight returned malformed evidence")?;
+        .ok_or("native Premium preflight returned malformed evidence")?;
     if !light_premium_is_current(&overview) {
         return Err(format!(
-            "SERVER-GAP W20b requires live Platform Premium for Ultimate Light: state={:?}, authority_revision={}, valid_for_us={}",
+            "ordinary admission lacks current Platform Premium: state={:?}, authority_revision={}, valid_for_us={}",
             overview.state, overview.authority_revision, overview.valid_for_us,
         ).into());
     }
@@ -1740,11 +1755,8 @@ async fn additional_rows(clients: &SeamClients<'_>) {
     row.finish(&result);
 
     let mut gate = JourneyRow::new("S13a", PARTY_GATE_ACTIONS);
-    let mut cost = JourneyRow {
-        actions: verdict::Row::new("E2EF7", "S13b", PARTY_COST_ACTIONS)
-            .gap_lines()
-            .sharing(&gate.actions),
-    };
+    let mut cost = JourneyRow::new("S13b", PARTY_COST_ACTIONS);
+    cost.actions = cost.actions.sharing(&gate.actions);
     let mut pair = [None, None];
     let world = qualification_world(clients);
     let watch = gate.actions.watch();
@@ -2780,7 +2792,7 @@ fn verify_party_payment(
         || before.health != after.health
         || before.soul != after.soul
     {
-        return Err(format!("prerequisite-or-cast-blocked:party observed={outcome:?};required-scaled-mana={charge};before={before:?};after={after:?};need-player-earned-level-32-class-and-premium;no-fixture-provisioning").into());
+        return Err(format!("prerequisite-or-cast-blocked:party observed={outcome:?};required-scaled-mana={charge};before={before:?};after={after:?};need-level-32-class-and-premium").into());
     }
     Ok(())
 }
@@ -2817,7 +2829,17 @@ async fn party_spell_journey(
     world: &BundleWorld,
 ) -> TestResult {
     let book = native_spell_book()?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_S13_ACCOUNT").await?;
+    let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
+    let scope = SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+    let peer_identity = character_prep::dedicated_character(&scope, "NODE_BOOT_S13_PEER_ACCOUNT").await?;
+    let (accounts, characters) = peer_identity.replace_slot(&scope, 0)?;
+    let scope = SeamClients { accounts: &accounts, characters: &characters, ..scope };
+    let clients = &scope;
     pair[0] = Some(connect_character(clients, 0xe2, 1).await?);
+    let caster = pair[0].as_mut().ok_or("S13 caster missing")?;
+    require_current_premium(caster).await?;
+    earn_player_level(caster, world, 32, Duration::from_secs(150)).await?;
     pair[1] = Some(connect_character(clients, 0xe3, 0).await?);
     let (caster, peer) = pair_mut(pair)?;
     if caster.join_snapshot().game_session_id == peer.join_snapshot().game_session_id
@@ -2848,14 +2870,18 @@ async fn party_spell_journey(
     };
     let index = qualification_spell_index(book, words)?;
     let spell = book.indexed(index).ok_or("party compiled index absent")?;
+    let level = full_e2ef5::prepare_spell_access(caster, spell).await?;
     let before = caster
         .actor_vitals()
         .copied()
         .ok_or("party initial vitals absent")?;
+    if level != 32 || before.mana < 216 {
+        return Err(format!("S13 requires level 32 with at least 216 mana: vocation={}, level={level}, mana={}", own.vocation, before.mana).into());
+    }
     let solo = caster.cast_spell(index, casts::SpellTarget::None, false).await
-        .map_err(|e| format!("party solo cast: {e};served-vocation={};served-level={};required-level={},premium={}", own.vocation, own.level, spell.level, spell.premium))?;
+        .map_err(|e| format!("party solo cast: {e};served-level={level};required-level={},premium={}", spell.level, spell.premium))?;
     verify_party_refusal(&solo, before, caster.actor_vitals().copied().ok_or("party solo lost vitals")?, casts::SpellCastDisposition::Rejected)
-        .map_err(|e| format!("party prerequisite-or-gate-blocked: {e};served-vocation={};served-level={};required-level={},premium={}", own.vocation, own.level, spell.level, spell.premium))?;
+        .map_err(|e| format!("party prerequisite-or-gate-blocked: {e};served-level={level};required-level={},premium={}", spell.level, spell.premium))?;
     let crate::spell::Execution::PartyBuff(buff) = &spell.execution else {
         return Err("party spell lacks party execution".into());
     };
@@ -3523,7 +3549,7 @@ const PVP_ACTIONS: &[&str] = &[
     "final-logout",
 ];
 const IMBUE_ACTIONS: &[&str] = &[
-    "player-acquisition",
+    "earned-prerequisites",
     "shrine-apply",
     "occupied-refusal",
     "worn-effect",
@@ -3721,45 +3747,6 @@ async fn player_experience(client: &mut DevClientSession) -> TestResult<u64> {
     ))
 }
 
-// Try the real starter's unarmed hunt, never a fixture build. A refused attack,
-// no damage/kill, absent spawn, or the bounded XP budget is an explicit prerequisite
-// failure. Only served level frames can end this loop successfully.
-async fn earn_pvp_level(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    acquisition_step(
-        "level",
-        earn_player_level(
-            client,
-            world,
-            oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL,
-            Duration::from_secs(150),
-        ),
-    )
-    .await
-}
-
-pub(super) async fn earn_player_level(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    required_level: u32,
-    budget: Duration,
-) -> TestResult {
-    let deadline = tokio::time::Instant::now() + budget;
-    loop {
-        let level = player_level(client).await?;
-        if level >= required_level {
-            return Ok(());
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("player-level-acquisition-blocked:served-level={level};required={required_level};ordinary-rat-hunt-budget={budget:?}").into());
-        }
-        let hunt = acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await;
-        hunt.map_err(|e| {
-            format!(
-                "player-level-acquisition-blocked:served-level={level};required={required_level};ordinary-hunt={e}"
-            )
-        })?;
-    }
-}
 fn hunt_kill_proven(alive: bool, corpse_proof: bool) -> bool {
     !alive && corpse_proof
 }
@@ -3880,41 +3867,75 @@ async fn wait_for_hunt_target<T>(
     }
 }
 
+pub(super) async fn earn_player_level(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    required_level: u32,
+    budget: Duration,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + budget;
+    loop {
+        let level = player_level(client).await?;
+        if level >= required_level {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("player-level-acquisition-blocked:served-level={level};required={required_level};ordinary-rat-hunt-budget={budget:?}").into());
+        }
+        let hunt = acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await;
+        hunt.map_err(|e| {
+            format!(
+                "player-level-acquisition-blocked:served-level={level};required={required_level};ordinary-hunt={e}"
+            )
+        })?;
+    }
+}
+
 async fn hunt_one_inner(
     client: &mut DevClientSession,
     world: &BundleWorld,
     acquisition_deadline: Option<tokio::time::Instant>,
 ) -> TestResult {
-    let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let positions: Vec<_> = meta
-        .spawns
-        .sources
-        .iter()
-        .flat_map(|s| s.points.iter().map(move |p| (s.floor, p)))
-        .filter(|(_, p)| {
-            meta.spawns
-                .creatures
-                .get(p.creature as usize)
-                .is_some_and(|c| c.key == "oteryn:creature.rat")
-        })
-        .map(|(floor, p)| TilePos {
-            x: p.x,
-            y: p.y,
-            floor,
-        })
-        .collect();
+    let start = tile(client.world_spatial().actor_position)?;
+    let world_snapshot = world.clone();
     let route_started = tokio::time::Instant::now();
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|t| !t.protection_zone())
-            && positions
-                .iter()
-                .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 1)
+    let path = route_work(client, move || {
+        let world = world_snapshot;
+        let bytes =
+            fs::read(required("NODE_BOOT_WORLD_BUNDLE").map_err(|error| error.to_string())?)
+                .map_err(|error| error.to_string())?;
+        let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))
+            .map_err(|error| error.to_string())?;
+        let positions: Vec<_> = meta
+            .spawns
+            .sources
+            .iter()
+            .flat_map(|s| s.points.iter().map(move |p| (s.floor, p)))
+            .filter(|(_, p)| {
+                meta.spawns
+                    .creatures
+                    .get(p.creature as usize)
+                    .is_some_and(|c| c.key == "oteryn:creature.rat")
+            })
+            .map(|(floor, p)| TilePos {
+                x: p.x,
+                y: p.y,
+                floor,
+            })
+            .collect();
+        route(&world, start, |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|t| !t.protection_zone())
+                && positions
+                    .iter()
+                    .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 1)
+        })
+        .ok_or("no reachable unprotected rat spawn in compiled world within 160-tile route budget")
+        .map_err(String::from)
     })
-    .ok_or("no reachable unprotected rat spawn in compiled world within 160-tile route budget")?;
+    .await?;
     evidence(&format!(
         "acquisition step=hunt-route state=complete elapsed_ms={} steps={}",
         route_started.elapsed().as_millis(),
@@ -4202,17 +4223,85 @@ async fn pvp_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    // Level both through their own playable route before admitting the peer concurrently.
-    pair[0] = Some(connect_character(clients, 0xf2, 0).await?);
-    earn_pvp_level(pair[0].as_mut().ok_or("first admission")?, world).await?;
-    release_when_unlocked(
-        pair[0].as_mut().ok_or("first admission")?,
-        Duration::from_secs(70),
+    mod hunt_route {
+        use super::*;
+        include!("qualification_hunt_route.rs");
+    }
+    use hunt_route::*;
+
+    let url = required("NODE_BOOT_PVP_DATABASE_URL")?;
+    let accounts = [
+        required("NODE_BOOT_PVP_ACCOUNT_ID")?,
+        required("NODE_BOOT_PVP_SECOND_ACCOUNT_ID")?,
+    ];
+    let world_id = required("NODE_BOOT_PVP_WORLD_ID")?;
+    let channel_id = required("NODE_BOOT_PVP_CHANNEL_ID")?;
+    let mut database = sqlx::PgConnection::connect(&url).await?;
+    let mut originals = Vec::new();
+    for (account, name) in accounts.iter().zip(["Arena One", "Arena Two"]) {
+        let id: Vec<u8> = sqlx::query_scalar(
+            "SELECT uuid_send(character_id) FROM game_character_roots
+             WHERE account_id=$1::uuid AND world_id=$2::uuid AND name=$3",
+        )
+        .bind(account)
+        .bind(&world_id)
+        .bind(name)
+        .fetch_one(&mut database)
+        .await?;
+        originals.push(<[u8; 16]>::try_from(id.as_slice())?);
+    }
+    let generation: String = sqlx::query_scalar(
+        "SELECT ownership_generation::text FROM game_runtime_scope_assignments
+         WHERE world_id=$1::uuid AND channel_id=$2::uuid AND state=1",
     )
+    .bind(&world_id)
+    .bind(&channel_id)
+    .fetch_one(&mut database)
     .await?;
-    pair[0] = None;
-    pair[1] = Some(connect_character(clients, 0xf3, 1).await?);
-    earn_pvp_level(pair[1].as_mut().ok_or("second admission")?, world).await?;
+    database.close().await?;
+    let arena = SeamClients {
+        address: required("NODE_BOOT_PVP_ADDRESS")?.parse()?,
+        url: &url,
+        accounts: &accounts,
+        characters: &originals,
+        world: crate::node::uuid_bytes(&world_id).ok_or("invalid arena world")?,
+        channel: crate::node::uuid_bytes(&channel_id).ok_or("invalid arena channel")?,
+        scope_generation: generation.parse()?,
+        ..*clients
+    };
+    let clients = &arena;
+    for index in 0..pair.len() {
+        let budget = Duration::from_secs(150);
+        let deadline = tokio::time::Instant::now() + budget;
+        verdict::Harness::global().bounded_wait(deadline, "S08-eligible-build");
+        tokio::time::timeout_at(deadline, async {
+            pair[index] = Some(connect_character(clients, 0xf2 + u8::try_from(index)?, index).await?);
+            let player = pair[index]
+                .as_mut()
+                .ok_or("S08 participant admission absent")?;
+            let required_level = oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL;
+            let initial_level = player_level(player).await?;
+            if initial_level >= required_level {
+                return Err(format!("S08 participant {index} must earn PvP eligibility in play; initial level={initial_level}").into());
+            }
+            let entry = tile(player.world_spatial().actor_position)?;
+            qualification_hunt_route(player, world, None, Some(entry), deadline).await?;
+            acquisition_step("hunt", hunt_one_inner(player, world, Some(deadline))).await?;
+            earn_player_level(
+                player,
+                world,
+                required_level,
+                deadline.saturating_duration_since(tokio::time::Instant::now()),
+            ).await?;
+            qualification_hunt_route(player, world, Some(entry), None, deadline).await?;
+            Ok::<_, Box<dyn std::error::Error>>(())
+        }).await.map_err(|_| format!("S08 participant {index} preparation exceeded {budget:?}"))?
+            .map_err(|error| format!("S08 participant {index} Open PvP preparation: {error}"))?;
+        if index == 0 {
+            release_when_unlocked(pair[0].as_mut().ok_or("first admission")?, Duration::from_secs(70)).await?;
+            pair[0] = None;
+        }
+    }
     row.pass("earned-levels");
     release_when_unlocked(
         pair[1].as_mut().ok_or("second admission")?,
@@ -4454,7 +4543,7 @@ fn carried(client: &DevClientSession, definition: std::num::NonZeroU32) -> TestR
             format!("required direct-backpack item absent:definition-ref={definition}").into()
         })
 }
-fn units(client: &DevClientSession, definition: std::num::NonZeroU32) -> u64 {
+pub(super) fn units(client: &DevClientSession, definition: std::num::NonZeroU32) -> u64 {
     client.inventory().map_or(0, |i| {
         i.entries
             .iter()
@@ -4495,7 +4584,23 @@ pub(super) async fn acquire(
 ) -> TestResult<std::num::NonZeroU32> {
     acquisition_step(
         "item",
-        acquire_inner(client, world, definitions, key, count),
+        acquire_inner(client, world, definitions, key, count, None),
+    )
+    .await
+}
+
+// A seller-specific check must obtain the item through that seller's live trade.
+pub(super) async fn acquire_from_vendor(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    definitions: &crate::content::item_ref::ItemDefinitionIndex,
+    key: &str,
+    count: u32,
+    seller: (&str, &str),
+) -> TestResult<std::num::NonZeroU32> {
+    acquisition_step(
+        "item",
+        acquire_inner(client, world, definitions, key, count, Some(seller)),
     )
     .await
 }
@@ -4506,6 +4611,7 @@ async fn acquire_inner(
     definitions: &crate::content::item_ref::ItemDefinitionIndex,
     key: &str,
     count: u32,
+    seller: Option<(&str, &str)>,
 ) -> TestResult<std::num::NonZeroU32> {
     let basis = spatial_basis::current(client)?;
     use native::npc_service as npc;
@@ -4517,6 +4623,9 @@ async fn acquire_inner(
         .definition_ref("Item", key, revision)
         .ok_or("acquisition reference absent")?;
     if units(client, reference) >= u64::from(count) {
+        if seller.is_some() {
+            return Err(format!("seller-specific purchase requires new inventory for {key}").into());
+        }
         return Ok(reference);
     }
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -4542,6 +4651,9 @@ async fn acquire_inner(
         else {
             continue;
         };
+        if seller.is_some_and(|(expected, _)| name != expected) {
+            continue;
+        }
         let Some(vendor) = metadata
             .npcs
             .npcs
@@ -4550,12 +4662,13 @@ async fn acquire_inner(
         else {
             continue;
         };
-        let Some(_path) = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            vendor
-                .placements
+        let placements = vendor.placements.clone();
+        let Some(_path) = route_live(client, world, move |at| {
+            placements
                 .iter()
                 .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 3)
-        }) else {
+        })
+        .await? else {
             attempted.push(format!("{name}:unreachable"));
             continue;
         };
@@ -4570,21 +4683,27 @@ async fn acquire_inner(
         evidence(&format!(
             "acquisition step=vendor-attempt item={key} vendor={name} elapsed_ms=0"
         ));
-        earn_gold(
-            client,
-            world,
-            planned_price
-                .checked_mul(u64::from(count).saturating_sub(units(client, reference)))
-                .ok_or("vendor price overflow")?,
-        )
-        .await?;
+        let required = planned_price
+            .checked_mul(u64::from(count).saturating_sub(units(client, reference)))
+            .ok_or("vendor price overflow")?;
+        let funding = earn_gold(client, world, required);
+        if seller.is_some() {
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+            verdict::Harness::global().bounded_wait(deadline, "vendor-purchase-funds");
+            tokio::time::timeout_at(deadline, funding)
+                .await
+                .map_err(|_| format!("{name} purchase funding exceeded 120s"))??;
+        } else {
+            funding.await?;
+        }
         // Hunting may move the player; resolve the actual route again.
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            vendor
-                .placements
+        let placements = vendor.placements.clone();
+        let path = route_live(client, world, move |at| {
+            placements
                 .iter()
                 .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 3)
         })
+        .await?
         .ok_or("vendor route unavailable after gold hunt")?;
         acquisition_step("vendor-walk", walk(client, world, &path)).await?;
         let vendor_name = name.replace('_', " ");
@@ -4592,19 +4711,21 @@ async fn acquire_inner(
             .world_entities()
             .and_then(|es| {
                 es.iter().find(|e| {
+                    let display = e.display_name.as_ref().and_then(|name| name.as_str().ok());
+                    let named_actor = if let Some((_, expected_display)) = seller {
+                        display.is_some_and(|display| display == expected_display)
+                    } else {
+                        display.is_some_and(|display| display.eq_ignore_ascii_case(&vendor_name))
+                    };
                     e.kind == oteryn_dev_client::EntityKind::Npc
+                        && (seller.is_none() || named_actor)
                         && vendor.placements.iter().any(|p| {
                             let distance = e.position.x.abs_diff(i32::from(p.x)).max(
                                 e.position.y.abs_diff(i32::from(p.y)),
                             );
                             e.position.floor == basis.floor(p.floor)
                                 && (distance == 0
-                                    || (distance <= 2
-                                        && e.display_name.is_some_and(|display| {
-                                            display.as_str().is_ok_and(|display| {
-                                                display.eq_ignore_ascii_case(&vendor_name)
-                                            })
-                                        })))
+                                    || (seller.is_none() && distance <= 2 && named_actor))
                         })
                 })
             })
@@ -4613,10 +4734,11 @@ async fn acquire_inner(
         let from = tile(client.world_spatial().actor_position)?;
         let vendor_at = tile(vendor_actor.position)?;
         if from.x.abs_diff(vendor_at.x).max(from.y.abs_diff(vendor_at.y)) > 3 {
-            let path = route(world, from, |at| {
+            let path = route_live(client, world, move |at| {
                 at.floor == vendor_at.floor
                     && at.x.abs_diff(vendor_at.x).max(at.y.abs_diff(vendor_at.y)) <= 2
             })
+            .await?
             .ok_or_else(|| format!("vendor {name} wandered to unreachable {vendor_at:?}"))?;
             acquisition_step("vendor-walk", walk(client, world, &path)).await?;
         }
@@ -4657,6 +4779,10 @@ async fn acquire_inner(
             }
             let window = npc::decode_npc_trade_window(&delta.payload)
                 .map_err(|e| format!("trade window:{e:?}"))?;
+            let (window_actor, revision) = window.open.ok_or("vendor window closed")?;
+            if seller.is_some() && window_actor != actor {
+                return Err(format!("vendor {name} served a trade window for a different actor").into());
+            }
             let (index, offer) = window
                 .offers
                 .iter()
@@ -4673,7 +4799,7 @@ async fn acquire_inner(
                     client.session_mut(),
                     &npc::NpcTradeIntent {
                         npc_actor: actor,
-                        catalogue_revision: window.open.ok_or("vendor window closed")?.1,
+                        catalogue_revision: revision,
                         offer_index: u32::try_from(index)?,
                         side: offer.side,
                         quantity,
@@ -4694,6 +4820,9 @@ async fn acquire_inner(
             .await?;
         }
         return Ok(reference);
+    }
+    if let Some((_, seller)) = seller {
+        return Err(format!("no reachable {seller} sale for {key}: {attempted:?}").into());
     }
     // Try the starter's actual loot route once before declaring an unmet item
     // prerequisite. This is bounded acquisition, not an assertion of global absence.
@@ -4880,6 +5009,18 @@ async fn imbuement_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
+    mod hunt_route {
+        use super::*;
+        include!("qualification_hunt_route.rs");
+    }
+    use hunt_route::*;
+
+    let mut characters = clients.characters.to_vec();
+    characters[1] = qualification_character(clients, 1, 0xf6, "Strike Journey", "Knight").await?;
+    let clients = &SeamClients {
+        characters: &characters,
+        ..*clients
+    };
     *connection = Some(connect_character(clients, 0xf6, 1).await?);
     let client = connection.as_mut().ok_or("imbuement admission absent")?;
     let definitions = provisioning::item_index()?;
@@ -4892,27 +5033,127 @@ async fn imbuement_journey(
             .bytes,
     )?;
     use crate::content::ReferenceItemField::Known;
-    let candidate=profiles.records.iter().filter(|r|r.admission.materializable && matches!(&r.semantics.imbuement,Known(i) if matches!(i.slot_count,Known(1..=3)) && matches!(&i.allowed_family_tiers,Known(fs) if fs.iter().any(|f|f.family.wire()==1))))
-        .min_by_key(|r| {
-            let key=&r.production_definition.production_key;
-            let present=definitions.revision(key).and_then(|rev|definitions.definition_ref("Item",key,rev)).is_some_and(|d|carried(client,d).is_ok());
-            (!present,key!="oteryn:item.tibia.i3264",key.clone())
-        }).ok_or("no materializable strike-capable item in pinned native policy")?;
-    let target = acquire(
+    let candidate = profiles
+        .records
+        .iter()
+        .find(|record| {
+            record.production_definition.production_key == "oteryn:item.tibia.i3264"
+                && record.admission.materializable
+                && matches!(&record.semantics.imbuement, Known(policy)
+                if matches!(policy.slot_count, Known(1..=3))
+                    && matches!(&policy.allowed_family_tiers, Known(families)
+                        if families.iter().any(|family| family.family.wire() == 1)))
+        })
+        .ok_or("P21 Sam's Sword has no materializable Strike slot in pinned native policy")?;
+    let key = &candidate.production_definition.production_key;
+    let revision = definitions.revision(key).ok_or("P21 target revision absent")?;
+    let target = definitions.definition_ref("Item", key, revision).ok_or("P21 target definition absent")?;
+    qualification_acquire(
         client,
         world,
-        &definitions,
-        &candidate.production_definition.production_key,
-        1,
+        tokio::time::Instant::now() + Duration::from_secs(150),
+        async |client| Ok(player_gold(client).await? >= 85),
+        async |client, deadline| {
+            acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await
+        },
     )
     .await?;
+    {
+        use native::npc_service as npc;
+        use oteryn_dev_client::client_runtime::npc_shop;
+        let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+        let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+        let sam = metadata
+            .npcs
+            .npcs
+            .iter()
+            .find(|entry| entry.key == "oteryn:npc.sam")
+            .ok_or("P21 Sam is absent from the compiled world")?;
+        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            sam.placements.iter().any(|place| {
+                place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 1
+            })
+        })
+        .ok_or("P21 Sam has no walking route after the hunt")?;
+        walk(client, world, &path).await?;
+        let here = client.world_spatial().actor_position;
+        let actor = client
+            .world_entities()
+            .and_then(|entities| {
+                entities.iter().find(|entity| {
+                    entity.kind == oteryn_dev_client::EntityKind::Npc
+                        && entity
+                            .display_name
+                            .is_some_and(|display| display.as_str() == Ok("Sam"))
+                        && entity.position.floor == here.floor
+                        && entity
+                            .position
+                            .x
+                            .abs_diff(here.x)
+                            .max(entity.position.y.abs_diff(here.y))
+                            <= 4
+                })
+            })
+            .ok_or("P21 the served actor Sam is outside talking range")?
+            .entity;
+        let greeting = client_row_e01::talk(client, actor, "hi", None).await?;
+        if greeting.open.map(|(npc, _)| npc) != Some(actor) {
+            return Err("P21 Sam did not open the native conversation".into());
+        }
+        client_row_e01::talk(client, actor, "trade", None).await?;
+        let delta = client
+            .session_mut()
+            .read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
+            .await?;
+        let window = npc::decode_npc_trade_window(&delta.payload)
+            .map_err(|error| format!("P21 Sam trade window: {error:?}"))?;
+        let (vendor, catalogue_revision) = window.open.ok_or("P21 Sam trade window closed")?;
+        if vendor != actor {
+            return Err("P21 trade window does not belong to Sam".into());
+        }
+        let (offer_index, offer) = window
+            .offers
+            .iter()
+            .enumerate()
+            .find(|(_, offer)| {
+                offer.item_definition_ref == target.get()
+                    && offer.side == npc::NpcTradeSide::Buy
+                    && offer.count == 1
+                    && offer.unit_price == 85
+            })
+            .ok_or("P21 Sam did not quote one Sword for exactly 85 gold")?;
+        let gold = player_gold(client).await?;
+        let count = units(client, target);
+        let reply = npc_shop::buy(
+            client.session_mut(),
+            &npc::NpcTradeIntent {
+                npc_actor: actor,
+                catalogue_revision,
+                offer_index: u32::try_from(offer_index)?,
+                side: offer.side,
+                quantity: 1,
+                expected_unit_price: offer.unit_price,
+            },
+        )
+        .await?;
+        if reply != npc::NpcIntentDisposition::Ok {
+            return Err(format!("P21 Sam refused the 85-gold Sword purchase: {reply:?}").into());
+        }
+        wait_units(client, target, count + 1).await?;
+        verify_gold_payment(gold, player_gold(client).await?, 85)?;
+    }
     let basic = oteryn_gameplay_items::imbuement::imbuement_recipe(1, 1)
         .ok_or("basic Strike recipe absent")?;
     for &(key, count) in basic.materials {
-        acquire(client, world, &definitions, key, count).await?;
+        acquire(client, world, &definitions, key, count)
+            .await
+            .map_err(|error| format!("P21 material {key} x{count}: {error}"))?;
     }
-    row.pass("player-acquisition");
-    earn_gold(client, world, basic.apply_gold + 15_000).await?;
+    character_prep::reload(client, clients).await?;
+    carried(client, target)?;
+    let required = basic.apply_gold.checked_add(15_000).ok_or("P21 fee overflow")?;
+    earn_gold(client, world, required).await?;
+    row.pass("earned-prerequisites");
     shrine(client, world).await?;
     let baseline = strike_effect(client).await?;
     let payment_before = player_gold(client).await?;
@@ -4954,7 +5195,11 @@ async fn imbuement_journey(
     row.pass("worn-effect");
     // Combat is a real eligible interval for Strike; no clock override. Removing
     // equipment checkpoints the elapsed duration before querying the carried item.
-    hunt_one(client, world).await?;
+    let entry = tile(client.world_spatial().actor_position)?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
+    qualification_hunt_route(client, world, None, Some(entry), deadline).await?;
+    acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await?;
+    qualification_hunt_route(client, world, Some(entry), None, deadline).await?;
     equipment_move(client, target, false).await?;
     let duration = imbue_window(client, target).await?.applied;
     if duration.len() != 1
@@ -6453,6 +6698,7 @@ impl ForgeClient {
                         if tile(self.position)? != landing {
                             return Err("forge STEP endpoint frame mismatch".into());
                         }
+                        verdict::Harness::global().progress("forge-walk");
                         break;
                     }
                     StepDisposition::Blocked => {
@@ -6868,7 +7114,7 @@ async fn forge_journey(
                 || value["result"] != serde_json::Value::Null
                 || client.slivers(sliver) != before
             {
-                return Err("insufficient dust refusal changed custody".into());
+                return Err(format!("insufficient dust refusal changed custody: reply={value}; slivers={before}->{}",client.slivers(sliver)).into());
             }
             row.pass("insufficient-dust-refusal");
             break;
@@ -7107,4 +7353,14 @@ mod forge_tests {
         native::GameSessionId::decode(&forge_occurrence(first, 1))?;
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn paid_light_mana_is_observed_before_retry() {
+    let source = include_str!("full_e2ef7.rs");
+    let (_, journey) = source.split_once("async fn light_journey(").unwrap();
+    let (before_retry, _) = journey.split_once("let retry = client.cast(index).await?;").expect("retry must be sent only after observing the paid cast");
+    assert!(before_retry.contains("before.mana.checked_sub(client.vitals.mana) != Some(mana)"));
+    assert!(before_retry.contains("row.pass(paid);"));
 }

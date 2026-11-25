@@ -67,6 +67,7 @@ pub(super) const VICTIM: MovementLocalPosition = MovementLocalPosition {
 pub(super) enum Case {
     EngencTraining,
     IntenseHealingOwnSummon,
+    IntenseHealingSelfTile,
     ParalyzeMonster,
     ParalyzePlayer,
     Replay,
@@ -192,9 +193,13 @@ async fn client_cast(
         Some(original) => original,
         None => UseIntent {
             target: UseTarget::Item(source.ok_or("snapshot exposes the direct entry handle")?),
-            use_with: Some(victim),
+            use_with: (case != Case::IntenseHealingSelfTile).then_some(victim),
             use_with_map_item: None,
-            use_with_position: None,
+            use_with_position: (case == Case::IntenseHealingSelfTile).then_some(SpellTargetPosition {
+                x: CASTER.x,
+                y: CASTER.y,
+                floor: -CASTER.floor,
+            }),
         },
     };
     if retry {
@@ -237,6 +242,10 @@ async fn client_cast(
             assert!(own_summon_visible, "the admitted client must see the exact summon");
             assert_eq!(before, 1, "the owned summon must be healable");
             send_use(client, first_id, &intent, Expected::Result(UseDisposition::TargetIllegal))
+                .await?;
+        }
+        Case::IntenseHealingSelfTile => {
+            send_use(client, first_id, &intent, Expected::Result(UseDisposition::Committed))
                 .await?;
         }
         Case::EngencTraining => {
@@ -537,7 +546,10 @@ async fn serve_cast(
 pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     let trained_caster = matches!(
         case,
-        Case::ParalyzeMonster | Case::ParalyzePlayer | Case::IntenseHealingOwnSummon
+        Case::ParalyzeMonster
+            | Case::ParalyzePlayer
+            | Case::IntenseHealingOwnSummon
+            | Case::IntenseHealingSelfTile
     );
     let harness =
         Harness::create_with_admission_seed(admin, "rune_bridge", !trained_caster, false).await?;
@@ -778,7 +790,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         .bind(id(41).as_slice()).execute(&harness.pool).await?;
     let source_key = if case == Case::UnqualifiedSource {
         "oteryn:item.tibia.i3607"
-    } else if case == Case::IntenseHealingOwnSummon {
+    } else if matches!(case, Case::IntenseHealingOwnSummon | Case::IntenseHealingSelfTile) {
         "oteryn:item.tibia.i3152"
     } else if case == Case::EngencTraining {
         "oteryn:item.tibia.i17512"
@@ -814,8 +826,13 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         drop(seal);
         return harness.cleanup().await;
     }
-    if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
-        super::paralyze_rune_fixtures::prepare_target(&owner, &harness, victim, case).await?;
+    if matches!(
+        case,
+        Case::ParalyzeMonster | Case::ParalyzePlayer | Case::IntenseHealingSelfTile
+    ) {
+        if case != Case::IntenseHealingSelfTile {
+            super::paralyze_rune_fixtures::prepare_target(&owner, &harness, victim, case).await?;
+        }
         tokio::time::timeout(
             std::time::Duration::from_secs(30),
             serve_cast(&owner, &harness, admitted, victim, case, None),

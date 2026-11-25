@@ -14,7 +14,6 @@ use std::num::NonZeroU32;
 const DAMAGE_RUNE_ID: u32 = 3174;
 const HEAL_RUNE_ID: u32 = 3152;
 const BLANK_RUNE_ID: u32 = 3147;
-const STARTER_CONJURE: &str = "adori dis min vis";
 const ORDINARY_CONJURE: &str = "adori min vis";
 const CONJURED_CHARGES: u64 = 10;
 const XODET: &str = "oteryn:npc.xodet";
@@ -28,7 +27,6 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = result.unwrap_or_else(|_| {
         Err("step=journey observed=timeout-240s need=all-native-replies-and-deltas".into())
     });
-    let result: TestResult = result.and(Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into()));
     if let Err(error) = &result {
         evidence(&format!("C06_GAP {error}"));
     }
@@ -45,6 +43,15 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let caster = character_prep::dedicated_character(clients, "NODE_BOOT_C06_CASTER_ACCOUNT").await?;
+    let (accounts, characters) = caster.replace_slot(clients, 1)?;
+    let scope = SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+    let peer = character_prep::dedicated_character(&scope, "NODE_BOOT_C06_PEER_ACCOUNT").await?;
+    let (accounts, characters) = peer.replace_slot(&scope, 0)?;
+    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..scope };
+    if clients.accounts.iter().any(|account| !requires_platform_grant(account)) {
+        return Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into());
+    }
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -58,7 +65,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let damage = provisioning::item_reference(&index, DAMAGE_RUNE_ID)?;
     let healing = provisioning::item_reference(&index, HEAL_RUNE_ID)?;
     let blank = provisioning::item_reference(&index, BLANK_RUNE_ID)?;
-    let mut client = connect_world(clients, 0xc6).await?;
+    let mut client = connect_character(clients, 0xc6, 1).await?;
+    full_e2ef7::earn_player_level(&mut client, world, 15, Duration::from_secs(150)).await?;
     // Xodet's pinned price is ten gold per blank rune. The second blank
     // makes the immediate repeat test cooldown rather than reagent absence.
     super::full_row_c02::earn_gold(&mut client, world, &metadata.spawns, 20)
@@ -291,19 +299,10 @@ fn conjure_index(client: &mut DevClientSession) -> TestResult<NonZeroU32> {
         .session_mut()
         .spell_catalog()?
         .ok_or("step=2 observed=no-spell-catalog")?;
-    [ORDINARY_CONJURE, STARTER_CONJURE]
-        .into_iter()
-        .find_map(|words| {
-            catalogue
-                .entries
-                .iter()
-                .find(|e| e.words == words && e.available && e.rune_item.is_none())
-                .and_then(|e| NonZeroU32::new(e.cast_index))
-        })
-        .ok_or_else(|| {
-            format!("step=2 observed=no-eligible-conjure need={ORDINARY_CONJURE}|{STARTER_CONJURE}")
-                .into()
-        })
+    catalogue.entries.iter()
+        .find(|entry| entry.words == ORDINARY_CONJURE && entry.available && entry.rune_item.is_none())
+        .and_then(|entry| NonZeroU32::new(entry.cast_index))
+        .ok_or_else(|| format!("step=2 observed=no-eligible-conjure need={ORDINARY_CONJURE}").into())
 }
 
 fn require_rune_eligibility(
@@ -420,15 +419,14 @@ async fn acquire(
         })
         .collect();
     let here = tile(client.world_spatial().actor_position)?;
-    let placed = npcs
-        .npcs
-        .iter()
-        .filter(|n| sellers.contains(&n.key))
-        .count();
-    let (npc, path) = npcs
-        .npcs
-        .iter()
-        .filter(|n| sellers.contains(&n.key))
+    let candidates = npcs.npcs.iter().filter(|n| {
+        sellers.contains(&n.key)
+            && (item_id != BLANK_RUNE_ID
+                || (n.key == XODET
+                    && n.placements.iter().any(|p| (p.x, p.y, p.floor) == (32398, 32222, 7))))
+    });
+    let placed = candidates.clone().count();
+    let (npc, path) = candidates
         .filter_map(|n| {
             let wander = if n.key == XODET {
                 XODET_WANDER_RADIUS
@@ -438,7 +436,8 @@ async fn acquire(
             let approach = wire::TALK_RANGE_TILES - wander;
             route(world, here, |at| {
                 n.placements.iter().any(|p| {
-                    p.floor == at.floor
+                    (item_id != BLANK_RUNE_ID || (p.x, p.y, p.floor) == (32398, 32222, 7))
+                        && p.floor == at.floor
                         && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
                 })
             })

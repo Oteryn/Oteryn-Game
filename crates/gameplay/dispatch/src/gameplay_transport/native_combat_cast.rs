@@ -952,6 +952,37 @@ impl PreparedNativeCombatCast {
                     .install_preflighted(proof);
             }
         }
+        #[cfg(feature = "qualification-cast-evidence")]
+        if result.applied
+            && let Some(magnitude) = self.magnitude.as_deref()
+        {
+            let command = self.batch.command;
+            for &(target, before, after) in magnitude.base_damage_evidence() {
+                if result.effects.iter().any(|effect| {
+                    effect.target == target
+                        && effect
+                            .health
+                            .is_some_and(|health| health.committed_health_loss().is_some())
+                }) {
+                    let target_id = target
+                        .placement_identity()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>();
+                    let session_id = command
+                        .game_session_id()
+                        .as_bytes()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>();
+                    eprintln!(
+                        "SEAM_EVIDENCE c12_base_damage session={session_id} command={} target={target_id} generation={} before={before} after={after}",
+                        command.command_id().get(),
+                        target.actor_local_generation()
+                    );
+                }
+            }
+        }
         result
     }
 }
@@ -962,7 +993,17 @@ pub struct CheckedNativeCommit {
     owner: super::CheckedOwnerBatch,
 }
 
+#[cfg_attr(feature = "qualification-cast-evidence", track_caller)]
 fn reject<T>() -> Result<T, SpellCastDisposition> {
+    #[cfg(feature = "qualification-cast-evidence")]
+    {
+        let source = std::panic::Location::caller();
+        eprintln!(
+            "SEAM_EVIDENCE native_owner_refused file={} line={}",
+            source.file(),
+            source.line()
+        );
+    }
     Err(SpellCastDisposition::Rejected)
 }
 
@@ -1258,7 +1299,7 @@ async fn prepare_source_self_from_owners(
             && p.spell()["execution"]["native_behavior"]["parameters"]["caster_effect"]
                 == "magic_green"
         {
-            append("appearance:effect/magic_green");
+            append(crate::spell::spell_presentations::SOURCE_MAGIC_GREEN_CUE);
         }
         if let Some(effect) = p.spell()["execution"]["native_behavior"]["parameters"]
             ["presentation"]["effect_asset_binding"]
@@ -1469,7 +1510,7 @@ async fn prepare_source_self_from_owners(
             && p.spell()["execution"]["native_behavior"]["parameters"]["caster_effect"]
                 == "magic_green"
         {
-            selected_cues.insert("appearance:effect/magic_green");
+            selected_cues.insert(crate::spell::spell_presentations::SOURCE_MAGIC_GREEN_CUE);
         }
         if let Some(effect) = p.spell()["execution"]["native_behavior"]["parameters"]
             ["presentation"]["effect_asset_binding"]
@@ -1711,6 +1752,41 @@ pub(in crate::gameplay_transport) async fn read_tile(
     objects: &LocalObjectRuntime,
     position: TilePosition,
 ) -> Result<TileFlags, SpellCastDisposition> {
+    read_cast_tile(tx, authority, room, runtime, objects, position)
+        .await
+        .map_err(|_| SpellCastDisposition::Rejected)
+}
+
+pub(in crate::gameplay_transport) async fn read_chain_visual_tile(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    room: &QualifiedNativeEntryRoom,
+    runtime: &ChannelRuntimeV1,
+    objects: &LocalObjectRuntime,
+    position: TilePosition,
+) -> Result<Option<TileFlags>, SpellCastDisposition> {
+    match read_cast_tile(tx, authority, room, runtime, objects, position).await {
+        Ok(tile) => Ok(Some(tile)),
+        // Crystal 201189f8 combat.cpp:1329–1344 still emits the destination effect when
+        // it cannot find a walking path. This tile cannot be used for combat or sight.
+        Err(CastTileError::MissingMetadata) => Ok(None),
+        Err(CastTileError::Unavailable) => reject(),
+    }
+}
+
+enum CastTileError {
+    MissingMetadata,
+    Unavailable,
+}
+
+async fn read_cast_tile(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    room: &QualifiedNativeEntryRoom,
+    runtime: &ChannelRuntimeV1,
+    objects: &LocalObjectRuntime,
+    position: TilePosition,
+) -> Result<TileFlags, CastTileError> {
     let cells = room.movement_cells();
     let logical = crate::content::LogicalCell {
         x: position.x,
@@ -1727,7 +1803,7 @@ pub(in crate::gameplay_transport) async fn read_tile(
                 present: false,
             });
         }
-        Err(SpellTileLookupError::ScopeMismatch) => return reject(),
+        Err(SpellTileLookupError::ScopeMismatch) => return Err(CastTileError::Unavailable),
         // Mutable source placements require same-transaction initialization receipts;
         // the source index alone intentionally leaves these cells unknown.
         Err(SpellTileLookupError::Unknown) | Ok(_) => {}
@@ -1741,12 +1817,17 @@ pub(in crate::gameplay_transport) async fn read_tile(
         cell(position),
     )
     .await
-    .map_err(|_| SpellCastDisposition::Rejected)?;
+    .map_err(|error| match error {
+        crate::spell::world_execution::WorldRelocationError::MissingTileMetadata => {
+            CastTileError::MissingMetadata
+        }
+        _ => CastTileError::Unavailable,
+    })?;
     let target = SpellGroundTarget::for_native_tile_read(room, runtime, cell(position))
-        .map_err(|_| SpellCastDisposition::Rejected)?;
+        .map_err(|_| CastTileError::Unavailable)?;
     let actual = read_spell_tile_in_transaction(tx, authority, &target)
         .await
-        .map_err(|_| SpellCastDisposition::Rejected)?;
+        .map_err(|_| CastTileError::Unavailable)?;
     Ok(TileFlags {
         projectile: static_tile.block_projectile()
             || actual.items.iter().any(|i| i.blocks_projectile),
@@ -2739,8 +2820,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     let mut prepared=match prepared_result{
                         Ok(p)=>p,Err(disposition)=>{
                         Box::pin(refusal_on_live_transaction(&mut tx)).await?;
-                        #[cfg(test)]
-                        eprintln!("SEAM_EVIDENCE native_combat_prepare result={disposition:?} ordinary={}",ordinary_combat::applicable(spell));
+                        #[cfg(any(test, feature = "qualification-cast-evidence"))]
+                        eprintln!("SEAM_EVIDENCE native_combat_prepare spell={} command={command_id} result={disposition:?} ordinary={} direct_companion={}",spell.key,ordinary_combat::applicable(spell),native_companion_item_cast::direct_applicable(spell));
                         if let (Some(rune),Some(legacy))=(rune.as_ref(),legacy.as_ref()) {
                             let refused=rune_item_cast::use_refusal(&mut tx,&authority,runtime,states,room,objects,spell,actor,rune,legacy,disposition,now).await;
                             return Ok(NativeCastDispatch::RuneRefused(refused));

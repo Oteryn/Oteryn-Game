@@ -326,6 +326,7 @@ fn resolve_native_callback_common_inner(
                 | "tile_item_operation"
                 | "acquire_summon"
                 | "companion_acquisition"
+                | "familiar_summon"
         )
     ) && !canonical_barrier
     {

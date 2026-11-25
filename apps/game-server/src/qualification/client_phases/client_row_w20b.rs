@@ -34,11 +34,27 @@ pub(super) async fn connect_player_caster(
     clients: &SeamClients<'_>,
     required_level: u32,
     premium_required: bool,
+    preparation_budget: Duration,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    let deadline = tokio::time::Instant::now() + preparation_budget;
+    verdict::Harness::global().bounded_wait(deadline, "personal-light-preparation");
+    tokio::time::timeout_at(
+        deadline,
+        prepare_player_caster(clients, required_level, premium_required, preparation_budget),
+    )
+    .await
+    .map_err(|_| format!("personal-light preparation exceeded {preparation_budget:?}"))?
+}
+
+async fn prepare_player_caster(
+    clients: &SeamClients<'_>,
+    required_level: u32,
+    premium_required: bool,
     hunt_budget: Duration,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     let mut client = connect_character(clients, 0x97, LIGHT_CHARACTER).await?;
     if premium_required
-        && let Err(error) = full_e2ef7::require_current_light_premium(&mut client).await
+        && let Err(error) = full_e2ef7::require_current_premium(&mut client).await
     {
         // The packet capture reuses this Character after the full journey.
         let cleanup = logout_retrying_busy(&mut client).await;
@@ -150,6 +166,8 @@ fn qualification_review_w20b_never_uses_privileged_profile() -> TestResult {
     assert!(journey.contains(concat!("client_row_w20b::", "connect_player_caster")));
     let (setup, packet) = capture.split_once("async fn journey(").ok_or("missing W20b packet journey")?;
     assert!(setup.contains(concat!("full_e2ef7::", "earn_player_level")));
+    assert!(!setup.contains(concat!("character_prep::", "Seeded")));
+    assert!(!setup.contains(concat!("character_prep::", "grant_premium")));
     let (packet, _) = packet.split_once("pub(super) async fn run_packet(").ok_or("missing W20b runner")?;
     assert!(packet.contains(concat!("connect_player_", "caster(")));
     Ok(())

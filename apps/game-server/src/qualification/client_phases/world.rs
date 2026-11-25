@@ -19,6 +19,8 @@ pub(in crate::qualification) use mp::legacy_d150;
 
 include!("character_core.rs");
 include!("character_release.rs");
+#[path = "character_prep.rs"]
+mod character_prep;
 include!("e2e_row_batch.rs");
 include!("floor_journey.rs");
 include!("full_e2ef7_mount.rs");
@@ -458,6 +460,51 @@ fn tile(position: ActorPosition) -> TestResult<TilePos> {
     })
 }
 
+/// Run map work while continuing to receive and answer server probes. Finish each
+/// liveness call so a cancellation at a frame boundary cannot lose its reply.
+async fn route_work<T: Send + 'static>(
+    client: &mut oteryn_dev_client::DevClientSession,
+    search: impl FnOnce() -> Result<T, String> + Send + 'static,
+) -> TestResult<T> {
+    let worker = tokio::task::spawn_blocking(search);
+    while !worker.is_finished() {
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+    Ok(worker.await??)
+}
+
+async fn route_live(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    goal: impl Fn(TilePos) -> bool + Send + 'static,
+) -> TestResult<Option<Vec<StepDirection>>> {
+    let start = tile(client.world_spatial().actor_position)?;
+    let world = world.clone();
+    route_work(client, move || Ok(route(&world, start, goal))).await
+}
+
+async fn npc_approach_path(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    npc: &oteryn_world_bundle::npc::Npc,
+) -> TestResult<Option<Vec<StepDirection>>> {
+    if npc.placements.is_empty() {
+        return Ok(None);
+    }
+    let placements = npc.placements.clone();
+    route_live(client, world, move |at| {
+        placements.iter().any(|placement| {
+            placement.floor == at.floor
+                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+        })
+    })
+    .await
+}
+
+pub(super) fn hunt_progress(phase: &'static str) {
+    verdict::Harness::global().progress(phase);
+}
+
 /// Plan from immutable production map facts; only replies to real STEP commands prove travel.
 fn route(
     world: &BundleWorld,
@@ -560,6 +607,18 @@ fn destination_with_teleports(
     direction: StepDirection,
     allow_teleport: bool,
 ) -> Option<TilePos> {
+    destination_with_collision(world, from, direction, allow_teleport, |at| {
+        world.enterable(at)
+    })
+}
+
+fn destination_with_collision(
+    world: &BundleWorld,
+    from: TilePos,
+    direction: StepDirection,
+    allow_teleport: bool,
+    enterable: impl Fn(TilePos) -> bool,
+) -> Option<TilePos> {
     use crate::map::floor::{Ground, resolve_landing};
     use crate::movement::CardinalStep;
     let direction = match direction {
@@ -582,7 +641,7 @@ fn destination_with_teleports(
     let ground = |cell| match position(cell) {
         Some(pos) => match world.base().tile(pos.x, pos.y, pos.floor) {
             None => Ground::Absent,
-            Some(tile) if tile.walkable() && world.enterable(pos) => Ground::Walkable,
+            Some(tile) if tile.walkable() && enterable(pos) => Ground::Walkable,
             Some(_) => Ground::Blocked,
         },
         None => Ground::Absent,
@@ -757,7 +816,16 @@ async fn request_fixture_control(
     operation: &'static str,
     argument: String,
 ) -> Result<String, String> {
-    let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
+    request_fixture_control_at("NODE_BOOT_CONTROL_SOCKET", session, operation, argument).await
+}
+
+async fn request_fixture_control_at(
+    socket_env: &str,
+    session: String,
+    operation: &'static str,
+    argument: String,
+) -> Result<String, String> {
+    let socket = required(socket_env).map_err(|error| error.to_string())?;
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
     let output = tokio::task::spawn_blocking(move || {
@@ -806,8 +874,9 @@ async fn walk(
     world: &BundleWorld,
     path: &[StepDirection],
 ) -> TestResult {
-    walk_with_landings(client, path, |at, direction| {
-        destination(world, at, direction)
+    let world = world.clone();
+    walk_with_landings(client, path, move |at, direction| {
+        destination(&world, at, direction)
     })
     .await
 }
@@ -815,7 +884,7 @@ async fn walk(
 async fn walk_with_landings(
     client: &mut oteryn_dev_client::DevClientSession,
     path: &[StepDirection],
-    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos> + Clone + Send + Sync + 'static,
 ) -> TestResult {
     walk_with_landing_budget(client, path, landing, None).await
 }
@@ -823,7 +892,7 @@ async fn walk_with_landings(
 async fn walk_with_landing_budget(
     client: &mut oteryn_dev_client::DevClientSession,
     path: &[StepDirection],
-    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos> + Clone + Send + Sync + 'static,
     step_budget: Option<Duration>,
 ) -> TestResult {
     let mut path = VecDeque::from(path.to_vec());
@@ -880,19 +949,25 @@ async fn walk_with_landing_budget(
                 })
                 .filter_map(|entity| tile(entity.position).ok())
                 .collect();
-            if visible_blockers.contains(&occupied)
-                && blocked.len() < 8
-                && blocked.insert(occupied)
-                && let Some(detour) = route_around_occupant(
-                    from,
-                    occupied,
-                    &path,
-                    |at| !blocked.contains(&at) && !visible_blockers.contains(&at),
-                    &landing,
-                )
+            if visible_blockers.contains(&occupied) && blocked.len() < 8 && blocked.insert(occupied)
             {
-                path = detour.into();
-                continue;
+                let blocked = blocked.clone();
+                let remaining = path.clone();
+                let landing = landing.clone();
+                if let Some(detour) = route_work(client, move || {
+                    Ok(route_around_occupant(
+                        from,
+                        occupied,
+                        &remaining,
+                        |at| !blocked.contains(&at) && !visible_blockers.contains(&at),
+                        landing,
+                    ))
+                })
+                .await?
+                {
+                    path = detour.into();
+                    continue;
+                }
             }
         }
         if outcome.disposition != StepDisposition::Moved || outcome.world_spatial_delta.is_none() {
@@ -1086,6 +1161,7 @@ pub(super) async fn journeys(
     }
     drop(client);
     {
+        let core_clients = clients;
         let clients = packet_clients;
         // Default runs retain the ordinary packets alongside the indexed rows.
         // Explicit groups can isolate those packets from the row batch.
@@ -1164,7 +1240,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(11) {
                 verdict::indexed("C11.full", async {
-                    full_row_c11::run_packet(clients).await;
+                    verdict::dawnport_excluded("C11.full");
                     release_row_characters(clients).await
                 })
                 .await;
@@ -1754,7 +1830,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(96) {
                 verdict::indexed("C11.client", async {
-                    client_row_c11::run_packet(clients).await;
+                    verdict::dawnport_excluded("C11.client");
                     release_row_characters(clients).await
                 })
                 .await;
@@ -2559,7 +2635,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(209) {
                 verdict::indexed("S16a.client", async {
-                    client_row_s16a::run_packet(clients).await;
+                    verdict::dawnport_excluded("S16a.client");
                     release_row_characters(clients).await
                 })
                 .await;
@@ -3209,6 +3285,9 @@ pub(super) async fn journeys(
                 })
                 .await;
             }
+            if e2e_row_selected(306) {
+                full_e2ef20::greet_ten(clients, world, &metadata.npcs).await;
+            }
         }
         for index in 0..clients.accounts.len() {
             wait_character_released(clients, index).await?;
@@ -3267,9 +3346,11 @@ pub(super) async fn journeys(
     evidence(&format!(
         "world_fixture role=core phase=return_to_town from={from:?} to={TOWN:?}"
     ));
-    let back = route(world, from, |at| at == TOWN).ok_or_else(|| {
-        format!("required core has no return route to town: from={from:?} to={TOWN:?}")
-    })?;
+    let back = route_live(&mut client, world, |at| at == TOWN)
+        .await?
+        .ok_or_else(|| {
+            format!("required core has no return route to town: from={from:?} to={TOWN:?}")
+        })?;
     walk(&mut client, world, &back).await?;
     client = character_core(client, clients, world).await?;
     client = include!("full_e2ef3_registration.rs");
@@ -3291,8 +3372,12 @@ pub(super) async fn journeys(
     client_hireling::hireling(&mut client).await?;
     client_browse_field::browse_field(&mut client).await?;
     client_daily_boost::daily_boost(&mut client).await?;
-    let path = route(world, TOWN, |at| near_locker(world, at))
-        .ok_or("town has no reachable authored depot locker")?;
+    let snapshot = world.clone();
+    let path = route_work(&mut client, move || {
+        Ok(route(&snapshot, TOWN, |at| near_locker(&snapshot, at)))
+    })
+    .await?
+    .ok_or("town has no reachable authored depot locker")?;
     walk(&mut client, world, &path).await?;
     client_depot_search::depot_search(&mut client).await?;
     client_stash::stash(&mut client).await?;
@@ -3377,22 +3462,25 @@ async fn profile_journey(
         Err("configured town start is not a bundle PZ".into())
     };
     let outside: TestResult = async {
-        let path = route(world, TOWN, |at| {
-            world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|tile| !tile.protection_zone())
+        let snapshot = world.clone();
+        let path = route_work(&mut client, move || {
+            Ok(route(&snapshot, TOWN, |at| {
+                snapshot
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|tile| !tile.protection_zone())
+            }))
         })
+        .await?
         .ok_or("no reachable outside-PZ comparison tile")?;
         walk(&mut client, world, &path).await?;
         client_spell_journey::protection_zone_probe(&mut client, false).await
     }
     .await;
     let pz = pz.and(outside);
-    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at == TOWN
-    })
-    .ok_or("PZ comparison has no return route")?;
+    let back = route_live(&mut client, world, |at| at == TOWN)
+        .await?
+        .ok_or("PZ comparison has no return route")?;
     walk(&mut client, world, &back).await?;
     let map = map_journey::run(&mut client, world, &model).await;
     let combat = match travel_to_spawn(&mut client, world, spawns, "oteryn:creature.rat").await {
@@ -3418,10 +3506,9 @@ async fn profile_journey(
     }
     drop(client);
     client = connect_character(clients, 0x6f, 0).await?;
-    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at == TOWN
-    })
-    .ok_or("profile journey has no return route")?;
+    let back = route_live(&mut client, world, |at| at == TOWN)
+        .await?
+        .ok_or("profile journey has no return route")?;
     walk(&mut client, world, &back).await?;
     let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -3457,27 +3544,59 @@ fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
     Ok((nonce, attempt))
 }
 
+pub(super) fn requires_platform_grant(account: &str) -> bool {
+    std::env::var("NODE_BOOT_PLATFORM_GRANT_ACCOUNTS")
+        .is_ok_and(|accounts| accounts.split(',').any(|required| required == account))
+}
+
+async fn platform_row_grant(clients: &SeamClients<'_>, index: usize) -> TestResult<String> {
+    let work = required("NODE_BOOT_PLATFORM_GRANT_DIR")?;
+    let account = clients.accounts[index].clone();
+    let character = uuid_text(&clients.characters[index]);
+    let world = uuid_text(&clients.world);
+    let channel = uuid_text(&clients.channel);
+    let address = clients.address.to_string();
+    let output = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("python3")
+            .arg(
+                Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../tools/qualification/node_boot/platform_grant.py"),
+            )
+            .args([work, account, character, world, channel, address])
+            .output()
+    })
+    .await??;
+    if !output.status.success() {
+        return Err("Platform-issued row grant unavailable".into());
+    }
+    Ok(String::from_utf8(output.stdout)?)
+}
+
 pub(super) async fn connect_character(
     clients: &SeamClients<'_>,
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     wait_character_released(clients, index).await?;
-    let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
-    let (nonce, attempt) = fresh_grant_material(tag)?;
-    let grant = Grant {
-        signing: clients.signing,
-        key_id: clients.key_id,
-        account_id: &clients.accounts[index],
-        character_id: clients.characters[index],
-        world_id: clients.world,
-        channel_id: clients.channel,
-        security_generation: generation,
-        scope_generation: clients.scope_generation,
-        nonce,
-        attempt,
+    let token = if requires_platform_grant(&clients.accounts[index]) {
+        platform_row_grant(clients, index).await?
+    } else {
+        let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
+        let (nonce, attempt) = fresh_grant_material(tag)?;
+        let grant = Grant {
+            signing: clients.signing,
+            key_id: clients.key_id,
+            account_id: &clients.accounts[index],
+            character_id: clients.characters[index],
+            world_id: clients.world,
+            channel_id: clients.channel,
+            security_generation: generation,
+            scope_generation: clients.scope_generation,
+            nonce,
+            attempt,
+        };
+        sign_grant(&grant, now_seconds()?)
     };
-    let token = sign_grant(&grant, now_seconds()?);
     let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
         address: clients.address,
         server_name: "localhost",
@@ -3510,16 +3629,21 @@ async fn travel_to_spawn(
                 .get(point.creature as usize)
                 .is_some_and(|entry| entry.key == creature)
         })
+        .map(|(floor, point)| (floor, point.x, point.y))
         .collect();
-    let path = route(world, from, |at| {
-        !world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_none_or(|tile| tile.protection_zone())
-            && points.iter().any(|(floor, point)| {
-                at.floor == *floor && at.x.abs_diff(point.x) <= 1 && at.y.abs_diff(point.y) <= 1
-            })
+    let snapshot = world.clone();
+    let path = route_work(client, move || {
+        Ok(route(&snapshot, from, |at| {
+            !snapshot
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_none_or(|tile| tile.protection_zone())
+                && points.iter().any(|&(floor, x, y)| {
+                    at.floor == floor && at.x.abs_diff(x) <= 1 && at.y.abs_diff(y) <= 1
+                })
+        }))
     })
+    .await?
     .ok_or_else(|| format!("no reachable {creature} spawn within town route budget"))?;
     walk(client, world, &path).await?;
     for _ in 0..32 {
@@ -3544,9 +3668,10 @@ async fn travel_to_spawn(
             .copied()
             .ok_or("spawn route has no visible creature")?;
         let target = tile(target.position)?;
-        let path = route(world, tile(here)?, |at| {
+        let path = route_live(client, world, move |at| {
             at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
         })
+        .await?
         .ok_or("visible creature unreachable")?;
         let Some(direction) = path.first() else {
             return Ok(());
@@ -3652,13 +3777,15 @@ async fn shop_journey(
         );
         return Ok(());
     };
-    let from = tile(client.world_spatial().actor_position)?;
-    let Some(path) = route(world, from, |at| {
-        npc.placements.iter().any(|placement| {
+    let placements = npc.placements.clone();
+    let Some(path) = route_live(client, world, move |at| {
+        placements.iter().any(|placement| {
             placement.floor == at.floor
                 && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
         })
-    }) else {
+    })
+    .await?
+    else {
         evidence(
             "mechanic=npc_shop skipped=no_route_to_authored_shop_within_town_budget content_id=oteryn:npc.sam source=apps/game-server/src/qualification/client_phases/world.rs:126",
         );

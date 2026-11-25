@@ -55,3 +55,9 @@ fn pvp_expert_optional_world_ignores_expert_choice() -> TestResult {
 fn pvp_expert_white_hand_reads_party_and_guild_aggressors() -> TestResult {
     super::item_look_fixtures::large_stack(|| scenario(13))
 }
+
+
+#[test]
+fn pvp_live_open_world_melee_hits_equipped_player() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(15))
+}

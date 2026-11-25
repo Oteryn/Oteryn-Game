@@ -127,15 +127,10 @@ fn compiled_town_bundle_loads_with_the_runtime_item_index() {
             let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
             let out =
                 std::env::temp_dir().join(format!("wb-town-boot-{}.otwb", std::process::id()));
-            let mut regions = std::fs::read_to_string(
+            let regions = std::fs::read_to_string(
                 root.join("tools/qualification/node_boot/town-regions.txt"),
             )
-            .expect("town regions")
-            .trim()
-            .to_owned();
-            if !regions.split(';').any(|region| region == "125,124") {
-                regions.push_str(";125,124");
-            }
+            .expect("town regions");
             let output = world_compiler(&root)
                 .current_dir(&root)
                 .args([
@@ -165,7 +160,19 @@ fn compiled_town_bundle_loads_with_the_runtime_item_index() {
                     .iter()
                     .any(|entry| entry.key == key)
             );
-            let identity = visited.manifest.identity;
+            let pin: Value = serde_json::from_slice(
+                &std::fs::read(root.join("content/world/pins/oteryn.json"))
+                    .expect("read town pins"),
+            )
+            .expect("parse town pins");
+            let text = |key: &str| pin[key].as_str().expect("committed town pin").to_owned();
+            let hex = report["digest"].as_str().expect("town digest");
+            let mut digest = [0u8; 32];
+            assert_eq!(hex.len(), digest.len() * 2);
+            for (index, byte) in digest.iter_mut().enumerate() {
+                *byte = u8::from_str_radix(&hex[index * 2..index * 2 + 2], 16)
+                    .expect("hex town digest");
+            }
             let start = TilePos {
                 x: 32369,
                 y: 32238,
@@ -175,16 +182,13 @@ fn compiled_town_bundle_loads_with_the_runtime_item_index() {
                 data,
                 BootPins {
                     bundle: BundlePins {
-                        digest: visited.digest,
-                        project_format_version: identity.project_format_version,
-                        world_schema_version: identity.world_schema_version,
-                        content_revision: identity.content_revision,
+                        digest,
+                        project_format_version: text("project_format_version"),
+                        world_schema_version: text("world_schema_version"),
+                        content_revision: text("content_revision"),
                         production: false,
                     },
-                    map_revision: format!(
-                        "sha256:{}",
-                        report["digest"].as_str().expect("town digest")
-                    ),
+                    map_revision: format!("sha256:{hex}"),
                     start,
                 },
             )
