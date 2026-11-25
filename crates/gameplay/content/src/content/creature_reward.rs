@@ -1017,8 +1017,29 @@ fn row(
                 && algorithm == LootSelectionAlgorithm::IndependentBernoulliPpm
                 && !is_boss(profile);
             let admits_tusk_shield = source_tusk_shield_pair(creature, reference);
+            // Keep the exact source roll in the Loot section, but exclude this
+            // fixed scenery from Zamulosh's private Item settlement.
+            let carried_entries;
+            let entries = if private_reward
+                && creature == "oteryn:creature.zamulosh"
+                && reference.key == "oteryn:loot.creature.zamulosh"
+                && reference.revision == "definition-r1"
+            {
+                carried_entries = table
+                    .entries
+                    .iter()
+                    .filter(|entry| {
+                        entry.item.key != "oteryn:item.tibia.i22555"
+                            || entry.item.revision != "definition-r1"
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>();
+                carried_entries.as_slice()
+            } else {
+                table.entries.as_slice()
+            };
             let entries = lower_loot_entries(
-                &table.entries,
+                entries,
                 items,
                 0,
                 admits_tusk_shield,
@@ -1872,6 +1893,47 @@ mod protected_loot_tests {
 }
 
 #[cfg(test)]
+pub(super) fn expected_zamulosh_private_loot(
+    source: &SectionLootTable,
+    items: &[SectionItemFacts],
+) -> Result<Vec<SectionLootEntry>, &'static str> {
+    assert_eq!(
+        (
+            source.identity.family.as_str(),
+            source.identity.key.as_str(),
+            source.identity.revision.as_str(),
+        ),
+        ("Loot", "oteryn:loot.creature.zamulosh", "definition-r1")
+    );
+    let wall = SectionRef {
+        family: "Item".into(),
+        key: "oteryn:item.tibia.i22555".into(),
+        revision: "definition-r1".into(),
+    };
+    let (scenery, carried): (Vec<_>, Vec<_>) = source
+        .entries
+        .iter()
+        .cloned()
+        .partition(|entry| entry.item == wall);
+    let [entry] = scenery.as_slice() else {
+        return Err("Zamulosh must retain exactly one source Stone Wall roll");
+    };
+    assert_eq!(
+        (entry.min_count, entry.max_count, entry.probability_ppm),
+        (1, 1, Some(5_000))
+    );
+    assert!(entry.children.is_empty());
+    assert!(
+        !items
+            .iter()
+            .find(|facts| facts.item == wall)
+            .ok_or("Zamulosh Stone Wall custody facts")?
+            .materializable
+    );
+    Ok(carried)
+}
+
+#[cfg(test)]
 mod protected_loot_sweep {
     use super::*;
 
@@ -1954,9 +2016,17 @@ mod protected_loot_sweep {
             let (Ok(row), Some(reference)) = (table.row(key), &binding.loot) else {
                 continue;
             };
+            let source = authored[reference];
+            let carried;
+            let expected = if key == "oteryn:creature.zamulosh" {
+                carried = expected_zamulosh_private_loot(source, &loot.items)?;
+                carried.as_slice()
+            } else {
+                source.entries.as_slice()
+            };
             let mut pruned = Vec::new();
             has_pruned_protected(
-                &authored[reference].entries,
+                expected,
                 &row.loot_table.entries,
                 bosses.contains(key),
                 &mut pruned,

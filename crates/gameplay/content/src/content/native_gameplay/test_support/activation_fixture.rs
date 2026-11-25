@@ -283,7 +283,9 @@ fn boss_slot_loot_fixture_compiles_kneebiter_row() {
 #[test]
 fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability()
 -> Result<(), String> {
-    use crate::content::creature_reward::{LootTablesSection, NoSettlementReason};
+    use crate::content::creature_reward::{
+        LootTablesSection, NoSettlementReason, expected_zamulosh_private_loot,
+    };
     use oteryn_gameplay_domain::domain::loot_data::{LootDefinitionRef, LootSelectionAlgorithm};
     let supplied = manifest_input();
     let loot: LootTablesSection = serde_json::from_slice(
@@ -370,6 +372,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         "oteryn:creature.the_weakened_count",
         "oteryn:creature.unaz_the_mean",
         "oteryn:creature.vok_the_freakish",
+        "oteryn:creature.zamulosh",
     ];
     let mut missing = 0;
     let mut inadmissible = 0;
@@ -458,6 +461,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         // A newly qualified physical body does not admit an incomplete private
         // table. Derive these refusals from its complete exact source Item facts;
         // the fixed cohort below rejects unexpected admission/refusal drift.
+        let mut zamulosh_private_loot = None;
         if materializable_corpse.is_some() {
             let binding = loot
                 .creature_loot
@@ -470,7 +474,12 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     .iter()
                     .find(|table| table.identity == *reference)
                     .ok_or("source newly materializable boss table")?;
-                let refused = source_loot_refusals::items(&table.entries, &loot.items);
+                if policy.definition_key == "oteryn:creature.zamulosh" {
+                    zamulosh_private_loot =
+                        Some(expected_zamulosh_private_loot(table, &loot.items)?);
+                }
+                let expected = zamulosh_private_loot.as_deref().unwrap_or(&table.entries);
+                let refused = source_loot_refusals::items(expected, &loot.items);
                 if !refused.is_empty() {
                     assert_eq!(
                         source.reward_table().row(&policy.definition_key).err(),
@@ -563,16 +572,13 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     .iter()
                     .find(|table| table.identity == *reference)
                     .ok_or("original complete source loot table")?;
-                assert_eq!(row.loot_table.entries.len(), table.entries.len());
+                let expected = zamulosh_private_loot.as_deref().unwrap_or(&table.entries);
+                assert_eq!(row.loot_table.entries.len(), expected.len());
                 if newly_admitted.contains(&policy.definition_key.as_str()) {
                     assert!(!table.entries.is_empty());
                 }
                 assert_eq!(table.algorithm, "IndependentBernoulliPpm");
-                source_loot_assertions::entries(
-                    &row.loot_table.entries,
-                    &table.entries,
-                    &loot.items,
-                );
+                source_loot_assertions::entries(&row.loot_table.entries, expected, &loot.items);
                 if policy.definition_key == "oteryn:creature.sugar_daddy" {
                     // W02 admits the unchanged source table and all its 22 Items.
                     assert_eq!(table.entries.len(), 22);
@@ -586,7 +592,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     assert!(table.entries.is_empty());
                     assert!(row.loot_table.entries.is_empty());
                 }
-                for (actual, original) in row.loot_table.entries.iter().zip(&table.entries) {
+                for (actual, original) in row.loot_table.entries.iter().zip(expected) {
                     assert_eq!(
                         actual.item,
                         LootDefinitionRef::new(
@@ -647,7 +653,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 257, 0, 80)
+        (52, 243, 0, 94)
     );
     assert_eq!(
         admitted,
@@ -684,6 +690,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.gelidrazah_the_frozen",
             "oteryn:creature.glitterscale",
             "oteryn:creature.glooth_fairy",
+            "oteryn:creature.gorzindel",
             "oteryn:creature.goshnar_s_cruelty",
             "oteryn:creature.goshnar_s_greed",
             "oteryn:creature.goshnar_s_hatred",
@@ -703,22 +710,34 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.koshei_the_deathless",
             "oteryn:creature.lord_azaram",
             "oteryn:creature.lord_retro",
+            "oteryn:creature.maior_domus",
+            "oteryn:creature.maior_domus_final",
+            "oteryn:creature.mazzinor",
+            "oteryn:creature.mimar_haffar",
+            "oteryn:creature.mimar_haffar_final",
             "oteryn:creature.mitmah_vanguard",
             "oteryn:creature.murcion",
             "oteryn:creature.orshabaal",
             "oteryn:creature.outburst",
+            "oteryn:creature.plagirath",
             "oteryn:creature.professor_maxxen",
+            "oteryn:creature.ragiaz",
+            "oteryn:creature.razzagorn",
             "oteryn:creature.rupture",
             "oteryn:creature.scarlett_etzel",
             "oteryn:creature.sharpclaw",
+            "oteryn:creature.shulgrax",
             "oteryn:creature.sir_baeloc",
             "oteryn:creature.soul_of_dragonking_zyrtarch",
             "oteryn:creature.spirit_overlord",
             "oteryn:creature.sugar_daddy",
+            "oteryn:creature.supercharged_mazzinor",
+            "oteryn:creature.tarbaz",
             "oteryn:creature.tazhadur",
             "oteryn:creature.teleskor",
             "oteryn:creature.the_blazing_time_guardian",
             "oteryn:creature.the_enraged_thorn_knight",
+            "oteryn:creature.the_false_god",
             "oteryn:creature.the_first_dragon",
             "oteryn:creature.the_freezing_time_guardian",
             "oteryn:creature.the_many",
@@ -732,6 +751,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.unaz_the_mean",
             "oteryn:creature.vemiath",
             "oteryn:creature.vok_the_freakish",
+            "oteryn:creature.zamulosh",
         ]
     );
     assert!(
