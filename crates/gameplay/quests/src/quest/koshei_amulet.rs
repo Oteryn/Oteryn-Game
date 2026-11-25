@@ -2,6 +2,10 @@
 use super::world_callbacks::Callback;
 
 pub const KEY: &str = "oteryn:quest-callback/koshei-amulet";
+pub const SUNDIAL: &str = "oteryn:quest-callback/koshei-sundial";
+pub const TOMB_ENTRY: &str = "oteryn:quest-callback/koshei/tomb-entry";
+pub const TOMB_ENTERED: &str = "oteryn:quest-progress/koshei/tomb-entered";
+pub const TOMB_SEAL: &str = "oteryn:quest-reward/koshei/tomb-seal";
 pub const TRACK: &str = "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/reward_door";
 
 pub fn callback() -> Result<Callback, String> {
@@ -56,7 +60,7 @@ pub(super) fn catacomb_access() -> Result<Vec<Callback>, String> {
         .into();
     world_requirements.push(serde_json::json!({"position": coffin, "appearance": 162}));
     callbacks.push(serde_json::json!({
-        "key": "oteryn:quest-callback/koshei-sundial",
+        "key": SUNDIAL,
         "quest": "oteryn:quest.koshei_the_deathless_quest",
         "trigger": "use",
         "selector": {"native": {

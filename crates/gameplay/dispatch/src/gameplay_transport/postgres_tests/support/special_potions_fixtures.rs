@@ -21,19 +21,25 @@ pub(super) async fn exchange(
     current_source: Option<NonZeroU32>,
     current_target: Option<NonZeroU32>,
 ) -> TestResult<(super::AdmittedSession, CommandStatus, Vec<u8>, Vec<u8>)> {
+    use super::qengine_rewards_fixtures::acknowledge_probe;
+    use crate::foundation::{MessageType, decode_wire_envelope};
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use oteryn_protocol_oteryn::world_object::MapUseTarget;
     use std::future::Future;
     use std::task::Poll;
 
+    let generation = admitted.continuity.connection_generation;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let driving = async {
+    let driving = async move {
         let mut source = None;
         let mut target = None;
         loop {
             let raw = super::item_look_fixtures::read_frame(&mut client).await?;
-            let envelope = crate::foundation::decode_wire_envelope(&raw)?;
-            if envelope.message_type() == crate::foundation::MessageType::SnapshotChunk {
+            let envelope = decode_wire_envelope(&raw)?;
+            if envelope.message_type() == MessageType::LivenessProbe {
+                acknowledge_probe(&mut client, generation, envelope.payload()).await?;
+            }
+            if envelope.message_type() == MessageType::SnapshotChunk {
                 let (_, domains) =
                     oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())?;
                 for domain in domains {
@@ -58,7 +64,7 @@ pub(super) async fn exchange(
                     }
                 }
             }
-            if envelope.message_type() == crate::foundation::MessageType::SnapshotCommit {
+            if envelope.message_type() == MessageType::SnapshotCommit {
                 break;
             }
         }
@@ -80,7 +86,7 @@ pub(super) async fn exchange(
             payload.to_vec()
         };
         let frame = oteryn_protocol_oteryn::encode_client_command(
-            admitted.continuity.connection_generation,
+            generation,
             &oteryn_protocol_oteryn::ClientCommandValue {
                 command_id,
                 command_type: 2,
@@ -89,13 +95,16 @@ pub(super) async fn exchange(
         )?;
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
-        client.shutdown().await?;
         loop {
             let raw = super::item_look_fixtures::read_frame(&mut client).await?;
-            let envelope = crate::foundation::decode_wire_envelope(&raw)?;
-            if envelope.message_type() == crate::foundation::MessageType::CommandResult {
+            let envelope = decode_wire_envelope(&raw)?;
+            if envelope.message_type() == MessageType::LivenessProbe {
+                acknowledge_probe(&mut client, generation, envelope.payload()).await?;
+            }
+            if envelope.message_type() == MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
                 if result.command_id == command_id {
+                    client.shutdown().await?;
                     return Ok::<_, Box<dyn std::error::Error>>((
                         result.status,
                         result.payload.to_vec(),
@@ -140,10 +149,10 @@ pub(super) async fn exchange(
         }),
     )
     .await??;
+    let (status, result, actual) = result.ok_or("client did not finish")??;
     let end = end.ok_or("server did not finish")?;
     let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else {
         return Err(format!("{end:?}").into());
     };
-    let (status, result, actual) = result.ok_or("client did not finish")??;
     Ok((admitted, status, result, actual))
 }

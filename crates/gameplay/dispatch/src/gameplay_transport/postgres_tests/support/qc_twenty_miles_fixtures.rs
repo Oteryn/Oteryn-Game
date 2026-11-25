@@ -163,9 +163,20 @@ pub(super) fn pinned_placements() -> TestResult<NpcPlacementTable> {
             .iter()
             .find(|npc| npc.key == key)
             .ok_or_else(|| format!("missing shipped NPC {key}"))?;
-        assert_eq!(npc.placements.len(), 1);
-        let p = npc.placements[0];
-        assert_eq!((p.x, p.y, p.floor), (at.x, at.y, at.floor));
+        let route_cell = (at.x, at.y, at.floor);
+        let mut expected_cells = vec![route_cell];
+        if key == "oteryn:npc.mr_brandon" {
+            // The regional population also admits Brandon's second Gray Beach contact.
+            expected_cells.push((33552, 31871, -7));
+        }
+        let mut cells: Vec<_> = npc.placements.iter().map(|p| (p.x, p.y, p.floor)).collect();
+        cells.sort_unstable();
+        assert_eq!(cells, expected_cells, "shipped placements for {key}");
+        let p = npc
+            .placements
+            .iter()
+            .find(|p| (p.x, p.y, p.floor) == route_cell)
+            .ok_or_else(|| format!("missing Twenty Miles route placement for {key}"))?;
         let direction = match p.direction {
             Direction::North => MovementFacing::North,
             Direction::South => MovementFacing::South,
@@ -410,7 +421,7 @@ async fn expire_dropped_item(h: &Harness, item: [u8; 16]) -> TestResult {
     let ground = sqlx::query("DELETE FROM game_item_ground_locations WHERE item_instance_id=$1")
         .bind(item).execute(&mut *tx).await?;
     assert_eq!(ground.rows_affected(), 1);
-    let retired = sqlx::query("UPDATE game_item_instances SET lifecycle=2,quantity=0
+    let retired = sqlx::query("UPDATE game_item_instances SET lifecycle=2,quantity=0,last_transaction_id=uuidv7()
         WHERE item_instance_id=$1 AND lifecycle=1")
         .bind(item).execute(&mut *tx).await?;
     assert_eq!(retired.rows_affected(), 1);

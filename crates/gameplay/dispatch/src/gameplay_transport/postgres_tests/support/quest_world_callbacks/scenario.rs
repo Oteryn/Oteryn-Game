@@ -27,6 +27,11 @@ fn scenario_case(
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let koshei = name == super::super::koshei_the_deathless_journey_fixtures::NAME;
+    let cyclops_amulet = matches!(
+        name,
+        "questpc7-friends-draconian-amulet-replaces-steel"
+            | "questpc7-friends-draconian-locked-soul-orb"
+    );
     use super::super::new_frontier_journey_fixtures;
     let recover_bait = name == new_frontier_journey_fixtures::BAIT_RECOVERY;
     let frontier = name == new_frontier_journey_fixtures::NAME || recover_bait;
@@ -1469,6 +1474,8 @@ fn scenario_case(
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
             _ if paradox_source_probe => Some(30),
+            // Paying for the amulet now reaches the authored Koshei admission.
+            _ if cyclops_amulet => Some(40),
             _ => None,
         };
         if let Some(initial_level) = initial_level {
@@ -1740,6 +1747,7 @@ fn scenario_case(
                 Some(h.root.clone()),
             );
         let eligibility_premium = if feaster
+            || cyclops_amulet
             || name == "catalogue-npc-inventory"
             || matches!(
                 name,

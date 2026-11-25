@@ -240,6 +240,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut matches = candidates.filter(accepts);
         let callback = matches.next().filter(|_| matches.next().is_none());
+        use oteryn_gameplay_quests::quest::koshei_amulet::{KEY, TOMB_ENTERED};
+        if callback.is_some_and(|callback| callback.key == KEY) {
+            // The authored tomb's seal must prove its encounter kill and
+            // sample the corpse. Leave that use to the carried quest owner.
+            let progress = self
+                .root
+                .read_character_quest_state(self.character, fence.character_id)
+                .await
+                .map_err(|_| ())?;
+            if progress.tracks().get(TOMB_ENTERED) == Some(&1) {
+                return Ok(None);
+            }
+        }
         let command_ref = CommandRef::new(
             command.game_session_id,
             CommandId::new(command.command_id).map_err(|_| ())?,

@@ -203,12 +203,25 @@ pub(super) async fn enter_jimmy(
 
 pub(super) async fn assert_guest_blocked(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
+    admitted: &mut AdmittedSession,
     h: &super::Harness,
     deadline: Instant,
 ) -> TestResult {
     use crate::foundation::{CharacterId, CharacterLease};
     use crate::gameplay_transport::connection::SessionContinuity;
+
+    // The authorized player's StepOut closed the door. Reopen it from
+    // Jimmy's side so the guest faces an open and unoccupied doorway.
+    let south = (
+        i32::from(JIMMY_DOOR.x),
+        i32::from(JIMMY_DOOR.y) + 1,
+        -i32::from(JIMMY_DOOR.floor),
+    );
+    walk_to(owner, admitted, south, deadline).await?;
+    assert_eq!(
+        use_jimmy_door(owner, admitted, deadline).await?,
+        UseDisposition::Committed
+    );
 
     let base = owner
         .current_quest_fence(admitted.game_session_id)
@@ -339,7 +352,7 @@ pub(super) async fn assert_guest_blocked(
         "a second session cannot follow through the open quest door"
     );
     assert_eq!(actor_cell(owner, &guest).await?, DOOR_APPROACH);
-    Ok(())
+    walk_to(owner, admitted, cell(JIMMY_STOP), deadline).await
 }
 
 fn command_deadline(route_deadline: Instant) -> Instant {

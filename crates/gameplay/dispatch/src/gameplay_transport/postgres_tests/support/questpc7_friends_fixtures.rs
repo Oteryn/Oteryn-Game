@@ -1,5 +1,5 @@
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
-use super::fixture::{Harness, id};
+use crate::gameplay_transport::{AdmissionRetryBudget, connection::FreshAdmissionAuthority};
+use super::fixture::{Harness, debug, id};
 
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 
@@ -29,11 +29,16 @@ pub(super) async fn mint(
     amount: u16,
     nonce: u64,
 ) -> TestResult {
+    // The donor unlock seeds skirts between two commands on an open wire.
+    // Let the seed wait for a visibility refresh and keep its foreground grant
+    // until the inventory transfer is durable.
+    let budget = AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, owner.root)
+        .map_err(debug)?;
     let fence = owner
-        .current_quest_fence(admitted.game_session_id)
+        .current_quest_fence_within(&budget, admitted.game_session_id)
         .await
-        .map_err(|()| "fence")?
-        .ok_or("fence")?;
+        .map_err(|()| "seed item fence read")?
+        .ok_or("seed item session ended")?;
     super::quest_world_callbacks_fixtures::input_item(
         owner,
         fence.item_fence(),
