@@ -52,8 +52,8 @@ Write it as one self-contained file. Include, in this order:
    non-PostgreSQL test, with the PostgreSQL case run by the coordinator.
 7. **Review:** for a Claude lane or child session that owns its branch,
    "you run the Codex review of your head and fix confirmed findings
-   (`oteryn-review` §5 and its `references/batch-review.md`: parallel lens runs,
-   plus the two holistic whole-diff runs for a train or chunked diff,
+   (`oteryn-review` §5 and its `references/batch-review.md`: one holistic
+   whole-diff run, chunks only above about 1500 lines,
    every finding with no cap, pattern sweep, one batch fix)"; for a Codex lane, "no review, the coordinator
    reviews". Every content train PR and every PR with code in a risk class
    gets that review at effort high, also when it carries `heavy-tests`.
@@ -83,13 +83,22 @@ name the effort by risk (owner decision 2026-11-25): `high` for a risk class
 consumers), `medium` for data, content, tests and simple slices. Start each
 packet with "Reasoning effort: <high|medium>."; a Codex lane on the PC that
 writes code uses the same setting. Codex review runs in Codex Cloud,
-read-only, with `gpt-6.2-astra` at reasoning effort `high`, never `codex exec`
-on the PC (`oteryn-review`). Its verified findings are fixed by a separate
-run (`codex-review.sh ... --fix-confirmed`, `oteryn-review` §5) at `high` for
-a P0/P1 in a risk class and at `medium` for any other fix. Owner rule
-2026-11-17 sets the model `gpt-6.2-sol` and moves review to Codex Cloud;
-owner rule 2026-11-18 sets review to `gpt-6.2-astra`; owner decision
-2026-11-25 sets effort by risk. Repository subagents use the model and effort
+read-only, with `gpt-6.2-sol` at reasoning effort `high`, plus one
+`gpt-6.2-astra` run at `high` for a risk-class PR, never at `medium` and
+never `codex exec` on the PC (`oteryn-review` §5). Its verified findings are
+fixed by a separate run (`oteryn-review` §5) at `high` for a P0/P1 in a risk
+class and at `medium` for any other fix. Owner rule 2026-11-17 moved review
+to Codex Cloud; the calibration decision of 2026-11-25 sets the review models
+above and effort by risk for writing.
+
+**Launch route (owner rule 2026-11-25).** Every session that needs Codex
+Cloud (the coordinator, a lane, a child session) launches, polls and reads
+its tasks from its own chat session with `scripts/codex-cloud.mjs`, using
+that session's own `codex login`. The owner's PC is not a launch relay: no
+`cxnew`, `cxrev`, `cxgo` or other PC wrapper submits a task for a cloud
+session. A session without a login reports that to the coordinator, which
+launches for it from its own chat.
+Repository subagents use the model and effort
 set in their own `.claude/agents/*.md` definition: `oteryn-hard-worker` for a
 risk class, `oteryn-impl-worker` for the rest.
 
@@ -100,8 +109,9 @@ found"). It needs an existing `codex login` and the environment variable
 coordinator if it is missing). It reads the login file itself; never open that
 file. Commands: `node .claude/skills/oteryn-waves/scripts/codex-cloud.mjs`
 `check` (environment ready), `submit --prompt-file <packet> --branch <ref>
---title <tag>` (prints the thread id), `poll <thread>`, `status <thread>`,
-`send <thread> --prompt-file <follow-up>`, `list`. It calls the desktop
+--title <tag> --model <model> --effort <high|medium>` (prints the thread id;
+always pass the model and effort explicitly), `poll <thread>`, `status <thread>`,
+`send <thread> --prompt-file <follow-up> --effort <high|medium>`, `list`. It calls the desktop
 client's internal RPC, not an official API: if it fails, report the error
 verbatim and do not retry a submit blindly.
 
