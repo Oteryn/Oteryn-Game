@@ -2785,6 +2785,7 @@
           "preserve": true
         }
       ],
+      "any_topic": true,
       "maximum_level": 79,
       "failure_reply": [
         "This hunt is for levels 50 through 79."
@@ -2823,6 +2824,7 @@
           "preserve": true
         }
       ],
+      "any_topic": true,
       "maximum_level": 49,
       "failure_reply": [
         "This hunt is for levels 25 through 49."

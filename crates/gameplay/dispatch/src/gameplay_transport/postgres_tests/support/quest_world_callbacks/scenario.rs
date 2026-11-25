@@ -3552,39 +3552,16 @@ fn scenario_case(
                     .position(),
                 origin
             );
-            let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-            for (n, key) in ["npc_1", "action_2", "action_1", "npc_2"]
-                .into_iter()
-                .enumerate()
-            {
-                use crate::durability::quest_state::{
-                    QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
-                };
-                let request = QuestTransitionRequest {
-                    transition_key: format!(
-                        "oteryn:quest-transition/quest/u9_4/liquid_black_quest/visitor/{key}"
-                    ),
-                    cause: QuestCause::Command(crate::foundation::CommandRef::new(
-                        admitted.game_session_id,
-                        crate::foundation::CommandId::new(100 + u64::try_from(n)?)
-                            .map_err(debug)?,
-                    )),
-                };
-                assert!(matches!(
-                    slot.commit_quest_transition(
-                        owner.root,
-                        owner.character,
-                        owner.holder,
-                        fence,
-                        request,
-                        owner.quest_catalogue.clone().ok_or("catalogue")?
-                    )
-                    .await
-                    .map_err(debug)?,
-                    QuestTransitionOutcome::Committed(_)
-                ));
-            }
-            drop(slot);
+            // Spectulus's machine conversation grants visitor stage 4. Restore
+            // that prior progress so this test exercises only the shortcut.
+            super::super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+                &h,
+                &owner,
+                &admitted,
+                &[(oteryn_gameplay_quests::quest::liquid_black::VISITOR.into(), 4)],
+                119,
+            ).await?;
+            owner.refresh_quest_session(admitted.game_session_id, false).await;
             owner.clock_origin = owner
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))

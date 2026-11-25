@@ -3528,6 +3528,9 @@ def build():
                     "storage": [storage(phase, 0, 0, preserve=True)],
                     **(
                         {
+                            # Crystal checks the "kill" request's level even when
+                            # a prior offer is awaiting confirmation.
+                            "any_topic": True,
                             "maximum_level": ceiling,
                             "failure_reply": [
                                 f"This hunt is for levels {level} through {ceiling}."

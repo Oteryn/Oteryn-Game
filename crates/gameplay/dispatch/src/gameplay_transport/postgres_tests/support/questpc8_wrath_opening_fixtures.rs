@@ -159,81 +159,33 @@ async fn seed_phantom_army_return(
     admitted: &AdmittedSession,
     h: &Harness,
 ) -> TestResult {
-    use crate::durability::quest_state::{
-        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
-    };
-    use crate::foundation::{CommandId, CommandRef};
-    use oteryn_gameplay_quests::quest::{
-        QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
-    };
-    use std::sync::Arc;
-
-    let key = "oteryn:quest-transition/qcx50-fixture-phantom-army-return";
-    let production = owner.quest_catalogue.clone().ok_or("quest catalogue")?;
-    let catalogue = Arc::new(
-        production
-            .with_fixture_transition(QuestTransition {
-                key: key.into(),
-                quest: "oteryn:quest.children_of_the_revolution_quest".into(),
-                effects: [(CHILDREN_STAGE, 20), (CHILDREN_MISSION, 2)]
-                    .into_iter()
-                    .map(|(track, value)| QuestEffect {
-                        track: track.into(),
-                        from: QuestComparison::Any,
-                        effect: QuestEffectKind::Set(value),
-                    })
-                    .collect(),
-                completes: false,
-                experience: None,
-                world_change: None,
-            })
-            .map_err(debug)?,
-    );
-    owner.quest_catalogue = Some(catalogue.clone());
-    let fence = owner
-        .current_quest_fence(admitted.game_session_id)
-        .await
-        .map_err(|()| "fence")?
-        .ok_or("fence")?;
-    {
-        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-        let result = slot
-            .commit_quest_transition(
-                owner.root,
-                owner.character,
-                owner.holder,
-                fence,
-                QuestTransitionRequest {
-                    transition_key: key.into(),
-                    cause: QuestCause::Command(CommandRef::new(
-                        admitted.game_session_id,
-                        CommandId::new(9000).map_err(debug)?,
-                    )),
-                },
-                catalogue,
-            )
-            .await
-            .map_err(debug)?;
-        assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
-    }
-    // Replace the fixture transition's pin with the exact 871c1dec
-    // production pin for a character returning from the battlefield.
+    // Import the saved battlefield return under the exact 871c1dec production
+    // pin. This case exercises Zalamon's report, not the held battlefield.
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[(CHILDREN_STAGE.into(), 20), (CHILDREN_MISSION.into(), 2)],
+        119,
+    )
+    .await?;
     let mut save = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *save)
         .await?;
     let state = sqlx::query(
-        "UPDATE game_character_quest_states
-         SET definition_hash = decode('42f19e449f681042976a398141a147d3e0a9f48c312c7a756f528b25fb7520b4', 'hex')
-         WHERE character_id=encode($1,'hex')::uuid
-           AND quest_key='oteryn:quest.children_of_the_revolution_quest'",
+        "INSERT INTO game_character_quest_states(character_id, quest_key, pinned_content_revision,
+                 definition_hash, started_character_revision, committed_character_revision)
+         SELECT character_id, 'oteryn:quest.children_of_the_revolution_quest', 'content-1',
+                decode('42f19e449f681042976a398141a147d3e0a9f48c312c7a756f528b25fb7520b4', 'hex'),
+                character_revision, character_revision
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
     )
     .bind(id(41).as_slice())
     .execute(&mut *save)
     .await?;
     assert_eq!(state.rows_affected(), 1);
     save.commit().await?;
-    owner.quest_catalogue = Some(production);
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;

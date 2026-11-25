@@ -14,7 +14,7 @@ pub(super) async fn install(
     stage_ready: bool,
 ) -> TestResult {
     let canonical = owner.quest_catalogue.clone().ok_or("catalogue")?;
-    let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
+    let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::offered_for(&canonical)?;
     let mut tracks = BTreeMap::new();
     let mut transitions = BTreeMap::new();
     for callback in callbacks {
@@ -26,7 +26,7 @@ pub(super) async fn install(
             let t = canonical
                 .transition(&key)
                 .cloned()
-                .ok_or("source reward transition")?;
+                .ok_or_else(|| format!("source reward transition {key}"))?;
             for key in t.effects.iter().map(|e| e.track.as_str()).chain(
                 callback
                     .requires

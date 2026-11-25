@@ -487,22 +487,27 @@ async fn spike(
     let migration = include_str!(
         "../../../../../../../apps/game-server/migrations/3033_cave_completionist_backfill.sql"
     );
-    for lifecycle in [2_i16, 3, 4] {
+    // Bazaar-locked roots still prove the account grant, with no Character
+    // progress row to clear before the next lifecycle case.
+    for (lifecycle, previous_progress) in [(2_i16, 1), (3, 0), (4, 1)] {
         // Reconstruct a pre-achievement purchase with one retained character.
         let mut fixture = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *fixture)
             .await?;
-        for delete in [
-            "DELETE FROM game_account_achievements WHERE achievement_key=$1",
-            "DELETE FROM game_account_achievement_grant_requests WHERE achievement_key=$1",
-            "DELETE FROM game_character_achievement_progress WHERE achievement_key=$1",
+        for (delete, rows) in [
+            ("DELETE FROM game_account_achievements WHERE achievement_key=$1", 1),
+            ("DELETE FROM game_account_achievement_grant_requests WHERE achievement_key=$1", 1),
+            (
+                "DELETE FROM game_character_achievement_progress WHERE achievement_key=$1",
+                previous_progress,
+            ),
         ] {
             let erased = sqlx::query(delete)
                 .bind("oteryn:achievement/cave_completionist")
                 .execute(&mut *fixture)
                 .await?;
-            assert_eq!(erased.rows_affected(), 1);
+            assert_eq!(erased.rows_affected(), rows, "{lifecycle}: {delete}");
         }
         let retained = sqlx::query("UPDATE game_character_roots SET lifecycle=$1")
             .bind(lifecycle)

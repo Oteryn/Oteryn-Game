@@ -321,6 +321,12 @@ pub(super) async fn exercise(
             },
         )
         .await?;
+        // Crossing the door spends the ordinary world-action window. Re-entry
+        // is a fresh USE even when fixture relocation takes no simulation time.
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(crate::gameplay_transport::map_door::WORLD_ACTION_COOLDOWN)
+            .ok_or("chamber re-entry clock")?;
     }
     let command = admitted.continuity.next_command_id;
     let reply =
@@ -346,7 +352,8 @@ pub(super) async fn exercise(
     let reply = reply?;
     assert_eq!(
         oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
-        oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+        oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
+        "{name}"
     );
     if name.ends_with("-fire-side-orchid") {
         let door_receipts: i64 = sqlx::query_scalar(

@@ -296,7 +296,7 @@ pub(super) async fn exercise_curos(
     const QUEST: &str = "oteryn:quest.an_uneasy_alliance_quest";
     const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline";
     const DOOR: &str = "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door";
-    const PREREQUISITE: &str = "oteryn:quest-transition/fixture/curos-days-of-doom";
+    const FRONTIER: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06";
     let mut selected = admitted
         .continuity
         .selected_capabilities
@@ -313,22 +313,6 @@ pub(super) async fn exercise_curos(
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("Curos capabilities")?;
 
-    let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
-    let catalogue = catalogue
-        .with_fixture_transition(quest::QuestTransition {
-            key: PREREQUISITE.into(),
-            quest: "oteryn:quest.the_new_frontier_quest".into(),
-            effects: vec![quest::QuestEffect {
-                track: "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06".into(),
-                from: quest::QuestComparison::Eq(0),
-                effect: quest::QuestEffectKind::Set(5),
-            }],
-            completes: false,
-            experience: None,
-            world_change: None,
-        })
-        .map_err(debug)?;
-    owner.quest_catalogue = Some(std::sync::Arc::new(catalogue));
     let [curos] =
         super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.curos"]).await?;
     assert_eq!(
@@ -336,8 +320,16 @@ pub(super) async fn exercise_curos(
         NpcIntentDisposition::Rejected
     );
     assert_eq!(stage(h, QUESTLINE).await?, None);
-    super::qengine_outfit_stories_fixtures::commit_fixture(owner, admitted, PREREQUISITE, 9801)
-        .await?;
+    // Curos's donor requires a completed New Frontier Mission 06 before the
+    // alliance begins. Restore that foreign progress in the canonical catalogue.
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[(FRONTIER.into(), 5)],
+        119,
+    )
+    .await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
