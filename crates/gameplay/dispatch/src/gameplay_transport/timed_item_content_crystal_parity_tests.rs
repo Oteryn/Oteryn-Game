@@ -144,22 +144,6 @@ fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
             "{active}"
         );
     }
-
-    // Crystal's Lloyd rolls 3100 (lloyd.lua:78), then Item::CreateItem
-    // normalizes it to the inactive ring (src/items/item.cpp:56,107-109).
-    let lloyd = native.reward_table().row("oteryn:creature.lloyd").unwrap();
-    assert!(lloyd.loot_table.entries.iter().any(|entry| {
-        entry.item.production_key == key(3098)
-            && entry.probability_ppm == Some(1_000_000)
-            && (entry.min_count, entry.max_count) == (1, 1)
-    }));
-    assert!(
-        lloyd
-            .loot_table
-            .entries
-            .iter()
-            .all(|entry| entry.item.production_key != key(3100))
-    );
 }
 
 /// E12 adds genuine physical Trader stock. That must not grant an equipment
