@@ -1467,7 +1467,11 @@ async fn obtain_taming(
         } else {
             let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
             let reply = loop {
-                match request_spawn(session.clone(), binding.creature_key.clone()).await {
+                let spawned = while_peer_is_live(client, async {
+                    Ok(request_spawn(session.clone(), binding.creature_key.clone()).await)
+                })
+                .await?;
+                match spawned {
                     Ok(reply) => break reply,
                     Err(error) if error == "no_free_tile" && crowded.len() < 4 => {
                         crowded.push(tile(client.world_spatial().actor_position)?);
@@ -1482,7 +1486,7 @@ async fn obtain_taming(
                 }
             };
             let entity = parse_spawned_entity(&reply)?;
-            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
             while !client
                 .world_entities()
                 .is_some_and(|view| view.get(&entity).is_some())
