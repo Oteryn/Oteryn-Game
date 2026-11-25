@@ -336,8 +336,8 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             } else {
                 authority.enter_input(admitted.game_session_id).await
             };
-            let guard_deferred =
-                permit.is_some() && !super::command::guards(authority, admitted, command).await?;
+            let guard_deferred = permit.is_some()
+                && !super::command::guards(authority, &mut admitted, command).await?;
             if guard_deferred {
                 drop(permit.take());
                 if command.command_type == COMMAND_PROJECTION
