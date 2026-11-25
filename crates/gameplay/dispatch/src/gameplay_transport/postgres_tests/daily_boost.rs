@@ -217,6 +217,27 @@ fn scenario(preadmission: bool) -> TestResult {
             &[CAPABILITY_DAILY_BOOST_V1],
         )
         .ok_or("capability")?;
+        {
+            let mut busy = h.root.try_acquire_ready()?;
+            let view = owner.daily_boost_wire(admitted, 2, COMMAND_TYPE_DAILY_BOOST_QUERY, &[]);
+            let mut view = std::pin::pin!(view);
+            std::future::poll_fn(|cx| {
+                assert!(
+                    std::future::Future::poll(view.as_mut(), cx).is_pending(),
+                    "the boost query must wait for the busy durability holder"
+                );
+                std::task::Poll::Ready(())
+            })
+            .await;
+            assert_eq!(
+                busy.return_to_pool_observed().await,
+                sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle
+            );
+            assert!(matches!(
+                view.await,
+                crate::gameplay_transport::guild_intent::GuildReply::Payload(_)
+            ));
+        }
         let (status, first) = support::exchange(
             &owner,
             &mut admitted,
