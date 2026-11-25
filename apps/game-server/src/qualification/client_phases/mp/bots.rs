@@ -170,6 +170,22 @@ async fn with_liveness<T>(
     .await
 }
 
+pub(super) async fn with_peer_liveness<'p, 'a, T>(
+    bots: &mut [Bot<'p, 'a>],
+    index: usize,
+    stage: &str,
+    action: impl AsyncFnOnce(&mut Bot<'p, 'a>) -> TestResult<T>,
+) -> TestResult<T> {
+    let (before, current) = bots.split_at_mut(index);
+    let (bot, after) = current.split_first_mut().ok_or("MP acting bot absent")?;
+    while_servicing_liveness(action(bot), async || {
+        pump_at(before, stage).await?;
+        pump_at(after, stage).await?;
+        Ok(())
+    })
+    .await?
+}
+
 async fn connect_bot(bot: &mut Bot<'_, '_>, tag: u8, stage: &str) -> TestResult {
     bot.progress(stage, "begin")?;
     let result = connect_character(bot.pair, tag, bot.index).await;
@@ -612,8 +628,14 @@ pub(super) async fn invite_accept(
     peer: usize,
 ) -> TestResult {
     let target = bots[peer].own()?;
-    party(&mut bots[leader], Some(party::PartyIntent::Invite(target))).await?;
-    let invitations = party(&mut bots[peer], None).await?;
+    with_peer_liveness(bots, leader, "party-invite", async |bot| {
+        party(bot, Some(party::PartyIntent::Invite(target))).await
+    })
+    .await?;
+    let invitations = with_peer_liveness(bots, peer, "party-invitations", async |bot| {
+        party(bot, None).await
+    })
+    .await?;
     let leader_name = bots[leader].name.as_str();
     let handle = invitations
         .invitations
@@ -621,7 +643,10 @@ pub(super) async fn invite_accept(
         .find(|invite| invite.name == leader_name)
         .ok_or("invited bot did not observe leader invitation")?
         .handle;
-    party(&mut bots[peer], Some(party::PartyIntent::Accept(handle))).await?;
+    with_peer_liveness(bots, peer, "party-accept", async |bot| {
+        party(bot, Some(party::PartyIntent::Accept(handle))).await
+    })
+    .await?;
     Ok(())
 }
 

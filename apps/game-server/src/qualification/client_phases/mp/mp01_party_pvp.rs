@@ -172,8 +172,8 @@ async fn relog(bots: &mut [Bot<'_, '_>], joined: bool, birth: &str) -> TestResul
         (Err(error), _) | (_, Err(error)) => failures.push(error.to_string()),
     }
     // Terminal release removes membership: world_party.rs:792 and terminal_release.rs:88.
-    for (index, bot) in bots.iter_mut().enumerate() {
-        let observation: TestResult = async {
+    for index in 0..bots.len() {
+        let observation = bots::with_peer_liveness(bots, index, "party-relog-view", async |bot| {
             if !party(bot, None).await?.members.is_empty() || !durable_party(bot).await?.is_empty() {
                 return Err("terminal logout retained membership;source:crates/gameplay/durability/src/durability/world_party.rs:792".into());
             }
@@ -184,7 +184,7 @@ async fn relog(bots: &mut [Bot<'_, '_>], joined: bool, birth: &str) -> TestResul
                 tab(bot, character::CharacterTab::GeneralStats).await?;
             }
             Ok(())
-        }.await;
+        }).await;
         check("relog-view", observation, &mut failures);
     }
     if joined && failures.is_empty() {
@@ -258,8 +258,11 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
     let expected = expected.into_iter().map(str::to_owned).collect::<Vec<_>>();
     let leader = bots[0].name.to_owned();
     let mut party_id = None;
-    for bot in &mut bots[..3] {
-        let view = party(bot, None).await?;
+    for index in 0..3 {
+        let view = bots::with_peer_liveness(bots, index, "party-view", async |bot| {
+            party(bot, None).await
+        })
+        .await?;
         let mut members = view
             .members
             .iter()
@@ -272,11 +275,14 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
         {
             return Err(format!(
                 "MP01 participant={} party view={view:?};expected={expected:?}",
-                bot.name
+                bots[index].name
             )
             .into());
         }
-        let rows = durable_party(bot).await?;
+        let rows = bots::with_peer_liveness(bots, index, "party-durable-view", async |bot| {
+            durable_party(bot).await
+        })
+        .await?;
         let mut names = rows.iter().map(|r| r.1.as_str()).collect::<Vec<_>>();
         names.sort_unstable();
         if names != expected
@@ -287,19 +293,21 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
         {
             return Err(format!(
                 "MP01 participant={} durable party differs:{rows:?}",
-                bot.name
+                bots[index].name
             )
             .into());
         }
         party_id = rows.first().map(|r| r.0.to_owned());
         evidence(&format!(
             "MP_CHECK MP01 party-view PASS participant={} members={members:?} PG={rows:?}",
-            bot.name
+            bots[index].name
         ));
     }
-    if !party(&mut bots[3], None).await?.members.is_empty()
-        || !durable_party(&bots[3]).await?.is_empty()
-    {
+    let outside_party = bots::with_peer_liveness(bots, 3, "party-witness", async |bot| {
+        Ok(party(bot, None).await?.members.is_empty() && durable_party(bot).await?.is_empty())
+    })
+    .await?;
+    if !outside_party {
         return Err("MP01 D unexpectedly belongs to the party".into());
     }
     Ok(())
@@ -352,11 +360,16 @@ async fn snapshots(
     bots: &mut [Bot<'_, '_>],
 ) -> TestResult<Vec<(Vec<panel::HistoryRow>, Vec<panel::HistoryRow>)>> {
     let mut result = Vec::new();
-    for bot in bots {
-        result.push((
-            history(bot, character::CharacterTab::RecentDeaths).await?,
-            history(bot, character::CharacterTab::RecentPvpKills).await?,
-        ));
+    for index in 0..bots.len() {
+        result.push(
+            bots::with_peer_liveness(bots, index, "history-snapshot", async |bot| {
+                Ok((
+                    history(bot, character::CharacterTab::RecentDeaths).await?,
+                    history(bot, character::CharacterTab::RecentPvpKills).await?,
+                ))
+            })
+            .await?,
+        );
     }
     Ok(result)
 }
