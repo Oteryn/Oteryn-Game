@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::durability::character_authority::CharacterAuthorityError;
+use crate::durability::character_build::DurableBuildState;
 use crate::durability::cyclopedia_character::combat::CombatSnapshot;
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, ConnectionGeneration};
 use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
@@ -148,6 +149,15 @@ fn scenario(hand_defence_only: bool) -> TestResult {
         let armor = effects.1;
         {
             let runtime = deps.runtime.lock().await;
+            if hand_defence_only {
+                let build = DurableBuildState::new("monk", (0, 0), [(10, 0); 7])?;
+                assert!(owner.states.spell_states.lock().await.load_owned_build(
+                    &runtime,
+                    deps.actor,
+                    deps.admitted.game_session_id,
+                    &build,
+                ));
+            }
             owner
                 .install_admission_suppressions(
                     &runtime,
@@ -195,6 +205,10 @@ fn scenario(hand_defence_only: bool) -> TestResult {
             assert_eq!(status, CommandStatus::Accepted);
             let defence = CombatStats::decode(&bytes).map_err(debug)?;
             assert_eq!(defence.get(Stat::DefenceEquipment), Some(22));
+            assert!(
+                defence.get(Stat::Mitigation).is_some_and(|value| value > 0),
+                "Twin Hooks must contribute to the Cyclopedia Mitigation stat"
+            );
             drop(owner);
             drop(authority);
             drop(seal);

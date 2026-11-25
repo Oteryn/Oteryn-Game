@@ -97,6 +97,46 @@ fn a_spellbook_defends_alone_and_with_the_attack_weapon() -> TestResult {
 }
 
 #[test]
+fn twin_hooks_with_unauthored_extra_defence_contribute_to_wheel_mitigation() -> TestResult {
+    use crate::durability::character_build::DurableBuildState;
+    use crate::spell::Vocation;
+    use crate::spell::cast::{CharacterCastFacts, PlayerSpellState};
+
+    let content = native(&super::input()?)?;
+    let equipment = held(&content, &[("oteryn:item.tibia.i10392", 5)]);
+    let hands = equipped_wheel_hands(&equipment, &content);
+    assert!(
+        hands.and_then(|hands| hands.weapon_hand).is_some(),
+        "Twin Hooks must resolve to a Wheel weapon hand"
+    );
+
+    let mut state = PlayerSpellState::new(
+        CharacterCastFacts {
+            vocation: Vocation::Knight,
+            level: 20,
+            magic_level: 0,
+            max_health: 100,
+            max_mana: 100,
+            max_soul: 100,
+        },
+        0,
+        0,
+    )
+    .ok_or("Knight spell state")?;
+    let build = DurableBuildState::new("knight", (0, 0), [(10, 0); 7])?;
+    state
+        .load_owned_build(&build)
+        .map_err(|error| format!("{error:?}"))?;
+    state.install_wheel_equipment(hands);
+    assert!(
+        state
+            .player_mitigation_percent(0)
+            .is_some_and(|rate| rate > 0.0)
+    );
+    Ok(())
+}
+
+#[test]
 fn unknown_weapon_facts_defend_with_nothing_and_another_digest_refuses() -> TestResult {
     let content = native(&super::input()?)?;
     assert_eq!(
