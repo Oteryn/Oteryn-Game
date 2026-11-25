@@ -51,11 +51,9 @@ code they touch, plus the astra run when the repair is in a risk class.
 
 Model and effort (owner decision 2026-11-25, calibration): every review run
 is a Codex Cloud task, read-only, model `gpt-6.2-sol` at reasoning effort
-`high`. A PR with code in a risk class (persistence, session fencing,
-protocol, authority, durable value, migrations, several consumers) also gets
-one `gpt-6.2-astra` run at effort `high` on the same head, with the same
-prompt, and so does a content train or a content diff above about 1500
-changed lines (calibration 2026-11-25: sol alone lost recall there); the two runs together are the one covered review of that head. An
+`high`, plus the `gpt-6.2-astra` runs at effort `high` on the same head that
+the run-selection table below names, with the same prompt; all runs of the
+round together are the one covered review of that head. An
 astra P0/P1 counts only after the review owner traced it (input, caller,
 wrong result) to a REAL verdict (§3); one disproved is recorded FALSE and
 closed, one that cannot be traced either way goes to the P2 backlog.
@@ -69,19 +67,21 @@ native `@codex review` comment route is one run.
 ### Choosing the runs (owner decision 2026-11-25, calibration)
 
 Every session picks the runs of a round from this table; the other rule files
-point here. "Lines" are hand-written changed lines (generated data, pins and
-regenerated registries excluded).
+point here, and `docs/agents/OWNER_FUNDED_AI_POLICY.md` authorizes the runs it
+names. "Lines" are hand-written changed lines (generated data, pins and
+regenerated registries excluded). "Measured" rows rest on the calibration of
+2026-11-25 (one run per model per PR, n=1); "default" rows are not measured yet.
 
-| Situation | Runs of the round | Measured reason |
+| Situation | Runs of the round | Basis |
 | --- | --- | --- |
-| Code PR up to about 1500 lines, no risk class | `gpt-6.2-sol` high, one holistic run | sol found the real P1s with little noise on small and medium diffs |
-| Risk class (persistence, session fencing, protocol, authority, durable value, migrations, a symbol with several consumers) | sol high + `gpt-6.2-astra` high on the same head | astra finds cross-module seams; its P0/P1 count only after a traced REAL verdict |
-| Code diff above about 1500 lines | sol high per area + one astra high whole-diff integration run (seams) | sol alone lost a writer-key/guard seam on a large diff; astra caught it |
-| Content train or content diff above about 1500 lines | as above + one astra high content-fidelity run with external sources | astra finds real fidelity gaps; under the rubric they are P2 for the next train |
-| Small data-only PR | sol high | low risk; astra adds mostly P2 |
-| Docs, rules or skills only | sol high only | astra over-graded rule-text conflicts as P1 |
-| Delta review (second round) | sol high over the fix commits; + astra when the repair is in a risk class | small scope |
-| CI-failure fix | sol high with the failing log lines in the prompt | the log points the run at the cause |
+| Code PR up to about 1500 lines, no risk class | `gpt-6.2-sol` high, one holistic run | measured: sol found the real P1s with little noise on small and medium diffs |
+| Risk class (persistence, session fencing, protocol, authority, durable value, migrations, a symbol with several consumers) | sol high + `gpt-6.2-astra` high on the same head | measured: astra finds cross-module seams; its P0/P1 count only after a traced REAL verdict |
+| Content train or content diff above about 1500 lines | sol high per area + one astra high whole-diff integration run (seams) + one astra high content-fidelity run with external sources | measured: on the large content diff holistic sol missed a writer-key/guard seam in 2 of 2 runs (one plain-prompt sol run found it); astra found it in 2 of 2 |
+| Code diff above about 1500 lines | sol high per area + one astra high whole-diff integration run | default (by analogy with the content row) |
+| Docs, rules, skills, workflows or agent definitions | sol high + astra high | measured: on a rules PR astra found real P1s (an agent file that does not parse, a gate that passed unreviewed PRs) |
+| Small data-only PR | sol high | default |
+| Delta review (second round) | sol high over the fix commits; + astra when the repair is in a risk class | default |
+| CI-failure fix | sol high with the failing log lines in the prompt | default |
 
 Never astra alone (it missed a known bug that sol found) and never effort
 `medium`.
@@ -107,8 +107,12 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
   tibia.com announcement dated on or before the target date (news through
   the TibiaData API; a later official source such as the tibia.com spell list
   supersedes an earlier announcement), then the wiki at the target date, then
-  Canary/Crystal as hypothesis only. A value already accepted under that
-  order with its cited source is not re-flagged. Cite the URL or
+  Canary/Crystal as hypothesis only. For bulk static content (items, NPCs,
+  map objects) the order is the source registry's
+  (`docs/agents/programs/OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md`
+  §6): TibiaWiki BR, then a second structured cross-check, then public official
+  evidence for exact conflicts, else `UNKNOWN`/`CONFLICT`. A value already
+  accepted under that order with its cited source is not re-flagged. Cite the URL or
   the `docs/reference/` file for each value; when sources disagree, report
   the disagreement and which source wins. Never bypass a site's protection;
   a source the run cannot reach is named as unchecked, not guessed.
@@ -127,7 +131,7 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
 
 ## 3. Merge, verify, sweep
 
-1. Merge the run outputs (the astra run too, on a risk-class PR). Remove
+1. Merge the run outputs (the astra runs too, when the table names them). Remove
    duplicates by `path:line` and defect class.
 2. Give every finding a verdict (`SKILL.md` §6). Verify each P0/P1 against
    the code: trace a real caller or input to the failure. For the ones that
@@ -172,7 +176,7 @@ start a third round.
 
 A packet that delegates review or fixing points to this file and states:
 
-- the head SHA, whether the astra run is due (risk class) and, for big
+- the head SHA, which astra runs the table names and, for big
   diffs, the chunks;
 - "report every finding, no cap; sweep each class across the diff";
 - the failing CI log lines, when there are any;

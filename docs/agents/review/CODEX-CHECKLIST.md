@@ -8,27 +8,28 @@ Every item below is a class that Codex has actually flagged on Oteryn PRs (P1/P2
 ## Severity rubric (owner decision 2026-11-25)
 
 Every reviewer (Codex sol and astra, Claude review, a person) grades with this
-table. The grade follows the player-visible effect, not the size of the code.
+table. The grade follows the effect on a real caller, not the size of the code.
 
 | Grade | What it is | Examples |
 | --- | --- | --- |
 | P0 | Security, value or save damage, broken `main` | auth or permission bypass; gold or items lost or duplicated; corrupted or unfenced character save; a red `main` build or gate |
-| P1 | A player flow that a real caller reaches gives a wrong result | quest or dialogue cannot be finished or gets stuck; reward not granted, or a non-value reward (outfit, addon, flag) granted twice; action rolled back; server hang or blocked channel; migration or guard that rejects valid play |
+| P1 | A real caller reaches a wrong result: a player flow, or a tool, workflow, gate or agent definition the repository runs | quest or dialogue cannot be finished or gets stuck; reward not granted, or a non-value reward (outfit, addon, flag) granted twice; action rolled back; server hang or blocked channel; migration or guard that rejects valid play; a gate that passes a PR it must hold; an agent or workflow file that does not parse |
 | P2 | Content fidelity or a contained defect; behaviour still works | text differs from the source; item profile bonus missing or too small; wrong number in a description; NPC on the wrong tile nearby; a label such as "Unknown modifier"; stale docs or counts; a test that reads a retired file |
 | P3 | Style and hygiene | naming, duplicated check, readability |
 
 A reward of gold or items granted twice is value duplication, so P0.
 
 Hard rule: a finding that does not name the `path:line` of a real caller (a
-player, an admin or staff path, or CI for a broken `main`) that reaches a
-broken flow, lost or duplicated value, a bad save, a security hole or a red
-`main` is at most P2. A content-fidelity gap is P2 even when it is certain and real. The
+player, an admin or staff path, a tool, workflow, gate or agent the
+repository runs, or CI for a broken `main`) that reaches a wrong result is at
+most P2. A content-fidelity gap is P2 even when it is certain and real. The
 grade follows the effect, not the file: a `content/*.json` error that makes a
 quest unfinishable, drops a callback or blocks an offer is P1.
 
-P2 content-fidelity findings are real gaps, not noise: the review owner
-records them in the content backlog and the next content train fixes them as
-one group. They never block the PR under review.
+P2 content-fidelity findings are real gaps, not noise: the review owner lists
+them (PR, `file:line`, finding, cited source) in one comment on the reviewed
+PR, and the packet of the next content train carries that list and fixes them
+as one group. They never block the PR under review.
 
 ## Persistence / SQL / migrations
 1. **Unbounded reads.** Every SELECT/collect over players, worlds, rows, history, or a table cut needs a LIMIT, a page, or a proven small bound. (#2168 highscore_snapshot World cut)
