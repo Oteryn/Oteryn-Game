@@ -1203,6 +1203,14 @@ def main() -> int:
         )
     run(["python3", "tools/content-schema/quest-authoring/last_creep_native.py"])
     run(["python3", "tools/content-schema/npc-authoring/convert_placements.py"])
+    # Refuse invalid Store offers before rebuilding the Item and World trees.
+    run(
+        [
+            "python3",
+            "tools/content-schema/store-authoring/build_runtime_catalogue.py",
+            "--refresh-owner-offers",
+        ]
+    )
     run(
         [
             "python3",
@@ -1308,14 +1316,6 @@ def main() -> int:
     # Claims above may add complete native container recipes. Rebuild their
     # Item closure only after those final claims exist, before census and pins.
     run(["python3", "tools/content-migration/register_spell_families.py"])
-    # Store admission checks the regenerated native Item profiles.
-    run(
-        [
-            "python3",
-            "tools/content-schema/store-authoring/build_runtime_catalogue.py",
-            "--refresh-owner-offers",
-        ]
-    )
     # W01 binds the same final native root as the complete callback witness.
     # Requalify both source bodies before their downstream consumers.
     run(["python3", native + "build_native_callback_witness.py"])
