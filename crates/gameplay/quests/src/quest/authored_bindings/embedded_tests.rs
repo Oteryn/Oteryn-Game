@@ -617,8 +617,8 @@ mod main_native_contract {
         let after = explicit.catalogue();
         // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
-        // Postman adds Benjamin's measurement track.
-        assert_eq!(before.tracks.len(), 2137 + 7 + 1);
+        // Source quest routes and Benjamin's measurement track extend the legacy tracks.
+        assert_eq!(before.tracks.len(), 2137 + 7 + 12 + 1);
         for pharaoh in ["omruc", "vashresamun"] {
             let key = format!(
                 "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/{pharaoh}_sarcophagus_claim"

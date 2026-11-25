@@ -654,6 +654,19 @@
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:039518a57b08eda330c9fc26e9905dfae05e753510f1b25c720a77a62cd71e10",
         "content/world/placements/region-z13-x130-y123.b3:1:sha256:fdd5e457c35b1a3622485103aa9006e2dbb33a622cba968fe792260c1cdac26e",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_20/grave_danger/questline",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 0,
+            "minimum": 4
+          }
+        }
       ]
     },
     {

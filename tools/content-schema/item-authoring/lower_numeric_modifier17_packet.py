@@ -11,8 +11,8 @@ import lower_wiki_movable_packet as frame
 
 shared, base, ROOT = prior.shared, prior.base, prior.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py"
-RECEIPT = "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v10.json"
-RECEIPT_SHA = "e32ab7a10cd574bb56fd9a14332de33cdaf4554caf56810b4e4c5425e88caec4"
+RECEIPT = "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v11.json"
+RECEIPT_SHA = "343f46372aeb78085c9a35fd2d84ef8595a75ac422ac203d8e2878034e04d966"
 OUTPUT = (
     ROOT
     / "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json"
@@ -201,7 +201,9 @@ def source_vector(entry, indexed, pages, cutoff, order):
     return values[0]["value"]
 
 
-def qualify(entry, definition, binding, obj, members, routed, vector, profile=None):
+def qualify(
+    entry, definition, binding, obj, members, routed, vector, profile=None, *, current_headers=None
+):
     iid, target = entry["item_id"], entry["current_target"]
     official = entry["official_source"]
     if (
@@ -219,7 +221,9 @@ def qualify(entry, definition, binding, obj, members, routed, vector, profile=No
         raise ValueError("numeric modifier exact/native/World identity drift")
     headers = {k: definition[k] for k in HEADERS}
     historical = entry["current_published_scope_receipt"]["native_headers"]
-    if headers != historical:
+    if current_headers is None:
+        current_headers = historical
+    if headers != current_headers:
         # A current native admission can supersede the historical eligibility
         # only when both full modifier vectors and the exact identity agree.
         native_binding = (profile or {}).get("production_binding", {})
@@ -231,10 +235,10 @@ def qualify(entry, definition, binding, obj, members, routed, vector, profile=No
             or native_binding.get("target") != target
             or admission.get("materializable") is not True
             or admission.get("stack_class") != "NonStackable"
-            or historical["materializable"] is not False
-            or historical["stack_class"] != "Unknown"
+            or current_headers["materializable"] is not False
+            or current_headers["stack_class"] != "Unknown"
             or headers
-            != historical
+            != current_headers
             | {
                 "materializable": admission["materializable"],
                 "stack_class": admission["stack_class"],
@@ -285,7 +289,7 @@ def qualify(entry, definition, binding, obj, members, routed, vector, profile=No
         "source_item_id": iid,
         "target": target,
         # WorldProject replays the promotion before the current native admission overlay.
-        "headers": historical,
+        "headers": current_headers,
         "expected_name": obj["name"],
         "modifiers": vector,
     }
@@ -397,6 +401,9 @@ def build(root=ROOT):
                 routed,
                 vector,
                 profiles.get(entry["item_key"]),
+                current_headers=receipt.get("native_header_successors", {}).get(
+                    str(entry["item_id"])
+                ),
             )
         )
     if sum(len(r["modifiers"]) for r in rows) != 50:

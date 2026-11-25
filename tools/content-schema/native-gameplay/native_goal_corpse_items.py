@@ -29,6 +29,7 @@ def module(name, root):
 
 def policies(root=ROOT):
     creatures = {o['creature'] for g in json.loads((root / GOALS).read_bytes())['goals'] for o in g['origins']}
+    creatures.add('oteryn:creature.magma_bubble')
     raw = (root / CREATURES).read_bytes()
     manifest = json.loads((root / 'content/spells.manifest.json').read_bytes())
     if hashlib.sha256(raw).hexdigest() != manifest['creature_profiles']['sha256']:

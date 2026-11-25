@@ -120,6 +120,29 @@ mod tests {
     }
 
     #[test]
+    fn jack_retains_exact_npc_writes_to_the_zelos_passage_track() -> Result<(), String> {
+        use crate::quest::{QuestComparison, grave_danger, loader};
+
+        let source =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = source.catalogue();
+        let callbacks = world_callbacks::load_for(catalogue)?;
+        for key in [grave_danger::START, grave_danger::ACCESS] {
+            let transition = catalogue.transition(key).ok_or(key)?;
+            validate_resolved_world(catalogue, transition, false, &callbacks)?;
+
+            let mut renamed = transition.clone();
+            renamed.key.push_str("-alias");
+            assert!(validate_resolved_world(catalogue, &renamed, false, &callbacks).is_err());
+
+            let mut modified = transition.clone();
+            modified.effects[0].from = QuestComparison::Any;
+            assert!(validate_resolved_world(catalogue, &modified, false, &callbacks).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
     fn published_registry_does_not_exhaust_the_resolved_source_bound() -> Result<(), String> {
         let source = super::super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|error| format!("{error:?}"))?;
@@ -127,6 +150,9 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
+        assert_eq!(base.len(), 1_024);
+        assert_eq!(bindings.world_callbacks().count(), 96);
+        assert_eq!(callbacks.len(), 1_120);
         // Four Postman selectors join the published registry alongside the authored journeys.
         assert_eq!(base.len(), 1_016);
         assert_eq!(bindings.world_callbacks().count(), 96);

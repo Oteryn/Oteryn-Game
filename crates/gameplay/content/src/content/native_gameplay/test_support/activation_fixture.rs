@@ -326,9 +326,16 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     // Change these source-qualification expectations only with admitted content.
     let newly_admitted = [
         "oteryn:creature.arbaziloth",
+        "oteryn:creature.count_vlarkorth",
         "oteryn:creature.demodras",
-        "oteryn:creature.the_percht_queen",
+        "oteryn:creature.duke_krule",
+        "oteryn:creature.earl_osam",
         "oteryn:creature.goshnar_s_spite",
+        "oteryn:creature.king_zelos",
+        "oteryn:creature.lord_azaram",
+        "oteryn:creature.magma_bubble",
+        "oteryn:creature.sir_baeloc",
+        "oteryn:creature.the_percht_queen",
         // Crystal equipment admits their three remaining source yields (31577–31579).
         "oteryn:creature.count_vlarkorth",
         "oteryn:creature.duke_krule",
@@ -673,7 +680,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 260, 33, 44)
+        (52, 259, 32, 46)
     );
     assert_eq!(
         admitted,
@@ -707,7 +714,10 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.grand_mother_foulscale",
             "oteryn:creature.ice_overlord",
             "oteryn:creature.ichgahal",
+            "oteryn:creature.king_zelos",
             "oteryn:creature.koshei_the_deathless",
+            "oteryn:creature.lord_azaram",
+            "oteryn:creature.magma_bubble",
             "oteryn:creature.lord_azaram",
             "oteryn:creature.mitmah_vanguard",
             "oteryn:creature.murcion",
@@ -734,7 +744,6 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.ferumbras",
             "oteryn:creature.ferumbras_mortal_shell",
             "oteryn:creature.glooth_fairy",
-            "oteryn:creature.king_zelos",
             "oteryn:creature.lord_retro",
             "oteryn:creature.professor_maxxen",
             "oteryn:creature.scarlett_etzel",

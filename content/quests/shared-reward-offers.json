@@ -3646,7 +3646,7 @@
         }
       ],
       "reply": [
-        "The basic Golden outfit costs 100000 gold. Do you agree?"
+        "The basic Golden outfit costs 100000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3666,7 +3666,7 @@
         }
       ],
       "reply": [
-        "The Golden boots and gloves costs 50000 gold. Do you agree?"
+        "The Golden boots and gloves costs 50000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3686,7 +3686,7 @@
         }
       ],
       "reply": [
-        "The Golden helmet costs 50000 gold. Do you agree?"
+        "The Golden helmet costs 50000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3726,11 +3726,12 @@
           "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
           "minimum": 0,
           "maximum": 0,
-          "set": 1
+          "set": 0,
+          "preserve": true
         }
       ],
       "reply": [
-        "The chosen commission costs 100000 gold. Do you agree?"
+        "The chosen commission costs 500000000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3745,11 +3746,12 @@
           "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
           "minimum": 1,
           "maximum": 1,
-          "set": 2
+          "set": 1,
+          "preserve": true
         }
       ],
       "reply": [
-        "The chosen commission costs 50000 gold. Do you agree?"
+        "The chosen commission costs 250000000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3764,11 +3766,12 @@
           "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
           "minimum": 2,
           "maximum": 2,
-          "set": 3
+          "set": 2,
+          "preserve": true
         }
       ],
       "reply": [
-        "The chosen commission costs 50000 gold. Do you agree?"
+        "The chosen commission costs 250000000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -5130,6 +5133,176 @@
       ],
       "reply": [
         "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "advertising",
+        "advertisement"
+      ],
+      "topic": 0,
+      "next_topic": 120,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/signs",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you take the advertisement task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "busy"
+      ],
+      "topic": 0,
+      "next_topic": 123,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/urine",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you take the busy task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "destroy"
+      ],
+      "topic": 0,
+      "next_topic": 124,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you take the destroy task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "guards"
+      ],
+      "topic": 0,
+      "next_topic": 122,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/captures",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you take the guards task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/goblin_merchant/guard_offer",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "kill"
+      ],
+      "topic": 0,
+      "next_topic": 125,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/stalkers",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you take the kill task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "perfume"
+      ],
+      "topic": 0,
+      "next_topic": 121,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/odours",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you take the perfume task?"
       ]
     },
     {

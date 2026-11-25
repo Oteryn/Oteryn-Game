@@ -923,7 +923,6 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         spell_import.canonical_bytes,
     )
     import writable_item_profiles
-
     writable_item_profiles.apply_native(
         root,
         generated,
@@ -931,6 +930,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         NATIVE_MANIFEST,
         provider_order,
         spell_import.canonical_bytes,
+        stage="legacy",
     )
     import mail_item_profiles
 
@@ -1773,6 +1773,15 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
+    # These boss drops and corpse stages join after the main appearance pass.
+    # Apply the same client top-order facts in the base Item provider so the
+    # separate SRX update section remains reserved for its specialized rows.
+    boss_items = native_goal_loot_items.OUTFIT_BOSS_LOOT | {36844, 36845, 36846, 36847}
+    boss_keys = {f"oteryn:item.tibia.i{item}" for item in boss_items}
+    house_decoration_actions.apply_top_order(
+        [row for row in items["records"] if row["production_definition"]["production_key"] in boss_keys],
+        json.loads((root / house_decoration_actions.PROFILES).read_bytes()),
+    )
     existing_items = {"records": items["records"].copy()}
     import crystal_equipment_quarter_1
     crystal_equipment_quarter_1.apply(root, items, provider_order)
@@ -1811,6 +1820,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         NATIVE_MANIFEST,
         provider_order,
         spell_import.canonical_bytes,
+        stage="carried",
     )
     # Keep the qualified Crystal rod costs where Global does not show a mana value.
     ranged_item_profiles.apply_native(
@@ -1861,6 +1871,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
 
     pin_repository_inputs(root, generated)
+    native_goal_loot_items.refresh_outfit_boss_loot(
+        root, generated, item_path, NATIVE_MANIFEST, spell_import.canonical_bytes,
+    )
 
     # The model bootstraps from this same fresh provider without recursively
     # requiring the very Prey results it is about to produce.

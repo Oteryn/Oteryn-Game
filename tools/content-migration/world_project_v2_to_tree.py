@@ -474,6 +474,8 @@ def materialize_item_tree(reference, declarations, editor, sources):
     apply_global_potions(item_records)
     from crystal_equipment_profiles import apply_admissions as apply_crystal_equipment
     apply_crystal_equipment(item_records, ROOT)
+    from writable_item_profiles import old_paper_definition
+    item_records.append(old_paper_definition(ROOT))
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []

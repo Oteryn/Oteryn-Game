@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import json
 import re
 from pathlib import Path
 
@@ -38,7 +39,7 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
         "86d294671104ff928bc6070e4fab19b68c2f1598fbddbf9e0496ee37eee33197",
     ): (
         "content/world/placements/index.json",
-        "026a95a6a163095b98e72550d3218cf0a8072b6275ff7cd5cde3b82fe1a800b5",
+        "913224199f55c3f82920d4f1f8c554208501f338b9eea95394e64f13ceedffd8",
     ),
     (
         "content/world/placements/region-z07-x130-y127.b3",
@@ -131,7 +132,7 @@ RELOCATIONS = {
         "d0b52da99de9ffff5ab0804ac13f293cc77f9d654b9291a59f56119f47d21575",
     ): (
         "tools/content-schema/item-authoring/check_stack_default_historical_context.py",
-        "0304232dbc524a5088976178acbe2e7a86a1b607cf6c13a7952d084fb73be529",
+        "74fa9c7ab558beecbd64acde45310d345ffbbf1b0c0adb8ed4c52dac703b1c30",
     ),
     (
         "tools/content-schema/item-authoring/test_stack_default_historical_context.py",
@@ -148,7 +149,14 @@ RELOCATIONS = {
         "82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "8d7a7406daf2bc488096475edf6239da26cae30b7ff1f41fc8bade9a83d2ef80",
+        "3d36cc4c70fabeeeec1fb46a9074d7020a6e09e88a243e7fa61992dd63d95d4f",
+    ),
+    (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
+    ): (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "3d36cc4c70fabeeeec1fb46a9074d7020a6e09e88a243e7fa61992dd63d95d4f",
     ),
     # Numeric17 reuses the Mantra/Bond compiler's source readers. Their behavior
     # is unchanged by the exact Global overlay check on live Mantra/Bond rows.
@@ -376,6 +384,45 @@ def read_text(root: Path, path: str) -> str:
     return (Path(root) / current_path(path)).read_text()
 
 
+def historical_wiki_records(records: dict) -> dict:
+    """Recover the dictionary before the 8748 re-key for historical verification."""
+    historical = dict(records)
+    key = "oteryn:item.tibia.i8748"
+    if key in historical:
+        if "8748" in historical:
+            raise ValueError("duplicate Old Piece of Paper snapshot identity")
+        historical["8748"] = historical.pop(key)
+    return historical
+
+
+def historical_wiki_snapshot(data: bytes) -> bytes | None:
+    """Reconstruct the exact bytes preceding the Old Piece of Paper re-key."""
+    try:
+        snapshot = json.loads(data)
+        if (
+            json.dumps(snapshot, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+        ).encode() != data:
+            return None
+
+        def record_digest(records):
+            return digest(
+                json.dumps(
+                    records, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+                ).encode()
+            )
+
+        if snapshot["snapshot_sha256"] != record_digest(snapshot["records"]):
+            return None
+        records = historical_wiki_records(snapshot["records"])
+        snapshot["records"] = records
+        snapshot["snapshot_sha256"] = record_digest(records)
+        return (
+            json.dumps(snapshot, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+        ).encode()
+    except (KeyError, ValueError):
+        return None
+
+
 def read_pinned(root: Path, path: str, expected: str) -> bytes | None:
     """The current bytes of a pinned source, or None when its pin does not hold."""
     frozen = FROZEN_COMPRESSED_SOURCES.get((path, expected))
@@ -393,7 +440,13 @@ def read_pinned(root: Path, path: str, expected: str) -> bytes | None:
     if not target.is_file():
         return None
     data = target.read_bytes()
-    return data if digest(data) == current_digest else None
+    if digest(data) == current_digest:
+        return data
+    if current == "imports/tibiawiki/facts/items-stats.json":
+        historical = historical_wiki_snapshot(data)
+        if historical is not None and digest(historical) == current_digest:
+            return data
+    return None
 
 
 def retain_quest_plan_citations(rows: list[dict]) -> list[dict]:

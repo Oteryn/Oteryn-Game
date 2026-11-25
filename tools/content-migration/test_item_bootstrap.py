@@ -16,6 +16,7 @@ from unittest.mock import patch
 import boss_conditional_item_reference as conditional
 import item_tree_index
 import ranged_item_profiles as ranged
+from dispenser_item_profiles import APPEARANCES
 
 TOOL = Path(__file__).with_name("world_project_v2_to_tree.py")
 spec = importlib.util.spec_from_file_location("item_bootstrap_converter", TOOL)
@@ -71,6 +72,9 @@ def fixture(root):
     identities.extend(
         bindings[str(row["id"])] for row in source_rows if "held" not in row
     )
+    for relative in (APPEARANCES, "imports/tibiawiki/facts/items-stats.json"):
+        (root / relative).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(TOOL.parents[2] / relative, root / relative)
     records = [
         {"kind": "Item", "identity": target, "materializable": False}
         for target in identities
@@ -247,7 +251,7 @@ class ItemBootstrapTests(unittest.TestCase):
                 self.assertEqual(converter.cli(["--items-only"]), 0)
                 ranged_call.assert_called_once_with(root)
             index = json.loads((root / "content/items/index.json").read_bytes())
-            expected_identities = [row["identity"] for row in reference["records"]]
+            expected_identities = [row["identity"] for row in reference["records"]] + [identity(8748)]
             count = len(expected_identities)
             expected_shards = [
                 f"content/items/definitions/items-{start:05d}-{min(start + 1, count - 1):05d}.json"

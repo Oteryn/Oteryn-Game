@@ -216,6 +216,42 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
         )],
     ),
     (
+        "oteryn:quest.giant_smithhammer_quest",
+        hash(b"02d322ad993f1194f9b16fab996570c08b8d23b29d85d1cc39c19f1473e5c3e4"),
+        &[
+            hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
+            hash(b"bc9a387b5eba43a87478e8016be9c36a86f4cf63a555ade6e4eefae403ca8ba8"),
+        ],
+    ),
+    (
+        "oteryn:quest.goblin_merchant_quest",
+        hash(b"75ed65085049b76c051ac4d92a8af8d59a3d015fa4cf1c0a973d0c5287f661f2"),
+        &[
+            hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
+            hash(b"950746d5cd80d9fd1dd8844d03187fd0527f9c69b276f4aa2da4c70ae06e522f"),
+        ],
+    ),
+    (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"9f8957002452ecfe907a4be7430a5910db697ac88b74efe8dfaeab0dce568531"),
+        &[
+            hash(b"286f3e0a4fdaff0ae2a14494889fe2d3492c5bbd4d8668a4f9b2cdaa48e37e7e"),
+            hash(b"6121b5603a681798d7e21ba2d8fddfb3a3479f7133f5672c824f6ea72cce87fe"),
+            hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
+            hash(b"43161afcc986695e8999938e3395de140ec57134c00b1e89bcbe0e640775b5a0"),
+            hash(b"4fe40f437a6acad51a574510d5d0bcef6dd7476ff7b1bed9438cc6b88c222ffe"),
+        ],
+    ),
+    (
+        "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+        hash(b"2524a17ebf71ea5d741672793c0152ef2c7cde8a0e0d858b8c0a424a13426441"),
+        &[
+            hash(b"ee6c3e406da9bb800d0f73cd6fe71da5fd8064f3f0e66c3c6133de1e045ed529"),
+            hash(b"6ce138c8d2d98d0869359e3a93c25e2053fe55fcd729a5dc9887fb0e76cd073e"),
+            hash(b"e73c8c57b74a19a1da0b5e2172458951140b1774dc0b526222c8742a156245fc"),
+        ],
+    ),
+    (
         "oteryn:quest.the_ancient_tombs_quest",
         hash(b"5a7765b1239512ce87772a6d2c366b9443cd5596969c7b52ff789d50db0d501a"),
         &[
@@ -235,14 +271,15 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
     for &(quest, current, previous) in GAMEPLAY_PREDECESSORS {
         if catalogue.definition_hash(quest) == Some(current) {
-            catalogue
-                .predecessors
-                .entry(quest.into())
-                .or_default()
-                .extend(previous.iter().map(|&hash| NpcDefinitionPredecessor {
-                    hash,
-                    defaults: Default::default(),
-                }));
+            let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
+            for &hash in previous {
+                if !predecessors.iter().any(|entry| entry.hash == hash) {
+                    predecessors.push(NpcDefinitionPredecessor {
+                        hash,
+                        defaults: Default::default(),
+                    });
+                }
+            }
         }
     }
 }
@@ -253,18 +290,26 @@ mod tests {
     use crate::quest::{loader, npc_rules};
 
     #[test]
-    fn package_accepts_main_grave_danger_pin_as_predecessor() -> Result<(), String> {
+    fn grave_danger_uses_the_zelos_report_definition_and_keeps_previous_pins() -> Result<(), String>
+    {
         let loaded =
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
         let grave = "oteryn:quest.grave_danger_quest";
-        let main = hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab");
         assert_eq!(
             catalogue.definition_hash(grave),
-            Some(PUBLISHED_GRAVE_DANGER_LIVE)
+            Some(hash(
+                b"9f8957002452ecfe907a4be7430a5910db697ac88b74efe8dfaeab0dce568531"
+            ))
         );
-        assert_ne!(PUBLISHED_GRAVE_DANGER_LIVE, main);
-        assert!(npc_rules::legacy_defaults(catalogue, grave, &main).is_some());
+        assert_eq!(
+            npc_rules::legacy_defaults(
+                catalogue,
+                grave,
+                &hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
+            ),
+            Some(&Default::default()),
+        );
         assert!(
             npc_rules::legacy_defaults(
                 catalogue,
@@ -284,17 +329,12 @@ mod tests {
 
         for &(quest, refreshed, published) in CITATION_REFRESHES {
             assert_eq!(published_hash(quest, refreshed), published, "{quest}");
-            if quest == "oteryn:quest.grave_danger_quest"
-                && published != PUBLISHED_GRAVE_DANGER_LIVE
-            {
-                // Pre-Zelos citation variants resolve to the published predecessor.
-                assert_ne!(catalogue.definition_hash(quest), Some(published));
-                assert!(npc_rules::legacy_defaults(catalogue, quest, &published).is_some());
-            } else if let Some((_, current, previous)) = GAMEPLAY_PREDECESSORS
+            if let Some((_, current, previous)) = GAMEPLAY_PREDECESSORS
                 .iter()
                 .find(|(owner, current, _)| *owner == quest && *current != published)
             {
                 assert!(previous.contains(&published), "{quest}");
+                assert_eq!(npc_rules::legacy_defaults(catalogue, quest, &published), Some(&Default::default()), "{quest}");
                 assert_eq!(catalogue.definition_hash(quest), Some(*current), "{quest}");
             } else {
                 assert_eq!(catalogue.definition_hash(quest), Some(published), "{quest}");

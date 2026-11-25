@@ -2161,16 +2161,15 @@ mod tests {
 
     #[test]
     fn registry_refuses_different_keys_on_the_same_selector() -> Result<(), String> {
-        let mut callbacks = load()?;
-        let mut alias = callbacks
-            .iter()
+        let original = load()?
+            .into_iter()
             .find(|callback| callback.key.ends_with("triangle-tower-lever"))
-            .ok_or("triangle callback")?
-            .clone();
+            .ok_or("triangle callback")?;
+        let mut alias = original.clone();
         alias.key = "oteryn:quest-callback/triangle-selector-alias".into();
-        callbacks.push(alias);
+        // Isolate the duplicate selector from the separate registry size bound.
         assert_eq!(
-            validate_registry(&callbacks),
+            validate_registry(&[original, alias]),
             Err("duplicate callback selector across registries".into())
         );
         Ok(())

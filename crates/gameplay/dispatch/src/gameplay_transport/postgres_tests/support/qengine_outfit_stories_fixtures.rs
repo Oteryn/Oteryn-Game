@@ -1122,7 +1122,7 @@ pub(super) async fn exercise(
             &[
                 ("base", None, None, Some(0)),
                 ("first-low", None, None, Some(1)),
-                ("second", None, None, Some(2)),
+                ("second-after-first", None, None, Some(2)),
             ],
             618,
         ),
@@ -1599,7 +1599,7 @@ pub(super) async fn exercise(
         if family == "golden" {
             assert_eq!(
                 serde_json::to_value(&callback)?["fee"],
-                serde_json::json!({"gold": if *suffix == "base" {100000} else {50000}, "include_bank":true})
+                serde_json::json!({"gold": if *suffix == "base" {500000000} else {250000000}, "include_bank":true})
             );
             assert!(!callback.requires_premium);
         }
@@ -1714,6 +1714,14 @@ pub(super) async fn exercise(
                         },
                     },
                 ];
+                if suffix.starts_with("second") {
+                    let value = if *suffix == "second-after-first" { 1 } else { -1 };
+                    expected.push(Requirement {
+                        track: "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon1".into(),
+                        minimum: value,
+                        maximum: if *suffix == "second-after-first" { 1 } else { 0 },
+                    });
+                }
                 if *suffix == "first-high" {
                     expected.push(Requirement {
                         track: "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon2"
@@ -2207,7 +2215,7 @@ pub(super) async fn exercise(
             actor_condition_fixture(owner, admitted, *kind, true).await?;
         }
 
-        if name == "qengine-rewards-l3-dark-trails-story" && callback.key.ends_with("-second") {
+        if name == "qengine-rewards-l3-dark-trails-story" && callback.key.ends_with("-second-after-first") {
             commit_fixture(
                 owner,
                 admitted,
@@ -2511,8 +2519,14 @@ pub(super) async fn exercise(
         for item in &needed {
             held.insert(item.item.clone(), quantity(h, &item.item).await?);
         }
-        if let Some(fee) = &callback.fee {
+        if let Some(fee) = &callback.fee
+            && (family != "golden" || step_index == 0)
+        {
             let before = counts(h).await?;
+            if family == "golden" {
+                sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING")
+                    .execute(&h.pool).await?;
+            }
             let (result, _, _) =
                 super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false).await?;
             assert_eq!(
@@ -2525,22 +2539,24 @@ pub(super) async fn exercise(
                 before,
                 "unpaid hand-in has no flags/value/consumption"
             );
-            supply(
-                owner,
-                admitted,
-                h,
-                &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
-                    fluid_subtype: None,
-
-                    item: "oteryn:item.tibia.i3043".into(),
-                    count: u16::try_from(fee.gold / 10000).map_err(debug)?,
-                },
-                &mut bags,
-                &mut occurrence,
-            )
-            .await?;
+            if family == "golden" {
+                super::item_forge_fusion_fixtures::fixture::seed_bank(h).await?;
+            } else {
+                supply(
+                    owner,
+                    admitted,
+                    h,
+                    &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                        fluid_subtype: None,
+                        item: "oteryn:item.tibia.i3043".into(),
+                        count: u16::try_from(fee.gold / 10000).map_err(debug)?,
+                    },
+                    &mut bags,
+                    &mut occurrence,
+                ).await?;
+            }
         }
-        let money_before = if callback.fee.is_some() {
+        let money_before = if callback.fee.is_some() && family != "golden" {
             Some(coin_worth(h).await?)
         } else {
             None
@@ -2658,6 +2674,20 @@ pub(super) async fn exercise(
                 "exact source fee, retain all change"
             );
         }
+        if family == "glooth-engineer" {
+            let awards: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/glooth_engineer'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(awards, i64::from(step_index == 2));
+            let completions: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key='oteryn:quest.glooth_engineer_outfits_quest' AND completes",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(completions, awards);
+        }
         if family == "battle-mage" {
             let exalted: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_account_achievements
@@ -2710,10 +2740,18 @@ pub(super) async fn exercise(
                 assert_eq!(stored, None, "the first addon cannot write the other addon");
                 continue;
             }
-            let row: (String,i64) = sqlx::query_as("SELECT quest_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(fence.character_id.as_bytes().as_slice()).bind(&state.track).fetch_one(&h.pool).await?;
+            let row: Option<(String,i64)> = sqlx::query_as("SELECT quest_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(fence.character_id.as_bytes().as_slice()).bind(&state.track).fetch_optional(&h.pool).await?;
+            if family == "glooth-engineer"
+                && steps[step_index].0 == "second"
+                && state.track.ends_with("/glooth_engineer_outfits/addon1")
+            {
+                assert!(row.is_none(), "the high-vote second addon leaves the first untouched");
+                assert_eq!(tracks[&state.track].initial, 0);
+                continue;
+            }
             assert_eq!(
                 row,
-                (tracks[&state.track].quest.clone(), state.minimum),
+                Some((tracks[&state.track].quest.clone(), state.minimum)),
                 "read-only parent ownership and progress retained"
             );
         }
@@ -2783,7 +2821,8 @@ pub(super) async fn exercise(
     );
     if family == "golden" {
         let paid: (i64, i64) = sqlx::query_as("SELECT count(*),coalesce(sum(fee_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=18").fetch_one(&h.pool).await?;
-        assert_eq!(paid, (3, 200000));
+        assert_eq!(paid, (3, 1_000_000_000));
+        assert_eq!(super::item_forge_fusion_fixtures::fixture::bank(h).await?, 0);
     }
     if family == "nobleman" {
         let paid:(i64,i64,i64)=sqlx::query_as("SELECT count(*),coalesce(sum(fee_gold_units),0)::bigint,coalesce(sum(bank_debit_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=18").fetch_one(&h.pool).await?;

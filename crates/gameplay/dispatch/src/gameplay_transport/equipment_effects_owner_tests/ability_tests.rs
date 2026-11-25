@@ -151,7 +151,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 23 training/exercise weapon profiles (tools/content-migration/loop_training_profiles.py):
     // 28552..=28557, 35279..=35290, 44065..=44067, 50294/50295. All have speed_bonus=0.
     ("LOOP-TRAIN-1", 23),
-    ("M01C-KEY-DOORS", 2),
+    ("M01C-KEY-DOORS", 3),
     // M06: the five door profiles 1628, 1646, 1647, 2967 and 2968
     // (tools/content-schema/native-gameplay/build_key_door_profiles.py). All have speed_bonus=0.
     ("M06-KEYS", 5),
@@ -398,7 +398,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // both pinned appearance banks; no original key is removed or relabeled.
     ("SEASON-W18-HOUSE", 1959),
     // Merged main1ae39c7fb adds53 distinct QENGINE reward identities from
-    // QENGINE2 captures 184 source-qualified Items (qengine_reward_item_profiles.IDS).
+    // QENGINE2 captures 186 source-qualified Items (qengine_reward_item_profiles.IDS).
     // The exact packet carries known speed_bonus=0 except the pick i3456,
     // whose existing UNKNOWN speed is preserved and checked below.
     ("QENGINE-REWARDS", 53),
@@ -424,7 +424,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 adds exactly the 184 independently captured physical quest Items.
+    // QENGINE2 adds exactly the 186 independently captured physical quest Items.
     // Rottin Wood adds the hammer (3460), handcrafted ribbon (12171), and rabbit's foot
     // lucky charm (12173). Crystal 201189f items.xml gives none of them a speed attribute.
     // In particular the pre-existing pick keeps its unknown equipment speed;
@@ -462,7 +462,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(added_keys.contains(format!("oteryn:item.tibia.i{id}").as_str()));
     }
     // QENGINE2 identities: generated begin
-    assert_eq!(added_keys.len(), 184);
+    assert_eq!(added_keys.len(), 186);
     assert_eq!(
         added_keys,
         std::collections::BTreeSet::from([
@@ -519,7 +519,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i17675",
             "oteryn:item.tibia.i17676",
             "oteryn:item.tibia.i17677",
+            "oteryn:item.tibia.i17678",
             "oteryn:item.tibia.i17679",
+            "oteryn:item.tibia.i17680",
             "oteryn:item.tibia.i17681",
             "oteryn:item.tibia.i19083",
             "oteryn:item.tibia.i19151",
@@ -823,9 +825,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    assert_eq!(later_main_profiles, 2593);
+    assert_eq!(later_main_profiles, 2594);
     const QENGINE2_BASE_PROFILES: usize = 53;
-    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 131);
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 133);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
         + QENGINE2_BASE_PROFILES
@@ -888,7 +890,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
-        ("qengine-reward-item-profiles.json", 184),
+        ("qengine-reward-item-profiles.json", 186),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -1042,13 +1044,13 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                     | "oteryn:item.tibia.i9221"
                     | "oteryn:item.tibia.i31268"
             ) {
-                // WRITE-CONTENT-1 preserves these source equipment facts but
-                // grants no mint/equip admission or speed qualification.
+                // The carried writing admission retains these existing
+                // equipment facts and leaves their speed unqualified.
                 assert!(matches!(
                     record.semantics.equipment,
                     ReferenceItemField::Known(_)
                 ));
-                assert!(!record.admission.materializable);
+                assert!(record.admission.materializable);
             } else {
                 assert!(!matches!(
                     record.semantics.equipment,
@@ -1110,6 +1112,16 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                 27932, 27933, 27934, 28572, 31266, 31268,
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
+        )
+        // The added Crystal distance-reading profiles and new document carriers
+        // retain unknown speed.
+        .chain(
+            (1979..=1982)
+                .chain(5331..=5388)
+                .chain(17725..=17800)
+                .chain(17862..=17867)
+                .chain([54133, 173, 175, 176, 177, 178, 179, 6533, 8747, 8748])
+                .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
         // MAIL-E09: the parcels and the stamped letter carry no speed attribute.
         .chain([3503, 3504, 3506].map(|id| format!("oteryn:item.tibia.i{id}")))

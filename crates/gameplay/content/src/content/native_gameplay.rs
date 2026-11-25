@@ -1376,6 +1376,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("Arbaziloth fire identity collision"));
         }
+        // Crystal 201189f items.xml binds the written 8747 to the exact 8748
+        // appearance. The fixed variant has no separate XML override.
+        let old_paper_binding = serde_json::from_value(serde_json::json!({
+            "source_key": "oteryn:source.crystalserver",
+            "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "identity_namespace": "ots/item_server_id", "external_id": "8748",
+            "target": {"family": "Item", "key": "oteryn:item.tibia.i8748", "revision": "definition-r1"},
+            "disposition": "EXACT"
+        })).map_err(|_| invalid("written old piece of paper binding"))?;
+        if admitted
+            .insert("8748".to_owned(), old_paper_binding)
+            .is_some()
+        {
+            return Err(invalid("written old piece of paper binding collision"));
+        }
         let cradle_profiles = qready1_cradle::profiles()?;
         for (id, record) in &cradle_profiles {
             if admitted
@@ -4875,6 +4890,38 @@ mod tests {
             .unwrap();
         assert_eq!(boss.category.as_str(), "nemesis");
     }
+    #[test]
+    fn outfit_tokens_are_in_admitted_native_boss_loot() -> Result<(), Box<dyn std::error::Error>> {
+        let (controller, _) = activated_with_loot_tables(test_source(1)?.world_id, None);
+        let generation = controller.active().ok_or("generation")?;
+        let native = generation.native_gameplay().ok_or("native gameplay")?;
+        for (creature, items) in [
+            ("magma_bubble", &[39544, 39545][..]),
+            ("count_vlarkorth", &[31738][..]),
+            ("duke_krule", &[31738][..]),
+            ("earl_osam", &[31738][..]),
+            ("lord_azaram", &[31738][..]),
+            ("sir_baeloc", &[31738][..]),
+            ("king_zelos", &[31737][..]),
+        ] {
+            let row = native
+                .reward_table()
+                .row(&format!("oteryn:creature.{creature}"))
+                .map_err(|reason| format!("{creature}: {reason:?}"))?;
+            for item in items {
+                let key = format!("oteryn:item.tibia.i{item}");
+                assert!(
+                    row.loot_table
+                        .entries
+                        .iter()
+                        .any(|entry| entry.item.production_key == key),
+                    "{creature}: {key}"
+                );
+            }
+        }
+        Ok(())
+    }
+
     #[test]
     fn reward_boss_empty_corpse_does_not_admit_missing_private_loot() {
         let world = test_source(1).unwrap().world_id;

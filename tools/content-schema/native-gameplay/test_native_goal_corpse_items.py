@@ -49,7 +49,7 @@ class NativeGoalCorpseProof(unittest.TestCase):
 
     def test_full_decay_closure_keeps_source_weights_and_capacities(self):
         policies, weights = native.policies()
-        self.assertEqual(len(policies), 29)
+        self.assertEqual(len(policies), 33)
         self.assertEqual({item: policies[item] for item in (7535, 7537, 7538, 7539, 7540)}, {
             7535: (7, 10000, 7537),
             7537: (7, 10000, 7538),
@@ -67,6 +67,10 @@ class NativeGoalCorpseProof(unittest.TestCase):
         self.assertEqual(weights[4041], 120000)
         self.assertEqual(weights[4013], 85000)
         self.assertEqual(weights[5973], 0)
+        self.assertEqual(policies[36847], (25, 10000, 36846))
+        self.assertEqual(policies[36846], (25, 300000, 36845))
+        self.assertEqual(policies[36845], (25, 300000, 36844))
+        self.assertEqual(policies[36844], (None, 60000, None))
 
     def test_admission_preserves_unowned_items_and_unrelated_semantics(self):
         items = definitions()

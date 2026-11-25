@@ -260,6 +260,7 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
     Ok(lowered)
 }
 
@@ -282,6 +283,9 @@ pub(super) fn lower_embedded_quest_state(
         super::elvenbane::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::classic_dialogue::extend_rottin(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    // Zelos's passage advances the donor questline to Jack's report stage.
+    lowered.catalogue =
+        super::grave_danger::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::world_callbacks::extend(
         super::reward_callbacks::declare_tracks(lowered.catalogue).map_err(QuestLoadError::Json)?,
     )
@@ -298,8 +302,6 @@ pub(super) fn lower_embedded_quest_state(
         super::classic_dialogue::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::liquid_black::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
-    lowered.catalogue =
-        super::grave_danger::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::wrath_sleeping_dragon::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =

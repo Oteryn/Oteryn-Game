@@ -53,6 +53,25 @@ LEVEL_ACCESS = {
 }
 
 
+# The north, south, west, and east exits from the Maze of Lost Souls entry.
+MAZE_OF_LOST_SOULS_DOORS = (
+    ((32479, 31634, 10), 5111, 1030),
+    ((32486, 31633, 10), 5111, 1030),
+    ((32483, 31630, 10), 5102, 1030),
+    ((32483, 31635, 10), 5102, 1030),
+)
+
+
+def level_doors(claim):
+    if claim in (
+        "oteryn:reward-claim.kv.griffinshield1",
+        "oteryn:reward-claim.kv.griffinshield2",
+        "oteryn:reward-claim.kv.griffinshield3",
+    ):
+        return MAZE_OF_LOST_SOULS_DOORS
+    return (LEVEL_ACCESS[claim],) if claim in LEVEL_ACCESS else ()
+
+
 def valid_capture_pin(document):
     revision = document.get("revision")
     return (
@@ -87,8 +106,9 @@ def captured_level_access(raw, selected, root=ROOT):
         "LevelDoorAction"
     ]["fields"]
     doors = {}
-    for key in sorted(set(selected) & LEVEL_ACCESS.keys()):
-        position, appearance, action = LEVEL_ACCESS[key]
+    for key, (position, appearance, action) in (
+        (claim, door) for claim in sorted(selected) for door in level_doors(claim)
+    ):
         field = next(f for f in fields if f["key"] == action)
         value = lua_tables.as_python(field["value"])
         groups = value if isinstance(value, list) else [value]
@@ -133,8 +153,7 @@ def supported_claim(definition):
     native = definition.get("native_contents", {})
     return (
         definition["readiness"] == "ready"
-        or panpipe_key_claim(definition)
-        or outlaw_key_claim(definition)
+        or source_key_claim(definition)
         or (
             definition.get("definition_profile") == "authored_variant_v1"
             and definition.get("readiness") == "waiting_implementation"
@@ -154,6 +173,10 @@ def supported_claim(definition):
 
 
 OUTLAW_KEYS = {3301: 2970, 3302: 2969, 3303: 2970, 3304: 2972}
+
+
+def source_key_claim(definition):
+    return key_claim(definition, 3600, 2969) or panpipe_key_claim(definition) or outlaw_key_claim(definition)
 
 
 def outlaw_key_claim(definition):
@@ -281,11 +304,12 @@ def capture(source_root, selected, root=ROOT):
                 or setting.get("container") != container_id
             ):
                 raise ValueError("QUEST_CHEST_SOURCE_SELECTOR_OR_REWARD_DRIFT")
-            if panpipe_key_claim(definition) and (
-                setting.get("isKey") is not True
-                or setting.get("storage") != {"expr": "Storage.Quest.Key.ID4055"}
-            ):
-                raise ValueError("QUEST_CHEST_SOURCE_KEY_DRIFT")
+            if source_key_claim(definition):
+                number = placement["reward"]["key_binding"].rsplit("/", 1)[1]
+                if setting.get("isKey") is not True or setting.get("storage") != {
+                    "expr": f"Storage.Quest.Key.ID{number}"
+                }:
+                    raise ValueError("QUEST_CHEST_SOURCE_KEY_DRIFT")
             rows.append(
                 {
                     "claim": key,
@@ -408,8 +432,7 @@ def selections(root=ROOT):
                 not row["claims"]
                 or not set(row["claims"]) <= captured_claims
                 or any(
-                    LEVEL_ACCESS.get(key)
-                    != (position, row["appearance"], row["action"])
+                    (position, row["appearance"], row["action"]) not in level_doors(key)
                     for key in row["claims"]
                 )
             ):
@@ -420,8 +443,8 @@ def selections(root=ROOT):
             ) != (row["action"], row["appearance"]):
                 raise ValueError("QUEST_CHEST_LEVEL_ACCESS_CONFLICT")
             doors[position] = row
-        for key in captured_claims & LEVEL_ACCESS.keys():
-            if LEVEL_ACCESS[key][0] not in doors:
+        for key in captured_claims:
+            if any(position not in doors for position, _, _ in level_doors(key)):
                 raise ValueError("QUEST_CHEST_LEVEL_ACCESS_MISSING")
         for row in document.get("item_access", []):
             position = tuple(row["position"])
@@ -440,41 +463,54 @@ def selections(root=ROOT):
         for key in captured_claims & ITEM_ACCESS.keys():
             if ITEM_ACCESS[key][0] not in doors:
                 raise ValueError("QUEST_CHEST_ITEM_ACCESS_MISSING")
-    if any(
-        row.get("claim") == "oteryn:reward-claim.kv.panpipe"
-        for row in bindings.values()
-    ):
-        # Already captured from both donors: door_key.lua lines137/158. The
-        # numeric storage is4055 despite the donors' stale "key3791" label.
+    key_doors = [
+        (claim, position, appearance, number)
+        for claim, position, appearance, number in (
+            ("oteryn:reward-claim.quest.key.id3600", (32506, 32175, 14), 5106, 3600),
+            ("oteryn:reward-claim.kv.panpipe", (32643, 32128, 8), 1631, 4055),
+        )
+        if any(row.get("claim") == claim for row in bindings.values())
+    ]
+    if key_doors:
         path = "tools/content-schema/quest-authoring/samples/doors/gates.json"
         raw = (root / path).read_bytes()
         if (
             hashlib.sha256(raw).hexdigest()
             != "dfcd8f8424d01c393fc6e0a25dbf26aeab902ec5cc691bd21ddbe336ddad7e87"
         ):
-            raise ValueError("PANPIPE_KEY_DOOR_SOURCE_PIN")
-        gate = [
-            r
-            for r in json.loads(raw)["gates"]
-            if r["identity"]["key"] == "canary:door-gate/key/4055"
-        ]
-        if (
-            len(gate) != 1
-            or gate[0]["condition"]["key_binding"] != "canary:door-key/4055"
-            or gate[0]["placements"]
-            != [{"position": {"x": 32643, "y": 32128, "z": 8}, "appearance": None}]
-        ):
-            raise ValueError("PANPIPE_KEY_DOOR_SOURCE_DRIFT")
-        position = (32643, 32128, 8)
-        if position in doors:
-            raise ValueError("PANPIPE_KEY_DOOR_ACCESS_CONFLICT")
-        doors[position] = {
-            "position": list(position),
-            "appearance": 1631,
-            "action": 4055,
-            "claims": ["oteryn:reward-claim.kv.panpipe"],
-        }
+            raise ValueError("QUEST_CHEST_KEY_DOOR_SOURCE_PIN")
+        gates = json.loads(raw)["gates"]
+        for claim, position, appearance, number in key_doors:
+            gate = [
+                r
+                for r in gates
+                if r["identity"]["key"] == f"canary:door-gate/key/{number}"
+            ]
+            if (
+                len(gate) != 1
+                or gate[0]["condition"]["key_binding"] != f"canary:door-key/{number}"
+                or gate[0]["placements"]
+                != [{"position": dict(zip("xyz", position)), "appearance": None}]
+            ):
+                raise ValueError("QUEST_CHEST_KEY_DOOR_SOURCE_DRIFT")
+            if position in doors:
+                raise ValueError("QUEST_CHEST_KEY_DOOR_ACCESS_CONFLICT")
+            doors[position] = {
+                "position": list(position),
+                "appearance": appearance,
+                "action": number,
+                "claims": [claim],
+            }
         sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
+    # Use the draw-well handler on this retained Ghoul Room placement.
+    if any(
+        row.get("claim") == "oteryn:reward-claim.quest.key.id3600"
+        for row in bindings.values()
+    ):
+        position = (32508, 32176, 13)
+        if position in doors:
+            raise ValueError("GHOUL_ROOM_WELL_ACTION_CONFLICT")
+        doors[position] = {"appearance": 1931, "action": 1000}
     alias_path = "content/quests/native-reward-placement-aliases.json"
     key = "oteryn:reward-claim.quest.key.id3899"
     if (root / alias_path).is_file() and any(
@@ -618,6 +654,12 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
         regions[path]["sha256"] = hashlib.sha256(raw).hexdigest()
     if require_all and imported != len(bindings):
         raise ValueError("QUEST_CHEST_INCOMPLETE_OVERLAY")
+    # The original QREADY1 overlay records its own witness for the same capture.
+    # Keep that witness current when this aggregate overlay validates the capture.
+    qualified = {source["path"]: source["sha256"] for source in sources}
+    for source in index["source"].get("quest_chests_qready1", {}).get("captures", []):
+        if source["path"] in qualified:
+            source["sha256"] = qualified[source["path"]]
     index["source"]["quest_chests"] = {"captures": sources, "imported": imported}
     outputs[INDEX] = canonical(index)
     summary = json.loads(outputs[SUMMARY])

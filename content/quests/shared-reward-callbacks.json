@@ -1406,13 +1406,48 @@
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
-        "owner:chosen-golden:100000-50000-50000:boots-before-helmet"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
       ],
       "fee": {
-        "gold": 100000,
+        "gold": 500000000,
         "include_bank": true
-      }
+      },
+      "forbids_outfits": [
+        "oteryn:outfit.golden"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l10-golden-base-owned",
+      "quest": "oteryn:quest.golden_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "already owned"
+      ],
+      "topic": 3,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your account already owns it. I have recorded this commission step."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.golden"
+      ]
     },
     {
       "key": "oteryn:quest-reward/l10-golden-boots",
@@ -1442,13 +1477,90 @@
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
-        "owner:chosen-golden:100000-50000-50000:boots-before-helmet"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
       ],
       "fee": {
-        "gold": 50000,
+        "gold": 250000000,
         "include_bank": true
-      }
+      },
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.golden",
+          "addons": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l10-golden-boots-owned",
+      "quest": "oteryn:quest.golden_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "already owned"
+      ],
+      "topic": 5,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your account already owns it. I have recorded this commission step."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.golden",
+          "addons": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l10-golden-complete-owned",
+      "quest": "oteryn:quest.golden_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
+      ],
+      "completes": true,
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.golden",
+          "addons": 3
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l10-golden-helmet",
@@ -1464,7 +1576,7 @@
           "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
           "minimum": 2,
           "maximum": 2,
-          "set": 3
+          "set": 4
         }
       ],
       "take": [],
@@ -1478,13 +1590,56 @@
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
-        "owner:chosen-golden:100000-50000-50000:boots-before-helmet"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
       ],
       "fee": {
-        "gold": 50000,
+        "gold": 250000000,
         "include_bank": true
-      }
+      },
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.golden",
+          "addons": 2
+        }
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/l10-golden-helmet-owned",
+      "quest": "oteryn:quest.golden_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "already owned"
+      ],
+      "topic": 4,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your account already owns it. I have recorded this commission step."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:fb6a4aa3abbe63f13f0fd3f882382d592c0d29fb0927e843f5067ea6c6ab5666"
+      ],
+      "completes": true,
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.golden",
+          "addons": 2
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l10-nightmare-join",
@@ -2597,94 +2752,6 @@
       "minimum_level": 250
     },
     {
-      "key": "oteryn:quest-reward/l12-fire-fighter-first",
-      "quest": "oteryn:quest.fire_fighter_outfits_quest",
-      "npc": "oteryn:npc.gnomadness",
-      "keywords": [
-        "fire fighter addon 1"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i39544",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.fire_fighter",
-        "addons": 1
-      },
-      "achievement": null,
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
-        "owner:chosen-trial:fire_fighter:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
-      ],
-      "minimum_level": 250,
-      "requires_premium": true,
-      "requires_outfits": [
-        "oteryn:outfit.fire_fighter"
-      ],
-      "forbids_addons": [
-        {
-          "outfit": "oteryn:outfit.fire_fighter",
-          "addons": 1
-        }
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/l12-fire-fighter-second",
-      "quest": "oteryn:quest.fire_fighter_outfits_quest",
-      "npc": "oteryn:npc.gnomadness",
-      "keywords": [
-        "fire fighter addon 2"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i39545",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.fire_fighter",
-        "addons": 2
-      },
-      "achievement": "oteryn:achievement/friendly_fire",
-      "reply": [
-        "Thank you for your help."
-      ],
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
-        "owner:chosen-trial:fire_fighter:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
-      ],
-      "minimum_level": 250,
-      "requires_premium": true,
-      "requires_outfits": [
-        "oteryn:outfit.fire_fighter"
-      ],
-      "forbids_addons": [
-        {
-          "outfit": "oteryn:outfit.fire_fighter",
-          "addons": 2
-        }
-      ],
-      "requires_addons": [
-        {
-          "outfit": "oteryn:outfit.fire_fighter",
-          "addons": 1
-        }
-      ]
-    },
-    {
       "key": "oteryn:quest-reward/l12-fire-fighter-start",
       "quest": "oteryn:quest.fire_fighter_outfits_quest",
       "npc": "oteryn:npc.gnomadness",
@@ -3755,6 +3822,53 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l3-glooth-engineer-complete-owned",
+      "quest": "oteryn:quest.glooth_engineer_outfits_quest",
+      "npc": "oteryn:npc.ezebeth",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/completed",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/glooth_engineer",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon1",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon2",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.glooth_engineer",
+          "addons": 3
+        }
+      ],
+      "completes": true
+    },
+    {
       "key": "oteryn:quest-reward/l3-glooth-engineer-first-high",
       "quest": "oteryn:quest.glooth_engineer_outfits_quest",
       "npc": "oteryn:npc.ezebeth",
@@ -3769,6 +3883,12 @@
           "minimum": -1,
           "maximum": 0,
           "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/completed",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
         }
       ],
       "take": [],
@@ -3777,7 +3897,7 @@
         "outfit": "oteryn:outfit.glooth_engineer",
         "addons": 1
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/glooth_engineer",
       "reply": [
         "Thank you for your help."
       ],
@@ -3800,7 +3920,17 @@
           "minimum": 1,
           "maximum": 1
         }
-      ]
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.glooth_engineer"
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.glooth_engineer",
+          "addons": 2
+        }
+      ],
+      "completes": true
     },
     {
       "key": "oteryn:quest-reward/l3-glooth-engineer-first-low",
@@ -3843,6 +3973,9 @@
           "minimum": 3,
           "maximum": 5
         }
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.glooth_engineer"
       ]
     },
     {
@@ -3885,8 +4018,80 @@
           "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
           "minimum": 6,
           "maximum": 2147483647
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0
         }
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.glooth_engineer"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-glooth-engineer-second-after-first",
+      "quest": "oteryn:quest.glooth_engineer_outfits_quest",
+      "npc": "oteryn:npc.ezebeth",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/completed",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.glooth_engineer",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/glooth_engineer",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/dark_trails/outfit",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+          "minimum": 6,
+          "maximum": 2147483647
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon1",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.glooth_engineer"
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.glooth_engineer",
+          "addons": 1
+        }
+      ],
+      "completes": true
     },
     {
       "key": "oteryn:quest-reward/l4-nobleman-first",

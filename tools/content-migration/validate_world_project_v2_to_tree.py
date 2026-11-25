@@ -46,6 +46,8 @@ def source_qualified_item_references(reference, root):
     from nrwicked_profiles import extend_records as arbaziloth_fire
 
     arbaziloth_fire(records, root)
+    from writable_item_profiles import old_paper_definition
+    records.append(old_paper_definition(root))
     return records
 
 

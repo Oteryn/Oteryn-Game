@@ -514,6 +514,7 @@ async fn wire_conversation_with_prefix_refusal(
     } else {
         vec![]
     };
+    let callback_key = callback.key.clone();
     let peer = tokio::spawn(async move {
         let mut catalogues = Vec::new();
         let mut result = None;
@@ -612,7 +613,7 @@ async fn wire_conversation_with_prefix_refusal(
             let mut prefix = [0; 4];
             match tokio::time::timeout_at(drain_deadline, client.read_exact(&mut prefix))
                 .await
-                .map_err(|_| "earned appearance catalogue did not arrive".to_owned())?
+                .map_err(|_| format!("earned appearance catalogue for {callback_key} did not arrive after {result:?}"))?
             {
                 Ok(_) => {}
                 Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => break,

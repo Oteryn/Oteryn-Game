@@ -5,6 +5,8 @@ Crystal 201189f data/libs/tables/doors.lua:4,9,265 supplies the identities.
 Its startup/tables/door_level.lua:66 binds 6264 to Noble Armor's level-35 gate.
 Panpipe's captured key-door gate at (32643,32128,8) also needs locked1631;
 closed1632/open1633 are already supplied by the plain door provider.
+Ghoul Room's key 3600 gate at (32506,32175,14) needs locked 5106;
+the same provider already supplies closed 5107 and open 5108.
 Desert Dungeon uses the existing5102/5103 pair with action1020 at32673,32100,8
 (Crystal startup/tables/door_level.lua:9-15); reuse questpc4/5 profile closure.
 Crystal 201189f data/libs/tables/doors.lua:4,9,265,273 supplies the identities.
@@ -19,7 +21,7 @@ from build_tool_item_profiles import build as source_profiles
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = 'tools/content-schema/native-gameplay/key-door-item-profiles.json'
-IDS = {1628, 1631, 1646, 1647, 1648, 1649, 2967, 2968, 5097, 5102, 5103, 6248, 6264, 6265}
+IDS = {1628, 1631, 1646, 1647, 1648, 1649, 2967, 2968, 5097, 5102, 5103, 5106, 6248, 6264, 6265}
 
 
 def build(directory):

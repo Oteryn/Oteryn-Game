@@ -6,7 +6,6 @@ use crate::map::facts::QuestCallbackProjection;
 fn shared_projection_target(
     projection: Option<&QuestCallbackProjection>,
     source: u64,
-    selected_tool: bool,
 ) -> Result<Option<u64>, UseDisposition> {
     // An unknown acknowledgement keeps the affected placement reserved for replay.
     Ok(match projection {
@@ -20,7 +19,7 @@ fn shared_projection_target(
             QuestCallbackProjection::ReleaseMerchant { .. }
             | QuestCallbackProjection::TimedRemoval { .. },
         ) => Some(source),
-        Some(QuestCallbackProjection::TimedTransform { .. }) if selected_tool => Some(source),
+        Some(QuestCallbackProjection::TimedTransform { .. }) => Some(source),
         Some(QuestCallbackProjection::TimedTargetTransform { key, .. }) => Some(*key),
         Some(QuestCallbackProjection::TimedPassages { entries, .. }) if entries.len() == 1 => {
             entries.first().map(|entry| entry.key)
@@ -560,15 +559,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(projection) => projection,
             Err(result) => return result,
         };
-        let selected_tool_instance = callback
-            .item_on_target
-            .as_ref()
-            .is_some_and(|tool| tool.selected_instance);
-        let projection_target =
-            match shared_projection_target(projection.as_ref(), key, selected_tool_instance) {
-                Ok(target) => target,
-                Err(refusal) => return refusal,
-            };
+        let projection_target = match shared_projection_target(projection.as_ref(), key) {
+            Ok(target) => target,
+            Err(refusal) => return refusal,
+        };
         if let Some(target) = projection_target
             && !self
                 .states
@@ -1789,7 +1783,7 @@ mod tests {
             },
         };
         assert_eq!(
-            shared_projection_target(Some(&projection), 42, true),
+            shared_projection_target(Some(&projection), 42),
             Ok(Some(42))
         );
         refresh_source_reset(Some(&mut projection), 200);

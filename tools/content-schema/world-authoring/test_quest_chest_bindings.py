@@ -13,6 +13,79 @@ import world_region_codec as codec
 
 
 class QuestChestBindings(unittest.TestCase):
+    def test_shipped_world_has_standalone_quest_reward_selectors(self):
+        placements = chests.ROOT / "content/world/placements"
+        palette = json.loads((placements / "index.json").read_bytes())["palette"]
+        for x, y, z, appearance, uid in (
+            (32015, 31409, 7, 2473, 6235),
+            (32146, 31430, 8, 2473, 6217),
+            (32456, 32008, 13, 2469, 6134),
+            (32509, 32181, 13, 4285, 5015),
+            (31973, 32209, 12, 2472, 6118),
+            (31977, 32209, 12, 2472, 6119),
+        ):
+            with self.subTest(uid=uid):
+                path = placements / codec.region_name(z, x // 256, y // 256)
+                _, _, _, sectors = codec.decode_region(path.read_bytes())
+                items = next(
+                    tile[5]
+                    for _, tiles in sectors
+                    for tile in tiles
+                    if tile[:2] == (x, y)
+                )
+                self.assertEqual(
+                    [
+                        (attrs or {}).get("unique")
+                        for index, depth, attrs in items
+                        if depth == 0 and palette[index]["source_item_id"] == appearance
+                    ],
+                    [uid],
+                )
+
+    def test_maze_of_lost_souls_has_four_level_30_entrance_doors(self):
+        placements = chests.ROOT / "content/world/placements"
+        palette = json.loads((placements / "index.json").read_bytes())["palette"]
+        _, _, _, sectors = codec.decode_region(
+            (placements / "region-z10-x126-y123.b3").read_bytes()
+        )
+        cells = {tile[:2]: tile[5] for _, tiles in sectors for tile in tiles}
+        for x, y, appearance in (
+            (32479, 31634, 5111),
+            (32486, 31633, 5111),
+            (32483, 31630, 5102),
+            (32483, 31635, 5102),
+        ):
+            with self.subTest(x=x, y=y):
+                self.assertEqual(
+                    [
+                        (attrs or {}).get("action")
+                        for index, depth, attrs in cells[x, y]
+                        if depth == 0 and palette[index]["source_item_id"] == appearance
+                    ],
+                    [1030],
+                )
+
+    def test_ghoul_room_landing_has_the_source_key_door(self):
+        placements = chests.ROOT / "content/world/placements"
+        palette = json.loads((placements / "index.json").read_bytes())["palette"]
+        _, _, _, sectors = codec.decode_region(
+            (placements / "region-z14-x126-y125.b3").read_bytes()
+        )
+        items = next(
+            tile[5]
+            for _, tiles in sectors
+            for tile in tiles
+            if tile[:2] == (32506, 32175)
+        )
+        self.assertEqual(
+            [
+                (attrs or {}).get("action")
+                for index, depth, attrs in items
+                if depth == 0 and palette[index]["source_item_id"] == 5106
+            ],
+            [3600],
+        )
+
     def test_current_committed_corpus_captures_exact_elvenbane_startup_uids(self):
         from pathlib import Path
 

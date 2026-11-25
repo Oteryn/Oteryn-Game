@@ -2157,7 +2157,7 @@
     },
     "oteryn:creature.marid": {
       "kills_per_hour_micros": 242016806,
-      "loot_per_kill_micros": 96507575,
+      "loot_per_kill_micros": 92645690,
       "tier": 2
     },
     "oteryn:creature.marsh_stalker": {
@@ -3886,7 +3886,7 @@
       "tier": 2
     }
   },
-  "model_input_sha256": "563c3d2359b04fee10d1638556202bcbc07aa62fb49a114add4daa9c61a01c32",
+  "model_input_sha256": "05d32bcde42a6203cea9c7218f8fbb96f1541dc2f951ea6a7d00dfa78ae473ea",
   "npc_price_policy": "maximum_catalogue_offer",
   "npc_sell_prices": {
     "oteryn:item.tibia.i10196": 150,
@@ -4798,7 +4798,6 @@
     "oteryn:item.tibia.i3579": 2,
     "oteryn:item.tibia.i3580": 100,
     "oteryn:item.tibia.i3582": 4,
-    "oteryn:item.tibia.i3588": 1,
     "oteryn:item.tibia.i3590": 1,
     "oteryn:item.tibia.i3595": 1,
     "oteryn:item.tibia.i3598": 1,

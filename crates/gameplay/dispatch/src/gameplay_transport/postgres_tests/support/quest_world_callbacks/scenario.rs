@@ -24,6 +24,10 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let explorer = name == super::super::explorer_society_journey_fixtures::NAME;
+    let (name, grave_report_case) = match name.strip_prefix("questpc7-grave/") {
+        Some(case) => ("questpc7-grave", Some(case)),
+        None => (name, None),
+    };
     let past_oberon_objective = name == "authored-secret-library-completed-oberon";
     let past_scarlett_objective = name == "questpc7-grave-completed-scarlett";
     let name = match name {
@@ -1347,7 +1351,7 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if name == "qengine-rewards-smith-story" {
+        let world = if matches!(name, "qengine-rewards-smith-story" | "authored-smith-cache") {
             world_with_native_items(
                 &callback,
                 trigger,
@@ -1379,6 +1383,14 @@ fn scenario_case(
                 &super::super::questpc7_goblin_fixtures::trunk_objects(),
                 generation.native_gameplay().ok_or("native")?,
                 &super::super::questpc7_goblin_fixtures::trunk_items(),
+            )?
+        } else if name == "qengine-rewards-goblin-perfume-finish" {
+            world_with_native_items(
+                &callback,
+                trigger,
+                &[],
+                generation.native_gameplay().ok_or("native")?,
+                &[(super::super::questpc7_goblin_fixtures::PERFUME_GAS, 17681)],
             )?
         } else if name == "qengine-rewards-goblin-pond" {
             let p = Position {
@@ -2715,6 +2727,8 @@ fn scenario_case(
             super::super::questpc7_hot_corpses_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-goblin-slug" {
             super::super::questpc7_goblin_slug_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "qengine-rewards-goblin-perfume-finish" {
+            Box::pin(super::super::questpc7_goblin_fixtures::exercise_perfume_finish(&mut owner, &mut admitted, &h)).await?;
         } else if name == "qengine-rewards-goblin-perfume-items" {
             super::super::questpc7_goblin_fixtures::exercise_perfume_items(&mut owner, &mut admitted, &h)
                 .await?;
@@ -2744,7 +2758,14 @@ fn scenario_case(
         } else if name == "qengine-rewards-grimvale-contacts" {
             super::super::questpc7_grimvale_fixtures::contacts(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-grave" {
-            super::super::questpc7_grave_fixtures::exercise(&mut owner, &mut admitted, &h, past_scarlett_objective).await?;
+            super::super::questpc7_grave_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                grave_report_case,
+                past_scarlett_objective,
+            )
+            .await?;
         } else if name == "questpc7-ferumbras" {
             super::super::questpc7_ferumbras_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hero" {
