@@ -10,7 +10,7 @@ import re
 RESULT = re.compile(
     r"^SEAM_EVIDENCE e2e_all scenario=([A-Z]\d\d[a-z]?\.[a-z0-9-]+) "
     r"status=(PASS|FAIL|SKIPPED|MISSING-SERVER|MISSING-CLIENT|OUT_OF_SCOPE) seconds=([0-9]+(?:\.[0-9]+)?)"
-    r"(?: evidence=(Dawnport owner-excluded|\S+))?"
+    r"(?: evidence=(\S+))?"
     # A failing scenario names its own cause and the first failing row/check.
     r"(?: cause=([a-z][a-z-]*) root=(\S+))?$"
 )
@@ -158,9 +158,11 @@ def results(text):
             raise ValueError(f"missing file:line source evidence: {scenario}")
         if status == "OUT_OF_SCOPE" and (
             scenario not in {"S16a.full", "S16a.client", "C11.full", "C11.client"}
-            or evidence != "Dawnport owner-excluded"
+            or evidence != "Dawnport_owner-excluded"
         ):
             raise ValueError(f"unknown owner exclusion: {scenario}")
+        if status == "OUT_OF_SCOPE":
+            evidence = "Dawnport owner-excluded"
         found[scenario] = (status, seconds, evidence)
     for scenario, result in combat_results(text).items():
         if scenario in found:

@@ -223,7 +223,7 @@ fn e2e_result_line(line: &str) -> String {
     };
     let verdict = match status {
         Some("CAPTURED") => return format!("e2e_capture {rest}"),
-        Some(value @ ("PASS" | "FAIL" | "SKIPPED" | "MISSING-SERVER" | "MISSING-CLIENT")) => value,
+        Some(value @ ("PASS" | "FAIL" | "SKIPPED" | "MISSING-SERVER" | "MISSING-CLIENT" | "OUT_OF_SCOPE")) => value,
         Some(other) => {
             detail.insert(0, other.to_owned());
             "FAIL"
@@ -258,6 +258,14 @@ fn e2e_result_line(line: &str) -> String {
 #[cfg(test)]
 mod e2e_result_line_tests {
     use super::e2e_result_line;
+
+    #[test]
+    fn dawnport_owner_exclusion_survives_live_evidence_normalization() {
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C11.full status=OUT_OF_SCOPE seconds=0 evidence=Dawnport owner-excluded"),
+            "e2e_all scenario=C11.full status=OUT_OF_SCOPE seconds=0 evidence=Dawnport_owner-excluded"
+        );
+    }
 
     #[test]
     fn row_results_preserve_typed_failure_suffix_after_evidence() {

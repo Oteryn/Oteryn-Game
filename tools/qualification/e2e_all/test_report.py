@@ -8,7 +8,7 @@ from report import combat_results, map_results, matrix_rows, results, summary, s
 class ReportTests(unittest.TestCase):
     def test_dawnport_owner_exclusions_are_distinct_terminal_results(self):
         line = ("SEAM_EVIDENCE e2e_all scenario=S16a.full status=OUT_OF_SCOPE "
-                "seconds=0 evidence=Dawnport owner-excluded")
+                "seconds=0 evidence=Dawnport_owner-excluded")
         found = results(line)
         self.assertEqual(found["S16a.full"], ("OUT_OF_SCOPE", 0, "Dawnport owner-excluded"))
         output, complete = summary([("S16a", "Vocation")], found)
