@@ -699,22 +699,25 @@ async fn contribute(
         .ok_or("spawned target health absent before swing")?;
     attack_target(&mut bots[index], Some(&target)).await?;
     let (mut selected, mut damaged) = (false, false);
-    bots::wait_observation(bots, deadline, "member lands committed damage on the hunt target", |bots, events| {
+    let (mut in_range, mut health) = (false, Some(health_before));
+    let observation = bots::wait_observation(bots, deadline, "member lands committed damage on the hunt target", |bots, events| {
             let client = bots[index].session.as_ref().ok_or("hunter closed")?;
             let target_view = client.world_entities().and_then(|view| view.get(&target))
                 .ok_or_else(|| format!("spawned target left hunter {index}'s view during contribution"))?;
             let actor = client.world_spatial().actor_position;
-            let in_range = actor.floor == target_view.position.floor
+            in_range = actor.floor == target_view.position.floor
                 && actor.x.abs_diff(target_view.position.x).max(actor.y.abs_diff(target_view.position.y)) <= 1;
             selected |= events[index].iter().any(|event| {
                 matches!(event, SessionEvent::ActorCombatState(delta)
                     if delta.server_sequence > after && delta.value.target == Some(target) && delta.value.modes == HUNT_MODES)
             });
             damaged |= events[index].iter().any(|event| committed_swing(event, after));
-            Ok(in_range && selected && damaged
-                && hunt_health(target_view.detail).is_some_and(|health| health < health_before))
-        }).await?;
-    Ok(())
+            health = hunt_health(target_view.detail);
+            Ok(in_range && selected && damaged && health.is_some_and(|value| value < health_before))
+        }).await;
+    observation.map_err(|error| {
+        format!("{error};hunter={index};target={target:?};selected={selected};committed_swing={damaged};in_range={in_range};health_before={health_before};health={health:?}").into()
+    })
 }
 
 async fn inspect_hunt_damage(
