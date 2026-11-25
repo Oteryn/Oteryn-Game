@@ -80,6 +80,15 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
   `docs/agents/review/CODEX-CHECKLIST.md`: P1 is a player flow that breaks,
   P2 is content fidelity or a contained defect. A real but non-breaking
   content gap is P2.
+- For content data (prices, loot, outfits, spells, NPC text and placement,
+  quest steps), check the values against external sources, not only the
+  Crystal/Canary donors, in the owner's source order
+  (`docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md`, S24): an official
+  tibia.com announcement (news through the TibiaData API), then the wiki at
+  the target date, then Canary/Crystal as hypothesis only. Cite the URL or
+  the `docs/reference/` file for each value; when sources disagree, report
+  the disagreement and which source wins. Never bypass a site's protection;
+  a source the run cannot reach is named as unchecked, not guessed.
 - A P0 or P1 states its evidence: `path:line` of the input or state, of the
   caller that reaches the changed code, and of the line that gives the wrong
   result. Without a caller you opened and quoted, it is at most P2.
