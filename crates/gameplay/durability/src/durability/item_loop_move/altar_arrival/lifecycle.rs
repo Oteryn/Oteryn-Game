@@ -30,10 +30,22 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
+        let scheduled = crate::durability::db::is_background_holder();
         let mut context = (permit, map);
         self.try_issue_semantic_pass()?.run_with_context(&mut context,move |holder,deadline,context| Box::pin(async move {
             let (permit,map)=*context;
-            let mut tx=crate::durability::db::begin_semantic_transaction(holder,deadline).await?;
+            let mut tx=crate::durability::db::begin_background_sensitive_transaction(holder,deadline).await?;
+            if scheduled && let Some(channel) = scope.channel_id() {
+                permit.check_scope(scope)?;
+                // An empty poll grants no spawn authority. Avoid taking the
+                // admission and physical-owner locks until there is work to prove.
+                let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_elemental_boss_latches WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND reset_epoch=$3)")
+                    .bind(scope.world_id().as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(epoch).fetch_one(&mut *tx).await?;
+                if !pending {
+                    tx.rollback().await?;
+                    return Ok(Vec::new());
+                }
+            }
             let owner=assert_spell_item_scope_with_recovery(&mut tx,permit,&record,&node,scope,generation.get()).await.map_err(owner_error)?;
             let channel=owner.channel_bytes().ok_or(DurabilityError::InvalidStoredState)?;
             let rows=sqlx::query("SELECT r.transaction_id::text,r.rule,r.readset,a.actor_local_id,a.actor_local_generation::text FROM game_elemental_boss_latches l JOIN game_elemental_altar_receipts r ON r.transaction_id=l.arrival_transaction_id JOIN game_item_loop_move_receipts m ON m.transaction_id=r.move_transaction_id LEFT JOIN game_elemental_boss_realizations a ON a.arrival_transaction_id=r.transaction_id AND a.ownership_generation=$4::text::numeric WHERE l.world_id=encode($1,'hex')::uuid AND l.channel_id=encode($2,'hex')::uuid AND l.reset_epoch=$3 AND m.content_digest=$5 AND r.inputs->0->'custody'->>'map_revision'=$6 AND game_world_reset_map_epoch_current(l.world_id,l.reset_epoch) AND EXISTS(SELECT 1 FROM game_content_activations c WHERE c.world_id=l.world_id AND c.channel_id=l.channel_id AND c.activation_sequence=(SELECT max(activation_sequence) FROM game_content_activations WHERE world_id=l.world_id AND channel_id=l.channel_id) AND c.server_artifact_digest=$5) ORDER BY r.rule LIMIT 4")
@@ -73,7 +85,7 @@ impl DurabilityRoot {
         let node = node.clone();
         let mut context = permit;
         self.try_issue_semantic_pass()?.run_with_context(&mut context,move |holder,deadline,permit|Box::pin(async move {
-            let mut tx=crate::durability::db::begin_semantic_transaction(holder,deadline).await?;
+            let mut tx=crate::durability::db::begin_background_sensitive_transaction(holder,deadline).await?;
             let owner=assert_spell_item_scope_with_recovery(&mut tx,permit,&record,&node,actor.runtime_scope(),actor.scope_generation().get()).await.map_err(owner_error)?;
             let channel=owner.channel_bytes().ok_or(DurabilityError::InvalidStoredState)?;
             sqlx::query("INSERT INTO game_elemental_boss_realizations(arrival_transaction_id,world_id,channel_id,ownership_generation,actor_local_id,actor_local_generation) SELECT l.arrival_transaction_id,l.world_id,l.channel_id,$4::text::numeric,$5,$6::text::numeric FROM game_elemental_boss_latches l WHERE l.arrival_transaction_id=encode($1,'hex')::uuid AND l.world_id=encode($2,'hex')::uuid AND l.channel_id=encode($3,'hex')::uuid ON CONFLICT(arrival_transaction_id,ownership_generation) DO NOTHING")

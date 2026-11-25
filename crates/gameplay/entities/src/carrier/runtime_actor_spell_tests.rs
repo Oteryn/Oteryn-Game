@@ -105,6 +105,28 @@ fn health(f: &Fixture, index: usize) -> i64 {
 }
 
 #[test]
+fn held_attack_commits_distinct_swings_and_replays_each_once() {
+    let mut f = fixture(1);
+    for ordinal in 0..2 {
+        let target = f.targets[0];
+        let mut swing = batch(&f, 1, vec![damage(target, ordinal, 3)]);
+        swing.occurrence.id = format!("held-attack:swing:{ordinal}");
+        let key = BatchReplayKey::PvpSwing { ordinal, target };
+        let staged = f
+            .runtime
+            .stage_combat_batch(&swing, key)
+            .expect("stage held swing");
+        assert!(f.runtime.commit_spell_batch(staged).unwrap().applied);
+        let replay = f
+            .runtime
+            .stage_combat_batch(&swing, key)
+            .expect("stage swing replay");
+        assert!(!f.runtime.commit_spell_batch(replay).unwrap().applied);
+    }
+    assert_eq!(health(&f, 0), 14);
+}
+
+#[test]
 fn three_effect_candidate_stages_real_slots_and_one_commit_installs_all() {
     let mut f = fixture(1);
     let b = batch(

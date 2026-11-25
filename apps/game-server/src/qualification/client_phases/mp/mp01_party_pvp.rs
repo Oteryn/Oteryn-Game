@@ -60,9 +60,11 @@ pub(super) async fn run(
         && check(
             "profiles",
             bounded("profiles", 30, async {
-                let (victim, party_members) = bots.split_last_mut().ok_or("MP01 victim missing")?;
-                profiles(party_members, &["knight", "druid", "paladin"]).await?;
-                starter::check_profile(victim, Some(birth)).await
+                profiles(&mut bots, &["knight", "druid", "paladin"]).await?;
+                bots::with_parked_peer_liveness(&mut bots, 3, async |victim| {
+                    starter::check_profile(victim, Some(birth)).await
+                })
+                .await
             })
             .await,
             &mut failures,
@@ -212,7 +214,8 @@ async fn bounded<T>(
 }
 
 async fn profiles(bots: &mut [Bot<'_, '_>], vocations: &[&str]) -> TestResult {
-    for (bot, &vocation) in bots.iter_mut().zip(vocations) {
+    for (index, &vocation) in vocations.iter().enumerate() {
+        bots::with_parked_peer_liveness(bots, index, async |bot| {
         let view = tab(bot, character::CharacterTab::GeneralStats).await?;
         let expected =
             character::vocation_id(vocation).ok_or("MP01 vocation has no protocol id")?;
@@ -241,6 +244,8 @@ async fn profiles(bots: &mut [Bot<'_, '_>], vocations: &[&str]) -> TestResult {
             bot.name,
             view.general.as_ref().map(|stats| stats.level)
         ));
+            Ok(())
+        }).await?;
     }
     Ok(())
 }

@@ -72,6 +72,18 @@ pub fn direct_rune(spell: &SpellDefinition) -> bool {
         }
         (
             Carrier::Rune {
+                item: item @ (3189 | 3200),
+                ..
+            },
+            Execution::Effects(effects),
+        ) => {
+            spell.aggressive
+                && spell.needs_target == (*item == 3189)
+                && has_world_geometry(spell) == (*item == 3200)
+                && matches!(effects.as_slice(), [SpellEffect::Damage { .. }])
+        }
+        (
+            Carrier::Rune {
                 item: 3149 | 3164 | 3166 | 3172 | 3173 | 3176 | 3188 | 3190 | 3192,
                 ..
             },

@@ -92,9 +92,11 @@ pub fn source_profiles(
     if food_profile.is_none() && conjure.is_none() {
         return Err(PlanRejected);
     }
+    // Conjure casts may be aggressive. The normal cast checks enforce their
+    // protection-zone and condition gates using the qualified caster tile.
     if has_target
         || aim_at_target
-        || spell.aggressive
+        || (food_profile.is_some() && spell.aggressive)
         || !matches!(spell.carrier, Carrier::Instant { .. })
     {
         return Err(PlanRejected);
@@ -139,6 +141,42 @@ mod tests {
         inventory_destination: true,
         ground_destination: true,
     };
+
+    #[test]
+    fn blank_rune_uses_normal_aggressive_cast_admission() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let catalogue: Value = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
+        ))?;
+        let row = catalogue["bundles"]
+            .as_array()
+            .and_then(|rows| {
+                rows.iter().find(|row| {
+                    row["bundle"]["spell"]["identity"]["key"] == "candidate:spell/blank_rune"
+                })
+            })
+            .ok_or("Blank Rune source bundle")?;
+        let spell = oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
+            &row["bundle"],
+            &row["dependencies"],
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let profile = spell.authored.as_ref().ok_or("Blank Rune source profile")?;
+        assert!(spell.aggressive);
+        assert!(super::super::cast_legality::protection_rejected(
+            profile, true
+        ));
+        assert!(!super::super::cast_legality::protection_rejected(
+            profile, false
+        ));
+        let (food, conjure) = source_profiles(&spell, false, false)
+            .map_err(|error| format!("blank rune source dispatch: {error:?}"))?;
+        assert!(food.is_none());
+        assert!(conjure.is_some_and(|conjure| conjure.reagent.is_none() && conjure.count == 1));
+        assert!(source_profiles(&spell, true, false).is_err());
+        assert!(source_profiles(&spell, false, true).is_err());
+        Ok(())
+    }
 
     #[test]
     fn grant_and_decay_keep_unknown_fields_unavailable_and_retain_exact_target() {

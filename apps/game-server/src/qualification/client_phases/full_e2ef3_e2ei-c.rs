@@ -278,6 +278,13 @@ impl Hunt<'_> {
         {
             return Err(format!("hunt chase mode refused: {reply:?}").into());
         }
+        let prior_corpses: BTreeSet<_> = client
+            .world_entities()
+            .into_iter()
+            .flat_map(|view| view.others())
+            .filter(|entry| entry.kind == EntityKind::Corpse)
+            .map(|entry| entry.entity.identity)
+            .collect();
         let mut position = target.position;
         let mut removed = false;
         let mut corpses = Vec::new();
@@ -309,15 +316,13 @@ impl Hunt<'_> {
                         position = updated.position;
                     }
                     removed |= delta.value.leave.contains(&target.entity);
-                    corpses.extend(
-                        delta
-                            .value
-                            .enter
-                            .into_iter()
-                            .filter(|entity| entity.kind == EntityKind::Corpse),
-                    );
+                    corpses.extend(delta.value.enter.into_iter().filter(|entity| {
+                        entity.kind == EntityKind::Corpse
+                            && !prior_corpses.contains(&entity.entity.identity)
+                    }));
                 }
             }
+            // Resolve a later item handle only for a corpse observed entering.
             if removed
                 && let Some((corpse, handle)) = corpses
                     .iter()
@@ -749,6 +754,158 @@ async fn backpack(client: &mut DevClientSession) -> TestResult<BTreeMap<u32, u64
     Ok(totals(&container(client, handle).await?))
 }
 
+async fn native_corpse_id(clients: &SeamClients<'_>, corpse: &Corpse) -> TestResult<[u8; 16]> {
+    use crate::durability::ground_cell_limit::GROUND_CELL_ROOT_LIMIT;
+    use crate::foundation::{
+        ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef, ScopeOwnershipGeneration,
+    };
+    use sqlx::Connection as _;
+
+    let position = corpse.entity.position;
+    let cell = [
+        position.x.to_be_bytes().as_slice(),
+        position.y.to_be_bytes().as_slice(),
+        position.floor.to_be_bytes().as_slice(),
+    ]
+    .concat();
+    // The spatial identity is derived from the dead actor. Match that identity
+    // against the live ground placements' mint receipts to recover the item UUID.
+    let candidates: Vec<(Vec<u8>, i64, String)> =
+        tokio::time::timeout(Duration::from_secs(5), async {
+            let mut database = sqlx::PgConnection::connect(clients.url).await?;
+            sqlx::query_as(
+                "SELECT uuid_send(g.item_instance_id), r.death_actor_local_id,
+                        r.death_actor_local_generation::text
+                 FROM game_item_ground_locations g
+                 JOIN game_item_mint_receipts r USING (item_instance_id)
+                 WHERE g.world_id = encode($1, 'hex')::uuid
+                   AND g.channel_id = encode($2, 'hex')::uuid
+                   AND g.runtime_scope_ownership_generation = $3::text::numeric
+                   AND g.spatial_position = $4
+                   AND r.death_world_id = g.world_id AND r.death_channel_id = g.channel_id
+                   AND r.death_scope_ownership_generation = g.runtime_scope_ownership_generation
+                   AND r.loot_purpose_key = 'CORPSE_MATERIALIZATION' AND r.draw_ordinal = 0
+                 ORDER BY g.item_instance_id LIMIT $5",
+            )
+            .bind(clients.world.as_slice())
+            .bind(clients.channel.as_slice())
+            .bind(clients.scope_generation.to_string())
+            .bind(cell)
+            .bind((GROUND_CELL_ROOT_LIMIT + 1) as i64)
+            .fetch_all(&mut database)
+            .await
+        })
+        .await
+        .map_err(|_| {
+            verdict::HarnessError::boxed(
+                verdict::Cause::Deadline {
+                    phase: "manual-click-corpse-uuid",
+                },
+                "manual-click corpse UUID lookup deadline",
+            )
+        })??;
+    if candidates.len() > GROUND_CELL_ROOT_LIMIT {
+        return Err(format!("manual-click corpse UUID lookup exceeded {GROUND_CELL_ROOT_LIMIT} placements on the corpse tile").into());
+    }
+
+    let world = WorldId::decode(&clients.world)?;
+    let channel = ChannelId::decode(&clients.channel)?;
+    let scope = ScopeOwnershipGeneration::new(clients.scope_generation)
+        .map_err(|_| "manual-click invalid scope generation")?;
+    let mut bound = None;
+    for (uuid, local_id, local_generation) in candidates {
+        let actor = ExactActorRef(ActorRef::from_owner_parts(
+            world,
+            channel,
+            scope,
+            ActorLocalId(u32::try_from(local_id)?),
+            ActorLocalGeneration(local_generation.parse()?),
+        ));
+        if actor.corpse_identity() == corpse.entity.entity.identity
+            && bound
+                .replace(<[u8; 16]>::try_from(uuid.as_slice())?)
+                .is_some()
+        {
+            return Err("manual-click spatial corpse matches multiple item UUIDs".into());
+        }
+    }
+    bound.ok_or_else(|| {
+        format!(
+            "manual-click missing native UUID for {:?}",
+            corpse.entity.entity
+        )
+        .into()
+    })
+}
+
+async fn manual_click(
+    live: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    hunt: &Hunt<'_>,
+    step: &mut &'static str,
+) -> TestResult {
+    let corpse = hunt
+        .lootable(
+            live,
+            step,
+            "manual-click-kill",
+            "manual-click-open",
+            loot_deadline(),
+        )
+        .await?;
+    *step = "manual-click";
+    let uuid = native_corpse_id(clients, &corpse).await?;
+    let mut expected = backpack(live).await?;
+    for (definition, count) in totals(&corpse.entries) {
+        *expected.entry(definition).or_default() += count;
+    }
+    let (status, reply) = quick(
+        live,
+        loot::QuickLootRequest {
+            corpse: Some(uuid),
+            ..request(Action::Click)
+        },
+    )
+    .await?;
+    let unique = reply
+        .items
+        .iter()
+        .map(|entry| entry.item)
+        .collect::<BTreeSet<_>>();
+    if status != CommandStatus::Accepted
+        || reply.items.len() != corpse.entries.len()
+        || unique.len() != reply.items.len()
+        || reply.items.iter().any(|entry| !entry.accepted)
+    {
+        return Err(format!(
+            "Click {uuid:?} {status:?} {reply:?}; expected {} transfers",
+            corpse.entries.len()
+        )
+        .into());
+    }
+
+    let refreshed = live.use_item(corpse.handle).await?;
+    if refreshed.status != CommandStatus::Accepted
+        || refreshed.disposition != UseDisposition::Committed
+    {
+        return Err(format!("Click corpse readback refused: {refreshed:?}").into());
+    }
+    settle(live, |live| {
+        Ok(live.open_container().is_some_and(|view| {
+            view.container_handle == Some(corpse.handle) && view.entries.is_empty()
+        }))
+    })
+    .await?;
+    let observed = backpack(live).await?;
+    if observed != expected {
+        return Err(format!("Click backpack expected={expected:?};observed={observed:?}").into());
+    }
+    evidence(&format!(
+        "I07 Click corpse={uuid:?} transfers={unique:?} corpse-empty backpack-verified"
+    ));
+    Ok(())
+}
+
 async fn loot_policy(
     client: &mut Option<DevClientSession>,
     clients: &SeamClients<'_>,
@@ -760,7 +917,7 @@ async fn loot_policy(
     let mut corpse = hunt
         .lootable(live, step, "loot-all", "loot-all", loot_deadline())
         .await?;
-    *step = "manual-click";
+    *step = "manual-click-negative";
     let before = quantities(live)?;
     let (status, reply) = quick(
         live,
@@ -1193,43 +1350,73 @@ pub(super) async fn run(
     }
 
     let started = Instant::now();
+    let mut click_step = "manual-click";
+    let click = manual_click(
+        client.as_mut().ok_or("connection closed")?,
+        clients,
+        &hunt,
+        &mut click_step,
+    )
+    .await;
     let mut step = "loot-all";
     let policy = loot_policy(&mut client, clients, &hunt, &mut step, town).await;
-    let policy = policy.map_or_else(
-        |error| format!("{step}={error}"),
-        |()| "loot-all,accept-skip-filters,relogin-policy-custody=verified".into(),
-    );
 
     let category = async {
         let live = client.as_mut().ok_or("connection closed")?;
-        let (status, reply) = quick(live, loot::QuickLootRequest {
-            category: Some(loot::QuickLootCategory::Gold),
-            recipient: Some(loot::QuickLootRecipient::MainContainer),
-            ..request(Action::Assign)
-        }).await?;
+        let (status, reply) = quick(
+            live,
+            loot::QuickLootRequest {
+                category: Some(loot::QuickLootCategory::Gold),
+                recipient: Some(loot::QuickLootRecipient::MainContainer),
+                ..request(Action::Assign)
+            },
+        )
+        .await?;
         if status != CommandStatus::Accepted || !reply.items.is_empty() {
-            return Err(format!("Gold/MainContainer assignment refused: {status:?} {reply:?}").into());
+            return Err(
+                format!("Gold/MainContainer assignment refused: {status:?} {reply:?}").into(),
+            );
         }
-        Ok::<_, Box<dyn std::error::Error>>("Gold/MainContainer assignment accepted; distinct container requires a durable recipient UUID")
-    }.await;
-    let category = category.map_or_else(|error| error.to_string(), str::to_owned);
-    let ammunition = quiver(&mut client, clients, &hunt, &metadata.npcs, town)
-        .await
-        .map_or_else(
-            |error| error.to_string(),
-            |()| "NPC buy, ammunition credit, and fresh custody verified".into(),
+        Ok::<_, Box<dyn std::error::Error>>(())
+    }
+    .await;
+    let ammunition = quiver(&mut client, clients, &hunt, &metadata.npcs, town).await;
+    let checks = [
+        (click_step, click),
+        (
+            if policy.is_ok() {
+                "loot-all,filters,relogin-policy-custody"
+            } else {
+                step
+            },
+            policy,
+        ),
+        ("gold-main-container-assignment", category),
+        ("quiver-ammunition", ammunition),
+    ];
+    let observed = checks
+        .iter()
+        .map(|(step, outcome)| match outcome {
+            Ok(()) => format!("{step}=verified"),
+            Err(error) => format!("{step}={error}"),
+        })
+        .collect::<Vec<_>>()
+        .join("; ");
+    if let Some((failed_step, error)) = checks
+        .iter()
+        .find_map(|(step, outcome)| outcome.as_ref().err().map(|error| (*step, error)))
+    {
+        let cause = verdict::classify(error.as_ref());
+        result(I07, started, "", Some((failed_step, &observed, &cause)));
+    } else {
+        let cause = verdict::Cause::Precondition {
+            name: "gold-pouch-acquisition-and-recipient-routing".into(),
+        };
+        let observed = format!(
+            "{observed}; distinct category routing and Gold Pouch 23721 acquisition remain unverified"
         );
-
-    let observed = format!(
-        "Click needs a bound corpse UUID (item_ref_admission.rs:150, item_quick_loot.rs:197); \
-        {policy}; category-routing={category} (item_quick_loot.rs:170); \
-        gold-pouch=23721 requires Inbox custody and durable recipient UUID (item_quick_loot.rs:88); \
-        no served NPC buy offer or starter Inbox acquisition; quiver-ammunition={ammunition}"
-    );
-    let cause = verdict::Cause::Precondition {
-        name: "quick-loot-client-corpse-uuid".into(),
-    };
-    result(I07, started, "", Some(("manual-click", &observed, &cause)));
+        result(I07, started, "", Some(("gold-pouch", &observed, &cause)));
+    }
 
     let mut client = client.ok_or("E2EF3 connection closed during fresh admission")?;
     travel(&mut client, world, |at| at == TOWN)

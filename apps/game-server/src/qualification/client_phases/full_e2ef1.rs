@@ -1216,6 +1216,7 @@ mod e2ef1 {
         let reference = provisioning::item_reference(&index, 3003)?;
         let rope = client.inventory().and_then(|i| i.entries.iter().find(|entry| entry.item_definition_ref == reference)).copied().ok_or("FAIL: ordinarily acquired rope content:oteryn:item.tibia.i3003 absent; starter_grant.rs grants only a backpack; fixture provisioning forbidden for full evidence")?;
         checks.pass("carried-rope", rope);
+        let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
         let object = approach(
             client,
             world,
@@ -1240,7 +1241,8 @@ mod e2ef1 {
                 })
             },
         )
-        .await?;
+        .await
+        .map_err(|error| format!("M07 session={session} phase=approach-rope: {error}"))?;
         let intent = UseIntent {
             target: UseTarget::Item(rope.handle),
             use_with: None,
@@ -1248,7 +1250,11 @@ mod e2ef1 {
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent).map_err(|e| format!("rope intent: {e:?}"))?;
-        let result = client.session_mut().world_context_use(&payload).await?;
+        let result = client
+            .session_mut()
+            .world_context_use(&payload)
+            .await
+            .map_err(|error| format!("M07 session={session} phase=use-rope: {error}"))?;
         if result.status != CommandStatus::Accepted
             || decode_use_result(&result.payload).map_err(|e| format!("rope result: {e:?}"))?
                 != UseDisposition::Committed
@@ -1261,7 +1267,8 @@ mod e2ef1 {
                     && at.x.abs_diff(object.at.x).max(at.y.abs_diff(object.at.y)) == 1
             })
         })
-        .await?;
+        .await
+        .map_err(|error| format!("M07 session={session} phase=observe-ascent: {error}"))?;
         if !client.inventory().is_some_and(|i| {
             i.entries
                 .iter()
@@ -1358,16 +1365,68 @@ mod e2ef1 {
         if !resting_tile(here) {
             let path = route(world, here, resting_tile)
                 .ok_or("no reachable protection zone that admits logout")?;
+            let rest = path
+                .iter()
+                .try_fold(here, |at, &direction| destination(world, at, direction))
+                .ok_or("logout route leaves the authored map")?;
             evidence(&format!(
-                "E2EF1_LEAVE_FIGHT from={at:?} steps={}",
+                "E2EF1_LEAVE_FIGHT from={at:?} to={rest:?} steps={}",
                 path.len()
             ));
-            walk(client, world, &path).await?;
+            // Batch ordinary cardinal steps through the server's paced route.
+            // Floor transitions and teleports still use the exact STEP edge.
+            let mut remaining = path.as_slice();
+            while let Some(direction) = remaining.first() {
+                let from = tile(client.world_spatial().actor_position)?;
+                let (count, target) =
+                    logout_walk_segment(from, remaining, |at, edge| destination(world, at, edge));
+                if count < 2 {
+                    walk(client, world, std::slice::from_ref(direction)).await?;
+                    remaining = &remaining[1..];
+                    continue;
+                }
+                autowalk(client, target).await?;
+                while tile(client.world_spatial().actor_position)? != target {
+                    if tokio::time::Instant::now() >= deadline {
+                        return Err("M05 fight cleanup exceeded the logout deadline".into());
+                    }
+                    client.service_liveness(Duration::from_millis(100)).await?;
+                    client.take_events();
+                }
+                remaining = &remaining[count..];
+            }
+            if !resting_tile(tile(client.world_spatial().actor_position)?) {
+                return Err("movement logout route did not reach protection".into());
+            }
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("M05 fight cleanup exceeded the logout deadline".into());
         }
         Ok(())
+    }
+
+    fn logout_walk_segment(
+        mut at: TilePos,
+        path: &[StepDirection],
+        landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+    ) -> (usize, TilePos) {
+        let budget = crate::movement::path_search::CHASE_SEARCH_DISTANCE as usize;
+        let mut count = 0;
+        for &direction in path.iter().take(budget) {
+            let (dx, dy) = direction.delta();
+            let Some(next) = landing(at, direction) else {
+                break;
+            };
+            if next.floor != at.floor
+                || i32::from(next.x) - i32::from(at.x) != dx
+                || i32::from(next.y) - i32::from(at.y) != dy
+            {
+                break;
+            }
+            at = next;
+            count += 1;
+        }
+        (count, at)
     }
 
     struct RestingLogout {
@@ -1617,6 +1676,29 @@ mod e2ef1 {
     #[cfg(test)]
     mod tests {
         use super::*;
+
+        #[test]
+        fn qualification_m05_logout_batches_only_ordinary_steps_in_route_range() {
+            use StepDirection::{East, North};
+            let budget = crate::movement::path_search::CHASE_SEARCH_DISTANCE as usize;
+            let landing = |at: TilePos, direction| match direction {
+                East => Some(TilePos { x: at.x + 1, ..at }),
+                North => Some(TilePos {
+                    floor: at.floor + 1,
+                    ..at
+                }),
+                _ => None,
+            };
+            let (count, target) = logout_walk_segment(TOWN, &vec![East; budget + 1], landing);
+            assert_eq!(count, budget);
+            assert_eq!(usize::from(target.x - TOWN.x), budget);
+            assert_eq!(
+                logout_walk_segment(TOWN, &[North, East], landing),
+                (0, TOWN)
+            );
+            assert_eq!(logout_walk_segment(TOWN, &[East, North], landing).0, 1);
+        }
+
         #[test]
         fn qualification_m05_door_requires_a_clear_approach_and_threshold() {
             let stand = ActorPosition {
