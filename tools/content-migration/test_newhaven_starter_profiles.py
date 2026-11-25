@@ -1,15 +1,46 @@
 """C19b starter equipment must be admitted in the real active native Item provider."""
 import json
-import unittest
+import os
 import tempfile
+import unittest
+import xml.etree.ElementTree as ET
+from pathlib import Path
 
 import newhaven_starter_profiles as starter
-from pathlib import Path
+import ranged_item_profiles as ranged
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 class NewhavenStarterProfilesTests(unittest.TestCase):
+    def test_newhaven_starter_attacks_match_items_xml(self):
+        fragment = ROOT / 'content/items/definitions/starting-loadout-profiles.json'
+        records = {
+            row['production_definition']['production_key']: row
+            for row in json.loads(fragment.read_bytes())['records']
+        }
+        # Offline runs use the importer's retained XML. Donor qualification
+        # runs the same assertions against Crystal's pinned items.xml.
+        source = ET.parse(os.environ.get('OTERYN_TEST_CRYSTAL_ITEMS_XML', ROOT / ranged.SOURCE))
+        for item_id, kind in [(21348, 'WAND'), (21350, 'ROD')]:
+            with self.subTest(item=item_id):
+                item = source.find(f"./item[@id='{item_id}']")
+                top = {node.attrib['key']: node.get('value') for node in item.findall('attribute')}
+                script = {
+                    node.attrib['key']: node.attrib['value']
+                    for node in item.findall("attribute[@key='script']/attribute")
+                }
+                expected = dict(
+                    kind=kind,
+                    damage_min=int(script['fromDamage']),
+                    damage_max=int(script['toDamage']),
+                    mana_per_shot=int(script['mana']),
+                    range_cells=int(top['range']),
+                    element=script['wandType'].upper(),
+                )
+                actual = records[f'oteryn:item.tibia.i{item_id}']['authoring'].get('ranged')
+                self.assertEqual(actual, expected)
+
     def test_newhaven_starter_definitions_are_carriable_native_equipment(self):
         profiles = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())
         fragment = json.loads((ROOT / 'content/items/definitions/starting-loadout-profiles.json').read_bytes())
