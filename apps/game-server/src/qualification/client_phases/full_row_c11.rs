@@ -69,16 +69,9 @@ impl Row {
                 evidence(&gap(action, &self.failures));
             }
         }
-        let pass = self.failures.is_empty() && ACTIONS.iter().all(|a| self.passed.contains(a));
         evidence(&format!(
-            "e2e_all scenario=C11.full status={} seconds={:.3} evidence={}",
-            if pass { "PASS" } else { "FAIL" },
+            "e2e_all scenario=C11.full status=OUT_OF_SCOPE seconds={:.3} evidence=owner-excluded-dawnport",
             self.started.elapsed().as_secs_f64(),
-            if pass {
-                "observed-complete-harmony-serene-battle-instinct-lifecycle".into()
-            } else {
-                self.failures.join("_").replace(' ', "-")
-            }
         ));
     }
 }

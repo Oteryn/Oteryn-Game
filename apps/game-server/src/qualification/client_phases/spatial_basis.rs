@@ -47,6 +47,25 @@ pub(super) fn current(client: &mut oteryn_dev_client::DevClientSession) -> TestR
     resolve(selected, marker, observed_floor)
 }
 
+pub(super) fn thais_home_temple(
+    towns: &oteryn_world_bundle::subarea::Table,
+) -> TestResult<oteryn_world_bundle::subarea::Temple> {
+    const THAIS: u32 = 8;
+    let home = towns
+        .default_town
+        .filter(|id| *id == THAIS)
+        .and_then(|id| towns.town(id))
+        .filter(|town| town.key == "oteryn:content.area.city.thais")
+        .and_then(|town| town.temple)
+        .ok_or("compiled default home town is not Thais with a temple")?;
+    if (home.x, home.y, home.floor) != (32369, 32241, -7) {
+        return Err(
+            format!("compiled Thais home temple differs from the authored temple: {home:?}").into(),
+        );
+    }
+    Ok(home)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

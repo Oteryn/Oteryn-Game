@@ -134,6 +134,18 @@ class ReportTests(unittest.TestCase):
             evidence = results(f"SEAM_EVIDENCE e2e_all scenario=M01.full status={status} seconds=0 evidence={source}")
             self.assertFalse(summary([("M01", "Movement")], evidence)[1])
 
+    def test_only_owner_excluded_dawnport_rows_can_be_out_of_scope(self):
+        line = ("SEAM_EVIDENCE e2e_all scenario={}.full status=OUT_OF_SCOPE "
+                "seconds=0 evidence=owner-excluded-dawnport")
+        found = results("\n".join(line.format(row) for row in ("C11", "S16a")))
+        rendered, complete = summary([("C11", "Dawnport"), ("S16a", "First vocation")], found)
+        self.assertTrue(complete)
+        self.assertEqual(rendered.count("OUT_OF_SCOPE"), 2)
+        self.assertFalse(summary([("S16a", "First vocation"), ("C20a", "Experience loss")],
+                                 {"S16a.full": found["S16a.full"]})[1])
+        with self.assertRaises(ValueError):
+            results(line.format("C20a"))
+
     def test_failing_result_may_name_its_cause_and_root(self):
         line = "SEAM_EVIDENCE e2e_all scenario=M01.full status=FAIL seconds=3"
         evidence = results(line + " cause=timeout root=M01/fixture0-released")

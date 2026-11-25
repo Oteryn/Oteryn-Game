@@ -1064,11 +1064,11 @@ async fn bulk_exchange(
             .quotes()
             .into_iter()
             .find(|quote| {
-                quote.side == side
-                    && quote.offer_index == offer_index
-                    && quote.item == offer.item_definition_ref
+                quote.side == side && sam_offer.is_none_or(|item| quote.item == item)
             })
             .ok_or("decoded UI quote")?;
+        assert_eq!(quote.offer_index, offer_index);
+        assert_eq!(quote.item, offer.item_definition_ref);
         assert!(
             shop.quote_text(quote)
                 .contains(&window.details[offer_index].name)
