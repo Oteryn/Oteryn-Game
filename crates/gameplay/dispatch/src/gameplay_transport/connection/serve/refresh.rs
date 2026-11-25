@@ -858,25 +858,31 @@ where
         ambient_sound(stream, session, cue_id).await?;
     }
 
+    // A combat effect is the second emission of its damage decision.
+    // Keep that pair on the world presentation route.
+    let combat_effect = |event: &wire::PresentationEvent| {
+        event.emission_ordinal == 2
+            && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. })
+    };
     if session.selected_capabilities.contains(290) {
-        authority.cast_effects(session.admitted, &events).await;
+        let public: Vec<_> = events
+            .iter()
+            .copied()
+            .filter(|event| !combat_effect(event))
+            .collect();
+        authority.cast_effects(session.admitted, &public).await;
     }
-    let item_events: Vec<_> = events
-        .iter()
-        .copied()
-        .filter(|event| {
-            item_selected && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. })
-        })
-        .collect();
+    let item_effect = |event: &wire::PresentationEvent| {
+        item_selected
+            && !combat_effect(event)
+            && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. })
+    };
+    let item_events: Vec<_> = events.iter().copied().filter(item_effect).collect();
     events.retain(|event| {
         presentation_selected
             && !matches!(event.kind, wire::PresentationEventKind::AmbientSound { .. })
-            && !(item_selected
-                && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. }))
+            && !item_effect(event)
     });
-    for (index, event) in events.iter_mut().enumerate() {
-        event.decision_ordinal = u32::try_from(index + 1).map_err(|_| ServeEnd::Disconnected)?;
-    }
     if !events.is_empty() {
         let payload =
             wire::encode_presentation_batch(&events).map_err(|_| ServeEnd::Disconnected)?;

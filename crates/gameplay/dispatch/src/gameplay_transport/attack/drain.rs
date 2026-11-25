@@ -62,6 +62,7 @@ pub(super) struct PvpSwing {
     pub(super) weapon: WeaponFacts,
     pub(super) attacker: CharacterId,
     pub(super) generation: u64,
+    pub(super) effect: Option<u16>,
 }
 
 // Inspect a clone: a missing source name read must not consume the real swing
@@ -652,7 +653,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     );
                     continue;
                 }
-                let Some(damage) = (if extension {
+                let Some((damage, effect)) = (if extension {
                     let scaled =
                         i64::try_from(i128::from(damage) * i128::from(offence.cleave) / 10_000)
                             .unwrap_or(i64::MAX);
@@ -660,11 +661,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // assigned critical charms, using the existing additive skills;
                     // it grants neither fatal nor damage-proc eligibility.
                     if charm_critical && scaled > 0 {
-                        u32::try_from(scaled)
-                            .ok()
-                            .map(|damage| i64::from(offence.critical(damage, critical_roll)))
+                        u32::try_from(scaled).ok().map(|damage| {
+                            let effect = (critical_roll <= u64::from(offence.player_critical().0))
+                                .then_some(equipped_offence::CRITICAL_EFFECT);
+                            (i64::from(offence.critical(damage, critical_roll)), effect)
+                        })
                     } else {
-                        Some(scaled)
+                        Some((scaled, None))
                     }
                 } else {
                     equipped_offence::critical_swing(
@@ -763,6 +766,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         weapon: selected.weapon.clone(),
                         attacker: lease.character_id(),
                         generation: lease.generation(),
+                        effect,
                     });
                     continue;
                 }
@@ -1123,6 +1127,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .max(0),
                     )
                     .unwrap_or(0);
+                    states.sounds.record_damage(
+                        &runtime,
+                        entry.actor,
+                        target,
+                        snapshot.position,
+                        u64::from(value),
+                        effect,
+                    );
                     let primary = reported_primary(final_parts, value);
                     let element = ranged::analyser_element(resolved_element);
                     states.analyser.impact(
@@ -1857,6 +1869,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 hit.modes,
                 hit.black,
                 damage,
+                hit.effect,
             )
             .await
         {

@@ -220,6 +220,22 @@ async fn rat_after_handoff(harness: &Harness) -> TestResult {
         player_health(&owner, arrived, session).await? < before,
         "between-swing melee must hit the player selected from the live roster"
     );
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+    use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
+    let (cursor, events) = owner.observe_sounds(arrived, session, 0).await.ok_or("monster hit journal")?;
+    let damage = events.iter().filter_map(|event| match event.kind {
+        PresentationEventKind::ValueText {
+            kind: PresentationValueKind::DamageReceived,
+            target,
+            attacker: Some(source),
+            primary,
+            ..
+        } if target.identity == arrived.placement_identity()
+            && source.identity == rat.placement_identity() => Some(primary.value),
+        _ => None,
+    }).sum::<u64>();
+    assert_eq!(damage, u64::from(before - player_health(&owner, arrived, session).await?));
+    assert!(owner.observe_sounds(arrived, session, cursor).await.ok_or("advanced journal")?.1.is_empty());
     Ok(())
 }
 

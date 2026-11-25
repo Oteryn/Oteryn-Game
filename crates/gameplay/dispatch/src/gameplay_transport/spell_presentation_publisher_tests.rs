@@ -810,3 +810,91 @@ fn qm46_quest_speech_is_public_player_monster_say_and_session_fenced_lane_1() {
         ));
     }
 }
+
+#[test]
+fn committed_attack_damage_and_its_effect_share_a_presentation_decision() {
+    use oteryn_protocol_oteryn::presentation::{
+        PresentationEventKind, PresentationSource, PresentationValueKind,
+        decode_presentation_batch, encode_presentation_batch,
+    };
+    let (runtime, attacker, target, session) = runtime();
+    let at = runtime.read_actor_position(target).unwrap().position();
+    let mut publisher = SoundPublisher::default();
+    publisher.record_damage(&runtime, attacker, target, at, 7, Some(173));
+    publisher.record_damage(&runtime, attacker, target, at, 6, None);
+    publisher.record_damage(&runtime, attacker, target, at, 8, Some(230));
+    publisher.record_damage(&runtime, attacker, target, at, 0, Some(173));
+
+    let (cursor, events) = publisher
+        .observe(&runtime, attacker, session, 0, true)
+        .unwrap();
+    let decoded = decode_presentation_batch(&encode_presentation_batch(&events).unwrap()).unwrap();
+    assert_eq!(decoded.len(), 5);
+    assert_eq!(decoded[0].decision_ordinal, decoded[1].decision_ordinal);
+    assert_ne!(decoded[1].decision_ordinal, decoded[2].decision_ordinal);
+    assert_ne!(decoded[2].decision_ordinal, decoded[3].decision_ordinal);
+    assert_eq!(decoded[3].decision_ordinal, decoded[4].decision_ordinal);
+    assert!(matches!(
+        (decoded[0].kind, decoded[1].kind),
+        (
+            PresentationEventKind::ValueText {
+                kind: PresentationValueKind::DamageDealt,
+                attacker: Some(source),
+                target: victim,
+                primary,
+                position,
+                ..
+            },
+            PresentationEventKind::MagicEffect { effect_id: 173, source: PresentationSource::Own, position: cue },
+        ) if source.identity == attacker.placement_identity()
+            && victim.identity == target.placement_identity()
+            && primary.value == 7 && position == cue
+    ));
+    assert!(matches!(
+        decoded[4].kind,
+        PresentationEventKind::MagicEffect {
+            effect_id: 230,
+            source: PresentationSource::Own,
+            ..
+        }
+    ));
+    let target_session = runtime
+        .positioned_actor_census()
+        .unwrap()
+        .into_iter()
+        .find(|(actor, _, _)| *actor == target)
+        .unwrap()
+        .2
+        .unwrap();
+    let (_, target_events) = publisher
+        .observe(&runtime, target, target_session, 0, true)
+        .unwrap();
+    assert!(matches!(
+        (target_events[3].kind, target_events[4].kind),
+        (
+            PresentationEventKind::ValueText {
+                kind: PresentationValueKind::DamageReceived,
+                ..
+            },
+            PresentationEventKind::MagicEffect {
+                effect_id: 230,
+                source: PresentationSource::Others,
+                ..
+            },
+        )
+    ));
+    assert!(
+        publisher
+            .observe(&runtime, target, target_session, 0, false)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+    assert!(
+        publisher
+            .observe(&runtime, attacker, session, cursor, true)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+}

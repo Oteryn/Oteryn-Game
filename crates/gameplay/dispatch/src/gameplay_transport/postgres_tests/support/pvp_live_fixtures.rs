@@ -540,6 +540,22 @@ pub(super) fn scenario(mode: i16) -> TestResult {
             );
             wait_live(&mut client, Duration::from_secs(10)).await?;
             use crate::gameplay_transport::pvp_live::faults::Point;
+            use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+            use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
+            let (mut hit_cursor, _) = owner.observe_sounds(actor, session, 0).await.ok_or("hit journal")?;
+            let assert_publication = |events: &[oteryn_protocol_oteryn::presentation::PresentationEvent], count: i64| {
+                let hits = events.iter().filter(|event| matches!(
+                    event.kind,
+                    PresentationEventKind::ValueText {
+                        kind: PresentationValueKind::DamageDealt,
+                        target: victim,
+                        attacker: Some(source),
+                        ..
+                    } if victim.identity == target.placement_identity()
+                        && source.identity == actor.placement_identity()
+                )).count();
+                assert_eq!(i64::try_from(hits), Ok(count), "one presentation per committed PvP hit");
+            };
             melee_fault(&mut client, &owner, 3, &payload, Point::BeforeCommit).await?;
             assert_eq!(health(&owner, target).await?, original_health);
             let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm")
@@ -564,6 +580,13 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 (true, false),
                 "first aggression forfeits only the attacker's Adventurer's Blessing"
             );
+            let (cursor, events) = owner.observe_sounds(actor, session, hit_cursor).await.ok_or("reconciled hit journal")?;
+            let committed: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_pvp_harm WHERE command_id=4 AND damage>0",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(committed, 1, "fault case reconciles one committed swing");
+            assert_publication(&events, committed);
+            hit_cursor = cursor;
             let before_hold = health(&owner, target).await?;
             let result = command(
                 &mut client,
@@ -603,6 +626,12 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 attack::decode_attack_intent_result(&result).map_err(debug)?,
                 attack::AttackIntentDisposition::Ok
             );
+            let (_, events) = owner.observe_sounds(actor, session, hit_cursor).await.ok_or("direct hit journal")?;
+            let committed: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_pvp_harm WHERE command_id=5 AND damage>0",
+            ).fetch_one(&h.pool).await?;
+            assert_publication(&events, committed);
+            eprintln!("PVP PRESENTATION POSTGRES_CASE_COMPLETED direct-and-reconciled");
             let spell = (1..=deps.spells.source_len())
                 .find_map(|i| {
                     std::num::NonZeroU32::new(u32::try_from(i).ok()?).filter(|i| {

@@ -576,6 +576,14 @@ struct SoundEntry {
     effect: bool,
     private: bool,
     house_scope: Option<(crate::foundation::RuntimeScopeRefV1, u64)>,
+    damage: Option<DamageCue>,
+}
+
+#[derive(Debug)]
+struct DamageCue {
+    target: ExactActorRef,
+    amount: u64,
+    effect: Option<u16>,
 }
 impl SoundPublisher {
     /// Channel outbox ownership does not change when its caster enters a House
@@ -588,14 +596,6 @@ impl SoundPublisher {
         cue: u16,
         secondary: u16,
     ) {
-        let Ok(binding) = context(runtime) else {
-            return;
-        };
-        if self.binding.as_ref() != Some(&binding) {
-            self.sounds.clear();
-            self.ambient.clear();
-            self.binding = Some(binding);
-        }
         let (cue, secondary) = if cue == 0 {
             (secondary, 0)
         } else {
@@ -603,6 +603,51 @@ impl SoundPublisher {
         };
         if cue == 0 {
             return;
+        }
+        self.record_positional(runtime, actor, position, cue, secondary, None);
+    }
+
+    pub(super) fn record_damage(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        attacker: ExactActorRef,
+        target: ExactActorRef,
+        position: MovementLocalPosition,
+        amount: u64,
+        effect: Option<u16>,
+    ) {
+        if amount > 0 {
+            self.record_positional(
+                runtime,
+                attacker,
+                position,
+                0,
+                0,
+                Some(DamageCue {
+                    target,
+                    amount,
+                    effect,
+                }),
+            );
+        }
+    }
+
+    fn record_positional(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        position: MovementLocalPosition,
+        cue: u16,
+        secondary: u16,
+        damage: Option<DamageCue>,
+    ) {
+        let Ok(binding) = context(runtime) else {
+            return;
+        };
+        if self.binding.as_ref() != Some(&binding) {
+            self.sounds.clear();
+            self.ambient.clear();
+            self.binding = Some(binding);
         }
         let Some(revision) = self.revision.checked_add(1) else {
             return;
@@ -621,6 +666,7 @@ impl SoundPublisher {
             effect: false,
             private: false,
             house_scope: None,
+            damage,
         });
     }
     pub(super) fn record_item_effect(
@@ -699,7 +745,8 @@ impl SoundPublisher {
         Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
     )> {
         use oteryn_protocol_oteryn::presentation::{
-            PresentationEvent, PresentationEventKind, PresentationSource,
+            PresentationColor, PresentationEvent, PresentationEventKind, PresentationSource,
+            PresentationValue, PresentationValueKind,
         };
         if !selected {
             return Some((after, Vec::new()));
@@ -742,7 +789,16 @@ impl SoundPublisher {
                 },
             });
         }
-        for sound in self.sounds.iter().filter(|sound| sound.revision > after) {
+        // The ambient replacement travels separately from the world batch.
+        let ambient_count = events.len();
+        // Leave room for an effect and its damage number in the same decision.
+        for (index, sound) in self
+            .sounds
+            .iter()
+            .enumerate()
+            .rev()
+            .filter(|(_, sound)| sound.revision > after)
+        {
             if sound.house_scope != house_scope || (sound.private && sound.actor != actor) {
                 continue;
             }
@@ -760,8 +816,60 @@ impl SoundPublisher {
                 PresentationSource::Others
             };
             let position = wire_position(sound.position)?;
+            let event_count = 1 + usize::from(
+                sound
+                    .damage
+                    .as_ref()
+                    .is_some_and(|hit| hit.effect.is_some()),
+            );
+            if events.len() - ambient_count + event_count
+                > oteryn_protocol_oteryn::presentation::MAX_PRESENTATION_EVENTS
+            {
+                break;
+            }
+            let decision_ordinal = u32::try_from(index).ok()?.checked_add(2)?;
+            if let Some(hit) = &sound.damage {
+                use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+                let entity = |actor: ExactActorRef| EntityRef {
+                    identity: actor.placement_identity(),
+                    generation: actor.actor_local_generation(),
+                };
+                if let Some(effect_id) = hit.effect {
+                    events.push(PresentationEvent {
+                        decision_ordinal,
+                        emission_ordinal: 2,
+                        kind: PresentationEventKind::MagicEffect {
+                            position,
+                            effect_id: u32::from(effect_id),
+                            source,
+                        },
+                    });
+                }
+                events.push(PresentationEvent {
+                    decision_ordinal,
+                    emission_ordinal: 1,
+                    kind: PresentationEventKind::ValueText {
+                        kind: if actor == hit.target {
+                            PresentationValueKind::DamageReceived
+                        } else if actor == sound.actor {
+                            PresentationValueKind::DamageDealt
+                        } else {
+                            PresentationValueKind::DamageOthers
+                        },
+                        position,
+                        target: entity(hit.target),
+                        attacker: Some(entity(sound.actor)),
+                        primary: PresentationValue {
+                            value: hit.amount,
+                            color: PresentationColor::Red,
+                        },
+                        secondary: None,
+                    },
+                });
+                continue;
+            }
             events.push(PresentationEvent {
-                decision_ordinal: u32::try_from(events.len() + 1).ok()?,
+                decision_ordinal,
                 emission_ordinal: 1,
                 kind: if sound.effect {
                     PresentationEventKind::MagicEffect {
@@ -779,6 +887,7 @@ impl SoundPublisher {
                 },
             });
         }
+        events[ambient_count..].reverse();
         Some((self.revision, events))
     }
 }

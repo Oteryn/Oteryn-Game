@@ -280,6 +280,31 @@ async fn qualify_global_baseline(
         u64::try_from(expected)?,
         "real auto-attack dispatch applies the baseline critical bonus"
     );
+    use oteryn_protocol_oteryn::presentation::{
+        PresentationEventKind as Event, PresentationSource, PresentationValueKind,
+    };
+    assert!(sounds.iter().any(|damage| {
+        let Event::ValueText {
+            kind: PresentationValueKind::DamageDealt,
+            target,
+            attacker: Some(attacker),
+            position,
+            primary,
+            ..
+        } = damage.kind else {
+            return false;
+        };
+        target.identity == creature.placement_identity()
+            && attacker.identity == actor.placement_identity()
+            && primary.value == RAT_HEALTH.unsigned_abs() - after
+            && sounds.iter().any(|effect| {
+                effect.decision_ordinal == damage.decision_ordinal
+                    && matches!(effect.kind, Event::MagicEffect {
+                        position: at, effect_id: 173, source: PresentationSource::Own,
+                    } if at == position)
+            })
+    }), "the committed critical hit publishes its effect with the attributed damage");
+    eprintln!("COMBAT_PRESENTATION POSTGRES_CASE_COMPLETED committed-intrinsic-critical");
     let runtime = owner.runtime.lock().await;
     owner
         .states

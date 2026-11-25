@@ -1057,6 +1057,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let received_damage = match dispatch {
                         Dispatch::Bite(Ok(applied)) => {
                             if applied.damage.applied > 0 {
+                                if let Ok(position) = runtime.read_actor_position(player) {
+                                    states.sounds.record_damage(
+                                        &runtime,
+                                        *actor,
+                                        player,
+                                        position.position(),
+                                        u64::from(applied.damage.applied),
+                                        None,
+                                    );
+                                }
                                 attack.kills().boss_damage_received(
                                     &runtime,
                                     *actor,

@@ -5,6 +5,10 @@ use super::*;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use oteryn_gameplay_combat_rules::resolution::equipped_offence::{EquippedOffence, leech_amount};
 
+// Crystal 201189f8 src/utils/utils_definitions.hpp:141,195.
+pub(super) const CRITICAL_EFFECT: u16 = 173;
+const FATAL_EFFECT: u16 = 230;
+
 /// The attacker's installed offence; zero for an actor without spell state.
 pub(super) fn attacker_offence(
     states: &ChannelSpellStates,
@@ -30,18 +34,20 @@ pub(super) fn critical_swing(
     ordinal: u16,
     damage: i64,
     critical_roll: u64,
-) -> Option<i64> {
+) -> Option<(i64, Option<u16>)> {
     if damage <= 0 || (!offence.rolls_critical() && offence.weapon_tier == 0) {
-        return Some(damage);
+        return Some((damage, None));
     }
     let damage = u32::try_from(damage).ok()?;
+    let mut effect =
+        (critical_roll <= u64::from(offence.player_critical().0)).then_some(CRITICAL_EFFECT);
     let damage = if offence.rolls_critical() {
         offence.critical(damage, critical_roll)
     } else {
         damage
     };
     let damage = if offence.weapon_tier > 0 {
-        let roll = swing_draw(
+        let roll = u64::try_from(swing_draw(
             root,
             attacker,
             lineage,
@@ -50,12 +56,19 @@ pub(super) fn critical_swing(
             "attack.fatal-hit",
             0,
             10_000,
-        )?;
-        offence.fatal(damage, u64::try_from(roll).ok()?)
+        )?)
+        .ok()?;
+        // Crystal 201189f8 src/game/game.cpp:8103-8106 gives fatal precedence.
+        // The existing rule adds a rounded point to a one-point hit on any
+        // successful roll. Use that unsaturated probe to identify the outcome.
+        if offence.fatal(1, roll) > 1 {
+            effect = Some(FATAL_EFFECT);
+        }
+        offence.fatal(damage, roll)
     } else {
         damage
     };
-    Some(i64::from(damage))
+    Some((i64::from(damage), effect))
 }
 
 /// Only an applied owner receipt permits leech. The admitted attack supplies
@@ -200,6 +213,69 @@ mod global_leech_tests {
             &receipt,
         );
         assert_eq!(states.get(&runtime, actor, session), Some(&after));
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::foundation::{ChannelId, CommandId, GameSessionId, WorldId};
+
+    #[test]
+    fn a_fatal_roll_replaces_the_critical_cue_for_the_same_hit()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let id = |suffix| {
+            let mut bytes = [0; 16];
+            bytes[6] = 0x70;
+            bytes[8] = 0x80;
+            bytes[15] = suffix;
+            bytes
+        };
+        let actor =
+            ExactActorRef::transport_fixture(WorldId::decode(&id(1))?, ChannelId::decode(&id(2))?);
+        let command = CommandRef::new(GameSessionId::decode(&id(3))?, CommandId::new(1)?);
+        let root = (0_u8..=u8::MAX)
+            .map(|seed| GameplayDecisionRoot::from_bytes([seed; 32]))
+            .find(|root| {
+                swing_draw(
+                    root,
+                    actor,
+                    command,
+                    0,
+                    b"fatal-hit",
+                    "attack.fatal-hit",
+                    0,
+                    10_000,
+                )
+                .is_some_and(|roll| roll < 905)
+            })
+            .ok_or("no fatal draw")?;
+        let offence = EquippedOffence {
+            weapon_tier: 10,
+            ..EquippedOffence::default()
+        };
+
+        assert_eq!(
+            critical_swing(&offence, &root, actor, command, 0, 100, 1),
+            Some((176, Some(FATAL_EFFECT)))
+        );
+        assert_eq!(
+            critical_swing(
+                &EquippedOffence::default(),
+                &root,
+                actor,
+                command,
+                0,
+                100,
+                1
+            ),
+            Some((110, Some(CRITICAL_EFFECT)))
+        );
+        assert_eq!(
+            critical_swing(&offence, &root, actor, command, 0, 0, 1),
+            Some((0, None))
+        );
         Ok(())
     }
 }

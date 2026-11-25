@@ -2,7 +2,8 @@
 use super::{
     ComposedFreshAdmission,
     actor_spell::{
-        ChannelSpellStates, PlayerBatchPreflight, check_owner_batch, install_owner_batch,
+        ChannelSpellStates, CheckedOwnerBatch, PlayerBatchPreflight, check_owner_batch,
+        install_owner_batch,
     },
 };
 use crate::content::QualifiedNativeEntryRoom;
@@ -209,7 +210,43 @@ pub struct PendingPvpHit {
     target_character: [u8; 16],
     ordinal: u16,
     binding: [u8; 32],
+    effect: Option<u16>,
 }
+
+impl PendingPvpHit {
+    fn install(
+        self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        checked: CheckedOwnerBatch,
+    ) -> bool {
+        use crate::foundation::runtime_actor_spell_types::PlayerBatchProof;
+        let damage = self.batch.effects.first().and_then(|effect| {
+            let target = effect.target;
+            let position = runtime.read_actor_position(target).ok()?.position();
+            let receipt = self.player.health_receipt(target, effect.sub_ordinal)?;
+            let amount =
+                u64::try_from(receipt.health_before.saturating_sub(receipt.health_after)).ok()?;
+            Some((target, position, amount))
+        });
+        let receipt =
+            install_owner_batch(runtime, states, self.physical, Some(self.player), checked);
+        if receipt.applied
+            && let Some((target, position, amount)) = damage
+        {
+            states.sounds.record_damage(
+                runtime,
+                self.batch.caster,
+                target,
+                position,
+                amount,
+                self.effect,
+            );
+        }
+        receipt.applied
+    }
+}
+
 fn park(hit: PendingPvpHit) -> Box<dyn std::any::Any + Send> {
     Box::new(super::actor_spell::native_combat_cast::UnresolvedSpellCommit::Pvp(Box::new(hit)))
 }
@@ -325,6 +362,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
         expected_black: bool,
         damage: crate::spell::cast::PreparedWheelAttackHit,
+        hit_effect: Option<u16>,
     ) -> Result<bool, DurabilityError> {
         let Some(effect) = batch.effects.first() else {
             return Ok(false);
@@ -377,6 +415,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             target_character,
             ordinal,
             binding,
+            effect: hit_effect,
         };
         let mut window = permit.open_commit_window(hit, park);
         // Even cancellation before COMMIT retains enough state to prove rollback and release.
@@ -479,7 +518,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(false);
         };
         let hit = window.install();
-        Ok(install_owner_batch(runtime, states, hit.physical, Some(hit.player), checked).applied)
+        Ok(hit.install(runtime, states, checked))
     }
 
     pub(super) async fn resolve_pvp_hit(&self, permit: &mut SpellLanePermit, hit: PendingPvpHit) {
@@ -538,13 +577,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return;
                 };
                 let hit = window.install();
-                install_owner_batch(
-                    &mut runtime,
-                    &mut states,
-                    hit.physical,
-                    Some(hit.player),
-                    checked,
-                );
+                hit.install(&mut runtime, &mut states, checked);
             }
             Ok(false) => {
                 if runtime
