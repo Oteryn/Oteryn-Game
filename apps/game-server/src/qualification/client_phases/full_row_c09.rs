@@ -415,6 +415,9 @@ async fn buy_meat_from_frodo(
         let path = route(world, here, within_talk_range).ok_or("no walk route to Frodo within talk range")?;
         walk(client, world, &path).await?;
     }
+    if tavern_interior {
+        verdict::Harness::global().progress("observe-frodo");
+    }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let actor = loop {
         if let Some(actor) = visible_frodo(client, &npc.placements) {
@@ -438,6 +441,9 @@ async fn buy_meat_from_frodo(
         client.take_events();
     };
     for text in ["hi", "trade"] {
+        if tavern_interior {
+            verdict::Harness::global().progress(if text == "hi" { "greet-frodo" } else { "open-frodo-trade" });
+        }
         let reply = runtime::talk(
             client.session_mut(),
             &wire::NpcTalkIntent {
@@ -449,6 +455,9 @@ async fn buy_meat_from_frodo(
         if reply != wire::NpcIntentDisposition::Ok {
             return Err(format!("NPC {text} reply={reply:?}").into());
         }
+    }
+    if tavern_interior {
+        verdict::Harness::global().progress("observe-frodo-offer");
     }
     let delta = client
         .session_mut()
@@ -473,6 +482,9 @@ async fn buy_meat_from_frodo(
         .ok_or("seller omitted meat offer")?;
     let before = quantity(client, reference)?;
     client.take_events();
+    if tavern_interior {
+        verdict::Harness::global().progress("buy-frodo-meat");
+    }
     let reply = runtime::buy(
         client.session_mut(),
         &wire::NpcTradeIntent {
