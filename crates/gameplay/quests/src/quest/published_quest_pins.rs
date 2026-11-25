@@ -20,6 +20,9 @@ const fn hash(hex: &[u8; 64]) -> DefinitionHash {
     output
 }
 
+const GRAVE_DANGER_PRE_ZELOS: DefinitionHash =
+    hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab");
+
 // A canonical citation can change when a different quest in its definition shard is
 // edited. For these exact citation-only refreshes, keep the published save identity.
 const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
@@ -41,7 +44,7 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
     (
         "oteryn:quest.grave_danger_quest",
         hash(b"5c6e9bc04b7dc5881f879e073bf3165d452e599d3633b64416cf1f611ac9523d"),
-        hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
+        GRAVE_DANGER_PRE_ZELOS,
     ),
     (
         "oteryn:quest.grimvale_quest",
@@ -92,7 +95,7 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
     (
         "oteryn:quest.grave_danger_quest",
         hash(b"540cd73ad49e78251491ea0266f3930f000b57c26007a5fcb0dcaf2bea4a4113"),
-        hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
+        GRAVE_DANGER_PRE_ZELOS,
     ),
     (
         "oteryn:quest.grimvale_quest",
@@ -158,7 +161,7 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
     (
         "oteryn:quest.grave_danger_quest",
         hash(b"4736dfb1c2085d6000f06bb8a7cb811d4f55714a01e53f5c4f35a79b01db902f"),
-        hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
+        GRAVE_DANGER_PRE_ZELOS,
     ),
     (
         "oteryn:quest.grimvale_quest",
@@ -185,11 +188,83 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
         hash(b"9b29515bba98d0b790f0bfdaa746c0223b6ccccf328e369370bcd9993a5a5067"),
         hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
     ),
+    // Generated from the merged definitions and the published c3ca2e8dc loader.
+    (
+        "oteryn:quest.ferumbras_ascension_quest",
+        hash(b"05cdf255318dcd268826279656a9d779b53b88b8030efb2dc13600cb756d4b64"),
+        hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
+    ),
+    (
+        "oteryn:quest.forgotten_knowledge_quest",
+        hash(b"372df6f08b7588a01455b9f2ffef138d1bb52c70ee7b6ddde117babdd098b874"),
+        hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+    ),
+    (
+        "oteryn:quest.formogar_mine_hoist",
+        hash(b"27004a9af9cc1bb7b59f061b9bbbd8b01a00e0f320a9d1e3682e91a41549ebdf"),
+        hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
+    ),
+    (
+        "oteryn:quest.giant_smithhammer_quest",
+        hash(b"5ce048870a692127563f83b2766a0b89034d2f74b09bb75c67826608d3f6ed64"),
+        hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
+    ),
+    (
+        "oteryn:quest.goblin_merchant_quest",
+        hash(b"cdaf632abd1feb4f61b76a2e03eb6c1bcd604b7e5f1bdff692c1289aea567b63"),
+        hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
+    ),
+    (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"622fd073a0be3b84c8c78c515db66bf8d09f18ba6fadb009b469572269c7c096"),
+        hash(b"286f3e0a4fdaff0ae2a14494889fe2d3492c5bbd4d8668a4f9b2cdaa48e37e7e"),
+    ),
+    (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"b29cb579067c778ba2fa8d4fba288bb8451dfb19486e87499877107d4f160789"),
+        GRAVE_DANGER_PRE_ZELOS,
+    ),
+    (
+        "oteryn:quest.grimvale_quest",
+        hash(b"6b3088673629c1cd58dbbd984e4d1d43eb18ba15e571584859f92ea46b81eb2f"),
+        hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
+    ),
+    (
+        "oteryn:quest.heart_of_destruction_quest",
+        hash(b"e82d27abd4cf3c63aec484c243af15969b50b182ba5fd53e615a89b2682b0f73"),
+        hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
+    ),
+    (
+        "oteryn:quest.hero_of_rathleton_quest",
+        hash(b"d7d6e50db66e0c7aafb8d00355f40bd531d470a3ca8a7c04da4f9255d515acfb"),
+        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
+    ),
+    (
+        "oteryn:quest.hidden_threats_quest",
+        hash(b"fc793d42c84350dbba73b31753ca10b1b94ee114b9c8d67c4cac9b2ad848b0e7"),
+        hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
+    ),
+    (
+        "oteryn:quest.hydra_egg_quest",
+        hash(b"9e0e1064ccff5db2a9a3c7272e783136889ce9fe8721aacdae663e62f3423c99"),
+        hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
+    ),
 ];
+
+type GameplayPredecessors = (&'static str, DefinitionHash, &'static [DefinitionHash]);
+
+const NEW_FRONTIER_SOURCE_PIN: DefinitionHash =
+    hash(b"e947f2485cdf2c3094ba301e71369a208d98b017d08aef8e727705a992b6f0be");
+// The native route is also loaded without authored bindings. Keep its exact predecessor.
+const NEW_FRONTIER_NATIVE_PREDECESSORS: GameplayPredecessors = (
+    "oteryn:quest.the_new_frontier_quest",
+    hash(b"61034f9e3365c8817d659f8ffa59a0f21e404d2a41dfc6099a48a5cedd71018f"),
+    &[NEW_FRONTIER_SOURCE_PIN],
+);
 
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
 // new rules bound to the new hash. Existing absent-track defaults did not change.
-const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
+const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
     // Captured by quest_definition_hashes on main 9295760b3 and the reviewed route definitions.
     (
         "oteryn:quest.authored.kingdom_of_kormarak_quest",
@@ -264,7 +339,7 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.outfit_and_addon_quests",
-        hash(b"8ad5b2673382523cc269396f2c2016226e18ac9f894ac2049264993ae5982d19"),
+        hash(b"f9785be106728cc026d6515c8e092eb08965d3d8e65bcb3a54f0816041a4d9dc"),
         &[
             hash(b"ce65daca1c0a3c499c3f23fe60ae01aeb517e1aaea4689022c055971de786e6f"),
             hash(b"bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8"),
@@ -287,10 +362,11 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.the_new_frontier_quest",
-        hash(b"61034f9e3365c8817d659f8ffa59a0f21e404d2a41dfc6099a48a5cedd71018f"),
-        &[hash(
-            b"e947f2485cdf2c3094ba301e71369a208d98b017d08aef8e727705a992b6f0be",
-        )],
+        hash(b"6aba631a049bcb9213d7192bcc98fcaf7c94ef7ce643c4c741c7f738f3e0a233"),
+        &[
+            NEW_FRONTIER_SOURCE_PIN,
+            hash(b"cb5d7d7008e10821fc65677dec2475d278235b7f5c82ac1f99a2e615873b9e1c"),
+        ],
     ),
     (
         "oteryn:quest.wayfarer_outfits_quest",
@@ -302,10 +378,11 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     // Captured from the complete loader at 3e09916423181c795c829eca5e5414dde3f29a3e.
     (
         "oteryn:quest.the_paradox_tower_quest",
-        hash(b"1d305dfe05863eea4575a95366cb15dda92d00d22b6c9dff915468932f165cde"),
-        &[hash(
-            b"4fc6ffa2b309728ed9ee0e76381c1e6d20d618389b2e74bdd5b773cf108bdec5",
-        )],
+        hash(b"4dd950a062b491c275148e6de0d4529af2296ab8f07fe1b46b89561e35f48601"),
+        &[
+            hash(b"4fc6ffa2b309728ed9ee0e76381c1e6d20d618389b2e74bdd5b773cf108bdec5"),
+            hash(b"3176623ca229a7e3d443e82077c9d162a7990607f78532e5601f801e1b26f3ff"),
+        ],
     ),
     (
         "oteryn:quest.the_queen_of_the_banshees_quest",
@@ -333,7 +410,10 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
 }
 
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
-    for &(quest, current, previous) in GAMEPLAY_PREDECESSORS {
+    for &(quest, current, previous) in GAMEPLAY_PREDECESSORS
+        .iter()
+        .chain([&NEW_FRONTIER_NATIVE_PREDECESSORS])
+    {
         if catalogue.definition_hash(quest) == Some(current) {
             let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
             for &hash in previous {
@@ -362,7 +442,7 @@ mod tests {
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
         let grave = "oteryn:quest.grave_danger_quest";
-        let main = hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab");
+        let main = GRAVE_DANGER_PRE_ZELOS;
         assert_ne!(catalogue.definition_hash(grave), Some(main));
         assert!(npc_rules::legacy_defaults(catalogue, grave, &main).is_some());
         assert!(
@@ -407,8 +487,8 @@ mod tests {
 
         for &(quest, refreshed, published) in CITATION_REFRESHES {
             assert_eq!(published_hash(quest, refreshed), published, "{quest}");
-            if quest == "oteryn:quest.grave_danger_quest" {
-                // Zelos credit changes the live definition. Both exact citation
+            if published == GRAVE_DANGER_PRE_ZELOS {
+                // Zelos credit changes the live definition. The pre-Zelos citation
                 // variants still resolve to the published predecessor.
                 assert_ne!(catalogue.definition_hash(quest), Some(published));
                 assert!(npc_rules::legacy_defaults(catalogue, quest, &published).is_some());
