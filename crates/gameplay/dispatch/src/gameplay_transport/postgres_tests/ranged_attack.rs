@@ -30,6 +30,12 @@ fn ranged_attack_postgres_wand_pays_mana_and_deals_death() -> TestResult {
     })
 }
 #[test]
+fn ranged_attack_postgres_scorcher_with_novice_spellbook_deals_fire() -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-starter", || {
+        scenario(21348, 3, false, 100, false, false)
+    })
+}
+#[test]
 fn ranged_attack_postgres_out_of_range_no_ammunition_and_no_mana_are_free() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-gates", || {
         scenario(3350, 7, true, 100, false, false)?;
@@ -99,6 +105,7 @@ fn scenario_with_quiver(
     reconcile: bool,
     quiver_slot: Option<i16>,
 ) -> TestResult {
+    let starter = weapon == 21348;
     let initial_ammo = if quiver_slot.is_some() && reconcile {
         1
     } else {
@@ -185,11 +192,12 @@ fn scenario_with_quiver(
                     70,
                     weapon,
                     if weapon == 3287 { 100 } else { 1 },
-                    if quiver_slot.is_some() { 5 } else { 6 },
+                    if quiver_slot.is_some() || starter { 5 } else { 6 },
                 ),
                 (71, 3447, initial_ammo, 10),
+                (74, 21400, 1, 6),
             ] {
-                if slot == 10 && !ammo {
+                if (slot == 10 && !ammo) || (item == 21400 && !starter) {
                     continue;
                 }
                 sqlx::raw_sql(sqlx::AssertSqlSafe(
@@ -259,7 +267,7 @@ fn scenario_with_quiver(
             channel_pin.clone(),
         )
         .map_err(debug)?;
-        if matches!(weapon, 25760 | 3287) {
+        if matches!(weapon, 21348 | 25760 | 3287) {
             // An elemental wand must pass physical immunity. This distinguishes its element
             // from a fist/physical hit through the real dispatch.
             let mut rat = native
@@ -405,7 +413,11 @@ fn scenario_with_quiver(
                         actor,
                         session,
                         crate::spell::cast::CharacterCastFacts {
-                            vocation: crate::spell::Vocation::Paladin,
+                            vocation: if starter {
+                                crate::spell::Vocation::Sorcerer
+                            } else {
+                                crate::spell::Vocation::Paladin
+                            },
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
                         (0, 0),
@@ -415,13 +427,14 @@ fn scenario_with_quiver(
             );
         }
 
+        let vocation = if starter { "sorcerer" } else { "paladin" };
         {
             let runtime = owner.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
             let state = states.get_mut(&runtime, actor, session).ok_or("player")?;
             state.restore_saved_vitals(1000, mana);
             let build = crate::durability::character_build::DurableBuildState::new(
-                "paladin",
+                vocation,
                 (0, 0),
                 [(80, 0); 7],
             )
@@ -430,7 +443,7 @@ fn scenario_with_quiver(
                 .enable_owned_training(&build, native.training_formula().ok_or("training formula")?)
                 .map_err(debug)?;
         }
-        if quiver_slot.is_some() {
+        if quiver_slot.is_some() || starter {
             use crate::gameplay_transport::connection::{
                 AdmittedSession, ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority,
                 SessionContinuity,
@@ -671,7 +684,7 @@ fn scenario_with_quiver(
                 100 - shots,
                 "only broken throwing stars leave the hand"
             );
-        } else if weapon == 25760 && mana > 0 && distance <= 3 {
+        } else if matches!(weapon, 21348 | 25760) && mana > 0 && distance <= 3 {
             assert!(killed, "wand damage reaches the monster");
             let runtime = owner.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
@@ -690,7 +703,7 @@ fn scenario_with_quiver(
             // Crossing a magic level consumes its required mana; compare both level and remainder.
             let expected = oteryn_gameplay_progression::mana_training::advance(
                 native.training_formula().ok_or("formula")?,
-                "paladin",
+                vocation,
                 0,
                 checkpoint.request.before.magic(),
                 u64::from(mana - caster.vitals().mana),
