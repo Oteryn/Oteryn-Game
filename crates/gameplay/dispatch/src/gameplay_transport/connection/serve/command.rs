@@ -431,6 +431,9 @@ where
                 },
                 None,
             ),
+            COMMAND_TYPE_LOGOUT_INTENT if decode_logout_intent(command.payload).is_ok() => {
+                Dispatch::NoLogout
+            }
             _ => Dispatch::Unregistered,
         };
         result::encode(session, command, &mut refusal)?

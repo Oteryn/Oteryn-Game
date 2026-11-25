@@ -478,6 +478,13 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 let (status, payload) =
                     house_hireling::result(selected, &Dispatch::Step(StepOutcome::rejected(), 0))?;
                 (None, payload, status)
+            } else if guard_deferred
+                && command.command_type == COMMAND_TYPE_LOGOUT_INTENT
+                && selected.command_selected(command.command_type)
+                && decode_logout_intent(command.payload).is_ok()
+            {
+                let (status, payload) = house_hireling::result(selected, &Dispatch::NoLogout)?;
+                (None, payload, status)
             } else {
                 (None, Vec::new(), CommandStatus::Rejected)
             };

@@ -7,6 +7,11 @@ use oteryn_protocol_oteryn::chat::{
     decode_chat_intent_result, encode_chat_intent,
 };
 
+use oteryn_protocol_oteryn::logout::{
+    CAPABILITY_LOGOUT_V1, COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, MAX_LOGOUT_INTENT_BYTES,
+    decode_logout_intent, decode_logout_result,
+};
+
 struct GuardAuthority {
     movement: StepAuthority,
     failure: Cell<Option<fn() -> DurabilityError>>,
@@ -50,6 +55,10 @@ impl FreshAdmissionAuthority for GuardAuthority {
         if self.activity { self.guard() } else { Ok(()) }
     }
 
+    async fn logout(&self, _: AdmittedSession) -> LogoutReply {
+        panic!("a guard-deferred logout must never reach the owner")
+    }
+
     async fn paced_step(
         &self,
         actor: ExactActorRef,
@@ -78,6 +87,17 @@ fn guard_case(
     capabilities: &'static [u32],
     house: bool,
 ) -> Result<(), Box<dyn Error>> {
+    guard_case_with_logout_payload(failure, transient, command_type, capabilities, house, &[])
+}
+
+fn guard_case_with_logout_payload(
+    failure: fn() -> DurabilityError,
+    transient: bool,
+    command_type: u32,
+    capabilities: &'static [u32],
+    house: bool,
+    logout_payload: &'static [u8],
+) -> Result<(), Box<dyn Error>> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -94,6 +114,15 @@ fn guard_case(
                             command_id: 1,
                             command_type,
                             payload: &payload,
+                        },
+                    )?
+                } else if command_type == COMMAND_TYPE_LOGOUT_INTENT {
+                    oteryn_protocol_oteryn::encode_client_command(
+                        1,
+                        &oteryn_protocol_oteryn::ClientCommandValue {
+                            command_id: 1,
+                            command_type,
+                            payload: logout_payload,
                         },
                     )?
                 } else if command_type == COMMAND_TYPE_USE_INTENT {
@@ -199,6 +228,15 @@ fn guard_case(
                                 ),
                                 Ok(UseDisposition::Rejected)
                             ),
+                            COMMAND_TYPE_LOGOUT_INTENT
+                                if capabilities.contains(&CAPABILITY_LOGOUT_V1)
+                                    && decode_logout_intent(logout_payload).is_ok() =>
+                            {
+                                assert_eq!(
+                                    decode_logout_result(results[0].payload),
+                                    Ok(LogoutResult::Busy)
+                                );
+                            }
                             _ => assert!(results[0].payload.is_empty()),
                         }
                         assert_eq!(results[1].command_id, 1);
@@ -318,4 +356,69 @@ fn house_scope_step_guard_defers_and_replay_never_executes() -> Result<(), Box<d
         &[],
         true,
     )
+}
+
+#[test]
+fn deferred_logout_ordinary_returns_busy_and_replays() -> Result<(), Box<dyn Error>> {
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        COMMAND_TYPE_LOGOUT_INTENT,
+        &[CAPABILITY_LOGOUT_V1],
+        false,
+    )
+}
+
+#[test]
+fn deferred_logout_house_returns_busy_and_replays() -> Result<(), Box<dyn Error>> {
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        COMMAND_TYPE_LOGOUT_INTENT,
+        &[CAPABILITY_LOGOUT_V1],
+        true,
+    )
+}
+
+#[test]
+fn deferred_logout_unnegotiated_stays_empty() -> Result<(), Box<dyn Error>> {
+    for house in [false, true] {
+        guard_case(
+            || DurabilityError::RootUnavailable,
+            true,
+            COMMAND_TYPE_LOGOUT_INTENT,
+            &[],
+            house,
+        )?;
+    }
+    Ok(())
+}
+
+#[test]
+fn deferred_logout_malformed_stays_empty() -> Result<(), Box<dyn Error>> {
+    for house in [false, true] {
+        guard_case_with_logout_payload(
+            || DurabilityError::RootUnavailable,
+            true,
+            COMMAND_TYPE_LOGOUT_INTENT,
+            &[CAPABILITY_LOGOUT_V1],
+            house,
+            &[0; MAX_LOGOUT_INTENT_BYTES + 1],
+        )?;
+    }
+    Ok(())
+}
+
+#[test]
+fn deferred_logout_lost_authority_disconnects() -> Result<(), Box<dyn Error>> {
+    for house in [false, true] {
+        guard_case(
+            || DurabilityError::Unavailable,
+            false,
+            COMMAND_TYPE_LOGOUT_INTENT,
+            &[CAPABILITY_LOGOUT_V1],
+            house,
+        )?;
+    }
+    Ok(())
 }
