@@ -1978,10 +1978,38 @@
           "minimum": -1,
           "maximum": 0,
           "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/authored/paradox-tower/talons",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/first_paradox_access",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/paradox/climb-complete",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/favorite_colour",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
         }
       ],
       "track_initials": {
-        "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/talon": -1
+        "oteryn:quest-progress/quest/u7_24/the_paradox_tower/reward/talon": -1,
+        "oteryn:quest-progress/authored/paradox-tower/talons": 0
       },
       "offerings": [],
       "return_on_failure": false,
@@ -1996,7 +2024,9 @@
           "count": 32,
           "contents": []
         }
-      }
+      },
+      "minimum_level": 30,
+      "premium_required": true
     },
     {
       "key": "oteryn:quest-callback/paradox-claim-wand",

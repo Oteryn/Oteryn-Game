@@ -629,6 +629,46 @@ pub(super) async fn exercise(
     state(h, 7, Some((ice, 7)), &[4837, 4872]).await?;
     let timed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_timed_states t JOIN game_item_instances i USING (item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i4837'").fetch_one(&h.pool).await?;
     assert_eq!(timed, 0, "selected course icicle must have no decay clock");
+    let lifetime: (i64, i64) = sqlx::query_as(
+        "SELECT p.duration_millis, p.expires_at_unix_ms-r.occurred_at
+         FROM game_spell_item_temporal_schedules p
+         JOIN game_reward_claim_mint_receipts r ON r.transaction_id=p.source_transaction_id
+         WHERE p.definition_production_key='oteryn:item.tibia.i4837'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(lifetime, (600_000, 600_000));
+
+    // Advance the test sample beyond its absolute deadline, keeping it carried.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let due = sqlx::query(
+        "UPDATE game_spell_item_temporal_schedules
+         SET expires_at_unix_ms=floor(extract(epoch FROM statement_timestamp())*1000)::bigint-1
+         WHERE definition_production_key='oteryn:item.tibia.i4837'",
+    )
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(due.rows_affected(), 1);
+    tx.commit().await?;
+    relocate(owner, session, angus_side).await?;
+    assert_eq!(
+        talk(owner, session, angus, "ice delivery").await?,
+        NpcIntentDisposition::Rejected
+    );
+    owner.states.spell_states.lock().await.next_item_deadline_pass_us = 0;
+    owner.drain_source_item_deadlines().await;
+    state(h, 7, Some((ice, 7)), &[4872]).await?;
+    assert_eq!(
+        talk(owner, session, angus, "ice sample melted").await?,
+        NpcIntentDisposition::Ok
+    );
+    state(h, 6, Some((ice, 6)), &[4872]).await?;
+    relocate(owner, session, position(ICE.x, ICE.y - 1, ICE.floor)).await?;
+    tool_use(owner, session, 4872, Some(ICE)).await?;
+    state(h, 7, Some((ice, 7)), &[4837, 4872]).await?;
     relocate(owner, session, angus_side).await?;
     assert_eq!(
         talk(owner, session, angus, "ice delivery").await?,

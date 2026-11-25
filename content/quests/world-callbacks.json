@@ -3714,6 +3714,13 @@
           "minimum": 6,
           "maximum": 6,
           "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5,
+          "set": 0,
+          "preserve": true
         }
       ],
       "offerings": [],
@@ -3783,6 +3790,13 @@
           "minimum": 6,
           "maximum": 6,
           "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5,
+          "set": 0,
+          "preserve": true
         }
       ],
       "offerings": [],

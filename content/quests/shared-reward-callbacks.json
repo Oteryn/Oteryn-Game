@@ -453,7 +453,7 @@
         "outfit": "oteryn:outfit.warmaster",
         "addons": 1
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/master_of_war",
       "reply": [
         "Thank you for your help."
       ],
@@ -476,7 +476,8 @@
           "minimum": -1,
           "maximum": 0
         }
-      ]
+      ],
+      "achievement_requires_full_outfit": true
     },
     {
       "key": "oteryn:quest-reward/l1-warmaster-crest-complete",
@@ -580,7 +581,7 @@
         "outfit": "oteryn:outfit.warmaster",
         "addons": 2
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/master_of_war",
       "reply": [
         "Thank you for your help."
       ],
@@ -603,7 +604,8 @@
           "minimum": -1,
           "maximum": 0
         }
-      ]
+      ],
+      "achievement_requires_full_outfit": true
     },
     {
       "key": "oteryn:quest-reward/l1-warmaster-tribal-complete",
@@ -700,7 +702,7 @@
         "outfit": "oteryn:outfit.wayfarer",
         "addons": 1
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/peazzekeeper",
       "reply": [
         "Thank you for your help."
       ],
@@ -712,13 +714,20 @@
       ],
       "requires_premium": true,
       "addon_only": true,
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.wayfarer",
+          "addons": 1
+        }
+      ],
       "requires": [
         {
           "track": "oteryn:quest-progress/wayfarer_outfit_1",
           "minimum": -1,
           "maximum": 0
         }
-      ]
+      ],
+      "achievement_requires_full_outfit": true
     },
     {
       "key": "oteryn:quest-reward/l1-wayfarer-cape-complete",
@@ -761,6 +770,12 @@
       ],
       "requires_premium": true,
       "addon_only": true,
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.wayfarer",
+          "addons": 1
+        }
+      ],
       "requires": [
         {
           "track": "oteryn:quest-progress/wayfarer_outfit_1",
@@ -803,7 +818,7 @@
         "outfit": "oteryn:outfit.wayfarer",
         "addons": 2
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/peazzekeeper",
       "reply": [
         "Thank you for your help."
       ],
@@ -815,13 +830,20 @@
       ],
       "requires_premium": true,
       "addon_only": true,
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.wayfarer",
+          "addons": 2
+        }
+      ],
       "requires": [
         {
           "track": "oteryn:quest-progress/wayfarer_outfit",
           "minimum": -1,
           "maximum": 0
         }
-      ]
+      ],
+      "achievement_requires_full_outfit": true
     },
     {
       "key": "oteryn:quest-reward/l1-wayfarer-hat-complete",
@@ -864,6 +886,12 @@
       ],
       "requires_premium": true,
       "addon_only": true,
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.wayfarer",
+          "addons": 2
+        }
+      ],
       "requires": [
         {
           "track": "oteryn:quest-progress/wayfarer_outfit",

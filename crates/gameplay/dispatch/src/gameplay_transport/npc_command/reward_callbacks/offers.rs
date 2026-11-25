@@ -1,26 +1,52 @@
 //! One bounded offer catalogue for both fact selection and dialogue routing.
 use super::*;
 
-pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Offers> {
+use std::borrow::Cow;
+use std::sync::OnceLock;
+
+const MAX_OFFERS: usize = 640;
+const SOURCES: &[&str] = &[
+    include_str!("../../../../../../../content/quests/shared-reward-offers.json"),
+    include_str!("../../../../../../../content/quests/chosen-reward-offers.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/an-interest-in-botany.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/classic-quests.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/explorer-society.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/l6-stories.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/m09-rookie.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/m16-targuna-marker.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/nomads-land.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/qd-steal-from-thieves.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-m10.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/threatened-dreams.json"),
+];
+
+pub(super) fn load(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+) -> Option<Cow<'static, [Offer]>> {
+    let offers = embedded()?;
+    #[cfg(not(test))]
+    let _ = admission;
+    #[cfg(test)]
+    if let Some(rows) = admission.states.npc_conversations.fixture_offer_rows.get() {
+        let mut combined = offers.offers.clone();
+        combined.extend(rows.iter().cloned());
+        return valid(&combined).then_some(Cow::Owned(combined));
+    }
+    Some(Cow::Borrowed(&offers.offers))
+}
+
+pub(super) fn embedded() -> Option<&'static Offers> {
+    static OFFERS: OnceLock<Option<Offers>> = OnceLock::new();
+    OFFERS.get_or_init(|| parse(SOURCES)).as_ref()
+}
+
+fn parse(sources: &[&str]) -> Option<Offers> {
     let mut offers = Offers {
         schema: 1,
         offers: Vec::new(),
     };
-    for source in [
-        include_str!("../../../../../../../content/quests/shared-reward-offers.json"),
-        include_str!("../../../../../../../content/quests/chosen-reward-offers.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/an-interest-in-botany.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/classic-quests.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/explorer-society.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/l6-stories.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/m09-rookie.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/m16-targuna-marker.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/nomads-land.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/qd-steal-from-thieves.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-m10.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/threatened-dreams.json"),
-    ] {
+    for source in sources {
         let document: Offers = serde_json::from_str(source).ok()?;
         if document.schema != 1 {
             return None;
@@ -30,14 +56,12 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
     offers
         .offers
         .extend(super::offer_match::rafzan_offers()?.offers);
-    #[cfg(test)]
-    if let Some(rows) = admission.states.npc_conversations.fixture_offer_rows.get() {
-        offers.offers.extend(rows.iter().cloned());
-    }
-    #[cfg(not(test))]
-    let _ = admission;
-    if offers.offers.len() > 512
-        || offers.offers.iter().any(|offer| {
+    valid(&offers.offers).then_some(offers)
+}
+
+fn valid(offers: &[Offer]) -> bool {
+    offers.len() <= MAX_OFFERS
+        && !offers.iter().any(|offer| {
             offer.requires.len() > 8
                 || offer.inventory.len() > 8
                 || offer
@@ -50,8 +74,34 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
                     line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)
                 })
         })
-    {
-        return None;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quest_offers_accept_the_train_size_and_both_premium_spellings() -> Result<(), String> {
+        let registered = embedded().ok_or("registered quest offers")?;
+        let offers = serde_json::json!({
+            "schema": 1,
+            "offers": (0..529).map(|next_topic| serde_json::json!({
+                "npc": "oteryn:npc.elane",
+                "keywords": ["glove"],
+                "topic": 0,
+                "next_topic": next_topic,
+                "storage": [],
+                "reply": ["Would you sell it?"],
+                (if next_topic % 2 == 0 { "premium" } else { "requires_premium" }): next_topic % 2 != 0
+            })).collect::<Vec<_>>(),
+        });
+        let parsed = parse(&[&offers.to_string()]).ok_or("composed offer schema and extent")?;
+        assert!(parsed.offers.len() > 512);
+        assert!(registered.offers.len() <= MAX_OFFERS);
+        for (index, offer) in parsed.offers.iter().take(529).enumerate() {
+            assert_eq!(offer.requires_premium, Some(index % 2 != 0));
+        }
+        assert!(!valid(&vec![parsed.offers[0].clone(); MAX_OFFERS + 1]));
+        Ok(())
     }
-    Some(offers)
 }

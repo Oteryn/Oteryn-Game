@@ -785,6 +785,87 @@ mod tests {
     }
 
     #[test]
+    fn explorer_legacy_pickaxe_saves_enter_ice_delivery_and_can_retry() -> Result<(), String> {
+        let loaded =
+            load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let prefix = "oteryn:quest-progress/quest/u7_6/explorer_society/";
+        let line = format!("{prefix}quest_line");
+        let field = format!("{prefix}field_course");
+        let ice = format!("{prefix}the_ice_delivery");
+        let callbacks = crate::quest::world_callbacks::load_for(catalogue)?;
+        let authored = catalogue.authored_bindings().ok_or("authored bindings")?;
+        let explorer = authored
+            .quests
+            .iter()
+            .find(|quest| quest.quest == "oteryn:quest.the_explorer_society_quest")
+            .ok_or("Explorer Society binding")?;
+        for stage in &explorer.stages {
+            let world = matches!(
+                stage.trigger,
+                crate::quest::authored_bindings::Trigger::MapUse { .. }
+                    | crate::quest::authored_bindings::Trigger::StepIn { .. }
+            );
+            for operation in stage.transitions(&explorer.quest)? {
+                let registered = catalogue.transition(&operation.key).ok_or(&operation.key)?;
+                crate::quest::admission_binding::validate_resolved_world(
+                    catalogue, registered, world, &callbacks,
+                )
+                .map_err(|error| format!("{}: {error}", operation.key))?;
+            }
+        }
+        for npc in ["angus", "mortimer"] {
+            let before = BTreeMap::from([(field.clone(), 5), (line.clone(), 1), (ice.clone(), 0)]);
+            let start = format!("oteryn:quest-reward/explorer-society/assign-ice-{npc}");
+            let transition = catalogue.transition(&start).ok_or(start)?;
+            let changes = catalogue
+                .evaluate(transition, &before, 0)
+                .map_err(|e| format!("{e:?}"))?;
+            let after = |track: &str| {
+                changes
+                    .iter()
+                    .find(|change| change.track == track)
+                    .map(|change| change.after)
+            };
+            assert_eq!(after(&line), Some(6));
+            assert_eq!(after(&field), Some(6));
+            assert_eq!(after(&ice), Some(6));
+
+            let before = BTreeMap::from([(field.clone(), 7), (line.clone(), 7), (ice.clone(), 7)]);
+            let retry = format!("oteryn:quest-reward/explorer-society/retry-ice-{npc}");
+            let transition = catalogue.transition(&retry).ok_or(retry)?;
+            let changes = catalogue
+                .evaluate(transition, &before, 0)
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(changes.len(), 3);
+            assert!(changes.iter().all(|change| change.after == 6));
+        }
+
+        for suffix in ["/cut-ice", "-ice-delivery-1", "-ice-delivery-2"] {
+            let key = format!("oteryn:quest-callback/explorer-society{suffix}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or(key)?;
+            let sample = callback
+                .item_reward
+                .as_ref()
+                .ok_or("scheduled icicle source")?;
+            assert_eq!(
+                (sample.item.as_str(), sample.count),
+                ("oteryn:item.tibia.i4837", 1)
+            );
+            assert!(
+                callback
+                    .storage
+                    .iter()
+                    .any(|storage| storage.add == Some(1))
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn quest_parity_explorer_tools_and_portals_bind_exact_assets() -> Result<(), String> {
         use crate::quest::world_callbacks::{self, Position, Trigger};
 

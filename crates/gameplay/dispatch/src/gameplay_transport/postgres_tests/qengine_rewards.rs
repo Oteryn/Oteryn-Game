@@ -38,6 +38,19 @@ fn qengine_elane_buys_gloves_from_free_and_completed_characters() -> TestResult 
 }
 
 #[test]
+fn qengine_outfit_handins_complete_an_account_owned_set_in_both_orders() -> TestResult {
+    for name in [
+        "qengine-rewards-l1-warmaster-account-set",
+        "qengine-rewards-l1-warmaster-tribal-account-set",
+        "qengine-rewards-l1-wayfarer-account-set",
+        "qengine-rewards-l1-wayfarer-hat-account-set",
+    ] {
+        scenario(name)?;
+    }
+    Ok(())
+}
+
+#[test]
 fn qengine_l1_warmaster_crest() -> TestResult {
     scenario("qengine-rewards-l1-warmaster-owned")?;
     scenario("qengine-rewards-l1-warmaster")

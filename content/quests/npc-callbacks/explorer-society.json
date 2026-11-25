@@ -675,6 +675,13 @@
       ],
       "failure_reply": [
         "Bring the requested item before reporting."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -709,6 +716,13 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -754,6 +768,13 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/angus.lua:120-647"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -2516,6 +2537,13 @@
       ],
       "failure_reply": [
         "Bring the requested item before reporting."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -2550,6 +2578,13 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -2595,6 +2630,13 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mortimer.lua:120-647"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -3828,6 +3870,18 @@
         "appearance": 4094,
         "maximum_age_ms": 310000
       }
+    }
+  ],
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+      "quest": "oteryn:quest.the_explorer_society_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 20,
+      "sources": [
+        "content/quests/authored-bindings/the-explorer-society.json"
+      ]
     }
   ]
 }

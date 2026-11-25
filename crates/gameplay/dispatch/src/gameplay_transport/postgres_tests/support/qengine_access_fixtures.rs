@@ -744,6 +744,7 @@ async fn wardrobe(
         outfits: vec![],
         exact_take: false,
         achievement: None,
+        achievement_requires_full_outfit: false,
         achievement_progress: vec![],
         reply: vec![],
         failure_reply: vec![],

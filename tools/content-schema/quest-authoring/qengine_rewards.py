@@ -512,7 +512,8 @@ def build():
 
     def finish_outfit(other_track, other_addon, achievement, page, revision):
         trade = callbacks[-1]
-        # Preserve the published trade's value plan and its historical receipts.
+        trade["forbids_addons"] = [trade["outfit"]]
+        # Preserve the character-local completion callback for existing routes.
         trade['requires'] = [{'track': other_track, 'minimum': -1, 'maximum': 0}]
         callbacks.append({
             **trade,
@@ -522,6 +523,8 @@ def build():
             'achievement': 'oteryn:achievement/' + achievement,
             'sources': [*trade['sources'], f'https://tibia.fandom.com/index.php?curid={page}&oldid={revision}'],
         })
+        trade["achievement"] = "oteryn:achievement/" + achievement
+        trade["achievement_requires_full_outfit"] = True
 
     for name, bit, item, word in [('crest',1,10199,'crest'), ('tribal',2,10198,'tribal crest')]:
         add('l1-warmaster-'+name, 'the_new_frontier_quest', 'cael', ['yes'],

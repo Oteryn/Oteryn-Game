@@ -79,7 +79,8 @@ fn scenario_case(
         || name == "paradox-skulls"
         || name.starts_with("qengine-rewards-questpc4-admission-");
     let native_switch = name.starts_with("l6-tomb-switch-native-");
-    let paradox_journey = name == super::super::paradox_tower_journey_fixtures::NAME;
+    let paradox_forfeit = name == super::super::paradox_tower_journey_fixtures::FORFEIT;
+    let paradox_journey = paradox_forfeit || name == super::super::paradox_tower_journey_fixtures::NAME;
     let native_upper = name.starts_with("qengine-rewards-questpc4-paradox-upper-");
     let native_story = name.starts_with("qengine-rewards-questpc4-paradox-story-");
     let diprath_room = name.starts_with("l6-diprath-room-");
@@ -1779,6 +1780,7 @@ fn scenario_case(
             || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium"))
             || name.starts_with("questpc7-outfits-")
             || name.starts_with("qengine-rewards-qb-")
+            || name.starts_with("qengine-rewards-l1-warmaster")
             || (name.starts_with("qengine-rewards-l1-wayfarer")
                 && !name.ends_with("-free"))
             || name == "qengine-rewards-elane-gloves-completed"
@@ -2868,7 +2870,7 @@ fn scenario_case(
             .await?;
         } else if paradox_journey {
             Box::pin(super::super::paradox_tower_journey_fixtures::exercise(
-                &mut owner, &mut admitted, &h, &authority,
+                &mut owner, &mut admitted, &h, &authority, paradox_forfeit,
             )).await?;
         } else if let Some(access) = classic_access {
             Box::pin(super::super::classic_quest_parity_fixtures::access_exercise(

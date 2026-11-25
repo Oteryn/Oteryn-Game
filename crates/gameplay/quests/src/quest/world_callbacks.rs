@@ -17,8 +17,8 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
-// Quests package 4 registers 1,094 callbacks before authored World bindings.
-pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1100;
+// Leave space for the registered package 2–4 cohorts before authored bindings.
+pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1280;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 

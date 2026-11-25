@@ -66,6 +66,7 @@ mod premium_purchase;
 mod quest_dialogue;
 mod quest_shop;
 pub(super) mod reward_callbacks;
+pub use reward_callbacks::validate_quest_reward_offers;
 mod reward_facts;
 mod seasonal;
 mod service_context;

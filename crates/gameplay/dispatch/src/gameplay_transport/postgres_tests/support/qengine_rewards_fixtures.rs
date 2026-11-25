@@ -606,7 +606,8 @@ async fn wire_conversation_with_prefix_refusal(
                 })
             })
         };
-        let mut shut = has_outfit(&catalogues);
+        let mut shut = result.is_some_and(|disposition| disposition != NpcIntentDisposition::Ok)
+            || has_outfit(&catalogues);
         if shut {
             client.shutdown().await.map_err(|e| e.to_string())?;
         }
@@ -1206,7 +1207,8 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-l1-legacy-decaying" {
         return Box::pin(legacy_decaying(owner, admitted, h)).await;
     }
-    let key = match name {
+    let account_set = name.ends_with("-account-set");
+    let key = match name.trim_end_matches("-account-set") {
         "qengine-rewards-l1-warmaster-tribal" | "qengine-rewards-l1-warmaster-tribal-owned" => {
             "l1-warmaster-tribal"
         }
@@ -1470,13 +1472,20 @@ pub(super) async fn exercise(
     let owned = name.ends_with("-owned");
     if key.starts_with("l1-warmaster-") || (key.starts_with("l1-wayfarer-") && !only && !free) {
         let outfit = callback.outfit.as_ref().ok_or("outfit")?;
-        let keys = [outfit.grant_key(0), outfit.grant_key(outfit.addons)];
+        let mut keys = vec![outfit.grant_key(0)];
+        if owned {
+            keys.push(outfit.grant_key(outfit.addons));
+        }
+        if account_set {
+            // Pre-existing account entitlement with no local complementary quest track.
+            keys.push(outfit.grant_key(3 - outfit.addons));
+        }
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await
             .map_err(|_| "fence")?
             .ok_or("fence")?;
-        for (index, key) in keys.iter().take(if owned { 2 } else { 1 }).enumerate() {
+        for (index, key) in keys.iter().enumerate() {
             let event = format!("qengine-l1-existing-grant-{index}");
             sqlx::query(
                 "WITH receipt AS (
@@ -1594,7 +1603,7 @@ pub(super) async fn exercise(
             .bind(achievement)
             .fetch_one(&h.pool)
             .await?,
-            1
+            i64::from(!callback.achievement_requires_full_outfit || account_set)
         );
     }
     // Literal transport replay cannot take items or repeat either value grant.
@@ -1741,6 +1750,35 @@ pub(super) async fn exercise(
             .bind(format!("oteryn:achievement/{achievement}"))
             .fetch_one(&h.pool)
         };
+        if account_set {
+            assert_eq!(earned().await?, 1, "the other addon was already owned by the account");
+            let local_addon = callback.storage.iter().find(|state| !state.preserve)
+                .ok_or("local addon progress")?;
+            super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+                h, owner, admitted, &[(local_addon.track.clone(), local_addon.minimum)], 151,
+            ).await?;
+            owner.refresh_quest_session(admitted.game_session_id, false).await;
+            let input = callback.take.first().ok_or("addon hand-in item")?;
+            let fence = owner.current_quest_fence(admitted.game_session_id)
+                .await.map_err(|_| "fence")?.ok_or("fence")?;
+            super::quest_world_callbacks_fixtures::input_item(
+                owner,
+                fence.item_fence(),
+                &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                    position: at,
+                    item: input.item.clone(),
+                    count: input.count,
+                },
+                322,
+                true,
+            ).await?;
+            let before_retry = counts(h).await?;
+            let (duplicate, _, _) = wire_reward(owner, admitted, npc, &callback, false).await?;
+            assert_eq!(duplicate, NpcIntentDisposition::Rejected);
+            assert_eq!(counts(h).await?, before_retry, "an owned addon cannot charge again");
+            assert_eq!(earned().await?, 1);
+            return Ok(());
+        }
         assert_eq!(
             earned().await?,
             0,

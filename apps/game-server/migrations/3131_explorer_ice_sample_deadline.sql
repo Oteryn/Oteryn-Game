@@ -1,4 +1,4 @@
--- Both Ice Delivery sources use the same absolute Item clock. Prove the
+-- All Ice Delivery sources use the same absolute Item clock. Prove the
 -- schedule against the reward source and the exact sample minted with it.
 DO $migration$
 DECLARE body TEXT; begin_at INT;
@@ -16,7 +16,8 @@ BEGIN
                 JOIN game_reward_claim_mint_receipts r ON r.transaction_id=s.mint_transaction_id
                 JOIN game_item_instances i USING(item_instance_id)
                 WHERE s.transition_key IN ('oteryn:quest-callback/explorer-society-ice-delivery-1',
-                                           'oteryn:quest-callback/explorer-society-ice-delivery-2')
+                                           'oteryn:quest-callback/explorer-society-ice-delivery-2',
+                                           'oteryn:quest-callback/explorer-society/cut-ice')
                   AND s.plan #>> '{give,item}'=NEW.definition_production_key
                   AND (r.character_id,r.game_session_id,r.command_id)=(s.character_id,s.cause_id,s.cause_ordinal)
                   AND r.transaction_id=NEW.source_transaction_id AND r.item_instance_id=NEW.item_instance_id

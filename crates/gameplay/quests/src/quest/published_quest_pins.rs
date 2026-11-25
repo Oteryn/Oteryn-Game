@@ -375,10 +375,17 @@ const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
             b"68a6045ea88cf241d8ec6f881245131a9076d8d423722544573e9c3b45dae42c",
         )],
     ),
+    (
+        "oteryn:quest.the_explorer_society_quest",
+        hash(b"f51489994ea4f58e5ed3bd18de0a2120cb2852b8005a63eaee08ff86b4128fb1"),
+        &[hash(
+            b"eef6a0c9dfb1196d65489ccf8478febf6fe02a32cc3696cbe3b2f12a7eb63740",
+        )],
+    ),
     // Captured from the complete loader at 3e09916423181c795c829eca5e5414dde3f29a3e.
     (
         "oteryn:quest.the_paradox_tower_quest",
-        hash(b"4dd950a062b491c275148e6de0d4529af2296ab8f07fe1b46b89561e35f48601"),
+        hash(b"0d6ee6f5e6bf5651b9d3442f9e393f31d549bd6450c861bd94caf6fbbb3f5962"),
         &[
             hash(b"4fc6ffa2b309728ed9ee0e76381c1e6d20d618389b2e74bdd5b773cf108bdec5"),
             hash(b"3176623ca229a7e3d443e82077c9d162a7990607f78532e5601f801e1b26f3ff"),
@@ -402,6 +409,15 @@ const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
     ),
 ];
 
+// The pkq2 Tibia Tales and Cursed Crystal source cohorts extend this successor.
+const TIBIA_TALES_TRAIN_SUCCESSOR: DefinitionHash =
+    hash(b"08ddd97de427afb52741eacdef7781de95f438f5a86a88915d484b447e885db7");
+
+fn is_successor(quest: &str, current: DefinitionHash, active: Option<DefinitionHash>) -> bool {
+    active == Some(current)
+        || (quest == "oteryn:quest.tibia_tales" && active == Some(TIBIA_TALES_TRAIN_SUCCESSOR))
+}
+
 pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> DefinitionHash {
     CITATION_REFRESHES
         .iter()
@@ -414,7 +430,7 @@ pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
         .iter()
         .chain([&NEW_FRONTIER_NATIVE_PREDECESSORS])
     {
-        if catalogue.definition_hash(quest) == Some(current) {
+        if is_successor(quest, current, catalogue.definition_hash(quest)) {
             let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
             for &hash in previous {
                 if !predecessors
@@ -435,6 +451,25 @@ pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
 mod tests {
     use super::*;
     use crate::quest::{loader, npc_rules};
+
+    #[test]
+    fn nomads_land_accepts_main_save_under_the_composed_tibia_tales_pin() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let mut catalogue = loaded.catalogue().clone();
+        let quest = "oteryn:quest.tibia_tales";
+        let main = hash(b"8d75517e41359a25abea653c8fd44fa5b4d2768c1470d9acaa9442b73f543065");
+        for (successor, accepted) in [(TIBIA_TALES_TRAIN_SUCCESSOR, true), ([0x5a; 32], false)] {
+            catalogue.predecessors.remove(quest);
+            catalogue.hashes.insert(quest.into(), successor);
+            retain_predecessors(&mut catalogue);
+            assert_eq!(
+                npc_rules::legacy_defaults(&catalogue, quest, &main).is_some(),
+                accepted
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn package_accepts_main_grave_danger_pin_as_predecessor() -> Result<(), String> {
@@ -503,7 +538,8 @@ mod tests {
             );
         }
         for &(quest, current, previous) in GAMEPLAY_PREDECESSORS {
-            assert_eq!(catalogue.definition_hash(quest), Some(current), "{quest}");
+            let active = catalogue.definition_hash(quest);
+            assert!(is_successor(quest, current, active), "{quest}: {active:?}");
             for &pin in previous {
                 assert_eq!(
                     npc_rules::legacy_defaults(catalogue, quest, &pin),

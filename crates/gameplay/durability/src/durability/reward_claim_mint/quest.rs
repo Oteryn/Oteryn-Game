@@ -277,6 +277,7 @@ pub(crate) async fn apply(
             return Ok(false);
         }
     }
+    let mut achievement = achievement;
     if !callback.forbids_addons.is_empty()
         || !callback.forbids_outfits.is_empty()
         || callback.account_reservation.is_some()
@@ -321,6 +322,20 @@ pub(crate) async fn apply(
                         oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Male=>crate::domain::appearance::Sex::Male,
                     })
                     ).await? { return Ok(false); }
+            }
+        }
+        if callback.achievement_requires_full_outfit {
+            let outfit = callback.outfit.as_ref().ok_or(DurabilityError::InvalidStoredState)?;
+            if !super::super::character_appearance::cosmetic_owned_for_sex(
+                tx,
+                fence.character_id,
+                cosmetics,
+                EarnedCosmetic::Addon(&outfit.outfit, 3 - outfit.addons),
+                None,
+            )
+            .await?
+            {
+                achievement = None;
             }
         }
         if let Some(reservation) = &callback.account_reservation

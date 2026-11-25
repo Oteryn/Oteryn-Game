@@ -201,6 +201,19 @@ fn unique_eligible<'a>(
     }
 }
 
+// Retain published keys for receipt reconciliation. Fresh USE has one owner
+// for each of these chests when both source programmes are loaded.
+fn superseded_chest(callback: &Callback, callbacks: &[Callback]) -> bool {
+    let owner = match callback.key.as_str() {
+        "oteryn:quest-callback/outlaw-camp-treasure" => {
+            "oteryn:quest-callback/authored-outlaw-camp-s3-treasure"
+        }
+        "oteryn:quest-callback/paradox-tower/talons" => "oteryn:quest-callback/paradox-claim-talon",
+        _ => return false,
+    };
+    callbacks.iter().any(|candidate| candidate.key == owner)
+}
+
 fn tile(p: Position) -> TilePos {
     TilePos {
         x: p.x,
@@ -1074,12 +1087,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             super::world_map::resolve_map_target(&source, target, |_| None::<()>).ok()?
         };
-        let mut selected = self
-            .callback_content()
+        let callbacks = self.callback_content();
+        let mut selected = callbacks
             .iter()
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
+                    && !superseded_chest(c, callbacks)
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
                     && c.activation.as_ref().is_none_or(|activation| {

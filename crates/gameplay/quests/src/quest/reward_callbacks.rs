@@ -357,6 +357,9 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub exact_take: bool,
     pub achievement: Option<String>,
+    /// Award the achievement when this hand-in completes the account-owned pair.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub achievement_requires_full_outfit: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub achievement_progress: Vec<AchievementProgress>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -633,8 +636,52 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, 
 /// available to immutable receipt reconciliation and catalogue validation.
 pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
     let mut callbacks = load_for(catalogue)?;
-    callbacks.retain(super::authored_bindings::personal_event_offered);
+    retain_offered_callbacks(&mut callbacks);
     Ok(callbacks)
+}
+
+fn retain_offered_callbacks(callbacks: &mut Vec<RewardCallback>) {
+    // Elane's common sale handles free accounts and completed outfits. Keep the
+    // earlier free-only transition available to replay its durable receipts.
+    let elane_sale = callbacks.iter().any(|callback| {
+        callback.key == "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves-sale"
+    });
+    callbacks.retain(|callback| {
+        super::authored_bindings::personal_event_offered(callback)
+            && (!elane_sale
+                || callback.key != "oteryn:quest-reward/l8-hunter-elane-gloves-sale-free")
+    });
+}
+
+#[cfg(test)]
+#[test]
+fn the_common_elane_sale_is_the_only_fresh_sale_when_both_are_registered() -> Result<(), String> {
+    let callbacks = load()?;
+    let common = callbacks
+        .iter()
+        .find(|callback| {
+            callback.key == "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves-sale"
+        })
+        .ok_or("common Elane sale")?;
+    let mut free_sale = common.clone();
+    free_sale.key = "oteryn:quest-reward/l8-hunter-elane-gloves-sale-free".into();
+    let mut legola = free_sale.clone();
+    legola.npc = "oteryn:npc.legola".into();
+    legola.key = "oteryn:quest-reward/l8-hunter-gloves-sale-free".into();
+    let mut composed = vec![free_sale, common.clone(), legola.clone()];
+    retain_offered_callbacks(&mut composed);
+    assert_eq!(composed, [common.clone(), legola]);
+    let payment = common.give.as_ref().ok_or("Elane sale payment")?;
+    assert_eq!(
+        (payment.item.as_str(), payment.count),
+        ("oteryn:item.tibia.i3035", 20)
+    );
+    assert_eq!(common.take.len(), 1);
+    assert_eq!(
+        (common.take[0].item.as_str(), common.take[0].count),
+        ("oteryn:item.tibia.i5875", 1)
+    );
+    Ok(())
 }
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
@@ -1094,6 +1141,15 @@ fn validate_document_with_capacity(
             || c.requires_completed_quests
                 .iter()
                 .any(|key| key == &c.quest || !slug(key, "oteryn:quest.", b"._", 128))
+            || (c.achievement_requires_full_outfit
+                && (c.achievement.is_none()
+                    || !c.addon_only
+                    || c.outfit.as_ref().is_none_or(|reward| {
+                        !matches!(reward.addons, 1 | 2)
+                            || reward.sex.is_some()
+                            || !c.forbids_addons.contains(reward)
+                    })
+                    || !c.outfits.is_empty()))
             || c.requires_addons.len() > 8
             || c.requires_addons
                 .iter()
@@ -1360,6 +1416,12 @@ fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
     };
     let current = if callback.addon_only {
         serde_json::to_vec(&("oteryn:quest-reward-addon-only-v1", current))
+            .map_err(|error| error.to_string())?
+    } else {
+        current
+    };
+    let current = if callback.achievement_requires_full_outfit {
+        serde_json::to_vec(&("oteryn:quest-reward-full-outfit-v1", current))
             .map_err(|error| error.to_string())?
     } else {
         current

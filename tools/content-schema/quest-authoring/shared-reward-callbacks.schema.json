@@ -434,6 +434,7 @@
             "maxLength": 1024
           }
         },
+        "achievement_requires_full_outfit": {"type": "boolean"},
         "achievement": {
           "oneOf": [
             {

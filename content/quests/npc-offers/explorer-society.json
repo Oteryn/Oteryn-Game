@@ -283,6 +283,13 @@
       ],
       "reply": [
         "Will you take on ice delivery?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -308,6 +315,13 @@
       ],
       "reply": [
         "Do you have the item for ice delivery?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -642,6 +656,13 @@
       ],
       "reply": [
         "Did the sample melt?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -1293,6 +1314,13 @@
       ],
       "reply": [
         "Will you take on ice delivery?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -1318,6 +1346,13 @@
       ],
       "reply": [
         "Do you have the item for ice delivery?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
       ]
     },
     {
@@ -1652,6 +1687,13 @@
       ],
       "reply": [
         "Did the sample melt?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
       ]
     },
     {
