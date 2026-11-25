@@ -65,8 +65,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let damage = provisioning::item_reference(&index, DAMAGE_RUNE_ID)?;
     let healing = provisioning::item_reference(&index, HEAL_RUNE_ID)?;
     let blank = provisioning::item_reference(&index, BLANK_RUNE_ID)?;
-    let mut client = connect_character(clients, 0xc6, 1).await?;
-    full_e2ef7::earn_player_level(&mut client, world, 15, Duration::from_secs(150)).await?;
+    const BUILD: character_prep::Seeded = character_prep::Seeded {
+        profile: "c06-sorcerer",
+        reason: "ordinary rune conjure level prerequisite",
+    };
+    character_prep::declare_seeded("C06", "dedicated-character-birth,level-15", BUILD.reason);
+    let mut client = BUILD.connect(clients, 0xc6, 1).await?;
+    character_prep::require_sorcerer_level(&mut client, 15).await?;
     // Xodet's pinned price is ten gold per blank rune. The second blank
     // makes the immediate repeat test cooldown rather than reagent absence.
     super::full_row_c02::earn_gold(&mut client, world, &metadata.spawns, 20)

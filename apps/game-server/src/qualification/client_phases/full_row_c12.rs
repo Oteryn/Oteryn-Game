@@ -702,14 +702,24 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     const LEVEL_PREPARATION: character_prep::Seeded = character_prep::Seeded {
         profile: "c12-monk",
-        reason: "item 50271 requires level 20",
+        reason: "item 50271 wear level / exori nia min level 18",
     };
-    character_prep::declare_seeded("C12", "level=20", LEVEL_PREPARATION.reason);
+    character_prep::declare_seeded("C12", "dedicated-character-birth,level-20", LEVEL_PREPARATION.reason);
     let mut client = LEVEL_PREPARATION.connect(clients, 0xc2, 1).await?;
     let level = full_e2ef7::player_level(&mut client).await?;
-    if level != 20 {
-        return Err(format!("C12 seeded level readback expected 20, served {level}").into());
+    let vocation = full_e2ef5::current_vocation(&mut client).await?;
+    if level != 20 || vocation != crate::spell::Vocation::Monk {
+        return Err(format!("C12 preparation expected level-20 Monk, served level={level} vocation={vocation:?}").into());
     }
+    let vitals = client.actor_vitals().ok_or("C12 admitted vitals absent")?;
+    let capacity = oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(level, "monk")
+        .map_err(|error| format!("C12 Monk capacity formula: {error:?}"))?;
+    // Monk reference formulae at level 20: 10L+105 HP, 10L+10 mana,
+    // and 25L+270+200 ounces (including the Global base adjustment).
+    if (vitals.max_health, vitals.max_mana, capacity) != (305, 210, 97_000) {
+        return Err(format!("C12 level-20 Monk maxima mismatch: hp={} mana={} derived_capacity_centi_oz={capacity}", vitals.max_health, vitals.max_mana).into());
+    }
+    evidence(&format!("C12 admitted-maxima max_hp={} max_mana={} derived_capacity_centi_oz={capacity}", vitals.max_health, vitals.max_mana));
     evidence("C12 prep=seeded level=20");
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;

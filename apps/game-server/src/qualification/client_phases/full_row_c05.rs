@@ -87,23 +87,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let caster_clients = identity.clients(clients);
     let target_identity = character_prep::dedicated_character(clients, "NODE_BOOT_C05_TARGET_ACCOUNT").await?;
     let target_clients = target_identity.clients(clients);
-    let mut caster = connect_character(&caster_clients, 0xc5, 0).await
+    const BUILD: character_prep::Seeded = character_prep::Seeded {
+        profile: "c05-exiva",
+        reason: "Exiva level prerequisite",
+    };
+    character_prep::declare_seeded("C05", "dedicated-character-birth,level-8", BUILD.reason);
+    let mut caster = BUILD.connect(&caster_clients, 0xc5, 0).await
         .map_err(|error| admission_error("caster-admission", error))?;
-    let world = full_e2ef7::qualification_world(&caster_clients)?;
-    full_e2ef7::earn_player_level(&mut caster, world, 8, Duration::from_secs(60)).await?;
-    if full_e2ef7::player_level(&mut caster).await? != 8 {
-        return Err("Exiva caster did not reach level 8".into());
-    }
-    let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
-        "sorcerer",
-        8,
-        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
-        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
-    ).ok_or("level-8 Sorcerer has no source vitals")?;
-    if !caster.actor_vitals().is_some_and(|vitals| {
-        vitals.max_health == max_health && vitals.max_mana == max_mana && vitals.mana >= 20
-    }) {
-        return Err(format!("earned level-8 Exiva caster did not have Sorcerer vitals: {:?}", caster.actor_vitals()).into());
+    character_prep::require_sorcerer_level(&mut caster, 8).await?;
+    if !caster.actor_vitals().is_some_and(|vitals| vitals.mana >= 20) {
+        return Err("C05 prepared caster has less than 20 mana".into());
     }
     let mut target = connect_character(&target_clients, 0xc6, 0)
         .await

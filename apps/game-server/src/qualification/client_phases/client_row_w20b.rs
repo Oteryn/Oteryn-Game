@@ -40,7 +40,7 @@ pub(super) async fn connect_player_caster(
     verdict::Harness::global().bounded_wait(deadline, "personal-light-preparation");
     tokio::time::timeout_at(
         deadline,
-        prepare_player_caster(clients, required_level, premium_required, preparation_budget),
+        prepare_player_caster(clients, required_level, premium_required),
     )
     .await
     .map_err(|_| format!("personal-light preparation exceeded {preparation_budget:?}"))?
@@ -50,9 +50,14 @@ async fn prepare_player_caster(
     clients: &SeamClients<'_>,
     required_level: u32,
     premium_required: bool,
-    hunt_budget: Duration,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    let mut client = connect_character(clients, 0x97, LIGHT_CHARACTER).await?;
+    const BUILD: character_prep::Seeded = character_prep::Seeded {
+        profile: "w20b-light",
+        reason: "Ultimate Light level prerequisite",
+    };
+    character_prep::declare_seeded("W20b", "dedicated-character-birth,level-26", BUILD.reason);
+    let mut client = BUILD.connect(clients, 0x97, LIGHT_CHARACTER).await?;
+    character_prep::require_sorcerer_level(&mut client, 26).await?;
     if premium_required
         && let Err(error) = full_e2ef7::require_current_premium(&mut client).await
     {
@@ -63,9 +68,8 @@ async fn prepare_player_caster(
         }
         return Err(error);
     }
-    if full_e2ef7::player_level(&mut client).await? < required_level {
-        let world = full_e2ef7::qualification_world(clients)?;
-        full_e2ef7::earn_player_level(&mut client, world, required_level, hunt_budget).await?;
+    if required_level > 26 {
+        return Err(format!("W20b prepared level 26 is below spell requirement {required_level}").into());
     }
     Ok(client)
 }
@@ -155,7 +159,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 #[test]
-fn qualification_review_w20b_never_uses_privileged_profile() -> TestResult {
+fn qualification_review_w20b_uses_only_the_declared_level_profile() -> TestResult {
     let capture = include_str!("client_row_w20b.rs");
     let (_, journey) = include_str!("full_e2ef7.rs")
         .split_once("async fn light_journey(")
@@ -165,8 +169,9 @@ fn qualification_review_w20b_never_uses_privileged_profile() -> TestResult {
     assert!(!journey.contains(concat!("client_row_w20b::", "connect_caster")));
     assert!(journey.contains(concat!("client_row_w20b::", "connect_player_caster")));
     let (setup, packet) = capture.split_once("async fn journey(").ok_or("missing W20b packet journey")?;
-    assert!(setup.contains(concat!("full_e2ef7::", "earn_player_level")));
-    assert!(!setup.contains(concat!("character_prep::", "Seeded")));
+    assert!(!setup.contains(concat!("full_e2ef7::", "earn_player_level")));
+    assert!(setup.contains(concat!("character_prep::", "Seeded")));
+    assert!(setup.contains(concat!("profile: ", "\"w20b-light\"")));
     assert!(!setup.contains(concat!("character_prep::", "grant_premium")));
     let (packet, _) = packet.split_once("pub(super) async fn run_packet(").ok_or("missing W20b runner")?;
     assert!(packet.contains(concat!("connect_player_", "caster(")));

@@ -213,3 +213,25 @@ pub(super) async fn reload(
     }
     Ok(())
 }
+
+/// Validate the served level, vocation and maxima after a level fixture re-admission.
+pub(super) async fn require_sorcerer_level(
+    client: &mut oteryn_dev_client::DevClientSession,
+    expected_level: u32,
+) -> TestResult {
+    let level = full_e2ef7::player_level(client).await?;
+    let vocation = full_e2ef5::current_vocation(client).await?;
+    let (hp, mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        expected_level,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    ).ok_or("Sorcerer maxima formula unavailable")?;
+    let vitals = client.actor_vitals().ok_or("prepared Sorcerer vitals absent")?;
+    if (level, vocation, vitals.max_health, vitals.max_mana)
+        != (expected_level, crate::spell::Vocation::Sorcerer, hp, mana)
+    {
+        return Err(format!("expected Sorcerer level={expected_level} max_hp={hp} max_mana={mana}; served level={level} vocation={vocation:?} vitals={vitals:?}").into());
+    }
+    Ok(())
+}

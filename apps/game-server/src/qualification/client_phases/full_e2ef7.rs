@@ -2836,10 +2836,16 @@ async fn party_spell_journey(
     let (accounts, characters) = peer_identity.replace_slot(&scope, 0)?;
     let scope = SeamClients { accounts: &accounts, characters: &characters, ..scope };
     let clients = &scope;
-    pair[0] = Some(connect_character(clients, 0xe2, 1).await?);
+    const BUILD: character_prep::Seeded = character_prep::Seeded {
+        profile: "s13-party",
+        reason: "party spell level prerequisite",
+    };
+    character_prep::declare_seeded("S13a", "dedicated-character-birth,level-32", BUILD.reason);
+    character_prep::declare_seeded("S13b", "dedicated-character-birth,level-32", BUILD.reason);
+    pair[0] = Some(BUILD.connect(clients, 0xe2, 1).await?);
     let caster = pair[0].as_mut().ok_or("S13 caster missing")?;
+    character_prep::require_sorcerer_level(caster, 32).await?;
     require_current_premium(caster).await?;
-    earn_player_level(caster, world, 32, Duration::from_secs(150)).await?;
     pair[1] = Some(connect_character(clients, 0xe3, 0).await?);
     let (caster, peer) = pair_mut(pair)?;
     if caster.join_snapshot().game_session_id == peer.join_snapshot().game_session_id
