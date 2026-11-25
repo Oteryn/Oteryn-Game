@@ -84,8 +84,11 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
   quest steps), check the values against external sources, not only the
   Crystal/Canary donors, in the owner's source order
   (`docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md`, S24): an official
-  tibia.com announcement (news through the TibiaData API), then the wiki at
-  the target date, then Canary/Crystal as hypothesis only. Cite the URL or
+  tibia.com announcement dated on or before the target date (news through
+  the TibiaData API; a later official source such as the tibia.com spell list
+  supersedes an earlier announcement), then the wiki at the target date, then
+  Canary/Crystal as hypothesis only. A value already accepted under that
+  order with its cited source is not re-flagged. Cite the URL or
   the `docs/reference/` file for each value; when sources disagree, report
   the disagreement and which source wins. Never bypass a site's protection;
   a source the run cannot reach is named as unchecked, not guessed.

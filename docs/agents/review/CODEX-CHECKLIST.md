@@ -13,13 +13,16 @@ table. The grade follows the player-visible effect, not the size of the code.
 | Grade | What it is | Examples |
 | --- | --- | --- |
 | P0 | Security, value or save damage, broken `main` | auth or permission bypass; gold or items lost or duplicated; corrupted or unfenced character save; a red `main` build or gate |
-| P1 | A player flow that a real caller reaches gives a wrong result | quest or dialogue cannot be finished or gets stuck; reward not granted or granted twice; action rolled back; server hang or blocked channel; migration or guard that rejects valid play |
+| P1 | A player flow that a real caller reaches gives a wrong result | quest or dialogue cannot be finished or gets stuck; reward not granted, or a non-value reward (outfit, addon, flag) granted twice; action rolled back; server hang or blocked channel; migration or guard that rejects valid play |
 | P2 | Content fidelity or a contained defect; behaviour still works | text differs from the source; item profile bonus missing or too small; wrong number in a description; NPC on the wrong tile nearby; a label such as "Unknown modifier"; stale docs or counts; a test that reads a retired file |
 | P3 | Style and hygiene | naming, duplicated check, readability |
 
-Hard rule: a finding that does not name the `path:line` through which a player
-actually reaches a broken flow, lost or duplicated value, or a bad save is at
-most P2. A content-fidelity gap is P2 even when it is certain and real. The
+A reward of gold or items granted twice is value duplication, so P0.
+
+Hard rule: a finding that does not name the `path:line` of a real caller (a
+player, an admin or staff path, or CI for a broken `main`) that reaches a
+broken flow, lost or duplicated value, a bad save, a security hole or a red
+`main` is at most P2. A content-fidelity gap is P2 even when it is certain and real. The
 grade follows the effect, not the file: a `content/*.json` error that makes a
 quest unfinishable, drops a callback or blocks an offer is P1.
 
