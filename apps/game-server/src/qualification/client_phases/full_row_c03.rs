@@ -8,7 +8,6 @@
 //! 2. `baseline`: attack a live compiled-world monster; require attributed player hits, monster
 //!    hits on the player, and an idle vitals regeneration rate to compare against.
 //! 3. `critical`: a hit the server marks as critical while the critical projection is positive;
-//!    the attributed frames carry no such mark yet, so the step fails naming it.
 //! 4. `leech`: attacker health and mana rise beyond the idle regeneration while hitting.
 //! 5. `reflect`: a monster hits the player and the same decision damages that monster without a
 //!    player hit.
@@ -24,7 +23,9 @@ use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::cyclopedia_character::{CharacterTab, combat};
 use oteryn_protocol_oteryn::item_view as items;
-use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
+use oteryn_protocol_oteryn::presentation::{
+    PresentationEvent, PresentationEventKind, PresentationSource, PresentationValueKind,
+};
 use std::collections::{BTreeMap, BTreeSet};
 
 use combat::CombatStat as Stat;
@@ -33,9 +34,10 @@ const STEPS: [&str; 10] = [
     "admission", "tabs", "baseline", "critical", "leech", "reflect", "cleave", "perfect-shot", "fatal", "refusal-relog",
 ];
 const FIGHT_SECONDS: u64 = 25;
-/// The attributed damage frames carry no critical, fatal or perfect-shot mark, so the client
-/// cannot tell those hits from ordinary damage.
-const UNMARKED: &str = "needed=server-mark-on-the-hit;ValueText-has-no-critical-fatal-or-perfect-shot-mark;source=crates/protocol-oteryn/src/presentation.rs:101";
+// Crystal 201189f8 src/utils/utils_definitions.hpp:141,195.
+const CRITICAL_EFFECT: u32 = 173;
+const FATAL_EFFECT: u32 = 230;
+const PERFECT_SHOT_CONTRACT: &str = "needed=ValueText.perfect_shot;Crystal-201189f8:src/game/game.cpp:7992;src/server/network/protocol/protocolgame.cpp:5637";
 
 struct Row {
     started: std::time::Instant,
@@ -402,32 +404,86 @@ async fn visible_monster(
     Ok(None)
 }
 
-/// One attributed ValueText observation: decision ordinal, target, attacker, value.
-type Seen = (u32, EntityRef, Option<EntityRef>, u64);
+/// One attributed ValueText observation: batch decision, target, attacker, damage, effect.
+type Seen = (u64, EntityRef, Option<EntityRef>, u64, Option<u32>);
 
 #[derive(Default)]
 struct Fight {
     seen: Vec<Seen>,
+    batch: u64,
     health_up: u64,
     mana_up: u64,
+    health_down: u64,
+    mana_down: u64,
     seconds: f64,
     flank: Option<EntityRef>,
 }
 
 impl Fight {
     fn own_hits(&self, me: EntityRef) -> Vec<u64> {
-        self.seen.iter().filter(|(_, t, a, _)| *a == Some(me) && *t != me).map(|s| s.3).collect()
+        self.seen
+            .iter()
+            .filter(|(_, t, a, _, _)| *a == Some(me) && *t != me)
+            .map(|s| s.3)
+            .collect()
     }
-}
 
-fn collect(event: &SessionEvent, out: &mut Vec<Seen>) {
-    let SessionEvent::Presentation(delta) = event else { return };
-    for e in &delta.value {
-        if let PresentationEventKind::ValueText { kind, target, attacker, primary, .. } = &e.kind
-            && matches!(kind, PresentationValueKind::DamageDealt | PresentationValueKind::DamageReceived | PresentationValueKind::DamageOthers)
-            && primary.value > 0
-        {
-            out.push((e.decision_ordinal, *target, *attacker, primary.value));
+    fn own_marked_hit(&self, me: EntityRef, id: u32) -> Option<u64> {
+        self.seen
+            .iter()
+            .find_map(|(_, target, attacker, value, effect)| {
+                (*target != me && *attacker == Some(me) && *effect == Some(id)).then_some(*value)
+            })
+    }
+
+    fn collect(&mut self, event: &SessionEvent) {
+        let SessionEvent::Presentation(delta) = event else {
+            return;
+        };
+        self.collect_presentation(&delta.value);
+    }
+
+    fn collect_presentation(&mut self, events: &[PresentationEvent]) {
+        self.batch += 1;
+        for e in events {
+            if let PresentationEventKind::ValueText {
+                kind,
+                target,
+                attacker,
+                primary,
+                position,
+                ..
+            } = &e.kind
+                && matches!(
+                    kind,
+                    PresentationValueKind::DamageDealt
+                        | PresentationValueKind::DamageReceived
+                        | PresentationValueKind::DamageOthers
+                )
+                && primary.value > 0
+            {
+                let marked = events.iter().find_map(|cue| {
+                    if cue.decision_ordinal != e.decision_ordinal {
+                        return None;
+                    }
+                    match cue.kind {
+                        PresentationEventKind::MagicEffect {
+                            position: at,
+                            effect_id,
+                            source: PresentationSource::Own,
+                        } if at == *position
+                            && matches!(effect_id, CRITICAL_EFFECT | FATAL_EFFECT) =>
+                        {
+                            Some(effect_id)
+                        }
+                        _ => None,
+                    }
+                });
+                // Decision ordinals are scoped to one presentation batch.
+                let decision = (self.batch << 32) | u64::from(e.decision_ordinal);
+                self.seen
+                    .push((decision, *target, *attacker, primary.value, marked));
+            }
         }
     }
 }
@@ -457,15 +513,19 @@ async fn fight(client: &mut DevClientSession, target: EntityRef, seconds: u64, h
     }
     let mut log = Fight { flank: monsters_near(client, 1).into_iter().find(|m| *m != target), ..Fight::default() };
     let began = tokio::time::Instant::now();
+    let deadline = began + Duration::from_secs(seconds);
+    verdict::Harness::global().bounded_wait(deadline, "combat-observation");
     let mut last = *client.actor_vitals().ok_or("vitals-absent")?;
-    while began.elapsed() < Duration::from_secs(seconds) && log.own_hits(me).len() < hits_wanted {
+    while tokio::time::Instant::now() < deadline && log.own_hits(me).len() < hits_wanted {
         client.service_liveness(Duration::from_millis(50)).await?;
         let now = *client.actor_vitals().ok_or("vitals-absent")?;
         log.health_up += u64::from(now.health.saturating_sub(last.health));
         log.mana_up += u64::from(now.mana.saturating_sub(last.mana));
+        log.health_down += u64::from(last.health.saturating_sub(now.health));
+        log.mana_down += u64::from(last.mana.saturating_sub(now.mana));
         last = now;
         for event in client.take_events() {
-            collect(&event, &mut log.seen);
+            log.collect(&event);
         }
         if log.flank.is_none() {
             log.flank = monsters_near(client, 1).into_iter().find(|m| *m != target);
@@ -589,10 +649,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let (idle_hp, idle_mp) = idle_rate(&mut client, 8).await?;
     let mut base_hits = Vec::new();
     let mut base_taken = 0;
+    let mut base_health_down = 0;
+    let mut base_mana_down = 0;
     for _ in 0..3 {
         let target = reachable_monster(&mut client, world, &metadata.spawns).await?;
         let base = fight(&mut client, target, FIGHT_SECONDS, 12).await?;
         base_hits.extend(base.own_hits(me));
+        base_health_down += base.health_down;
+        base_mana_down += base.mana_down;
         base_taken += base
             .seen
             .iter()
@@ -612,7 +676,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if base_hits.len() >= 6 && base_taken > 0 {
         row.pass("baseline", (&base_hits, base_taken, idle_hp, idle_mp, clean));
     } else {
-        row.fail("baseline", format!("attributed-player-hits={};monster-hits-on-player={base_taken};needed>=6-and>=1", base_hits.len()));
+        row.fail("baseline", format!("attributed-player-hits={};monster-hits-on-player={base_taken};unattributed-hp-drop={base_health_down};unattributed-mana-drop={base_mana_down};needed>=6-and>=1", base_hits.len()));
     }
     let base_max = base_hits.iter().copied().max().unwrap_or(0);
 
@@ -621,15 +685,30 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let hits = hunt.own_hits(me);
 
     // critical: a hit marked critical by the server while the projection is positive.
-    let (chance, damage) = (with.off(Stat::CriticalChance), with.off(Stat::CriticalDamage));
+    let (chance, damage) = (
+        with.off(Stat::CriticalChance),
+        with.off(Stat::CriticalDamage),
+    );
     if chance <= 0 || damage <= 0 {
-        row.fail("critical", needed("critical-chance-and-damage", chance.min(damage)));
+        row.fail(
+            "critical",
+            needed("critical-chance-and-damage", chance.min(damage)),
+        );
     } else if !clean {
-        row.fail("critical", "needed=clean-non-critical-baseline;a-source-that-cannot-be-unequipped-remains");
+        row.fail(
+            "critical",
+            "needed=clean-non-critical-baseline;a-source-that-cannot-be-unequipped-remains",
+        );
+    } else if let Some(value) = hunt.own_marked_hit(me, CRITICAL_EFFECT) {
+        row.pass("critical", (chance, damage, value));
     } else {
-        // A hit above a sampled clean maximum can still be an ordinary roll; only a server mark
-        // on the hit itself separates a critical from ordinary damage.
-        row.fail("critical", format!("{UNMARKED};clean-max={base_max};hunt-max={:?}", hits.iter().max()));
+        row.fail(
+            "critical",
+            format!(
+                "needed=attributed-critical-effect;hits={};clean-max={base_max}",
+                hits.len()
+            ),
+        );
     }
 
     // leech: attacker vitals must rise beyond idle regeneration, with the expected leech non-zero.
@@ -666,10 +745,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if reflection <= 0 {
         row.fail("reflect", needed("physical-reflection", reflection));
     } else {
-        let reflected = hunt.seen.iter().any(|(ordinal, victim, attacker, _)| {
+        let reflected = hunt.seen.iter().any(|(ordinal, victim, attacker, _, _)| {
             *victim != me
                 && *attacker != Some(me)
-                && hunt.seen.iter().any(|(o, t, a, _)| o == ordinal && *t == me && *a == Some(*victim))
+                && hunt.seen.iter().any(|(o, t, a, _, _)| o == ordinal && *t == me && *a == Some(*victim))
         });
         let taken = hunt.seen.iter().filter(|s| s.1 == me).count();
         if reflected {
@@ -684,7 +763,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if cleave <= 0 {
         row.fail("cleave", needed("cleave", cleave));
     } else if let Some(flank) = hunt.flank {
-        let second: Vec<u64> = hunt.seen.iter().filter(|(_, t, a, _)| *t == flank && *a == Some(me)).map(|s| s.3).collect();
+        let second: Vec<u64> = hunt.seen.iter().filter(|(_, t, a, _, _)| *t == flank && *a == Some(me)).map(|s| s.3).collect();
         if second.is_empty() {
             row.fail("cleave", format!("projection={cleave};second-monster-adjacent-but-took-no-player-damage"));
         } else {
@@ -701,7 +780,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     } else if let Some((distance, bonus)) = shots.iter().copied().find(|(d, _)| *d == 1) {
         // An ordinary hit can exceed the flat bonus, so the lowest hit proves nothing on its own.
         let floor = hits.iter().copied().min().unwrap_or(0);
-        row.fail("perfect-shot", format!("{UNMARKED};distance={distance};bonus={bonus};lowest-hit={floor}"));
+        row.fail("perfect-shot", format!("{PERFECT_SHOT_CONTRACT};distance={distance};bonus={bonus};lowest-hit={floor}"));
     } else {
         row.fail("perfect-shot", format!("projected={shots:?};needed=ranged-attack-at-the-projected-distance-that-this-adjacent-fight-cannot-produce"));
     }
@@ -711,22 +790,32 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if fatal <= 0 {
         row.fail("fatal", needed("onslaught-from-a-tiered-weapon", fatal));
     } else if !clean {
-        row.fail("fatal", "needed=clean-baseline;a-source-that-cannot-be-unequipped-remains");
+        row.fail(
+            "fatal",
+            "needed=clean-baseline;a-source-that-cannot-be-unequipped-remains",
+        );
+    } else if let Some(value) = hunt.own_marked_hit(me, FATAL_EFFECT) {
+        row.pass("fatal", (fatal, value));
     } else {
-        row.fail("fatal", format!("{UNMARKED};projection={fatal};clean-max={base_max};hunt-max={:?}", hits.iter().max()));
+        row.fail(
+            "fatal",
+            format!(
+                "needed=attributed-fatal-effect;projection={fatal};hits={};clean-max={base_max}",
+                hits.len()
+            ),
+        );
     }
 
     // refusal and durability.
     let before_vitals = *client.actor_vitals().ok_or("vitals-absent")?;
     let refusal = client.session_mut().attack_target(Some(&me)).await?;
     client.service_liveness(Duration::from_millis(300)).await?;
-    let self_damage: Vec<_> = client
-        .take_events()
-        .iter()
-        .fold(Vec::new(), |mut seen, e| {
-            collect(e, &mut seen);
-            seen
-        })
+    let mut refusal_hits = Fight::default();
+    for event in client.take_events() {
+        refusal_hits.collect(&event);
+    }
+    let self_damage: Vec<_> = refusal_hits
+        .seen
         .into_iter()
         .filter(|s| s.1 == me && s.2 == Some(me))
         .collect();
@@ -776,6 +865,57 @@ mod tests {
         row.fail("leech", "no vitals increase");
         row.pass("leech", "late");
         assert!(row.passed.is_empty() && row.failures.len() == 1);
+    }
+
+    #[test]
+    fn marks_require_the_same_batch_decision_position_and_attacker() {
+        use oteryn_protocol_oteryn::{
+            presentation::{PresentationColor, PresentationValue},
+            world_spatial::ActorPosition,
+        };
+        let entity = |byte| EntityRef { identity: [byte; 16], generation: 1 };
+        let (me, other, target) = (entity(1), entity(2), entity(3));
+        let position = ActorPosition { x: 7, y: 8, floor: 7 };
+        let hit = |attacker| PresentationEvent {
+            decision_ordinal: 1,
+            emission_ordinal: 1,
+            kind: PresentationEventKind::ValueText {
+                kind: PresentationValueKind::DamageDealt,
+                position,
+                target,
+                attacker: Some(attacker),
+                primary: PresentationValue { value: 4, color: PresentationColor::Red },
+                secondary: None,
+            },
+        };
+        let mark = |decision_ordinal, position, source, effect_id| PresentationEvent {
+            decision_ordinal,
+            emission_ordinal: 2,
+            kind: PresentationEventKind::MagicEffect { position, source, effect_id },
+        };
+        let critical = mark(1, position, PresentationSource::Own, CRITICAL_EFFECT);
+        for cue in [
+            mark(2, position, PresentationSource::Own, CRITICAL_EFFECT),
+            mark(1, ActorPosition { x: 9, ..position }, PresentationSource::Own, CRITICAL_EFFECT),
+            mark(1, position, PresentationSource::Others, CRITICAL_EFFECT),
+        ] {
+            let mut log = Fight::default();
+            log.collect_presentation(&[hit(me), cue]);
+            assert_eq!(log.own_hits(me), vec![4]);
+            assert_eq!(log.own_marked_hit(me, CRITICAL_EFFECT), None);
+        }
+        let mut log = Fight::default();
+        log.collect_presentation(&[hit(me)]);
+        log.collect_presentation(&[critical]);
+        log.collect_presentation(&[hit(other), critical]);
+        assert_eq!(log.own_marked_hit(me, CRITICAL_EFFECT), None);
+        log.collect_presentation(&[hit(me), critical]);
+        log.collect_presentation(&[
+            hit(me),
+            mark(1, position, PresentationSource::Own, FATAL_EFFECT),
+        ]);
+        assert_eq!(log.own_marked_hit(me, CRITICAL_EFFECT), Some(4));
+        assert_eq!(log.own_marked_hit(me, FATAL_EFFECT), Some(4));
     }
 
     #[test]
