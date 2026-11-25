@@ -550,9 +550,9 @@ impl ObtainContent {
                             .find(|field| field["field_path"] == "oteryn:source.npc.display_name")
                     })
                     .and_then(|field| field["value"]["value"].as_str());
-                let slug = key.rsplit('.').next().ok_or("invalid NPC key")?;
-                let name = name.map_or_else(|| slug.replace('_', " "), str::to_owned);
-                if npc_names.insert(key.to_owned(), name).is_some() {
+                if let Some(name) = name.filter(|name| !name.trim().is_empty())
+                    && npc_names.insert(key.to_owned(), name.to_owned()).is_some()
+                {
                     return Err(format!("duplicate NPC definition {key}").into());
                 }
             }
@@ -572,29 +572,26 @@ impl ObtainContent {
         &self,
         target: &Target,
         npcs: &oteryn_world_bundle::npc::Table,
-    ) -> Option<Vec<&NpcReward>> {
+    ) -> TestResult<Option<Vec<&NpcReward>>> {
         let mut rewards = self
             .callbacks
             .iter()
             .filter(|callback| {
-                npcs.npcs
+                callback
+                    .outfit
                     .iter()
-                    .any(|npc| npc.key == callback.npc && !npc.placements.is_empty())
-                    && callback
-                        .outfit
-                        .iter()
-                        .chain(&callback.outfits)
-                        .any(|reward| {
-                            reward.sex != Some(CreationSex::Male)
-                                && match target {
-                                    Target::Outfit { outfit_key } => outfit_key == &reward.outfit,
-                                    Target::Addon { outfit_key, addon } => {
-                                        outfit_key == &reward.outfit
-                                            && reward.addons & addon_mask(*addon) != 0
-                                    }
-                                    Target::Mount { .. } => false,
+                    .chain(&callback.outfits)
+                    .any(|reward| {
+                        reward.sex != Some(CreationSex::Male)
+                            && match target {
+                                Target::Outfit { outfit_key } => outfit_key == &reward.outfit,
+                                Target::Addon { outfit_key, addon } => {
+                                    outfit_key == &reward.outfit
+                                        && reward.addons & addon_mask(*addon) != 0
                                 }
-                        })
+                                Target::Mount { .. } => false,
+                            }
+                    })
             })
             .collect::<Vec<_>>();
         rewards.sort_by_key(|callback| {
@@ -606,9 +603,27 @@ impl ObtainContent {
                 .min()
                 .unwrap_or(0)
         });
-        rewards
-            .into_iter()
-            .find_map(|reward| self.dialogue_to(reward))
+        let Some(reward) = rewards.first() else {
+            return Ok(None);
+        };
+        if !npcs
+            .npcs
+            .iter()
+            .any(|npc| npc.key == reward.npc && !npc.placements.is_empty())
+        {
+            return Err(format!(
+                "harness-obtain-path: NPC {} has no placement in this fixture",
+                reward.npc
+            )
+            .into());
+        }
+        self.dialogue_to(reward).map(Some).ok_or_else(|| {
+            format!(
+                "harness-obtain-path: no dialogue journey to reward from {}",
+                reward.npc
+            )
+            .into()
+        })
     }
 
     fn dialogue_to<'a>(&'a self, reward: &'a NpcReward) -> Option<Vec<&'a NpcReward>> {
@@ -881,7 +896,7 @@ async fn prepare<'a>(
     }
     let mut actions = Vec::new();
     for target in targets {
-        if let Some(steps) = obtain.npc_route(&target, npcs) {
+        if let Some(steps) = obtain.npc_route(&target, npcs)? {
             for item in steps.iter().flat_map(|step| &step.take) {
                 seed_item(clients, &item.item, i64::from(item.count), items).await?;
             }
@@ -1673,70 +1688,58 @@ fn check_speed(
     level: u32,
     bonus: u16,
 ) -> TestResult {
-    use oteryn_gameplay_world::map::floor::{Ground, resolve_landing};
-    use oteryn_gameplay_world::movement::CardinalStep::*;
     let basis = spatial_basis::current(client)?;
     let entities = client
         .world_entities()
         .ok_or("missing wire spatial entities")?;
-    let origin = (
-        i32::from(position.x),
-        i32::from(position.y),
-        -i32::from(position.floor),
-    );
-    let at_tile = |(x, y, z): (i32, i32, i32)| {
-        Some(TilePos {
-            x: x.try_into().ok()?,
-            y: y.try_into().ok()?,
-            floor: i8::try_from(z).ok()?.checked_neg()?,
-        })
-    };
-    let ground = |cell| {
-        let Some(at) = at_tile(cell) else {
-            return Ground::Absent;
-        };
-        match world.base().tile(at.x, at.y, at.floor) {
-            None => Ground::Absent,
-            Some(tile) if tile.walkable() && world.enterable(at) => Ground::Walkable,
-            Some(_) => Ground::Blocked,
-        }
-    };
-    let mut checked_walkable = false;
+    let mut checked_cardinal = false;
     let cardinal = forecast(level, bonus, 150).ok_or("missing reference step duration")?;
     for (index, (ms, direction)) in motion
         .prewalk_ms
         .into_iter()
         .zip([
-            North, East, South, West, NorthEast, SouthEast, SouthWest, NorthWest,
+            (0, -1),
+            (1, 0),
+            (0, 1),
+            (-1, 0),
+            (1, -1),
+            (1, 1),
+            (-1, 1),
+            (-1, -1),
         ])
         .enumerate()
     {
-        let (dx, dy) = direction.delta();
-        let next = (origin.0 + dx, origin.1 + dy, origin.2);
-        let same_floor_step = resolve_landing(
-            world.floors(),
-            ground,
-            |cell| ground(cell) == Ground::Walkable,
-            origin,
-            direction,
-        ) == Ok(next);
-        let walkable = same_floor_step
-            && at_tile(next).is_some_and(|at| {
-                let protection = world
-                    .base()
-                    .tile(at.x, at.y, at.floor)
-                    .is_some_and(|tile| tile.protection_zone());
-                world.floors().teleport(at).is_none()
-                    && !entities.iter().any(|entry| {
+        let walkable = if let Some((x, y)) = position
+            .x
+            .checked_add_signed(direction.0)
+            .zip(position.y.checked_add_signed(direction.1))
+        {
+            let at = TilePos {
+                x,
+                y,
+                floor: position.floor,
+            };
+            if world.floors().contains(at) || world.floors().teleport(at).is_some() {
+                return Err(format!(
+                    "forecast direction {index}: fixture crosses a floor change or teleport"
+                )
+                .into());
+            }
+            world.base().tile(x, y, at.floor).is_some_and(|tile| {
+                tile.walkable()
+                    && !entities.others().any(|entry| {
                         use oteryn_dev_client::EntityKind::{Creature, Npc, Player};
                         let blocks = matches!(entry.kind, Creature | Npc)
-                            || (entry.kind == Player && !protection);
+                            || (entry.kind == Player && !tile.protection_zone());
                         blocks
-                            && entry.position.x == next.0
-                            && entry.position.y == next.1
+                            && entry.position.x == i32::from(x)
+                            && entry.position.y == i32::from(y)
                             && entry.position.floor == basis.floor(at.floor)
                     })
-            });
+            })
+        } else {
+            false
+        };
         // Crystal 201189f8 src/creatures/creature.cpp:1492-1511.
         let expected = if !walkable {
             0
@@ -1748,10 +1751,10 @@ fn check_speed(
         if ms != expected {
             return Err(format!("forecast direction {index}: observed {ms}ms, expected {expected}ms at level {level}, bonus {bonus}").into());
         }
-        checked_walkable |= walkable;
+        checked_cardinal |= index < 4 && ms != 0;
     }
-    if !checked_walkable {
-        return Err("no walkable forecast direction at the fixture position".into());
+    if !checked_cardinal {
+        return Err("no positive cardinal movement forecast at the fixture position".into());
     }
     Ok(())
 }
@@ -1769,7 +1772,7 @@ mod tests {
         let target = Target::Outfit {
             outfit_key: "oteryn:outfit.assassin".into(),
         };
-        assert!(obtain.npc_route(&target, &Table::default()).is_none());
+        assert!(obtain.npc_route(&target, &Table::default()).is_err());
         let npcs = Table {
             npcs: vec![Npc {
                 key: "oteryn:npc.vescu".into(),
@@ -1782,7 +1785,7 @@ mod tests {
             }],
         };
         let steps = obtain
-            .npc_route(&target, &npcs)
+            .npc_route(&target, &npcs)?
             .ok_or("missing Vescu reward route")?;
         let words = steps
             .iter()
