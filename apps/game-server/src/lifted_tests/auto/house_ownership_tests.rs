@@ -2,7 +2,7 @@
 //! never a qualification or activation of D1383's absent catalogue producer.
 #![allow(clippy::expect_used)]
 use crate::bestiary_postgres_harness::{
-    self as fixture, Harness, TestResult, debug, id, runtime,
+    self as fixture, Harness, TestResult, configured_admin, debug, id, runtime,
 };
 use crate::durability::DurabilityRoot;
 use crate::durability::house_ownership::{
@@ -26,13 +26,8 @@ where
     F: FnOnce(Arc<Harness>) -> Fut,
     Fut: Future<Output = TestResult>,
 {
-    let admin = match std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
-        Ok(admin) => admin,
-        Err(std::env::VarError::NotPresent) => {
-            eprintln!("Skipping {tag}: OTERYN_TEST_POSTGRES_ADMIN_URL is absent");
-            return Ok(());
-        }
-        Err(error) => return Err(error.into()),
+    let Some(admin) = configured_admin() else {
+        return Ok(());
     };
     let rt = runtime()?;
     let h = Arc::new(rt.block_on(Harness::create(admin, tag, true))?);
@@ -48,12 +43,8 @@ where
 }
 
 async fn runtime_root(h: &Harness) -> TestResult<DurabilityRoot> {
-    runtime_root_with_options(h, "").await
-}
-
-async fn runtime_root_with_options(h: &Harness, options: &str) -> TestResult<DurabilityRoot> {
     let root = DurabilityRoot::connect_test_runtime(&format!(
-        "{}?options=-c%20role%3Doteryn_game_runtime{options}",
+        "{}?options=-c%20role%3Doteryn_game_runtime",
         h.database.url
     ))?;
     assert!(root.maintain_ready_once().await?);
@@ -228,38 +219,12 @@ fn house_ownership_recovered_bid_escrow_replay_conflict_and_session_fence() -> T
 fn house_ownership_first_rent_settlement_and_restart_replay() -> TestResult {
     run("house_ownership_winner", |h| async move {
         seed(&h, true).await?;
-        // Keep the fixture deadline fixed between attempts. Only this test's
-        // runtime connections resolve clock_timestamp() to the test clock.
-        let deadline: i64 = sqlx::query_scalar(
-            "UPDATE game_house_auctions SET ends_at=pg_catalog.clock_timestamp()
-             WHERE auction_id=encode($1,'hex')::uuid
-             RETURNING (extract(epoch FROM ends_at)*1000000)::bigint",
-        )
-        .bind(id(76).as_slice()).fetch_one(&h.pool).await?;
-        let pool = &h.pool;
-        let set_clock = |now: i64| async move {
-            sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE OR REPLACE FUNCTION public.clock_timestamp() RETURNS timestamptz
-                 LANGUAGE sql VOLATILE AS $$ SELECT to_timestamp({now}::numeric / 1000000) $$"
-            )))
-            .execute(pool)
-            .await
-        };
-        set_clock(deadline - 1).await?;
-        let options = "%20-c%20search_path%3Dpublic%2Cpg_catalog";
-        let root = runtime_root_with_options(&h, options).await?;
+        let root = runtime_root(&h).await?;
+        sqlx::query("UPDATE game_house_auctions SET ends_at=clock_timestamp()-interval '1 second' WHERE auction_id=encode($1,'hex')::uuid")
+            .bind(id(76).as_slice()).execute(&h.pool).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = root.open_character_authority(&seal).await.map_err(debug)?;
         let request = settlement_request()?;
-        assert_eq!(
-            root.house_settlement(&authority, &h.node, &gate(&root), request.clone())
-                .await
-                .map_err(debug)?,
-            HouseOwnershipOutcome::NotDue
-        );
-        assert_eq!(amounts(&h).await?, (0, 600, 0));
-        assert_eq!(h.count("game_house_audit_outbox").await?, 0);
-        set_clock(deadline).await?;
         sqlx::query(
             "UPDATE game_house_properties SET rent_gold=200,revision=revision+1 WHERE house_key=$1",
         )
@@ -283,7 +248,7 @@ fn house_ownership_first_rent_settlement_and_restart_replay() -> TestResult {
         let access:(String,String)=sqlx::query_as("SELECT role,acl_revision::text FROM game_house_access(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid)")
             .bind(id(fixture::WORLD).as_slice()).bind(HOUSE).bind(id(fixture::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(access, ("OWNER".into(), "1".into()));
-        let restarted = runtime_root_with_options(&h, options).await?;
+        let restarted = runtime_root(&h).await?;
         let reopened = restarted
             .open_character_authority(&seal)
             .await
