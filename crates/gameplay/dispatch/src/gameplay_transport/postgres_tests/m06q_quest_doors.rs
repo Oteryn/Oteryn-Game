@@ -583,10 +583,12 @@ fn scenario(
                     );
                 }
                 PlayerGroundCase::Refused => {
-                    // x=1 is a real tile beyond reach; x=8 is in reach but absent from the bundle.
-                    for (command_id, x, expected) in [
-                        (101, 1, LoopMoveResult::TooFar),
-                        (102, 8, LoopMoveResult::Refused(LoopMoveRefusal::Blocked)),
+                    // Door USE placed the actor at (6, 0). The absent cell is adjacent.
+                    assert!(map.base().tile(1, 0, -7).is_some());
+                    assert!(map.base().tile(6, 1, -7).is_none());
+                    for (command_id, target, expected) in [
+                        (101, cell(1), LoopMoveResult::TooFar),
+                        (102, WorldTilePosition { y: 1, ..cell(6) }, LoopMoveResult::Refused(LoopMoveRefusal::Blocked)),
                     ] {
                         assert_eq!(
                             owner
@@ -596,7 +598,7 @@ fn scenario(
                                     LoopMove {
                                         item,
                                         count: None,
-                                        target: LoopTarget::Ground(cell(x)),
+                                        target: LoopTarget::Ground(target),
                                         slot: None,
                                     }
                                 )

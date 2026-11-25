@@ -16,5 +16,5 @@ DO $$ DECLARE body TEXT; anchor TEXT := ' SELECT CASE'; BEGIN
   RAISE EXCEPTION 'Crystal corpse registry anchor changed';
  END IF;
  EXECUTE replace(body,anchor,anchor || $branches$
-  WHEN p_key='oteryn:item.tibia.i50029' THEN ARRAY[300000,300000,60000]::BIGINT[]$branches$);
+  WHEN p_key='oteryn:item.tibia.i50029' THEN ARRAY[60000,60000,60000]::BIGINT[]$branches$);
 END $$;

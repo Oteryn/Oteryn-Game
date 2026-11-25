@@ -190,7 +190,7 @@ def admit_ranged_equipment(root, document, parity):
 
 def corpse_sql(root):
     from quest_corpse_profiles import XML, XML_SHA, decay_closure
-    from quest_shared_boss_corpses import BODIES
+    from quest_shared_boss_corpses import BODIES, apply_arbaziloth_corpse_facts
 
     raid = json.loads((root / PATH).read_bytes())
     key_prefix = "oteryn:item.tibia.i"
@@ -211,6 +211,7 @@ def corpse_sql(root):
     if hashlib.sha256(raw).hexdigest() != XML_SHA:
         raise ValueError("Quest corpse Item source digest differs")
     xml = source.xml_index(raw)
+    apply_arbaziloth_corpse_facts(xml)
     for number in decay_closure(quest_roots, xml):
         attrs = source.attrs(xml[number])
         target = int(attrs["decayto"])

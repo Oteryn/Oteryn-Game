@@ -222,6 +222,14 @@ async fn step(
         encode_step_intent(dir),
     )
     .await?;
+    assert_position(owner, session, at).await
+}
+
+async fn assert_position(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: &AdmittedSession,
+    at: Position,
+) -> TestResult {
     let actor = session.runtime_actor.ok_or("player")?;
     assert_eq!(
         owner
@@ -453,7 +461,6 @@ async fn door(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     session: &mut AdmittedSession,
     at: Position,
-    direction: StepDirection,
 ) -> TestResult {
     owner
         .refresh_quest_session(session.game_session_id, false)
@@ -462,7 +469,8 @@ async fn door(
         map_use(owner, session, at).await?,
         UseDisposition::Committed
     );
-    step(owner, session, direction, at).await
+    // The source quest door moves onto the doorway as part of USE.
+    assert_position(owner, session, at).await
 }
 
 async fn assert_journal(
@@ -589,13 +597,7 @@ pub(super) async fn exercise(
     );
     state(h, 2, Some((joining, 2)), &[]).await?;
     relocate(owner, session, position(32598, 31932, -15)).await?;
-    door(
-        owner,
-        session,
-        position(32598, 31933, -15),
-        StepDirection::South,
-    )
-    .await?;
+    door(owner, session, position(32598, 31933, -15)).await?;
     assert_eq!(
         map_use(owner, session, BROOCH).await?,
         UseDisposition::Committed
@@ -682,13 +684,7 @@ pub(super) async fn exercise(
     );
     state(h, 15, Some((urn, 27)), &[4872]).await?;
     relocate(owner, session, position(32957, 32836, -8)).await?;
-    door(
-        owner,
-        session,
-        position(32957, 32835, -8),
-        StepDirection::North,
-    )
-    .await?;
+    door(owner, session, position(32957, 32835, -8)).await?;
     assert_eq!(
         map_use(owner, session, URN).await?,
         UseDisposition::Committed
@@ -706,13 +702,7 @@ pub(super) async fn exercise(
     );
     state(h, 18, Some((poetry, 36)), &[4872]).await?;
     relocate(owner, session, position(32702, 31605, -14)).await?;
-    door(
-        owner,
-        session,
-        position(32703, 31605, -14),
-        StepDirection::East,
-    )
-    .await?;
+    door(owner, session, position(32703, 31605, -14)).await?;
     assert_eq!(
         map_use(owner, session, POETRY).await?,
         UseDisposition::Committed
