@@ -134,7 +134,10 @@ async fn acquire(
             if text == "hi" {
                 continue;
             }
-            let window = npc_service::decode_npc_trade_window(&delta.payload)
+            let details_selected = client
+                .selected_capabilities()
+                .contains(&oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+            let window = npc_service::decode_npc_trade_window_for(&delta.payload, details_selected)
                 .map_err(|e| format!("trade window: {e:?}"))?;
             let Some((index, offer)) = window.offers.iter().enumerate().find(|(_, offer)| {
                 offer.side == npc_service::NpcTradeSide::Buy
