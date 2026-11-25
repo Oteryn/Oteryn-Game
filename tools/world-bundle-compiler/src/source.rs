@@ -232,6 +232,7 @@ fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Proj
         .collect::<Result<Vec<_>, _>>()?;
     crate::authored_props::apply(root, &mut index, &mut regions, selected)?;
     scoped_ground::validate(root, &index, &regions, selected)?;
+    crate::startup_attributes::apply(root, &mut index, &mut regions, selected)?;
     let mut families = Families::default();
     for shard in shards(&root.join("content/world/transitions"), "teleports-")? {
         families.add_teleports(&shard)?;

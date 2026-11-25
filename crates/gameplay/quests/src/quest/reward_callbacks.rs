@@ -363,6 +363,9 @@ pub struct RewardCallback {
     pub reply: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub failure_reply: Vec<String>,
+    /// Source-authored dialogue topic after a definitive refusal.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failure_topic: Option<u16>,
     pub sources: Vec<String>,
 }
 
@@ -599,6 +602,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/travora-tickets.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
 ];
@@ -1196,6 +1200,8 @@ fn validate_document_with_capacity(
             || c.inventory.iter().any(|rule| {
                 !slug(&rule.item, "oteryn:item.", b"._/:-", 256) || rule.minimum > rule.maximum
             })
+            || (c.failure_topic.is_some()
+                && (c.failure_reply.is_empty() || c.carried_item.is_some()))
             || c.failure_reply.len() > 8
             || c.failure_reply.iter().any(|line| {
                 line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)
@@ -1255,6 +1261,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
     let terms = terms.as_object_mut().ok_or("reward terms")?;
     terms.remove("reply");
     terms.remove("failure_reply");
+    terms.remove("failure_topic");
     terms.remove("sources");
     let bytes = serde_json::to_vec(terms).map_err(|e| e.to_string())?;
     Ok(Some(Sha256::digest(bytes).into()))
@@ -2479,9 +2486,8 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing and 31 QB routes. The final two terms are
-        // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12);
+        // Shared includes five numbered-key routes. The Travora document has six ticket routes.
+        assert_eq!(load()?.len(), 238 + 5 + 59 + 125 + 1 + 1 + 13 + 12 + 6);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2521,6 +2527,11 @@ mod tests {
             "oteryn:quest-reward/m36-rock-steady-second",
             "oteryn:quest-reward/m36-rock-steady-start",
             "oteryn:quest-reward/m36-rock-steady-weapon",
+            "oteryn:quest-reward/prisoner-apples",
+            "oteryn:quest-reward/prisoner-key-3666",
+            "oteryn:quest-reward/shirith-key-3033",
+            "oteryn:quest-reward/skjaar-key-3142",
+            "oteryn:quest-reward/skjaar-quiz-donation",
         ];
         let added: BTreeSet<_> = legacy
             .iter()
@@ -2528,7 +2539,7 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 207);
+        assert_eq!(legacy.len(), 207 + 5);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))

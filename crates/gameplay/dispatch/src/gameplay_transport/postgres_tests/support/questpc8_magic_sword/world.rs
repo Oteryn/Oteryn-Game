@@ -10,6 +10,21 @@ pub(super) fn world(
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
+    let startup: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/world-bundle-compiler/data/crystal-startup-bindings.json"
+    )))?;
+    let passage_action = startup["bindings"]
+        .as_array()
+        .and_then(|rows| {
+            rows.iter().find(|row| {
+                row["position"] == serde_json::json!([32578, 32197, 15])
+                    && row["item"] == 1631
+                    && row["attribute"] == "action"
+            })
+        })
+        .and_then(|row| row["value"].as_u64())
+        .ok_or("published passage action")?;
     let appearances = [432, 1948, 1631, 2472, 2123, 1633];
     let native_index = native.item_index().ok_or("native item index")?;
     for (index, appearance) in appearances.iter().enumerate() {
@@ -79,7 +94,14 @@ pub(super) fn world(
                                 + 1,
                         )?,
                         depth: 0,
-                        attrs: Default::default(),
+                        attrs: sector::Attrs {
+                            action: if appearance == 1631 {
+                                Some(u16::try_from(passage_action)?)
+                            } else {
+                                None
+                            },
+                            ..Default::default()
+                        },
                     });
                 }
                 grouped

@@ -17,6 +17,7 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-m10.json"),
         include_str!("../../../../../../../content/quests/npc-offers/threatened-dreams.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/travora-tickets.json"),
     ] {
         let document: Offers = serde_json::from_str(source).ok()?;
         if document.schema != 1 {

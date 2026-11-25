@@ -1,25 +1,54 @@
 {
   "events": [
     {
-      "name": "Eexample 1",
-      "startdate": "01/01/2024",
-      "enddate": "12/31/2024",
+      "name": "Double Loot (Crystal 201189f8 data/json/eventscheduler/events.json:130–135)",
+      "startdate": "11/12/2024",
+      "enddate": "11/17/2024",
       "ingame": {
-        "exprate": 100,
-        "lootrate": 100,
-        "spawnrate": 100,
-        "skillrate": 100
+        "lootrate": 200
       }
     },
     {
-      "name": "Eexample 2",
-      "startdate": "01/01/2024",
-      "enddate": "12/31/2024",
+      "name": "Rapid Respawn and Double Skill Weekend (news 8801)",
+      "startdate": "06/05/2026",
+      "enddate": "06/08/2026",
+      "starthour": "04:00",
+      "endhour": "03:59:59",
       "ingame": {
-        "exprate": 100,
-        "lootrate": 100,
-        "spawnrate": 100,
-        "skillrate": 100
+        "spawnrate": 500,
+        "skillrate": 200
+      }
+    },
+    {
+      "name": "Rapid Respawn Weekend (news 8881)",
+      "startdate": "08/07/2026",
+      "enddate": "08/10/2026",
+      "starthour": "04:00",
+      "endhour": "03:59:59",
+      "ingame": {
+        "spawnrate": 500
+      }
+    },
+    {
+      "name": "Double XP and Double Skill Event (news 8924)",
+      "startdate": "09/04/2026",
+      "enddate": "09/07/2026",
+      "starthour": "04:00",
+      "endhour": "03:59:59",
+      "ingame": {
+        "exprate": 200,
+        "skillrate": 200
+      }
+    },
+    {
+      "name": "Double XP and Double Skill Event (news 9050)",
+      "startdate": "11/20/2026",
+      "enddate": "11/23/2026",
+      "starthour": "05:00",
+      "endhour": "04:59:59",
+      "ingame": {
+        "exprate": 200,
+        "skillrate": 200
       }
     }
   ],

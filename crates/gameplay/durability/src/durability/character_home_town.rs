@@ -72,8 +72,12 @@ impl DurabilityRoot {
             let citizenship = if citizenship == Some(16) {
                 let progress: Option<i64> = sqlx::query_scalar(
                     "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid \
-                     AND track_key='oteryn:quest-progress/storage/41174'"
-                ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                     AND track_key IN ($2,$3) \
+                     ORDER BY (track_key=$2) DESC LIMIT 1"
+                ).bind(fence.character_id.as_bytes().as_slice())
+                 .bind(oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0])
+                 .bind(oteryn_gameplay_quests::quest::barbarian_mead::LEGACY_QUESTLINE)
+                 .fetch_optional(&mut *tx).await?;
                 citizenship.filter(|_| progress.is_some_and(|value| value >= 8))
             } else { citizenship };
             // assert_gameplay_fence already holds the Character root FOR UPDATE.

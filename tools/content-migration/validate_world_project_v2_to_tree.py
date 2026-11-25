@@ -46,6 +46,8 @@ def source_qualified_item_references(reference, root):
     from nrwicked_profiles import extend_records as arbaziloth_fire
 
     arbaziloth_fire(records, root)
+    from galthen_door_reference import extend_records as extend_galthen_door_references
+    extend_galthen_door_references(records)
     return records
 
 
@@ -412,7 +414,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
-        == "c0d5b3f3d5e41669af82254075767bfc05e0dea4358525173958f0b1836a1c17",
+        == "c7ed2f835829dbc679797be01ceeec7b3e257fface6e2e3b56d45af4b147c514",
         "HIT_MAGIC_PACKET_DIGEST",
     )
     magic = {
@@ -444,7 +446,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
-        == "26e28db88bf524a27179535ec74ddd47af0c913bd3dd93003436bb45ff77f071",
+        == "7ddc79244fada2e9dfe3372fb7e200a70f3d71f76a863c68c09afca86a281966",
         "USE_OBSERVATION_PACKET_DIGEST",
     )
     packet = json.loads(raw)
@@ -530,7 +532,7 @@ def use_relation_targets():
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
-        == "26e28db88bf524a27179535ec74ddd47af0c913bd3dd93003436bb45ff77f071",
+        == "7ddc79244fada2e9dfe3372fb7e200a70f3d71f76a863c68c09afca86a281966",
         "USE_OBSERVATION_PACKET_DIGEST",
     )
     return {target_id(p["target"]) for p in json.loads(raw)["promotions"]}

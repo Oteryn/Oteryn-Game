@@ -617,7 +617,8 @@ mod main_native_contract {
         let after = explicit.catalogue();
         // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
-        assert_eq!(before.tracks.len(), 2137 + 7);
+        // Numbered key rewards add five tracks and the Travora ticket adds one.
+        assert_eq!(before.tracks.len(), 2136 + 7 + 5 + 1);
         for pharaoh in ["omruc", "vashresamun"] {
             let key = format!(
                 "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/{pharaoh}_sarcophagus_claim"
@@ -655,9 +656,9 @@ mod main_native_contract {
         }
         // Empty imported bindings must preserve the complete native admission
         // result, including rule-bound hashes, rather than the raw lowerer's hashes.
-        let expected = arena_completion::extend(completion_sets::extend(native_kills::extend(
-            before.clone(),
-        )?)?)?;
+        let mut expected = arena_completion::extend(completion_sets::extend(
+            native_kills::extend(before.clone())?,
+        )?)?;
         assert_eq!(expected.tracks, after.tracks);
         assert_eq!(expected.transitions, after.transitions);
         assert_eq!(expected.hashes, after.hashes);
@@ -677,6 +678,8 @@ mod main_native_contract {
             }
         }
         assert_eq!(before.npc_legacy, after.npc_legacy);
+        // The final native rules can register an exact predecessor for an extended hash.
+        crate::quest::published_quest_pins::retain_predecessors(&mut expected);
         assert_eq!(expected.predecessors, after.predecessors);
         assert_eq!(before.authored_bindings, after.authored_bindings);
         assert!(after.native_recipe_evidence.is_some());

@@ -360,6 +360,9 @@ macro_rules! world_scenario {
     ($tag:literal, |$h:ident, $request:ident, $seal:ident, $authority:ident, $world_id:ident, $native:ident, $world:ident, $cells:ident, $room:ident, $pin:ident, $deps:ident, $actor:ident, $session:ident, $owner:ident, $fence:ident, $admitted:ident| $body:block) => {{
         use $crate::gameplay_transport::monk_save::postgres_tests::full_world_support::*;
         run(async |admin| {
+        use oteryn_gameplay_foundation::scheduled_events::{Schedule, test_clock};
+        // These scenarios assert ordinary combat awards independently of the live calendar.
+        let _event_clock = test_clock::set(Schedule::default(), 0);
         reset();
         let $h = Harness::create_with_admission_seed(admin, $tag, false, false).await?;
         let version: String = sqlx::query_scalar("SHOW server_version").fetch_one(&$h.pool).await?;

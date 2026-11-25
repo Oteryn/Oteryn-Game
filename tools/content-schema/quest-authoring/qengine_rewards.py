@@ -29,12 +29,13 @@ PROVENANCE = 'crystal-9f5a72c-quest-rewards-v1'
 DECISION = 'owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06'
 
 # These independently registered documents retain their existing greeting owner.
-# Zalamon's chosen opening is explicitly authored; M10, M13 and L6 (Lubo) retain source text.
+# Zalamon's chosen opening is explicitly authored; M10, M13 and L6 retain source text.
 REWARD_GREETING_OWNERS = {
-    'oteryn:npc.zalamon': 'content/dialogues/quests/chosen-reward-greetings.json',
+    'oteryn:npc.a_prisoner': 'content/dialogues/quests/l6-story-greetings.json',
     'oteryn:npc.henricus': 'content/dialogues/quests/qnpcfx-m10-greetings.json',
     'oteryn:npc.lubo': 'content/dialogues/quests/l6-story-greetings.json',
     'oteryn:npc.rafzan': 'content/dialogues/quests/m13-goblin-greetings.json',
+    'oteryn:npc.zalamon': 'content/dialogues/quests/chosen-reward-greetings.json',
 }
 
 
@@ -1111,6 +1112,9 @@ def build():
             }
         elif name in ('l6-citizen-rook-backpack', 'qb-citizen-backpack'):
             callback['account_reservation'] = {'action': 'finish', 'key': backpack}
+    numbered_keys = json.loads((ROOT / 'tools/content-schema/quest-authoring/cwdoor-npc-keys.json').read_bytes())
+    callbacks.extend(numbered_keys['callbacks'])
+    offers.extend(numbered_keys['offers'])
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)
@@ -1292,7 +1296,7 @@ def validate_callbacks(document):
             or {r['track'] for r in requires}&{s['track'] for s in storage}
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
-            or (not value_guard and not callback.get('repeatable',False)
+            or (counter is None and not value_guard and not callback.get('repeatable',False)
                 and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or (callback.get('repeatable',False) and (
                 not ((callback.get('fee') and callback.get('give'))

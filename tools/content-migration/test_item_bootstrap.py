@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Exercise the shared Item writer without native, Prey, or World generation."""
 
 import importlib.util
@@ -14,6 +13,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import boss_conditional_item_reference as conditional
+import galthen_door_reference as galthen
 import item_tree_index
 import ranged_item_profiles as ranged
 
@@ -228,10 +228,11 @@ class ItemBootstrapTests(unittest.TestCase):
             index = json.loads((root / "content/items/index.json").read_bytes())
             expected_shards = [
                 "content/items/definitions/items-00000-00001.json",
-                "content/items/definitions/items-00002-00002.json",
+                "content/items/definitions/items-00002-00003.json",
+                "content/items/definitions/items-00004-00004.json",
             ]
             self.assertEqual(index["shards"], expected_shards)
-            self.assertEqual(index["record_count"], 3)
+            self.assertEqual(index["record_count"], 3 + len(galthen.APPEARANCES))
             self.assertEqual(
                 index["legacy_source"]["git_blob_sha"],
                 converter.git_blob_sha(
@@ -253,7 +254,12 @@ class ItemBootstrapTests(unittest.TestCase):
             ]
             self.assertEqual(
                 [row["definition"]["identity"] for row in rows],
-                [identity(1), identity(2), identity(3)],
+                [
+                    identity(1),
+                    identity(2),
+                    identity(3),
+                    *(identity(appearance) for appearance in galthen.APPEARANCES),
+                ],
             )
             self.assertTrue(rows[0]["definition"]["materializable"])
             self.assertEqual(rows[0]["editor"], editor["entries"][0])
@@ -273,6 +279,11 @@ class ItemBootstrapTests(unittest.TestCase):
                 },
             )
             self.assertNotIn("authoring", rows[1])
+            for row, appearance in zip(rows[3:], galthen.APPEARANCES, strict=True):
+                self.assertEqual(
+                    row,
+                    {"definition": conditional.definition(identity(appearance)["key"])},
+                )
             profiles = json.loads((root / ranged.RANGED_PROFILES).read_bytes())[
                 "records"
             ]

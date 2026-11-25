@@ -95,23 +95,50 @@ mod tests {
         let model = catalogue
             .service_model_for_project()
             .map_err(|e| format!("{e:?}"))?;
+        // Chip now has an independent literal contact. Use a service-free NPC
+        // without focus in the empty journal book to exercise the fallback.
+        let empty = NpcTalkBook::from_model_with_journal_source(
+            &model,
+            &[],
+            r#"{"schema":1,"programs":[]}"#,
+        );
+        let (fixture, _) = model
+            .npcs()
+            .iter()
+            .find(|(reference, npc)| {
+                npc.services.is_empty()
+                    && reference
+                        .key
+                        .strip_prefix("oteryn:npc.")
+                        .is_some_and(super::slug)
+                    && empty.get(&reference.key).is_none()
+            })
+            .ok_or("NPC without standalone focus")?;
         let mut source: serde_json::Value = serde_json::from_str(include_str!(
             "../../../../../content/quests/world-change-journals.json"
         ))
         .map_err(|e| e.to_string())?;
         for p in source["programs"].as_array_mut().ok_or("programmes")? {
-            p["runtime_enabled"] = (p["key"] == "lumberjack").into();
+            let enabled = p["key"] == "lumberjack";
+            p["runtime_enabled"] = enabled.into();
+            if enabled {
+                for callback in p["npc_callbacks"].as_array_mut().ok_or("callbacks")? {
+                    if callback["npc"] == "oteryn:npc.chip" {
+                        callback["npc"] = fixture.key.clone().into();
+                    }
+                }
+            }
         }
         let book = NpcTalkBook::from_model_with_journal_source(&model, &[], &source.to_string());
-        let chip = book
-            .get("oteryn:npc.chip")
+        let contact = book
+            .get(&fixture.key)
             .ok_or("missing enabled journal NPC focus")?;
-        assert!(!chip.greeting_reply.is_empty());
-        assert!(!chip.admitted_dialogue);
-        assert!(chip.offers().is_empty());
-        assert!(!chip.bank());
-        assert!(chip.travel_routes.is_empty());
-        assert!(chip.premium_services.is_empty());
+        assert!(!contact.greeting_reply.is_empty());
+        assert!(!contact.admitted_dialogue);
+        assert!(contact.offers().is_empty());
+        assert!(!contact.bank());
+        assert!(contact.travel_routes.is_empty());
+        assert!(contact.premium_services.is_empty());
         let at = ChatPosition {
             x: 100,
             y: 100,
@@ -120,13 +147,13 @@ mod tests {
         let npcs = [TalkNpc {
             id: 1u8,
             position: at,
-            entry: chip,
+            entry: contact,
         }];
         let mut focus = None;
         let reply = talk(at, "hi", &npcs, &mut focus).ok_or("missing native greeting")?;
         assert_eq!(focus, Some(1));
         assert_eq!(
-            chip.render_source_text(&reply.text, "Helper"),
+            contact.render_source_text(&reply.text, "Helper"),
             "Greetings, Helper."
         );
         for p in source["programs"].as_array_mut().ok_or("programmes")? {
@@ -134,7 +161,7 @@ mod tests {
         }
         let disabled =
             NpcTalkBook::from_model_with_journal_source(&model, &[], &source.to_string());
-        assert!(disabled.get("oteryn:npc.chip").is_none());
+        assert!(disabled.get(&fixture.key).is_none());
         assert_ne!(book.catalogue_revision, disabled.catalogue_revision);
         Ok(())
     }

@@ -160,8 +160,35 @@ pub(super) async fn fight(
     let mut killed = false;
     let mut dealt_damage = false;
     for _ in 0..512 {
-        // The connection scheduler normally drives chase separately from swings.
-        owner.chase_step_now(player, member.game_session_id).await;
+        if chase == ChaseMode::Stand {
+            // The Shaman can retreat again after the first hit. Follow its live
+            // position with wire steps so the next shot has no intervening tile.
+            let (player_at, target_at) = {
+                let runtime = owner.runtime.lock().await;
+                (
+                    runtime
+                        .read_actor_position(player)
+                        .map_err(debug)?
+                        .position(),
+                    runtime
+                        .read_actor_position(target)
+                        .map_err(debug)?
+                        .position(),
+                )
+            };
+            let dx = player_at.x.abs_diff(target_at.x);
+            let dy = player_at.y.abs_diff(target_at.y);
+            if dx.max(dy) > 1 {
+                super::desert_earned_route_fixtures::walk_to_adjacent(owner, member, target_at)
+                    .await
+                    .map_err(|error| {
+                        format!("approaching the Orc Shaman at {target_at:?}: {error}")
+                    })?;
+            }
+        } else {
+            // The connection scheduler normally drives chase separately from swings.
+            owner.chase_step_now(player, member.game_session_id).await;
+        }
         owner
             .refresh_attack_weapon(player, member.game_session_id)
             .await;
@@ -323,22 +350,7 @@ async fn upper_defenders(
             targets
         };
         for (target, origin) in targets {
-            let at = owner
-                .runtime
-                .lock()
-                .await
-                .read_actor_position(target.actor)
-                .map_err(debug)?
-                .position();
-            let chase = if origin == ORC_SHAMAN_SPAWN
-                && at.y == 31647
-                && (32590..=32592).contains(&at.x)
-            {
-                // The Orc Shaman retreats behind projectile blockers. Search
-                // the source walk for the nearest free adjacent firing tile.
-                super::desert_earned_route_fixtures::walk_to_adjacent(owner, member, at)
-                    .await
-                    .map_err(|error| format!("approaching the Orc Shaman at {at:?}: {error}"))?;
+            let chase = if origin == ORC_SHAMAN_SPAWN {
                 ChaseMode::Stand
             } else {
                 ChaseMode::Chase

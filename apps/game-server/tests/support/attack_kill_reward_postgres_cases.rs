@@ -576,6 +576,7 @@ fn input(
 ) -> TestResult<CreatureDeathRewardInput<2>> {
     Ok(CreatureDeathRewardInput {
         tutorial_corruptor: None,
+        atomic_source_loot: false,
         corpse_item: Some(corpse_item_ref()),
         loot_table_ref: Some(rat_loot_table_ref()),
         loot_table,

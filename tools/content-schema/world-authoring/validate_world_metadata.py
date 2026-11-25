@@ -128,6 +128,11 @@ def family_records(
     keys = [r.get("declaration", {}).get("identity", {}).get("key") for r in records]
     if keys != sorted(keys) or len(set(keys)) != len(keys):
         errors.append(f"{family}: keys must be unique and sorted")
+    crystal_traversal = {}
+    if family == "Transition.Teleport":
+        from crystal_traversal import donor_transitions
+
+        crystal_traversal = donor_transitions()
     for record in records:
         declaration = record.get("declaration", {})
         key = declaration.get("identity", {}).get("key")
@@ -142,6 +147,7 @@ def family_records(
                 family not in OWN_SOURCE_REVISION
                 and bound.get("identity_namespace") != WIKI_NAMESPACE
                 and bound.get("source_revision") != summary["source"].get("revision")
+                and record != crystal_traversal.get(key)
             ):
                 errors.append(
                     f"{key}: source binding revision differs from the pinned source"
