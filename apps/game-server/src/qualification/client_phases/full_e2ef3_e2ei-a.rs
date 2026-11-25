@@ -126,11 +126,6 @@ pub(super) async fn run(
     };
     report(I01, step, started, &result);
 
-    character_prep::declare_seeded(
-        I16,
-        "protective-charms,target-sword-if-missing",
-        "Basic Strike conversion and persistence",
-    );
     let mut step = "reach-imbuement-shrine";
     let started = std::time::Instant::now();
     let result = match &world {
@@ -556,23 +551,21 @@ async fn imbuement_journey(
     step: &mut &'static str,
 ) -> TestResult<()> {
     let index = provisioning::item_index()?;
-    // Check the physical shrine route before granting materials or earning gold.
+    // Check the physical shrine route before asking the starter to gather loot and gold.
     full_e2ef7::shrine(client, world).await?;
-    *step = "seed-basic-strike-materials-and-sword";
+    *step = "obtain-basic-strike-materials";
     let recipe = oteryn_gameplay_items::imbuement::imbuement_recipe(1, 1)
         .ok_or("Basic Strike recipe absent")?;
-    for &(key, count) in recipe.materials {
-        character_prep::grant_item(client, character_prep::item_id(key)?, count).await?;
+    for &(item, count) in recipe.materials {
+        full_e2ef7::acquire(client, world, &index, item, count)
+            .await
+            .map_err(|error| format!(
+                "Basic Strike requires {count} Protective Charms ({item}) and {} gold; ordinary acquisition observed {error}; the town crop has no Imbuement Assistant placement and one Valkyrie spawn (32286,32121,7) with a 90000ms respawn and a 30974ppm one-charm drop",
+                recipe.apply_gold,
+            ))?;
     }
-    let sword = provisioning::item_reference(&index, 3264)?;
-    if !entries(client)?
-        .iter()
-        .any(|entry| entry.item_definition_ref == sword)
-    {
-        character_prep::grant_item(client, 3264, 1).await?;
-    }
-    relogin_starter(client, clients).await?;
-    *step = "earn-imbuement-fee";
+    *step = "obtain-sword-and-fee";
+    let sword = full_e2ef7::acquire(client, world, &index, "oteryn:item.tibia.i3264", 1).await?;
     full_e2ef7::earn_gold(client, world, recipe.apply_gold).await?;
     *step = "inspect-applied-imbuement";
     full_e2ef7::shrine(client, world).await?;

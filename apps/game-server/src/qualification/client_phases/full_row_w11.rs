@@ -2,12 +2,11 @@
 //!
 //! Concrete player scenario derived from the W11 audit/matrix row and the live endgame-entry,
 //! taint-query, and quest-state owners:
-//! 1. Admit the node-boot character and send boss command 133 with the taint projection opt-in;
+//! 1. Admit a dedicated character prepared at the Soul War entry level and send boss command
+//!    133 with the taint projection opt-in;
 //!    expect ACCEPTED plus a bounded Soul War/Rotten Blood taint snapshot.
 //! 2. Send player boss-lever command 178 for Goshnar's Cruelty; expect either a typed activity
-//!    handoff (which would begin the real combat chain) or a typed refusal. The provisioned
-//!    ordinary character is expected to expose the level/access refusal before an instance can
-//!    be entered; the observed reply, rather than a source-derived verdict, decides the row.
+//!    handoff (which would begin the real combat chain) or a typed refusal.
 //! 3. Send a malformed boss-lever command as the negative path; expect REJECTED with no payload,
 //!    then repeat command 133 to prove that the refused command changed no taint state.
 //! 4. Log out normally, obtain a fresh admission, and repeat command 133; expect the durable
@@ -20,6 +19,7 @@ use oteryn_protocol_oteryn::boss_encounter as wire;
 
 const SOURCE_GAP: &str =
     "crates/gameplay/dispatch/src/gameplay_transport/endgame_entry.rs:3";
+const SOUL_WAR_LEVEL: u32 = 250;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -71,7 +71,51 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_world(clients, 0xb1).await?;
+    mod hunt_route {
+        use super::*;
+        include!("qualification_hunt_route.rs");
+    }
+
+    character_prep::declare_seeded(
+        "W11",
+        "dedicated-character-birth,level-250",
+        "Crystal Soul War entry level",
+    );
+    let account_env = "NODE_BOOT_C11_KNIGHT_ACCOUNT";
+    let account = required(account_env)?;
+    let (accounts, mut characters) =
+        if let Some(slot) = clients.accounts.iter().position(|existing| existing == &account) {
+            let mut accounts = clients.accounts.to_vec();
+            let mut characters = clients.characters.to_vec();
+            accounts.swap(1, slot);
+            characters.swap(1, slot);
+            (accounts, characters)
+        } else {
+            character_prep::dedicated_character(clients, account_env)
+                .await?
+                .replace_slot(clients, 1)?
+        };
+    let scope = SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
+    characters[1] =
+        hunt_route::qualification_character(&scope, 1, 0xb1, "Soul War Journey", "Knight").await?;
+    let clients = &SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
+    let build = character_prep::Seeded {
+        profile: "w11-soul-war",
+        reason: "Crystal Soul War entry level",
+    };
+    let mut client = build.connect(clients, 0xb1, 1).await?;
+    let level = full_e2ef7::player_level(&mut client).await?;
+    if level != SOUL_WAR_LEVEL {
+        return Err(format!("step=soul-war-level expected={SOUL_WAR_LEVEL} observed={level}").into());
+    }
     let before = taints(&mut client).await?;
     evidence(&format!("W11_CHECK step=1 taints status=PASS observed={before:?}"));
 

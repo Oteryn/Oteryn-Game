@@ -34,7 +34,13 @@ impl<S: SessionStream> Session<S> {
             "LivenessAck write",
             write_frame(&mut self.stream, &ack),
         )
-        .await
+        .await?;
+        crate::framing::trace_client_frame(
+            &ack,
+            self.connection_generation,
+            &self.selected_capabilities,
+        );
+        Ok(())
     }
 
     /// Sends the FND-02 `ClientCommand` type 1 `WORLD_ACTOR_STEP_INTENT` for `direction` and

@@ -2,8 +2,11 @@
 //! matrix row, and `reward_bag_use`'s generation-fenced consume/mint owner.
 //!
 //! Player scenario:
-//! 1. Admit the player. Record a purchase GAP because the donor Messenger is unplaced.
-//! 2. Seed two red Christmas bundles and verify their exact backpack quantity.
+//! 1. Walk to the compiled Messenger of Santa, TALK "hi" and "trade", and read the
+//!    live offer price. If needed, walk to a real rat spawn, ATTACK and loot until
+//!    the character can afford two bags. Return on foot and open the shop again.
+//! 2. BUY two red Christmas bundles; expect an accepted purchase reply and the exact
+//!    inventory changes for the bundles and paid gold.
 //! 3. Send USE-WITH-POSITION for one bundle; expect Accepted/NothingToUse and no
 //!    inventory change (the refusal must not consume or mint anything).
 //! 4. Send ordinary USE for one bundle; expect Accepted/Committed and an inventory
@@ -112,7 +115,7 @@ fn bag_handle(
                 .find(|entry| entry.item_definition_ref == reference)
         })
         .map(|entry| entry.handle)
-        .ok_or_else(|| "step 3: red Christmas bundle has no server-issued handle".into())
+        .ok_or_else(|| "step 3: purchased red Christmas bundle has no server-issued handle".into())
 }
 
 async fn use_intent(

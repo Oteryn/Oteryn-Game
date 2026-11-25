@@ -14,20 +14,12 @@ use std::num::NonZeroU32;
 const DAMAGE_RUNE_ID: u32 = 3174;
 const HEAL_RUNE_ID: u32 = 3152;
 const BLANK_RUNE_ID: u32 = 3147;
-const STARTER_CONJURE: &str = "adori dis min vis";
 const ORDINARY_CONJURE: &str = "adori min vis";
 const CONJURED_CHARGES: u64 = 10;
 const XODET: &str = "oteryn:npc.xodet";
 const XODET_WANDER_RADIUS: u32 = 2;
 
-const PREPARATION: character_prep::Seeded = character_prep::Seeded {
-    profile: "c06-sorcerer",
-    reason: "C06 tests native rune purchase, conjure and use at the authored spell eligibility level.",
-};
-const PREREQUISITES: &str = "level-15-sorcerer";
-
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("C06", PREREQUISITES, PREPARATION.reason);
     let started = std::time::Instant::now();
     let result =
         verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
@@ -39,7 +31,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         evidence(&format!("C06_GAP {error}"));
     }
     evidence(&format!(
-        "SEAM_EVIDENCE e2e_all scenario=C06.full status={} seconds={:.3} mode=seeded prerequisites={PREREQUISITES}{}",
+        "SEAM_EVIDENCE e2e_all scenario=C06.full status={} seconds={:.3}{}",
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64(),
         if result.is_ok() {
@@ -73,7 +65,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let damage = provisioning::item_reference(&index, DAMAGE_RUNE_ID)?;
     let healing = provisioning::item_reference(&index, HEAL_RUNE_ID)?;
     let blank = provisioning::item_reference(&index, BLANK_RUNE_ID)?;
-    let mut client = PREPARATION.connect(clients, 0xc6, 1).await?;
+    let mut client = connect_character(clients, 0xc6, 1).await?;
+    full_e2ef7::earn_player_level(&mut client, world, 15, Duration::from_secs(150)).await?;
     // Xodet's pinned price is ten gold per blank rune. The second blank
     // makes the immediate repeat test cooldown rather than reagent absence.
     super::full_row_c02::earn_gold(&mut client, world, &metadata.spawns, 20)
@@ -306,19 +299,10 @@ fn conjure_index(client: &mut DevClientSession) -> TestResult<NonZeroU32> {
         .session_mut()
         .spell_catalog()?
         .ok_or("step=2 observed=no-spell-catalog")?;
-    [ORDINARY_CONJURE, STARTER_CONJURE]
-        .into_iter()
-        .find_map(|words| {
-            catalogue
-                .entries
-                .iter()
-                .find(|e| e.words == words && e.available && e.rune_item.is_none())
-                .and_then(|e| NonZeroU32::new(e.cast_index))
-        })
-        .ok_or_else(|| {
-            format!("step=2 observed=no-eligible-conjure need={ORDINARY_CONJURE}|{STARTER_CONJURE}")
-                .into()
-        })
+    catalogue.entries.iter()
+        .find(|entry| entry.words == ORDINARY_CONJURE && entry.available && entry.rune_item.is_none())
+        .and_then(|entry| NonZeroU32::new(entry.cast_index))
+        .ok_or_else(|| format!("step=2 observed=no-eligible-conjure need={ORDINARY_CONJURE}").into())
 }
 
 fn require_rune_eligibility(

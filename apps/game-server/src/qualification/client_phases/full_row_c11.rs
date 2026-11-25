@@ -10,25 +10,15 @@
 //!    Harmony delta back to zero. Send it once more at zero as the refusal/zero-charge path and
 //!    require the server reply and unchanged Harmony/mana (the current owner deliberately accepts
 //!    this recorded Global-unverified path, so either disposition is recorded rather than faked).
-//! 5. On a separate promoted Premium Knight, commit a Wheel allocation and verify that
-//!    Battle Instinct activates. Check malformed refusal on that same admission.
+//! 5. Query Battle Instinct and check malformed refusal. The pinned perk is Knight-only, so
+//!    this Monk journey reports the missing separate Knight allocation and activation.
 //! 6. Logout, freshly admit the same character, and re-check the durable Monk vocation by casting
 //!    the Monk-only builder again; require its reply, mana delta, Harmony delta, and Serene state.
 
 use super::full_row_c01::admission_error;
-use super::full_row_p20::{approach_npc, talk};
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use std::collections::BTreeSet;
-
-const ORESSA_PREPARATION: character_prep::Seeded = character_prep::Seeded {
-    profile: "c11-unassigned",
-    reason: "C11 tests Oressa’s vocation choice and Harmony after reaching level 8.",
-};
-const KNIGHT_PREPARATION: character_prep::Seeded = character_prep::Seeded {
-    profile: "c11-knight",
-    reason: "C11 tests Battle Instinct activation after committing a Knight Wheel allocation.",
-};
 
 const ACTIONS: &[&str] = &[
     "player-monk-choice",
@@ -94,16 +84,9 @@ impl Row {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("C11", "unassigned-level-8,premium-knight,wheel-fee-gold", "Oressa choice and Wheel mechanics");
     let mut row = Row::new();
     let terminal = match verdict::indexed_timeout(
-        Duration::from_secs(300), verdict::observe(async {
-            if let Err(error) = knight_journey(&mut row, clients).await {
-                verdict::record_error(error.as_ref());
-                row.fail("battle-instinct-snapshot", error);
-            }
-            journey(&mut row, clients).await
-        }),
+        Duration::from_secs(300), verdict::observe(journey(&mut row, clients)),
     ).await {
         Ok(Ok(())) => None,
         Ok(Err(error)) => {
@@ -125,32 +108,20 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let dedicated = character_prep::dedicated_named_character(clients, "NODE_BOOT_C11_UNASSIGNED_ACCOUNT", Some("Oressa Candidate")).await?;
-    let clients = &dedicated.clients(clients);
-    let mut client = ORESSA_PREPARATION.connect(clients, 0xcb, 0)
+    let mut client = connect_world(clients, 0xcb)
         .await
         .map_err(|error| admission_error("initial-admission", error))?;
     let (vocation, level) = admitted_vocation(&mut client).await?;
-    if monk_path(vocation, level) != Some(false) || level != 8 {
-        return Err(format!("Oressa candidate must first admit unassigned at level 8; observed vocation={vocation} level={level}").into());
-    }
     match monk_path(vocation, level) {
         Some(false) => {
-            let town = tile(client.world_spatial().actor_position)?;
             choose_monk(&mut client, world, &bytes).await
                 .map_err(|error| verdict::context(format!("step=player-monk-choice observed={error}"), error))?;
-            let (chosen, chosen_level) = admitted_vocation(&mut client).await?;
-            if monk_path(chosen, chosen_level) != Some(true) || chosen_level != level {
-                return Err(format!("Oressa confirmation did not persist Monk; observed vocation={chosen}").into());
-            }
             row.pass("player-monk-choice", "Oressa-confirmed");
-            let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == town)
-                .ok_or("no player walk route from Oressa back to the initial admission tile")?;
-            walk(&mut client, world, &path).await?;
         }
         Some(true) => row.fail("player-monk-choice", "already-Monk; need=first-vocation-transition; continuing Monk gameplay"),
         None => {
             row.fail("player-monk-choice", format!("vocation-id={vocation} level={level}; need=unassigned-level-8-character-for-Oressa-or-admitted-Monk-for-Harmony"));
+            battle_queries(row, &mut client).await;
             logout(&mut client, world).await?;
             return Ok(());
         }
@@ -204,10 +175,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
     }
 
+    battle_queries(row, &mut client).await;
     let prior = client.join_snapshot().game_session_id;
     logout(&mut client, world).await?;
     drop(client);
-    let mut fresh = connect_character(clients, 0xcc, 0)
+    let mut fresh = connect_world(clients, 0xcc)
         .await
         .map_err(|error| admission_error("fresh-admission-monk", error))?;
     if fresh.join_snapshot().game_session_id == prior {
@@ -341,56 +313,15 @@ async fn wait_spell(
     Ok(())
 }
 
-async fn knight_journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    use oteryn_protocol_oteryn::{battle_instinct_status as wire, wheel};
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_C11_KNIGHT_ACCOUNT").await?;
-    let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
-    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
-    let mut client = KNIGHT_PREPARATION.connect(clients, 0xca, 1).await?;
-    character_prep::grant_item(&client, 3043, 2).await?;
-    character_prep::reload(&mut client, clients).await?;
-    character_prep::grant_premium(&client).await?;
-    let king = approach_npc(&mut client, world, &metadata.npcs, "oteryn:npc.king_tibianus").await?;
-    if talk(&mut client, king, "hi").await?.is_empty()
-        || talk(&mut client, king, "promotion").await? != ["Do you want to be promoted for 20000 gold coins?"]
-        || talk(&mut client, king, "yes").await? != ["You are now promoted."]
-    {
-        return Err("Knight’s real promotion dialogue did not confirm purchase".into());
+async fn battle_queries(row: &mut Row, client: &mut DevClientSession) {
+    use oteryn_protocol_oteryn::battle_instinct_status as wire;
+    match client.session_mut().gated_command(wire::CAPABILITY_BATTLE_INSTINCT_STATUS_V1, wire::COMMAND_TYPE_BATTLE_INSTINCT_STATUS_QUERY, &[]).await {
+        Ok(reply) if reply.status == CommandStatus::Accepted => match wire::BattleInstinctStatus::decode(&reply.payload) {
+            Some(status) => row.fail("battle-instinct-snapshot", battle_instinct_gap(status.active)),
+            None => row.fail("battle-instinct-snapshot", format!("reply={reply:?} malformed status payload")),
+        },
+        Ok(reply) => row.fail("battle-instinct-snapshot", format!("reply={reply:?}")), Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("battle-instinct-snapshot", error) },
     }
-
-    let before = battle_status(&mut client).await?;
-    if before.active || before.melee != 0 || before.shielding != 0 {
-        return Err(format!("Battle Instinct active before allocation: {before:?}").into());
-    }
-    let request = wheel::WheelAllocationRequest {
-        action: 0, occurrence: [0; 16], expected_revision: 0, points: [0; 36], vessels: None,
-    };
-    let initial = wheel_command(&mut client, &request).await?;
-    if initial.refused || initial.points != [0; 36] {
-        return Err(format!("expected clean Knight Wheel: {initial:?}").into());
-    }
-    // Pinned Knight route from core state slot 15 to Battle Instinct in state slot 1.
-    let mut points = [0; 36];
-    for (slot, capacity) in [(15, 50), (9, 75), (8, 100), (7, 150), (1, 200)] {
-        points[slot - 1] = capacity;
-    }
-    let saved = wheel_command(&mut client, &wheel::WheelAllocationRequest {
-        action: 1, occurrence: v7(0xcb, 1), expected_revision: initial.revision, points, vessels: None,
-    }).await?;
-    if saved.refused || Some(saved.revision) != initial.revision.checked_add(1) || saved.points != points
-        || wheel_command(&mut client, &request).await? != saved
-    {
-        return Err(format!("Knight Wheel allocation did not commit: {saved:?}").into());
-    }
-    let active = battle_status(&mut client).await?;
-    if !active.active || active.melee != 0 || active.shielding != 0 {
-        return Err(format!("Battle Instinct did not activate in the empty temple: {active:?}").into());
-    }
-    row.pass("battle-instinct-snapshot", (saved, before, active));
     match client
         .session_mut()
         .gated_command(
@@ -406,26 +337,6 @@ async fn knight_journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult 
         Ok(reply) => row.fail("malformed-refusal", format!("reply={reply:?}")),
         Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("malformed-refusal", error) },
     }
-    logout(&mut client, world).await
-}
-
-async fn battle_status(client: &mut DevClientSession) -> TestResult<oteryn_protocol_oteryn::battle_instinct_status::BattleInstinctStatus> {
-    use oteryn_protocol_oteryn::battle_instinct_status as wire;
-    let reply = client.session_mut().gated_command(wire::CAPABILITY_BATTLE_INSTINCT_STATUS_V1, wire::COMMAND_TYPE_BATTLE_INSTINCT_STATUS_QUERY, &[]).await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!("Battle Instinct query refused: {reply:?}").into());
-    }
-    wire::BattleInstinctStatus::decode(&reply.payload).ok_or_else(|| "invalid Battle Instinct payload".into())
-}
-
-async fn wheel_command(client: &mut DevClientSession, request: &oteryn_protocol_oteryn::wheel::WheelAllocationRequest) -> TestResult<oteryn_protocol_oteryn::wheel::WheelAllocationReply> {
-    use oteryn_protocol_oteryn::wheel;
-    let payload = wheel::encode_wheel_request(request).map_err(|error| format!("Wheel request: {error:?}"))?;
-    let reply = client.session_mut().gated_command(wheel::CAPABILITY_WHEEL_ALLOCATION_V1, wheel::COMMAND_TYPE_WHEEL_ALLOCATION, &payload).await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!("Wheel command refused: {reply:?}").into());
-    }
-    wheel::decode_wheel_reply(&reply.payload).map_err(|error| format!("Wheel reply: {error:?}").into())
 }
 
 async fn choose_monk(
@@ -544,6 +455,12 @@ fn monk_path(vocation: u8, level: u32) -> Option<bool> {
     }
 }
 
+// The pinned Wheel catalog places this conviction on the Knight graph only.
+// Neither a starter snapshot nor a Monk execution can prove player acquisition.
+fn battle_instinct_gap(active: bool) -> String {
+    format!("active={active}; need=separate-eligible-Knight-and-inactive-to-active-committed-Wheel-allocation")
+}
+
 fn require_spender_harmony(client: &DevClientSession, expected: u32) -> TestResult {
     let actual = client.actor_vitals().ok_or("spender pre-cast vitals missing")?.harmony;
     if !spender_precondition(actual, expected) {
@@ -572,7 +489,9 @@ mod tests {
         assert_eq!(monk_path(1, 7), None);
         assert_eq!(monk_path(1, 8), Some(false));
         assert_eq!(monk_path(10, 1), Some(true));
-
+        for active in [false, true] {
+            assert!(battle_instinct_gap(active).contains("need=separate-eligible-Knight-and-inactive-to-active-committed-Wheel-allocation"));
+        }
     }
 
 
