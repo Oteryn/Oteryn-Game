@@ -300,6 +300,25 @@ END $migration$;
 
 -- An arena relocation records this obligation in the same transaction.
 -- Only the current fenced projection can acknowledge the originating receipt.
+DO $migration$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint
+        WHERE conrelid='game_arena_match_receipts'::regclass
+          AND conname='game_arena_relocation_adoption_ordinal_check') THEN
+        ALTER TABLE game_arena_match_receipts
+            DROP CONSTRAINT game_arena_match_cause_ordinal_check,
+            DROP CONSTRAINT game_arena_match_cause_payload_check,
+            ADD CONSTRAINT game_arena_relocation_adoption_ordinal_check
+                CHECK (command_id BETWEEN 1 AND 55340232221128654845),
+            ADD CONSTRAINT game_arena_relocation_adoption_payload_check CHECK (
+                (command_id<=18446744073709551615 AND octet_length(payload)<=32)
+                OR (command_id>18446744073709551615 AND command_id<=36893488147419103230
+                    AND octet_length(payload) BETWEEN 33 AND 64)
+                OR (command_id>36893488147419103230 AND octet_length(payload) BETWEEN 1 AND 32
+                    AND native_origin_binding IS NULL));
+    END IF;
+END $migration$;
+
 CREATE TABLE IF NOT EXISTS game_arena_relocations (
     character_id UUID NOT NULL,
     game_session_id UUID NOT NULL,

@@ -248,26 +248,6 @@ pub(in crate::gameplay_transport) fn tick(
         }
         false
     });
-    // A fresh login or reset cannot retain an unfenced placement in a pit.
-    if walkable(owner, runtime, position(donor::KICK))
-        && let Ok(players) = runtime.positioned_actor_census()
-    {
-        for (actor, at, session) in players {
-            let Some(session) = session else {
-                continue;
-            };
-            if !matches.contains_key(&session)
-                && (1..=10).any(|pit| in_pit(at.position(), pit))
-                && owner
-                    .states
-                    .spell_states
-                    .try_lock()
-                    .is_ok_and(|states| !states.is_dead(actor))
-            {
-                let _ = runtime.relocate_arena_player(actor, session, at, position(donor::KICK));
-            }
-        }
-    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -457,7 +437,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || (read.dead && matches!(after.phase, 1 | 2))
                 || (!read.pit_owned && matches!(after.phase, 1 | 2)));
         let expired = matches!(after.phase, 1 | 2) && after.deadline_ms <= read.now_ms;
-        if stale || expired {
+        if stale && read.relocation_pending {
+            disposition = D::Busy;
+        } else if stale || expired {
             after = after.idle();
             disposition = if expired { D::TimedOut } else { D::WrongState };
         } else if after.phase == 1

@@ -803,19 +803,68 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                         ).bind(i32::from(pit)).fetch_one(&harness.pool);
                     assert_eq!(count().await?, 0, "relocation receipt is still missing");
                     if matches!(recovery, PortalRecovery::Restart) {
+                        let generation = restart_scope(&harness, admitted.game_session_id).await?;
                         let mut restarted = Dependencies::new()?;
                         let booted_map = fixture::boot_world(&restarted, native, &bytes, &pins)?;
-                        fixture::runtime_at(&mut restarted, active, &pin, &booted_map,
-                            crate::foundation::MovementLocalPosition { x, y, floor: -floor as i16 }
+                        fixture::runtime_at_generation(&mut restarted, active, &pin, &booted_map,
+                            crate::foundation::MovementLocalPosition { x, y, floor: -floor as i16 },
+                            generation,
                         )?;
                         let restarted_cells = booted_map.movement_cells(restarted.room.movement_cells()).map_err(debug)?;
                         let mut rebooted = restarted.owner(&harness, &authority);
                         rebooted.active_generation = Some(active);
                         rebooted.movement_cells = (&restarted_cells).into();
                         restarted.initialize(&rebooted).await;
+                        let mut readmitted = admitted;
+                        readmitted.runtime_actor = Some(restarted.actor);
+                        let fence = rebooted.current_quest_fence(readmitted.game_session_id).await
+                            .map_err(debug)?.ok_or("readmitted gameplay fence")?;
+                        assert_eq!(fence.scope_ownership_generation.get(), generation);
+                        readmitted.item_fence = Some(fence.item_fence());
+                        assert!(!rebooted.root.arena_orphan_can_leave(rebooted.character, rebooted.holder, fence).await?);
+                        let before_relocation = {
+                            let mut runtime = restarted.runtime.lock().await;
+                            assert_eq!(runtime.binding().scope_generation().get(), generation);
+                            crate::gameplay_transport::arena_match::tick(&rebooted, &mut runtime);
+                            let snapshot = runtime.read_actor_position(restarted.actor).map_err(debug)?;
+                            let at = snapshot.position();
+                            assert_eq!((at.x, at.y, at.floor), portal, "the orphan sweep must leave a pending relocation alone");
+                            snapshot
+                        };
+                        let pending = command(&rebooted, &mut readmitted, A::Status).await?;
+                        assert_eq!(pending.disposition, D::Busy);
+                        assert_eq!((i32::from(pending.state.phase), i32::from(pending.state.pit)), (phase, destination));
                         rebooted.drain_monster_melee().await;
-                        let at = restarted.runtime.lock().await.read_actor_position(restarted.actor).map_err(debug)?.position();
+                        let relocated = restarted.runtime.lock().await.read_actor_position(restarted.actor).map_err(debug)?;
+                        let at = relocated.position();
                         assert_eq!((at.x, at.y, at.floor), expected, "the fresh runtime recovers the committed portal");
+                        assert_eq!(relocated.revision(), before_relocation.revision() + 1, "only one movement committed");
+                        let persisted: (i32, i32, i64) = sqlx::query_as(
+                            "SELECT (body->>'phase')::int,(body->>'pit')::int,(body->>'scope_generation')::bigint FROM game_character_arena_matches"
+                        ).fetch_one(&harness.pool).await?;
+                        assert_eq!(persisted, (phase, destination, i64::try_from(generation)?));
+                        let now = rebooted.owner_now().get() + 3_000_000;
+                        rebooted.drain_arena_matches(now).await;
+                        assert_eq!(restarted.runtime.lock().await.read_actor_position(restarted.actor).map_err(debug)?, relocated);
+                        assert_eq!(count().await?, 1);
+                        if phase == 3 {
+                            use crate::gameplay_transport::spell_premium_coordinator::{SpellPremiumCoordinator, purchase_fixture};
+                            let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+                            harness.root.latch_premium_activation(&activation.activation_id, activation.switch_over_us,
+                                activation.switch_over_us + 60_000_000).await.map_err(debug)?;
+                            let premium = SpellPremiumCoordinator::new(consumer, Some(clock), Some(activation), Some(harness.root.clone()));
+                            rebooted.premium_coordinator = Some(&premium);
+                            rebooted.admit_premium(id(40), readmitted.game_session_id);
+                            let trophy = command(&rebooted, &mut readmitted, A::ClaimReward { rank: 1, category: 4, choice: 1 }).await?;
+                            assert_eq!(trophy.disposition, D::Applied, "{trophy:?}");
+                            assert_eq!(trophy.state.phase, 3);
+                            assert_eq!(trophy.state.claimed_masks[0], 8);
+                        } else {
+                            let lease: (i32, i64) = sqlx::query_as(
+                                "SELECT pit::int,scope_generation::bigint FROM game_svargrond_pit_leases"
+                            ).fetch_one(&harness.pool).await?;
+                            assert_eq!(lease, (destination, i64::try_from(generation)?));
+                        }
                     } else {
                         let now = owner.owner_now().get() + 3_000_000;
                         owner.drain_arena_matches(now).await;
@@ -997,6 +1046,35 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         let _ = native;
         Ok(())
     })
+}
+
+async fn restart_scope(harness: &Harness, session: crate::foundation::GameSessionId) -> TestResult<u64> {
+    use crate::durability::runtime_scope_assignment::{AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey, RuntimeScopeAssignmentWriter};
+    let scope = crate::bestiary_postgres_harness::scope()?;
+    let crate::foundation::RuntimeScopeRefV1::Channel { world_id, channel_id } = scope else {
+        return Err("Channel fixture".into());
+    };
+    sqlx::query("INSERT INTO game_control_scope_grants VALUES
+        (session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,2) ON CONFLICT DO NOTHING")
+        .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).execute(&harness.pool).await?;
+    let predecessor = harness.root.read_runtime_scope_predecessor(scope).await.map_err(debug)?.ok_or("scope predecessor")?;
+    let writer = RuntimeScopeAssignmentWriter::open(harness.root.clone(), "sequencer-writer").await.map_err(debug)?;
+    let replaced = writer.submit(&AssignmentRequest {
+        operation_key: OperationKey::from_bytes([149; 32]),
+        actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+        command: AssignmentCommand::Replace { scope, predecessor, target: harness.node.fact() },
+    }).await.map_err(debug)?;
+    let AssignmentOutcome::Committed(replaced) = replaced else { return Err("scope replacement was refused".into()); };
+    let generation = replaced.assignment.ownership_generation;
+    assert_ne!(generation, 1);
+    crate::bestiary_postgres_harness::publish_readiness_for_scope(&harness.pool, &harness.root, &harness.node, generation, scope).await?;
+    // The carrier fixture supplies the current admission, as on the original
+    // boot. The new assignment and readiness above are both durable writes.
+    let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET scope_ownership_generation=$2::text::numeric
+        WHERE game_session_id=encode($1,'hex')::uuid AND scope_ownership_generation=1")
+        .bind(session.as_bytes().as_slice()).bind(generation.to_string()).execute(&harness.pool).await?;
+    assert_eq!(updated.rows_affected(), 1);
+    Ok(generation)
 }
 
 // Positive setup uses the same fenced quest writer, never a raw state insert.

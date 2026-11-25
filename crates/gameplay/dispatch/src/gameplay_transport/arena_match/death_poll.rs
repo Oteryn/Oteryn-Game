@@ -48,19 +48,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.settle_arena_victory(session, live).await;
             }
         }
+        self.clear_arena_orphans().await;
     }
 
     async fn resume_arena_projections(&self) -> Option<Vec<GameSessionId>> {
         if self.bundle_map().is_none() {
             return Some(Vec::new());
         }
-        let (scope, generation) = {
+        let (scope, generation, positioned) = {
             let runtime = self.runtime.lock().await;
             runtime.owner_fence().ok()?;
             let binding = runtime.binding();
-            (binding.runtime_scope(), binding.scope_generation().get())
+            let positioned: Vec<_> = runtime.positioned_actor_census().ok()?
+                .into_iter().filter_map(|(_, _, session)| session).collect();
+            (binding.runtime_scope(), binding.scope_generation().get(), positioned)
         };
-        let read = self.root.read_arena_projection_leases(self.character, scope, generation);
+        let read = self.root.read_arena_projection_leases(self.character, scope, generation, &positioned);
         #[cfg(test)]
         let read = pause_poll_read(read);
         let (now_ms, leased) = read.await.ok()?;
@@ -82,10 +85,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if fence.character_id != projection.character
                 || fence.runtime_scope != scope
                 || fence.scope_ownership_generation.get() != generation
-                || !self.root.arena_projection_current(self.character, self.holder, fence, &state).await.unwrap_or(false)
             {
                 continue;
             }
+            {
+                let runtime = self.runtime.lock().await;
+                if !self.arena_poll_current(&runtime, actor, fence) {
+                    continue;
+                }
+            }
+            let state = if projection.relocation_pending {
+                let Ok(Some(rebound)) = self.root
+                    .prepare_arena_relocation(self.character, self.holder, fence, &state).await
+                else { continue };
+                rebound
+            } else if self.root
+                .arena_projection_current(self.character, self.holder, fence, &state).await.unwrap_or(false)
+            {
+                state
+            } else {
+                continue;
+            };
             let already_left = {
                 let mut runtime = self.runtime.lock().await;
                 if !self.arena_poll_current(&runtime, actor, fence) {
@@ -122,6 +142,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         Some(resumed)
+    }
+
+    async fn clear_arena_orphans(&self) {
+        let candidates = {
+            let runtime = self.runtime.lock().await;
+            if !walkable(self, &runtime, position(donor::KICK)) {
+                return;
+            }
+            let Ok(matches) = self.states.arena_matches.live.lock() else { return };
+            let Ok(positioned) = runtime.positioned_actor_census() else { return };
+            positioned.into_iter().filter_map(|(actor, at, session)| {
+                let session = session?;
+                (!matches.contains_key(&session) && (1..=10).any(|pit| in_pit(at.position(), pit)))
+                    .then_some((actor, at, session))
+            }).take(donor::CENTERS.len()).collect::<Vec<_>>()
+        };
+        for (actor, at, session) in candidates {
+            let Some(_permit) = self.spell_lane_permit().await else { continue };
+            let Ok(Some(fence)) = self.current_quest_fence(session).await else { continue };
+            if !self.root.arena_orphan_can_leave(self.character, self.holder, fence).await.unwrap_or(false) {
+                continue;
+            }
+            let mut runtime = self.runtime.lock().await;
+            if self.arena_poll_current(&runtime, actor, fence)
+                && runtime.read_actor_position(actor) == Ok(at)
+                && walkable(self, &runtime, position(donor::KICK))
+            {
+                let _ = runtime.relocate_arena_player(actor, session, at, position(donor::KICK));
+            }
+        }
     }
 
     async fn settle_arena_victory(&self, session: GameSessionId, live: LiveMatch) {

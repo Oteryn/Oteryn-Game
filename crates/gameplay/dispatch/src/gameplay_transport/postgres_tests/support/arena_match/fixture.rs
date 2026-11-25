@@ -218,6 +218,17 @@ pub(in super::super) fn runtime_at(
     map: &crate::map::boot::BundleWorld,
     start: crate::foundation::MovementLocalPosition,
 ) -> TestResult {
+    runtime_at_generation(deps, active, pin, map, start, 1)
+}
+
+pub(in super::super) fn runtime_at_generation(
+    deps: &mut Dependencies,
+    active: &crate::content::ActiveGeneration,
+    pin: &crate::content::NativeEntryContentPin,
+    map: &crate::map::boot::BundleWorld,
+    start: crate::foundation::MovementLocalPosition,
+    generation: u64,
+) -> TestResult {
     deps.room = pin.qualified_room().clone();
     let cells = map
         .movement_cells(deps.room.movement_cells())
@@ -250,7 +261,7 @@ pub(in super::super) fn runtime_at(
         deps.admitted.channel_id,
         crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
         1,
-        1,
+        generation,
         1,
         "runtime-scope-assignment:1",
         32,
