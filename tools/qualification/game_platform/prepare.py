@@ -4,8 +4,54 @@ import json
 import os
 import secrets
 import shlex
+import socket
+from contextlib import ExitStack
 import sys
 from pathlib import Path
+
+
+PORT_NAMES = (
+    "NODE_BOOT_GAME_PORT",
+    "NODE_BOOT_PG_PORT",
+    "NODE_BOOT_PLATFORM_PORT",
+    "GAME_PLATFORM_PLATFORM_PG_PORT",
+    "GAME_PLATFORM_HTTP_PORT",
+    "GAME_PLATFORM_INTERNAL_PORT",
+    "GAME_PLATFORM_ADMISSION_PORT",
+    "GAME_PLATFORM_GATEWAY_PORT",
+    "GAME_PLATFORM_CALLBACK_PORT",
+    "GAME_PLATFORM_NATIVE_PORT",
+)
+
+
+def select_ports(environment, names=PORT_NAMES):
+    """Choose distinct loopback TCP ports, preserving caller-supplied values."""
+    explicit = {
+        name: int(environment[name])
+        for name in (*names, "NODE_BOOT_PVP_GAME_PORT")
+        if name in environment
+    }
+    if any(not 1024 <= port <= 65535 for port in explicit.values()):
+        raise ValueError("invalid_listener_port")
+    used = set(explicit.values())
+    if len(used) != len(explicit):
+        raise ValueError("duplicate_listener_port")
+
+    ports = {}
+    with ExitStack() as probes:
+        for name in names:
+            if name in explicit:
+                ports[name] = explicit[name]
+                continue
+            while True:
+                probe = probes.enter_context(socket.socket())
+                probe.bind(("127.0.0.1", 0))
+                port = probe.getsockname()[1]
+                if port not in used:
+                    used.add(port)
+                    ports[name] = port
+                    break
+    return ports
 
 
 def portal_binary(work):
@@ -21,13 +67,9 @@ def main():
     work = Path(sys.argv[1])
     account_a, account_b, world, channel, fresh, recovery, fresh_id, recovery_id = sys.argv[2:10]
     binary = portal_binary(work)
-    callback_port = int(os.environ.get("GAME_PLATFORM_CALLBACK_PORT", "18099"))
-    if not 1024 <= callback_port <= 65535:
-        raise ValueError("invalid_callback_port")
-    callback = f"http://127.0.0.1:{callback_port}/callback"
-    native_port = int(os.environ.get("GAME_PLATFORM_NATIVE_PORT", "18100"))
-    if not 1024 <= native_port <= 65535:
-        raise ValueError("invalid_native_port")
+    ports = select_ports(os.environ, ("GAME_PLATFORM_CALLBACK_PORT", "GAME_PLATFORM_NATIVE_PORT"))
+    callback = f"http://127.0.0.1:{ports['GAME_PLATFORM_CALLBACK_PORT']}/callback"
+    native_port = ports["GAME_PLATFORM_NATIVE_PORT"]
     client = "019a0000-0000-7000-8000-0000000c11e7"
     suffix = secrets.token_hex(8)
     accounts = [
@@ -80,7 +122,11 @@ def main():
 
 if __name__ == "__main__":
     try:
-        main()
+        if sys.argv[1:] == ["--select-ports"]:
+            for name, port in select_ports(os.environ).items():
+                print(f"{name}={port}")
+        else:
+            main()
     except (OSError, ValueError, KeyError) as error:
         # Only a fixed internal error may escape; never render input values.
         if isinstance(error, ValueError) and str(error) == "real_portal_binary_missing":
