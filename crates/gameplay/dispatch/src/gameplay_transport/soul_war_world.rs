@@ -15,7 +15,7 @@ pub(super) async fn committed_step(
     _now: u64,
 ) {
     let Some(origin) = origin else { return };
-    if hunt_entry(owner, actor, session, origin, committed).await {
+    if hub_entry(owner, actor, session, origin, committed).await {
         return;
     }
     let Some(room) = owner.effective_rooms().gate_monster_ai() else {
@@ -119,9 +119,9 @@ pub(super) async fn committed_step(
     }
 }
 
-/// Crystal 201189f moveevent-soul_war_entrances.lua:1-49. These are
-/// position registrations in the published World, independent of boss rooms.
-async fn hunt_entry(
+/// Crystal 201189f moveevent-soul_war_entrances.lua:1-49 and
+/// moveevent-teleport_entrance_reward.lua register these World positions.
+async fn hub_entry(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -148,12 +148,15 @@ async fn hunt_entry(
     }
     let at = committed.position();
     let frame = context.source_frame();
-    let destination = match frame.source_position((at.x, at.y, at.floor)) {
+    let source = frame.source_position((at.x, at.y, at.floor));
+    let reward = source == Some([33621, 31416, 10]);
+    let destination = match source {
         Some([33615, 31422, 10]) => [34009, 31014, 9],
         Some([33618, 31422, 10]) => [33972, 31041, 11],
         Some([33621, 31422, 10]) => [33894, 31019, 8],
         Some([33624, 31422, 10]) => [33858, 31831, 3],
         Some([33627, 31422, 10]) => [33887, 31188, 10],
+        Some([33621, 31416, 10]) => [33621, 31411, 10],
         _ => return false,
     };
     drop(runtime);
@@ -188,7 +191,10 @@ async fn hunt_entry(
     let Some(player) = states.get(&runtime, actor, session) else {
         return true;
     };
-    let message = if player.character_facts().level < 250 {
+    let message = if reward {
+        (!state.completed())
+            .then_some("Defeat Goshnar's Megalomania before entering the reward room.")
+    } else if player.character_facts().level < 250 {
         Some("You need level 250 to enter here.")
     } else if !state.access() {
         Some("Your soul does not yet resonate with the frequency required to enter here.")
@@ -241,9 +247,11 @@ async fn hunt_entry(
                 .emit_movement_effect(crate::map::overlay::TilePos { x, y, floor }, 11);
         }
     };
-    if message.is_none() {
+    if message.is_none() && !reward {
         effect(origin.position());
     }
-    effect(destination);
+    if message.is_none() || !reward {
+        effect(destination);
+    }
     true
 }
