@@ -24,7 +24,7 @@
     },
     "Dialogue": {
       "index": "content/dialogues/definitions/index.json",
-      "records": 836
+      "records": 852
     },
     "Document": {
       "index": "content/documents/index.json",
@@ -346,7 +346,7 @@
       "path": "content/dialogues/definitions/dialogues-00000-00499.json"
     },
     {
-      "path": "content/dialogues/definitions/dialogues-00500-00835.json"
+      "path": "content/dialogues/definitions/dialogues-00500-00851.json"
     },
     {
       "path": "content/dialogues/definitions/index.json"
@@ -987,7 +987,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "eeedb5e7c1a657a3ffd52012162a1bde5095ea95f776b2dd89288815ad994c4f"
+          "sha256": "341b85b2179ce84f12d1d73f2a05691a755dfac9faad4cb8ba0b02978e4d2da1"
         },
         {
           "creates_canonical_identities": false,
