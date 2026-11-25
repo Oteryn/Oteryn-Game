@@ -74,6 +74,7 @@ pub(in crate::gameplay_transport) struct Matches {
     command: tokio::sync::Mutex<()>,
     live: Mutex<HashMap<GameSessionId, LiveMatch>>,
     victory_poll: Mutex<Option<(u64, u64)>>,
+    relocation_cursor: Mutex<Option<crate::domain::CharacterId>>,
     #[cfg(test)]
     fixture_pit_ms: std::sync::atomic::AtomicU64,
 }
@@ -437,7 +438,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || (read.dead && matches!(after.phase, 1 | 2))
                 || (!read.pit_owned && matches!(after.phase, 1 | 2)));
         let expired = matches!(after.phase, 1 | 2) && after.deadline_ms <= read.now_ms;
-        if stale && read.relocation_pending {
+        if stale && read.relocation_pending && !read.dead {
             disposition = D::Busy;
         } else if stale || expired {
             after = after.idle();

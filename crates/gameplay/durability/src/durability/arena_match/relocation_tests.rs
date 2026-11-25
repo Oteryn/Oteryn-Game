@@ -129,6 +129,7 @@ async fn scenario(admin: String) -> h::TestResult {
                     fence.runtime_scope,
                     fence.scope_ownership_generation.get(),
                     std::slice::from_ref(&fence.game_session_id),
+                    None,
                 )
             };
             let set_session_state = |state: i16| {
@@ -282,6 +283,7 @@ async fn grace_sessions(fixture: &h::Harness) -> h::TestResult {
             fence.runtime_scope,
             fence.scope_ownership_generation.get(),
             &positioned,
+            None,
         )
         .await?;
     assert_eq!(pending.len(), 1);

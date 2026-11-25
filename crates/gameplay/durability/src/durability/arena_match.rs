@@ -267,15 +267,17 @@ impl DurabilityRoot {
                         return Ok(Err(error));
                     }
                     let state = load_state(&mut tx, fence).await?;
-                    let relocation_pending = projection::pending_relocation(&mut tx, fence, &state).await?;
+                    let relocation_pending =
+                        projection::pending_relocation(&mut tx, fence, &state).await?;
                     let masks = claimed_masks(&mut tx, fence).await?;
                     let now_ms = now(&mut tx).await?;
-                    let replay = replay_origin(&mut tx, fence, cause, &payload, origin.as_deref()).await?;
-                    let dead: bool = matches!(state.phase,1|2) && sqlx::query_scalar::<_,bool>("SELECT EXISTS(SELECT 1 FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND committed_character_revision>$2::text::numeric)")
-                        .bind(fence.character_id.as_bytes().as_slice()).bind(state.entry_revision.to_string()).fetch_one(&mut *tx).await?;
-                    let pit_owned = !matches!(state.phase,1|2) || (!dead &&
-                        (pit_lease::owned(&mut tx,fence,&state,now_ms).await?
-                         || pit_lease::claim(&mut tx,fence,&state,now_ms).await?));
+                    let replay =
+                        replay_origin(&mut tx, fence, cause, &payload, origin.as_deref()).await?;
+                    let dead = dead_since_entry(&mut tx, fence.character_id, &state).await?;
+                    let pit_owned = !matches!(state.phase, 1 | 2)
+                        || (!dead
+                            && (pit_lease::owned(&mut tx, fence, &state, now_ms).await?
+                                || pit_lease::claim(&mut tx, fence, &state, now_ms).await?));
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(MatchRead {
                         relocation_pending,
@@ -335,7 +337,8 @@ impl DurabilityRoot {
             if prior.rank > 0 && request.after.rank == 0
                 && (prior.session != *fence.game_session_id.as_bytes()
                     || prior.scope_generation != fence.scope_ownership_generation.get())
-                && projection::pending_relocation(&mut tx,fence,&prior).await? {
+                && projection::pending_relocation(&mut tx,fence,&prior).await?
+                && !dead_since_entry(&mut tx, fence.character_id, &prior).await? {
                 return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
             }
             let now_ms=now(&mut tx).await?;
@@ -415,6 +418,20 @@ impl DurabilityRoot {
             tx.commit(deadline).await?;Ok(Ok(bytes))
         })).await?
     }
+}
+
+async fn dead_since_entry(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: crate::domain::CharacterId,
+    state: &MatchState,
+) -> Result<bool, DurabilityError> {
+    Ok(matches!(state.phase, 1 | 2) && sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM game_character_death_receipts
+         WHERE character_id=encode($1,'hex')::uuid AND committed_character_revision>$2::text::numeric)"
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind(state.entry_revision.to_string())
+    .fetch_one(&mut **tx).await?)
 }
 
 pub(super) async fn load_state(

@@ -63,10 +63,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .into_iter().filter_map(|(_, _, session)| session).collect();
             (binding.runtime_scope(), binding.scope_generation().get(), positioned)
         };
-        let read = self.root.read_arena_projection_leases(self.character, scope, generation, &positioned);
+        let cursor = *self.states.arena_matches.relocation_cursor.lock().ok()?;
+        let read = self.root.read_arena_projection_leases(
+            self.character, scope, generation, &positioned, cursor,
+        );
         #[cfg(test)]
         let read = pause_poll_read(read);
         let (now_ms, leased) = read.await.ok()?;
+        // Advance even when a row cannot be projected. An empty page starts
+        // a new sweep so temporarily blocked rows still get retried.
+        {
+            let mut saved = self.states.arena_matches.relocation_cursor.lock().ok()?;
+            if *saved == cursor {
+                *saved = leased.iter()
+                    .filter(|projection| projection.relocation_pending)
+                    .map(|projection| projection.character)
+                    .max_by_key(|character| *character.as_bytes());
+            }
+        }
         let mut resumed = Vec::new();
         for projection in leased {
             let state = projection.state;
