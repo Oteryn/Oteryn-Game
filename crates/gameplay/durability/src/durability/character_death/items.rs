@@ -85,7 +85,9 @@ pub(super) async fn select<const N: usize>(
     .bind(character.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
     .await?;
-    let rows = sqlx::query("SELECT s.slot, i.item_instance_id::text, i.definition_production_key, i.definition_family FROM (SELECT slot,item_instance_id FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid UNION ALL SELECT 9::smallint,item_instance_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid) s JOIN game_item_instances i USING(item_instance_id) ORDER BY i.item_instance_id LIMIT 11 FOR UPDATE OF i")
+    let rows = sqlx::query("SELECT s.slot, i.item_instance_id::text, i.definition_production_key, i.definition_family, \
+        game_player_death_item_custody_protected(i.item_instance_id,encode($1,'hex')::uuid,i.world_id) AS custody_protected \
+        FROM (SELECT slot,item_instance_id FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid UNION ALL SELECT 9::smallint,item_instance_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid) s JOIN game_item_instances i USING(item_instance_id) ORDER BY i.item_instance_id LIMIT 11 FOR UPDATE OF i")
         .bind(character.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
     if rows.len() > 10 {
         return Err(DurabilityError::InvalidStoredState);
@@ -106,6 +108,9 @@ pub(super) async fn select<const N: usize>(
             10 => EquipmentSlot::Ammo,
             _ => return Err(DurabilityError::InvalidStoredState),
         };
+        if row.try_get::<bool, _>("custody_protected")? {
+            continue;
+        }
         amulet |= slot == EquipmentSlot::Necklace
             && row.try_get::<String, _>("definition_family")? == "Item"
             && row.try_get::<String, _>("definition_production_key")? == "oteryn:item.tibia.i3057";

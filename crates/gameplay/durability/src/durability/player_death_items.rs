@@ -48,6 +48,7 @@ pub struct PlayerDeathItemRequest {
 pub enum PlayerDeathItemOutcome {
     Written,
     Replay,
+    RetainedInCustody,
 }
 #[derive(Debug)]
 pub enum PlayerDeathItemError {
@@ -348,10 +349,19 @@ async fn write(
         }
     };
     permit.check_scope(fence.runtime_scope)?;
-    let death = sqlx::query("SELECT death_spatial_position, death_map_revision, content_revision FROM game_character_death_receipts WHERE death_occurrence_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND death_world_id=encode($3,'hex')::uuid AND death_scope_kind=$4 AND death_channel_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND death_instance_id IS NOT DISTINCT FROM encode($6,'hex')::uuid")
-        .bind(cause.death_occurrence.as_slice()).bind(character.as_slice()).bind(world_id.as_bytes().as_slice()).bind(scope_kind).bind(channel_id.as_deref()).bind(instance_id.as_deref()).fetch_optional(&mut *connection).await?.ok_or(PlayerDeathItemError::StaleState)?;
+    let death = sqlx::query("SELECT death_spatial_position, death_map_revision, content_revision, \
+        CASE WHEN ($7 AND amulet_of_loss_item_id=encode($8,'hex')::uuid) \
+               OR (NOT $7 AND encode($8,'hex')::uuid=ANY(lost_item_ids)) \
+             THEN game_player_death_item_custody_protected(encode($8,'hex')::uuid,character_id,death_world_id) \
+             ELSE FALSE END AS custody_protected FROM game_character_death_receipts WHERE death_occurrence_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND death_world_id=encode($3,'hex')::uuid AND death_scope_kind=$4 AND death_channel_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND death_instance_id IS NOT DISTINCT FROM encode($6,'hex')::uuid")
+        .bind(cause.death_occurrence.as_slice()).bind(character.as_slice()).bind(world_id.as_bytes().as_slice()).bind(scope_kind).bind(channel_id.as_deref()).bind(instance_id.as_deref()).bind(burn).bind(cause.item_instance.as_slice()).fetch_optional(&mut *connection).await?.ok_or(PlayerDeathItemError::StaleState)?;
     if death.try_get::<String, _>("content_revision")? != request.content_revision {
         return Err(PlayerDeathItemError::StaleState);
+    }
+    // A pre-backfill receipt may still select a now-bound carried item or
+    // ancestor. Respawn rechecks its custody in the completion guard.
+    if death.try_get::<bool, _>("custody_protected")? {
+        return Ok(PlayerDeathItemOutcome::RetainedInCustody);
     }
     let item = sqlx::query("SELECT definition_family, definition_production_key, definition_revision_ref, quantity, COALESCE((SELECT key_number FROM game_item_keys k WHERE k.item_instance_id=game_item_instances.item_instance_id),0) AS key_number, state_revision::text AS revision FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND lifecycle=1 FOR UPDATE")
         .bind(cause.item_instance.as_slice()).bind(world_id.as_bytes().as_slice()).fetch_optional(&mut *connection).await?.ok_or(PlayerDeathItemError::StaleState)?;
