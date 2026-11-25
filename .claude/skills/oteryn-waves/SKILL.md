@@ -18,6 +18,9 @@ pushes that CI had to judge.
   caller and a test), then PARTIAL rows missing one piece, then MISSING rows.
 - One mechanic = one branch = one PR; the `a`/`b` split for a mechanic too
   big for one PR is in `oteryn-dev` `references/mechanic.md`.
+- Work is split by subsystem lane S1-S9 (`docs/architecture/subsystems/README.md`):
+  each lane's owner session writes its own crates. A slice that needs another
+  subsystem's crate waits for that owner's review of its consumer map.
 - Each slice is a tracer bullet: a thin path through every layer it touches
   (rules, storage, caller, wire, test), not one layer done completely. Write
   the blocking edges between slices explicitly.
@@ -46,31 +49,45 @@ worker picks its own number.
 ## 4. Write the packets and dispatch
 
 One self-contained packet per unit: `references/delegation.md` has the format
-(base SHA the worker verifies, numbers, owned paths, the red-then-green success
-check, limits to paste) and the rules for taking results back. Dispatch the
-whole wave at once, and only as many units as you can review and land the
-same day.
+(consumer map first, base SHA the worker verifies, numbers, owned paths, the
+red-then-green success check, effort by risk, limits to paste) and the rules
+for taking results back. A risk class gets its reviewed plan before code
+(`oteryn-coding`, *Risk classes*). Dispatch the whole wave at once, and only
+as many units as you can review and land the same day.
 
-## 5. Land the wave through one batch
+Work in progress is limited (owner decision 2026-11-25): finish and merge
+before starting new work, and keep one content train in CI plus one in build.
 
-1. Review each returned unit (`oteryn-review`) and push it to its own branch.
-2. Merge the wave's finished game-server heads, plus any other finished ones
-   waiting, onto a fresh `main` as one batch branch (at most 3 heads);
-   it is only a test vehicle.
-3. Run what the PR gate never runs on the batch tree, on a PC lane when one is
+## 5. Land the wave through one content train
+
+Owner decision 2026-11-25. The train is the one way finished units land
+together; `oteryn-dev` `references/ci-merge.md`, *The content train*, has the
+mechanics.
+
+1. Review each returned unit (`oteryn-review`) and push it to its own unit
+   branch. A unit is a coherent piece that can be dropped alone. The risk
+   class of a unit matters more than its size; there is no line cap.
+2. One writer owns the train branch `claude/happy-davinci-ijz3wy-ctrain-N`,
+   cut from a fresh `main`. The writer merges the unit branches with the
+   merge drivers and regenerates the derived files once.
+3. Run what the PR gate never runs on the train tree, on a PC lane when one is
    available: Node boot and the integration shards (`oteryn-dev`
    `references/local-checks.md`, *Jobs that only run after the merge*). Label the
-   batch `heavy-tests`; the batch's Codex review follows the per-PR rule
-   (`oteryn-review`, *Independent review by Codex*).
-4. Batch red: bisect it by member and fix the member, not the batch. A member
-   that goes red or changes after the batch tested it stops the landing: merge
-   no further members, rebuild the batch from the ones left on the new `main`
-   and test it again.
-5. Batch green: check `main` health (`oteryn-dev` `scripts/main-health.sh`),
-   then merge the members one by one, back to back, with no other merge at all
+   train `heavy-tests`; the train's Codex review follows the per-PR rule
+   (`oteryn-review`, *Independent review by Codex*) and runs at effort high
+   even with that label.
+4. A red unit leaves the train: bisect by unit, fix the unit on its own
+   branch, rebuild the train from the units left. A main-red fix goes outside
+   the train. A unit that changes after the train tested it stops the
+   landing; test the train again.
+5. Train green: check `main` health (`oteryn-dev` `scripts/main-health.sh`),
+   then merge the units one by one, back to back, with no other merge at all
    in between (`oteryn-dev` `references/ci-merge.md`, *Merge conditions*).
-   After the last one, `git rev-parse origin/main^{tree}` must equal the batch
-   head's `^{tree}`; then close the batch.
+   After the last one, `git rev-parse origin/main^{tree}` (`origin/staging`
+   while the staging flow is in use) must equal the train head's `^{tree}`;
+   then close the train. When the train changed a derived file beyond the
+   units, the train PR itself lands instead (`oteryn-dev`
+   `references/ci-merge.md`, *The content train*).
 
 ## 6. Close the wave
 
@@ -80,7 +97,8 @@ same day.
   cost a re-push, a re-run, a review finding or a fix in another PR; keep one
   only if someone reading just the final code would repeat it, and cite its
   evidence (PR or run id). Each kept lesson ends in exactly one of:
-  - a proposed automated check, when a script can detect the pattern;
+  - a CI guard test, when a script or test can detect the pattern (a P0/P1
+    class that recurs becomes a guard test, not a note; owner 2026-11-25);
   - one line in the skill that owns that kind of work (`oteryn-coding`,
     `oteryn-debugging`, `oteryn-review`, `oteryn-dev`, this skill);
   - dropped, with the reason.

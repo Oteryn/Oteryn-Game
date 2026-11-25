@@ -584,7 +584,13 @@ def test_source_cohort_includes_installed_successors() -> None:
         pass
 
     def measure():
-        assert installed == [("thaian", rc.ROOT), ("buddel", rc.ROOT, rc.WORLD)], (
+        assert installed == [
+            ("thaian", rc.ROOT),
+            ("buddel", rc.ROOT, rc.WORLD),
+            rc.WORLD,
+            rc.WORLD,
+            rc.WORLD,
+        ], (
             "measure only the complete installed World"
         )
         raise Measured
@@ -602,7 +608,18 @@ def test_source_cohort_includes_installed_successors() -> None:
             "buddel_travel.install_buddel",
             side_effect=lambda root, world: installed.append(("buddel", root, world)),
         ),
-        patch("travel_route_corrections.project_routes"),
+        patch(
+            "travel_route_corrections.project_routes",
+            side_effect=lambda _, world: installed.append(world),
+        ),
+        patch(
+            "regional_npc_prices.install",
+            side_effect=lambda _, world: installed.append(world),
+        ),
+        patch(
+            "regional_npc_dialogue.install",
+            side_effect=lambda _, world: installed.append(world),
+        ),
         patch.object(rc, "canonicalize_world"),
         patch.object(rc, "refresh_source_cohort_extent", side_effect=measure),
     ):
@@ -718,6 +735,14 @@ def full_generation_trace(
                 "travel_route_corrections.project_routes",
                 side_effect=lambda *_: record(("project-travel-routes",)),
             ),
+            patch(
+                "regional_npc_prices.install",
+                side_effect=lambda *_: record(("install-regional-npc-prices",)),
+            ),
+            patch(
+                "regional_npc_dialogue.install",
+                side_effect=lambda *_: record(("install-regional-npc-dialogue",)),
+            ),
             patch.object(
                 rc,
                 "canonicalize_world",
@@ -763,6 +788,8 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
         ("install-thaian",),
         ("install-buddel",),
         ("project-travel-routes",),
+        ("install-regional-npc-prices",),
+        ("install-regional-npc-dialogue",),
         ("canonicalize-world",),
         ("source-cohort",),
         ("repin-world",),
@@ -785,7 +812,8 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
         assert error.cmd == ["canonicalize-world"]
     else:
         raise AssertionError("canonical rewrite refusal must stop generation")
-    assert not any(command in refused for command in ordered[5:]), refused
+    after_canonicalization = ordered[ordered.index(("canonicalize-world",)) + 1:]
+    assert not any(command in refused for command in after_canonicalization), refused
 
 
 def test_world_canonicalizer_copies_only_a_complete_document_inventory() -> None:

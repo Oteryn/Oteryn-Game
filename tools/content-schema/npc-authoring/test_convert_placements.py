@@ -125,6 +125,10 @@ class ConvertPlacementsTest(unittest.TestCase):
 
     def test_only_scoped_admitted_npcs(self):
         scope = set(json.loads(cp.SCOPE.read_text())["npcs"])
+        contacts = json.loads(cp.CONTACTS.read_text())
+        scope.update(f'oteryn:npc.{row["npc"]}' for group in contacts.values() for row in group)
+        regional = json.loads(cp.regional_placements.SELECTION.read_text())["placements"]
+        scope.update(f"oteryn:npc.{row['npc']}" for row in regional)
         self.assertEqual({r["declaration"]["npc"] for r in self.records}, scope - {h["npc"] for h in self.held})
         self.assertLessEqual(scope, cp.admitted_keys())
 
@@ -149,7 +153,12 @@ class ConvertPlacementsTest(unittest.TestCase):
 
     def test_records_sorted_unique_and_keyed_by_cell(self):
         keys = [r["declaration"]["identity"]["key"] for r in self.records]
-        self.assertEqual(keys, sorted(set(keys)))
+        self.assertEqual(len(keys), len(set(keys)))
+        shards = [json.loads(self.files[Path(name).name])["records"] for name in self.index["shards"]]
+        original, *mainland = shards
+        for group in (original, [row for shard in mainland for row in shard]):
+            group_keys = [row["declaration"]["identity"]["key"] for row in group]
+            self.assertEqual(group_keys, sorted(group_keys))
         for r in self.records:
             d = r["declaration"]
             c = d["cell"]

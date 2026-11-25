@@ -1299,3 +1299,93 @@ fn runtime_item_look_names_a_visible_npc_and_refuses_stale_or_out_of_view_target
         Err(ItemLookRefusal::NotVisible)
     ));
 }
+
+#[test]
+fn albinius_and_telas_do_not_show_locked_source_offers() {
+    let catalogue = crate::content::NpcDataCatalogue::load(
+        &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+        std::ffi::OsStr::new("world"),
+        crate::content::npc_catalogue_preproduction_limits(),
+    )
+    .expect("committed NPC catalogue");
+    let model = catalogue
+        .service_model_for_project()
+        .expect("service model");
+    // The node admits both shops through their native quest callers.
+    let book = Arc::new(NpcTalkBook::from_model_with_native_quests(
+        &model,
+        &["oteryn:npc.albinius", "oteryn:npc.telas"],
+    ));
+    let mut locked_quotes = Vec::new();
+    for (key, item, price, direction) in [
+        (
+            "oteryn:npc.albinius",
+            51443,
+            30000,
+            crate::content::ProjectV2ServiceOfferDirection::SellToPlayer,
+        ),
+        (
+            "oteryn:npc.albinius",
+            51442,
+            25000,
+            crate::content::ProjectV2ServiceOfferDirection::SellToPlayer,
+        ),
+        (
+            "oteryn:npc.telas",
+            8775,
+            500,
+            crate::content::ProjectV2ServiceOfferDirection::BuyFromPlayer,
+        ),
+    ] {
+        let item_key = format!("oteryn:item.tibia.i{item}");
+        assert!(
+            book.get(key)
+                .expect("shop NPC")
+                .offers()
+                .iter()
+                .any(|offer| {
+                    offer.item.key == item_key
+                        && offer.unit_price == price
+                        && offer.direction == direction
+                })
+        );
+        let index = ItemDefinitionIndex::decode(
+            &serde_json::to_vec(&serde_json::json!({
+                "schema": crate::content::item_ref::ITEM_KEYS_SCHEMA,
+                "records": [[item_key, "definition-r1"]],
+            }))
+            .expect("item index JSON"),
+        )
+        .expect("item index");
+        let (runtime, actor, session, npc) = fixture_for(2, key);
+        let chat = chat_with(session, Arc::clone(&book));
+        let conversations = NpcConversations::default();
+        assert_eq!(
+            conversations
+                .talk_in(
+                    &chat,
+                    &runtime,
+                    actor,
+                    session,
+                    &intent(npc, "hi"),
+                    at(BASE),
+                    Some(&index)
+                )
+                .disposition,
+            NpcIntentDisposition::Ok
+        );
+        let reply = conversations.talk_in(
+            &chat,
+            &runtime,
+            actor,
+            session,
+            &intent(npc, "trade"),
+            at(BASE + 300_000),
+            Some(&index),
+        );
+        if reply.window.and_then(|window| window.open).is_some() {
+            locked_quotes.push((key, item));
+        }
+    }
+    assert!(locked_quotes.is_empty(), "locked quotes: {locked_quotes:?}");
+}
