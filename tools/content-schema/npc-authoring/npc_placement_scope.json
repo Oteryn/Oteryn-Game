@@ -995,19 +995,6 @@
       },
       "reason": "Crystal 201189f8 captain_gulliver.lua:68 lands on this XML anchor at Issavi. The next cell south uses the same clear ground and is within the donor walk radius of 2 (captain_harava.lua:11)."
     },
-    "oteryn:npc.captain_max": {
-      "source": {
-        "x": 32298,
-        "y": 32895,
-        "z": 6
-      },
-      "target": {
-        "x": 32298,
-        "y": 32896,
-        "z": 6
-      },
-      "reason": "The Calassa ferry returns to the donor's actor cell. Use the adjacent clear tile on the same boat so the arrival remains enterable."
-    },
     "oteryn:npc.danlon": {
       "source": {
         "x": 32190,
