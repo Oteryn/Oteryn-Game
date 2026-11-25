@@ -156,13 +156,15 @@ pub(super) fn scenario_options_impl(
         }
         item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
         if let ScenarioMode::ExplicitHead { vocation, .. } = mode {
+            // mode=seeded: pair the starting level and XP with an explicit vocation.
+            // Crystal 201189f8 data/items/items.xml:27260-27277 has no minimum level.
             let mut tx = harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *tx)
                 .await?;
             sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,$2,0,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,2,encode($3,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET vocation=EXCLUDED.vocation")
                 .bind(id(41).as_slice()).bind(vocation).bind(id(112).as_slice()).execute(&mut *tx).await?;
-            sqlx::query("INSERT INTO game_character_progression_state VALUES(encode($1,'hex')::uuid,2,50,1000000,'profile-1','ruleset-1','content-1','simulation-1','evidence-1','declaration-1','policy-1','reward-1') ON CONFLICT(character_id) DO UPDATE SET level=EXCLUDED.level,total_experience=EXCLUDED.total_experience")
+            sqlx::query("INSERT INTO game_character_progression_state VALUES(encode($1,'hex')::uuid,2,1,0,'profile-1','ruleset-1','content-1','simulation-1','evidence-1','declaration-1','policy-1','reward-1') ON CONFLICT(character_id) DO UPDATE SET level=EXCLUDED.level,total_experience=EXCLUDED.total_experience")
                 .bind(id(41).as_slice()).execute(&mut *tx).await?;
             tx.commit().await?;
         }
@@ -375,10 +377,6 @@ pub(super) fn scenario_options_impl(
                 )
                 .await?;
                 assert_eq!(actual, expected);
-                assert_eq!(
-                    equipped_count(pool).await?,
-                    i64::from(expected == ItemMoveOutcome::Moved)
-                );
                 client.shutdown().await?;
                 return Ok(());
             }
@@ -658,13 +656,6 @@ pub(super) fn scenario_options_impl(
             connection.await??;
         }
         drop(paused_clock);
-        if matches!(mode, ScenarioMode::ExplicitHead { .. }) {
-            drop(owner_clock);
-            drop(owner);
-            drop(authority);
-            drop(seal);
-            return harness.cleanup().await;
-        }
         // A newly composed owner reads the stored item by identity, independent of the wire view.
         let mut reloaded = deps.owner(&harness, &authority);
         reloaded.active_generation = Some(generation);
@@ -674,6 +665,37 @@ pub(super) fn scenario_options_impl(
         )
         .await
         .ok_or("reloaded equipment")?;
+        if let ScenarioMode::ExplicitHead { expected, .. } = mode {
+            let moved = expected == ItemMoveOutcome::Moved;
+            assert_eq!(equipment.items.len(), usize::from(moved));
+            if moved {
+                assert_eq!(equipment.items[0].item_instance_id, id(71));
+                assert_eq!(equipment.items[0].slot, 1); // Durable Head slot.
+            }
+            let source_in_backpack: bool = sqlx::query_scalar(
+                "SELECT EXISTS (
+                    SELECT 1 FROM game_item_container_entries e
+                    JOIN game_item_instances i USING (item_instance_id)
+                    WHERE e.item_instance_id = encode($1, 'hex')::uuid
+                      AND e.parent_item_instance_id = encode($2, 'hex')::uuid
+                      AND e.character_id = encode($3, 'hex')::uuid
+                      AND i.definition_production_key = 'oteryn:item.tibia.i10385'
+                      AND i.quantity = 1 AND i.lifecycle = 1
+                )",
+            )
+            .bind(id(71).as_slice())
+            .bind(id(70).as_slice())
+            .bind(id(41).as_slice())
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(source_in_backpack, !moved);
+            drop(reloaded);
+            drop(owner_clock);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if matches!(mode, ScenarioMode::Hands { .. } | ScenarioMode::Ammo { .. }) {
             let refused = matches!(
                 mode,
