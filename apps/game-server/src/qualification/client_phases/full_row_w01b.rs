@@ -246,7 +246,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 
 async fn logout_after_observation(
     client: &mut DevClientSession,
-    spawn: TilePos,
+    rats: &[TilePos],
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
 ) -> TestResult {
     use oteryn_protocol_oteryn::logout::LogoutResult;
@@ -261,7 +261,7 @@ async fn logout_after_observation(
         };
         let until = tokio::time::Instant::now() + Duration::from_millis(u64::from(retry_after_ms));
         let origin = tile(client.world_spatial().actor_position)?;
-        let path = route_with_landings(origin, |at| distance(at, spawn) >= 10, |_| true, &landing)
+        let path = route_with_landings(origin, |at| rats.iter().all(|&rat| distance(at, rat) >= 10), |_| true, &landing)
             .ok_or("no safe escape from the rat while logout is combat locked")?;
         let refuge = path.into_iter().try_fold(origin, |at, direction| landing(at, direction))
             .ok_or("combat logout escape landing disappeared")?;
@@ -329,6 +329,10 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     let spawn = RAT_SITE;
     let stand = RAT_STAND;
     let retreat = RAT_RETREAT;
+    let nearby_rats: Vec<_> = rat_points(&metadata.spawns)
+        .map(|(at, _)| at)
+        .filter(|at| at.floor == spawn.floor && distance(*at, spawn) <= 40)
+        .collect();
     let mut exact_sites = rat_points(&metadata.spawns).filter(|(at, _)| *at == spawn);
     let (_, respawn_ms) = exact_sites.next().ok_or("authored Venore rat missing")?;
     if exact_sites.next().is_some() || distance(spawn, retreat) < 20 {
@@ -580,7 +584,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.begin("logout");
     let observation_tile = tile(client.world_spatial().actor_position)?;
     let previous_session = client.join_snapshot().game_session_id;
-    logout_after_observation(&mut client, spawn, landing).await?;
+    logout_after_observation(&mut client, &nearby_rats, landing).await?;
     progress.pass("logout", "Accepted");
     drop(client);
     progress.begin("fresh-admission");
@@ -609,7 +613,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     }
     progress.pass("fresh-admission-state", replacement);
     progress.begin("final-logout");
-    logout_after_observation(&mut fresh, spawn, landing).await?;
+    logout_after_observation(&mut fresh, &nearby_rats, landing).await?;
     progress.pass("final-logout", "Accepted");
     Ok(())
 }
