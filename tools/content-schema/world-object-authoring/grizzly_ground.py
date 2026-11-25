@@ -67,7 +67,11 @@ def appearance_ground(identifier, speed, root=ROOT):
         raise ValueError("ground has no official appearance membership")
     known = lambda value: {"state": "KNOWN", "value": value}
     return {
-        "identity": {"family": "Terrain", "key": f"oteryn:terrain.tibia.i{identifier}", "revision": "definition-r1"},
+        "identity": {
+            "family": "Terrain",
+            "key": f"oteryn:terrain.tibia.i{identifier}",
+            "revision": "definition-r1",
+        },
         "kind": known("ground"),
         "walkable": known("unpass" not in appearance.flags),
         "ground_speed": known(appearance.speed),

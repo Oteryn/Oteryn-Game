@@ -34,7 +34,9 @@ def routed_ground(identifier, speed, profile, root):
     bindings = json.loads(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )
-    binding = next(row for row in bindings["bindings"] if row["external_id"] == str(identifier))
+    binding = next(
+        row for row in bindings["bindings"] if row["external_id"] == str(identifier)
+    )
     if binding["target"] != {
         "family": "Item",
         "key": f"oteryn:item.tibia.i{identifier}",
@@ -89,7 +91,9 @@ def routed_ground(identifier, speed, profile, root):
 
 
 def output(root=ROOT):
-    return routed_ground(7748, 150, "OTERYN_M49_OFFICIAL_APPEARANCE_CROSS_CHECKED_GROUND/v1", root)
+    return routed_ground(
+        7748, 150, "OTERYN_M49_OFFICIAL_APPEARANCE_CROSS_CHECKED_GROUND/v1", root
+    )
 
 
 if __name__ == "__main__":
