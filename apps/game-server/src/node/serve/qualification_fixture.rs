@@ -45,6 +45,9 @@ const HASTE_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000000f";
 const CHALLENGE_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000013";
 
 #[cfg(feature = "qualification-spawn")]
+const BARRIER_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
+
+#[cfg(feature = "qualification-spawn")]
 const PARTY_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000017";
 
 #[cfg(feature = "qualification-spawn")]
@@ -55,6 +58,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "s08-knight" => Some(("knight", 8)),
         "s08-sorcerer" => Some(("sorcerer", 8)),
+        "f5-c16a" => Some(("druid", 32)),
         "s13-party" => Some(("sorcerer", 32)),
         "w20b-light" => Some(("sorcerer", 26)),
         "c05-exiva" => Some(("sorcerer", 8)),
@@ -769,6 +773,7 @@ async fn prepare_build(
             | "c11-knight"
             | "c12-monk"
             | "c06-sorcerer"
+            | "f5-c16a"
             | "s13-party"
             | "w20b-light"
             | "s08-knight"
@@ -807,6 +812,7 @@ async fn prepare_build(
             | ("c11-knight", KNIGHT_ACCOUNT)
             | ("c12-monk", MONK_ACCOUNT)
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
+            | ("f5-c16a", BARRIER_CASTER_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
             | ("w20b-light", LIGHT_ACCOUNT)
             | ("s08-knight", PVP_KNIGHT_ACCOUNT)
@@ -2006,6 +2012,7 @@ mod tests {
         }
         for profile in [
             "c05-exiva",
+            "f5-c16a",
             "f5-c17a",
             "f5-c17c",
             "f5-c13",
