@@ -15,6 +15,7 @@ pub(super) async fn run(
     packets: &SeamClients<'_>,
     world: &BundleWorld,
     towns: &oteryn_world_bundle::subarea::Table,
+    rewards: &crate::content::creature_reward::CreatureRewardTable,
 ) {
     let mut profiles_confirmed = false;
     verdict::indexed(
@@ -24,7 +25,7 @@ pub(super) async fn run(
     .await;
     verdict::indexed(
         "MP09.full",
-        mp09_party_xp::run(core, packets, world, profiles_confirmed),
+        mp09_party_xp::run(core, packets, world, rewards, profiles_confirmed),
     )
     .await;
 }

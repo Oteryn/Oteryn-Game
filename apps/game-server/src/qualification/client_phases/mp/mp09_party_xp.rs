@@ -22,7 +22,7 @@ const HUNT_TARGET: (&str, &str, u64) = ("oteryn:creature.bonelord", "bonelord", 
 
 // A low-armour hostile creature lets the level-one fixture register real party activity.
 const ELIGIBILITY_TARGET: (&str, u64) = ("oteryn:creature.cave_rat", 10);
-const LEVEL_PROBE: (&str, u64, u64) = ("oteryn:creature.crazed_beggar", 35, 100);
+const LEVEL_PROBE: (&str, u64, u64) = ("oteryn:creature.minotaur", 50, 100);
 
 const XP_SOURCE: &str = "crates/gameplay/social-rules/src/shared_experience_split.rs:122";
 
@@ -53,6 +53,7 @@ pub(super) async fn run(
     core: &SeamClients<'_>,
     packets: &SeamClients<'_>,
     world: &BundleWorld,
+    rewards: &crate::content::creature_reward::CreatureRewardTable,
     mp01_profiles_confirmed: bool,
 ) -> TestResult {
     let started = std::time::Instant::now();
@@ -94,6 +95,7 @@ pub(super) async fn run(
             for index in 0..bots.len() {
                 bots::equip_axe(&mut bots, index, axe).await?;
             }
+            check_level_probe(rewards, LEVEL_PROBE)?;
             underlevel_party(&mut bots, world).await?;
             bots::approach(&mut bots, 1, 0, world, false).await?;
             bots::approach(&mut bots, 2, 0, world, false).await?;
@@ -870,6 +872,19 @@ async fn solo_hunt_award(
     ))
 }
 
+fn check_level_probe(
+    rewards: &crate::content::creature_reward::CreatureRewardTable,
+    (creature, xp, _): (&str, u64, u64),
+) -> TestResult {
+    let reward = rewards
+        .row(creature)
+        .map_err(|reason| format!("{creature} cannot settle kill rewards: {}", reason.as_str()))?;
+    if reward.corpse_item.is_none() || u64::try_from(reward.xp_amount.get())? != xp {
+        return Err(format!("{creature} must provide a corpse and {xp} base XP").into());
+    }
+    Ok(())
+}
+
 async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> TestResult {
     let (_, leader_level, _) = stats(&mut bots[0]).await?;
     let (_, low_level, _) = stats(&mut bots[3]).await?;
@@ -967,7 +982,7 @@ async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> T
     .await?;
     attack_target(&mut bots[0], None).await?;
     let death = observed_hunt_death(bots, None, LEVEL_PROBE.0, target).await?;
-    // The spawned Crazed Beggar has 100 HP and only its melee ability. The ledger credits
+    // The spawned Minotaur has 100 HP and only its melee ability. The ledger credits
     // actual HP removed, including the capped lethal strike.
     let leader_damage = LEVEL_PROBE
         .2
@@ -1034,6 +1049,25 @@ fn is_threshold_probe(high: u32, low: u32) -> bool {
 #[cfg(test)]
 mod qualification_review_tests {
     use super::*;
+
+    #[test]
+    fn underlevel_probe_can_settle_on_the_live_content_pin() -> TestResult {
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])?;
+        let (controller, _) = crate::content::native_gameplay::test_support::try_activate_input(
+            world,
+            native_input()?,
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let rewards = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("missing active native gameplay")?
+            .reward_table();
+        let refusal = check_level_probe(rewards, ("oteryn:creature.crazed_beggar", 35, 100))
+            .expect_err("the former probe must fail closed");
+        assert!(refusal.to_string().contains("corpse_item_inadmissible"));
+        check_level_probe(rewards, LEVEL_PROBE)
+    }
 
     #[test]
     fn delta_mp09_requires_exact_shared_and_solo_receipt_members() {

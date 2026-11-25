@@ -3232,6 +3232,7 @@ pub(super) async fn journeys(
                 &mp_second.clients(clients),
                 world,
                 &metadata.manifest.subareas,
+                &generation.rewards,
             )
             .await;
         }
