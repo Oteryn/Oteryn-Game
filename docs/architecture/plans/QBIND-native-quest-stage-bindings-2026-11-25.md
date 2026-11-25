@@ -128,3 +128,20 @@ Main already has full reference paths. Paradox Tower's `content/quests/authored-
 - **Bank Robbery.** `crates/gameplay/quests/src/quest/authored_bindings/occurrence.rs:100` holds the route unavailable and `quest/reward_callbacks.rs:627` filters its offers. `apps/game-server/tests/support/authority_cases/qm55_unavailable.rs:39` guards this. Crystal has a Jesse creature definition and an empty Bank Robbery storage entry. Neither defines the occurrence authority. Preserve the gate pending the decision below. [Jesse](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/bosses/jesse_the_wicked.lua) · [Storage](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/lib/core/storages.lua#L1881)
 
 Owner decisions remain where evidence runs out. Choose whether Bank Robbery stays unavailable or ships an explicitly Oteryn-owned occurrence, including scope/reset and eligibility for Naji, Jesse and stolen gold. For a chosen recipe whose exact reward, access entitlement or gameplay predicate is still undefined after source qualification, approve the specific Oteryn policy or keep that quest held. Quest/branch resolution, placement and source quantities are evidence work before these decisions. The coordinator confirms the first release cohort and the shared-file handoff after S1/S2/S5 review.
+
+## Unit 1 results
+
+Measured on `f0b1961ffa5669478aab72d1b55f81a84aeb2ce2`. The snapshot is the top-level JSON documents in `content/quests/authored-bindings/` selected by `crates/gameplay/quests/build_authored_bindings.rs:56`. Bytes are the sum of raw document lengths because `quest/authored_bindings/embedded.rs:14` checks that sum before parsing. Owner and stage counts follow `quest/authored_bindings.rs:132` in the quests crate, including NPC alternatives and occurrence restarts.
+
+| Registry measure | Base used | Limit | Remaining | Projected per emitted quest |
+| --- | ---: | ---: | ---: | ---: |
+| Documents | 36 | 128 | 92 | 1 |
+| Quest owners | 39 | 128 | 89 | 1 |
+| Bytes | 479,314 | 8,388,608 | 7,909,294 | 6,109 |
+| Stage slots | 258 | 2,048 | 1,790 | 8 |
+
+The projection uses one compact, newline-terminated document per quest and the size and stage count of the Pilgrimage of Ashes control. The byte budget fits 1,294 quests of that size and the stage budget fits 223. The owner limit binds first at **89 of 304**, with 215 outside capacity under that projection. Future cohorts need their own measurements. Pilgrimage already occupies one document and owner, so the test fragment replaces it in the verifier's combined snapshot and consumes no additional production capacity.
+
+The offline report at `tools/content-schema/quest-authoring/samples/server-completion/qbind-admission.json` lists one test control, 303 held records and zero production admissions. The lowerer joins the pinned import plan and chosen-state projection to the exact registered Pilgrimage journey. The chosen-source associations are historical. The projected canonical definition and current native owner supply the digest, and the live owner's final Guide Jonathan branch supplies the selector and 20 platinum coins. Stage `s8` already completes on main in `content/quests/authored-bindings/qmech-m01c-pilgrimage.json:1`. The PostgreSQL replay control covers durable completion, item custody and receipt counts. The control has no access grant.
+
+Make Believe is held at `content/quests/missions/completion-binding-plan.json:1`. Stages `s1` through `s19` lack qualified native bindings, including the exact Wayland Smythers final-report branch and southwest reward-portal association at `s19`. Stage `s20` has only graph intent from `s19`. The Thalassara boss shortcut portals and Stellar Moonsilver crafting rewards each lack exact native targets, governing access predicates and a delivery binding. Qualifying and enabling that route requires the post-handoff Content input and generated binding changes described above. Bank Robbery remains unavailable.
