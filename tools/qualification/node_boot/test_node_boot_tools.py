@@ -458,6 +458,35 @@ class StageDumpTests(unittest.TestCase):
         failed = self.run_stage('false')
         self.assertRegex(failed, r'PG_OBSERVE dump --stage sample --dir \S+ --activity \S+activity.log --verbose')
 
+    def test_unexpected_row_failure_preserves_first_node_log(self):
+        with tempfile.TemporaryDirectory() as temp:
+            script = textwrap.dedent(f'''\
+                set -Eeuo pipefail
+                WORK={temp}; VARS={temp}/vars; : > "$VARS"
+                GAME_SOURCE={temp}/game
+                mkdir -p "$GAME_SOURCE/tools/qualification/node_boot"
+                echo Known.full > "$GAME_SOURCE/tools/qualification/node_boot/known_fail_rows.txt"
+                node_log={temp}/node.log; failed_node_log={temp}/failed-node.log
+                NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0
+                declare -A STATUS=(); ORDER=()
+                evidence() {{ :; }}
+                start_runtime_diagnostics() {{ :; }}; stop_runtime_diagnostics() {{ :; }}
+                pg_observability_dump() {{ :; }}
+                sample_row() {{
+                    printf '%s\n' "$1" > "$node_log"
+                    printf 'SEAM_EVIDENCE e2e_all scenario=%s status=FAIL seconds=1\n' "$2"
+                }}
+                ''') + '\n'.join(function(name) for name in ('stage_rows', 'known_rows', 'stage')) + textwrap.dedent('''
+                stage known -- sample_row known Known.full
+                [[ ${STATUS[known]} == PASS && ! -e "$failed_node_log" ]]
+                stage first -- sample_row first C19a.full
+                [[ ${STATUS[first]} == 'FAIL(rows)' && $(cat "$failed_node_log") == first ]]
+                stage later -- sample_row later C20d.full
+                [[ ${STATUS[later]} == 'FAIL(rows)' && $(cat "$failed_node_log") == first ]]
+                ''')
+            result = bash(script)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
 
 class NodeSignalTests(unittest.TestCase):
     def test_signal_requires_matching_process_birth_time(self):

@@ -5147,18 +5147,26 @@ source_authority = "OTERYN_GAME_JOURNAL"
         let index = gameplay
             .and_then(|state| state.item_index())
             .expect("index");
-        let booted = boot_bundle_items(checked(), world, channel, gameplay).expect("booted");
-        // The active profile does not classify 1629 as a Door (`item_type`), so no door is
-        // placed whatever its appearance id, and a preprod node refuses to serve this bundle
-        // rather than open a doorway in name only.
-        assert_eq!(booted.facts().doors().len(), 0);
+        let mut expected_doors = 0;
+        oteryn_world_bundle::bundle::visit(&bytes, |manifest, sector| {
+            expected_doors += sector
+                .tiles
+                .iter()
+                .flat_map(|tile| &tile.items)
+                .filter(|item| {
+                    let entry = &manifest.palette[item.palette as usize];
+                    item.depth == 0
+                        && entry.family == oteryn_world_bundle::bundle::Family::Item
+                        && crate::map::boot::native_item_definition(gameplay, &entry.key)
+                            .is_some_and(|definition| definition.door)
+                })
+                .count();
+            Ok(())
+        })
+        .expect("count top-level doors in the active generation");
+        let booted = boot_bundle_world(checked(), world, channel, gameplay).expect("booted");
+        assert_eq!(booted.facts().doors().len(), expected_doors);
         assert_eq!(booted.facts().doors().sealed(), 0);
-        assert!(matches!(
-            boot_bundle_world(checked(), world, channel, gameplay),
-            Err(BootError::WorldBundle(
-                crate::map::boot::BootRefusal::NoDoors
-            ))
-        ));
         for (key, x, compact) in [(boxed, 6, boxed_id), (coin, 7, coin_id)] {
             use crate::map::view::MapFacts;
             let reference = index

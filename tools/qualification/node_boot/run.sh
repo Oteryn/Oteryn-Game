@@ -1183,6 +1183,8 @@ stage() { # name prerequisite... -- function
     [[ -z $stale_rows ]] || echo "NODE_BOOT_KNOWN_FAIL_STALE $name rows=$stale_rows"
     if [[ -n $new_rows ]]; then
       STATUS[$name]="FAIL(rows)"
+      # Keep the failing incarnation before later probes truncate the live log.
+      [[ -f "$failed_node_log" || ! -f "$node_log" ]] || cp "$node_log" "$failed_node_log"
       echo "NODE_BOOT_STAGE_FAILED $name rows=$new_rows"
     fi
     if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then

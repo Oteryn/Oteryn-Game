@@ -172,6 +172,9 @@ and inherits `OTERYN_E2E_CREATURE_BATCH` for `creature_sweep`. It prints a
 summary for each group and writes private logs under `/tmp/node-boot-cloud.*`
 at the path reported on stderr. It exits nonzero if any group fails.
 
+Use `tools/qualification/node_boot/cloud_run.sh c19a` to run the starter
+backpack and relog journey by itself. The `f6` group still includes C19a.
+
 Use `tools/qualification/node_boot/cloud_run.sh p16` to run the P16 blessing
 services journey by itself. The `f6` group still includes P16.
 
