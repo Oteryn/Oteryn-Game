@@ -14,7 +14,7 @@ use crate::durability::character_proficiency::{
 };
 use oteryn_gameplay_content::content::{
     ImportedShapingUnit, ImportedWeaponProficiencyData, ProjectV2ExactRatio,
-    ProjectV2ProficiencyPerk, ProjectV2ProficiencyThresholdClass,
+    ProjectV2ProficiencyPerk, ProjectV2ProficiencyThresholdClass, ReferenceItemField,
     import_committed_weapon_proficiency_data,
 };
 use oteryn_gameplay_domain::domain::weapon_proficiency::{
@@ -210,6 +210,7 @@ pub struct ProductionProficiencyCatalogue {
 impl ProductionProficiencyCatalogue {
     pub(super) fn catalogue_page(
         &self,
+        native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
         index: &oteryn_gameplay_content::content::item_ref::ItemDefinitionIndex,
         tracks: Option<&WeaponProficiencyDispatch>,
         offset: u32,
@@ -255,13 +256,13 @@ impl ProductionProficiencyCatalogue {
                     })
                 })
                 .collect::<Option<Vec<_>>>()?;
+            let revision = index.revision(key);
             entries.push(ProficiencyCatalogueEntry {
-                definition: index
-                    .revision(key)
+                definition: revision
                     .and_then(|revision| index.definition_ref("Item", key, revision))
                     .map_or(0, |reference| reference.get()),
                 weapon: key.clone(),
-                name: definition.name.clone(),
+                name: self.display_name(native, key, revision)?.to_owned(),
                 experience: track.map_or(0, |track| track.progress),
                 thresholds: *resolved.shape.track_shape().class().thresholds(),
                 levels,
@@ -285,6 +286,30 @@ impl ProductionProficiencyCatalogue {
     pub(super) fn weapon_keys(&self) -> impl Iterator<Item = &str> {
         self.data.bindings().keys().map(String::as_str)
     }
+    /// An admitted item's name is shared by both projections. The profile label is
+    /// the fallback when the active Item has no published name.
+    pub(super) fn display_name<'a>(
+        &'a self,
+        native: &'a oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+        item_key: &str,
+        revision: Option<&str>,
+    ) -> Option<&'a str> {
+        if let Some(policy) = revision.and_then(|revision| native.item_policy(item_key, revision))
+            && let ReferenceItemField::Known(presentation) = &policy.record().semantics.presentation
+            && let ReferenceItemField::Known(name) = &presentation.name
+        {
+            return Some(name);
+        }
+        let binding = self.data.bindings().get(item_key)?;
+        Some(
+            &self
+                .data
+                .definitions()
+                .get(&binding.profile_binding.key)?
+                .name,
+        )
+    }
+
     pub(super) fn empty_track(&self, item_key: &str) -> Option<LiveProficiencyTrack> {
         let shape = self.resolved(item_key)?.shape;
         Some(LiveProficiencyTrack {

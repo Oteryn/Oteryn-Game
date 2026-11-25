@@ -144,6 +144,25 @@ fn scenario() -> TestResult {
                 .await
                 .is_some()
         );
+        let scorcher = "oteryn:item.tibia.i21348";
+        let index = generation
+            .native_gameplay()
+            .and_then(|native| native.item_index())
+            .ok_or("active Item index")?;
+        let scorcher_offset = catalogue
+            .weapon_keys()
+            .filter(|key| index.revision(key).is_some())
+            .position(|key| key == scorcher)
+            .ok_or("scorcher browse offset")?;
+        let browse = FreshAdmissionAuthority::weapon_proficiency_browse(
+            &owner,
+            deps.actor,
+            session,
+            u32::try_from(scorcher_offset)?,
+        )
+        .await
+        .ok_or("scorcher browse page")?;
+        let browsed_scorcher = browse.rows.first().ok_or("scorcher browse row")?;
         let mut admitted = deps.admitted;
         admitted.item_fence = Some(fence);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -158,6 +177,7 @@ fn scenario() -> TestResult {
         let mut command_id = 1_u64;
         let mut keys = std::collections::BTreeSet::new();
         let mut saw_sword = false;
+        let mut saw_scorcher = false;
         loop {
             let protocol = oteryn_protocol_oteryn::encode_client_command(1, &oteryn_protocol_oteryn::ClientCommandValue {
                 command_id,
@@ -179,6 +199,11 @@ fn scenario() -> TestResult {
             assert_eq!(page.offset, offset);
             for entry in &page.entries {
                 assert!(keys.insert(entry.weapon.clone()), "catalogue repeats a weapon");
+                if entry.weapon == scorcher {
+                    saw_scorcher = true;
+                    assert_eq!(entry.definition, browsed_scorcher.definition.get());
+                    assert_eq!(entry.name, browsed_scorcher.name, "scorcher display name");
+                }
                 assert!(!entry.levels.is_empty());
                 assert!(entry.levels.iter().all(|level| !level.perks.is_empty()));
                 if entry.weapon == key {
@@ -195,6 +220,7 @@ fn scenario() -> TestResult {
             assert!(!page.entries.is_empty(), "catalogue stopped before its total");
         }
         assert!(saw_sword);
+        assert!(saw_scorcher);
         assert_eq!(keys.len(), crate::durability::character_proficiency::ProficiencyDefinitions::active_weapon_count(catalogue.as_ref()));
         eprintln!("nx8_proficiency_catalogue: executed all {offset} weapon tracks through production wire in {:?}", started.elapsed());
         Ok(())
