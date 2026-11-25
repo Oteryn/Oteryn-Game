@@ -346,6 +346,14 @@ fn tabs_scenario() -> TestResult {
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(extended[..stats.len()], stats[..], "the V1 body is unchanged");
         assert_eq!(extended[stats.len()..], [vocation_id("knight").ok_or("knight")?]);
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_promotions(character_id,purchase_occurrence_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(30).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        let (status, promoted) = exchange(&owner, &mut admitted, 11, tab, &[1, 0, 0, 1]).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(promoted[stats.len()..], [vocation_id("elite_knight").ok_or("elite knight")?]);
         // Capability 488: the public final-blow killer and the unjustified flag follow the cause.
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
@@ -376,7 +384,7 @@ fn tabs_scenario() -> TestResult {
             ],
         )
         .ok_or("cyclopedia death details capability")?;
-        let (status, detailed) = exchange(&owner, &mut admitted, 11, tab, &[2, 0, 0, 50]).await?;
+        let (status, detailed) = exchange(&owner, &mut admitted, 12, tab, &[2, 0, 0, 50]).await?;
         assert_eq!(status, CommandStatus::Accepted);
         let mut expected = deaths.clone();
         expected.extend_from_slice(&u32::try_from(level)?.to_le_bytes());

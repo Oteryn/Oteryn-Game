@@ -1,8 +1,10 @@
 """A source cell with no native tile moves only to the nearest walkable ground of its floor."""
+
 import json
 import tempfile
 import unittest
 from pathlib import Path
+
 import chosen_placement_adjustments as source
 import qh_jimmy_stub as stub
 
@@ -11,9 +13,11 @@ JIMMY = (32857, 31383, 6)
 
 
 def choice(x, y, z=6):
-    return {'source': {'x': JIMMY[0], 'y': JIMMY[1], 'z': JIMMY[2]},
-            'target': {'x': x, 'y': y, 'z': z},
-            'reason': 'Wiki cell has no native tile; nearest walkable ground in the same room.'}
+    return {
+        "source": {"x": JIMMY[0], "y": JIMMY[1], "z": JIMMY[2]},
+        "target": {"x": x, "y": y, "z": z},
+        "reason": "Wiki cell has no native tile; nearest walkable ground in the same room.",
+    }
 
 
 class MissingTileCell(unittest.TestCase):
@@ -24,10 +28,12 @@ class MissingTileCell(unittest.TestCase):
         self.donor_root = Path(temporary.name)
         placements = (self.donor_root / stub.INDEX).parent
         placements.mkdir(parents=True)
-        (placements / 'index.json').symlink_to(ROOT / stub.INDEX)
-        (placements.parent / 'terrain').symlink_to(ROOT / 'content/world/terrain')
-        index = json.loads((placements / 'index.json').read_bytes())
-        palette = {entry['source_item_id']: i for i, entry in enumerate(index['palette'])}
+        (placements / "index.json").symlink_to(ROOT / stub.INDEX)
+        (placements.parent / "terrain").symlink_to(ROOT / "content/world/terrain")
+        index = json.loads((placements / "index.json").read_bytes())
+        palette = {
+            entry["source_item_id"]: i for i, entry in enumerate(index["palette"])
+        }
         raw = (ROOT / stub.REGION).read_bytes()
         floor, rx, ry, sectors = source.codec.decode_region(raw)
         donor_sectors = {}
@@ -44,33 +50,57 @@ class MissingTileCell(unittest.TestCase):
             if donor_tiles:
                 x, y = donor_tiles[0][:2]
                 sx, sy = x // 32, y // 32
-                donor_sectors[(sy % 8) * 8 + sx % 8] = source.codec.encode_sector_tiles(sx, sy, donor_tiles)
+                donor_sectors[(sy % 8) * 8 + sx % 8] = source.codec.encode_sector_tiles(
+                    sx, sy, donor_tiles
+                )
         (self.donor_root / stub.REGION).write_bytes(
             source.codec.encode_region(floor, rx, ry, donor_sectors)
         )
 
     def test_jimmy_moves_to_nearest_walkable_room_cell(self):
-        cell, evidence = source.choose_cell(self.donor_root, JIMMY, choice(32857, 31380), set())
+        cell, evidence = source.choose_cell(
+            self.donor_root, JIMMY, choice(32857, 31380), set()
+        )
         self.assertEqual(cell, (32857, 31380, 6))
-        self.assertEqual(evidence['source_cell'], {'x': 32857, 'y': 31383, 'floor': 6})
-        self.assertEqual(len(evidence['map']['sha256']), 64)
+        self.assertEqual(evidence["source_cell"], {"x": 32857, "y": 31383, "floor": 6})
+        self.assertEqual(len(evidence["map"]["sha256"]), 64)
 
     def test_farther_border_occupied_or_other_floor_cells_refuse(self):
-        for x, y, z in [(32858, 31380, 6),   # walkable, but farther than 32857,31380
-                        (32857, 31381, 6),   # nearer, but a roof border, not ground
-                        (32856, 31380, 6),   # border
-                        (32857, 31379, 6),   # farther
-                        (32857, 31383, 7)]:  # another floor
+        for x, y, z in [
+            (32858, 31380, 6),  # walkable, but farther than 32857,31380
+            (32857, 31381, 6),  # nearer, but a roof border, not ground
+            (32856, 31380, 6),  # border
+            (32857, 31379, 6),  # farther
+            (32857, 31383, 7),
+        ]:  # another floor
             with self.assertRaises(ValueError):
                 source.choose_cell(self.donor_root, JIMMY, choice(x, y, z), set())
         with self.assertRaises(ValueError):
-            source.choose_cell(self.donor_root, JIMMY, choice(32857, 31380), {(32857, 31380, 6)})
+            source.choose_cell(
+                self.donor_root, JIMMY, choice(32857, 31380), {(32857, 31380, 6)}
+            )
 
     def test_existing_source_tile_still_needs_an_adjacent_target(self):
-        edala = {'source': {'x': 32697, 'y': 31718, 'z': 2},
-                 'target': {'x': 32699, 'y': 31718, 'z': 2}, 'reason': 'two cells away'}
+        edala = {
+            "source": {"x": 32697, "y": 31718, "z": 2},
+            "target": {"x": 32699, "y": 31718, "z": 2},
+            "reason": "two cells away",
+        }
         with self.assertRaises(ValueError):
             source.choose_cell(ROOT, (32697, 31718, 2), edala, set())
+
+    def test_ordinary_appearance_does_not_supply_scoped_ground(self):
+        before = (32908, 31409, 1)
+        placement = {
+            "source": {"x": before[0], "y": before[1], "z": before[2]},
+            "target": {"x": 32908, "y": 31413, "z": 1},
+            "reason": "Find the nearest walkable ground from a missing native tile.",
+        }
+        # The target uses ordinary appearance 50816 outside the reviewed cells.
+        with self.assertRaisesRegex(
+            ValueError, "must adjoin its exact retained source cell"
+        ):
+            source.choose_cell(ROOT, before, placement, set())
 
     def test_equal_distance_walkable_cells_refuse(self):
         path = self.donor_root / stub.REGION
@@ -84,11 +114,12 @@ class MissingTileCell(unittest.TestCase):
                 tiles.append((*tied, *winning[2:]))
                 tiles.sort(key=lambda tile: (tile[1], tile[0]))
             result[index] = source.codec.encode_sector_tiles(
-                rx * 8 + index % 8, ry * 8 + index // 8, tiles)
+                rx * 8 + index % 8, ry * 8 + index // 8, tiles
+            )
         path.write_bytes(source.codec.encode_region(floor, rx, ry, result))
         with self.assertRaises(ValueError):
             source.choose_cell(self.donor_root, JIMMY, choice(32857, 31380), set())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

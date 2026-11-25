@@ -6,6 +6,7 @@ use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::highscore_snapshot::BOSS_POINTS_CATEGORY;
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::content::native_gameplay::NativeCosmeticsView;
@@ -111,6 +112,7 @@ async fn read_title_facts(
             "{}eternity",
             oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX
         ))
+        .bind(i32::from(BOSS_POINTS_CATEGORY))
         .fetch_one(&mut **tx)
         .await?;
     let count = |value: i64| u32::try_from(value.max(0)).unwrap_or(u32::MAX);
@@ -199,6 +201,8 @@ async fn read_title_facts(
 
 // Collapse immutable kill history once per read. A correlated LIMIT 1 per boss/category
 // rescanned receipts without a (Character, boss) index and exhausted the semantic pass.
+// Crystal player_title.cpp:213 requires more than 10 points for Big Boss. Use the
+// committed score from the same snapshot row that establishes first place.
 const TITLE_FACTS_SQL: &str = "WITH me AS (SELECT character_id,account_id,world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid), \
  boss_categories AS MATERIALIZED (SELECT DISTINCT ON (boss_key) boss_key,category FROM game_character_bosstiary_kill_receipts WHERE character_id=encode($1,'hex')::uuid) SELECT \
  COALESCE((SELECT value FROM game_character_quest_tracks q WHERE q.character_id=me.character_id AND q.track_key='oteryn:taskboard/weekly/points'),0)::bigint AS task_board_points, \
@@ -210,7 +214,7 @@ const TITLE_FACTS_SQL: &str = "WITH me AS (SELECT character_id,account_id,world_
  EXISTS(SELECT 1 FROM game_character_quest_tracks q WHERE q.character_id=me.character_id AND q.track_key=$4 AND q.value=1) AS monk_pilgrimage, \
  COALESCE((SELECT balance FROM game_account_bank_balances b WHERE b.account_id=me.account_id AND b.world_id=me.world_id),0)::bigint AS bank_balance, \
  COALESCE((SELECT level FROM game_character_progression_state p WHERE p.character_id=me.character_id),0)::bigint AS level, \
- ARRAY(SELECT h.category FROM game_world_highscore_heads h JOIN game_world_highscore_rows w ON w.snapshot_id=h.current_snapshot_id AND w.filter=0 AND w.position=1 WHERE h.world_id=me.world_id AND w.character_id=me.character_id ORDER BY h.category) AS world_leads, \
+ ARRAY(SELECT h.category FROM game_world_highscore_heads h JOIN game_world_highscore_rows w ON w.snapshot_id=h.current_snapshot_id AND w.filter=0 AND w.position=1 WHERE h.world_id=me.world_id AND w.character_id=me.character_id AND (h.category<>$5 OR w.value_primary>10) ORDER BY h.category) AS world_leads, \
  COALESCE((SELECT max(streak) FROM game_character_daily_rewards d WHERE d.character_id=me.character_id),0)::integer AS login_streak, \
  EXISTS(SELECT 1 FROM game_guild_members g WHERE g.character_id=me.character_id AND g.rank_level=1) AS guild_leader, \
  COALESCE((SELECT sum(boss_points) FROM game_character_bosstiary_progress p WHERE p.character_id=me.character_id),0)::bigint AS boss_points, \
@@ -647,7 +651,7 @@ mod tests {
             2, 3, 7, 19, 20, 21, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36, 38, 39, 41, 42,
         ];
         revoked.extend(59..=84);
-        revoked.push(89);
+        revoked.extend([89, 95]);
         assert_eq!(revoked_conditional_titles(TitleFacts::default()), revoked);
         let all = TitleFacts {
             explored_map_percent: 100,

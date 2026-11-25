@@ -19,7 +19,8 @@ use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 
 use crate::gameplay_transport::connection::{
-    AdmittedSession, ConnectionEnd, FirstEntryOutcome, IDLE_LIVENESS, serve_admitted,
+    AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
+    serve_admitted,
 };
 
 use oteryn_gameplay_items::forge::{EXALTED_CORE_KEY, FORGE_SLIVER_KEY};
@@ -39,6 +40,7 @@ pub(in super::super) enum Case {
     DustLimit,
     DustCap,
     Refusals,
+    BusyHolder,
     Fences,
     Concurrent,
     NoRoom,
@@ -129,7 +131,7 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             | Case::Integrity
             | Case::CoreRefusal
             | Case::MixedFee => (1000, 1000),
-            Case::Refusals => (59, 100),
+            Case::Refusals | Case::BusyHolder => (59, 100),
             Case::DustCap => {
                 let max = crate::domain::forge_dust::DustLimit::from_upgrade_count(
                     crate::domain::forge_dust::DUST_LIMIT_UPGRADES_MAX,
@@ -197,6 +199,26 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             Case::DustLimit => super::dust_limit(&h, &owner, &mut admitted).await?,
             Case::DustCap => super::dust_cap(&h, &owner, &mut admitted).await?,
             Case::Refusals => super::refusals(&h, &owner, &mut admitted).await?,
+            Case::BusyHolder => {
+                let holder = h.root.issue_ready_semantic_pass().await?;
+                let (held, reply) = tokio::join!(
+                    holder.run(|_, _| Box::pin(async {
+                        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                        Ok(())
+                    })),
+                    owner.item_forge(
+                        admitted,
+                        admitted.continuity.next_command_id,
+                        request(Operation::DustToSlivers, 120),
+                        None,
+                    ),
+                );
+                held?;
+                let reply: Value = serde_json::from_slice(&reply.ok_or("missing Forge reply")?)?;
+                assert_eq!(reply["reason"], "INSUFFICIENT_DUST");
+                assert_eq!(reply["applied"], false);
+                assert_eq!(balances(&h).await?, (59, 100, 0, 0));
+            }
             Case::Fences => super::fences(&h, &owner, &mut admitted).await?,
             Case::Concurrent => super::concurrent(&h, &owner, &mut admitted).await?,
             Case::NoRoom => super::no_room(&h, &owner, &mut admitted).await?,

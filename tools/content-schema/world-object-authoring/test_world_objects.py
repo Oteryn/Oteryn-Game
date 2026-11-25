@@ -14,6 +14,8 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -810,6 +812,34 @@ def test_committed_donor_qualification_and_catalogue():
         census["qualification_sha256"] == build_catalogue.DONOR_QUALIFICATION_SHA256,
         "census binds exact reviewed qualification",
     )
+
+
+def test_standalone_cli_validates_appearance_only_terrain():
+    terrain = build_catalogue.ROOT / "content/world/terrain"
+    with tempfile.TemporaryDirectory() as directory:
+        record_path = Path(directory) / "record.json"
+        for shard in (
+            "terrain-08612-08612.json",  # Summer ground
+            "terrain-08751-08793.json",  # Spawn slice one
+            "terrain-08794-08845.json",  # Scoped spawn slice two
+            "terrain-08846-08885.json",  # Spawn slice three
+        ):
+            record = json.loads((terrain / shard).read_bytes())["records"][0]
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-E",
+                    str(Path(world_objects.__file__).resolve()),
+                    "--validate",
+                    str(record_path),
+                ],
+                cwd=directory,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            check(result.returncode == 0, f"{shard}: {result.stdout}{result.stderr}")
 
 
 if __name__ == "__main__":

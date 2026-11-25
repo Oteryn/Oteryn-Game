@@ -1,0 +1,225 @@
+{
+  "authority_epoch": "preproduction-unallocated",
+  "capability_manifest": [
+    {
+      "capability_id": "achievement",
+      "support": "unsupported"
+    },
+    {
+      "capability_id": "creature",
+      "support": "supported"
+    },
+    {
+      "capability_id": "creature_loot",
+      "support": "supported"
+    },
+    {
+      "capability_id": "item",
+      "support": "supported"
+    },
+    {
+      "capability_id": "npc",
+      "support": "supported"
+    },
+    {
+      "capability_id": "npc_shop",
+      "support": "supported"
+    },
+    {
+      "capability_id": "quest",
+      "support": "unsupported"
+    },
+    {
+      "capability_id": "spell",
+      "support": "unsupported"
+    }
+  ],
+  "completeness_manifest": [
+    {
+      "capability_id": "achievement",
+      "state": "unknown"
+    },
+    {
+      "capability_id": "creature",
+      "state": "partial"
+    },
+    {
+      "capability_id": "creature_loot",
+      "state": "partial"
+    },
+    {
+      "capability_id": "item",
+      "state": "partial"
+    },
+    {
+      "capability_id": "npc",
+      "state": "partial"
+    },
+    {
+      "capability_id": "npc_shop",
+      "state": "partial"
+    },
+    {
+      "capability_id": "quest",
+      "state": "unknown"
+    },
+    {
+      "capability_id": "spell",
+      "state": "unknown"
+    }
+  ],
+  "content_profile_id": "oteryn:profile.public-content-view-v1",
+  "entities": [
+    {
+      "capability_id": "creature",
+      "content_key": "oteryn:creature.abyssador",
+      "data": {
+        "armor": 15,
+        "definition_revision": "definition-r1",
+        "experience": 400000,
+        "health": 350000,
+        "name": "Abyssador",
+        "payload_revision": 1,
+        "resistances": [
+          {
+            "damage_type": "death",
+            "percent": {
+              "denominator": 1,
+              "numerator": 15
+            }
+          },
+          {
+            "damage_type": "earth",
+            "percent": {
+              "denominator": 1,
+              "numerator": 100
+            }
+          },
+          {
+            "damage_type": "energy",
+            "percent": {
+              "denominator": 1,
+              "numerator": 15
+            }
+          },
+          {
+            "damage_type": "fire",
+            "percent": {
+              "denominator": 1,
+              "numerator": 15
+            }
+          },
+          {
+            "damage_type": "ice",
+            "percent": {
+              "denominator": 1,
+              "numerator": 15
+            }
+          },
+          {
+            "damage_type": "physical",
+            "percent": {
+              "denominator": 1,
+              "numerator": 10
+            }
+          }
+        ],
+        "speed": 230
+      },
+      "type": "creature"
+    },
+    {
+      "capability_id": "item",
+      "content_key": "oteryn:item.tibia.i1000",
+      "data": {
+        "definition_revision": "definition-r1",
+        "materializable": false,
+        "name": "dry grass",
+        "payload_revision": 1,
+        "stack_class": "Unknown"
+      },
+      "type": "item"
+    },
+    {
+      "capability_id": "item",
+      "content_key": "oteryn:item.tibia.i16155",
+      "data": {
+        "definition_revision": "definition-r1",
+        "materializable": false,
+        "name": "decorative ribbon",
+        "payload_revision": 1,
+        "stack_class": "Unknown"
+      },
+      "type": "item"
+    },
+    {
+      "capability_id": "item",
+      "content_key": "oteryn:item.tibia.i22516",
+      "data": {
+        "definition_revision": "definition-r1",
+        "materializable": false,
+        "name": "silver token",
+        "payload_revision": 1,
+        "stack_class": "Unknown"
+      },
+      "type": "item"
+    },
+    {
+      "capability_id": "item",
+      "content_key": "oteryn:item.tibia.i22518",
+      "data": {
+        "definition_revision": "definition-r1",
+        "materializable": false,
+        "name": "Fireheart cuirass",
+        "payload_revision": 1,
+        "stack_class": "Unknown"
+      },
+      "type": "item"
+    },
+    {
+      "capability_id": "npc",
+      "content_key": "oteryn:npc.cledwyn",
+      "data": {
+        "definition_revision": "definition-r1",
+        "payload_revision": 1
+      },
+      "type": "npc"
+    }
+  ],
+  "generated_at": "2026-11-22T12:16:38Z",
+  "relations": [
+    {
+      "capability_id": "creature_loot",
+      "data": {
+        "algorithm": "IndependentBernoulliPpm",
+        "max_count": 1,
+        "min_count": 1,
+        "payload_revision": 1,
+        "probability_ppm": 27540
+      },
+      "relation_key": "oteryn:creature.abyssador.loot.0",
+      "source": "oteryn:creature.abyssador",
+      "target": "oteryn:item.tibia.i16155",
+      "type": "creature_loot"
+    },
+    {
+      "capability_id": "npc_shop",
+      "data": {
+        "count": null,
+        "currency": "oteryn:item.tibia.i22516",
+        "direction": "SellToPlayer",
+        "payload_revision": 1,
+        "sub_type": null,
+        "unit_price": 100
+      },
+      "relation_key": "oteryn:npc.cledwyn.shop.oteryn.service.trade.cledwyn.row.0",
+      "source": "oteryn:npc.cledwyn",
+      "target": "oteryn:item.tibia.i22518",
+      "type": "npc_shop"
+    }
+  ],
+  "required_capabilities": [],
+  "ruleset_id": "oteryn:ruleset.public-catalog-candidate",
+  "source_revision": "3e09916423181c795c829eca5e5414dde3f29a3e",
+  "tombstones": []
+}
