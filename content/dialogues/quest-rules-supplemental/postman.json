@@ -278,6 +278,47 @@
       ]
     },
     {
+      "key": "oteryn:quest-npc/postman/kevin/mailbox_promotion_offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "reply": [
+        "The mailbox is working again. Are you ready for your next assignment?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:79"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "op": "eq",
+          "value": 6
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission02",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 9
+        }
+      ]
+    },
+    {
       "key": "oteryn:quest-npc/postman/kevin/bill_report",
       "quest": "oteryn:quest.the_postman_missions_quest",
       "npc": "oteryn:npc.kevin",

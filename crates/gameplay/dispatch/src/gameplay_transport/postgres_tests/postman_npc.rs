@@ -212,6 +212,103 @@ fn crystal_kevin_postgres_requires_the_full_tour_briefing_and_takes_all_bones() 
 }
 
 #[test]
+fn crystal_kevin_postgres_resumes_first_promotion_after_regreeting() -> TestResult {
+    use super::classic_quests_fixtures::{install, progress, talk};
+    use super::qengine_outfit_stories_fixtures::{
+        seed_production_progression_context, seed_quest_prerequisites,
+    };
+
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("postman-promotion", || {
+        run(async |admin| {
+            reset();
+            let h = Harness::create_with_admission_seed(admin, "postman_promotion", true, false)
+                .await?;
+            prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+            let (controller, pin) = activated_with_loot_tables(world, None);
+            let deps = Dependencies::with_content(
+                ChannelContentPin::from_activation(
+                    world,
+                    pin.activation_sequence(),
+                    pin.identity().server_artifact_digest(),
+                    pin.identity().client_artifact_digest(),
+                    pin.frame_binding().digest(),
+                    pin.qualified_room().map_revision_digest(),
+                    (2, 0, 7),
+                ),
+                pin.qualified_room().clone(),
+                crate::spell::cast::v1_spell_book().map_err(debug)?,
+            )?;
+            publish_item_content(&h, &deps.admitted, &pin).await?;
+            let mut owner = deps.owner(&h, &authority);
+            owner.active_generation = Some(controller.active().ok_or("active content")?);
+            owner.quest_catalogue = Some(Arc::new(
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?
+                    .catalogue()
+                    .clone(),
+            ));
+            deps.initialize(&owner).await;
+            let mut admitted = deps.admitted;
+            seed_production_progression_context(&h, &owner, admitted.game_session_id).await?;
+            owner.admit_progression_session(&mut admitted).await;
+            let admitted = &admitted;
+            deps.runtime
+                .lock()
+                .await
+                .initialize_first_entry_position(deps.actor)
+                .map_err(debug)?;
+            let [kevin] = install(&owner, admitted, ["oteryn:npc.kevin"]).await?;
+            let mission01 = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01";
+            let mission02 = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission02";
+            let rank = "oteryn:quest-progress/quest/u7_24/the_postman_missions/rank";
+            seed_quest_prerequisites(
+                &h,
+                &owner,
+                admitted,
+                &[(mission01.into(), 6), (mission02.into(), 2)],
+                91,
+            )
+            .await?;
+            owner.refresh_quest_session(admitted.game_session_id, true).await;
+
+            talk(&mut owner, admitted, kevin, 1, "hi").await?;
+            let offer = talk(&mut owner, admitted, kevin, 2, "mission").await?;
+            assert_eq!(offer, ["The mailbox is working again. Are you ready for your next assignment?"]);
+            assert_eq!(progress(&owner, admitted, &authority, mission02).await?, 3);
+            assert_eq!(progress(&owner, admitted, &authority, rank).await?, 0);
+
+            talk(&mut owner, admitted, kevin, 3, "hi").await?;
+            talk(&mut owner, admitted, kevin, 4, "yes").await?;
+            assert_eq!(progress(&owner, admitted, &authority, rank).await?, 0);
+            assert_eq!(talk(&mut owner, admitted, kevin, 5, "mission").await?, offer);
+            assert_eq!(progress(&owner, admitted, &authority, rank).await?, 0);
+            assert_eq!(
+                talk(&mut owner, admitted, kevin, 6, "yes").await?,
+                ["You are now an Assistant Postofficer. Ready to deliver a bill?"]
+            );
+            assert_eq!(progress(&owner, admitted, &authority, rank).await?, 1);
+            assert_eq!(progress(&owner, admitted, &authority, mission02).await?, 3);
+
+            talk(&mut owner, admitted, kevin, 7, "hi").await?;
+            assert_eq!(
+                talk(&mut owner, admitted, kevin, 8, "mission").await?,
+                ["Are you ready for another mission?"]
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await
+        })
+    })
+}
+
+#[test]
 fn postman_olrik_postgres_only_uses_bank_after_type2_activation() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
