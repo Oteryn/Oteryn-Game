@@ -624,6 +624,15 @@ ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_
 game_platform_start
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
   seed_mp_accounts
+  if [[ "${NODE_BOOT_E2E_ONLY:-}" == p20 || "${NODE_BOOT_E2E_ONLY:-}" == thaisroutes ]]; then
+    premium_accounts=("$SECOND_ACCOUNT_ID")
+    if [[ "$NODE_BOOT_E2E_ONLY" == thaisroutes ]]; then
+      premium_accounts+=("$C12_MONK_ACCOUNT")
+    fi
+    python3 "$GAME_SOURCE/tools/qualification/node_boot/platform_premium.py" \
+      "$WORK" "$GP_PG_CONTAINER" "${premium_accounts[@]}" \
+      || game_platform_fail platform premium_grant_failed
+  fi
 fi
 
 # Shipped binaries and the SEAM client harness.
