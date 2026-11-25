@@ -18,7 +18,7 @@ use crate::durability::runtime_scope_assignment::{
 };
 
 use crate::foundation::admission_authority_publication::{
-    AdmissionAuthorityGuardKeyV1, AdmissionAuthorityPublicationV1,
+    AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1, AdmissionAuthorityPublicationV1,
     AdmissionPublicationPreconditionV1,
 };
 
@@ -121,7 +121,29 @@ async fn admit_second_node_inner(
     current.character_id = crate::foundation::CharacterId::decode(&id(RECIPIENT)).map_err(debug)?;
     current.channel_id = channel;
     current.scope_ownership_generation = receipt.assignment.ownership_generation;
+    let mut runtime_source = Source::with_current(now, current.clone())?;
+    runtime_source
+        .rows
+        .retain(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
+    let runtime_publication =
+        AdmissionAuthorityPublicationV1::prepare(&runtime_source, now).map_err(debug)?;
+    h.root
+        .publish_runtime_readiness(&node, &runtime_publication)
+        .await
+        .map_err(debug)?;
+
+    let now = clock(h).await?;
     let mut source = Source::with_current(now, current)?;
+    let runtime = source
+        .rows
+        .iter_mut()
+        .find(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)))
+        .ok_or("runtime row")?;
+    *runtime = runtime_publication
+        .changes()
+        .first()
+        .ok_or("runtime publication")?
+        .clone();
     let guards = AdmissionGuardStore::from_root(h.root.clone());
     let signing_key = source
         .rows
@@ -153,27 +175,50 @@ async fn admit_second_node_inner(
     let account_key = AdmissionAuthorityGuardKeyV1::Account {
         account_id: uuid(account_id),
     };
-    let prior_account = guards.load(std::slice::from_ref(&account_key)).await
-        .map_err(debug)?.into_iter().next().flatten();
-    if let Some(prior) = &prior_account {
-        let account = source.rows.iter_mut().find(|row| row.key == account_key)
+    if let Some(prior) = guards
+        .load(std::slice::from_ref(&account_key))
+        .await
+        .map_err(debug)?
+        .into_iter()
+        .next()
+        .flatten()
+    {
+        // The preceding Character has logged out. Reobserve Platform security
+        // while retaining the exact released account claim.
+        let account = source
+            .rows
+            .iter_mut()
+            .find(|row| row.key == account_key)
             .ok_or("account row")?;
-        *account = prior.clone();
+        *account = prior;
+        account.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+            expected_publication_revision: account.publication_revision,
+        };
+        account.publication_revision += 1;
+        account.source.source_revision += 1;
+        account.source.decision_identity =
+            format!("game-security-refresh-{}", account.source.source_revision);
+        account.source.source_observed_at = now;
+        let AdmissionAuthorityGuardStateV1::Account { security, presence } = &mut account.state
+        else {
+            return Err("account guard state".into());
+        };
+        assert!(
+            presence.is_none(),
+            "the prior Character must release the account"
+        );
+        let proof = &mut security.provenance;
+        proof.publication_revision = account.publication_revision;
+        proof.source_revision += 1;
+        proof.accepted_source_revision = proof.source_revision;
+        proof.decision_identity = format!("platform-observation-{}", proof.source_revision);
+        proof.accepted_decision_identity = proof.decision_identity.clone();
+        proof.source_observed_at = now;
     }
     let all_rows = source.rows.clone();
     source
         .rows
-        .retain(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
-    let publication = AdmissionAuthorityPublicationV1::prepare(&source, now).map_err(debug)?;
-    h.root
-        .publish_runtime_readiness(&node, &publication)
-        .await
-        .map_err(debug)?;
-    source.rows = all_rows.clone();
-    source
-        .rows
-        .retain(|row| !matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_))
-            && (prior_account.is_none() || row.key != account_key));
+        .retain(|row| !matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
     let publication = AdmissionAuthorityPublicationV1::prepare(&source, now).map_err(debug)?;
     guards.publish(&publication).await.map_err(debug)?;
     source.rows = all_rows;

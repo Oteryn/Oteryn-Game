@@ -13,6 +13,10 @@ use crate::native_admission_source::store::StoreClient;
 use oteryn_protocol_oteryn::store as wire;
 use std::sync::{Arc, Mutex as SyncMutex};
 
+const FIELD_SURGEON: &str = "store:outfit:field-surgeon";
+const FORMER_OWNER: u8 = 40;
+const NEW_OWNER: u8 = 95;
+
 #[test]
 fn cosmetic_tokens_real_dispatch_debits_character_and_unlocks_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -103,7 +107,20 @@ fn account_owned_coin_cosmetic_refuses_token_payment_on_another_character() -> T
 fn scenario(tokens: bool, previous_revision: bool, regression: Option<Regression>) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_appearance(admin, "cosmetic_tokens").await?;
-        prepare_current_session(&harness).await?;
+        let ledger = Arc::new(SyncMutex::new(Ledger {
+            balance: if tokens { 60 } else { 1000 },
+            world: uuid(&id(42)),
+            ..Ledger::default()
+        }));
+        let mut platform = StoreClient::new(
+            Box::new(FakePlatform(ledger.clone())),
+            "oteryn-game/store-consumer".into(),
+        );
+        if matches!(regression, Some(Regression::Transfer)) {
+            prepare_transferred_cosmetic_session(&harness, &mut platform).await?;
+        } else {
+            prepare_current_session(&harness).await?;
+        }
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
             .root
@@ -147,15 +164,7 @@ fn scenario(tokens: bool, previous_revision: bool, regression: Option<Regression
         let mut controller_binding = admitted.controller.ok_or("controller")?;
         controller_binding.account_id = account_id;
         admitted.controller = Some(controller_binding);
-        let ledger = Arc::new(SyncMutex::new(Ledger {
-            balance: if tokens { 60 } else { 1000 },
-            world: uuid(admitted.world_id.as_bytes()),
-            ..Ledger::default()
-        }));
-        owner.store = Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(
-            Box::new(FakePlatform(ledger.clone())),
-            "oteryn-game/store-consumer".into(),
-        ))));
+        owner.store = Some(Arc::new(tokio::sync::Mutex::new(platform)));
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             owner.offered_capabilities(),
             &[wire::CAPABILITY_STORE_V1, 479],
@@ -183,7 +192,7 @@ fn scenario(tokens: bool, previous_revision: bool, regression: Option<Regression
         let offer = page
             .offers
             .iter()
-            .find(|o| o.offer_key == "store:outfit:field-surgeon")
+            .find(|o| o.offer_key == FIELD_SURGEON)
             .ok_or("Field Surgeon")?;
         assert_eq!(offer.price, 870);
         let request = wire::StorePurchaseRequest {
@@ -482,6 +491,184 @@ fn scenario(tokens: bool, previous_revision: bool, regression: Option<Regression
     })
 }
 
+// Model the old owner's already-paid, offline delivery. The character
+// transfers while offline, then admits for the first time under the new owner.
+async fn prepare_transferred_cosmetic_session(
+    h: &Harness,
+    platform: &mut StoreClient,
+) -> TestResult {
+    use crate::durability::store::{
+        PaidStoreCosmeticIntent, PurchaseRequest, PurchaseRequestState, StorePurchaseHistoryEntry,
+    };
+    use crate::native_admission_source::store::{
+        OperationKind, PurchaseResult, PurchaseStoreOffer,
+    };
+    use oteryn_gameplay_economy::store as rules;
+
+    let account = id(FORMER_OWNER);
+    let character = id(41);
+    let offer = crate::content::store_cosmetics::offer(FIELD_SURGEON).ok_or("cosmetic offer")?;
+    let revision = crate::gameplay_transport::store::active_catalogue_revision();
+    let purchase_id = id(81);
+    let binding = rules::PurchaseStoreOffer {
+        purchase_request_id: rules::PurchaseRequestId::from_bytes(purchase_id).map_err(debug)?,
+        account_id: crate::domain::AccountId::from_bytes(account).map_err(debug)?,
+        character_id: crate::domain::CharacterId::from_bytes(character).map_err(debug)?,
+        offer_key: offer.key.clone(),
+        catalog_revision: revision.into(),
+        price: offer.price,
+        currency: rules::CurrencyKind::TibiaCoin,
+    };
+    let journal = PurchaseRequest {
+        purchase_request_id: purchase_id,
+        account_id: account,
+        character_id: character,
+        binding: binding.binding_digest().to_vec(),
+    };
+    assert_eq!(
+        h.root
+            .record_purchase_request(journal.clone())
+            .await
+            .map_err(debug)?,
+        PurchaseRequestState::Sent
+    );
+    sqlx::query(
+        "INSERT INTO game_character_store_cosmetics(character_id, world_id, offer_key, purchase_id)
+         VALUES ($1, $2, $3, $4)",
+    )
+    .bind(sqlx::types::Uuid::from_bytes(character))
+    .bind(sqlx::types::Uuid::from_bytes(id(42)))
+    .bind(&offer.key)
+    .bind(sqlx::types::Uuid::from_bytes(purchase_id))
+    .execute(&h.pool)
+    .await?;
+    let answer = platform
+        .purchase(
+            &PurchaseStoreOffer {
+                purchase_request_id: uuid(&purchase_id),
+                account_id: uuid(&account),
+                character_id: uuid(&character),
+                world_id: uuid(&id(42)),
+                offer_key: offer.key.clone(),
+                catalog_revision: revision.into(),
+                unit_price: offer.price.to_string(),
+                quantity: 1,
+                currency: "COINS".into(),
+            },
+            "COSMETIC",
+        )
+        .await
+        .map_err(debug)?;
+    let PurchaseResult::Accepted {
+        order_id,
+        operation_ids,
+    } = answer
+    else {
+        return Err(format!("former owner's Store purchase: {answer:?}").into());
+    };
+    let [operation] = operation_ids.as_slice() else {
+        return Err("expected one cosmetic operation".into());
+    };
+    let intent = platform
+        .read_intent(OperationKind::Deliver, operation)
+        .await
+        .map_err(debug)?;
+    let order = *sqlx::types::Uuid::parse_str(&order_id)?.as_bytes();
+    h.root
+        .record_store_answer_with_history(
+            journal,
+            serde_json::to_vec(&serde_json::json!({
+                "result": "ACCEPTED", "order_id": order_id, "operation_ids": operation_ids,
+            }))?,
+            Some(StorePurchaseHistoryEntry {
+                order_id: order,
+                offer_key: offer.key.clone(),
+                catalog_revision: revision.into(),
+                price: offer.price,
+                currency: "TIBIA_COIN".into(),
+            }),
+        )
+        .await
+        .map_err(debug)?;
+
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    assert!(
+        h.root
+            .recover_paid_store_cosmetic(
+                &authority,
+                PaidStoreCosmeticIntent {
+                    operation: *sqlx::types::Uuid::parse_str(operation)?.as_bytes(),
+                    account,
+                    order,
+                    fulfilment: intent.entitlement_id,
+                    offer: offer.key.clone(),
+                    catalogue: revision.into(),
+                },
+            )
+            .await
+            .map_err(debug)?
+    );
+    transfer_cosmetic_character(h, &authority, character).await?;
+    drop(authority);
+    drop(seal);
+    super::fresh_session_fixtures::prepare_current_session_for_account(h, id(NEW_OWNER)).await?;
+    Ok(())
+}
+
+async fn transfer_cosmetic_character(
+    h: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    character: [u8; 16],
+) -> TestResult {
+    use crate::native_admission_source::character_commands::{Decision, Input};
+    let source = super::house_transfer_fixtures::RecoverySource::start(h).await?;
+    let new_account = uuid(&id(NEW_OWNER));
+    source
+        .evidence
+        .refresh_account(&h.root, &h.node, &new_account)
+        .await
+        .map_err(debug)?;
+    let now = super::chat_world_fixture::clock(h).await?;
+    let operation = uuid(&id(85));
+    // The command decoder checks this canonical field order byte for byte.
+    let intent = format!(
+        concat!(
+            r#"{{"contract_version":1,"command":"TransferCharacterOwnership","variant":"PLATFORM_BAZAAR_TRANSFER","#,
+            r#""issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"{}","source_revision":"85","#,
+            r#""operation_id":"{}","character_id":"{}","expected_from_account_id":"{}","to_account_id":"{}","#,
+            r#""purpose":"BAZAAR_LISTING_ESCROW","issued_at_source":"{}","expires_at_source":"{}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
+        ),
+        uuid(&id(185)),
+        operation,
+        uuid(&character),
+        uuid(&id(FORMER_OWNER)),
+        new_account,
+        now,
+        now + 300,
+    );
+    let outcome = h
+        .root
+        .decide_character_command(
+            authority,
+            &h.node,
+            "oteryn:character-authority:primary",
+            "TransferCharacterOwnership",
+            &operation,
+            Input::Intent(intent.as_bytes()),
+        )
+        .await;
+    assert!(
+        matches!(&outcome, Decision::Publish { result_code, .. } if result_code == "CHAR_CMD_OK"),
+        "offline Character transfer: {outcome:?}"
+    );
+    Ok(())
+}
+
 async fn cosmetic_regression(
     case: Regression,
     harness: &Harness,
@@ -498,16 +685,46 @@ async fn cosmetic_regression(
     let account = admitted.controller.ok_or("controller")?.account_id;
     match case {
         Regression::Earned => {
+            use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, UnlockFact};
+            let key = "store:mount:armoured-war-horse";
+            let offer = crate::content::store_cosmetics::offer(key).ok_or("mount offer")?;
+            let content = owner
+                .active_generation
+                .and_then(|g| g.native_gameplay())
+                .and_then(|g| g.cosmetics())
+                .ok_or("cosmetics")?;
             let source: serde_json::Value = serde_json::from_slice(include_bytes!(
                 "../../../../../../tools/content-schema/native-gameplay/item-cosmetic-actions-native.json"
             ))?;
-            let lottery = source["rules"].as_array().ok_or("rules")?.iter()
-                .find(|r| r["item_id"] == 37746).ok_or("lottery")?;
-            let grant = lottery["choices"].as_array().ok_or("choices")?.iter()
-                .find(|r| r["feedback"].as_str().is_some_and(|text| text.contains("Armoured War Horse")))
-                .and_then(|row| row["grants"][0].as_str()).ok_or("earned grant")?;
+            let lottery = source["rules"]
+                .as_array()
+                .ok_or("rules")?
+                .iter()
+                .find(|r| r["item_id"] == 37746)
+                .ok_or("lottery")?;
+            let provenance = source["provenance"]
+                .as_str()
+                .ok_or("item grant provenance")?;
+            // Crystal's lottery feedback uses names from a different ID table.
+            // Resolve its awarded mount through the pinned grant mapping.
+            let grant = lottery["choices"]
+                .as_array()
+                .ok_or("choices")?
+                .iter()
+                .filter_map(|row| row["grants"][0].as_str())
+                .find(|grant| {
+                    content.earned_unlock(
+                        grant,
+                        provenance,
+                        EarnedCosmetic::Mount(&offer.unlock_key),
+                    ) == UnlockFact::Compatible
+                })
+                .ok_or("lottery grant for the Store mount")?;
+            assert_eq!(grant, "oteryn:item-grant.mount.23");
             let mut tx = harness.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+            sqlx::query("SET LOCAL session_replication_role = replica")
+                .execute(&mut *tx)
+                .await?;
             sqlx::query(
                 "WITH receipt AS (
                    INSERT INTO game_account_appearance_unlock_receipts
@@ -515,16 +732,16 @@ async fn cosmetic_regression(
                    RETURNING account_id,unlock_key,grant_occurrence_id
                  )
                  INSERT INTO game_account_appearance_unlocks SELECT * FROM receipt"
-            ).bind(account.as_slice()).bind(grant).bind(source["provenance"].as_str())
+            ).bind(account.as_slice()).bind(grant).bind(provenance)
                 .bind(character.as_slice()).execute(&mut *tx).await?;
             tx.commit().await?;
-            let key = "store:mount:armoured-war-horse";
-            let offer = crate::content::store_cosmetics::offer(key).ok_or("mount offer")?;
             request.offer_key = key.into();
             request.price = offer.price;
             let result = purchase(owner, admitted, command(&request)?).await?;
             assert_eq!(result.code, wire::StorePurchaseCode::OfferUnavailable);
-            assert!(ledger.lock().map_err(|_| "ledger")?.debits.is_empty());
+            let ledger = ledger.lock().map_err(|_| "ledger")?;
+            assert_eq!(ledger.purchases, 0);
+            assert!(ledger.debits.is_empty());
         }
         Regression::AccountOwnedToken => {
             let accepted = purchase(owner, admitted, command(&request)?).await?;
@@ -555,35 +772,59 @@ async fn cosmetic_regression(
             assert_eq!(spends, 0);
         }
         Regression::Transfer => {
-            use crate::domain::appearance::{AccountUnlocks, AppearanceContent, EarnedCosmetics, UnlockFact};
-            let accepted = purchase(owner, admitted, command(&request)?).await?;
-            assert_eq!(accepted.code, wire::StorePurchaseCode::Accepted);
-            let new_account = id(95);
-            let mut tx = harness.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
-            for sql in [
-                "UPDATE game_character_roots SET account_id=encode($1,'hex')::uuid WHERE character_id=encode($2,'hex')::uuid",
-                "UPDATE game_durability_reconnect_sessions SET account_id=encode($1,'hex')::uuid WHERE character_id=encode($2,'hex')::uuid",
-            ] {
-                sqlx::query(sql).bind(new_account.as_slice()).bind(character.as_slice()).execute(&mut *tx).await?;
-            }
-            tx.commit().await?;
-            let fence = crate::gameplay_transport::character_gameplay_fence::current(owner, admitted.game_session_id, false)
-                .await.ok_or("new owner's fence")?;
-            let content = owner.active_generation.and_then(|g| g.native_gameplay())
-                .and_then(|g| g.cosmetics()).ok_or("cosmetics")?;
-            let state = owner.root.read_current_character_appearance_state(
-                owner.character, owner.holder, fence, content.earned_grant_keys(),
-            ).await.map_err(debug)?;
-            let ownership = EarnedCosmetics { content, facts: &state.earned };
-            assert_eq!(ownership.outfit(&"oteryn:outfit.field_surgeon".into()), UnlockFact::Absent);
-            let mut controller = admitted.controller.ok_or("controller")?;
-            controller.account_id = new_account;
-            admitted.controller = Some(controller);
+            use crate::domain::appearance::{
+                AccountUnlocks, AppearanceContent, EarnedCosmetics, UnlockFact,
+            };
+            assert_eq!(account, id(NEW_OWNER));
+            let fence = crate::gameplay_transport::character_gameplay_fence::current(
+                owner,
+                admitted.game_session_id,
+                false,
+            )
+            .await
+            .ok_or("new owner's fence")?;
+            let content = owner
+                .active_generation
+                .and_then(|g| g.native_gameplay())
+                .and_then(|g| g.cosmetics())
+                .ok_or("cosmetics")?;
+            let state = owner
+                .root
+                .read_current_character_appearance_state(
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    content.earned_grant_keys(),
+                )
+                .await
+                .map_err(debug)?;
+            let ownership = EarnedCosmetics {
+                content,
+                facts: &state.earned,
+            };
+            assert_eq!(
+                ownership.outfit(&"oteryn:outfit.field_surgeon".into()),
+                UnlockFact::Absent
+            );
             ledger.lock().map_err(|_| "ledger")?.balance = 1_000;
-            request.purchase_request_id = id(81);
             let accepted = purchase(owner, admitted, command(&request)?).await?;
             assert_eq!(accepted.code, wire::StorePurchaseCode::Accepted);
+            let owners: Vec<sqlx::types::Uuid> = sqlx::query_scalar(
+                "SELECT account_id FROM store_delivery_receipts
+                 WHERE character_id = $1 AND entitlement_key = $2 ORDER BY account_id",
+            )
+            .bind(sqlx::types::Uuid::from_bytes(character))
+            .bind(format!("store-cosmetic:{FIELD_SURGEON}"))
+            .fetch_all(&harness.pool)
+            .await?;
+            assert_eq!(
+                owners,
+                [FORMER_OWNER, NEW_OWNER].map(|tag| sqlx::types::Uuid::from_bytes(id(tag)))
+            );
+            assert_eq!(
+                ledger.lock().map_err(|_| "ledger")?.debits,
+                [request.price; 2]
+            );
         }
         Regression::Abandoned | Regression::LegacyRefusal | Regression::PaidBeforeGrant | Regression::OfflinePaid | Regression::OfflineLostAnswer => {
             let paid = matches!(case, Regression::PaidBeforeGrant | Regression::OfflinePaid);

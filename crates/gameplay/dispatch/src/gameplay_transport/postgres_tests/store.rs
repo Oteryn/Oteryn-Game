@@ -11,7 +11,7 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::CommandStatus;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    FirstEntryOutcome, FreshAdmissionAuthority,
+    ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority, SessionContinuity,
 };
 
 use crate::native_admission_source::store::StoreClient;
@@ -47,6 +47,25 @@ fn page_request() -> TestResult<(u32, Vec<u8>)> {
 
 async fn count(harness: &Harness, sql: &'static str) -> TestResult<i64> {
     Ok(sqlx::query_scalar(sql).fetch_one(&harness.pool).await?)
+}
+
+async fn release_store_character(
+    store: &crate::durability::fresh_admission::FreshAdmissionStore,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    let controller = admitted.controller.ok_or("Store controller")?;
+    let account = uuid(&controller.account_id);
+    let released = store
+        .release_logout_session(admitted.game_session_id, &account, controller.transport)
+        .await?;
+    assert!(
+        matches!(
+            released,
+            crate::durability::fresh_admission::ExpiredLossReleaseV1::Released { .. }
+        ),
+        "Store Character logout: {released:?}"
+    );
+    Ok(())
 }
 
 async fn swords(harness: &Harness) -> TestResult<i64> {
@@ -430,24 +449,82 @@ fn scenario_with_answer(case: Case) -> TestResult {
             assert_eq!(count(&harness, "SELECT count(*) FROM store_delivery_receipts").await?, 0);
             sqlx::query("DROP TRIGGER fail_store_commit ON store_delivery_receipts").execute(&harness.pool).await?;
             if matches!(case, Case::CrossCharacter) {
-                let (second_node, second) = super::chat_world_fixture::admit_second_node_for_account(
-                    &harness, account_id,
-                ).await?;
+                let store = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+                    harness.root.clone(),
+                );
+                release_store_character(&store, admitted).await?;
+                let (second_node, second) =
+                    super::chat_world_fixture::admit_second_node_for_account(&harness, account_id)
+                        .await?;
                 let mut second_owner = second.owner(&harness, &authority);
                 second_owner.holder = &second_node;
                 second_owner.active_generation = Some(active);
                 second_owner.store = owner.store.clone();
                 let mut second_admitted = second.admitted;
-                second_admitted.continuity.selected_capabilities = admitted.continuity.selected_capabilities;
-                let retry = purchase(&second_owner, &mut second_admitted, purchase_request(83, SWORD, 25)?).await?;
+                second_admitted.continuity.selected_capabilities =
+                    admitted.continuity.selected_capabilities;
+                let retry = purchase(
+                    &second_owner,
+                    &mut second_admitted,
+                    purchase_request(83, SWORD, 25)?,
+                )
+                .await?;
                 assert_eq!(retry.code, wire::StorePurchaseCode::OfferUnavailable);
                 assert_eq!(swords(&harness).await?, 0);
+                release_store_character(&store, second_admitted).await?;
+
+                let session =
+                    super::full_world_support::relogin_as(&harness, id(41), account_id, id(111))
+                        .await?;
+                let current = store.current_session(session).await?;
+                let actor = {
+                    let mut runtime = owner.runtime.lock().await;
+                    runtime
+                        .remove_terminal_session(admitted.game_session_id, deps.actor)
+                        .map_err(debug)?;
+                    let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+                    let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+                    runtime
+                        .initialize_first_entry_position(actor)
+                        .map_err(debug)?;
+                    runtime
+                        .bind_attacker_lease(actor, session, current.current_character_lease())
+                        .map_err(debug)?;
+                    actor
+                };
+                deps.initialize_player(&owner, actor, session).await;
+                admitted = crate::gameplay_transport::connection::AdmittedSession {
+                    game_session_id: session,
+                    runtime_actor: Some(actor),
+                    controller: Some(ControllerBinding {
+                        account_id,
+                        transport: current.current_transport().ok_or("purchaser transport")?,
+                    }),
+                    item_fence: Some(
+                        crate::gameplay_transport::item_fence_of(current)
+                            .ok_or("purchaser fence")?,
+                    ),
+                    continuity: SessionContinuity {
+                        selected_capabilities: admitted.continuity.selected_capabilities,
+                        ..SessionContinuity::FRESH
+                    },
+                    ..admitted
+                };
             }
             let resumed_request = purchase_request(81, SWORD, 25)?;
             let retry = purchase(&owner, &mut admitted, resumed_request.clone()).await?;
             assert_eq!(retry.code, wire::StorePurchaseCode::Accepted);
             assert_eq!(purchase(&owner, &mut admitted, resumed_request).await?, retry);
             assert_eq!(swords(&harness).await?, 1);
+            let recipient: sqlx::types::Uuid = sqlx::query_scalar(
+                "SELECT l.character_id FROM game_item_character_inbox_locations l
+                 JOIN game_item_instances i USING(item_instance_id)
+                 WHERE i.definition_production_key = $1",
+            )
+            .bind(SWORD_ITEM)
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(recipient.as_bytes(), &id(41));
             assert_eq!(ledger.lock().expect("ledger").debits, [25]);
             drop(owner);
             drop(authority);

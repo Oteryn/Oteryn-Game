@@ -151,7 +151,11 @@ async fn scenario(h: &Harness,cask:bool,store:bool) -> TestResult {
         },
     ];
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-        &[],crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id,deps.admitted.channel_id),1,"policy-1",OFFERS,
+        &[],
+        crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id, deps.admitted.channel_id),
+        1,
+        "policy-1",
+        crate::gameplay_transport::store::with_store_offer(OFFERS, store),
     ).map_err(debug)?;
 
     deps.initialize(&owner).await;
