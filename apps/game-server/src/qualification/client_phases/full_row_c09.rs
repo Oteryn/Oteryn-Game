@@ -327,7 +327,16 @@ async fn walk_to_frodo(
     placement.extend_from_slice(&key.to_be_bytes());
     client.service_liveness(Duration::from_millis(250)).await?;
     client.take_events();
-    let used = client.use_object(&placement, 0).await?;
+    let mut used = client.use_object(&placement, 0).await?;
+    for _ in 0..2 {
+        if used.status != CommandStatus::Rejected || used.disposition != UseDisposition::Rejected {
+            break;
+        }
+        // A rejected command can be retried with the same closed revision. A
+        // commit or stale revision must never be retried as a door toggle.
+        client.service_liveness(Duration::from_millis(250)).await?;
+        used = client.use_object(&placement, 0).await?;
+    }
     if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {
         return Err(format!(
             "tavern door USE reply={used:?} at {:?} vitals={:?}",
