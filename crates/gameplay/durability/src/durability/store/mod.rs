@@ -24,9 +24,14 @@ pub use hireling_model::{
     HirelingServiceDeliveryPlan, HirelingStoreAction, HirelingStorePurchase,
     canonical_hireling_name,
 };
+pub(super) use outbox::store_claim_source_in_transaction;
 pub(crate) use prey_expansion::write_prey_expansion_receipt;
 pub use purchase_history::{StorePurchaseHistoryEntry, StorePurchaseHistoryRow};
 pub use storage::{PurchaseRequestState, StoreDurabilityError};
+
+/// The retained receipt with the native item ID that proves the Store claim.
+pub type StoreClaimSource = (DeliveryReceipt, [u8; 16]);
+
 mod popularity;
 #[cfg(test)]
 mod tests;

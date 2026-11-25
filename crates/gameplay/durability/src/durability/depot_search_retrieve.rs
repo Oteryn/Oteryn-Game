@@ -5,6 +5,7 @@
 //! move until the inventory has no room, and what does not fit stays.
 use super::*;
 use crate::domain::premium::PremiumGate;
+use crate::durability::store::{StoreClaimSource, store_claim_source_in_transaction};
 
 /// The CHECK bound of a child loop receipt's batch ordinal (migration 0227).
 const RETRIEVE_ITEMS_MAX: i64 = 1280;
@@ -41,8 +42,10 @@ struct Candidate {
 
 enum Retrieval {
     Definition { client_id: u32, all: bool },
-    StoreItem([u8; 16]),
+    StoreItem { delivery_id: [u8; 16], item: [u8; 16] },
 }
+
+type CustodyRetrieval = (DepotSearchRetrieval, Option<StoreClaimSource>);
 
 impl DurabilityRoot {
     /// Command 182 retrieval from depot and Inbox custody. Replay returns the stored outcome.
@@ -61,11 +64,21 @@ impl DurabilityRoot {
         std::result::Result<DepotSearchRetrieval, LoopMoveRefusal>,
         DurabilityError,
     > {
-        self.commit_custody_retrieval(permit, recovery, node, fence, command, content,
-            Retrieval::Definition { client_id, all }).await
+        let result = self
+            .commit_custody_retrieval(
+                permit,
+                recovery,
+                node,
+                fence,
+                command,
+                content,
+                Retrieval::Definition { client_id, all },
+            )
+            .await?;
+        Ok(result.map(|(outcome, _)| outcome))
     }
 
-    /// Claim one exact Store Inbox instance through the native retrieval transaction.
+    /// Claim one exact Store Inbox instance and return the proof from its move transaction.
     #[allow(clippy::too_many_arguments, reason = "same authorities and native content as depot search")]
     pub async fn commit_store_inbox_retrieval<C: ItemLoopContent>(
         &self,
@@ -75,13 +88,24 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         command: CommandRef,
         content: &C,
+        delivery_id: [u8; 16],
         item: [u8; 16],
     ) -> std::result::Result<
-        std::result::Result<DepotSearchRetrieval, LoopMoveRefusal>,
+        std::result::Result<Option<StoreClaimSource>, LoopMoveRefusal>,
         DurabilityError,
     > {
-        self.commit_custody_retrieval(permit, recovery, node, fence, command, content,
-            Retrieval::StoreItem(item)).await
+        let result = self
+            .commit_custody_retrieval(
+                permit,
+                recovery,
+                node,
+                fence,
+                command,
+                content,
+                Retrieval::StoreItem { delivery_id, item },
+            )
+            .await?;
+        Ok(result.map(|(_, proof)| proof))
     }
 
     #[allow(clippy::too_many_arguments, reason = "retrieval uses the existing fenced item owners")]
@@ -95,20 +119,20 @@ impl DurabilityRoot {
         content: &C,
         retrieval: Retrieval,
     ) -> std::result::Result<
-        std::result::Result<DepotSearchRetrieval, LoopMoveRefusal>,
+        std::result::Result<CustodyRetrieval, LoopMoveRefusal>,
         DurabilityError,
     > {
         permit.check_scope(fence.runtime_scope)?;
-        let (request, key, all, exact_item) = match retrieval {
+        let (request, key, all, store_item) = match retrieval {
             Retrieval::Definition { client_id: 0, .. } => return Ok(Err(LoopMoveRefusal::Rejected)),
             Retrieval::Definition { client_id, all } => {
                 let mut request = client_id.to_be_bytes().to_vec();
                 request.push(u8::from(all));
                 (request, Some(format!("oteryn:item.tibia.i{client_id}")), all, None)
             }
-            Retrieval::StoreItem(item) => (
-                item.to_vec(), None, false, Some(item),
-            ),
+            Retrieval::StoreItem { delivery_id, item } => {
+                (item.to_vec(), None, false, Some((delivery_id, item)))
+            }
         };
         let record = recovery
             .record_for(self)
@@ -128,15 +152,14 @@ impl DurabilityRoot {
                 }
                 let retrieved = u32::try_from(row.try_get::<i64,_>("retrieved")?).map_err(|_| DurabilityError::InvalidStoredState)?;
                 let found: bool = row.try_get("found")?;
-                super::super::db::commit_semantic_transaction(tx, deadline).await?;
-                return Ok(Ok(if found { DepotSearchRetrieval::Retrieved(retrieved) } else { DepotSearchRetrieval::NotFound }));
+                return finish_retrieval(tx, deadline, store_item, found, retrieved).await.map(Ok);
             }
             let attempt: LoopResult<(bool, u32)> = async {
                 assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await?;
                 let (world, _) = scope_of(&fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
                 // Roots in fixed order, then their nested entries; each row carries its ancestry,
                 // so an entry inside an already moved match travels with it, never twice.
-                let rows = if let Some(item) = exact_item {
+                let rows = if let Some((delivery_id, item)) = store_item {
                     sqlx::query("SELECT x.item_instance_id::text,0::int depth,NULL::int town_id,
                         NULL::smallint box_number,ARRAY[x.item_instance_id::text] path,i.quantity
                         FROM game_item_character_inbox_locations x
@@ -144,6 +167,7 @@ impl DurabilityRoot {
                         JOIN store_delivery_receipts r ON r.item_instance_id=x.item_instance_id
                         WHERE x.item_instance_id=encode($1,'hex')::uuid
                           AND x.character_id=encode($2,'hex')::uuid AND x.world_id=encode($3,'hex')::uuid
+                          AND r.operation_id=encode($4,'hex')::uuid
                           AND r.character_id=x.character_id AND r.world_id=x.world_id AND i.lifecycle=1
                           AND NOT EXISTS (
                               SELECT 1 FROM store_delivery_receipts r
@@ -154,7 +178,7 @@ impl DurabilityRoot {
                               )
                           )")
                         .bind(item.as_slice()).bind(fence.character_id.as_bytes().as_slice())
-                        .bind(world.as_bytes().as_slice()).fetch_all(&mut *tx).await?
+                        .bind(world.as_bytes().as_slice()).bind(delivery_id.as_slice()).fetch_all(&mut *tx).await?
                 } else {
                     sqlx::query(r#"
                     WITH RECURSIVE roots AS (
@@ -235,13 +259,43 @@ impl DurabilityRoot {
                     sqlx::query("INSERT INTO game_depot_search_retrieve_receipts(game_session_id,command_id,character_id,request,found,retrieved) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,$5,$6)")
                         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice())
                         .bind(&request).bind(found).bind(i64::from(retrieved)).execute(&mut *tx).await?;
-                    super::super::db::commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(if found { DepotSearchRetrieval::Retrieved(retrieved) } else { DepotSearchRetrieval::NotFound }))
+                    finish_retrieval(tx, deadline, store_item, found, retrieved).await.map(Ok)
                 }
                 Err(error) => { tx.rollback().await?; loop_error(error).map(Err) }
             }
         })).await
     }
+}
+
+async fn finish_retrieval(
+    mut tx: Transaction<'_, Postgres>,
+    deadline: std::time::Instant,
+    store_item: Option<([u8; 16], [u8; 16])>,
+    found: bool,
+    retrieved: u32,
+) -> Result<CustodyRetrieval, DurabilityError> {
+    let outcome = if found {
+        DepotSearchRetrieval::Retrieved(retrieved)
+    } else {
+        DepotSearchRetrieval::NotFound
+    };
+    // NotFound can mean another command already moved the item. A full
+    // backpack leaves the claim available for a later command.
+    let proof = if let Some((delivery_id, item)) = store_item
+        && outcome != DepotSearchRetrieval::Retrieved(0)
+    {
+        let proof = store_claim_source_in_transaction(&mut tx, delivery_id)
+            .await?
+            .filter(|(_, proof_item)| *proof_item == item);
+        if retrieved != 0 && proof.is_none() {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        proof
+    } else {
+        None
+    };
+    super::super::db::commit_semantic_transaction(tx, deadline).await?;
+    Ok((outcome, proof))
 }
 
 /// One child move under a savepoint: a refusal (no room, overweight) rolls back only itself.

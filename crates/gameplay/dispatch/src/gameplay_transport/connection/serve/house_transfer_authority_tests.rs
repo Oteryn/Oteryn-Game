@@ -233,6 +233,182 @@ where
         .map_err(|_| "House command test panicked".to_owned())?
 }
 
+struct RetainedClaimAuthority {
+    inventory: CommandAuthority,
+    inventory_reads: Cell<u32>,
+    map_reads: Cell<u32>,
+    follow_up_seen: Cell<bool>,
+    claim: oteryn_protocol_oteryn::store::StoreClaimReceipt,
+}
+
+impl FreshAdmissionAuthority for RetainedClaimAuthority {
+    async fn admit(
+        &self,
+        _: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Rejected)
+    }
+
+    async fn house_scope_ack(&self, _: AdmittedSession) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        Ok(Some((1, vec![1])))
+    }
+
+    async fn mana_shield_remaining(&self, admitted: AdmittedSession) -> Option<u32> {
+        assert_eq!(
+            self.map_reads.get(),
+            1,
+            "a retained claim must not read the House map"
+        );
+        self.follow_up_seen.set(true);
+        self.inventory.mana_shield_remaining(admitted).await
+    }
+
+    async fn observe_house_map(
+        &self,
+        _: AdmittedSession,
+        _: &mut SessionMapView,
+        _: &mut SessionItemView,
+    ) -> Option<Result<Option<MapUpdate>, crate::gameplay_transport::world_map::MapViewError>> {
+        let calls = self.map_reads.get();
+        self.map_reads.set(calls + 1);
+        if calls == 0 {
+            Some(Ok(Some(MapUpdate::Snapshot(
+                crate::gameplay_transport::item_view::ItemViewSnapshotDomain {
+                    domain_id: oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+                    revision: 1,
+                    snapshot_type: 1,
+                    payload: Vec::new(),
+                },
+            ))))
+        } else {
+            self.follow_up_seen.get().then_some(Ok(None))
+        }
+    }
+
+    async fn observe_character_inventory(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<crate::gameplay_transport::item_view::InventoryItems> {
+        self.inventory_reads.set(self.inventory_reads.get() + 1);
+        self.inventory
+            .observe_character_inventory(actor, session)
+            .await
+    }
+
+    async fn store_command(
+        &self,
+        _: AdmittedSession,
+        command_id: u64,
+        command_type: u32,
+        payload: Vec<u8>,
+    ) -> (CommandStatus, Vec<u8>) {
+        use oteryn_protocol_oteryn::store as wire;
+        assert_eq!(command_type, wire::COMMAND_TYPE_STORE_INBOX_CLAIM);
+        assert_eq!(command_id, 2);
+        assert_eq!(
+            wire::decode_inbox_claim_request(&payload).map(|claim| claim.fulfilment_unit_id),
+            Ok(self.claim.fulfilment_unit_id.clone())
+        );
+        match wire::encode_claim_receipt(&self.claim) {
+            Ok(receipt) => (CommandStatus::Accepted, receipt),
+            Err(_) => (CommandStatus::Rejected, Vec::new()),
+        }
+    }
+}
+
+#[test]
+fn house_remains_connected_after_retained_store_claim_when_map_is_unavailable() -> Result<(), String>
+{
+    run_command_test(|| async {
+        use crate::gameplay_transport::tcp_tls::read_frame;
+        use oteryn_protocol_oteryn::{actor_spell, store as wire};
+
+        let (mut admitted, _) = command_fixture(&[4, 18, wire::CAPABILITY_STORE_V1, 605])?;
+        // Command 1 already committed on the Channel. The House receives a new command ID.
+        admitted.continuity.next_command_id = 2;
+        let authority = RetainedClaimAuthority {
+            inventory: CommandAuthority {
+                reserved: false,
+                move_seen: Cell::new(None),
+            },
+            map_reads: Cell::new(0),
+            inventory_reads: Cell::new(0),
+            follow_up_seen: Cell::new(false),
+            claim: wire::StoreClaimReceipt {
+                operation_id: [0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2],
+                fulfilment_unit_id: "00000000-0000-7000-8000-000000000001".into(),
+                result: wire::StoreClaimCode::Committed,
+                recovery_generation: 1,
+                decided_at_unix_ms: 1_000,
+            },
+        };
+        let request = wire::encode_inbox_claim_request(&wire::StoreInboxClaimRequest {
+            fulfilment_unit_id: authority.claim.fulfilment_unit_id.clone(),
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        let (mut server, mut client) = tokio::io::duplex(1 << 16);
+        for (command_id, command_type, payload) in [
+            (2, wire::COMMAND_TYPE_STORE_INBOX_CLAIM, request.as_slice()),
+            (3, actor_spell::COMMAND_TYPE_MANA_SHIELD_REMAINING, &[][..]),
+        ] {
+            let frame = oteryn_protocol_oteryn::encode_client_command(
+                admitted.continuity.connection_generation,
+                &oteryn_protocol_oteryn::ClientCommandValue {
+                    command_id,
+                    command_type,
+                    payload,
+                },
+            )
+            .map_err(|error| format!("{error:?}"))?;
+            write_frame(&mut client, &frame)
+                .await
+                .map_err(|error| error.to_string())?;
+        }
+        tokio::io::AsyncWriteExt::shutdown(&mut client)
+            .await
+            .map_err(|error| error.to_string())?;
+        let _ = serve(
+            &mut server,
+            admitted,
+            &authority,
+            &authority,
+            &mut None,
+            IDLE_LIVENESS,
+            &mut integrity::Integrity::default(),
+            false,
+        )
+        .await;
+        drop(server);
+        let mut replies = Vec::new();
+        while let Ok(frame) = read_frame(&mut client).await {
+            let envelope = decode_wire_envelope(&frame).map_err(|error| format!("{error:?}"))?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                    .map_err(|error| format!("{error:?}"))?;
+                replies.push((result.command_id, result.status, result.payload.to_vec()));
+            }
+        }
+        assert_eq!(
+            replies.first(),
+            Some(&(
+                2,
+                CommandStatus::Accepted,
+                wire::encode_claim_receipt(&authority.claim)
+                    .map_err(|error| format!("{error:?}"))?
+            )),
+        );
+        assert_eq!(
+            replies.get(1).map(|reply| (reply.0, reply.1)),
+            Some((3, CommandStatus::Accepted)),
+            "next House command after committed Store claim"
+        );
+        assert_eq!(authority.map_reads.get(), 2);
+        assert_eq!(authority.inventory_reads.get(), 2);
+        Ok(())
+    })
+}
+
 #[test]
 fn house_query_mount_and_inscription_routes_return_owner_results() -> Result<(), String> {
     run_command_test(|| async {

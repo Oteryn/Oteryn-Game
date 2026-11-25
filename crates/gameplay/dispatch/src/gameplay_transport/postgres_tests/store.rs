@@ -102,6 +102,7 @@ enum Case {
     RestoreMissingClaim,
     SlowClaimDiscovery,
     ClaimReceipt,
+    ClaimHolderContention,
     LastSlot,
     InterruptedMint,
     LostAnswer,
@@ -257,6 +258,148 @@ fn store_worker_leaves_platform_claim_pending_while_item_is_in_inbox() -> TestRe
 }
 
 #[test]
+fn store_claim_refreshes_backpack_when_receipt_reread_loses_holder() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-claim-holder", || {
+        scenario_with_answer(Case::ClaimHolderContention)
+    })
+}
+
+async fn claim_with_holder_contention(
+    harness: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    ledger: &SyncMutex<Ledger>,
+    request: &wire::StoreInboxClaimRequest,
+) -> TestResult {
+    use super::store_fixtures::{SlowClaimReads, wait_for_advisory_waiter};
+    use crate::durability::DurabilityRoot;
+    use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
+    use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
+    use oteryn_protocol_oteryn::{MessageType, item_view, world_spatial_entities};
+    use std::time::Duration;
+
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        owner.offered_capabilities(),
+        &[
+            world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES,
+            item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
+            wire::CAPABILITY_STORE_V1,
+        ],
+    )
+    .ok_or("claim with inventory capabilities")?;
+    let slow = Arc::new(SlowClaimReads::default());
+    ledger.lock().expect("ledger").slow_claim_reads = Some(slow.clone());
+    let mut barrier = harness.pool.begin().await?;
+    let holder_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+        .fetch_one(&mut *barrier)
+        .await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(3485, 186)")
+        .execute(&mut *barrier)
+        .await?;
+    // Queue the competing owner at the move's commit, after all of its
+    // statements. Release the holder for the inventory read once the Store
+    // route reaches publication, which needs no database connection.
+    sqlx::raw_sql(
+        "CREATE FUNCTION test_store_claim_commit_barrier() RETURNS trigger LANGUAGE plpgsql AS $$
+         BEGIN PERFORM pg_advisory_xact_lock(3485, 186); RETURN NULL; END $$;
+         CREATE CONSTRAINT TRIGGER test_store_claim_commit_barrier
+         AFTER INSERT ON game_depot_search_retrieve_receipts
+         DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+         EXECUTE FUNCTION test_store_claim_commit_barrier();",
+    )
+    .execute(&harness.pool)
+    .await?;
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let frame = oteryn_protocol_oteryn::encode_client_command(
+        admitted.continuity.connection_generation,
+        &oteryn_protocol_oteryn::ClientCommandValue {
+            command_id: admitted.continuity.next_command_id,
+            command_type: wire::COMMAND_TYPE_STORE_INBOX_CLAIM,
+            payload: &wire::encode_inbox_claim_request(request).map_err(debug)?,
+        },
+    )
+    .map_err(debug)?;
+    write_frame(&mut client, &frame).await?;
+    tokio::io::AsyncWriteExt::shutdown(&mut client).await?;
+
+    let _deadline = harness.root.boot_pass_deadline(Duration::from_secs(3));
+    let queued = std::cell::Cell::new(false);
+    let serving = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS);
+    let contention = DurabilityRoot::with_holder_owner(async {
+        wait_for_advisory_waiter(&harness.pool, holder_pid).await?;
+        assert!(
+            harness.root.try_issue_semantic_pass().is_err(),
+            "move must hold the database connection"
+        );
+        let waiter = harness.root.holder_waiter().ok_or("claim holder waiter")?;
+        queued.set(true);
+        barrier.commit().await?;
+        slow.first_started.notified().await;
+        drop(waiter);
+        slow.release_first.notify_one();
+        Ok::<(), Box<dyn std::error::Error>>(())
+    });
+    {
+        let mut contention = std::pin::pin!(contention);
+        let mut serving = std::pin::pin!(serving);
+        tokio::select! {
+            _ = &mut serving => {}
+            result = &mut contention => {
+                result?;
+                serving.await;
+            }
+        }
+    }
+    drop(server);
+
+    assert!(queued.get(), "competing owner queued during the Store move");
+    let moved = count(
+        harness,
+        "SELECT count(*) FROM store_delivery_receipts d
+        JOIN game_item_container_entries e USING (item_instance_id)",
+    )
+    .await?;
+    assert_eq!(moved, 1, "Store item moved once into the backpack");
+    let mut reply = None;
+    let mut backpack = None;
+    while let Ok(frame) = read_frame(&mut client).await {
+        let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame).map_err(debug)?;
+        match envelope.message_type() {
+            MessageType::CommandResult => {
+                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                    .map_err(debug)?;
+                reply = Some((result.status, result.payload.to_vec()));
+            }
+            MessageType::StateDelta => {
+                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
+                    .map_err(debug)?;
+                if delta.domain_id == item_view::STATE_DOMAIN_CHARACTER_INVENTORY {
+                    backpack =
+                        Some(item_view::decode_character_inventory(delta.payload).map_err(debug)?);
+                }
+            }
+            _ => {}
+        }
+    }
+    let (status, payload) = reply.ok_or("Store claim reply")?;
+    assert_eq!(
+        status,
+        CommandStatus::Accepted,
+        "committed Store claim after holder contention"
+    );
+    assert_eq!(
+        wire::decode_claim_receipt(&payload).map_err(debug)?.result,
+        wire::StoreClaimCode::Committed
+    );
+    assert_eq!(backpack.ok_or("live backpack delta")?.entries.len(), 1);
+    eprintln!("STORE-154 POSTGRES_CASE_COMPLETED committed claim with holder contention");
+    Ok(())
+}
+
+#[test]
 fn store_worker_republishes_a_retained_receipt_after_restore() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
     super::kill_reward_e2e_fixtures::scenario_thread::run("store-recovery-generation", || {
@@ -318,6 +461,21 @@ fn scenario_with_answer(case: Case) -> TestResult {
             None,
         );
         let active = controller.active().ok_or("active")?;
+        let deps = if matches!(case, Case::ClaimHolderContention) {
+            let world = deps.admitted.world_id;
+            let channel_pin = super::ChannelContentPin::from_activation(
+                world,
+                pin.activation_sequence(),
+                pin.identity().server_artifact_digest(),
+                pin.identity().client_artifact_digest(),
+                pin.frame_binding().digest(),
+                pin.qualified_room().map_revision_digest(),
+                (2, 0, 7),
+            );
+            Dependencies::with_content(channel_pin, deps.room, deps.spells)?
+        } else {
+            deps
+        };
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
         deps.initialize(&owner).await;
@@ -650,8 +808,8 @@ fn scenario_with_answer(case: Case) -> TestResult {
             return harness.cleanup().await;
         }
 
-        if matches!(case, Case::RestoreReceiptGeneration | Case::ClaimReceipt) {
-            let claim = matches!(case, Case::ClaimReceipt);
+        if matches!(case, Case::RestoreReceiptGeneration | Case::ClaimReceipt | Case::ClaimHolderContention) {
+            let claim = matches!(case, Case::ClaimReceipt | Case::ClaimHolderContention);
             {
                 let mut platform = ledger.lock().expect("ledger");
                 platform.advertise_claims = claim;
@@ -689,6 +847,13 @@ fn scenario_with_answer(case: Case) -> TestResult {
                 let request = wire::StoreInboxClaimRequest {
                     fulfilment_unit_id: uuid(&result.operation_id.ok_or("delivery ID")?),
                 };
+                if matches!(case, Case::ClaimHolderContention) {
+                    claim_with_holder_contention(&harness, &owner, admitted, &ledger, &request).await?;
+                    drop(owner);
+                    drop(authority);
+                    drop(seal);
+                    return harness.cleanup().await;
+                }
                 let reply = serve(&owner, &mut admitted, &[(
                     wire::COMMAND_TYPE_STORE_INBOX_CLAIM,
                     wire::encode_inbox_claim_request(&request).map_err(debug)?,
