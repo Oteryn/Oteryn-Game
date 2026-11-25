@@ -1,6 +1,7 @@
 //! M02 client capture: a far door use makes the server autowalk and retry the use.
 
 use super::*;
+use crate::map::door::AuthoredClosedDoor;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 #[derive(Clone, Copy)]
@@ -17,28 +18,16 @@ fn distance(a: TilePos, b: TilePos) -> u16 {
     }
 }
 
-fn plain_doors(bytes: &[u8], world: &BundleWorld) -> TestResult<Vec<Door>> {
-    let mut doors = Vec::new();
-    oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
-        for tile in sector.tiles {
-            let at = TilePos { x: tile.x, y: tile.y, floor: sector.floor };
-            for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
-                let appearance = crate::map::palette_appearance(
-                    &manifest.palette[item.palette as usize].key,
-                );
-                if appearance == Some(1638) && world.facts().doors().at(at) {
-                    doors.push(Door {
-                        at,
-                        ordinal: u8::try_from(ordinal).map_err(|_| {
-                            oteryn_world_bundle::Error::Limit("M02 door ordinal".into())
-                        })?,
-                    });
-                }
-            }
-        }
-        Ok(())
-    })?;
-    Ok(doors)
+fn plain_doors(world: &BundleWorld) -> Vec<Door> {
+    let doors = world.facts().doors();
+    doors
+        .keys()
+        .filter(|&key| doors.authored_closed(key) == Some(AuthoredClosedDoor::Plain))
+        .filter_map(|key| {
+            let (at, ordinal) = crate::map::view::placement_of(key)?;
+            Some(Door { at, ordinal })
+        })
+        .collect()
 }
 
 fn capture(payload: &[u8], expected: ActorPosition) {
@@ -62,21 +51,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
-        bytes.clone(),
+        bytes,
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xa2).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let (door, path) = plain_doors(&bytes, world)?
-        .into_iter()
-        .filter_map(|door| {
-            route(world, from, |at| distance(at, door.at) == 3).map(|path| (door, path))
-        })
-        .min_by_key(|(_, path)| path.len())
+    let doors = plain_doors(world);
+    let door_from = |at| doors.iter().find(|door| distance(at, door.at) == 3);
+    let path = route(world, from, |at| door_from(at).is_some())
         .ok_or("M02 client capture has no reachable plain door")?;
     walk(&mut client, world, &path).await?;
+    let stand = tile(client.world_spatial().actor_position)?;
+    let door = door_from(stand).ok_or("M02 route missed its planned approach")?;
     client.take_events();
     let key = crate::map::view::placement_key(door.at, door.ordinal)
         .ok_or("M02 client capture placement")?;
