@@ -2680,6 +2680,9 @@ pub(in crate::gameplay_transport) async fn prepare_due(
         )
         .map_err(|_| SpellCastDisposition::Rejected)
         .and_then(|mut owner| {
+            if let Some(weapon) = owned.intrinsic_weapon_for_spell(spell, content) {
+                owner.bind_intrinsic_weapon_damage(weapon);
+            }
             owner
                 .bind_native_health_observations(runtime, owned.native_health_observations())
                 .map_err(|_| SpellCastDisposition::Rejected)?;

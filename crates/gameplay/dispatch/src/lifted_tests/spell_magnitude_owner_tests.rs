@@ -34,6 +34,13 @@ struct Fixture {
 fn fixture() -> Fixture {
     fixture_with_damage_healing(0)
 }
+
+pub(crate) fn native_weapon_damage_fixture()
+-> (ChannelRuntimeV1, Vec<LiveActorBinding>, MagnitudeOwnedAttributes) {
+    let fixture = fixture();
+    (fixture.runtime, fixture.bindings, fixture.attributes)
+}
+
 fn fixture_with_damage_healing(source_percent: i64) -> Fixture {
     fixture_with_capacity(source_percent, false)
 }
