@@ -421,3 +421,31 @@ zero seed verdicts. Neither emitted a `NODE_BOOT_RESULT`. The executor
 reported `write_stdin failed: Unknown process id 89986` and
 `write_stdin failed: Unknown process id 73571`. Completed seed rows
 remain in the ledger history and the fresh batch is retried in full.
+
+## Foreground replay on the shared integration base
+
+Merge `d976275bd6ae89ff7dce609b971df0100ede9d76` includes integration
+commit `19261925deacefda8003d405580f6d416e303c97`. One full foreground
+slice, `OTERYN_E2E_ITEM_SWEEP_BATCH=0:20`, completed in 1,098 seconds.
+The content census had 2,125 eligible entries. The 20 selected entries
+produced 81 PASS and 47 FAIL rows. The terminal marker was
+`NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged`.
+
+| Root-cause class | FAIL rows | Source |
+| --- | ---: | --- |
+| Combat panel snapshot request rejected | 14 | `crates/gameplay/dispatch/src/gameplay_transport/attack/cyclopedia.rs:113` |
+| Positive equipment move returned SlotMismatch | 14, including 9 dependent rows | `crates/gameplay/dispatch/src/gameplay_transport/item_move.rs:130` |
+| Backpack equipment destination unavailable | 8, including 6 dependent rows | `crates/protocol-oteryn/src/item_view.rs:319` |
+| Item i10219 preparation refused | 3, including 2 dependent rows | `apps/game-server/src/qualification/client_phases/item_sweep.rs:361` |
+| Hand defence absent from successful panel | 3 | `crates/gameplay/combat-rules/src/resolution/player_defence.rs:58` |
+| Fresh map rack USE returned StaleState | 2 | `crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs:556` |
+| Carried container USE returned NothingToUse | 2 | `crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs:560` |
+| Wrong-vocation move returned SlotMismatch | 1 | `crates/gameplay/dispatch/src/gameplay_transport/item_move.rs:130` |
+
+The slice produced zero rows matching the requested handoff tags
+`fxroute` (no route in town), `fxt2` (E1051 snapshot), `open` (NPC
+visibility within wander radius), and `open` (RootUnavailable
+provisioning). The 14 combat panel rows received a command-level
+`Rejected` reply. The i10219 row again showed a generic preparation
+refusal. The earlier typed `DefinitionNotFound` evidence is recorded
+above.
