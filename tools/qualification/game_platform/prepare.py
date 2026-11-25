@@ -125,6 +125,7 @@ def main():
                         ' -CAkey "$profile_dir/ca-key.pem" -CAcreateserial -days 2'
                         ' -extfile "$profile_dir/profile-b.ext" -out "$profile_dir/profile-b.pem" >/dev/null 2>&1\n'
                         '  export PRODUCTS_ENTITLEMENTS_PROFILE_B_AUTHORITY_ENABLED=true\n'
+                        "  export PRODUCTS_ENTITLEMENTS_PROFILE_B_PRODUCTS='[\"oteryn.premium_time@2\"]'\n"
                         '  export PRODUCTS_ENTITLEMENTS_PROFILE_B_AUTHORITY_MTLS_CLIENT_IDENTITY="$profile_identity"\n'
                         f"  {shlex.quote(str(binary))} seed signing-custody {custody_args} > {shlex.quote(str(work / 'custody-result.json'))}\n"
                         f"  export PORTAL_NATIVE_ADMISSION_KEY_CUSTODY_FILE={shlex.quote(str(custody / 'admission-custody.bin'))}\n"
