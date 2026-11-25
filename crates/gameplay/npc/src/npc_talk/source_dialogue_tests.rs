@@ -230,7 +230,7 @@ fn crystal_return_ferries_resolve_source_routes() -> Result<(), String> {
             .iter()
             .find(|route| route.keyword == keyword)
             .ok_or_else(|| format!("missing {key}/{keyword}"))?;
-        assert_eq!(route.held, !matches!(npc, "eremo" | "kendra"), "{key}");
+        assert_eq!(route.held, npc != "eremo", "{key}");
         assert_eq!(route.route.price, fare, "{key}");
         assert_eq!(route.route.premium, npc == "kendra", "{key}");
         assert_eq!(route.postman, matches!(npc, "kendra" | "tonar"), "{key}");

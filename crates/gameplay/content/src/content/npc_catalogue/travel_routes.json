@@ -1944,7 +1944,7 @@
     "y": 32262,
     "floor": 7,
     "postman": true,
-    "held": false,
+    "held": true,
     "carpet": false
   },
   {

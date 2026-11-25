@@ -121,7 +121,7 @@
     "y": 32262,
     "floor": 7,
     "postman": true,
-    "held": false,
+    "held": true,
     "carpet": false,
     "native_addition": true,
     "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kendra.lua:59-70:sha256:13d8d3385affdca7d40dc5d5e55af9bcbb2f72b42f0c4451e2ce4cb46d5ff788"

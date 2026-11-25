@@ -84,6 +84,19 @@ fn line(outcome: &crate::gameplay_transport::npc_command::NpcTalkOutcome) -> Str
         .unwrap_or_default()
 }
 
+pub(super) fn with_kendra_anniversary_fixture(book: NpcTalkBook) -> TestResult<NpcTalkBook> {
+    const KENDRA: &str = "oteryn:npc.kendra";
+    let mut entry = book.get(KENDRA).cloned().ok_or("Kendra talk entry")?;
+    let route = entry
+        .travel_routes
+        .iter_mut()
+        .find(|route| route.route.key == "thais")
+        .ok_or("Crystal Thais route")?;
+    // Open the route in the test book to exercise the anniversary fare and settlement.
+    route.held = false;
+    Ok(book.with(KENDRA, entry))
+}
+
 pub(super) fn scenario_with_reward_callback() -> TestResult {
     scenario(true)
 }
@@ -240,10 +253,11 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
         )
         .map_err(debug)?;
         let model = catalogue.service_model_for_project().map_err(debug)?;
+        let book = with_kendra_anniversary_fixture(NpcTalkBook::from_model(&model))?;
         owner
             .states
             .chat
-            .install_npc_talk(Arc::new(NpcTalkBook::from_model(&model)));
+            .install_npc_talk(Arc::new(book));
         let session = dependencies.admitted.game_session_id;
         owner
             .states

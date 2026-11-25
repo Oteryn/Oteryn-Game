@@ -1870,7 +1870,7 @@ mod tests {
                     .find(|route| route.keyword == keyword)
             });
             if let Some(binding) = route {
-                assert_eq!(binding.held, !matches!(stem, "eremo" | "kendra"), "{key}");
+                assert_eq!(binding.held, stem != "eremo", "{key}");
                 let route = &binding.route;
                 assert_eq!(
                     (route.price, route.premium, binding.quest_gate.as_deref()),

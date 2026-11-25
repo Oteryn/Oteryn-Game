@@ -1,6 +1,6 @@
 //! Kendra's live route hold and Crystal fare fixture through the durable NPC_TALK owner.
 use super::fixture::{Harness, debug, id, run};
-use super::npc_paid_travel_fixtures::talk;
+use super::npc_paid_travel_fixtures::{talk, with_kendra_anniversary_fixture};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::native_gameplay::test_support::activated_with_loot_tables;
 use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
@@ -130,15 +130,7 @@ async fn scenario(admin: String, policy: RoutePolicy) -> TestResult {
     .map_err(debug)?;
     let mut book = NpcTalkBook::from_model(&catalogue.service_model_for_project().map_err(debug)?);
     if matches!(policy, RoutePolicy::CrystalPaidFixture) {
-        // Keep the exact donor fare/arrival coverage in an explicitly test-only book.
-        let mut entry = book.get(NPC).cloned().ok_or("Kendra talk entry")?;
-        let route = entry
-            .travel_routes
-            .iter_mut()
-            .find(|route| route.route.key == "thais")
-            .ok_or("Crystal Thais route")?;
-        route.held = false;
-        book = book.with(NPC, entry);
+        book = with_kendra_anniversary_fixture(book)?;
     }
     let npc = {
         let mut runtime = deps.runtime.lock().await;
