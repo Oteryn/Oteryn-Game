@@ -1850,8 +1850,10 @@ fn qualification_spell_index(
 // These ordinary TLS observers include the boot-required capability closure and
 // decode its map/item domains as well as their journey-specific observations.
 const LIGHT_SUPPORTED_CAPABILITIES: &[u32] = &[4, 6, 11, 13, 15, 18, 19, 21, 30, 64];
-const PVP_SUPPORTED_CAPABILITIES: &[u32] =
-    &[4, 6, 9, 11, 13, 15, 17, 18, 21, 30, 42, 64, 87, 134, 199];
+const PVP_SUPPORTED_CAPABILITIES: &[u32] = &[
+    4, 6, 11, 13, 15, 17, 18, 21, 30, 42, 64, 87, 134, 199,
+    native::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
+];
 const FORGE_SUPPORTED_CAPABILITIES: &[u32] = &[
     4, 6, 9, 11, 12, 13, 14, 15, 17, 18, 21, 25, 30, 64, 104, 152, 199,
 ];
@@ -3325,11 +3327,13 @@ mod raw_observer_tests {
             offered_for_scope_with(true, None, false),
         )
         .map_err(|error| format!("raw observer boot requirements: {error:?}"))?;
-        // Appearance's owner adds 25/104 at session admission when cosmetics are
-        // available. They are intentionally absent from the static boot offer.
+        // The static boot offer here has neither native names nor session cosmetics.
         for (supported, dynamic_only) in [
             (LIGHT_SUPPORTED_CAPABILITIES, &[][..]),
-            (PVP_SUPPORTED_CAPABILITIES, &[][..]),
+            (
+                PVP_SUPPORTED_CAPABILITIES,
+                &[native::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2][..],
+            ),
             (FORGE_SUPPORTED_CAPABILITIES, &[25, 104][..]),
         ] {
             let selected = required
@@ -4292,7 +4296,12 @@ async fn pvp_journey(
         a.take_events();
         b.take_events();
     }
-    let victim_name = pvp_name(b).await?;
+    let victim_name = b
+        .own_name
+        .as_str()
+        .map_err(|error| format!("PvP victim snapshot name: {error:?}"))?
+        .to_owned();
+    evidence("S08 victim name validated from the admitted actor snapshot");
     let old_kills = pvp_history(a).await?;
     if skull(b, pvp_ref(a)?).await? != 0 {
         return Err("PvP needs initially neutral attacker; existing skull would invalidate unjustified oracle".into());
@@ -5206,6 +5215,7 @@ struct PvpClient {
     selected: Vec<u32>,
     revisions: BTreeMap<u32, u64>,
     own: spatial::EntityRef,
+    own_name: native::entity_names::EntityDisplayName,
     vitals: casts::ActorVitals,
     position: ActorPosition,
     content: [u8; 32],
@@ -5347,8 +5357,7 @@ impl PvpClient {
             .entities
             .iter()
             .find(|e| e.entity.identity == view.own_identity)
-            .ok_or("PvP own actor absent")?
-            .entity;
+            .ok_or("PvP own actor absent")?;
         let expert = native::pvp_expert::decode_expert_fight_modes(
             domains
                 .iter()
@@ -5366,7 +5375,8 @@ impl PvpClient {
             probe: 0,
             selected: accepted.selected_capabilities,
             revisions: domains.iter().map(|d| (d.domain_id, d.revision)).collect(),
-            own,
+            own: own.entity,
+            own_name: own.display_name.ok_or("PvP own actor name absent")?,
             vitals,
             position: view.actor_position,
             content: view.content_generation,
@@ -5759,22 +5769,6 @@ async fn pvp_tab(client: &mut PvpClient, tab: character::CharacterTab) -> TestRe
     }
     Ok(reply.payload)
 }
-async fn pvp_name(client: &mut PvpClient) -> TestResult<String> {
-    let command =
-        highscores::command(request(1, 0, 1, 0)).map_err(|e| format!("PvP name request:{e:?}"))?;
-    let reply = client
-        .gated_command(command.capability, command.command_type, &command.payload)
-        .await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err("PvP victim ranking/name refused".into());
-    }
-    wire::decode_highscores_result(&reply.payload)
-        .map_err(|e| format!("PvP name:{e:?}"))?
-        .own_row
-        .map(|r| r.name)
-        .ok_or_else(|| "PvP victim ranking omitted own name".into())
-}
-
 async fn player_gold(client: &mut DevClientSession) -> TestResult<u64> {
     use native::atelier::resources as money;
     let reply = client
