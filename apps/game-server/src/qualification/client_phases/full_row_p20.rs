@@ -242,18 +242,20 @@ pub(super) async fn approach_npc(
         })
     }, |at, direction| door_edge(world, at, direction))
     .ok_or_else(|| format!("step=npc-approach no legitimate walking route to {key}"))?;
+    let route_world = world.clone();
+    let landing = move |at, direction| door_edge(&route_world, at, direction).map(|(next, _)| next);
     let mut steps = Vec::new();
     for action in actions {
         match action {
             ApproachAction::UseDoor(key) => {
-                walk_with_landings(client, &steps, |at, direction| door_edge(world, at, direction).map(|(next, _)| next)).await?;
+                walk_with_landings(client, &steps, landing.clone()).await?;
                 steps.clear();
                 open_route_door(client, world, key).await?;
             }
             ApproachAction::Step(direction) => steps.push(direction),
         }
     }
-    walk_with_landings(client, &steps, |at, direction| door_edge(world, at, direction).map(|(next, _)| next)).await?;
+    walk_with_landings(client, &steps, landing).await?;
     client
         .world_entities()
         .and_then(|view| {

@@ -813,7 +813,10 @@ impl BundleWorld {
 
     /// Whether this cell would be enterable with one specific door open.
     pub fn enterable_with_open_door(&self, pos: TilePos, key: u64) -> bool {
-        !self.map.facts.quest_callback_blocked(&self.base, pos, self.blocked.contains(&pos))
+        !self
+            .map
+            .facts
+            .quest_callback_blocked(&self.base, pos, self.blocked.contains(&pos))
             && !self.map.facts.doors().blocks_except(pos, Some(key))
     }
 

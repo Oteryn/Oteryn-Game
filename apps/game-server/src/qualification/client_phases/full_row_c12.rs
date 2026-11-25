@@ -490,9 +490,6 @@ async fn samples(hunt: &Hunt<'_>, client: &mut DevClientSession, spell: NonZeroU
     Ok(out)
 }
 
-async fn restore_cast_mana(client: &mut DevClientSession) -> TestResult {
-    use oteryn_protocol_oteryn::world_object::UseDisposition;
-
 const BLUE_VALLEY_ENTRY: TilePos = TilePos { x: 32456, y: 32290, floor: -7 };
 const BLUE_VALLEY_ARRIVAL: TilePos = TilePos { x: 33614, y: 31494, floor: -7 };
 const BLUE_VALLEY_EXIT: TilePos = TilePos { x: 33605, y: 31468, floor: -7 };
@@ -539,6 +536,9 @@ async fn cross_portal(
     }
     Ok(())
 }
+
+async fn restore_cast_mana(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
 
     if client.actor_vitals().is_some_and(|vitals| vitals.mana >= CAST_MANA) {
         return Ok(());
