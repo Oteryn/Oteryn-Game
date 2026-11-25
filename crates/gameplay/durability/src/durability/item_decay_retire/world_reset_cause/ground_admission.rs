@@ -63,7 +63,8 @@ pub(in crate::durability::item_decay_retire) async fn admit_ground(
         return Err(DurabilityError::InvalidStoredState);
     }
     let placement_ordinal = if step.is_corpse_step() {
-        if !entries.is_empty() {
+        // Arena reset validates and retires the complete tree in this transaction.
+        if !entries.is_empty() && !matches!(step.cause, RetireCause::ArenaReset(_)) {
             return Ok(Err(DecayRetireError::Refused(
                 DecayRetireRefusal::EntriesRemain,
             )));

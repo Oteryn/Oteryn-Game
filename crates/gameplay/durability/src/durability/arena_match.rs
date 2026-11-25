@@ -334,7 +334,11 @@ impl DurabilityRoot {
             }
             let prior=load_state(&mut tx,fence).await?;
             if prior!=request.before {return Ok(Err(CharacterProgressionError::ConflictingOccurrence));}
+            let explicit_leave = request.native_origin.is_none()
+                && oteryn_protocol_oteryn::arena::decode_match_request(&request.payload).ok()
+                    == Some(oteryn_protocol_oteryn::arena::ArenaAction::Leave);
             if prior.rank > 0 && request.after.rank == 0
+                && !explicit_leave
                 && (prior.session != *fence.game_session_id.as_bytes()
                     || prior.scope_generation != fence.scope_ownership_generation.get())
                 && projection::pending_relocation(&mut tx,fence,&prior).await?

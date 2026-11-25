@@ -401,6 +401,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_arena_match(self.character, self.holder, fence, cause, payload)
             .await
             .ok()?;
+        if let Some(replay) = read.replay {
+            return Some(replay);
+        }
         if !read.dead
             && read.pit_owned
             && (read.state.rank == 0
@@ -417,9 +420,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await?;
         }
-        if let Some(replay) = read.replay {
-            return Some(replay);
-        }
         let before = read.state;
         let mut victory = None;
         let mut after = before.clone();
@@ -432,7 +432,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()?
             .get(&session)
             .cloned();
+        // A current Leave can cancel a pending destination without adopting the old run.
+        let may_leave_pending = read.relocation_pending && !read.dead && matches!(action, A::Leave);
         let stale = after.rank > 0
+            && !may_leave_pending
             && (after.session != *session.as_bytes()
                 || after.scope_generation != fence.scope_ownership_generation.get()
                 || (read.dead && matches!(after.phase, 1 | 2))
@@ -651,9 +654,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(bytes);
         }
-        self.restore_arena_projection(actor, session, &after, read.now_ms, permit, fence)
-            .await?;
-        if after != before && after.phase != 2 {
+        // The committed reply survives a failed projection. The poll retries its relocation.
+        if self
+            .restore_arena_projection(actor, session, &after, read.now_ms, permit, fence)
+            .await
+            .is_some()
+            && after != before
+            && after.phase != 2
+        {
             let _ = self.root.acknowledge_arena_relocation(self.character, self.holder, fence, &after).await;
         }
         Some(bytes)

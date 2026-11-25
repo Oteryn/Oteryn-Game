@@ -142,6 +142,7 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
         entry_kinds.push(match entry.kind {
             DeathEntryKind::Direct => 1_i16,
             DeathEntryKind::Nested => 2_i16,
+            DeathEntryKind::Corpse => 3_i16,
         });
     }
     // The held SpellLane cannot change scope or acquire an unresolved attempt.

@@ -15,6 +15,22 @@ fn arena_pending_victory_after_death_and_relog_allows_leave() -> TestResult {
 }
 
 #[test]
+fn arena_leave_before_poll_supersedes_victory_after_death_and_relog() -> TestResult {
+    scenario(
+        "arena_leave_before_poll_supersedes_victory_after_death_and_relog",
+        Case::VictoryLeaveFirst,
+    )
+}
+
+#[test]
+fn arena_leave_before_poll_preserves_the_other_characters_pit_lease() -> TestResult {
+    scenario(
+        "arena_leave_before_poll_preserves_the_other_characters_pit_lease",
+        Case::PitTaken,
+    )
+}
+
+#[test]
 fn arena_relocation_census_reaches_rows_past_unactionable_ones() -> TestResult {
     scenario(
         "arena_relocation_census_reaches_rows_past_unactionable_ones",
@@ -41,6 +57,8 @@ fn arena_dead_pending_entry_after_relog_is_superseded_by_poll() -> TestResult {
 #[derive(Clone, Copy)]
 enum Case {
     Victory,
+    VictoryLeaveFirst,
+    PitTaken,
     Census,
     DeadEntry,
     DeadEntryPoll,
@@ -117,7 +135,7 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
         scope_generation: 1,
         ..MatchState::default()
     };
-    if matches!(case, Case::DeadEntry | Case::DeadEntryPoll) {
+    if matches!(case, Case::DeadEntry | Case::DeadEntryPoll | Case::PitTaken) {
         seed_pending(
             &mut tx,
             id(41),
@@ -206,7 +224,26 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
     ).fetch_one(&harness.pool).await?;
         assert_eq!(still_pending, i64::try_from(donor::CENTERS.len())? + 1);
     } else {
-        seed_death(&mut tx).await?;
+        let other_character = id(1);
+        if matches!(case, Case::PitTaken) {
+            let other_session = id(101);
+            seed_unbound_admission(&mut tx, other_character, other_session, 1).await?;
+            sqlx::query(
+                "INSERT INTO game_svargrond_pit_leases
+                    (world_id,channel_id,pit,character_id,game_session_id,run_id,scope_generation,expires_at_ms)
+                 VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,encode($3,'hex')::uuid,
+                    encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,$6)",
+            )
+            .bind(id(42).as_slice())
+            .bind(id(43).as_slice())
+            .bind(other_character.as_slice())
+            .bind(other_session.as_slice())
+            .bind(id(93).as_slice())
+            .bind(now_ms + i64::from(donor::PIT_SECONDS) * 1000)
+            .execute(&mut *tx).await?;
+        } else {
+            seed_death(&mut tx).await?;
+        }
         tx.commit().await?;
         if matches!(case, Case::Victory | Case::DeadEntryPoll) {
             owner.drain_arena_matches(owner.owner_now().get()).await;
@@ -233,10 +270,11 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
             .await
             .ok_or("Leave returned no reply")?;
         let result = wire::decode_match_result(&reply).map_err(debug)?;
-        let (expected, completed, relocation_result) = if matches!(case, Case::Victory) {
-            (D::Applied, 1, (true, false))
-        } else {
-            (D::WrongState, 0, (false, true))
+        let (expected, completed, relocation_result) = match case {
+            Case::Victory => (D::Applied, 1, (true, false)),
+            Case::VictoryLeaveFirst => (D::Applied, 1, (false, true)),
+            Case::PitTaken => (D::Applied, 0, (false, true)),
+            _ => (D::WrongState, 0, (false, true)),
         };
         assert_eq!(result.disposition, expected, "{result:?}");
         assert_eq!(
@@ -248,6 +286,12 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
             (0, 0, completed)
         );
         assert_eq!(relocation(harness, old_session).await?, relocation_result);
+        if matches!(case, Case::PitTaken) {
+            let lease: Vec<u8> = sqlx::query_scalar(
+                "SELECT uuid_send(character_id) FROM game_svargrond_pit_leases WHERE pit=1",
+            ).fetch_one(&harness.pool).await?;
+            assert_eq!(lease, other_character);
+        }
     }
     Ok(())
 }

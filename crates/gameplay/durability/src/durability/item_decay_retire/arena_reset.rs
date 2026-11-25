@@ -13,6 +13,7 @@ pub(in crate::durability) async fn retire_top(
 ) -> std::result::Result<(), DurabilityError> {
     let scope = visit.fence.runtime_scope;
     let generation = visit.fence.scope_ownership_generation;
+    let other_floor = item.other_floor();
     // The Ground owner lock is already held. Include both storage floor
     // conventions and unrenderable rows in the deciding top-of-stack read.
     let row = sqlx::query(
@@ -27,14 +28,15 @@ pub(in crate::durability) async fn retire_top(
     .bind(scope.world_id().as_bytes().as_slice())
     .bind(scope.channel_id().map(|id| id.as_bytes().to_vec()))
     .bind(item.position.as_slice())
-    .bind(item.other_floor().as_slice())
+    .bind(other_floor.as_slice())
     .fetch_optional(&mut ***tx)
     .await?;
     let Some(row) = row else {
         return Ok(());
     };
+    let stored_position: Vec<u8> = row.try_get("spatial_position")?;
     if row.try_get::<Vec<u8>, _>("item")? != item.identity
-        || row.try_get::<Vec<u8>, _>("spatial_position")? != item.position
+        || (stored_position != item.position && stored_position != other_floor)
         || row.try_get::<Option<i64>, _>("stack_ordinal")? != Some(item.ordinal)
         || row.try_get::<String, _>("generation")? != generation.get().to_string()
         || row.try_get::<&str, _>("definition_family")? != "Item"
