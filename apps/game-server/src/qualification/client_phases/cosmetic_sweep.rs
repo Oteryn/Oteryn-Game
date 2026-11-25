@@ -5,6 +5,7 @@
 //! Seed receipts: apps/game-server/migrations/0093_character_appearance.sql:69
 use super::*;
 use full_row_s06::{apply_appearance, change, own_binding, snapshot, wait_for_selection};
+use mp::observations::while_servicing_liveness;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_gameplay_characters::speed::{StepSpeedTable, player_effective_speed};
 use oteryn_gameplay_quests::quest::{
@@ -1703,7 +1704,7 @@ async fn exercise(
     let mount_key = mount.map(|(mount, _)| mount.key.as_str());
     let addons = addon_mask(addon);
     rows.pass(mode);
-    let peer = connect_at_anchor(clients, 0xca, 1).await?;
+    let peer = while_peer_is_live(client, connect_at_anchor(clients, 0xca, 1)).await?;
     let peer_home = tile(peer.world_spatial().actor_position)?;
     *observer = Some(peer);
     let observer = observer.as_mut().ok_or("observer fixture missing")?;
@@ -1719,7 +1720,7 @@ async fn exercise(
     if !near(peer_home) {
         let path = route(world, peer_home, near)
             .ok_or("harness-observer-route: no route into actor sight range")?;
-        walk(observer, world, &path).await?;
+        while_peer_is_live(client, walk(observer, world, &path)).await?;
     }
     let mut observer_state = snapshot(observer)?;
     let previous_colours = state
@@ -1750,12 +1751,16 @@ async fn exercise(
         selection: selection.clone(),
         content_revision: content.content_revision.clone(),
     };
-    let (status, result, _) = change(client, &request).await?;
-    let (CommandStatus::Accepted, appearance::ChangeResult::Committed(revision)) = (status, result)
-    else {
-        return Err(format!("appearance change refused: {status:?} {result:?}").into());
-    };
-    wait_for_selection(client, &mut state, revision, &selection).await?;
+    while_peer_is_live(observer, async {
+        let (status, result, _) = change(client, &request).await?;
+        let (CommandStatus::Accepted, appearance::ChangeResult::Committed(revision)) =
+            (status, result)
+        else {
+            return Err(format!("appearance change refused: {status:?} {result:?}").into());
+        };
+        wait_for_selection(client, &mut state, revision, &selection).await
+    })
+    .await?;
     let binding = own_binding(client, &state)?;
     if binding.look != expected {
         return Err(format!(
@@ -1793,17 +1798,23 @@ async fn exercise(
     rows.pass("second client received changed look for same entity");
     if let Some((mount, _)) = mount {
         let (_, level, _) = creature_sweep::read_stats(client).await?;
-        ride(client, true).await?;
-        let (motion, position) = wait_motion(client, entity, mount.look.id).await?;
-        wait_motion(observer, entity, mount.look.id).await?;
+        let (motion, position) = while_peer_is_live(observer, async {
+            ride(client, true).await?;
+            wait_motion(client, entity, mount.look.id).await
+        })
+        .await?;
+        while_peer_is_live(client, wait_motion(observer, entity, mount.look.id)).await?;
         rows.pass("both clients received the authored mounted look");
         match check_speed(world, position, &motion, level, mount.speed_bonus) {
             Ok(()) => rows.pass("wire prewalk forecasts match content speed bonus"),
             Err(error) => rows.fail(error.as_ref()),
         }
-        ride(client, false).await?;
-        let (motion, position) = wait_motion(client, entity, 0).await?;
-        wait_motion(observer, entity, 0).await?;
+        let (motion, position) = while_peer_is_live(observer, async {
+            ride(client, false).await?;
+            wait_motion(client, entity, 0).await
+        })
+        .await?;
+        while_peer_is_live(client, wait_motion(observer, entity, 0)).await?;
         check_speed(world, position, &motion, level, 0)?;
         rows.pass("both clients cleared mount look and base forecast returned");
     }
@@ -1826,6 +1837,17 @@ async fn exercise(
         return Err("fresh admission did not preserve selection, look, colours and unlock".into());
     }
     Ok(())
+}
+
+async fn while_peer_is_live<T>(
+    peer: &mut DevClientSession,
+    step: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    while_servicing_liveness(step, async || {
+        peer.service_liveness(Duration::from_millis(50)).await?;
+        Ok(())
+    })
+    .await?
 }
 
 async fn ride(client: &mut DevClientSession, riding: bool) -> TestResult {
