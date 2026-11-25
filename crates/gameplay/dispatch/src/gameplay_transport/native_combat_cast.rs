@@ -2628,6 +2628,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             parameter_output,
             native_health_observations,
         );
+        let rune_cast = rune.is_some();
         let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
             let (owner,access,writer,guards,parameter_output,native_health_observations)=ctx;
             let (permit,pending)=writer.parts();
@@ -2743,6 +2744,14 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         eprintln!("SEAM_EVIDENCE native_combat_prepare result={disposition:?} ordinary={}",ordinary_combat::applicable(spell));
                         if let (Some(rune),Some(legacy))=(rune.as_ref(),legacy.as_ref()) {
                             let refused=rune_item_cast::use_refusal(&mut tx,&authority,runtime,states,room,objects,spell,actor,rune,legacy,disposition,now).await;
+                            let feedback = match disposition {
+                                SpellCastDisposition::LevelTooLow => Some("You do not have enough level."),
+                                SpellCastDisposition::MagicLevelTooLow => Some("You do not have enough magic level."),
+                                _ => None,
+                            };
+                            if let Some(text) = feedback {
+                                owner.states.chat.push_party_spell_feedback(session, text);
+                            }
                             return Ok(NativeCastDispatch::RuneRefused(refused));
                         }
                         return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,vitals:super::observe_vitals(runtime,states,actor,session)}))
@@ -3078,7 +3087,14 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let _ = self.drain_native_quest_hits().await;
         match result {
             Ok(result) => result,
-            Err(_) => NativeCastDispatch::Pending,
+            Err(error) => {
+                if rune_cast {
+                    super::super::operator_event(&format!(
+                        "event=native_rune_cast_pending command_id={command_id} error={error:?}"
+                    ));
+                }
+                NativeCastDispatch::Pending
+            }
         }
     }
 }

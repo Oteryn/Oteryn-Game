@@ -524,6 +524,10 @@ async fn prepare_spatial(
     for a in &profile.dependencies.abilities {
         candidates.extend(geometry(a, origin, facing)?);
     }
+    // A non-chain rune only acts on its authored footprint. An unrelated
+    // creature's tile and sight path cannot qualify or veto this cast.
+    let rune_footprint = matches!(spell.carrier, crate::spell::Carrier::Rune { .. })
+        && spell.chain.is_none();
     let mut bindings = Vec::new();
     let mut chain_creatures = Vec::new();
     for (a, p, _) in roster {
@@ -531,6 +535,7 @@ async fn prepare_spatial(
         if p.floor != caster_position.floor
             || p.x.abs_diff(caster_position.x) > MAX_SIGHT_DISTANCE
             || p.y.abs_diff(caster_position.y) > MAX_SIGHT_DISTANCE
+            || (rune_footprint && !candidates.contains(&p) && attack_target_tile != Some(p))
         {
             continue;
         }

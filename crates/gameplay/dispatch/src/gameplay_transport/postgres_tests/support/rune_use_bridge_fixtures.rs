@@ -66,6 +66,9 @@ pub(super) const VICTIM: MovementLocalPosition = MovementLocalPosition {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Case {
     EngencTraining,
+    Explosion,
+    Fireball,
+    FireballIneligible,
     IntenseHealingOwnSummon,
     ParalyzeMonster,
     ParalyzePlayer,
@@ -238,6 +241,29 @@ async fn client_cast(
             assert_eq!(before, 1, "the owned summon must be healable");
             send_use(client, first_id, &intent, Expected::Result(UseDisposition::TargetIllegal))
                 .await?;
+        }
+        Case::Explosion | Case::Fireball | Case::FireballIneligible => {
+            let intent = UseIntent {
+                use_with: (case != Case::Explosion).then_some(victim),
+                use_with_position: (case == Case::Explosion).then_some(SpellTargetPosition {
+                    x: VICTIM.x,
+                    y: VICTIM.y,
+                    floor: -VICTIM.floor,
+                }),
+                ..intent.clone()
+            };
+            let expected = if case == Case::FireballIneligible {
+                UseDisposition::RequirementNotMet
+            } else {
+                UseDisposition::Committed
+            };
+            if case == Case::Fireball {
+                test_faults::arm(Point::SessionReadBusy);
+            }
+            send_use(client, first_id, &intent, Expected::Result(expected)).await?;
+            if case == Case::Fireball {
+                send_use(client, first_id, &intent, Expected::Replay).await?;
+            }
         }
         Case::EngencTraining => {
             send_use(
@@ -517,15 +543,12 @@ async fn serve_cast(
     };
     let (admitted, cast) = join_two(
         serving,
-        client_cast(
-            &mut client,
-            owner,
-            harness,
-            victim,
-            case,
-            original,
-            first_id,
-        ),
+        async move {
+            client_cast(
+                &mut client, owner, harness, victim, case, original, first_id,
+            )
+            .await
+        },
     )
     .await;
     if owner.root.has_ready_demand() {
@@ -537,7 +560,7 @@ async fn serve_cast(
 pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     let trained_caster = matches!(
         case,
-        Case::ParalyzeMonster | Case::ParalyzePlayer | Case::IntenseHealingOwnSummon
+        Case::ParalyzeMonster | Case::ParalyzePlayer | Case::IntenseHealingOwnSummon | Case::Explosion | Case::Fireball
     );
     let harness =
         Harness::create_with_admission_seed(admin, "rune_bridge", !trained_caster, false).await?;
@@ -778,6 +801,10 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         .bind(id(41).as_slice()).execute(&harness.pool).await?;
     let source_key = if case == Case::UnqualifiedSource {
         "oteryn:item.tibia.i3607"
+    } else if case == Case::Explosion {
+        "oteryn:item.tibia.i3200"
+    } else if matches!(case, Case::Fireball | Case::FireballIneligible) {
+        "oteryn:item.tibia.i3189"
     } else if case == Case::IntenseHealingOwnSummon {
         "oteryn:item.tibia.i3152"
     } else if case == Case::EngencTraining {
@@ -791,7 +818,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-    if case == Case::Replay {
+    if matches!(case, Case::Replay | Case::Explosion | Case::Fireball | Case::FireballIneligible) {
         // This direct fixture has no Channel maintenance loop. Finish the real
         // map owner setup before its vitals timer competes with rune commands.
         assert!(
@@ -1006,7 +1033,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         assert!(!owner.states.command_ingress.resumable(&resumed));
     }
     let (quantity, revision): (i64, String) = sqlx::query_as("SELECT quantity,state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
-    let committed = matches!(case, Case::Replay | Case::BeforeCommit | Case::AfterCommit);
+    let committed = matches!(case, Case::Replay | Case::BeforeCommit | Case::AfterCommit | Case::Explosion | Case::Fireball);
     let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE game_session_id=encode($1,'hex')::uuid")
         .bind(id(50).as_slice()).fetch_one(&harness.pool).await?;
     assert_eq!(receipts, i64::from(committed));
