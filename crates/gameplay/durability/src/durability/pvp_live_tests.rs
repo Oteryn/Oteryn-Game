@@ -222,6 +222,9 @@ fn active_war_harm_does_not_assign_white_skull_or_unjustified_receipt() -> TestR
         let (_permit, authority) = authority(&mut tx, h, 900).await?;
         let mut facts = facts();
         facts.relation.war_between = true;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
         record_live_pvp_harm_in_transaction(&mut tx, &authority, &facts, 0, [3; 32], 10)
             .await
             .map_err(debug)?;
@@ -235,8 +238,9 @@ fn active_war_harm_does_not_assign_white_skull_or_unjustified_receipt() -> TestR
             !unjustified,
             "war opponents are justified even when unmarked"
         );
-        let white: bool = sqlx::query_scalar("SELECT white_skull_until IS NOT NULL FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid").bind(facts.attacker.as_slice()).fetch_one(&mut *tx).await?;
+        let (white, forfeited): (bool, bool) = sqlx::query_as("SELECT white_skull_until IS NOT NULL,adventurer_forfeited FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid").bind(facts.attacker.as_slice()).fetch_one(&mut *tx).await?;
         assert!(!white);
+        assert!(forfeited);
         let contributors = death_contributors_in_transaction(
             &mut tx,
             crate::domain::CharacterId::from_bytes(facts.target).map_err(debug)?,
