@@ -706,7 +706,7 @@ fn dependencies(
     )?;
     runtime
         .begin_activation_spawn_sources(vec![(
-            vec![((if matches!(case, AttackCase::Rat | AttackCase::TheMonster) { 2 } else { -1 }, 12, -7), 60_000, case.creature_key().into(), maximum_health, false)],
+            vec![((if matches!(case, AttackCase::Rat | AttackCase::TheMonster) { 2 } else { -1 }, 12, -7), 60_000, case.creature_key().to_owned(), maximum_health, false)],
             5_000,
         )])
         .map_err(debug)?;
