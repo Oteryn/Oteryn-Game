@@ -36,6 +36,25 @@ impl DiscoverySpeed {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn discovery_speed_bonus_matches_documented_envelope() -> Result<(), &'static str> {
+        let rules = DiscoverySpeed::embedded().ok_or("speed content")?;
+        // Exercise the envelope with sample totals, independent of the live map's area count.
+        for total in [20, 100] {
+            assert_eq!(rules.bonus(1, total, true), 100);
+            assert_eq!(rules.bonus(total, total, true), 195);
+            for completed in 1..=total {
+                assert_eq!(rules.bonus(completed, total, false), 0);
+                assert!(
+                    rules.bonus(completed - 1, total, true) <= rules.bonus(completed, total, true),
+                    "bonus decreased at {completed}/{total} completed areas"
+                );
+            }
+        }
+        Ok(())
+    }
+
     #[test]
     fn discovery_speed_owner_formula_endpoints_floor_and_single_area() -> Result<(), &'static str> {
         let rules = DiscoverySpeed::embedded().ok_or("speed content")?;
