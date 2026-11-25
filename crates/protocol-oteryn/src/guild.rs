@@ -8,6 +8,9 @@ use crate::charm_wire::{
 pub const CAPABILITY_GUILD_V1: u32 = 40;
 pub const COMMAND_TYPE_GUILD_INTENT: u32 = 40;
 pub const COMMAND_TYPE_GUILD_QUERY: u32 = 41;
+pub const COMMAND_TYPE_GUILD_SET_MESSAGE: u32 = 6391;
+pub const MAX_GUILD_MESSAGE_BYTES: usize = 255;
+pub const MAX_GUILD_SET_MESSAGE_BYTES: usize = 287;
 pub const MAX_GUILD_REQUEST_BYTES: usize = 128;
 pub const MAX_GUILD_RESULT_BYTES: usize = 65_536;
 pub const MAX_GUILD_PAGE_ENTRIES: usize = 100;
@@ -42,6 +45,20 @@ pub enum GuildIntent {
         guild: [u8; 16],
         character: [u8; 16],
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GuildSetMessage {
+    pub guild: [u8; 16],
+    pub expected_revision: u64,
+    pub text: String,
+}
+
+#[must_use]
+pub fn valid_guild_message(text: &str) -> bool {
+    text.len() <= MAX_GUILD_MESSAGE_BYTES
+        && !text.chars().any(char::is_control)
+        && (text.is_empty() || !text.trim().is_empty())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -110,7 +127,8 @@ pub enum GuildQueryResult {
 mod codec;
 pub use codec::{
     decode_guild_intent, decode_guild_intent_result, decode_guild_query, decode_guild_query_result,
-    encode_guild_intent, encode_guild_intent_result, encode_guild_query, encode_guild_query_result,
+    decode_guild_set_message, encode_guild_intent, encode_guild_intent_result, encode_guild_query,
+    encode_guild_query_result, encode_guild_set_message,
 };
 #[cfg(test)]
 #[path = "guild_tests.rs"]

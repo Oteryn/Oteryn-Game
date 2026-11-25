@@ -239,3 +239,30 @@ fn a_roster_member_carries_its_current_channel_and_a_bad_channel_fails_closed()
     assert!(encode_guild_query_result(&roster(member)).is_err());
     Ok(())
 }
+
+#[test]
+fn gmotd_codec_distinguishes_empty_from_missing_and_bounds_the_request()
+-> Result<(), GuildWireError> {
+    let mut edit = GuildSetMessage {
+        guild: id(1),
+        expected_revision: u64::MAX,
+        text: format!("{}x", "é".repeat(127)),
+    };
+    let longest = encode_guild_set_message(&edit)?;
+    assert_eq!(longest.len(), MAX_GUILD_SET_MESSAGE_BYTES);
+    assert_eq!(decode_guild_set_message(&longest)?, edit);
+    edit.text.clear();
+    let clear = encode_guild_set_message(&edit)?;
+    assert_eq!(decode_guild_set_message(&clear)?, edit);
+    assert!(decode_guild_set_message(&clear[..clear.len() - 2]).is_err());
+    for invalid in [
+        "x".repeat(256),
+        "é".repeat(128),
+        " \u{a0}".into(),
+        "n\u{7f}o".into(),
+    ] {
+        edit.text = invalid;
+        assert!(encode_guild_set_message(&edit).is_err());
+    }
+    Ok(())
+}

@@ -189,6 +189,31 @@ pub fn decode_guild_intent(bytes: &[u8]) -> WireResult<GuildIntent> {
         _ => return bad(),
     })
 }
+pub fn encode_guild_set_message(request: &GuildSetMessage) -> WireResult<Vec<u8>> {
+    if !valid_guild_message(&request.text) {
+        return bad();
+    }
+    let mut out = Vec::new();
+    put(&mut out, 1, &request.guild);
+    num(&mut out, 2, request.expected_revision);
+    put(&mut out, 3, request.text.as_bytes());
+    checked(out, decode_guild_set_message, MAX_GUILD_SET_MESSAGE_BYTES)
+}
+
+pub fn decode_guild_set_message(bytes: &[u8]) -> WireResult<GuildSetMessage> {
+    bounded(bytes, MAX_GUILD_SET_MESSAGE_BYTES)?;
+    let f = fields(bytes, 3)?;
+    let text = text(required(&f, 3)?, MAX_GUILD_MESSAGE_BYTES)?;
+    if !valid_guild_message(&text) {
+        return bad();
+    }
+    Ok(GuildSetMessage {
+        guild: uuid(required(&f, 1)?)?,
+        expected_revision: scalar(&f, 2)?,
+        text,
+    })
+}
+
 fn cursor(c: &GuildRosterCursor) -> Vec<u8> {
     let mut b = Vec::new();
     put(&mut b, 1, &c.guild);

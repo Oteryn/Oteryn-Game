@@ -4,7 +4,7 @@ package oteryn.protocol.v1;
 // IDs are UUIDv7 DATA selectors, exactly 16 bytes, never authority.
 // Requests <=128 bytes; unknown/duplicate fields and mixed oneofs fail closed.
 // Fields are required on wire unless marked optional/repeated, including empty
-// title/message strings. An empty own-summary message alone means no membership.
+// title/message strings. An empty Own result means no membership.
 message GuildSelector { bytes guild = 1; }
 message GuildInvite { bytes guild = 1; string name = 2; } // canonical CharacterName selector
 message GuildTarget { bytes guild = 1; bytes character = 2; }
@@ -21,6 +21,9 @@ message GuildIntent {
     GuildTarget revoke_invite = 7;
   }
 }
+// Command 6391 (Guild v1 with Guild chat selected), request <=287 bytes.
+// Text is required even for a clear. New text is limited to 255 UTF-8 bytes.
+message GuildSetMessage { bytes guild = 1; uint64 expected_revision = 2; string text = 3; }
 // Native GuildResult.code()+1: OK=1, NOT_ALLOWED=2, ALREADY_IN_GUILD=3,
 // GUILD_FULL=4, NOT_INVITED=5, INVITATION_LIMIT=6, GUILD_DISBANDING=7,
 // GUILD_DEADLINE_PASSED=8, NAME_TAKEN=9, ACCOUNT_HAS_POSITION=10,
