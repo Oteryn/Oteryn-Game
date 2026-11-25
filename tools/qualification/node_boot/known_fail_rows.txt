@@ -24,7 +24,6 @@ C20a.full blocked-by at S16a/oressa-reachable
 C20b.full assertion at C20b/earned-loss-eligible-level
 C20c.full assertion at C20c/adventurer-earned-prerequisites
 C20d.full assertion at C20d/lifecycle
-E01.full assertion at E01/greet; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
 E03.full assertion at E03/gold-up; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
 E04.full assertion at E04/look; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
 E05.full assertion at E05/browse; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
