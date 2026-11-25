@@ -1646,8 +1646,13 @@ mod protected_loot_tests {
                         creature,
                         "oteryn:creature.crazed_dwarf" | "oteryn:creature.dwarf"
                     ) {
+                        // Letter 3505 finding: both Dwarfs must admit their corpse before rolling loot.
+                        let row = rewards.row(creature).map_err(|reason| {
+                            format!("{creature}: Letter reward row refused: {reason:?}")
+                        })?;
                         assert_eq!(
-                            lowered
+                            row.loot_table
+                                .entries
                                 .iter()
                                 .filter(
                                     |entry| entry.item.production_key == "oteryn:item.tibia.i3505"

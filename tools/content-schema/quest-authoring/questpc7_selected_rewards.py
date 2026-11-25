@@ -371,6 +371,11 @@ def append_eligibility_starts(root, callbacks, offers, inputs, pin):
                     raw,
                     definition,
                 )
+    wayland_menu = [
+        "If you have collected enough radiant attire scraps, I can arrange the creation of an Illuminated Warrior for you.",
+        "The full outfit requires 2500 scraps. Each addon requires 1250 more. "
+        "Are you interested in the {basic} outfit, the {insignia}, or the {halo} helmet?",
+    ]
     for quest, slug, npc, words in wanted:
         path, index, raw, definition = definitions[quest]
         recipe = (
@@ -411,11 +416,11 @@ def append_eligibility_starts(root, callbacks, offers, inputs, pin):
                 "give": None,
                 "outfit": None,
                 "achievement": None,
-                "reply": [
-                    "Bring back my crossbow from the cultist cache."
+                "reply": (
+                    ["Bring back my crossbow from the cultist cache."]
                     if slug == "hunter"
-                    else "Collect 2500 radiant attire scraps for the basic outfit."
-                ],
+                    else wayland_menu
+                ),
                 "sources": [
                     f"canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}",
                     f"{source_pin}:{source_path}:1-{len(inputs[source_path].splitlines())}:sha256:{hashlib.sha256(inputs[source_path]).hexdigest()}",
@@ -427,6 +432,18 @@ def append_eligibility_starts(root, callbacks, offers, inputs, pin):
             intro = callbacks[-1]
             outfit = "oteryn:outfit.illuminated_warrior"
             track = intro["storage"][0]["track"]
+            offers.append(
+                {
+                    "npc": intro["npc"],
+                    "keywords": ["outfit"],
+                    "topic": 0,
+                    "next_topic": 0,
+                    "storage": [
+                        {"track": track, "minimum": 0, "maximum": 3, "set": 0, "preserve": True}
+                    ],
+                    "reply": wayland_menu,
+                }
+            )
             for keyword, addon, count in [
                 ("basic", 0, 2500),
                 ("insignia", 1, 1250),

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "0633aaa257e44a043e1317b57c75739238ad7c0609067b82de41b8d959b0c0c8",
+  "input_sha256": "5850bbe1f6558dc6370c4973c745ae5cdd262d1d3d956c231eedd4d9232b5ac7",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2049,7 +2049,6 @@
     "oteryn:creature.drillworm",
     "oteryn:creature.dryad",
     "oteryn:creature.duskbringer",
-    "oteryn:creature.dwarf",
     "oteryn:creature.dwarf_geomancer",
     "oteryn:creature.dwarf_guard",
     "oteryn:creature.dwarf_henchman",
@@ -2695,10 +2694,8 @@
     "oteryn:creature.drillworm",
     "oteryn:creature.dryad",
     "oteryn:creature.duskbringer",
-    "oteryn:creature.dwarf",
     "oteryn:creature.dwarf_geomancer",
     "oteryn:creature.dwarf_guard",
-    "oteryn:creature.dwarf_henchman",
     "oteryn:creature.dwarf_soldier",
     "oteryn:creature.dworc_fleshhunter",
     "oteryn:creature.dworc_shadowstalker",

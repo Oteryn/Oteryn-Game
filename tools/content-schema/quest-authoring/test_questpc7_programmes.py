@@ -55,6 +55,23 @@ class QuestPc7QuestRewards(unittest.TestCase):
                 {"give", "take", "fee", "outfit", "transition"} & offer.keys()
             )
 
+    def test_wayland_outfit_uses_the_full_menu_before_and_after_intro(self):
+        npc = "oteryn:npc.wayland_smythers"
+        intro = next(
+            row for row in self.callbacks["callbacks"]
+            if row["key"] == "oteryn:quest-reward/questpc7-illuminated-intro"
+        )
+        self.assertIn("outfit", intro["keywords"])
+        for option in ("basic", "insignia", "halo"):
+            self.assertIn(option, " ".join(intro["reply"]))
+        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])["offers"]
+        menu = next(row for row in offers if row["npc"] == npc and row["keywords"] == ["outfit"])
+        self.assertEqual(menu["reply"], intro["reply"])
+        self.assertEqual((menu["topic"], menu["next_topic"]), (0, 0))
+        self.assertEqual(menu["storage"], [{
+            **intro["storage"][0], "minimum": 0, "maximum": 3, "preserve": True,
+        }])
+
     def test_formal_exhibition_requires_current_premium_and_consumed_button(self):
         worlds = [
             c

@@ -6550,6 +6550,27 @@
     {
       "npc": "oteryn:npc.wayland_smythers",
       "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "If you have collected enough radiant attire scraps, I can arrange the creation of an Illuminated Warrior for you.",
+        "The full outfit requires 2500 scraps. Each addon requires 1250 more. Are you interested in the {basic} outfit, the {insignia}, or the {halo} helmet?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
         "no"
       ],
       "topic": 101,
