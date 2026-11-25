@@ -20,6 +20,7 @@ use oteryn_protocol_oteryn::npc_service as wire;
 const SVARGROND_UNIQUE: u16 = 9066;
 const ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000022";
 const CAPTAIN: &str = "oteryn:npc.captain_bluebear";
+const THAIS_DOCK: TilePos = TilePos { x: 32312, y: 32209, floor: -6 };
 const REFUSAL: &str = "You first need to absolve the Barbarian Test Quest to become citizen!";
 
 #[derive(Clone, Copy, Debug)]
@@ -345,49 +346,41 @@ fn carried_gold(client: &DevClientSession) -> TestResult<u64> {
         .sum())
 }
 
-fn dock_ledge(
+async fn seed_thais_dock(
+    client: &mut DevClientSession,
+    database: &mut sqlx::PgConnection,
+    clients: &SeamClients<'_>,
     world: &BundleWorld,
-    origin: TilePos,
-    placements: &[oteryn_world_bundle::npc::Placement],
-) -> Option<(TilePos, StepDirection, TilePos, TilePos)> {
-    let range = i16::try_from(wire::TALK_RANGE_TILES).ok()?;
-    let mut ledges = std::collections::BTreeMap::new();
-    for p in placements {
-        for dx in -range..=range {
-            for dy in -range..=range {
-                let Some((x, y)) = p.x.checked_add_signed(dx).zip(p.y.checked_add_signed(dy)) else {
-                    continue;
-                };
-                let upper = TilePos { x, y, floor: p.floor };
-                if (dx == 0 && dy == 0) || !world.enterable(upper) {
-                    continue;
-                }
-                for direction in [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West] {
-                    let (dx, dy) = direction.delta();
-                    let Ok((dx, dy)) = i16::try_from(dx).and_then(|dx| i16::try_from(dy).map(|dy| (dx, dy))) else {
-                        continue;
-                    };
-                    let Some((x, y)) = upper.x.checked_add_signed(-dx).zip(upper.y.checked_add_signed(-dy)) else {
-                        continue;
-                    };
-                    let Some((prior_x, prior_y)) = x.checked_add_signed(-dx).zip(y.checked_add_signed(-dy)) else {
-                        continue;
-                    };
-                    let cast_from = TilePos { x, y, floor: upper.floor - 1 };
-                    let facing = TilePos { x: prior_x, y: prior_y, ..cast_from };
-                    if world.base().tile(x, y, upper.floor).is_none()
-                        && destination(world, facing, direction) == Some(cast_from)
-                    {
-                        ledges.entry(facing).or_insert((direction, cast_from, upper));
-                    }
-                }
-            }
-        }
+) -> TestResult {
+    if !world.enterable(THAIS_DOCK)
+        || !world.base().tile(THAIS_DOCK.x, THAIS_DOCK.y, THAIS_DOCK.floor)
+            .is_some_and(|tile| tile.walkable())
+    {
+        return Err("step=thais-dock authored boarding tile is unavailable".into());
     }
-    let path = route(world, origin, |at| ledges.contains_key(&at))?;
-    let facing = path.into_iter().try_fold(origin, |at, step| destination(world, at, step))?;
-    let (direction, cast_from, upper) = ledges.remove(&facing)?;
-    Some((facing, direction, cast_from, upper))
+    accepted_logout(client).await?;
+    wait_character_released(clients, 0).await?;
+    character_prep::declare_seeded(
+        "W23",
+        "thais-dock-starting-position",
+        "start at the authored boarding area before purchasing native travel to Svargrond",
+    );
+    let updated = sqlx::query(
+        "UPDATE game_character_last_positions
+         SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
+         WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(i32::from(THAIS_DOCK.x))
+    .bind(i32::from(THAIS_DOCK.y))
+    .bind(-i16::from(THAIS_DOCK.floor))
+    .execute(database)
+    .await?;
+    if updated.rows_affected() != 1 {
+        return Err("step=thais-dock requires one native last-position record".into());
+    }
+    Ok(())
 }
 
 async fn travel_to_svargrond(
@@ -401,10 +394,10 @@ async fn travel_to_svargrond(
         .iter()
         .find(|entry| entry.key == CAPTAIN)
         .ok_or("step=svargrond-travel Captain Bluebear absent from the compiled bundle")?;
-    let origin = tile(client.world_spatial().actor_position)?;
-    let (facing, direction, cast_from, dock) = dock_ledge(world, origin, &captain.placements)
-        .ok_or("step=svargrond-travel no reachable native Levitate ledge near Captain Bluebear")?;
-    levitate_to_ledge(client, world, facing, direction, cast_from, dock).await?;
+    let dock = tile(client.world_spatial().actor_position)?;
+    if dock != THAIS_DOCK {
+        return Err(format!("step=thais-dock fresh admission at {dock:?}, expected {THAIS_DOCK:?}").into());
+    }
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         captain.placements.iter().any(|p| {
             p.floor == at.floor
@@ -686,6 +679,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         selected.town
     ));
 
+    seed_thais_dock(&mut fresh, &mut database, clients, world).await?;
+    drop(fresh);
+    let mut fresh = connect_character(clients, 0xdc, 0).await?;
     travel_to_svargrond(&mut fresh, world, &metadata.npcs, boat).await?;
     let direction = approach_svargrond_portal(&mut fresh, world, svargrond.at).await?;
     let temple = world
