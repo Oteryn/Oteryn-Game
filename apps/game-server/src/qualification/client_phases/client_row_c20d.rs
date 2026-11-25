@@ -29,7 +29,13 @@ async fn journey(
 ) -> TestResult {
     let mut client = connect_world(clients, 0xc2).await?;
     let result: TestResult = async {
-        let home = spatial_basis::thais_home_temple(&world.base().subareas)?;
+        let home = world
+            .base()
+            .subareas
+            .default_town
+            .and_then(|id| world.base().subareas.town(id))
+            .and_then(|town| town.temple)
+            .ok_or("C20d capture has no configured home temple")?;
         let temple = oteryn_protocol_oteryn::world_spatial::ActorPosition {
             x: i32::from(home.x),
             y: i32::from(home.y),

@@ -9,7 +9,7 @@ import re
 
 RESULT = re.compile(
     r"^SEAM_EVIDENCE e2e_all scenario=([A-Z]\d\d[a-z]?\.[a-z0-9-]+) "
-    r"status=(PASS|FAIL|SKIPPED|MISSING-SERVER|MISSING-CLIENT|OUT_OF_SCOPE) seconds=([0-9]+(?:\.[0-9]+)?)"
+    r"status=(PASS|FAIL|SKIPPED|MISSING-SERVER|MISSING-CLIENT) seconds=([0-9]+(?:\.[0-9]+)?)"
     r"(?: evidence=(\S+))?"
     # A failing scenario names its own cause and the first failing row/check.
     r"(?: cause=([a-z][a-z-]*) root=(\S+))?$"
@@ -132,10 +132,6 @@ def matrix_rows(text):
     return rows
 
 
-OWNER_EXCLUDED = {"C11.full", "S16a.full", "S16a.client"}
-OWNER_EXCLUSION = "owner-excluded-dawnport"
-
-
 def results(text):
     found = {}
     for line in text.splitlines():
@@ -145,8 +141,6 @@ def results(text):
         if not match:
             raise ValueError("malformed E2E-ALL result")
         scenario, status, seconds, evidence, cause, _root = match.groups()
-        if status == "OUT_OF_SCOPE" and (scenario not in OWNER_EXCLUDED or evidence != OWNER_EXCLUSION):
-            raise ValueError(f"invalid owner exclusion: {scenario}")
         if cause and status != "FAIL":
             raise ValueError(f"cause on a non-failing result: {scenario}")
         seconds = float(seconds)
@@ -205,17 +199,15 @@ def summary(rows, found, node_status=0, client_status=0, map_evidence=None,
     output = ["mechanic | status | seconds | evidence / gap"]
     complete = True
     for row_id, name in rows:
-        scenario = f"{row_id}.full"
-        default = ("OUT_OF_SCOPE", 0.0, OWNER_EXCLUSION) if scenario in OWNER_EXCLUDED else (
-            "FAIL", 0.0, "complete scenario unimplemented or not reached"
+        status, seconds, evidence = found.get(
+            f"{row_id}.full", ("FAIL", 0.0, "complete scenario unimplemented or not reached")
         )
-        status, seconds, evidence = found.get(scenario, default)
-        complete &= status == "PASS" or (status == "OUT_OF_SCOPE" and scenario in OWNER_EXCLUDED)
+        complete &= status == "PASS"
         output.append(f"{row_id} {name} | {status} | {seconds:.3f} | {evidence or ''}")
     for scenario, (status, seconds, evidence) in sorted(found.items()):
         if not scenario.endswith(".full"):
             output.append(f"slice {scenario} | {status} | {seconds:.3f} | {evidence or 'bounded assertion only'}")
-            complete &= status == "PASS" or (status == "OUT_OF_SCOPE" and scenario in OWNER_EXCLUDED)
+            complete &= status == "PASS"
     for name, status in [("node_boot", node_status), ("client_tests", client_status)]:
         output.append(f"{name} | {'PASS' if status == 0 else 'FAIL'} | - | exit={status}")
     if map_evidence is not None:

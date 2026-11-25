@@ -724,16 +724,6 @@ impl Row {
         self.report(status, field, failure);
     }
 
-    /// An excluded row can still supply a prerequisite for another row.
-    pub(super) fn finish_out_of_scope(self, result: &TestResult, reason: &str) {
-        let failure = (!(result.is_ok() && self.complete()))
-            .then(|| self.cause(result.as_ref().err().map(|error| &**error)));
-        if let Some(error) = result.as_ref().err() {
-            evidence(&format!("{}_GAP {} {error}", self.family, self.id));
-        }
-        self.report("OUT_OF_SCOPE", Some(reason), failure);
-    }
-
     /// The row is incomplete because a known server route is absent.
     pub(super) fn finish_missing_server(self, source: &str) {
         let (cause, root) = self.cause(None);
@@ -1044,20 +1034,6 @@ mod verdict_tests {
             assert!(blocked.watch.state().not_run);
             Ok(())
         })
-    }
-
-    #[test]
-    fn excluded_first_vocation_failure_still_blocks_dependent_rows() {
-        let harness = harness(true, None);
-        let row = Row::with_harness("E2EF6", "S16a", &["first-vocation"], harness);
-        row.finish_out_of_scope(
-            &Err("first vocation unavailable".into()),
-            "owner-excluded-dawnport",
-        );
-        assert_eq!(
-            harness.blocked(&[Need::Row("S16a")]).as_deref(),
-            Some("S16a/first-vocation")
-        );
     }
 
     #[test]

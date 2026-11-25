@@ -49,6 +49,10 @@ impl Row {
         self.0.pass(action, format_args!("observed={observed:?}"));
     }
 
+    #[allow(
+        dead_code,
+        reason = "Only the function-local row test reads completeness; the shared verdict decides PASS."
+    )]
     fn complete(&self) -> bool {
         self.0.complete()
     }
@@ -99,9 +103,7 @@ pub(super) async fn run(
             first_vocation(&mut vocation, clients, world, spawns, npcs),
         )
         .await;
-    // S16a is excluded from scoring, but its observed result gates C20a.
-    let first_vocation_proven = result.is_ok() && vocation.complete();
-    vocation.0.finish_out_of_scope(&result, "owner-excluded-dawnport");
+    vocation.finish(result);
 
     // Promotion starts from the knight the first-vocation row produces.
     let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[character_release_need(clients, 1), After("S16a")]);
@@ -110,12 +112,7 @@ pub(super) async fn run(
         .bound(
             Duration::from_secs(1100),
             "experience-loss journey deadline; remaining actions unproven",
-            async {
-                if !first_vocation_proven {
-                    return Err("C20a requires a completed S16a first-vocation journey".into());
-                }
-                experience_loss(&mut loss, clients, world, spawns, npcs).await
-            },
+            experience_loss(&mut loss, clients, world, spawns, npcs),
         )
         .await;
     match result {
@@ -874,7 +871,12 @@ async fn temple_respawn(
         }
         // This unprovisioned Character has made no citizenship change. The bundle's
         // configured hometown fixes the expected temple BEFORE observing the death.
-        let home = spatial_basis::thais_home_temple(&world.base().subareas)?;
+        let towns = &world.base().subareas;
+        let home = towns
+            .default_town
+            .and_then(|id| towns.town(id))
+            .and_then(|town| town.temple)
+            .ok_or("compiled world has no default home temple")?;
         let basis = spatial_basis::current(&mut client)?;
         let temple = ActorPosition {
             x: i32::from(home.x),

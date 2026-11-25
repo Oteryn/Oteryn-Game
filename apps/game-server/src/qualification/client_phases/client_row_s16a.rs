@@ -192,14 +192,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    let started = std::time::Instant::now();
     match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
-        Ok(Ok(observed)) => evidence(&format!("S16A_CLIENT_CAPTURE {observed}")),
-        Ok(Err(error)) => evidence(&format!("S16A_CLIENT_CAPTURE_ERROR {error}")),
-        Err(_) => evidence("S16A_CLIENT_CAPTURE_ERROR timeout"),
+        Ok(Ok(observed)) => evidence(&format!(
+            "e2e_all scenario=S16a.client status=CAPTURED evidence={observed}"
+        )),
+        Ok(Err(error)) => evidence(&format!(
+            "e2e_all scenario=S16a.client status=FAIL evidence={}",
+            error.to_string().replace(' ', "_")
+        )),
+        Err(_) => evidence("e2e_all scenario=S16a.client status=FAIL evidence=timeout"),
     }
-    evidence(&format!(
-        "e2e_all scenario=S16a.client status=OUT_OF_SCOPE seconds={:.3} evidence=owner-excluded-dawnport",
-        started.elapsed().as_secs_f64(),
-    ));
 }
