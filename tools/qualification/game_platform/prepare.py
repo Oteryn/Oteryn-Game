@@ -109,6 +109,19 @@ def main():
                         f"export PORTAL_OAUTH_CONFIG=\"$(cat {shlex.quote(str(work / 'oauth.json'))})\"\n"
                         'if [[ "${1:-}" == serve ]]; then\n'
                         '  export OTERYN_ACCOUNT_LOGIN=true\n'
+                        f"  profile_dir={shlex.quote(str(work / 'portal' / 'secrets'))}\n"
+                        '  profile_identity=profile-b-authority.game.e2e.oteryn.test\n'
+                        '  umask 077\n'
+                        '  openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes'
+                        ' -subj "/CN=$profile_identity" -keyout "$profile_dir/profile-b.key"'
+                        ' -out "$profile_dir/profile-b.csr" >/dev/null 2>&1\n'
+                        '  printf "subjectAltName=DNS:%s\\nextendedKeyUsage=clientAuth\\n" "$profile_identity"'
+                        ' > "$profile_dir/profile-b.ext"\n'
+                        '  openssl x509 -req -in "$profile_dir/profile-b.csr" -CA "$(dirname "$profile_dir")/certs/ca.pem"'
+                        ' -CAkey "$profile_dir/ca-key.pem" -CAcreateserial -days 2'
+                        ' -extfile "$profile_dir/profile-b.ext" -out "$profile_dir/profile-b.pem" >/dev/null 2>&1\n'
+                        '  export PRODUCTS_ENTITLEMENTS_PROFILE_B_AUTHORITY_ENABLED=true\n'
+                        '  export PRODUCTS_ENTITLEMENTS_PROFILE_B_AUTHORITY_MTLS_CLIENT_IDENTITY="$profile_identity"\n'
                         f"  {shlex.quote(str(binary))} seed signing-custody {custody_args} > {shlex.quote(str(work / 'custody-result.json'))}\n"
                         f"  export PORTAL_NATIVE_ADMISSION_KEY_CUSTODY_FILE={shlex.quote(str(custody / 'admission-custody.bin'))}\n"
                         f"  export PORTAL_NATIVE_ADMISSION_KEY_WRAPPING_KEY_FILE={shlex.quote(str(custody / 'admission-wrapping.key'))}\n"

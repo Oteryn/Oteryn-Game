@@ -865,9 +865,9 @@ if (( ${#NODE_CLOCK_FEATURES[@]} )); then
   NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_CLOCK_FILE=$OTERYN_QUALIFICATION_CLOCK_FILE")
 fi
 if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
-  # Use the Platform's disposable Premium-purpose client and trust root.
-  local_premium_dir="$WORK/portal/certs"
-  cat "$local_premium_dir/clients/premium.pem" "$local_premium_dir/clients/premium.key" > "$WORK/profile-b-client.pem"
+  # Game's Profile B client has its own identity on the disposable Platform CA.
+  profile_dir="$WORK/portal/secrets"
+  (umask 077; cat "$profile_dir/profile-b.pem" "$profile_dir/profile-b.key" > "$WORK/profile-b-client.pem")
   secret_to "$SERVICE_UID" "$WORK/profile-b-client.pem" "$BASE/node/secrets/profile-b-client.pem"
   NODE_GAMEPLAY_ENV+=("OTERYN_PLATFORM_PROFILE_B_AUTHORITY_ENABLED=true"
     "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
