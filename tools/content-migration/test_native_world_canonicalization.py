@@ -163,6 +163,29 @@ class NativeWorldCompletion(unittest.TestCase):
             b"do not borrow repository output\n",
         )
 
+    def test_predecessor_materializer_uses_output_first(self):
+        materializer = self.repo / "materialize_content_world_project_v2"
+        self.write(materializer, b"fixture executable")
+
+        def native(command, *, cwd, check):
+            self.assertEqual(cwd, self.repo)
+            self.assertTrue(check)
+            self.assertEqual(command[:2], [str(materializer), "--output-root"])
+            self.assertEqual(command[3], "--canonicalize-root")
+            self.assertEqual(len(command), 5)
+            output, staging = Path(command[2]), Path(command[4])
+            self.assertNotEqual(staging, self.world)
+            self.assertFalse(output.exists())
+            shutil.copytree(staging, output)
+            self.calls.append(output)
+
+        with patch.object(canonical.subprocess, "run", side_effect=native):
+            extent = canonical.complete_world_project(
+                self.repo, self.world, materializer=materializer
+            )
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(extent["creatures"], 1)
+
     def test_native_failure_cannot_leave_staged_python_bytes_in_the_input(self):
         default_world = self.repo / "content/world"
         shutil.copytree(self.world, default_world)
@@ -182,6 +205,8 @@ class NativeWorldCompletion(unittest.TestCase):
         def native(command, **kwargs):
             staging = Path(command[command.index("--input-root") + 1])
             install_buddel.assert_called_once_with(self.repo, staging)
+            prices.assert_called_once_with(self.repo, staging)
+            dialogue.assert_called_once_with(self.repo, staging)
             return self.native_output(command, **kwargs)
 
         argv = [
@@ -198,6 +223,8 @@ class NativeWorldCompletion(unittest.TestCase):
             patch("import_cyclopedia_global.apply_trade_source"),
             patch("import_cyclopedia_global.load_capture"),
             patch("questpc7_world_seal.refresh"),
+            patch("regional_npc_prices.install") as prices,
+            patch("regional_npc_dialogue.install") as dialogue,
             patch.object(canonical.subprocess, "run", side_effect=native),
         ):
             canonical.main()
@@ -237,6 +264,8 @@ class NativeWorldCompletion(unittest.TestCase):
             install_buddel.assert_called_once_with(self.repo, staging)
             project_routes.assert_called_once_with(self.repo, staging)
             capture.assert_called_once_with(self.repo)
+            prices.assert_called_once_with(self.repo, staging)
+            dialogue.assert_called_once_with(self.repo, staging)
             locator = "definitions/declarations.json"
             declarations = (staging / locator).read_bytes()
             self.assertEqual(
@@ -261,6 +290,8 @@ class NativeWorldCompletion(unittest.TestCase):
             patch.object(sys, "argv", argv),
             patch("buddel_travel.install_buddel") as install_buddel,
             patch("travel_route_corrections.project_routes") as project_routes,
+            patch("regional_npc_prices.install") as prices,
+            patch("regional_npc_dialogue.install") as dialogue,
             patch(
                 "import_cyclopedia_global.load_capture",
                 return_value={3361: {"npc_buy_from": [{"npc": "Dixi", "price": 25}]}},
@@ -289,6 +320,8 @@ class NativeWorldCompletion(unittest.TestCase):
             install_spawn.assert_called_once_with(self.repo, staged)
             install_buddel.assert_called_once_with(self.repo, staged)
             install_parity.assert_called_once_with(self.repo, staged)
+            prices.assert_called_once_with(self.repo, staged)
+            dialogue.assert_called_once_with(self.repo, staged)
             self.native_output(command, **kwargs)
             raise subprocess.CalledProcessError(1, command)
 
@@ -299,6 +332,8 @@ class NativeWorldCompletion(unittest.TestCase):
             patch("import_cyclopedia_global.apply_trade_source"),
             patch("import_cyclopedia_global.load_capture"),
             patch("questpc7_world_seal.refresh"),
+            patch("regional_npc_prices.install") as prices,
+            patch("regional_npc_dialogue.install") as dialogue,
             patch.object(parity, "install_documents") as install_parity,
             patch.object(canonical.subprocess, "run", side_effect=native),
         ):
@@ -327,6 +362,8 @@ class NativeWorldCompletion(unittest.TestCase):
             self.assertNotEqual(source, world)
             install_buddel.assert_called_once_with(self.repo, source)
             project_routes.assert_called_once_with(self.repo, source)
+            prices.assert_called_once_with(self.repo, source)
+            dialogue.assert_called_once_with(self.repo, source)
             self.assertFalse(output.exists())
             for locator in canonical.DOCUMENTS:
                 self.write(output / locator, (source / locator).read_bytes())
@@ -335,7 +372,7 @@ class NativeWorldCompletion(unittest.TestCase):
         def materialize():
             canonical.complete_world_project(
                 self.repo, world, include_world_successors=True,
-                materializer_executable=producer,
+                materializer=producer,
             )
 
         def measured():
@@ -350,6 +387,8 @@ class NativeWorldCompletion(unittest.TestCase):
             patch.object(regenerate, "run"),
             patch.object(regenerate, "refresh_quest_callback_proof"),
             patch.object(regenerate, "materialize_world", side_effect=materialize),
+            patch("regional_npc_prices.install") as prices,
+            patch("regional_npc_dialogue.install") as dialogue,
             patch("buddel_travel.install_buddel") as install_buddel,
             patch("travel_route_corrections.project_routes") as project_routes,
             patch("import_cyclopedia_global.apply_trade_source"),
@@ -389,7 +428,7 @@ class NativeWorldCompletion(unittest.TestCase):
                 with patch.object(canonical.subprocess, "run", side_effect=writer):
                     if scenario == "complete":
                         canonical.complete_world_project(
-                            self.repo, world, materializer_executable=producer
+                            self.repo, world, materializer=producer
                         )
                         actual = canonical.read_documents(world)
                         changed = {key for key in actual if actual[key] != self.original[key]}
@@ -397,7 +436,7 @@ class NativeWorldCompletion(unittest.TestCase):
                     else:
                         with self.assertRaises((ValueError, subprocess.CalledProcessError)):
                             canonical.complete_world_project(
-                                self.repo, world, materializer_executable=producer
+                                self.repo, world, materializer=producer
                             )
                         self.assertEqual(canonical.read_documents(world), self.original)
                 self.assertEqual(
@@ -524,16 +563,23 @@ class NativeWorldCompletion(unittest.TestCase):
         (manifest.parent / prebuilt.TARGETS["canonicalizer"]["name"]).write_bytes(
             b"changed"
         )
-        with (
-            patch.object(prebuilt, "identity", return_value=binding),
-            patch.object(canonical.subprocess, "run") as native,
-            self.assertRaisesRegex(ValueError, "checksum"),
+        for writer, environment in (
+            ({"canonicalizer_manifest": manifest}, {}),
+            (
+                {"materializer": self.repo / "materializer"},
+                {"OTERYN_WORLD_CANONICALIZER_MANIFEST": str(manifest)},
+            ),
         ):
-            canonical.complete_world_project(
-                self.repo, self.world, canonicalizer_manifest=manifest
-            )
-        native.assert_not_called()
-        self.assertEqual(canonical.read_documents(self.world), self.original)
+            with (
+                self.subTest(writer=writer),
+                patch.object(prebuilt, "identity", return_value=binding),
+                patch.object(canonical.subprocess, "run") as native,
+                patch.dict(canonical.os.environ, environment),
+                self.assertRaisesRegex(ValueError, "checksum"),
+            ):
+                canonical.complete_world_project(self.repo, self.world, **writer)
+            native.assert_not_called()
+            self.assertEqual(canonical.read_documents(self.world), self.original)
 
 
 if __name__ == "__main__":

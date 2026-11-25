@@ -144,6 +144,7 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-migration/regional_npc_prices.py", "--check"],
     [
         "python3",
         "tools/content-schema/world-object-authoring/spawn_ground.py",
@@ -186,6 +187,7 @@ CHECKS = (
     ],
     ["python3", "tools/content-schema/world-object-authoring/crystal_spawn_ground.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
+    ["python3", "tools/content-schema/npc-authoring/convert_placements.py", "--check"],
     [
         "python3",
         "tools/content-schema/quest-authoring/quest_batch4.py",

@@ -534,7 +534,9 @@ fn boss_spawn_world_points_reach_bundle_at_fixed_cells() -> TestResult {
             checked += 1;
         }
     }
-    assert_eq!(checked, 38);
+    // Includes Shard of Corruption from world-monster.xml:190614–190616 and the
+    // Crystal 201189f8 Gorga, Clavius, Adlerauge, and Michael the Stalwart points.
+    assert_eq!(checked, 39);
     Ok(())
 }
 

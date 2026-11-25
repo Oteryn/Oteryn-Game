@@ -27,7 +27,8 @@ const QUEST: &str = "oteryn:quest.the_explorer_society_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u7_6/explorer_society/";
 const ANGUS: Position = position(32670, 32730, -7);
 const UZGOD: Position = position(32664, 31894, -9);
-const MAX: Position = position(32298, 32895, -6);
+// The authored placement keeps the ferry's return cell at (32298, 32895) open.
+const MAX: Position = position(32298, 32896, -6);
 const CALASSA: Position = position(31911, 32710, -6);
 const BROOCH: Position = position(32598, 31934, -15);
 const ICE: Position = position(32133, 31688, -9);
