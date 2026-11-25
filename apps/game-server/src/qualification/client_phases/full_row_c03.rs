@@ -34,6 +34,8 @@ const STEPS: [&str; 10] = [
     "admission", "tabs", "baseline", "critical", "leech", "reflect", "cleave", "perfect-shot", "fatal", "refusal-relog",
 ];
 const FIGHT_SECONDS: u64 = 25;
+// The authored Poison Spider has a melee attack that can hit through starter armour.
+const COMBAT_TARGET: (&str, &str) = ("oteryn:creature.poison_spider", "Poison Spider");
 // Crystal 201189f8 src/utils/utils_definitions.hpp:141,195.
 const CRITICAL_EFFECT: u32 = 173;
 const FATAL_EFFECT: u32 = 230;
@@ -286,8 +288,8 @@ fn baseline_route(
     searched: &[TilePos],
 ) -> Option<Vec<StepDirection>> {
     let mut approaches = BTreeSet::new();
-    for (spawn, _) in full_e2ef3::ordinary_spawn_points(spawns) {
-        if !outside_protection(world, spawn) {
+    for (spawn, key) in full_e2ef3::ordinary_spawn_points(spawns) {
+        if key != COMBAT_TARGET.0 || !outside_protection(world, spawn) {
             continue;
         }
         for dx in -1..=1 {
@@ -378,6 +380,12 @@ async fn visible_monster(
                 .into_iter()
                 .flat_map(|entities| entities.others())
                 .filter(|entity| entity.kind == EntityKind::Creature)
+                .filter(|entity| {
+                    entity.display_name.is_some_and(|name| {
+                        name.as_str()
+                            .is_ok_and(|name| name.eq_ignore_ascii_case(COMBAT_TARGET.1))
+                    })
+                })
                 .filter_map(|entity| {
                     let at = tile(entity.position).ok()?;
                     (here.floor == at.floor && outside_protection(world, at)).then_some((
@@ -507,6 +515,16 @@ async fn idle_rate(client: &mut DevClientSession, seconds: u64) -> TestResult<(f
 async fn fight(client: &mut DevClientSession, target: EntityRef, seconds: u64, hits_wanted: usize) -> TestResult<Fight> {
     let me = own(client)?;
     client.take_events();
+    let start = client.world_spatial().actor_position;
+    let target_at = client.world_entities().and_then(|world| world.get(&target));
+    let target_name = target_at
+        .and_then(|entry| entry.display_name.as_ref())
+        .and_then(|name| name.as_str().ok());
+    evidence(&format!(
+        "C03_ENCOUNTER player={start:?} target_position={:?} target_name={target_name:?} health={:?}",
+        target_at.map(|entry| entry.position),
+        client.actor_vitals().map(|vitals| vitals.health),
+    ));
     let reply = client.session_mut().attack_target(Some(&target)).await?;
     if reply.disposition != AttackIntentDisposition::Ok {
         return Err(format!("attack-target-reply:{reply:?}").into());
@@ -538,6 +556,20 @@ async fn fight(client: &mut DevClientSession, target: EntityRef, seconds: u64, h
         }
     }
     log.seconds = began.elapsed().as_secs_f64();
+    let end = client.world_spatial().actor_position;
+    let target_end = client
+        .world_entities()
+        .and_then(|world| world.get(&target))
+        .map(|entry| entry.position);
+    let target_hits = log
+        .seen
+        .iter()
+        .filter(|seen| seen.1 == me && seen.2 == Some(target))
+        .count();
+    evidence(&format!(
+        "C03_ENCOUNTER_END player={end:?} target_position={target_end:?} seconds={:.3} health={} hp_drop={} target_hits={target_hits}",
+        log.seconds, last.health, log.health_down,
+    ));
     let stop = client.session_mut().attack_target(None).await?;
     if stop.disposition != AttackIntentDisposition::Ok {
         return Err(format!("attack-stop-reply:{stop:?}").into());
@@ -643,6 +675,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     let with = Stats::read(&mut client).await?;
     row.pass("tabs", (with.offence.character_revision, with.offence.equipment_revision, with.defence.equipment_revision));
+    evidence(&format!(
+        "C03_DEFENCE armor={} defence={} equipment={:?}",
+        with.def(Stat::Armor),
+        with.def(Stat::DefenceTotal),
+        worn(&client),
+    ));
 
     // Clean baseline: the same fight with every strippable source out of the equipment.
     let (stripped, clean) = if with.offence_sources() > 0 { strip(&mut client).await? } else { (Vec::new(), true) };
@@ -973,6 +1011,7 @@ mod tests {
         .bundle;
         let initial = baseline_route(world, TOWN, &metadata.spawns, |_| true, &[])
             .ok_or("C03 baseline could not reach a compiled town spawn")?;
+        eprintln!("C03 compiled {} approach uses {} steps", COMBAT_TARGET.1, initial.len());
         let first = *initial.first().ok_or("C03 route must leave the temple")?;
         let occupied = destination(world, TOWN, first).ok_or("C03 route has invalid first step")?;
         let path = baseline_route(world, TOWN, &metadata.spawns, |at| at != occupied, &[])
@@ -984,13 +1023,14 @@ mod tests {
         }
         assert_ne!(at, TOWN);
         let target = full_e2ef3::ordinary_spawn_points(&metadata.spawns)
+            .filter(|(_, key)| *key == COMBAT_TARGET.0)
             .map(|(spawn, _)| spawn)
             .find(|spawn| {
                 spawn.floor == at.floor
                     && at.x.abs_diff(spawn.x).max(at.y.abs_diff(spawn.y)) <= 1
                     && outside_protection(world, *spawn)
             })
-            .ok_or("C03 compiled route ended beside no spawn")?;
+            .ok_or("C03 compiled route ended beside no Poison Spider spawn")?;
         let open = live_approach_route(world, TOWN, target, &BTreeSet::from([target]))
             .ok_or("C03 live approach has no route from town")?;
         let blocked = destination(world, TOWN, *open.first().ok_or("C03 approach must move")?)
