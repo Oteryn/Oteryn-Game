@@ -491,7 +491,7 @@ pub(super) async fn exercise(
         .read_character_build_state(owner.character, fence.character_id)
         .await
         .map_err(debug)?;
-    super::annihilator_combat::prepare_supplies(owner, admitted, &build, true).await?;
+    super::annihilator_combat::prepare_supplies(owner, admitted, &build, false).await?;
     let fragment_chests = [
         (at(33194, 32458, -7), 0),
         (at(33305, 32277, -10), 1),
@@ -558,22 +558,21 @@ pub(super) async fn exercise(
         .await
         .map_err(debug)?
         .ok_or("Koshei potion fence")?;
-    super::quest_world_callbacks_fixtures::input_item(
-        owner,
-        potion_fence.item_fence(),
-        &oteryn_gameplay_quests::quest::world_callbacks::Offering {
-            position: Position {
-                x: SWITCH.x - 1,
-                y: SWITCH.y,
-                floor: SWITCH.floor,
+    // Stock the two combat stacks with the potion the journey uses.
+    for occurrence in [175, 176] {
+        input_item(
+            owner,
+            potion_fence.item_fence(),
+            &Offering {
+                position: at(SWITCH.x - 1, SWITCH.y, SWITCH.floor),
+                item: super::annihilator_combat::PALADIN_POTION.into(),
+                count: 100,
             },
-            item: super::annihilator_combat::PALADIN_POTION.into(),
-            count: 50,
-        },
-        175,
-        true,
-    )
-    .await?;
+            occurrence,
+            true,
+        )
+        .await?;
+    }
     move_to(owner, admitted, at(SWITCH.x - 1, SWITCH.y, SWITCH.floor)).await?;
     let switch = target(owner, SWITCH, 1)?;
     assert_eq!(

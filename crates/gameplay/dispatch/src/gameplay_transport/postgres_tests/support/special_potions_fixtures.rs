@@ -146,7 +146,10 @@ pub(super) async fn exchange(
             if result.is_none()
                 && let Poll::Ready(value) = driving.as_mut().poll(context)
             {
-                result = Some(value);
+                match value {
+                    Ok(value) => result = Some(value),
+                    Err(error) => return Poll::Ready(Err(error)),
+                }
             }
             if end.is_some() && result.is_some() {
                 Poll::Ready(Ok(()))
@@ -160,6 +163,6 @@ pub(super) async fn exchange(
     let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else {
         return Err(format!("{end:?}").into());
     };
-    let (status, result, actual) = result.ok_or("client did not finish")??;
+    let (status, result, actual) = result.ok_or("client did not finish")?;
     Ok((admitted, status, result, actual))
 }
