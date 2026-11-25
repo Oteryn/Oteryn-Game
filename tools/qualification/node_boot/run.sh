@@ -971,7 +971,7 @@ def stop(_signal, _frame):
     stopping = True
 signal.signal(signal.SIGINT, stop)
 signal.signal(signal.SIGTERM, stop)
-events = {'serve_end', 'serve_command_end', 'command_guard_failed',
+events = {'serve_end', 'serve_command_end', 'command_guard_failed', 'command_guard_deferred',
           'join_prepare_failed', 'listener_poll_slow', 'listener_connection_poll_slow',
           'pass_dropped', 'step_rejected_dawnport', 'step_rejected_source_map',
           'step_rejected_dead', 'step_rejected_lane', 'step_rejected_pvp_locks',
@@ -995,7 +995,8 @@ labels = {
                       'activity_publish', 'activity_return', 'activity_scope',
                       'activity_successor', 'activity_view', 'actor_unreserved',
                       'admitted_binding', 'appearance_observation', 'familiar_cast',
-                      'combat_hold', 'condition_save', 'death_save', 'entry', 'familiar_save',
+                      'combat_hold', 'condition_save', 'cyclopedia_general_stats', 'death_save',
+                      'entry', 'familiar_save',
                       'foreground_demand', 'gourmet_checkpoint', 'hunting_stamina_readback',
                       'item_effects', 'kill_rewards', 'logout_settle', 'loss_activity_origin',
                       'loss_readback', 'monk_save', 'native_publication',

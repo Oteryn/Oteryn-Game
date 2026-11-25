@@ -31,6 +31,25 @@ def function(name):
 
 
 class RuntimeEvidenceTests(unittest.TestCase):
+    def test_reports_command_deferral_and_cyclopedia_read_failure(self):
+        monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
+        prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
+        lines = (
+            'oteryn-game-server event=command_guard_deferred guard=house_transfer_input '
+            'kind=holder_busy command_type=388 command_id=1 token=private',
+            'oteryn-game-server event=session_durability_failed '
+            'stage=cyclopedia_general_stats kind=deadline',
+        )
+        script = prefix + '\n' + '\n'.join(f'report({line!r})' for line in lines)
+        result = subprocess.run([sys.executable, '-c', script, 'unused', 'test', '1', '0'],
+                                capture_output=True, text=True, check=True)
+        self.assertIn('event=command_guard_deferred', result.stdout)
+        self.assertIn('guard=house_transfer_input', result.stdout)
+        self.assertIn('command_type=388', result.stdout)
+        self.assertIn('command_id=1', result.stdout)
+        self.assertIn('failure_stage=cyclopedia_general_stats', result.stdout)
+        self.assertNotIn('private', result.stdout)
+
     def test_served_content_revision_is_the_characters_interpretation(self):
         # NBSEAM: the quest and Task Board owners refuse a Character whose stored progression
         # content differs from the served readiness.content_revision (ProgressionContextMismatch).
