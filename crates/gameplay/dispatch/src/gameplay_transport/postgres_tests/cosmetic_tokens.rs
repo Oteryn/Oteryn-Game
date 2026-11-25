@@ -50,10 +50,12 @@ enum Regression {
     PaidBeforeGrant,
     OfflinePaid,
     OfflineLockOrder,
+    CoinRetryLockOrder,
+    TokenRetryLockOrder,
     OfflineLostAnswer,
     LegacyItem { worker: bool },
     Inbox,
-    RestoreReservations,
+    RestoreReservations(restore_reservations::Snapshot),
     Transfer,
     Earned,
     AccountOwnedToken,
@@ -98,6 +100,16 @@ fn coin_cosmetic_recovery_locks_the_buyer_before_its_grant() -> TestResult {
 }
 
 #[test]
+fn coin_cosmetic_reservation_leaves_buyer_unlocked_while_answer_writer_holds_purchase() -> TestResult {
+    regression("coin-cosmetic-lock-order", Regression::CoinRetryLockOrder)
+}
+
+#[test]
+fn token_cosmetic_purchase_leaves_buyer_unlocked_while_answer_writer_holds_purchase() -> TestResult {
+    regression("token-cosmetic-lock-order", Regression::TokenRetryLockOrder)
+}
+
+#[test]
 fn coin_cosmetic_worker_recovers_a_lost_platform_answer() -> TestResult {
     regression("cosmetic-offline-lost-answer", Regression::OfflineLostAnswer)
 }
@@ -119,7 +131,17 @@ fn store_review_inbox_projects_entitlement_independent_of_delivery_and_claim() -
 
 #[test]
 fn store_review_restore_conflict_retires_accepted_reservations() -> TestResult {
-    regression("store-restore-reservations", Regression::RestoreReservations)
+    regression("store-restore-reservations", Regression::RestoreReservations(restore_reservations::Snapshot::Answered))
+}
+
+#[test]
+fn store_restore_releases_reservations_after_the_original_answer_is_retained() -> TestResult {
+    regression("store-restore-sent", Regression::RestoreReservations(restore_reservations::Snapshot::Sent))
+}
+
+#[test]
+fn store_restore_backfills_reservations_for_existing_delivery_fences() -> TestResult {
+    regression("store-restore-upgrade", Regression::RestoreReservations(restore_reservations::Snapshot::Fenced))
 }
 
 #[path = "cosmetic_tokens/restore_reservations.rs"]
@@ -276,14 +298,25 @@ fn scenario(tokens: bool, previous_revision: bool, regression: Option<Regression
                 wire::encode_purchase_request(request).map_err(debug)?,
             ))
         };
-        if matches!(regression, Some(Regression::RestoreReservations)) {
-            restore_reservations::prepare(&harness, &owner, &mut admitted, &ledger, &request).await?;
+        if let Some(Regression::RestoreReservations(snapshot)) = regression {
+            let late = restore_reservations::prepare(&harness, &owner, &mut admitted, &ledger, &request, snapshot).await?;
+            let platform = owner.store.clone();
+            let states = owner.states.clone();
             drop(owner);
             drop(authority);
             let predecessor = seal.record().recovery_generation;
             let issued_at = seal.record().issued_at.checked_add(1).ok_or("issued at")?;
             drop(seal);
-            restore_reservations::reconcile(&harness, &ledger, predecessor, issued_at).await?;
+            restore_reservations::reconcile(&harness, &ledger, predecessor, issued_at, snapshot, late).await?;
+            if matches!(snapshot, restore_reservations::Snapshot::Sent | restore_reservations::Snapshot::Fenced) {
+                let seal = harness.recovery.seal_current().map_err(debug)?;
+                let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
+                let mut restored = deps.owner(&harness, &authority);
+                restored.active_generation = Some(active);
+                restored.store = platform;
+                restored.states = states;
+                restore_reservations::buy_again(&harness, &restored, &mut admitted, request).await?;
+            }
             return harness.cleanup().await;
         }
         if let Some(case) = regression {
@@ -1061,10 +1094,43 @@ async fn cosmetic_regression(
     let character = *admitted.item_fence.ok_or("fence")?.character_id.as_bytes();
     let account = admitted.controller.ok_or("controller")?.account_id;
     match case {
-        Regression::RestoreReservations => return Err("restore needs the recovery transition fixture".into()),
+        Regression::RestoreReservations(_) => return Err("restore needs the recovery transition fixture".into()),
         Regression::BlessingImport => return Err("blessing import requires its own catalogue page".into()),
         Regression::SiblingPending { tokens } => {
             sibling_pending(harness, owner, admitted, ledger, request, tokens).await?;
+        }
+        Regression::CoinRetryLockOrder | Regression::TokenRetryLockOrder => {
+            let fence = crate::gameplay_transport::character_gameplay_fence::current(
+                owner, admitted.game_session_id, false,
+            ).await.ok_or("current fence")?;
+            let content = owner.active_generation
+                .and_then(|generation| generation.native_gameplay())
+                .and_then(|native| native.cosmetics()).ok_or("cosmetics content")?.clone();
+            let journal = crate::durability::store::PurchaseRequest {
+                purchase_request_id: request.purchase_request_id,
+                account_id: account,
+                character_id: character,
+                binding: vec![1; 32],
+            };
+            let purchase_id = journal.purchase_request_id;
+            if matches!(case, Regression::CoinRetryLockOrder) {
+                // The retry reaches this owner after its initial journal transaction.
+                owner.root.record_purchase_request(journal.clone()).await.map_err(debug)?;
+                let reserved = super::store_fixtures::assert_store_retry_lock_order(
+                    &harness.pool, purchase_id, character,
+                    owner.root.reserve_store_cosmetic(owner.character, owner.holder, fence, journal, request.offer_key, content),
+                ).await?.map_err(debug)?;
+                assert!(reserved);
+            } else {
+                let refused = super::store_fixtures::assert_store_retry_lock_order(
+                    &harness.pool, purchase_id, character,
+                    owner.root.purchase_store_cosmetic_tokens(
+                        owner.character, owner.holder, fence, journal, request.offer_key,
+                        request.catalog_revision, content,
+                    ),
+                ).await?.map_err(debug)?;
+                assert_eq!(refused.code, wire::StorePurchaseCode::InsufficientBalance);
+            }
         }
         Regression::Inbox => {
             let entitlement = id(201);

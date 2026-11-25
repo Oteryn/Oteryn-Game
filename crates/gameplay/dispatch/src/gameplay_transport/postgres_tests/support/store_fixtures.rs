@@ -296,6 +296,31 @@ pub(super) async fn serve(
     Ok(values)
 }
 
+/// Probe the buyer lock taken by the answer writer's history foreign key.
+pub(super) async fn assert_store_retry_lock_order<T: std::fmt::Debug>(
+    pool: &sqlx::PgPool,
+    purchase: [u8; 16],
+    character: [u8; 16],
+    retry: impl std::future::Future<Output = T>,
+) -> TestResult<T> {
+    let mut writer = pool.begin().await?;
+    let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()").fetch_one(&mut *writer).await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:store-purchase:'||encode($1,'hex'),0))")
+        .bind(purchase.as_slice()).execute(&mut *writer).await?;
+    tokio::pin!(retry);
+    tokio::select! {
+        result = &mut retry => return Err(format!("retry skipped purchase serialization: {result:?}").into()),
+        result = wait_for_advisory_waiter(pool, pid) => result?,
+    }
+    let character_available = sqlx::query(
+        "SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR KEY SHARE NOWAIT",
+    ).bind(character.as_slice()).fetch_one(&mut *writer).await.is_ok();
+    writer.rollback().await?;
+    let result = tokio::time::timeout(std::time::Duration::from_secs(3), &mut retry).await?;
+    assert!(character_available, "Store reservation locked the buyer ahead of the purchase");
+    Ok(result)
+}
+
 /// Wait until an actual PostgreSQL writer queues behind the transaction's advisory lock.
 pub(super) async fn wait_for_advisory_waiter(pool: &sqlx::PgPool, holder: i32) -> TestResult {
     tokio::time::timeout(std::time::Duration::from_secs(2), async {

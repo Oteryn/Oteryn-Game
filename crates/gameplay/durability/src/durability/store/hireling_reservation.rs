@@ -9,7 +9,7 @@ use super::super::runtime_scope_assignment::NodeIncarnationProof;
 use super::super::{DurabilityError, DurabilityRoot};
 use super::codec::PurchaseRequest;
 use super::hireling_model::{HirelingStoreAction, HirelingStorePurchase};
-use super::purchase::record_request;
+use super::purchase::{lock_request, record_request};
 use super::storage::{
     PurchaseRequestState, StoreDurabilityError, account_matches, assert_store_fence,
 };
@@ -46,6 +46,7 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
+            lock_request(&mut tx, &request).await?;
             if !assert_store_fence(&mut tx, &fence, &node, Some(origin_channel)).await? || !account_matches(&mut tx, &fence, &request.account_id).await? {
                 return Ok(Err(StoreDurabilityError::AuthorityRejected));
             }

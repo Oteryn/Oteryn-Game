@@ -178,8 +178,10 @@ impl DurabilityRoot {
                      WHERE l.item_instance_id=d.item_instance_id AND l.from_kind=6 AND l.to_kind=1
                        AND m.character_id=d.character_id AND m.world_id=d.world_id
                      UNION ALL
-                     SELECT to_timestamp(u.occurred_at::double precision / 1000),u.transaction_id,d.recovery_generation
+                     SELECT to_timestamp(u.occurred_at::double precision / 1000),u.transaction_id,
+                            COALESCE(t.placement_recovery_generation,d.recovery_generation)
                      FROM game_item_use_records u
+                     JOIN game_hireling_lamp_transitions t USING(transaction_id)
                      WHERE u.source_item_instance_id=d.item_instance_id AND u.source_kind=2 AND u.cause_kind=470
                        AND u.character_id=d.character_id AND u.world_id=d.world_id
                  ) proof
