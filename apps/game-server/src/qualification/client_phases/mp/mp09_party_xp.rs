@@ -634,16 +634,7 @@ async fn encounter(
 
     bots::pump(bots).await?;
     attack_target(&mut bots[0], Some(&target)).await?;
-    bots::wait_observation(bots, deadline, "exact hunt corpse", |bots, _| {
-        let leader = bots[0].session.as_ref().ok_or("leader closed")?;
-        Ok(leader.world_entities().is_some_and(|view| {
-            view.get(&target).is_none()
-                && view.iter().any(|entity| {
-                    entity.kind == EntityKind::Corpse && entity.entity.identity == corpse_identity
-                })
-        }))
-    })
-    .await?;
+    wait_hunt_corpse(bots, deadline, "exact hunt corpse", target, corpse_identity).await?;
     evidence(&format!(
         "MP_CHECK MP09 hunt-kill PASS committed kill;attributed_damage={hits:?}"
     ));
@@ -769,6 +760,62 @@ async fn inspect_hunt_damage(
         crate::node::operator_files::hex_bytes::<16>(corpse)
             .map_err(|_| "invalid corpse identity")?,
     ))
+}
+
+async fn wait_hunt_corpse(
+    bots: &mut [Bot<'_, '_>],
+    combat_deadline: tokio::time::Instant,
+    detail: &str,
+    target: EntityRef,
+    corpse: [u8; 16],
+) -> TestResult {
+    let after = bots[0].client()?.last_server_sequence();
+    let mut finishing_swings = 0;
+    let mut minimum_health = None;
+    let mut exact_corpse = false;
+    let combat = bots::wait_observation(bots, combat_deadline, detail, |bots, events| {
+        finishing_swings += events[0]
+            .iter()
+            .filter(|event| committed_swing(event, after))
+            .count();
+        let leader = bots[0].session.as_ref().ok_or("leader closed")?;
+        let Some(view) = leader.world_entities() else {
+            return Ok(false);
+        };
+        if let Some(health) = view
+            .get(&target)
+            .and_then(|entity| hunt_health(entity.detail))
+        {
+            minimum_health = Some(minimum_health.map_or(health, |prior: u8| prior.min(health)));
+        }
+        let target_absent = view.get(&target).is_none();
+        exact_corpse = target_absent
+            && view.iter().any(|entity| {
+                entity.kind == EntityKind::Corpse && entity.entity.identity == corpse
+            });
+        Ok(target_absent)
+    })
+    .await;
+    combat.map_err(|error| format!(
+        "{error};phase=combat;target={target:?};finishing_swings={finishing_swings};minimum_target_health={minimum_health:?}"
+    ))?;
+    if exact_corpse {
+        return Ok(());
+    }
+    // A real qualification kill spent 68 seconds between its lethal receipt
+    // and the durable party settlement. Keep that wait separate from combat.
+    let settlement_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    bots::wait_observation(bots, settlement_deadline, detail, |bots, _| {
+        let leader = bots[0].session.as_ref().ok_or("leader closed")?;
+        Ok(leader.world_entities().is_some_and(|view| {
+            view.get(&target).is_none()
+                && view.iter().any(|entity| {
+                    entity.kind == EntityKind::Corpse && entity.entity.identity == corpse
+                })
+        }))
+    })
+    .await
+    .map_err(|error| format!("{error};phase=settlement;target={target:?};corpse={corpse:?}").into())
 }
 
 async fn observed_hunt_death(
@@ -976,42 +1023,10 @@ async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> T
     }
     // Finish the probe creature before returning the other party members to their normal journey.
     set_hunt_modes(&mut bots[0]).await?;
-    let after = bots[0].client()?.last_server_sequence();
     attack_target(&mut bots[0], Some(&target)).await?;
-    let mut observed_health = None;
-    let mut minimum_health = None;
-    let mut finishing_swings = 0;
-    let observation = bots::wait_observation(
-        bots,
-        deadline,
-        "underlevel activity corpse",
-        |bots, events| {
-            finishing_swings += events[0]
-                .iter()
-                .filter(|event| committed_swing(event, after))
-                .count();
-            let view = bots[0]
-                .session
-                .as_ref()
-                .and_then(|client| client.world_entities());
-            observed_health = view
-                .and_then(|view| view.get(&target))
-                .and_then(|entity| hunt_health(entity.detail));
-            if let Some(health) = observed_health {
-                minimum_health =
-                    Some(minimum_health.map_or(health, |previous: u8| previous.min(health)));
-            }
-            Ok(view.is_some_and(|view| {
-                view.iter().any(|entity| {
-                    entity.kind == EntityKind::Corpse && entity.entity.identity == corpse
-                })
-            }))
-        },
-    )
-    .await;
-    observation.map_err(|error| format!(
-        "{error};target={target:?};underlevel_damage={damage};leader_initial_damage={leader_damage_before_finish};finishing_swings={finishing_swings};minimum_target_health={minimum_health:?};last_target_health={observed_health:?}"
-    ))?;
+    wait_hunt_corpse(bots, deadline, "underlevel activity corpse", target, corpse)
+        .await
+        .map_err(|error| format!("{error};underlevel_damage={damage};leader_initial_damage={leader_damage_before_finish}"))?;
     attack_target(&mut bots[0], None).await?;
     let death = observed_hunt_death(bots, None, LEVEL_PROBE.0, target).await?;
     // The spawned Minotaur has 100 HP and only its melee ability. The ledger credits
