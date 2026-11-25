@@ -691,31 +691,8 @@ PY_REGION_PIN
   install_owned root:root -m 0644 "$WORK/world.otwb" "$BASE/world/world.otbundle"
   install_owned root:root -m 0644 "$PIN" "$BASE/world/world.json"
   MAP_REVISION="$WORLD_DIGEST"
-  if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 && ${NODE_BOOT_E2E_ONLY:-} == f4 ]]; then
-    # Bind the NPC catalogue from the same checkout that compiled the World.
-    # The node verifies the project digest and independently matches the bundle's catalogue digest.
-    PYTHONPATH="$GAME_SOURCE/deploy/synology-game" python3 - "$GAME_SOURCE" "$WORK" <<'PY_NPC_STAGE'
-import json
-import sys
-from pathlib import Path
-from stage_npc_data import PIN_SCHEMA, catalogue_digest, collect_catalogue, project_files, stage
-
-repo, work = map(Path, sys.argv[1:])
-content = repo / "content"
-revision, project = project_files(content / "world")
-pin = work / "npc-data.pin.json"
-pin.write_text(json.dumps({
-    "schema": PIN_SCHEMA,
-    "project_revision": revision,
-    "project_sha256": catalogue_digest(project.items()),
-    "catalogue_sha256": catalogue_digest(collect_catalogue(content)),
-}), encoding="utf-8")
-stage(pin, repo, work / "npc-data")
-PY_NPC_STAGE
-    mv -- "$WORK/npc-data" "$BASE/npc-data"
-    NODE_NPC_ARGS=(--npc-data-project "$BASE/npc-data/content/world"
-      --npc-data-sha256 "$(< "$BASE/npc-data/PROJECT_SHA256")")
-  fi
+  source "$GAME_SOURCE/tools/qualification/node_boot/npc_data.sh"
+  node_boot_stage_npc_data
 fi
 install_owned "$SERVICE_UID" -d -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
 install_owned "$SERVICE_UID" -d -m 0755 "$BASE/node/secrets"
