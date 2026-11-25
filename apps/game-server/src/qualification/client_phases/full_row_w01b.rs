@@ -236,6 +236,29 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+async fn logout_after_observation(
+    client: &mut DevClientSession,
+    retreat: TilePos,
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+) -> TestResult {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    let first = client.session_mut().logout().await?;
+    let Some(LogoutResult::InFight { retry_after_ms }) = first.result else {
+        return if first.result == Some(LogoutResult::Accepted) {
+            Ok(())
+        } else {
+            Err(format!("logout reply={first:?}").into())
+        };
+    };
+    let safe_at = tokio::time::Instant::now() + Duration::from_millis(u64::from(retry_after_ms));
+    walk_rat_route(client, retreat, landing, None, false).await?;
+    verdict::Harness::global().bounded_wait(safe_at, "combat-logout-lock");
+    while tokio::time::Instant::now() < safe_at {
+        client.service_liveness(Duration::from_millis(100)).await?;
+    }
+    logout(client).await
+}
+
 async fn seed_rat_retreat(clients: &SeamClients<'_>) -> TestResult {
     let mut initial = connect_character(clients, 0xb0, 0).await?;
     logout(&mut initial).await?;
@@ -543,7 +566,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.begin("logout");
     let observation_tile = tile(client.world_spatial().actor_position)?;
     let previous_session = client.join_snapshot().game_session_id;
-    logout(&mut client).await?;
+    logout_after_observation(&mut client, retreat, landing).await?;
     progress.pass("logout", "Accepted");
     drop(client);
     progress.begin("fresh-admission");
@@ -572,7 +595,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     }
     progress.pass("fresh-admission-state", replacement);
     progress.begin("final-logout");
-    logout(&mut fresh).await?;
+    logout_after_observation(&mut fresh, retreat, landing).await?;
     progress.pass("final-logout", "Accepted");
     Ok(())
 }
