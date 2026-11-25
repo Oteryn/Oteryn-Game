@@ -110,7 +110,7 @@ def main():
                         'if [[ "${1:-}" == serve ]]; then\n'
                         '  export OTERYN_ACCOUNT_LOGIN=true\n'
                         '  export OTERYN_ADMIN_PANEL=true OTERYN_ADMIN_COMMERCE=true OTERYN_PREMIUM_ENABLED=true\n'
-                        '  export OTERYN_ADMIN_HOST="\${OTERYN_PUBLIC_ORIGIN#http://}"\n'
+                        '  export OTERYN_ADMIN_HOST="${OTERYN_PUBLIC_ORIGIN#http://}"\n'
                         f"  profile_dir={shlex.quote(str(work / 'portal' / 'secrets'))}\n"
                         '  profile_identity=profile-b-authority.game.e2e.oteryn.test\n'
                         '  umask 077\n'
