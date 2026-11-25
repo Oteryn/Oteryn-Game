@@ -770,7 +770,7 @@ mod tests {
                     i64::from(destination.y),
                     i64::from(destination.floor)
                 ),
-                (x, if slug == "issavi" { y + 2 } else { y }, floor),
+                (x, y, floor),
                 "{route_key}"
             );
         }
