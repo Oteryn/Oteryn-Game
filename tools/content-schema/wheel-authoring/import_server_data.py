@@ -3,7 +3,7 @@ import hashlib
 import json
 import sys
 from pathlib import Path
-from wheel_authoring import ROOT, read, validate, validate_evidence
+from wheel_authoring import ROOT, icon, read, validate, validate_evidence
 
 REPO = ROOT.parents[2]
 DIRECTORY = REPO / 'rulesets/progression/wheel-of-destiny'
@@ -13,6 +13,50 @@ GEM_VOCATION_FIELDS = ('gem_family', 'gem_names', 'basic_mods_position_1',
 
 def encoded(value):
     return json.dumps(value, indent=2, allow_nan=False) + '\n'
+
+
+def extend_supreme_pool(gems):
+    evidence = read(REPO / 'docs/reference/wheel-of-destiny-testserver-20261113/new-supreme-mods.json')
+    rows = evidence['new_mods']
+    if [row['source_id'] for row in rows] != list(range(94, 114)):
+        raise ValueError('TESTSERVER_SUPREME_POPULATION')
+    labels = {
+        'base_damage_bonus': 'Base Damage',
+        'critical_extra_damage': 'Critical Extra Damage',
+        'base_healing_bonus': 'Base Healing',
+        'cooldown_reduction': 'Cooldown',
+    }
+    for row in rows:
+        # Shield Slam still needs the equipment-attack Spell owner.
+        if row['spell_name'] == 'Shield Slam':
+            continue
+        identifier, target, kind = row['source_id'], row['spell_name'], row['effect']
+        values = row['grade_values']
+        if len(values) != 4 or row['record_enabled'] != 1:
+            raise ValueError(f'TESTSERVER_SUPREME_GRADES:{identifier}')
+        cooldown = kind == 'cooldown_reduction'
+        label = labels[kind]
+        grades = []
+        for grade, value in enumerate(values):
+            effect = {'kind': kind, 'value': abs(value) if cooldown else value,
+                      'unit': row['unit'], 'target': target}
+            effects = [effect]
+            text = f'{value:+g}{"s" if cooldown else "%"} {label}'
+            if cooldown and grade:
+                # Apply the existing cooldown grade pattern to the independently observed Grade IV value.
+                momentum, = row['planner_grade_iv_crosscheck']['additional_effects']
+                chance = (0, 0.33, 0.66, 1)[grade] * momentum['value']
+                effects.append({'kind': momentum['effect'], 'value': chance,
+                                'unit': momentum['unit'], 'target': target})
+                text += f', +{chance:g}% Momentum'
+            grades.append({'grade': grade, 'reference_text': text, 'numeric_effects': effects})
+        gems['catalogue']['supreme_mods'].append({
+            'source_id': identifier, 'name': target, 'summary_name': target,
+            'format': 'Seconds' if cooldown else 'PlusPercentWithUpToTwoFloatingpointsFromInt',
+            'grades': grades, 'reference_summary': f'{"s" if cooldown else "+ %"} {label}',
+            'icon': icon('supreme_mod', identifier),
+        })
+        gems['vocations'][row['vocation']]['supreme_mods'].append(identifier)
 
 
 def exports():
@@ -37,13 +81,14 @@ def exports():
                 for v in data['vocations']}
     if restored != data['vocations'] or gems['data']['catalogue'] != data['gems']:
         raise ValueError('SERVER_IMPORT_PROJECTION')
+    extend_supreme_pool(gems['data'])
     result = {'wheel.json': encoded(wheel), 'gems.json': encoded(gems)}
     manifest = {'schema': 'OTERYN_WHEEL_GEM_DATA_MANIFEST/v1', **header,
         'source': source.relative_to(REPO).as_posix(),
         'files': {name: hashlib.sha256(value.encode()).hexdigest()
                   for name, value in result.items()},
         'coverage': {'vocations': 5, 'slots': 180, 'revelations': 20,
-                     'basic_mods': 46, 'supreme_mods': 94},
+                     'basic_mods': 46, 'supreme_mods': len(gems['data']['catalogue']['supreme_mods'])},
         'pending_runtime': ['W-R/GEM-R admission and native effect bindings',
             'Character allocation, gems, grades, vessels and initial grant',
             'Atomic Atelier economy/items, crusher/drop/trade',
@@ -66,4 +111,4 @@ def check_or_write(check=False):
 
 if __name__ == '__main__':
     check_or_write('--check' in sys.argv)
-    print('PASS: server import, 5 vocations / 180 slots / 46 Basic / 94 Supreme; runtime inactive.')
+    print('PASS: server import, 5 vocations / 180 slots / 46 Basic / 112 Supreme; runtime inactive.')

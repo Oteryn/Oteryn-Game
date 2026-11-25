@@ -24,6 +24,8 @@ pub struct Counter {
     #[serde(default)]
     pub authored_stage: bool,
     pub world_change: Option<&'static str>,
+    #[serde(skip)]
+    pub death_area: Option<super::authored_bindings::kills::DeathArea>,
 }
 
 impl Counter {
@@ -125,6 +127,7 @@ pub const COUNTERS: &[Counter] = &[
         maximum: 20,
         authored_stage: false,
         world_change: None,
+        death_area: None,
     },
     Counter {
         transition: "oteryn:quest-transition/native-kills/dragon-slayer-lord",
@@ -135,6 +138,7 @@ pub const COUNTERS: &[Counter] = &[
         maximum: 20,
         authored_stage: false,
         world_change: None,
+        death_area: None,
     },
     Counter {
         transition: "oteryn:quest-transition/native-kills/cave-explorer",
@@ -145,6 +149,7 @@ pub const COUNTERS: &[Counter] = &[
         maximum: 20,
         authored_stage: false,
         world_change: None,
+        death_area: None,
     },
     Counter {
         transition: "oteryn:quest-transition/native-kills/fire-fighter",
@@ -155,6 +160,7 @@ pub const COUNTERS: &[Counter] = &[
         maximum: 10,
         authored_stage: false,
         world_change: None,
+        death_area: None,
     },
     Counter {
         transition: "oteryn:quest-transition/chosen-source/adventures_of_galthen_quest/s5",
@@ -165,6 +171,7 @@ pub const COUNTERS: &[Counter] = &[
         maximum: 1,
         authored_stage: true,
         world_change: None,
+        death_area: None,
     },
     Counter {
         transition: "oteryn:quest-transition/chosen-source/adventures_of_galthen_quest/s8",
@@ -175,6 +182,7 @@ pub const COUNTERS: &[Counter] = &[
         maximum: 1,
         authored_stage: true,
         world_change: None,
+        death_area: None,
     },
     // Chosen recipe quests-00200-00299.json record23 s4/s5/s6 deliberately omits
     // the full source phases. Crystal201189f creaturescripts_death_first_dragon.lua:21-30
@@ -188,6 +196,88 @@ pub const COUNTERS: &[Counter] = &[
         gate: "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s4",
         maximum: 1,
         world_change: None,
+        death_area: None,
+    },
+    // Crystal 201189f, bigfoot_burden/creaturescripts_wiggler_kill.lua:1-12.
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/bigfoot-exterminators-wiggler",
+        creature: "oteryn:creature.wiggler",
+        quest: "oteryn:quest.bigfoot_s_burden_quest",
+        track: "oteryn:quest-progress/quest/u9_60/bigfoots_burden/exterminated_count",
+        gate: "oteryn:quest-progress/quest/u9_60/bigfoots_burden/mission_exterminators",
+        maximum: 10,
+        authored_stage: false,
+        world_change: None,
+        death_area: None,
+    },
+    // Crystal 201189f, dangerous_depth/creaturescripts_lost_exile_task.lua:47-66 and monster/vermins/deepworm.lua:16-18.
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/dangerous-depths-subterranean-deepworm",
+        creature: "oteryn:creature.deepworm",
+        quest: "oteryn:quest.dangerous_depths_quest",
+        track: "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/organisms",
+        gate: "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/subterranean",
+        maximum: 50,
+        authored_stage: false,
+        world_change: None,
+        death_area: None,
+    },
+    // Crystal 201189f, dangerous_depth/creaturescripts_lost_exile_task.lua:47-66 and monster/vermins/diremaw.lua:16-18.
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/dangerous-depths-subterranean-diremaw",
+        creature: "oteryn:creature.diremaw",
+        quest: "oteryn:quest.dangerous_depths_quest",
+        track: "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/organisms",
+        gate: "oteryn:quest-progress/quest/u11_50/dangerous_depths/dwarves/subterranean",
+        maximum: 50,
+        authored_stage: false,
+        world_change: None,
+        death_area: None,
+    },
+    // Crystal 201189f, spike_tasks/creaturescripts_lower_spike_kill.lua:1-18.
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/spike-lower-kill",
+        creature: "oteryn:creature.drillworm",
+        quest: "oteryn:quest.spike_task",
+        track: "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_main",
+        gate: "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_lower_kill_active",
+        maximum: 7,
+        authored_stage: false,
+        world_change: None,
+        death_area: Some(super::authored_bindings::kills::DeathArea {
+            minimum: [32120, 32470, 13],
+            maximum: [32345, 32710, 15],
+        }),
+    },
+    // Crystal 201189f, spike_tasks/creaturescripts_middle_spike_kill.lua:1-18.
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/spike-middle-kill",
+        creature: "oteryn:creature.crystalcrusher",
+        quest: "oteryn:quest.spike_task",
+        track: "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_main",
+        gate: "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_middle_kill_active",
+        maximum: 7,
+        authored_stage: false,
+        world_change: None,
+        death_area: Some(super::authored_bindings::kills::DeathArea {
+            minimum: [32100, 32470, 11],
+            maximum: [32380, 32725, 12],
+        }),
+    },
+    // Crystal 201189f, spike_tasks/creaturescripts_upper_spike_kill.lua:1-18.
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/spike-upper-kill",
+        creature: "oteryn:creature.demon_skeleton",
+        quest: "oteryn:quest.spike_task",
+        track: "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_main",
+        gate: "oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_active",
+        maximum: 7,
+        authored_stage: false,
+        world_change: None,
+        death_area: Some(super::authored_bindings::kills::DeathArea {
+            minimum: [32008, 32522, 8],
+            maximum: [32365, 32759, 10],
+        }),
     },
 ];
 
@@ -239,6 +329,7 @@ pub(crate) fn counters() -> impl Iterator<Item = &'static Counter> {
         .iter()
         .chain(qworld::counters().unwrap_or_default())
         .chain(fugue::COUNTERS)
+        .chain(super::grizzly_adams::regional_tasks::COUNTERS)
         .chain(
             super::world_change_journals::counters()
                 .into_iter()
@@ -251,6 +342,7 @@ pub(super) fn registered_counters() -> Result<impl Iterator<Item = &'static Coun
     Ok(COUNTERS
         .iter()
         .chain(fugue::COUNTERS)
+        .chain(super::grizzly_adams::regional_tasks::COUNTERS)
         .chain(phase_settlements::COUNTERS)
         .chain(qworld::counters()?)
         .chain(super::world_change_journals::counters()?))

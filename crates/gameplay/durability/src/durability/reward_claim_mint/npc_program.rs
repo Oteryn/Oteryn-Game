@@ -38,7 +38,19 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
     let Some(rule) = plan.selected_rule_keys.first() else {
         return Ok(Err(RewardClaimMintError::InvalidInput));
     };
-    let claim_key = crate::durability::quest_state::npc_program::hot_cuisine_m42::claim_key(plan)?;
+    let claim_key = if plan.quest == "oteryn:quest.bigfoot_s_burden_quest" {
+        // The NPC source trigger checks the same rule and command-bound claim key.
+        sqlx::query_scalar("SELECT game_quest_npc_reward_claim_key($1,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric)")
+            .bind(serde_json::json!({"quest": plan.quest}))
+            .bind(rule)
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(command.game_session_id().as_bytes().as_slice())
+            .bind(command.command_id().get().to_string())
+            .fetch_one(&mut ***tx)
+            .await?
+    } else {
+        crate::durability::quest_state::npc_program::hot_cuisine_m42::claim_key(plan, command)?
+    };
     let context: Option<(String, String)> = sqlx::query_as("SELECT ruleset_revision,simulation_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     let Some((ruleset_revision, sim_revision)) = context else {

@@ -172,7 +172,7 @@ pub fn gate(key: &str) -> Option<&'static Gate> {
 }
 pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
     activation_callbacks().chain(GATES.iter().map(|gate| {
-        let mut effects=CallbackEffectSet::default();effects.magic=Some(MagicEffect {position:gate.destination,effect:gate.effect});
+        let mut effects=CallbackEffectSet::default();effects.magic=Some(MagicEffect {position:Some(gate.destination),effect:gate.effect});
         Callback {
         use_range: 1,
         disguise: None,

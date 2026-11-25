@@ -116,13 +116,11 @@ WorldProject v2 (PROF-CONTENT-1b). `content/world` stays unmodified.
 - **Threshold class:** `item_weapon_proficiency.py` applies the rule (D197, D198, D200) to each binding
   when content is built and writes it to `content/proficiencies/bindings.json`; the Item Authoring
   Schema CI drift-checks it (`--check`).
-- **Result:** 665 weapons bound: 470 standard, 158 knight, 37 crossbow (642 before ITEM-ADD-1 added
+- **Result:** 666 weapons bound: 471 standard, 158 knight, 37 crossbow (642 before ITEM-ADD-1 added
   the donor epoch-2 Items; Snowball with Ice Shards 53855 is an admitted appearance-only Item
   bound to p474 Standard without materialization or weapon-mechanics inference).
-- **Not bound:**
-  - 1 weapon whose class is `unknown` (ink sword 51666);
-
-  Ink Sword is only counted (`excluded`), and it gets no proficiency until its threshold evidence is admitted.
+- Ink Sword (51666) binds p371 Standard. TibiaWiki revision 1188273 identifies the sword
+  and lists no vocation requirement.
 
 ## Content population
 
@@ -141,11 +139,11 @@ python test_proficiency_authoring.py
 ## Native server data import
 
 The server API `import_committed_weapon_proficiency_data()` imports 443 definitions, 3671
-source-ordered perks, 665 admitted weapon bindings and the complete accepted progression ruleset
+source-ordered perks, 666 admitted weapon bindings and the complete accepted progression ruleset
 (including all three threshold tables, source/revision, kill-credit and points data).
 It retains definition revisions and source provenance and converts decimals to exact ratios.
 Unresolved revisions, duplicate definitions/weapons, malformed perk shapes and ruleset drift
-refuse the complete import. Ink Sword (no admitted Item identity yet) stays unbound.
+refuse the complete import. Ink Sword has a Standard threshold binding and no evidenced shaping pool.
 
 Export the actual server import as JSON:
 

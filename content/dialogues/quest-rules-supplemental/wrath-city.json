@@ -1,0 +1,178 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.wrath-city",
+  "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission05",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gate_guardian.lua:56-69"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 34,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gate_guardian.lua:56-69"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/wrath-city/gate-offer",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.gate_guardian",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "pass"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0,
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "op": "eq",
+          "value": 13
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission05",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Do you seek admission to the city?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gate_guardian.lua:56-69"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/wrath-city/gate-admission",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.gate_guardian",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "op": "eq",
+          "value": 13
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission05",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Your papers are in order. You may pass."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "value": 22
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission05",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        },
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 33114,
+            "y": 31197,
+            "floor": -7
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gate_guardian.lua:56-69"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/wrath-city/gate-decline",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.gate_guardian",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        1
+      ],
+      "guards": [],
+      "reply": [
+        "Then stay outside the city."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gate_guardian.lua:56-69"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/gate_guardian.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "b5a6ca3eda4d01f4effbe4bbef918a244b20bd4a512b9f8172b8da02d5126939"
+    },
+    {
+      "path": "data-global/npc/zalamon.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "6e4413732e7aee8b72a3263798aa50268139a80d04c5f47e4f3b35e51d645465"
+    },
+    {
+      "path": "data-global/npc/zlak.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "9999e7313ecee3b95c97941ee7463e8304165194e7db3dff5b610843239826c3"
+    }
+  ]
+}

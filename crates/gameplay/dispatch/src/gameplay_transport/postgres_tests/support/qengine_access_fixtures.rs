@@ -693,6 +693,8 @@ async fn wardrobe(
         .clone()
         .ok_or("wardrobe outfit")?;
     let seed = RewardCallback {
+        msg_contains: false,
+        clear_topic_on_refusal: false,
         account_reservation: None,
         repeatable: false,
         required_claims: Vec::new(),
@@ -722,6 +724,7 @@ async fn wardrobe(
         quest: callback.quest.clone(),
         npc: "oteryn:npc.fixture".into(),
         keywords: vec!["fixture".into()],
+        exclude_keywords: vec![],
         topic: 0,
         next_topic: 0,
         storage: callback.storage.clone(),

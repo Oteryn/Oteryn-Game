@@ -2,6 +2,7 @@
 use super::{NpcDefinitionPredecessor, QuestStateCatalogue};
 
 type DefinitionHash = [u8; 32];
+type PredecessorPin = (&'static str, DefinitionHash, &'static [DefinitionHash]);
 
 const fn hash(hex: &[u8; 64]) -> DefinitionHash {
     const fn digit(byte: u8) -> u8 {
@@ -127,7 +128,7 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
 
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
 // new rules bound to the new hash. Existing absent-track defaults did not change.
-const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
+const GAMEPLAY_PREDECESSORS: &[PredecessorPin] = &[
     (
         "oteryn:quest.ferumbras_ascension_quest",
         hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
@@ -152,6 +153,27 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
 ];
 
+// Captured from 3e099164 and origin/main with quest_definition_hashes.
+// The daily bindings add tracks and operations while retaining existing defaults.
+const DAILY_PREDECESSORS: &[(&str, DefinitionHash)] = &[
+    (
+        "oteryn:quest.bigfoot_s_burden_quest",
+        hash(b"5ec0c3c6eb10e5876e39fd742b9fa39905980b2d81cea8077116aef91f873258"),
+    ),
+    (
+        "oteryn:quest.dangerous_depths_quest",
+        hash(b"b19e1d3f99ecdaf123501f7ba3a54ca184be811b7e4e6a9f8c6f3307f32a0acb"),
+    ),
+    (
+        "oteryn:quest.dangerous_depths_quest",
+        hash(b"7fa750757e1538451eef088596b846c0bd4369b78b40a0c57efdbcb047ee6830"),
+    ),
+    (
+        "oteryn:quest.spike_task",
+        hash(b"056a2e30ee5ff71b52331a31967a02804df035b2f8b0befe321d8869809829bb"),
+    ),
+];
+
 pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> DefinitionHash {
     CITATION_REFRESHES
         .iter()
@@ -160,7 +182,72 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
 }
 
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
-    for &(quest, current, previous) in GAMEPLAY_PREDECESSORS {
+    retain(catalogue, GAMEPLAY_PREDECESSORS);
+    for &(quest, previous) in DAILY_PREDECESSORS {
+        if catalogue
+            .definition_hash(quest)
+            .is_some_and(|current| current != previous)
+        {
+            catalogue
+                .predecessors
+                .entry(quest.into())
+                .or_default()
+                .push(NpcDefinitionPredecessor {
+                    hash: previous,
+                    defaults: Default::default(),
+                });
+        }
+    }
+}
+
+pub(super) fn retain_hunt_and_wrath_predecessors(catalogue: &mut QuestStateCatalogue) {
+    // Captured with quest_definition_hashes on the merge base, origin/main,
+    // the reviewed branch tips, and the current catalogue. Existing defaults are unchanged.
+    const PINS: &[PredecessorPin] = &[
+        (
+            "oteryn:quest.killing_in_the_name_of_quest",
+            hash(b"4a317ee678707134f01b13b2bd781e299c7d781df6bb6efb644259f7b62085d3"),
+            &[
+                hash(b"dbb0bbd7ead5a280f2085e685637ff0071e3c04013fb937376d89901950e6e61"),
+                hash(b"eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5"),
+                hash(b"a7f389a365008c76a903abdf77166d015d73d5824067df9b08a83d89d00d06c2"),
+                hash(b"c52fbe6ca8b4f44b34216ac7f1b1220cf101d4af00d8991fa45cabe4847a3294"),
+                hash(b"0fd0c8c8cc7691bd22cb31db5f67fbdff23d2a452ce2388e08e019739b789f27"),
+            ],
+        ),
+        (
+            "oteryn:quest.wrath_of_the_emperor_quest",
+            hash(b"542b939eb16b9ce3692470efa448e7a90e5dfc3e409061960aa894cb90fd3ba6"),
+            &[
+                hash(b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86"),
+                hash(b"58e9e5d6281350894a50b1903b1bce8e3bcc0c8f67d20407f7ef73ae8313a7cf"),
+            ],
+        ),
+    ];
+    retain(catalogue, PINS);
+    retain(catalogue, TOKEN_EXCHANGE_PREDECESSORS);
+}
+
+// Generated with quest_definition_hashes on main and the reviewed exchange catalogue.
+const TOKEN_EXCHANGE_PREDECESSORS: &[PredecessorPin] = &[
+    (
+        "oteryn:quest.hunting_for_tokens",
+        hash(b"48caf0d645e2b8d2763906efe45fb95363aaa5115f2e8a918f57c05417e7a979"),
+        &[hash(
+            b"f68593b143c5de45970b3a2375e9264d9781bc7968f59cc67c218b4e66cd05b3",
+        )],
+    ),
+    (
+        "oteryn:quest.rift_warrior_outfits_quest",
+        hash(b"2bea7fe1165bfca2838ecf0913dee9dbbe253b05e001f367ae19944a020abc49"),
+        &[hash(
+            b"c78651384e378afe5e740ecccbbd20354a80c4baf1abf6190fae1d21247c1a94",
+        )],
+    ),
+];
+
+fn retain(catalogue: &mut QuestStateCatalogue, pins: &[PredecessorPin]) {
+    for &(quest, current, previous) in pins {
         if catalogue.definition_hash(quest) == Some(current) {
             catalogue
                 .predecessors
@@ -178,6 +265,110 @@ pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
 mod tests {
     use super::*;
     use crate::quest::{loader, npc_rules};
+
+    #[test]
+    fn review_batch_loads_merge_base_quest_saves() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        // Captured with quest_definition_hashes on the merge base d481467205
+        // and origin/main 896958e567 (identical quest loader inputs).
+        let saved = [
+            (
+                "oteryn:quest.bigfoot_s_burden_quest",
+                hash(b"5ec0c3c6eb10e5876e39fd742b9fa39905980b2d81cea8077116aef91f873258"),
+            ),
+            (
+                "oteryn:quest.dangerous_depths_quest",
+                hash(b"7fa750757e1538451eef088596b846c0bd4369b78b40a0c57efdbcb047ee6830"),
+            ),
+            (
+                "oteryn:quest.hunting_for_tokens",
+                hash(b"f68593b143c5de45970b3a2375e9264d9781bc7968f59cc67c218b4e66cd05b3"),
+            ),
+            (
+                "oteryn:quest.killing_in_the_name_of_quest",
+                hash(b"eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5"),
+            ),
+            (
+                "oteryn:quest.spike_task",
+                hash(b"056a2e30ee5ff71b52331a31967a02804df035b2f8b0befe321d8869809829bb"),
+            ),
+            (
+                "oteryn:quest.wrath_of_the_emperor_quest",
+                hash(b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86"),
+            ),
+        ];
+        let mut refused = Vec::new();
+        for (quest, stored_hash) in saved {
+            if catalogue.definition_hash(quest) != Some(stored_hash)
+                && npc_rules::legacy_defaults(catalogue, quest, &stored_hash).is_none()
+            {
+                refused.push(quest);
+            }
+        }
+        assert!(refused.is_empty(), "merge-base saves refused: {refused:?}");
+        Ok(())
+    }
+
+    #[test]
+    fn token_exchanges_keep_unfinished_published_saves_readable() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let mut rejected = Vec::new();
+        for (quest, published) in [
+            (
+                "oteryn:quest.hunting_for_tokens",
+                hash(b"f68593b143c5de45970b3a2375e9264d9781bc7968f59cc67c218b4e66cd05b3"),
+            ),
+            (
+                "oteryn:quest.rift_warrior_outfits_quest",
+                hash(b"c78651384e378afe5e740ecccbbd20354a80c4baf1abf6190fae1d21247c1a94"),
+            ),
+        ] {
+            assert_ne!(catalogue.definition_hash(quest), Some(published));
+            if npc_rules::legacy_defaults(catalogue, quest, &published).is_none() {
+                rejected.push(quest);
+            }
+        }
+        assert!(rejected.is_empty(), "published saves refused: {rejected:?}");
+        Ok(())
+    }
+    #[test]
+    fn hunting_and_wrath_loaders_accept_published_saves() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        for (quest, predecessor) in [
+            (
+                "oteryn:quest.killing_in_the_name_of_quest",
+                hash(b"eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5"),
+            ),
+            (
+                "oteryn:quest.killing_in_the_name_of_quest",
+                hash(b"a7f389a365008c76a903abdf77166d015d73d5824067df9b08a83d89d00d06c2"),
+            ),
+            (
+                "oteryn:quest.killing_in_the_name_of_quest",
+                hash(b"c52fbe6ca8b4f44b34216ac7f1b1220cf101d4af00d8991fa45cabe4847a3294"),
+            ),
+            (
+                "oteryn:quest.wrath_of_the_emperor_quest",
+                hash(b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86"),
+            ),
+            (
+                "oteryn:quest.wrath_of_the_emperor_quest",
+                hash(b"58e9e5d6281350894a50b1903b1bce8e3bcc0c8f67d20407f7ef73ae8313a7cf"),
+            ),
+        ] {
+            assert_ne!(catalogue.definition_hash(quest), Some(predecessor));
+            let defaults = npc_rules::legacy_defaults(catalogue, quest, &predecessor)
+                .ok_or("published predecessor missing")?;
+            assert!(defaults.is_empty());
+        }
+        Ok(())
+    }
 
     #[test]
     fn package_accepts_main_grave_danger_pin_as_predecessor() -> Result<(), String> {
@@ -205,6 +396,14 @@ mod tests {
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
 
+        for &(quest, pin) in DAILY_PREDECESSORS {
+            assert_ne!(catalogue.definition_hash(quest), Some(pin), "{quest}");
+            assert_eq!(
+                npc_rules::legacy_defaults(catalogue, quest, &pin),
+                Some(&Default::default()),
+                "{quest}"
+            );
+        }
         for &(quest, refreshed, published) in CITATION_REFRESHES {
             assert_eq!(published_hash(quest, refreshed), published, "{quest}");
             if quest == "oteryn:quest.grave_danger_quest" {

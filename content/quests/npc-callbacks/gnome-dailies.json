@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/bigfoot-daily/crystal-packages-opened",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/actions_package.lua:1-7"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/bigfoot-daily/unpack-crystal",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "npc": "oteryn:npc.gnomeral",
+      "keywords": [
+        "unpack crystal"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/bigfoot-daily/crystal-packages-opened",
+          "effect": {
+            "kind": "add",
+            "value": 1
+          },
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 9223372036854775806
+          }
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i15802",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i15801",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You unpack the lonely crystal."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/actions_package.lua:1-7"
+      ],
+      "carried_item": "oteryn:item.tibia.i15802",
+      "carried_exchange": true,
+      "per_occurrence_mint": true
+    }
+  ]
+}

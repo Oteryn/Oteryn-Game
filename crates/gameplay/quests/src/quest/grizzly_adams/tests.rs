@@ -672,8 +672,7 @@ fn grizzly_native_catalogue_keeps_old_keys_and_refuses_contextless_actions() -> 
 }
 
 #[test]
-fn grizzly_real_quest_log_shows_live_counts_and_preserves_other_npc_exclusions()
--> Result<(), String> {
+fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
     use crate::quest::log::{QuestLogFacts, QuestLogState};
     struct Facts(GrizzlyState);
     impl QuestLogFacts for Facts {
@@ -696,29 +695,8 @@ fn grizzly_real_quest_log_shows_live_counts_and_preserves_other_npc_exclusions()
         .ok_or("missing journal")?;
     let quest = &loaded.content.active().quests()[index];
     assert_eq!(quest.start, Some((storage_track(QUEST_LOG_STORAGE), 0)));
-    // The source has 87 missions: W15c admits all 78 Grizzly missions. The nine other
-    // NPCs' journals still lack supported ordered template bindings in the existing loader.
-    assert_eq!(quest.missions.len(), 78);
-    let excluded: std::collections::BTreeSet<_> = loaded
-        .exclusions
-        .iter()
-        .filter(|entry| entry.quest == QUEST)
-        .filter_map(|entry| entry.mission.as_deref())
-        .collect();
-    assert_eq!(
-        excluded,
-        std::collections::BTreeSet::from([
-            "the_marid_green_djinns",
-            "the_efreet_blue_djinns",
-            "meriana_rebels_pirates",
-            "turmoil_of_war",
-            "lugri_necromancers_and_priestesses",
-            "edron_city_trolls",
-            "edron_city_goblins",
-            "edron_city_rotworms",
-            "edron_city_cyclops",
-        ])
-    );
+    assert_eq!(quest.missions.len(), 87);
+    assert!(!loaded.exclusions.iter().any(|entry| entry.quest == QUEST));
     let index = u32::try_from(index).map_err(|error| error.to_string())?;
     assert!(
         loaded
@@ -750,5 +728,849 @@ fn grizzly_real_quest_log_shows_live_counts_and_preserves_other_npc_exclusions()
     assert!(mission.text.contains("1/300"));
     assert!(mission.text.contains("kongra: 1"));
     assert!(!mission.done);
+    Ok(())
+}
+
+#[test]
+fn regional_boss_handoffs_remain_refused_without_the_boss_routes() -> Result<(), String> {
+    use crate::quest::reward_callbacks::{load_for, offered_for};
+    let loaded = crate::quest::loader::load_embedded_quest_state("regional-boss-partial")
+        .map_err(|error| format!("{error:?}"))?;
+    let historical = load_for(loaded.catalogue())?;
+    let offered = offered_for(loaded.catalogue())?;
+    for task in ["blue-djinns", "green-djinns", "minotaurs", "necromancers"] {
+        let key = format!("oteryn:quest-reward/hunting-tasks/{task}/report");
+        assert!(
+            historical.iter().any(|callback| callback.key == key),
+            "{key}"
+        );
+        assert!(
+            !offered.iter().any(|callback| callback.key == key),
+            "PARTIAL boss route cannot advance the quota: {key}"
+        );
+    }
+    let pirate_report = offered
+        .iter()
+        .find(|callback| callback.key == "oteryn:quest-reward/hunting-tasks/pirates/report")
+        .ok_or("Pirate quota pays before the boss stage")?;
+    assert!(pirate_report.give.is_some());
+    assert!(pirate_report.experience.is_some());
+    let programme = crate::quest::npc_rules::NpcRuleCatalog::runtime()
+        .map_err(|error| error.to_string())?
+        .admitted_for_npc(&pirate_report.npc, loaded.catalogue())
+        .map_err(|error| error.to_string())?
+        .ok_or("Pirate hunting programme")?;
+    let mut tracks: BTreeMap<_, _> = pirate_report
+        .requires
+        .iter()
+        .map(|requirement| (requirement.track.clone(), requirement.minimum))
+        .collect();
+    tracks.extend(
+        pirate_report
+            .storage
+            .iter()
+            .map(|storage| (storage.track.clone(), storage.set)),
+    );
+    let input = crate::quest::npc_rules::NpcRuleInput {
+        npc: &pirate_report.npc,
+        trigger: crate::quest::npc_rules::NpcRuleTrigger::Say,
+        message: "task",
+        player_name: None,
+        topic: 0,
+        tracks: &tracks,
+        inventory: &Default::default(),
+        now_epoch_seconds: 1_700_000_000,
+        calendar_month: 11,
+        premium_current: true,
+        level: 60,
+        vocation: "oteryn:vocation.knight",
+        sex: 0,
+        outfits: &BTreeMap::new(),
+    };
+    assert!(
+        programme
+            .plan_storage(&input)
+            .map_err(|error| error.to_string())?
+            .is_none(),
+        "PARTIAL pirate repeat requires the original boss route"
+    );
+    Ok(())
+}
+
+#[test]
+fn non_paw_and_fur_tasks_load_with_native_counters_and_journals() -> Result<(), String> {
+    let lowered = crate::quest::loader::load_embedded_quest_state("killing-in-the-name-test")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = lowered.catalogue();
+    let log = crate::quest::log::loader::load_embedded_quest_log(&lowered)?;
+    let journal = log
+        .content
+        .active()
+        .quests()
+        .iter()
+        .find(|quest| quest.key == QUEST)
+        .ok_or("missing Killing in the Name Of journal")?;
+    assert_eq!(journal.missions.len(), 87);
+    // Validate retained report transitions as well as live offers. The partial boss
+    // handoffs have a separate admission test.
+    let callbacks = crate::quest::reward_callbacks::load_for(catalogue)?;
+    let rules =
+        crate::quest::npc_rules::NpcRuleCatalog::runtime().map_err(|error| error.to_string())?;
+    for (task, quota, creatures) in [
+        ("trolls", 100, &["troll", "troll_champion"][..]),
+        (
+            "goblins",
+            150,
+            &["goblin", "goblin_scavenger", "goblin_assassin"],
+        ),
+        ("rotworms", 300, &["rotworm", "carrion_worm"]),
+        (
+            "cyclops",
+            500,
+            &["cyclops", "cyclops_drone", "cyclops_smith"],
+        ),
+        ("green-djinns", 500, &["green_djinn", "efreet"]),
+        ("blue-djinns", 500, &["blue_djinn", "marid"]),
+        (
+            "pirates",
+            3000,
+            &[
+                "pirate_marauder",
+                "pirate_cutthroat",
+                "pirate_buccaneer",
+                "pirate_corsair",
+            ],
+        ),
+        (
+            "minotaurs",
+            5000,
+            &[
+                "minotaur",
+                "minotaur_guard",
+                "minotaur_mage",
+                "minotaur_archer",
+            ],
+        ),
+        (
+            "necromancers",
+            4000,
+            &[
+                "necromancer",
+                "priestess",
+                "blood_priest",
+                "blood_hand",
+                "shadow_pupil",
+            ],
+        ),
+    ] {
+        let report_key = format!("oteryn:quest-reward/hunting-tasks/{task}/report");
+        let report = callbacks
+            .iter()
+            .find(|c| c.key == report_key)
+            .ok_or("report callback")?;
+        let programme = rules
+            .admitted_for_npc(&report.npc, catalogue)
+            .map_err(|error| error.to_string())?
+            .ok_or("hunting programme")?;
+        let acceptance_key = format!("oteryn:quest-npc/hunting-tasks/{task}/accept");
+        let acceptance = programme
+            .programs()
+            .iter()
+            .flat_map(|program| &program.document.rules)
+            .find(|rule| rule.key == acceptance_key)
+            .ok_or("acceptance rule")?;
+        let phase = format!("oteryn:quest-progress/hunting-tasks/{task}/phase");
+        let count = format!("oteryn:quest-progress/hunting-tasks/{task}/count");
+        assert!(
+            journal
+                .missions
+                .iter()
+                .any(|mission| mission.track == phase)
+        );
+        assert!(
+            report
+                .storage
+                .iter()
+                .any(|storage| storage.track == count && storage.minimum == quota)
+        );
+        let mut tracks = BTreeMap::from([
+            (
+                "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry".into(),
+                -1,
+            ),
+            (
+                "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03".into(),
+                3,
+            ),
+            (
+                "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03".into(),
+                3,
+            ),
+            (
+                "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4".into(),
+                5,
+            ),
+            (
+                "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest".into(),
+                2,
+            ),
+        ]);
+        if task == "goblins" {
+            tracks.insert("oteryn:quest-progress/hunting-tasks/trolls/phase".into(), 2);
+        }
+        let level = match task {
+            "trolls" | "goblins" => 6,
+            "rotworms" => 20,
+            "cyclops" => 30,
+            "necromancers" => 60,
+            _ => 10,
+        };
+        let input = crate::quest::npc_rules::NpcRuleInput {
+            npc: &report.npc,
+            trigger: crate::quest::npc_rules::NpcRuleTrigger::Say,
+            message: "yes",
+            player_name: None,
+            topic: acceptance.topics.as_ref().ok_or("acceptance topic")?[0],
+            tracks: &tracks,
+            inventory: &Default::default(),
+            now_epoch_seconds: 1_700_000_000,
+            calendar_month: 11,
+            premium_current: true,
+            level,
+            vocation: "oteryn:vocation.knight",
+            sex: 0,
+            outfits: &BTreeMap::new(),
+        };
+        // Crystal matches "task" within a phrase and Budrik uses the exact "mission" opener.
+        let ask = if task == "minotaurs" {
+            "mission"
+        } else {
+            "can I take the task?"
+        };
+        let quote = programme
+            .plan_storage(&crate::quest::npc_rules::NpcRuleInput {
+                message: ask,
+                topic: 0,
+                ..input
+            })
+            .map_err(|error| error.to_string())?
+            .ok_or_else(|| format!("{task} phrased offer refused"))?;
+        assert_eq!(quote.next_topic, input.topic, "{task}");
+        if task != "minotaurs" {
+            for message in ["yes, about the task", "no, about the task"] {
+                let repeated = programme
+                    .plan_storage(&crate::quest::npc_rules::NpcRuleInput { message, ..input })
+                    .map_err(|error| error.to_string())?
+                    .ok_or_else(|| format!("{task} did not repeat the prompt for {message:?}"))?;
+                assert_eq!(repeated.next_topic, input.topic, "{task}: {message}");
+                assert!(repeated.track_changes.is_empty(), "{task}: {message}");
+                assert_eq!(repeated.selected_rule_keys, quote.selected_rule_keys);
+            }
+        }
+        let phrased_accept = programme
+            .plan_storage(&crate::quest::npc_rules::NpcRuleInput {
+                message: "yes please",
+                ..input
+            })
+            .map_err(|error| error.to_string())?
+            .ok_or_else(|| format!("{task} phrased acceptance refused"))?;
+        assert_eq!(
+            phrased_accept.selected_rule_keys.as_slice(),
+            std::slice::from_ref(&acceptance_key)
+        );
+        let report_request = if task == "minotaurs" {
+            "mission"
+        } else {
+            "I finished the task"
+        };
+        assert!(report.matches_keyword(report_request), "{task}");
+        let prefix = format!("oteryn:quest-transition/native-kills/hunting-tasks/{task}/");
+        assert!(
+            !crate::quest::native_kills::active_for(catalogue, &tracks)
+                .iter()
+                .any(|key| key.starts_with(&prefix))
+        );
+        let plan = programme
+            .plan_storage(&input)
+            .map_err(|error| error.to_string())?
+            .ok_or("eligible task refused")?;
+        assert_eq!(plan.selected_rule_keys, [acceptance_key]);
+        assert!(
+            plan.track_changes
+                .iter()
+                .any(|change| change.key == phase && change.after == 1)
+        );
+        tracks.extend(
+            plan.track_changes
+                .into_iter()
+                .map(|change| (change.key, change.after)),
+        );
+        let active = crate::quest::native_kills::active_for(catalogue, &tracks);
+        let report_transition = crate::quest::reward_callbacks::primary_transition(report)?;
+        assert!(matches!(
+            catalogue.evaluate(&report_transition, &tracks, 0),
+            Err(crate::quest::QuestRefusal::StageMismatch)
+        ));
+        tracks.insert(count.clone(), quota - 1);
+        for creature in creatures {
+            let key =
+                format!("oteryn:quest-transition/native-kills/hunting-tasks/{task}/{creature}");
+            assert!(active.contains(&key), "inactive counter {key}");
+            let counter = crate::quest::native_kills::counter_for(catalogue, &key).ok_or(key)?;
+            assert_eq!(counter.creature, format!("oteryn:creature.{creature}"));
+            assert_eq!(counter.maximum, quota);
+            let death = catalogue
+                .transition(counter.transition)
+                .ok_or("death transition")?;
+            let changes = catalogue
+                .evaluate(death, &tracks, 0)
+                .map_err(|refusal| format!("{refusal:?}"))?;
+            assert!(
+                changes
+                    .iter()
+                    .any(|change| change.track == count && change.after == quota)
+            );
+        }
+        tracks.insert(count, quota);
+        let reported = catalogue
+            .evaluate(&report_transition, &tracks, 0)
+            .map_err(|refusal| format!("{refusal:?}"))?;
+        assert!(
+            reported
+                .iter()
+                .any(|change| change.track == phase && change.after == 2)
+        );
+        tracks.insert(phase, 2);
+        assert!(matches!(
+            catalogue.evaluate(&report_transition, &tracks, 0),
+            Err(crate::quest::QuestRefusal::StageMismatch)
+        ));
+    }
+    Ok(())
+}
+
+#[test]
+fn wrath_mission_five_loads_admission_handoff_and_city_routes() -> Result<(), String> {
+    let lowered = crate::quest::loader::load_embedded_quest_state("wrath-city-test")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = lowered.catalogue();
+    let callbacks = crate::quest::reward_callbacks::offered_for(catalogue)?;
+    for action in [
+        "briefing",
+        "supplies-accept",
+        "supplies-report",
+        "zlak-handoff",
+    ] {
+        assert!(
+            callbacks
+                .iter()
+                .any(|c| c.key == format!("oteryn:quest-reward/wrath-city/{action}"))
+        );
+    }
+    let briefing = callbacks
+        .iter()
+        .find(|c| c.key == "oteryn:quest-reward/wrath-city/briefing")
+        .ok_or("briefing")?;
+    assert!(briefing.requires.iter().any(|guard| guard.track
+        == "oteryn:quest-progress/wrath-city/supplies"
+        && guard.minimum == 2
+        && guard.maximum == 2));
+    assert!(briefing.matches_keyword("tell me about the mission"));
+    let handoff = callbacks
+        .iter()
+        .find(|c| c.key == "oteryn:quest-reward/wrath-city/zlak-handoff")
+        .ok_or("handoff")?;
+    assert!(handoff.matches_keyword("tell me about the mission"));
+    let gates = crate::quest::npc_rules::NpcRuleCatalog::runtime()
+        .and_then(|rules| rules.admitted_for_npc("oteryn:npc.gate_guardian", catalogue))
+        .map_err(|error| error.to_string())?
+        .ok_or("Gate Guardian programme")?;
+    let questline = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline";
+    let mission = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission05";
+    for (stage, step, can_enter) in [(12, 0, false), (13, 1, true), (22, 2, false)] {
+        let facts = BTreeMap::from([(questline.into(), stage), (mission.into(), step)]);
+        let input = crate::quest::npc_rules::NpcRuleInput {
+            npc: "oteryn:npc.gate_guardian",
+            trigger: crate::quest::npc_rules::NpcRuleTrigger::Say,
+            message: "yes",
+            player_name: None,
+            topic: 1,
+            tracks: &facts,
+            inventory: &Default::default(),
+            now_epoch_seconds: 1_700_000_000,
+            calendar_month: 11,
+            premium_current: true,
+            level: 80,
+            vocation: "oteryn:vocation.knight",
+            sex: 0,
+            outfits: &BTreeMap::new(),
+        };
+        let offer = gates
+            .plan_storage(&crate::quest::npc_rules::NpcRuleInput {
+                message: "can I have a pass?",
+                topic: 0,
+                ..input
+            })
+            .map_err(|error| error.to_string())?;
+        assert_eq!(offer.map(|plan| plan.next_topic), can_enter.then_some(1));
+        for message in ["yes, I need a pass", "yes, about the mission"] {
+            let combined = crate::quest::npc_rules::NpcRuleInput { message, ..input };
+            assert!(
+                gates
+                    .plan_storage_teleport(&combined)
+                    .map_err(|error| error.to_string())?
+                    .is_none(),
+                "prompt keyword should win at stage {stage}: {message}"
+            );
+            let repeated = gates
+                .plan_storage(&combined)
+                .map_err(|error| error.to_string())?;
+            assert_eq!(repeated.map(|plan| plan.next_topic), can_enter.then_some(1));
+        }
+        let confirmed = gates
+            .plan_storage_teleport(&crate::quest::npc_rules::NpcRuleInput {
+                message: "yes please",
+                ..input
+            })
+            .map_err(|error| error.to_string())?;
+        assert_eq!(confirmed.is_some(), can_enter);
+        let entry = gates
+            .plan_storage_teleport(&input)
+            .map_err(|error| error.to_string())?;
+        assert_eq!(entry.is_some(), can_enter);
+        if let Some(entry) = entry {
+            assert_eq!(
+                (
+                    entry.destination.x,
+                    entry.destination.y,
+                    entry.destination.floor
+                ),
+                (33114, 31197, -7)
+            );
+            assert!(
+                entry
+                    .source
+                    .track_changes
+                    .iter()
+                    .any(|change| change.key == questline && change.after == 22)
+            );
+        }
+    }
+    let world = crate::quest::world_callbacks::load_for(catalogue)?;
+    for action in [
+        "supply-crate",
+        "supply-fish",
+        "feed-prisoners",
+        "rebel-to-city",
+        "city-to-rebel-north",
+        "city-to-rebel-south",
+    ] {
+        let key = format!("oteryn:quest-callback/authored-wrath-city-{action}");
+        let callback = world.iter().find(|c| c.key == key).ok_or(key)?;
+        assert!(callback.selector.native.is_some());
+        if callback.teleport.is_some() {
+            assert!(callback.is_read_only());
+            assert!(callback.return_on_failure);
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn daniel_repeats_a_reported_starter_hunt_only_from_the_choice_prompt() -> Result<(), String> {
+    use crate::quest::npc_rules::{NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger};
+    let loaded = crate::quest::loader::load_embedded_quest_state("daniel-repeat")
+        .map_err(|error| format!("{error:?}"))?;
+    let npc = "oteryn:npc.daniel_steelsoul";
+    let programme = NpcRuleCatalog::runtime()
+        .and_then(|rules| rules.admitted_for_npc(npc, loaded.catalogue()))
+        .map_err(|error| error.to_string())?
+        .ok_or("Daniel hunting programme")?;
+    let phase = |task| format!("oteryn:quest-progress/hunting-tasks/{task}/phase");
+    let count = |task| format!("oteryn:quest-progress/hunting-tasks/{task}/count");
+    let tracks = BTreeMap::from([
+        (phase("trolls"), 2),
+        (phase("goblins"), 2),
+        (count("trolls"), 100),
+        (count("goblins"), 150),
+    ]);
+    let input = NpcRuleInput {
+        npc,
+        trigger: NpcRuleTrigger::Say,
+        message: "task",
+        player_name: None,
+        topic: 0,
+        tracks: &tracks,
+        inventory: &Default::default(),
+        now_epoch_seconds: 1_700_000_000,
+        calendar_month: 11,
+        premium_current: true,
+        level: 19,
+        vocation: "oteryn:vocation.knight",
+        sex: 0,
+        outfits: &BTreeMap::new(),
+    };
+    let choice = programme
+        .plan_storage(&input)
+        .map_err(|error| error.to_string())?
+        .ok_or("repeat choice")?;
+    assert!(choice.track_changes.is_empty());
+    for task in ["trolls", "goblins"] {
+        assert!(
+            choice
+                .reply
+                .iter()
+                .any(|line| line.contains(&format!("{{{task}}}")))
+        );
+        assert!(
+            programme
+                .plan_storage(&NpcRuleInput {
+                    message: task,
+                    ..input
+                })
+                .map_err(|error| error.to_string())?
+                .is_none()
+        );
+        let start = programme
+            .plan_storage(&NpcRuleInput {
+                message: task,
+                topic: choice.next_topic,
+                ..input
+            })
+            .map_err(|error| error.to_string())?
+            .ok_or("repeat start")?;
+        assert_eq!(start.next_topic, 0);
+        assert!(
+            start
+                .track_changes
+                .iter()
+                .any(|change| change.key == phase(task) && change.after == 1)
+        );
+        assert!(
+            start
+                .track_changes
+                .iter()
+                .any(|change| change.key == count(task) && change.after == 0)
+        );
+        assert!(start.track_changes.iter().all(|change| {
+            !change
+                .key
+                .starts_with("oteryn:quest-progress/hunting-tasks/")
+                || change.key == phase(task)
+                || change.key == count(task)
+        }));
+    }
+    assert!(
+        programme
+            .plan_storage(&NpcRuleInput {
+                message: "yes",
+                topic: choice.next_topic,
+                ..input
+            })
+            .map_err(|error| error.to_string())?
+            .is_none()
+    );
+    Ok(())
+}
+
+#[test]
+fn regional_hunt_reports_and_zlak_require_the_donor_keywords() -> Result<(), String> {
+    use crate::quest::reward_callbacks::{load_for, offered_for};
+    let loaded = crate::quest::loader::load_embedded_quest_state("regional-report-keywords")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = load_for(catalogue)?;
+    let offered = offered_for(catalogue)?;
+    let mut unexpected = Vec::new();
+    for (hunt, creature, held) in [
+        ("trolls", "trolls", false),
+        ("goblins", "goblins", false),
+        ("cyclops", "cyclops", false),
+        ("rotworms", "rotworms", false),
+        ("pirates", "pirates", false),
+        ("blue-djinns", "blue djinns", true),
+        ("green-djinns", "green djinns", true),
+        ("minotaurs", "minotaurs", true),
+        ("necromancers", "necromancers", true),
+    ] {
+        let key = format!("oteryn:quest-reward/hunting-tasks/{hunt}/report");
+        let callback = callbacks
+            .iter()
+            .find(|callback| callback.key == key)
+            .ok_or(key)?;
+        assert_eq!(offered.iter().any(|entry| entry.key == callback.key), !held);
+        let positive = if hunt == "minotaurs" {
+            "mission"
+        } else {
+            "I finished the task"
+        };
+        assert!(callback.matches_keyword(positive), "{hunt}");
+        for text in [
+            format!("the {creature} are nearby"),
+            "I have a report".into(),
+        ] {
+            if callback.matches_keyword(&text) {
+                unexpected.push((callback.key.as_str(), text));
+            }
+        }
+    }
+    let zlak = offered
+        .iter()
+        .find(|entry| entry.key == "oteryn:quest-reward/wrath-city/zlak-handoff")
+        .ok_or("Zlak handoff")?;
+    assert!(zlak.matches_keyword("tell me about the mission"));
+    if zlak.matches_keyword("tell me about imperial service") {
+        unexpected.push((zlak.key.as_str(), "tell me about imperial service".into()));
+    }
+    assert!(
+        unexpected.is_empty(),
+        "unexpected reward triggers: {unexpected:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn daniel_declines_to_an_eligible_alternate_hunt() -> Result<(), String> {
+    use crate::quest::npc_rules::{NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger};
+    let loaded = crate::quest::loader::load_embedded_quest_state("daniel-alternate")
+        .map_err(|error| format!("{error:?}"))?;
+    let npc = "oteryn:npc.daniel_steelsoul";
+    let programme = NpcRuleCatalog::runtime()
+        .and_then(|rules| rules.admitted_for_npc(npc, loaded.catalogue()))
+        .map_err(|error| error.to_string())?
+        .ok_or("Daniel hunting programme")?;
+    let phase = |task| format!("oteryn:quest-progress/hunting-tasks/{task}/phase");
+    let mut failures = Vec::new();
+    for (level, trolls, cyclops, expected) in [
+        (19, 0, 0, "goblins"),
+        (19, 2, 0, "trolls"),
+        (30, 0, 0, "rotworms"),
+        (30, 0, 2, "rotworms"),
+    ] {
+        let tracks = BTreeMap::from([(phase("trolls"), trolls), (phase("cyclops"), cyclops)]);
+        let input = NpcRuleInput {
+            npc,
+            trigger: NpcRuleTrigger::Say,
+            message: "task",
+            player_name: None,
+            topic: 0,
+            tracks: &tracks,
+            inventory: &Default::default(),
+            now_epoch_seconds: 1_700_000_000,
+            calendar_month: 11,
+            premium_current: true,
+            level,
+            vocation: "oteryn:vocation.knight",
+            sex: 0,
+            outfits: &BTreeMap::new(),
+        };
+        let mut topic = 0;
+        for message in ["task", "no", "yes"] {
+            let plan = programme
+                .plan_storage(&NpcRuleInput {
+                    message,
+                    topic,
+                    ..input
+                })
+                .map_err(|error| error.to_string())?;
+            let Some(plan) = plan else {
+                failures.push((expected, message));
+                break;
+            };
+            topic = plan.next_topic;
+            if message == "yes" {
+                assert_eq!(topic, 0);
+                assert!(
+                    plan.track_changes
+                        .iter()
+                        .any(|change| { change.key == phase(expected) && change.after == 1 }),
+                    "{expected}"
+                );
+            } else {
+                assert!(plan.track_changes.is_empty(), "{expected}: {message}");
+            }
+        }
+        // At overlapping levels a player can also decline a Rotworms prompt
+        // opened just before reaching level 30.
+        if level == 30 && cyclops == 0 {
+            let rotworms = programme
+                .plan_storage(&NpcRuleInput { level: 29, ..input })
+                .map_err(|error| error.to_string())?
+                .ok_or("Rotworms offer at level 29")?;
+            let switch = programme
+                .plan_storage(&NpcRuleInput {
+                    message: "no",
+                    topic: rotworms.next_topic,
+                    ..input
+                })
+                .map_err(|error| error.to_string())?
+                .ok_or("Rotworms decline at level 30")?;
+            let start = programme
+                .plan_storage(&NpcRuleInput {
+                    message: "yes",
+                    topic: switch.next_topic,
+                    ..input
+                })
+                .map_err(|error| error.to_string())?;
+            if !start.is_some_and(|plan| {
+                plan.track_changes
+                    .iter()
+                    .any(|change| change.key == phase("cyclops") && change.after == 1)
+            }) {
+                failures.push(("cyclops", "yes"));
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "alternate confirmations failed: {failures:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn regional_hunt_reports_yield_to_earlier_npc_keywords() -> Result<(), String> {
+    use crate::quest::reward_callbacks::{load_for, offered_for};
+    let loaded = crate::quest::loader::load_embedded_quest_state("hunt-mission-precedence")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let offered = offered_for(catalogue)?;
+    let historical = load_for(catalogue)?;
+    let mut intercepted = Vec::new();
+    for (hunt, earlier, held) in [
+        ("cyclops", &["mission"][..], false),
+        ("goblins", &["mission"][..], false),
+        ("rotworms", &["mission"][..], false),
+        ("trolls", &["mission"][..], false),
+        (
+            "pirates",
+            &["eleonore", "mission", "mermaid", "pirate outfit"][..],
+            false,
+        ),
+        ("blue-djinns", &["mission"][..], true),
+        ("green-djinns", &["mission"][..], true),
+    ] {
+        let key = format!("oteryn:quest-reward/hunting-tasks/{hunt}/report");
+        let callbacks = if held { &historical } else { &offered };
+        let callback = callbacks
+            .iter()
+            .find(|callback| callback.key == key)
+            .ok_or(key)?;
+        assert!(callback.matches_keyword("I finished the task"), "{hunt}");
+        for keyword in earlier {
+            if callback.matches_keyword(&format!("{keyword} task")) {
+                intercepted.push((hunt, *keyword));
+            }
+        }
+    }
+    assert!(
+        intercepted.is_empty(),
+        "reports intercepted earlier branches: {intercepted:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn review_batch_regional_hunts_follow_crystal_branch_order() -> Result<(), String> {
+    use crate::quest::npc_rules::{NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger};
+    let loaded = crate::quest::loader::load_embedded_quest_state("regional-branch-order")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = crate::quest::reward_callbacks::load_for(catalogue)?;
+    let rules = NpcRuleCatalog::runtime().map_err(|error| error.to_string())?;
+    let mut failures = Vec::new();
+    for (task, alternate, level) in [
+        ("trolls", "goblins", 19),
+        ("goblins", "trolls", 19),
+        ("rotworms", "cyclops", 30),
+        ("cyclops", "rotworms", 30),
+    ] {
+        let npc = "oteryn:npc.daniel_steelsoul";
+        let programme = rules
+            .admitted_for_npc(npc, catalogue)
+            .map_err(|error| error.to_string())?
+            .ok_or("Daniel hunting programme")?;
+        let phase = |hunt| format!("oteryn:quest-progress/hunting-tasks/{hunt}/phase");
+        let topic = |hunt| {
+            let key = format!("oteryn:quest-npc/hunting-tasks/{hunt}/accept");
+            programme
+                .programs()
+                .iter()
+                .flat_map(|program| &program.document.rules)
+                .find(|rule| rule.key == key)
+                .and_then(|rule| rule.topics.as_ref()?.first().copied())
+                .ok_or(key)
+        };
+        let tracks = BTreeMap::from([(phase("trolls"), i64::from(task == "goblins") * 2)]);
+        let input = NpcRuleInput {
+            npc,
+            trigger: NpcRuleTrigger::Say,
+            message: "no",
+            player_name: None,
+            topic: topic(task)?,
+            tracks: &tracks,
+            inventory: &Default::default(),
+            now_epoch_seconds: 1_700_000_000,
+            calendar_month: 11,
+            premium_current: true,
+            level,
+            vocation: "oteryn:vocation.knight",
+            sex: 0,
+            outfits: &BTreeMap::new(),
+        };
+        let decline = programme
+            .plan_storage(&input)
+            .map_err(|error| error.to_string())?;
+        let alternate_topic = topic(alternate)?;
+        if decline.as_ref().map(|plan| plan.next_topic) != Some(alternate_topic) {
+            failures.push(format!("declining {task} did not offer {alternate}"));
+        }
+        let confirmation = format!("yes {task}");
+        for message in ["yes", confirmation.as_str()] {
+            let accept = programme
+                .plan_storage(&NpcRuleInput {
+                    message,
+                    topic: alternate_topic,
+                    ..input
+                })
+                .map_err(|error| error.to_string())?;
+            if !accept.is_some_and(|plan| {
+                plan.track_changes
+                    .iter()
+                    .any(|change| change.key == phase(alternate) && change.after == 1)
+            }) {
+                failures.push(format!(
+                    "{message:?} did not accept alternate {alternate} after declining {task}"
+                ));
+            }
+        }
+    }
+    for (npc, earlier) in [
+        ("daniel_steelsoul", "mission"),
+        ("raymond_striker", "mission"),
+        ("raymond_striker", "eleonore"),
+        ("raymond_striker", "mermaid"),
+        ("raymond_striker", "pirate outfit"),
+        ("malor", "mission"),
+        ("gabel", "mission"),
+        ("lugri", "outfit"),
+    ] {
+        let npc = format!("oteryn:npc.{npc}");
+        let message = format!("I finished the {earlier} task");
+        let matches = callbacks.iter().any(|callback| {
+            callback.npc == npc
+                && callback
+                    .key
+                    .starts_with("oteryn:quest-reward/hunting-tasks/")
+                && callback.matches_keyword(&message)
+        });
+        if matches {
+            failures.push(format!("{npc} Rewards consumed {message:?}"));
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "Crystal branch mismatches: {failures:#?}"
+    );
     Ok(())
 }

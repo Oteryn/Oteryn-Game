@@ -86,6 +86,6 @@ fn middle_third_spawn_anchors_are_realized_by_the_world_loader() -> Result<(), B
     assert_eq!(blocked, 2);
     // Includes Shard of Corruption from Crystal 201189f8
     // data-global/world/world-monster.xml:190614–190616.
-    assert_eq!(report.points, 87_820);
+    assert_eq!(report.points, 87_828);
     Ok(())
 }

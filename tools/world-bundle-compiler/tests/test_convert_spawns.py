@@ -26,10 +26,10 @@ class ConvertSpawnsTest(unittest.TestCase):
         cls.held = json.loads(cs.HELD.read_text())["records"]
 
     def test_counts(self):
-        self.assertEqual(len(self.records), 54692)
-        self.assertEqual(sum(len(r["declaration"]["points"]) for r in self.records), 87820)
-        self.assertEqual(self.index["record_count"], 54692)
-        self.assertEqual(self.index["point_count"], 87820)
+        self.assertEqual(len(self.records), 54700)
+        self.assertEqual(sum(len(r["declaration"]["points"]) for r in self.records), 87828)
+        self.assertEqual(self.index["record_count"], 54700)
+        self.assertEqual(self.index["point_count"], 87828)
 
     def test_provenance_is_crystalserver(self):
         self.assertEqual(self.index["source"]["source_key"], "oteryn:source.crystalserver")
@@ -63,8 +63,8 @@ class ConvertSpawnsTest(unittest.TestCase):
                 self.assertNotIn("respawn_ms", point)
         self.assertEqual(self.index["additional_sources"][0]["record_count"], 10)
         held = json.loads(self.files["held-bosses.json"])["records"]
-        self.assertEqual(len(held), 34)
-        self.assertEqual(self.index["held_bosses"]["point_count"], 34)
+        self.assertEqual(len(held), 26)
+        self.assertEqual(self.index["held_bosses"]["point_count"], 26)
         self.assertTrue(all("boss_policy" not in row["point"] for row in held))
 
     def test_public_pharaohs_retain_their_exact_spawn_and_respawn(self):
@@ -72,7 +72,7 @@ class ConvertSpawnsTest(unittest.TestCase):
                   if point["creature"] in cs.PHARAOHS]
         self.assertEqual(len(points), 7)
         for point in points:
-            x, y, z = cs.PHARAOHS[point["creature"]]
+            x, y, z, _ = cs.FIXED_PUBLIC_BOSSES[point["creature"]]
             self.assertEqual(point["cell"], {"floor": z, "x": x, "y": y})
             self.assertEqual(point["boss_policy"], {"respawn": {"min_s": 90, "max_s": 90}})
             self.assertNotIn("respawn_ms", point)

@@ -4521,7 +4521,7 @@ async fn acquire_inner(
     }
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let offers: serde_json::Value = serde_json::from_slice(&fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
+        root.join("content/services/trade/trade-00000-00324.json"),
     )?)?;
     let metadata = oteryn_world_bundle::bundle::visit(
         &fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,

@@ -260,6 +260,7 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::published_quest_pins::retain_hunt_and_wrath_predecessors(&mut lowered.catalogue);
     Ok(lowered)
 }
 
@@ -661,6 +662,7 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/children-grease.json"),
             include_str!("../../../../../content/quests/world-callbacks/dream-courts.json"),
             include_str!("../../../../../content/quests/world-callbacks/engenc2-cults.json"),
+            include_str!("../../../../../content/quests/world-callbacks/gnome-dailies.json"),
             include_str!("../../../../../content/quests/world-callbacks/ice-islands-seals.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-lion-offerings.json"),
@@ -703,6 +705,7 @@ mod tests {
                 "../../../../../content/quests/world-callbacks/threatened-dreams-mosaic-treasure.json"
             ),
             include_str!("../../../../../content/quests/questl2-djinn-world.json"),
+            include_str!("../../../../../content/quests/world-callbacks/wrath-city.json"),
         ];
         let mut expected = std::collections::BTreeSet::new();
         for text in registries {

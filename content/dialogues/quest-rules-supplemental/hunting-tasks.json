@@ -1,0 +1,2388 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.hunting-tasks",
+  "quest": "oteryn:quest.killing_in_the_name_of_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/blue-djinns/count",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 500,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/blue-djinns/phase",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/cyclops/count",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 500,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/goblins/count",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 150,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/green-djinns/count",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 500,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/green-djinns/phase",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/minotaurs/count",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 5000,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/minotaurs/phase",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/necromancers/count",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 4000,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/pirates/count",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3000,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/pirates/phase",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/rotworms/count",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 300,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/trolls/count",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 100,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/killing_in_the_name_of.lua:72-212"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/daniel/repeat-choice",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "task"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 6
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 19
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Which hunt would you like to repeat, {trolls} or {goblins}?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 10
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:122-156"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/trolls/repeat",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "trolls"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        10
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 6
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 19
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Your hunt for 100 Trolls has begun. Report to me when you are done."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:157-164"
+      ],
+      "exclude_keywords": [
+        "task",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/goblins/repeat",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "goblins"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        10
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 6
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 19
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Your hunt for 150 Goblins has begun. Report to me when you are done."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:165-173"
+      ],
+      "exclude_keywords": [
+        "task",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/trolls/accept",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 6
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 19
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Your hunt for 100 Trolls has begun. Report to me when you are done."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:75-84"
+      ],
+      "exclude_keywords": [
+        "task",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/trolls/decline",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        1
+      ],
+      "guards": [],
+      "reply": [
+        "Will you hunt 150 Goblins?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:225-227"
+      ],
+      "exclude_keywords": [
+        "task",
+        "mission",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/trolls/ask-first",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "task"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 6
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 19
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Will you hunt 100 Trolls for Edron?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:75-84"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/trolls/in-progress",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "task"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/count",
+          "op": "lt",
+          "value": 100
+        }
+      ],
+      "reply": [
+        "The hunt for 100 Trolls is still in progress. See your quest log for the count."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:75-84"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/goblins/accept",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        2
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 6
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 19
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Your hunt for 150 Goblins has begun. Report to me when you are done."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:85-98"
+      ],
+      "exclude_keywords": [
+        "task",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/goblins/decline",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        2
+      ],
+      "guards": [],
+      "reply": [
+        "Will you hunt 100 Trolls for Edron?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:228-230"
+      ],
+      "exclude_keywords": [
+        "task",
+        "mission",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/goblins/ask",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "task"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 6
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 19
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Will you hunt 150 Goblins?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:85-98"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/goblins/in-progress",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "task"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/count",
+          "op": "lt",
+          "value": 150
+        }
+      ],
+      "reply": [
+        "The hunt for 150 Goblins is still in progress. See your quest log for the count."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:85-98"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/cyclops/accept",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        3
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 30
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 59
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Your hunt for 500 Cyclops has begun. Report to me when you are done."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:110-121"
+      ],
+      "exclude_keywords": [
+        "task",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/cyclops/decline",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        3
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "lt",
+          "value": 40
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Will you hunt 300 Rotworms?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:237-239"
+      ],
+      "exclude_keywords": [
+        "task",
+        "mission",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/cyclops/ask",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "task"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 30
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 59
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Will you hunt 500 Cyclops?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:110-121"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/cyclops/in-progress",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "task"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/count",
+          "op": "lt",
+          "value": 500
+        }
+      ],
+      "reply": [
+        "The hunt for 500 Cyclops is still in progress. See your quest log for the count."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:110-121"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/rotworms/accept",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        4
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 20
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 39
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Your hunt for 300 Rotworms has begun. Report to me when you are done."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:99-109"
+      ],
+      "exclude_keywords": [
+        "task",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/rotworms/decline",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        4
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 30
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Will you hunt 500 Cyclops?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:232-234"
+      ],
+      "exclude_keywords": [
+        "task",
+        "mission",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/rotworms/ask",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "task"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 20
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 39
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Will you hunt 300 Rotworms?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:99-109"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/rotworms/in-progress",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "trigger": "say",
+      "keywords": [
+        "task"
+      ],
+      "keyword_mode": "msg_contains",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/count",
+          "op": "lt",
+          "value": 300
+        }
+      ],
+      "reply": [
+        "The hunt for 300 Rotworms is still in progress. See your quest log for the count."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:99-109"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/green-djinns/accept",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.gabel",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        5
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Your hunt for 500 Green Djinns or Efreets has begun. Report to me when you are done."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/phase",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:141-176"
+      ],
+      "exclude_keywords": [
+        "task",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/green-djinns/ask",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.gabel",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "green djinns"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0,
+        5
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Will you hunt 500 Green Djinns or Efreets?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:141-176"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/green-djinns/in-progress",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.gabel",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "green djinns"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/phase",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/count",
+          "op": "lt",
+          "value": 500
+        }
+      ],
+      "reply": [
+        "The hunt for 500 Green Djinns or Efreets is still in progress. See your quest log for the count."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:141-176"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/green-djinns/awaiting-boss-route",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.gabel",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "green djinns"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/phase",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/count",
+          "op": "eq",
+          "value": 500
+        }
+      ],
+      "reply": [
+        "You have reached the hunt quota. The boss route is unavailable. I will keep your hunt recorded."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:141-176"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/blue-djinns/accept",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.malor",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        6
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Your hunt for 500 Blue Djinns or Marids has begun. Report to me when you are done."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/phase",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:155-188"
+      ],
+      "exclude_keywords": [
+        "task",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/blue-djinns/ask",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.malor",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "blue djinns"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0,
+        6
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Will you hunt 500 Blue Djinns or Marids?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:155-188"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/blue-djinns/in-progress",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.malor",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "blue djinns"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/phase",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/count",
+          "op": "lt",
+          "value": 500
+        }
+      ],
+      "reply": [
+        "The hunt for 500 Blue Djinns or Marids is still in progress. See your quest log for the count."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:155-188"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/blue-djinns/awaiting-boss-route",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.malor",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "blue djinns"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/phase",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/count",
+          "op": "eq",
+          "value": 500
+        }
+      ],
+      "reply": [
+        "You have reached the hunt quota. The boss route is unavailable. I will keep your hunt recorded."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:155-188"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/pirates/accept",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        7
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "op": "eq",
+          "value": 5
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Your hunt for 3000 Pirates has begun. Report to me when you are done."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/phase",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:153-210"
+      ],
+      "exclude_keywords": [
+        "task",
+        "eleonore",
+        "mission",
+        "mermaid",
+        "pirate outfit"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/pirates/ask",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "pirates"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0,
+        7
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "op": "eq",
+          "value": 5
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Will you hunt 3000 Pirates?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:153-210"
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mission",
+        "mermaid",
+        "pirate outfit"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/pirates/in-progress",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "pirates"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/phase",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/count",
+          "op": "lt",
+          "value": 3000
+        }
+      ],
+      "reply": [
+        "The hunt for 3000 Pirates is still in progress. See your quest log for the count."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:153-210"
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mission",
+        "mermaid",
+        "pirate outfit"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/minotaurs/ask",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.budrik",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest",
+        "task",
+        "minotaurs"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 40
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/minotaurs/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Will you hunt 5000 Minotaurs?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/budrik.lua:75-115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/minotaurs/accept",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.budrik",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        8
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "le",
+          "value": 40
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/minotaurs/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Your hunt for 5000 Minotaurs has begun. Report to me when you are done."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/minotaurs/phase",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/minotaurs/count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/budrik.lua:75-115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/minotaurs/decline",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.budrik",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        8
+      ],
+      "guards": [],
+      "reply": [
+        "Very well."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/budrik.lua:75-115"
+      ],
+      "exclude_keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/minotaurs/in-progress",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.budrik",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "minotaurs",
+        "mission",
+        "quest"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/minotaurs/phase",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/minotaurs/count",
+          "op": "lt",
+          "value": 5000
+        }
+      ],
+      "reply": [
+        "The hunt for 5000 Minotaurs is still in progress. See your quest log for the count."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/budrik.lua:75-115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/minotaurs/awaiting-boss-route",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.budrik",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "minotaurs",
+        "mission",
+        "quest"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/minotaurs/phase",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/minotaurs/count",
+          "op": "eq",
+          "value": 5000
+        }
+      ],
+      "reply": [
+        "You have reached the hunt quota. The boss route is unavailable. I will keep your hunt recorded."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/budrik.lua:75-115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/necromancers/accept",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.lugri",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        9
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 60
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Your hunt for 4000 Necromancers and Priestesses has begun. Report to me when you are done."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "task",
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/necromancers/decline",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.lugri",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        9
+      ],
+      "guards": [],
+      "reply": [
+        "Very well."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "task",
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/necromancers/ask",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.lugri",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "necromancers"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0,
+        9
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 60
+        },
+        {
+          "kind": "premium",
+          "value": true
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Will you hunt 4000 Necromancers and Priestesses?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 9
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/necromancers/in-progress",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.lugri",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "necromancers"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/count",
+          "op": "lt",
+          "value": 4000
+        }
+      ],
+      "reply": [
+        "The hunt for 4000 Necromancers and Priestesses is still in progress. See your quest log for the count."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/hunting-tasks/necromancers/awaiting-boss-route",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.lugri",
+      "trigger": "say",
+      "keywords": [
+        "task",
+        "necromancers"
+      ],
+      "keyword_mode": "msg_contains",
+      "topics": [
+        0
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/count",
+          "op": "eq",
+          "value": 4000
+        }
+      ],
+      "reply": [
+        "You have reached the hunt quota. The boss route is unavailable. I will keep your hunt recorded."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/budrik.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5"
+    },
+    {
+      "path": "data-global/npc/daniel_steelsoul.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "15a30e7f29472fa0e2b8b553699938af8ddcfd6889367c4d2a80c4c1c2e4764d"
+    },
+    {
+      "path": "data-global/npc/gabel.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "4691a0a07d65bc9972acc3641e8c89fc0476c7a3033c128a51801e19fdbedeaa"
+    },
+    {
+      "path": "data-global/npc/lugri.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27"
+    },
+    {
+      "path": "data-global/npc/malor.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "abcae4a2c7ba46ea369355a0c31e905189a3489c18bba843d06f9a0310cc09ec"
+    },
+    {
+      "path": "data-global/npc/raymond_striker.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "9788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8"
+    }
+  ]
+}

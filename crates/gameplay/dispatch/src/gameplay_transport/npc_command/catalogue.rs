@@ -350,7 +350,9 @@ pub(super) fn prepare(
     if teleport.as_ref().is_some_and(|p| {
         !matches!(
             p.source.quest.as_str(),
-            "oteryn:quest.the_paradox_tower_quest" | "oteryn:quest.in_service_of_yalahar_quest"
+            "oteryn:quest.the_paradox_tower_quest"
+                | "oteryn:quest.in_service_of_yalahar_quest"
+                | "oteryn:quest.wrath_of_the_emperor_quest"
         )
     }) {
         return Some(Step::Refused);
@@ -540,6 +542,12 @@ fn install(
         && let Some(state) = sessions.get_mut(&session)
     {
         state.catalogue = next.map(Pending::Topic);
+    }
+}
+
+pub(super) fn retire_for_quest_dialogue(state: &mut SessionNpc, context: &Context) {
+    if matches!(&state.catalogue, Some(Pending::Topic(topic)) if &topic.context == context) {
+        state.catalogue = None;
     }
 }
 

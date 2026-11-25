@@ -167,6 +167,28 @@ pub(super) async fn exercise(
             .is_err()
     );
     assert_eq!(snapshot(h).await?, committed);
+
+    // Advance the fixture to the observations of a second attempt after the
+    // cooldown. The production writer must issue a new reward for this report.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (track, value) in [("measurements", 1_i64), ("time_task_measurements", 0)] {
+        sqlx::query("UPDATE game_character_quest_tracks SET value=$3 WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+            .bind(id(41).as_slice())
+            .bind(format!("{PREFIX}{track}"))
+            .bind(value)
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    let second = super::classic_quests_fixtures::talk(owner, admitted, gnomus, 9503, "measurements").await?;
+    assert_eq!(second, reply);
+    assert_eq!(snapshot(h).await?, (committed.0 + 1, 2, 2));
     Ok(())
 }
 

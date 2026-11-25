@@ -113,6 +113,8 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
+        assert_eq!(base.len(), 1_146);
+        assert_eq!(bindings.world_callbacks().count(), 96);
         assert_eq!(
             callbacks.len(),
             base.len() + bindings.world_callbacks().count()

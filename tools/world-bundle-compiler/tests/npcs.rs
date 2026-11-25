@@ -640,6 +640,9 @@ fn ground_and_walkable_border_items_do_not_block_an_npc_cell() -> TestResult {
     Ok(())
 }
 
+#[path = "npcs/crystal_contacts.rs"]
+mod crystal_contacts;
+
 #[path = "npcs/journey.rs"]
 mod journey;
 

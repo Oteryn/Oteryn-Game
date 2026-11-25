@@ -504,7 +504,7 @@ mod tests {
     }
 
     #[test]
-    fn every_bound_definition_but_the_dual_vocation_casters_has_a_pool() {
+    fn bound_definitions_without_a_shaping_pool_match_the_admitted_set() {
         let shaping = import_committed_proficiency_shaping().expect("shaping imports");
         let data = import_committed_weapon_proficiency_data().expect("catalogue imports");
         let bound: std::collections::BTreeSet<_> = data
@@ -513,10 +513,23 @@ mod tests {
             .map(|binding| binding.profile_binding.key.as_str())
             .collect();
         let unshaped: Vec<_> = bound
-            .iter()
-            .filter(|key| !shaping.definition_vocations.contains_key(**key))
+            .into_iter()
+            .filter(|key| !shaping.definition_vocations.contains_key(*key))
             .collect();
-        assert_eq!(unshaped.len(), 7, "{unshaped:?}");
+        // Ink Sword has an admitted Standard threshold and no evidenced shaping vocation.
+        assert_eq!(
+            unshaped,
+            [
+                "oteryn:proficiency.tibia.p162",
+                "oteryn:proficiency.tibia.p177",
+                "oteryn:proficiency.tibia.p192",
+                "oteryn:proficiency.tibia.p217",
+                "oteryn:proficiency.tibia.p220",
+                "oteryn:proficiency.tibia.p221",
+                "oteryn:proficiency.tibia.p222",
+                "oteryn:proficiency.tibia.p371",
+            ]
+        );
         assert!(
             shaping
                 .definition_vocations

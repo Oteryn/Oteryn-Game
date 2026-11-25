@@ -460,7 +460,7 @@ async fn acquire(
     if !metadata.npcs.npcs.iter().any(|entry| entry.key == SELLER) {
         return Err(format!("need=50271-seller-in-served-world;seller={SELLER};placement=33603,31468,7;region=131,122").into());
     }
-    let trades = read_json("content/services/trade/trade-00000-00323.json")?;
+    let trades = read_json("content/services/trade/trade-00000-00324.json")?;
     let key = format!("oteryn:item.tibia.i{ITEM_ID}");
     let mut offers: Vec<(String, u64)> = Vec::new();
     for record in trades["records"].as_array().ok_or("trade records absent")? {
@@ -697,7 +697,7 @@ mod tests {
 
     #[test]
     fn the_declared_trade_sells_the_item() -> TestResult {
-        let trades = read_json("content/services/trade/trade-00000-00323.json")?;
+        let trades = read_json("content/services/trade/trade-00000-00324.json")?;
         let key = format!("oteryn:item.tibia.i{ITEM_ID}");
         assert!(trades["records"].as_array().ok_or("records")?.iter().any(|record| {
             record["declaration"]["offers"].as_array().is_some_and(|offers| {

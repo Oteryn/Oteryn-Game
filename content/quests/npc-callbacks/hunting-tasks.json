@@ -1,0 +1,428 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/hunting-tasks/blue-djinns/report",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.malor",
+      "keywords": [
+        "task"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/count",
+          "minimum": 500,
+          "maximum": 500,
+          "set": 500,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You completed the hunt for 500 Blue Djinns or Marids. Your next target is Fahim the Wise."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:155-188"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "minimum": 3,
+          "maximum": 3
+        }
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunting-tasks/cyclops/report",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "keywords": [
+        "task"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/count",
+          "minimum": 500,
+          "maximum": 500,
+          "set": 500,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 8,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You completed the hunt for 500 Cyclops."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:110-121"
+      ],
+      "experience": 3000,
+      "per_occurrence_mint": true,
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunting-tasks/goblins/report",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "keywords": [
+        "task"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/count",
+          "minimum": 150,
+          "maximum": 150,
+          "set": 150,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 2,
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i3031",
+            "count": 50
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You completed the hunt for 150 Goblins."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:85-98"
+      ],
+      "experience": 300,
+      "per_occurrence_mint": true,
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunting-tasks/green-djinns/report",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.gabel",
+      "keywords": [
+        "task"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/count",
+          "minimum": 500,
+          "maximum": 500,
+          "set": 500,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You completed the hunt for 500 Green Djinns or Efreets. Your next target is Merikh the Slaughterer."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:141-176"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "minimum": 3,
+          "maximum": 3
+        }
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunting-tasks/minotaurs/report",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.budrik",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/minotaurs/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/minotaurs/count",
+          "minimum": 5000,
+          "maximum": 5000,
+          "set": 5000,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You completed the hunt for 5000 Minotaurs. Your next target is The Horned Fox."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/budrik.lua:75-115"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunting-tasks/necromancers/report",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "task"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/count",
+          "minimum": 4000,
+          "maximum": 4000,
+          "set": 4000,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You completed the hunt for 4000 Necromancers and Priestesses. Your next target is Necropharus."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunting-tasks/pirates/report",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "keywords": [
+        "task"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/count",
+          "minimum": 3000,
+          "maximum": 3000,
+          "set": 3000,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 50,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You completed the hunt for 3000 pirates. Here are the coins I promised."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:153-210"
+      ],
+      "experience": 10000,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "minimum": 5,
+          "maximum": 5
+        }
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mission",
+        "mermaid",
+        "pirate outfit"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunting-tasks/rotworms/report",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "keywords": [
+        "task"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/count",
+          "minimum": 300,
+          "maximum": 300,
+          "set": 300,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 4,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You completed the hunt for 300 Rotworms."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:99-109"
+      ],
+      "experience": 1000,
+      "per_occurrence_mint": true,
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunting-tasks/trolls/report",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.daniel_steelsoul",
+      "keywords": [
+        "task"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/count",
+          "minimum": 100,
+          "maximum": 100,
+          "set": 100,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 2,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You completed the hunt for 100 Trolls."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:75-84"
+      ],
+      "experience": 200,
+      "per_occurrence_mint": true,
+      "exclude_keywords": [
+        "mission"
+      ]
+    }
+  ]
+}

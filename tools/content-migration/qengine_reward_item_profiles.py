@@ -51,6 +51,9 @@ IDS |= {21504, 21505, 21506, 21507, 9106}
 IDS |= {9106}
 # QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.
 IDS |= {27654}
+# Crystal 201189f Spike, Bigfoot and Dangerous Depths daily tools and packages.
+# The retained client/Canary physical rows agree with the donor item weights.
+IDS |= {15703, 15801, 15802, 19204, 19207, 19214, 19216, 19218, 27307, 27308}
 IDS |= qmech_m39.ITEMS
 IDS |= {21504, 21505}
 # Lion trials: exact holy-water vessel plus separately qualified one-hour flower duration.
@@ -103,10 +106,29 @@ STATIC_IDS = MERCHANT_SCENERY | {8995, 8996, 9527, 17677, 17679, 17681, 21573, 2
 SIDE_IDS |= STATIC_IDS | {3114, 3456, 3661, 32197, 32225, 32226, 32227, 32228, 32582, 32583, 32584, 32585, 32602, 32757}
 SIDE_IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 
+# Wrath Mission 5 provisions use the matching Crystal and Canary physical facts.
+IDS |= {10218, 10247}
+
 # Existing Dworc and Merlkin loot yields require portable native custody.
 IDS |= {3348, 3403}
 IDS |= SIDE_IDS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
+# Ruprecht's items, existing exchange currencies, and already admitted charged
+# variants retain their native owners. These are the missing portable identities.
+TOKEN_EXCHANGE_ITEMS = {
+    8191, 8192, 16094, 16099, 16101, 16104, 16105, 16106, 16107, 16109,
+    16110, 16111, 16112, 16116, 16153, 16154, 19150, 19152, 19153, 19154,
+    19155, 19156, 22026, 22027, 22028, 23676, 23677, 23678, 23679, 23680,
+    23681, 23682, 23683, 25979, 25980, 25981, 25982, 28894, 28895, 28896,
+    28897, 29428, 29429, 30342, 30344, 30401, 30403, 31265, 31266, 31267,
+    31268, 31557, 31621, 32621, 32636, 34210, 37058, 37059, 37060, 39179,
+    39182, 39185, 39187, 39188, 39233, 39235, 43510, 43511, 43517,
+}
+IDS |= TOKEN_EXCHANGE_ITEMS
+# Retain the canonical, client-sourced weights where the XML disagrees.
+TOKEN_EXCHANGE_WEIGHT_CONFLICTS = {
+    23677: (2700, 200), 32636: (90, 80), 34210: (6660, 6659), 39187: (70, 0),
+}
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
 XML_SHA = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
@@ -115,14 +137,16 @@ CLIENT = f'content/assets/files/appearances-{CLIENT_SHA}.dat'
 
 
 def reconcile_canonical_physical(item_id, definition, record):
-    # Purified Soul: retain the canonical0.20oz value; raw Canary XML says2.50oz.
-    # Admit only this exact reviewed pair, never a general weight override.
-    if item_id != 32228:return
+    # Keep the existing canonical weights for these exact donor discrepancies.
+    weights = {10218: (510, 509), 10247: (8000, 7500), 32228: (20, 250)}
+    if item_id not in weights:
+        return
+    canonical_weight, donor_weight = weights[item_id]
     known=lambda value:{'state':'KNOWN','value':value}
     canonical=definition['semantics']['physical']['value']['weight']
     donor=record['semantics']['physical']['value']['weight']
-    if canonical!=known(20) or donor!=known(250):
-        raise ValueError('QENGINE_PURIFIED_SOUL_WEIGHT_DECISION_DRIFT')
+    if canonical!=known(canonical_weight) or donor!=known(donor_weight):
+        raise ValueError(f'QENGINE_REWARD_ITEM_WEIGHT_DECISION_DRIFT:{item_id}')
     record['semantics']['physical']['value']['weight']=canonical.copy()
 
 
@@ -210,7 +234,7 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         node=xml[item_id]
         attrs = source.attrs(node)
         flower = lion_flower.admitted(item_id, attrs)
-        admitted_duration = flower or item_id in (CORPSE_IDS | MERCHANT_SCENERY | EXPLORER_CORPSES | {4837})
+        admitted_duration = flower or item_id in (CORPSE_IDS | MERCHANT_SCENERY | EXPLORER_CORPSES | TOKEN_EXCHANGE_ITEMS | {4837})
         if not admitted_duration and {'charges', 'duration', 'decayto', 'stopduration'} & attrs.keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
@@ -221,6 +245,21 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
                                          admitted.get(f'oteryn:item.tibia.i{item_id}'))
         definition=definitions[f'oteryn:item.tibia.i{item_id}']
         reconcile_canonical_physical(item_id,definition,record)
+        if item_id in TOKEN_EXCHANGE_WEIGHT_CONFLICTS:
+            canonical, donor = TOKEN_EXCHANGE_WEIGHT_CONFLICTS[item_id]
+            current = definition['semantics']['physical']['value']['weight']
+            physical_weight = record['semantics']['physical']['value']['weight']
+            if (current, physical_weight) != (source.K(canonical), source.K(donor)):
+                raise ValueError('TOKEN_EXCHANGE_ITEM_WEIGHT_DRIFT:' + str(item_id))
+            record['semantics']['physical']['value']['weight'] = current.copy()
+        if item_id == 39187:
+            # The donor mints the equipped variant, whose countdown is
+            # suspended when it transforms to 39186 on unequip.
+            temporal = record['semantics']['temporal']['value']
+            if source.attrs(node).get('transformdeequipto') != '39186':
+                raise ValueError('TOKEN_EXCHANGE_ARBOREAL_TRANSFORM_DRIFT')
+            temporal['consumption_mode'] = source.K('AUTHORITATIVE_ACTIVE_TIME_BUDGET')
+            temporal['stop_duration'] = source.K(True)
         if flower:
             record=lion_flower.temporal(record, definition, accepted.known_conflict)
         # These exact Ground-only props and corpse stages have canonical

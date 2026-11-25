@@ -300,6 +300,13 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "is_false")]
     pub fresh_corpse: bool,
     pub keywords: Vec<String>,
+    /// Earlier donor branches consume these words before this reward can match.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub exclude_keywords: Vec<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub msg_contains: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub clear_topic_on_refusal: bool,
     pub topic: u16,
     pub next_topic: u16,
     /// Complete this owning quest in the same receipt as its final dialogue.
@@ -434,6 +441,8 @@ impl RewardCallback {
 mod fresh_corpse_tests;
 #[cfg(test)]
 mod ice_paint_tests;
+#[cfg(test)]
+mod token_exchanges_tests;
 
 impl OutfitReward {
     pub fn grant_key(&self, addon: u8) -> String {
@@ -451,6 +460,28 @@ impl OutfitReward {
     }
 }
 impl RewardCallback {
+    /// Jorge scans the donor's souvenir table in source order.
+    pub fn accepts_npc_match(&self, another_match: bool) -> bool {
+        !another_match
+            || (self.npc == "oteryn:npc.jorge"
+                && self.topic == 101
+                && self.key.starts_with("oteryn:quest-reward/jorge-exchange-"))
+    }
+
+    pub fn matches_keyword(&self, text: &str) -> bool {
+        !self
+            .exclude_keywords
+            .iter()
+            .any(|word| super::npc_rules::msg_contains(text, word))
+            && self.keywords.iter().any(|word| {
+                if self.msg_contains {
+                    super::npc_rules::msg_contains(text, word)
+                } else {
+                    word == text
+                }
+            })
+    }
+
     fn valid_carried_inputs(&self) -> bool {
         let selected = |key: &str| {
             self.take
@@ -577,10 +608,14 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/gnome-dailies.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/hunting-tasks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
     include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/token-exchanges.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/wrath-city.json"),
     include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m09-rookie.json"),
@@ -626,7 +661,10 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, 
 /// available to immutable receipt reconciliation and catalogue validation.
 pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
     let mut callbacks = load_for(catalogue)?;
-    callbacks.retain(super::authored_bindings::personal_event_offered);
+    callbacks.retain(|callback| {
+        super::authored_bindings::personal_event_offered(callback)
+            && !super::grizzly_adams::regional_tasks::awaits_boss_route(&callback.key)
+    });
     Ok(callbacks)
 }
 
@@ -1175,7 +1213,12 @@ fn validate_document_with_capacity(
             || (c.keywords.is_empty() && c.world_claim.is_none() && c.carried_item.is_none())
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
-            || c.keywords.iter().any(|s| {
+            || c.exclude_keywords.len() > 12
+            || c.exclude_keywords
+                .iter()
+                .any(|word| c.keywords.contains(word))
+            || c.exclude_keywords.iter().collect::<BTreeSet<_>>().len() != c.exclude_keywords.len()
+            || c.keywords.iter().chain(&c.exclude_keywords).any(|s| {
                 s.is_empty() || s.len() > 64 || !s.is_ascii() || s != &s.to_ascii_lowercase()
             })
             || c.experience
@@ -2479,9 +2522,12 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing and 31 QB routes. The final two terms are
-        // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12);
+        // Shared covers 207 existing, 31 QB and 15 Gnomally routes. Additional shards include
+        // Rottin Wood, the Forgemaster, Matchmaker, nine hunting reports, four Wrath routes, and 75 token exchange routes.
+        assert_eq!(
+            load()?.len(),
+            253 + 59 + 125 + 1 + 1 + 13 + 12 + 1 + 9 + 4 + 75
+        );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2506,8 +2552,19 @@ mod tests {
     fn authored_shards_complete_only_the_selected_quest_and_preserve_old_plans()
     -> Result<(), String> {
         let shared = parse(DOCUMENTS[0])?;
-        let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
+        let (qb, non_qb): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
         assert_eq!(qb.len(), 31);
+        let (gnomally, legacy): (Vec<_>, Vec<_>) = non_qb.into_iter().partition(|callback| {
+            callback
+                .key
+                .starts_with("oteryn:quest-reward/gnomally-exchange-")
+        });
+        assert_eq!(gnomally.len(), 15);
+        assert!(
+            gnomally
+                .iter()
+                .all(|callback| callback.npc == "oteryn:npc.gnomally")
+        );
         let added_keys = [
             "oteryn:quest-reward/l2-wizard-flowers",
             "oteryn:quest-reward/l2-wizard-flowers-start",
@@ -3603,4 +3660,73 @@ mod outfit_reward_predecessor_tests {
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod daily_tests {
+    use super::*;
+
+    #[test]
+    fn matchmaker_package_exchanges_the_exact_carried_package() -> Result<(), String> {
+        let loaded = crate::quest::loader::load_embedded_quest_state("ctdaily")
+            .map_err(|error| format!("{error:?}"))?;
+        let callbacks = load_for(loaded.catalogue())?;
+        let package = callbacks
+            .iter()
+            .find(|callback| callback.key == "oteryn:quest-reward/bigfoot-daily/unpack-crystal")
+            .ok_or("Matchmaker package use")?;
+        assert!(package.carried_exchange);
+        assert!(package.per_occurrence_mint);
+        assert_eq!(
+            package.carried_item.as_deref(),
+            Some("oteryn:item.tibia.i15802")
+        );
+        assert_eq!(
+            package.take.as_slice(),
+            &[ItemAmount {
+                item: "oteryn:item.tibia.i15802".into(),
+                count: 1,
+                fluid_subtype: None
+            }]
+        );
+        assert_eq!(
+            package.give.as_ref().map(|reward| reward.item.as_str()),
+            Some("oteryn:item.tibia.i15801")
+        );
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn jorge_selects_the_first_matching_souvenir_from_the_live_catalogue() -> Result<(), String> {
+    let loaded = super::loader::load_embedded_quest_state("jorge-source-order")
+        .map_err(|error| format!("{error:?}"))?;
+    let callbacks = offered_for(loaded.catalogue())?;
+    for (text, expected) in [
+        ("music box or abacus", "oteryn:item.tibia.i19151"),
+        ("music box or assassin doll", "oteryn:item.tibia.i28897"),
+    ] {
+        let mut matches = callbacks.iter().filter(|callback| {
+            callback.npc == "oteryn:npc.jorge"
+                && callback.topic == 101
+                && callback.matches_keyword(text)
+        });
+        let first = matches.next().ok_or("missing first souvenir match")?;
+        assert_eq!(
+            first.give.as_ref().map(|reward| reward.item.as_str()),
+            Some(expected),
+            "{text}"
+        );
+        let another_match = matches.next().is_some();
+        assert!(
+            another_match,
+            "both souvenir names match the same utterance"
+        );
+        assert!(
+            first.accepts_npc_match(another_match),
+            "the first match must win"
+        );
+    }
+    Ok(())
 }

@@ -20,32 +20,34 @@ NOTE = " Additionally M49 Earth altar ground7748 retains its canonical Item iden
 DIGEST = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 
 
-def output(root=ROOT):
+def routed_ground(identifier, speed, profile, root):
     raw = (root / f"content/assets/files/appearances-{DIGEST}.dat").read_bytes()
     if hashlib.sha256(raw).hexdigest() != DIGEST:
-        raise ValueError("M49 official appearance digest")
-    appearance = read_appearances(raw)[7748]
+        raise ValueError("official ground appearance digest")
+    appearance = read_appearances(raw)[identifier]
     if (
         "bank" not in appearance.flags
         or "unpass" in appearance.flags
-        or appearance.speed != 150
+        or appearance.speed != speed
     ):
-        raise ValueError("M49 Earth ground differs from the qualified source")
+        raise ValueError(f"ground {identifier} differs from the qualified source")
     bindings = json.loads(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )
-    binding = next(row for row in bindings["bindings"] if row["external_id"] == "7748")
+    binding = next(
+        row for row in bindings["bindings"] if row["external_id"] == str(identifier)
+    )
     if binding["target"] != {
         "family": "Item",
-        "key": "oteryn:item.tibia.i7748",
+        "key": f"oteryn:item.tibia.i{identifier}",
         "revision": "definition-r1",
     }:
-        raise ValueError("M49 Earth identity binding")
+        raise ValueError(f"ground {identifier} Item identity binding")
     known = lambda value: {"state": "KNOWN", "value": value}
     record = {
         "identity": {
             "family": "Terrain",
-            "key": "oteryn:terrain.tibia.i7748",
+            "key": f"oteryn:terrain.tibia.i{identifier}",
             "revision": "definition-r1",
         },
         "kind": known("ground"),
@@ -60,15 +62,15 @@ def output(root=ROOT):
                 "color": appearance.automap_color,
             }
         ),
-        "client_projection": known({"appearance_id": 7748}),
+        "client_projection": known({"appearance_id": identifier}),
         "provenance": {
             "source": {
                 "engine": "crystal",
                 "repository": "zimbadev/crystalserver",
                 "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-                "profile": "OTERYN_M49_OFFICIAL_APPEARANCE_CROSS_CHECKED_GROUND/v1",
+                "profile": profile,
             },
-            "source_item_id": 7748,
+            "source_item_id": identifier,
             "item_pointer": binding["target"],
             "route": {"owner": "Terrain", "reason": "ground_or_border"},
             "fields": {
@@ -86,6 +88,12 @@ def output(root=ROOT):
     return (
         json.dumps({"family": "Terrain", "records": [record]}, indent=2) + "\n"
     ).encode()
+
+
+def output(root=ROOT):
+    return routed_ground(
+        7748, 150, "OTERYN_M49_OFFICIAL_APPEARANCE_CROSS_CHECKED_GROUND/v1", root
+    )
 
 
 if __name__ == "__main__":

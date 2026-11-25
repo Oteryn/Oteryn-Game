@@ -113,7 +113,10 @@ pub(super) async fn open(
         return rejected();
     }
     hireling.trade = Some(window);
-    state.window = Some((intent.npc_actor, None));
+    state.window = Some((
+        intent.npc_actor,
+        super::super::TradeWindowSelection::Ordinary,
+    ));
     outcome
 }
 

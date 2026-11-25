@@ -393,7 +393,7 @@ mod tests {
     fn actual_full_catalogue_imports_and_resolves_every_weapon() {
         let data = import_committed_weapon_proficiency_data().expect("actual import");
         assert_eq!(data.definitions.len(), 443);
-        assert_eq!(data.bindings.len(), 665);
+        assert_eq!(data.bindings.len(), 666);
         assert_eq!(
             data.definitions
                 .values()
@@ -451,7 +451,12 @@ mod tests {
                 binding.item.key
             );
         }
-        assert!(!data.bindings.contains_key("oteryn:item.tibia.i51666"));
+        let ink = &data.bindings["oteryn:item.tibia.i51666"];
+        assert_eq!(ink.profile_binding.key, "oteryn:proficiency.tibia.p371");
+        assert_eq!(
+            ink.threshold_class,
+            ProjectV2ProficiencyThresholdClass::Standard
+        );
         // Snowball 53855 is admitted appearance-only (PROF-SNOWBALL-REKEY-1).
         assert!(data.bindings.contains_key("oteryn:item.tibia.i53855"));
         assert_eq!(

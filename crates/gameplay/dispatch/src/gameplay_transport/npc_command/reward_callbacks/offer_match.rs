@@ -4,6 +4,16 @@ use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 use std::collections::BTreeMap;
 
 impl Offer {
+    pub(super) fn matches_keyword(&self, text: &str) -> bool {
+        self.keywords.iter().any(|word| {
+            if self.msg_contains {
+                oteryn_gameplay_quests::quest::npc_rules::msg_contains(text, word)
+            } else {
+                word == text
+            }
+        })
+    }
+
     pub(super) fn admits(
         &self,
         npc: &str,
@@ -14,7 +24,7 @@ impl Offer {
     ) -> bool {
         self.npc == npc
             && self.matches_topic(topic)
-            && self.keywords.iter().any(|word| word == text)
+            && self.matches_keyword(text)
             && self.storage.iter().all(|s| {
                 tracks
                     .get(&s.track)
