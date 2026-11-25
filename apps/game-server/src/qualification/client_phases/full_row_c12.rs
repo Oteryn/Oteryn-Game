@@ -700,12 +700,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if !requires_platform_grant(&clients.accounts[1]) {
         return Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into());
     }
-    let mut client = connect_character(clients, 0xc2, 1).await?;
+    const LEVEL_PREPARATION: character_prep::Seeded = character_prep::Seeded {
+        profile: "c12-monk",
+        reason: "item 50271 requires level 20",
+    };
+    character_prep::declare_seeded("C12", "level=20", LEVEL_PREPARATION.reason);
+    let mut client = LEVEL_PREPARATION.connect(clients, 0xc2, 1).await?;
+    let level = full_e2ef7::player_level(&mut client).await?;
+    if level != 20 {
+        return Err(format!("C12 seeded level readback expected 20, served {level}").into());
+    }
+    evidence("C12 prep=seeded level=20");
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    full_e2ef7::earn_player_level(&mut client, world, 20, Duration::from_secs(150)).await?;
     full_e2ef7::require_current_premium(&mut client).await?;
     spell(&mut client)?;
     let index = provisioning::item_index()?;
