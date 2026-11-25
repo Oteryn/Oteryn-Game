@@ -5,6 +5,24 @@ use crate::content::native_gameplay::test_support::activated_with_loot_tables;
 use crate::foundation::ChannelContentPin;
 use std::sync::Arc;
 
+async fn publish_item_content(
+    h: &Harness,
+    admitted: &crate::gameplay_transport::connection::AdmittedSession,
+    pin: &crate::content::NativeEntryContentPin,
+) -> TestResult {
+    let world = admitted.world_id.as_bytes().as_slice();
+    let channel = admitted.channel_id.as_bytes().as_slice();
+    sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+        .bind(world).bind(channel).execute(&h.pool).await?;
+    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,NULL,$4,$5,$6)")
+        .bind(world).bind(channel).bind(pin.activation_sequence().to_string())
+        .bind(pin.identity().server_artifact_digest().as_slice())
+        .bind(pin.identity().client_artifact_digest().as_slice())
+        .bind(pin.frame_binding().digest().as_slice())
+        .execute(&h.pool).await?;
+    Ok(())
+}
+
 #[test]
 fn crystal_kevin_postgres_requires_the_full_tour_briefing_and_takes_all_bones() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -23,7 +41,7 @@ fn crystal_kevin_postgres_requires_the_full_tour_briefing_and_takes_all_bones() 
                 .map_err(debug)?;
             let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
             let (controller, pin) = activated_with_loot_tables(world, None);
-            let deps = Dependencies::with_content(
+            let deps = Dependencies::with_content_and_capacity(
                 ChannelContentPin::from_activation(
                     world,
                     pin.activation_sequence(),
@@ -35,7 +53,11 @@ fn crystal_kevin_postgres_requires_the_full_tour_briefing_and_takes_all_bones() 
                 ),
                 pin.qualified_room().clone(),
                 crate::spell::cast::v1_spell_book().map_err(debug)?,
+                3,
             )?;
+            // Crystal kevin.lua:53-60 consumes carried items. The item writers
+            // check the durable Channel activation as well as the runtime pin.
+            publish_item_content(&h, &deps.admitted, &pin).await?;
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(controller.active().ok_or("active content")?);
             owner.quest_catalogue = Some(Arc::new(
@@ -45,6 +67,14 @@ fn crystal_kevin_postgres_requires_the_full_tour_briefing_and_takes_all_bones() 
                     .clone(),
             ));
             deps.initialize(&owner).await;
+            let mut admitted = deps.admitted;
+            super::qengine_outfit_stories_fixtures::seed_production_progression_context(
+                &h,
+                &owner,
+                admitted.game_session_id,
+            )
+            .await?;
+            owner.admit_progression_session(&mut admitted).await;
             deps.runtime
                 .lock()
                 .await
@@ -212,6 +242,8 @@ fn postman_olrik_postgres_only_uses_bank_after_type2_activation() -> TestResult 
                 pin.qualified_room().clone(),
                 crate::spell::cast::v1_spell_book().map_err(debug)?,
             )?;
+            // Crystal olrik.lua:69-72 charges the wager from carried coins and bank funds.
+            publish_item_content(&h, &deps.admitted, &pin).await?;
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(controller.active().ok_or("active content")?);
             owner.quest_catalogue = Some(Arc::new(
