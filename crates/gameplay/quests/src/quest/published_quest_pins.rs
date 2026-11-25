@@ -3,6 +3,9 @@ use super::{NpcDefinitionPredecessor, QuestStateCatalogue};
 
 type DefinitionHash = [u8; 32];
 
+const GRAVE_DANGER_PRE_ZELOS: DefinitionHash =
+    hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab");
+
 pub(super) const fn hash(hex: &[u8; 64]) -> DefinitionHash {
     const fn digit(byte: u8) -> u8 {
         if byte.is_ascii_digit() {
@@ -41,7 +44,7 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
     (
         "oteryn:quest.grave_danger_quest",
         hash(b"52b062dee5106bfe6c5dd58bbb018ed6e5a952f458b65a89d719da7db1424527"),
-        hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
+        GRAVE_DANGER_PRE_ZELOS,
     ),
     (
         "oteryn:quest.heart_of_destruction_quest",
@@ -81,7 +84,7 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
     (
         "oteryn:quest.grave_danger_quest",
         hash(b"540cd73ad49e78251491ea0266f3930f000b57c26007a5fcb0dcaf2bea4a4113"),
-        hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
+        GRAVE_DANGER_PRE_ZELOS,
     ),
     (
         "oteryn:quest.grimvale_quest",
@@ -118,6 +121,48 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
         hash(b"2a0e84e7f04fe4eafff4c3824de035250c01f8c9317feb2773ba11391678e00b"),
         hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
     ),
+    // Merged citation digests captured with quest_definition_hashes.
+    (
+        "oteryn:quest.formogar_mine_hoist",
+        hash(b"573f5ae9cf08a05018a99b7b773797326f93a2fd2e62025f5541bbcafb8795e7"),
+        hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
+    ),
+    (
+        "oteryn:quest.giant_smithhammer_quest",
+        hash(b"aee6849e771f86af9ac983344207ba160da0f0889441c0ae148b8c0a4d4cf4cc"),
+        hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
+    ),
+    (
+        "oteryn:quest.goblin_merchant_quest",
+        hash(b"26d7d2303a2ccd81de839f3a3653db3613762e14fcfec7573cb10c860db3bff0"),
+        hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
+    ),
+    (
+        "oteryn:quest.heart_of_destruction_quest",
+        hash(b"b49004b3ac6547cf7f916ddfb0b343e2fd4a0315bcdf1d46c71f1a66def59154"),
+        hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
+    ),
+    (
+        "oteryn:quest.hero_of_rathleton_quest",
+        hash(b"13841887d2cda6862f0898037cc6441d42b704872ded826dfbecb3261a7727a7"),
+        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
+    ),
+    (
+        "oteryn:quest.hidden_threats_quest",
+        hash(b"0a77d4d929a6c9719f3f39eb88a631595cf515da121f64fe84b4dc5e63826823"),
+        hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
+    ),
+    (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"5379f875a00f92429abeaed968037bf4e2778416c0b62a7b4f31cc2ac7c4d0aa"),
+        hash(b"286f3e0a4fdaff0ae2a14494889fe2d3492c5bbd4d8668a4f9b2cdaa48e37e7e"),
+    ),
+    (
+        // The derived pre-Zelos definition keeps its exact saved defaults.
+        "oteryn:quest.grave_danger_quest",
+        hash(b"676537a62b92f7b97f27da4c44aab3fbb5dc1bbcd684c5173d99905a0927416a"),
+        GRAVE_DANGER_PRE_ZELOS,
+    ),
 ];
 
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
@@ -140,7 +185,7 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.ferumbras_ascension_quest",
-        hash(b"904af0470d70e7f7de11c50d476be4eb899041a8b397a67a79e9c41f00d9036c"),
+        hash(b"69a1b3cfaa0d7f3b921da0ea7bb3bafd1de62a22e484e4c333541ba29c9b2a79"),
         &[
             hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
             hash(b"e86e12f668231e6ff93181caf6bd34a4dde5b7d53b9bacff6bc4a44bd12fb464"),
@@ -148,7 +193,7 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.forgotten_knowledge_quest",
-        hash(b"c3f10d04b28f58a30f98fa7df4082712661ed21f638e12318e9f1d323e386650"),
+        hash(b"cbc0d3c2dfe847aa97daad45f4d322331ea90416ed774d5dddfc4cc7b4567281"),
         &[
             hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
             hash(b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a"),
@@ -156,7 +201,7 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.grimvale_quest",
-        hash(b"0e190e8ec58f1d4b5600a3743a45fe185371815e9fc20c0b1971316e986fc2fc"),
+        hash(b"ec073be1d536c213bf81c914202b663a7f862ae7f78316fd97053173e3127823"),
         &[
             hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
             hash(b"4fb22937877e3de361938b3dc7358b9bb98f799341987579ec56e4f54063a819"),
@@ -171,10 +216,12 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.the_ape_city_quest",
-        hash(b"11bdc83b25d2857d49be51cceb845bca1b00d14ec6e4e140e846c42cb0fb17d0"),
-        &[hash(
-            b"18884601e04fc41671d5b24abc67f63cc0cf234813bc1f967ab24297871d1e05",
-        )],
+        hash(b"3e8a82c701c48fb9e42db74edc6a0c3821b2f1e71dddf805b8d3553043dae44d"),
+        &[
+            hash(b"18884601e04fc41671d5b24abc67f63cc0cf234813bc1f967ab24297871d1e05"),
+            // The authored route on main (c3ca2e8dc) keeps the same track defaults.
+            hash(b"353191f4da997af50b1548bdd15276bfabf5f5f0a188f9720465d07ffd56c72f"),
+        ],
     ),
     (
         "oteryn:quest.the_beginning_quest",
@@ -243,7 +290,7 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.hydra_egg_quest",
-        hash(b"ce23f90445efb9cd4020ec098c0d6fa3466bec2454c82c667548f7f0c6a4f448"),
+        hash(b"c2247451fc15ba29360c581a59805205a6b8d3a606392342f1c99660cfdea6fa"),
         &[hash(
             b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca",
         )],
@@ -297,7 +344,15 @@ mod tests {
         let grave = "oteryn:quest.grave_danger_quest";
         let main = hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab");
         assert_ne!(catalogue.definition_hash(grave), Some(main));
-        assert!(npc_rules::legacy_defaults(catalogue, grave, &main).is_some());
+        let defaults = catalogue
+            .declared_tracks()
+            .filter(|track| track.quest == grave)
+            .map(|track| (track.key.clone(), track.initial))
+            .collect();
+        assert_eq!(
+            npc_rules::legacy_defaults(catalogue, grave, &main),
+            Some(&defaults)
+        );
         assert!(
             npc_rules::legacy_defaults(
                 catalogue,
@@ -333,9 +388,17 @@ mod tests {
 
         for &(quest, refreshed, published) in CITATION_REFRESHES {
             assert_eq!(published_hash(quest, refreshed), published, "{quest}");
-            if quest == "oteryn:quest.grave_danger_quest" {
-                // Zelos credit changes the live definition. Both exact citation
-                // variants still resolve to the published predecessor.
+            if matches!(
+                quest,
+                "oteryn:quest.ferumbras_ascension_quest"
+                    | "oteryn:quest.forgotten_knowledge_quest"
+                    | "oteryn:quest.grimvale_quest"
+                    | "oteryn:quest.hydra_egg_quest"
+            ) || (quest == "oteryn:quest.grave_danger_quest"
+                && published == GRAVE_DANGER_PRE_ZELOS)
+            {
+                // These quests have since gained gameplay changes. Each citation
+                // variant still resolves to the exact published predecessor.
                 assert_ne!(catalogue.definition_hash(quest), Some(published));
                 assert!(npc_rules::legacy_defaults(catalogue, quest, &published).is_some());
             } else {

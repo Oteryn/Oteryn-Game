@@ -113,10 +113,11 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
-        // Count the published callbacks separately from the authored binding extension.
+        // Count the published callbacks separately from the authored binding extension,
+        // including the 65 MapUse/StepIn stages from main's authored journeys.
         assert_eq!(base.len(), 1_055);
-        assert_eq!(bindings.world_callbacks().count(), 31);
-        assert_eq!(callbacks.len(), 1_086);
+        assert_eq!(bindings.world_callbacks().count(), 96);
+        assert_eq!(callbacks.len(), 1_151);
         assert_eq!(
             callbacks.len(),
             base.len() + bindings.world_callbacks().count()

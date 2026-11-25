@@ -674,7 +674,7 @@ pub(super) async fn exercise_books(
     for (_, text, item) in &texts {
         let item = ItemKey::Instance(item.as_slice().try_into().map_err(|_| "cookbook UUID")?);
         let bytes = owner
-            .item_inscription_read(reader, Some(item))
+            .item_inscription_read(reader, Some(item), false)
             .await
             .ok_or("server inscription read")?;
         let reading = Reply::decode(&bytes).ok_or("cookbook read result")?;
