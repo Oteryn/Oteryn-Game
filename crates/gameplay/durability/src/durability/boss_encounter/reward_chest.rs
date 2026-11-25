@@ -13,6 +13,8 @@ mod settlement;
 pub struct BossRewardItem {
     pub definition: TypedDefinitionRef,
     pub quantity: u32,
+    /// One-based ordinal of the root container in this character's chest.
+    pub parent_ordinal: Option<u16>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
