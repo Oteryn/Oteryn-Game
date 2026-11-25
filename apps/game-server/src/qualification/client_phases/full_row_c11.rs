@@ -21,15 +21,6 @@ use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use std::collections::BTreeSet;
 
-const ORESSA_PREPARATION: character_prep::Seeded = character_prep::Seeded {
-    profile: "c11-unassigned",
-    reason: "C11 tests Oressa’s vocation choice and Harmony after reaching level 8.",
-};
-const KNIGHT_PREPARATION: character_prep::Seeded = character_prep::Seeded {
-    profile: "c11-knight",
-    reason: "C11 tests Battle Instinct activation after committing a Knight Wheel allocation.",
-};
-
 const ACTIONS: &[&str] = &[
     "player-monk-choice",
     "solo-serene",
@@ -94,7 +85,6 @@ impl Row {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("C11", "unassigned-level-8,premium-knight,wheel-fee-gold", "Oressa choice and Wheel mechanics");
     let mut row = Row::new();
     let terminal = match verdict::indexed_timeout(
         Duration::from_secs(300), verdict::observe(async {
@@ -127,34 +117,26 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let dedicated = character_prep::dedicated_named_character(clients, "NODE_BOOT_C11_UNASSIGNED_ACCOUNT", Some("Oressa Candidate")).await?;
     let clients = &dedicated.clients(clients);
-    let mut client = ORESSA_PREPARATION.connect(clients, 0xcb, 0)
+    let mut client = connect_character(clients, 0xcb, 0)
         .await
         .map_err(|error| admission_error("initial-admission", error))?;
+    let town = tile(client.world_spatial().actor_position)?;
+    full_e2ef7::earn_player_level(&mut client, world, 8, Duration::from_secs(150)).await?;
     let (vocation, level) = admitted_vocation(&mut client).await?;
     if monk_path(vocation, level) != Some(false) || level != 8 {
-        return Err(format!("Oressa candidate must first admit unassigned at level 8; observed vocation={vocation} level={level}").into());
+        return Err(format!("Oressa candidate must reach level 8 while unassigned; observed vocation={vocation} level={level}").into());
     }
-    match monk_path(vocation, level) {
-        Some(false) => {
-            let town = tile(client.world_spatial().actor_position)?;
-            choose_monk(&mut client, world, &bytes).await
-                .map_err(|error| verdict::context(format!("step=player-monk-choice observed={error}"), error))?;
-            let (chosen, chosen_level) = admitted_vocation(&mut client).await?;
-            if monk_path(chosen, chosen_level) != Some(true) || chosen_level != level {
-                return Err(format!("Oressa confirmation did not persist Monk; observed vocation={chosen}").into());
-            }
-            row.pass("player-monk-choice", "Oressa-confirmed");
-            let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == town)
-                .ok_or("no player walk route from Oressa back to the initial admission tile")?;
-            walk(&mut client, world, &path).await?;
-        }
-        Some(true) => row.fail("player-monk-choice", "already-Monk; need=first-vocation-transition; continuing Monk gameplay"),
-        None => {
-            row.fail("player-monk-choice", format!("vocation-id={vocation} level={level}; need=unassigned-level-8-character-for-Oressa-or-admitted-Monk-for-Harmony"));
-            logout(&mut client, world).await?;
-            return Ok(());
-        }
+    choose_monk(&mut client, world, &bytes)
+        .await
+        .map_err(|error| verdict::context(format!("step=player-monk-choice observed={error}"), error))?;
+    let (chosen, chosen_level) = admitted_vocation(&mut client).await?;
+    if monk_path(chosen, chosen_level) != Some(true) || chosen_level != level {
+        return Err(format!("Oressa confirmation did not persist Monk; observed vocation={chosen}").into());
     }
+    row.pass("player-monk-choice", "Oressa-confirmed");
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == town)
+        .ok_or("no player walk route from Oressa back to the initial admission tile")?;
+    walk(&mut client, world, &path).await?;
 
     if client.actor_vitals().is_some_and(|v| v.serene) {
         row.pass("solo-serene", client.actor_vitals());
@@ -350,10 +332,15 @@ async fn knight_journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult 
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_C11_KNIGHT_ACCOUNT").await?;
     let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
     let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
-    let mut client = KNIGHT_PREPARATION.connect(clients, 0xca, 1).await?;
-    character_prep::grant_item(&client, 3043, 2).await?;
-    character_prep::reload(&mut client, clients).await?;
-    character_prep::grant_premium(&client).await?;
+    let mut client = connect_character(clients, 0xca, 1).await?;
+    let (vocation, level) = admitted_vocation(&mut client).await?;
+    if Some(vocation) != oteryn_protocol_oteryn::cyclopedia_character::vocation_id("knight")
+        || level < 625
+    {
+        return Err(format!("C11 Wheel requires an ordinary Knight at earned level 625 or higher for the 575-point route; served vocation={vocation}, level={level}").into());
+    }
+    full_e2ef7::require_current_premium(&mut client).await?;
+    full_e2ef7::earn_gold(&mut client, world, 20_000).await?;
     let king = approach_npc(&mut client, world, &metadata.npcs, "oteryn:npc.king_tibianus").await?;
     if talk(&mut client, king, "hi").await?.is_empty()
         || talk(&mut client, king, "promotion").await? != ["Do you want to be promoted for 20000 gold coins?"]

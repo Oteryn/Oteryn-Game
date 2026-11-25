@@ -54,7 +54,7 @@ async fn prepare_player_caster(
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     let mut client = connect_character(clients, 0x97, LIGHT_CHARACTER).await?;
     if premium_required
-        && let Err(error) = full_e2ef7::require_current_light_premium(&mut client).await
+        && let Err(error) = full_e2ef7::require_current_premium(&mut client).await
     {
         // The packet capture reuses this Character after the full journey.
         let cleanup = logout_retrying_busy(&mut client).await;

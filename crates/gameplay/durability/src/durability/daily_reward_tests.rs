@@ -7,8 +7,13 @@ fn run<F>(tag: &'static str, body: F) -> TestResult
 where
     F: AsyncFnOnce(&Harness) -> TestResult,
 {
-    let Some(admin) = harness::configured_admin() else {
-        return Ok(());
+    let admin = match std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
+        Ok(admin) => admin,
+        Err(std::env::VarError::NotPresent) => {
+            eprintln!("DAILY-REWARD-PG {tag}: OTERYN_TEST_POSTGRES_ADMIN_URL is absent");
+            return Ok(());
+        }
+        Err(error) => return Err(error.into()),
     };
     harness::runtime()?.block_on(async move {
         let h = Harness::create(admin, tag, true).await?;
@@ -132,6 +137,32 @@ fn daily_reward_postgres_claim_replay_gap_and_restart() -> TestResult {
         );
         assert_eq!(projection(h).await?.0, 2);
         assert_eq!(h.root_revision().await?, "1");
+        Ok(())
+    })
+}
+
+#[test]
+fn daily_reward_postgres_seven_consecutive_claims() -> TestResult {
+    run("daily_consecutive_claims", async |h| {
+        // The claim owner reads its calendar from the committed reset history.
+        for day in 1_u8..=7 {
+            let epoch = u64::from(day);
+            let timestamp = format!("2026-10-{day:02}T08:00:00Z");
+            reset(h, epoch, &timestamp).await?;
+            let DailyRewardClaimOutcome::Committed(receipt) =
+                claim(h, request(epoch, 60 + day)?).await?
+            else {
+                return Err(format!("day {day}: claim did not commit").into());
+            };
+            assert_eq!(receipt.streak_before, u32::from(day - 1));
+            assert_eq!(receipt.streak_after, u32::from(day));
+            assert_eq!(receipt.jokers_spent, 0);
+            let (_, streak, saved_epoch, saved_day) = projection(h).await?;
+            assert_eq!(streak, i32::from(day));
+            assert_eq!(saved_epoch, epoch.to_string());
+            assert_eq!(saved_day, receipt.reset_day);
+        }
+        assert_eq!(h.count("game_character_daily_reward_claims").await?, 7);
         Ok(())
     })
 }

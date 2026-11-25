@@ -1559,7 +1559,6 @@ struct JourneyRow {
 impl JourneyRow {
     fn new(id: &'static str, required: &'static [&'static str]) -> Self {
         let seeded = match id {
-            "S13a" | "S13b" => Some(("level-32-premium-caster,clean-peer", "party spell gates and cost")),
             "P21" => Some((
                 "dedicated-character-birth",
                 "Basic Strike application and persistence",
@@ -1639,7 +1638,7 @@ fn light_premium_is_current(overview: &oteryn_protocol_oteryn::premium_overview:
         && overview.valid_for_us > 0
 }
 
-pub(super) async fn require_current_light_premium(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn require_current_premium(client: &mut DevClientSession) -> TestResult {
     use oteryn_protocol_oteryn::{character_info, premium_overview};
     let reply = client.session_mut().gated_command(
         character_info::CAPABILITY_CHARACTER_INFO_V1,
@@ -1647,13 +1646,13 @@ pub(super) async fn require_current_light_premium(client: &mut DevClientSession)
         &[premium_overview::OPERATION],
     ).await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("personal-light Premium preflight refused: {:?}", reply.status).into());
+        return Err(format!("native Premium preflight refused: {:?}", reply.status).into());
     }
     let overview = premium_overview::Overview::decode(&reply.payload)
-        .ok_or("personal-light Premium preflight returned malformed evidence")?;
+        .ok_or("native Premium preflight returned malformed evidence")?;
     if !light_premium_is_current(&overview) {
         return Err(format!(
-            "SERVER-GAP W20b requires live Platform Premium for Ultimate Light: state={:?}, authority_revision={}, valid_for_us={}",
+            "ordinary admission lacks current Platform Premium: state={:?}, authority_revision={}, valid_for_us={}",
             overview.state, overview.authority_revision, overview.valid_for_us,
         ).into());
     }
@@ -2857,12 +2856,10 @@ async fn party_spell_journey(
     let (accounts, characters) = peer_identity.replace_slot(&scope, 0)?;
     let scope = SeamClients { accounts: &accounts, characters: &characters, ..scope };
     let clients = &scope;
-    const PREPARATION: character_prep::Seeded = character_prep::Seeded {
-        profile: "s13-party",
-        reason: "Party spell refusal, range and payment need an eligible caster and an ungrouped peer",
-    };
-    pair[0] = Some(PREPARATION.connect(clients, 0xe2, 1).await?);
-    character_prep::grant_premium(pair[0].as_ref().ok_or("party caster missing")?).await?;
+    pair[0] = Some(connect_character(clients, 0xe2, 1).await?);
+    let caster = pair[0].as_mut().ok_or("S13 caster missing")?;
+    require_current_premium(caster).await?;
+    earn_player_level(caster, world, 32, Duration::from_secs(150)).await?;
     pair[1] = Some(connect_character(clients, 0xe3, 0).await?);
     let (caster, peer) = pair_mut(pair)?;
     if caster.join_snapshot().game_session_id == peer.join_snapshot().game_session_id
@@ -2877,7 +2874,6 @@ async fn party_spell_journey(
     }
     gate.pass("two-admissions");
     cost.pass("two-admissions");
-    require_current_light_premium(caster).await?;
     // The retained server-owned ranking row carries the durable vocation.
     // Read it rather than guessing class from a generic refusal or profile env.
     let observed = query(caster, request(1, 0, 1, 0)).await?;

@@ -128,7 +128,7 @@ pub(super) async fn run(
             resting_bonuses(&mut resting, clients, world, spawns),
         )
         .await;
-    finish_resting_row(resting, result);
+    resting.finish(result);
 }
 
 pub(super) async fn run_blessing_services(
@@ -208,7 +208,7 @@ const RESTING_BONUSES: &[&str] = &[
     "shrine-open-and-claim",
     "duplicate-claim-refused",
     "relog-daily-streak",
-    "resting-tiers-independent-of-streak",
+    "earned-seven-day-streak",
     "player-earned-deficits",
     "resting-double-health-mana",
     "resting-soul-and-stamina",
@@ -526,24 +526,12 @@ async fn resting_deficits(
     Ok(())
 }
 
-fn finish_resting_row(row: Row, result: TestResult<Option<&'static str>>) {
-    if let Ok(Some(source)) = result {
-        evidence(&format!(
-            "E2EF6_GAP {} server ticks qualify all PZ tiles, without an admitted narrower resting-area classification; no native player route can prove the area distinction source:{source}",
-            row.0.id
-        ));
-        row.0.finish_missing_server(source);
-    } else {
-        row.finish(result.map(|_| ()));
-    }
-}
-
 async fn resting_bonuses(
     row: &mut Row,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
-) -> TestResult<Option<&'static str>> {
+) -> TestResult {
     use oteryn_protocol_oteryn::{rest_status as rest, world_object::UseDisposition};
 
     async fn resting_status(client: &mut DevClientSession) -> TestResult<rest::RestStatus> {
@@ -561,11 +549,6 @@ async fn resting_bonuses(
     }
     use hunt_route::*;
 
-    character_prep::declare_seeded(
-        "P10",
-        "dedicated-free-and-premium-births,spell-capable-level,premium",
-        "Free and Premium resting tiers and actual Premium recovery with real deficits",
-    );
     let free = {
         let mut characters = clients.characters.to_vec();
         characters[1] =
@@ -610,8 +593,7 @@ async fn resting_bonuses(
         cleanup?;
         status
     };
-    // The profile is authorized for the Light account. In the F6 matrix
-    // that account is already present, but the journey needs a fresh character.
+    // Keep the Premium journey on its own character on the Light account.
     let account = required("NODE_BOOT_LIGHT_ACCOUNT_ID")?;
     let light_slot = clients
         .accounts
@@ -635,12 +617,9 @@ async fn resting_bonuses(
         characters: &characters,
         ..*clients
     };
-    let build = character_prep::Seeded {
-        profile: "w20b-light",
-        reason: "available native deficit spells",
-    };
-    let mut client = build.connect(clients, 0xf2, 1).await?;
-    let result: TestResult<Option<&'static str>> = async {
+    let mut client = connect_character(clients, 0xf2, 1).await?;
+    let result: TestResult = async {
+        full_e2ef7::require_current_premium(&mut client).await?;
         let initial = daily_wall(&mut client).await?;
         if initial.claimed || initial.claim_enabled {
             return Err(format!("P10 fresh-day prerequisite blocked: expected an unclaimed, unopened wall on this fresh GameSession; observed={initial:?}").into());
@@ -658,16 +637,6 @@ async fn resting_bonuses(
             &mut client, world, Some(inside), Some(outside),
             tokio::time::Instant::now() + Duration::from_secs(150),
         ).await?;
-        character_prep::grant_premium(&client).await?;
-        relog(&mut client, clients, 0xf3).await?;
-        if daily_wall(&mut client).await? != initial {
-            return Err("P10 Premium admission changed the unclaimed daily wall".into());
-        }
-        let preclaim = resting_status(&mut client).await?;
-        if (preclaim.inside_resting_area, preclaim.streak, preclaim.health_multiplier, preclaim.mana_multiplier, preclaim.stamina, preclaim.soul)
-            != (true, initial.streak, 2, 2, true, true) {
-            return Err(format!("P10 Premium bonuses before the claim differ from RestStatus V1: {preclaim:?}").into());
-        }
         let opened = client.session_mut().use_object(b"oteryn:placement/daily-reward-shrine", 0).await?;
         if opened.disposition != UseDisposition::Committed {
             return Err(format!("P10 real shrine USE refused at {inside:?}: {opened:?}").into());
@@ -694,11 +663,14 @@ async fn resting_bonuses(
         }
         row.pass("relog-daily-streak", claimed);
         let after_claim = resting_status(&mut client).await?;
-        if (after_claim.inside_resting_area, after_claim.streak, after_claim.health_multiplier, after_claim.mana_multiplier, after_claim.stamina, after_claim.soul)
-            != (true, claimed.streak, preclaim.health_multiplier, preclaim.mana_multiplier, preclaim.stamina, preclaim.soul) {
-            return Err(format!("P10 changing streak changed the Premium resting tier: {preclaim:?}->{after_claim:?}").into());
+        if claimed.streak < 7 {
+            return Err(format!("P10 earned streak is {}; live qualification requires at least seven consecutive daily claims. Controlled reset coverage: daily_reward_postgres_seven_consecutive_claims", claimed.streak).into());
         }
-        row.pass("resting-tiers-independent-of-streak", (free, preclaim, after_claim));
+        if (after_claim.inside_resting_area, after_claim.streak, after_claim.health_multiplier, after_claim.mana_multiplier, after_claim.stamina, after_claim.soul)
+            != (true, claimed.streak, 2, 2, true, true) {
+            return Err(format!("P10 resting bonuses at earned streak {} differ: {after_claim:?}", claimed.streak).into());
+        }
+        row.pass("earned-seven-day-streak", (free, after_claim));
         resting_deficits(&mut client, clients, world, spawns, outside).await?;
         let look = self_look(&mut client).await?;
         if !look.ends_with(", sorcerer).") {
@@ -867,13 +839,14 @@ async fn resting_bonuses(
             != (true, claimed.streak, 2, 2, true, true) {
             return Err(format!("P10 RestStatus V1 after PZ reentry: {reentered:?}").into());
         }
-        row.pass("resting-area-classification", (outside_status, reentered));
-        Ok(None)
+        // Crystal 201189f8 src/creatures/players/player.cpp:801–810 uses PZ.
+        // These observations prove that proxy only, not a narrower resting area.
+        Err("P10 resting-area-classification unproven: the server uses PZ as its resting predicate; the shrine PZ and an outside tile cannot prove an ordinary non-resting PZ is excluded".into())
     }.await;
     let cleanup = return_and_release(&mut client, world).await;
     match (result, cleanup) {
         (Err(error), _) | (_, Err(error)) => Err(error),
-        (Ok(source), Ok(())) => Ok(source),
+        (Ok(()), Ok(())) => Ok(()),
     }
 }
 

@@ -21,12 +21,7 @@ use oteryn_protocol_oteryn::item_view as items;
 use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
 use std::num::NonZeroU32;
 
-const PREPARATION: character_prep::Seeded = character_prep::Seeded {
-    profile: "c12-monk",
-    reason: "C12 tests spell augment behavior after obtaining the weapon and qualifying for the spell.",
-};
 const ITEM_ID: u32 = 50_271;
-const PREREQUISITES: &str = "level-20-monk,premium,mana-potions";
 const MANA_POTION: u32 = 268;
 const CAST_MANA: u32 = 50;
 const SPELL_WORDS: &str = "exori nia";
@@ -93,7 +88,7 @@ impl Row {
             }
         };
         evidence(&format!(
-            "e2e_all scenario=C12.full status={} seconds={:.3} mode=seeded prerequisites={PREREQUISITES}{detail}",
+            "e2e_all scenario=C12.full status={} seconds={:.3}{detail}",
             if complete { "PASS" } else { "FAIL" },
             self.started.elapsed().as_secs_f64()
         ));
@@ -112,7 +107,6 @@ fn token(value: &str) -> String {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("C12", PREREQUISITES, "exori nia augment attribution");
     let mut row = Row::new();
     let result = match verdict::indexed_timeout(Duration::from_secs(480), verdict::observe(journey(&mut row, clients))).await {
         Ok(result) => result,
@@ -557,15 +551,25 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if !requires_platform_grant(&clients.accounts[1]) {
         return Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into());
     }
-    let mut client = PREPARATION.connect(clients, 0xc2, 1).await?;
-    let level = full_e2ef7::player_level(&mut client).await?;
-    if level < 20 {
-        return Err(format!("Platform-admitted Monk needs level 20 for item {ITEM_ID}; observed={level}").into());
-    }
+    let mut client = connect_character(clients, 0xc2, 1).await?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    full_e2ef7::earn_player_level(&mut client, world, 20, Duration::from_secs(150)).await?;
+    full_e2ef7::require_current_premium(&mut client).await?;
+    spell(&mut client)?;
+    let index = provisioning::item_index()?;
+    full_e2ef7::acquire_from_vendor(
+        &mut client,
+        world,
+        &index,
+        "oteryn:item.tibia.i268",
+        12,
+        ("xodet", "Xodet"),
+    )
+    .await
+    .map_err(|error| format!("C12 ordinary Mana Potion acquisition: {error}"))?;
     let talk_range = oteryn_protocol_oteryn::npc_service::TALK_RANGE_TILES;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == 7 && u32::from(at.x.abs_diff(33603).max(at.y.abs_diff(31468))) <= talk_range
@@ -583,10 +587,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if carried_count(&client, definition) != 0 || equipped_right(&client, definition) {
         return Err("item 50271 must first enter the dedicated Monk's backpack through the purchase".into());
     }
-    character_prep::grant_premium(&client).await?;
-    character_prep::grant_item(&client, MANA_POTION, 12).await?;
-    character_prep::reload(&mut client, clients).await?;
-    let index = provisioning::item_index()?;
     let purchased = full_e2ef7::acquire_from_vendor(
         &mut client,
         world,
