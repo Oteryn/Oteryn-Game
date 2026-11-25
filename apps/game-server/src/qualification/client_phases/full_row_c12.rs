@@ -25,6 +25,7 @@ const ITEM_ID: u32 = 50_271;
 const MANA_POTION: u32 = 268;
 const CAST_MANA: u32 = 50;
 const SPELL_WORDS: &str = "exori nia";
+#[cfg(test)]
 const SPELL_NAME: &str = "greater tiger clash";
 const SAMPLES: usize = 3;
 const COMMAND_BUDGET: Duration = Duration::from_secs(8);
@@ -137,7 +138,12 @@ fn spell(client: &mut DevClientSession) -> TestResult<NonZeroU32> {
     NonZeroU32::new(entry.cast_index).ok_or_else(|| "Greater Tiger Clash has zero served index".into())
 }
 
+// OTV2-20261002-item-mantra-bond-source-qualification-v1.json:14315
+// Captured Greater Tiger Clash base damage bonus for Fists of Enlightenment: +8%.
+const EXPECTED_AUGMENT_BPS: u64 = 800;
+
 /// The base-damage augment (hundredths of a percent) that content binds to this spell on the item.
+#[cfg(test)]
 fn content_augment() -> TestResult<u64> {
     let profiles = read_json("content/items/definitions/spell-native-profiles.json")?;
     let key = format!("oteryn:item.tibia.i{ITEM_ID}");
@@ -600,7 +606,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("live purchase returned the wrong weapon definition".into());
     }
     let spell_index = spell(&mut client)?;
-    let augment = content_augment()?;
+    let augment = EXPECTED_AUGMENT_BPS;
     let from = tile(client.world_spatial().actor_position)?;
     let profiles = creature_profiles()?;
     let (creature, _) = pick_creature(
@@ -718,7 +724,7 @@ mod tests {
 
     #[test]
     fn content_binds_the_augment_to_the_item() -> TestResult {
-        assert!(content_augment()? > 0);
+        assert_eq!(content_augment()?, EXPECTED_AUGMENT_BPS);
         assert_ne!(item_ref()?.get(), 0);
         Ok(())
     }
