@@ -176,7 +176,11 @@ OUTLAW_KEYS = {3301: 2970, 3302: 2969, 3303: 2970, 3304: 2972}
 
 
 def source_key_claim(definition):
-    return key_claim(definition, 3600, 2969) or panpipe_key_claim(definition) or outlaw_key_claim(definition)
+    return (
+        key_claim(definition, 3600, 2969)
+        or panpipe_key_claim(definition)
+        or outlaw_key_claim(definition)
+    )
 
 
 def outlaw_key_claim(definition):

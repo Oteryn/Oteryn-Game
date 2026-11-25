@@ -25,6 +25,7 @@ OUTFIT_BOSS_LOOT = {
     39545, 50147, 50149, 50188, 50260,
 }
 MAGMA_BUBBLE_CORPSE = 36847
+GRAVE_DANGER_LOOT = 'tools/content-schema/native-gameplay/grave-danger-crystal-loot.json'
 
 
 def refresh_outfit_boss_loot(root, generated, profile_path, manifest_path, canonical):
@@ -59,11 +60,44 @@ def refresh_outfit_boss_loot(root, generated, profile_path, manifest_path, canon
                     or not {'CharacterInventory', 'Ground'} <= set(admission['legal_destinations'])):
                 raise ValueError('OUTFIT_BOSS_LOOT_YIELD_NOT_ADMITTED:' + key)
             row.update(qualified)
+    apply_crystal_grave_loot(root, document, generated)
     raw = canonical(document)
     generated[path] = raw
     manifest = json.loads(generated[manifest_path])
     manifest['loot_tables']['sha256'] = hashlib.sha256(raw).hexdigest()
     generated[manifest_path] = canonical(manifest)
+
+
+def apply_crystal_grave_loot(root, document, generated):
+    from grave_danger_content import PIN
+
+    capture = json.loads((root / GRAVE_DANGER_LOOT).read_bytes())
+    if capture['revision'] != PIN:
+        raise ValueError('GRAVE_DANGER_LOOT_SOURCE_REVISION')
+    profiles = json.loads(generated['content/creatures/definitions/spell-native-profiles.json'])
+    eligibility = {
+        row['profile']['target']['key']:
+        row['profile']['data']['profile']['details']['system_eligibility']['reward_boss']
+        for row in profiles['records']
+        if row['profile']['target']['key'] in capture['creatures']
+    }
+    bindings = {row['creature']['key']: row['loot'] for row in document['creature_loot']}
+    tables = {row['identity']['key']: row for row in document['tables']}
+    items = {row['item']['key']: row['item'] for row in document['items']}
+    for creature, source in capture['creatures'].items():
+        reference = bindings[creature]
+        table = tables[reference['key']]
+        if eligibility[creature] is not source['reward_boss'] or table['identity'] != reference:
+            raise ValueError('GRAVE_DANGER_LOOT_BINDING:' + creature)
+        table['entries'] = [
+            {
+                'item': items[f'oteryn:item.tibia.i{item_id}'],
+                'min_count': minimum,
+                'max_count': maximum,
+                'probability_ppm': probability,
+            }
+            for item_id, minimum, maximum, probability in source['entries']
+        ]
 
 
 def importer(root):

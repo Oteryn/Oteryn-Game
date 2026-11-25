@@ -44,6 +44,7 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::RuntimeScopeRefV1;
+use oteryn_gameplay_content::content::spell_wheel_profile::assignment_follows_source_order;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
@@ -513,6 +514,23 @@ impl DurabilityRoot {
                         facts.at_temple,
                     ) {
                         return refuse(refusal);
+                    }
+                    // Mixed saves must also be reachable through the ordered refunds and
+                    // spends. The live validator above owns ring thresholds and removal.
+                    let mut changes = slots.points().iter().zip(before.points());
+                    if changes.clone().any(|(after, before)| after > before)
+                        && changes.any(|(after, before)| after < before)
+                        && !assignment_follows_source_order(
+                            before.points(),
+                            slots.points(),
+                            available,
+                            |i| {
+                                let slot = &ruleset.slots()[i];
+                                (slot.capacity, slot.unlock_from.as_slice())
+                            },
+                        )
+                    {
+                        return refuse(WheelRefusal::NotAdjacent);
                     }
                     // An allocation keeps its pinned revision; a first row takes the active one.
                     let pinned = stored.as_ref().map_or_else(

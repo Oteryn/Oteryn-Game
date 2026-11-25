@@ -2,6 +2,7 @@ use super::fixture::{Harness, debug, id};
 use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
 };
+use crate::content::creature_reward::NoSettlementReason;
 use crate::foundation::{
     CharacterId, CharacterLease, CommandId, CommandRef, ExactActorRef, GameSessionId,
     MovementLocalPosition, NodeId, OwnerDamageCommand,
@@ -10,14 +11,12 @@ use crate::gameplay_transport::connection::FirstEntryOutcome;
 use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_creature_kill};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
     death_objectives::{self, DeathObjective},
     grave_danger, loader,
 };
 use std::sync::Arc;
 
 const ZELOS: &str = "oteryn:creature.king_zelos";
-const SEED: &str = "oteryn:quest-transition/grave-danger/fixture-prerequisites";
 const KNIGHT: &str = "oteryn:creature.count_vlarkorth";
 const SCARLETT: &str = "oteryn:creature.scarlett_etzel";
 
@@ -25,7 +24,7 @@ const SCARLETT: &str = "oteryn:creature.scarlett_etzel";
 enum Case {
     Contributors,
     ChestFault,
-    ShippedCatalogue,
+    RefusedPrivateLoot,
     IdleReset,
     SecondCreditFault,
 }
@@ -66,8 +65,12 @@ fn grave_boss_credit_settles_when_shipped_private_loot_is_refused() -> TestResul
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    scenario(&admin, "gz_zelos_shipped_loot", ZELOS, Case::ShippedCatalogue)?;
-    scenario(&admin, "gz_scarlett_shipped_loot", SCARLETT, Case::ShippedCatalogue)
+    scenario(
+        &admin,
+        "gz_scarlett_shipped_loot",
+        SCARLETT,
+        Case::RefusedPrivateLoot,
+    )
 }
 
 #[test]
@@ -133,23 +136,45 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, activated) = if case == Case::ShippedCatalogue {
+    let (controller, activated) =
         super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id,
             "content-1",
-        )?
-    } else {
-        super::questpc7_grave_fixtures::generation_with_qualified_grave_rewards(
-            deps.admitted.world_id,
-        )?
-    };
+        )?;
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
-    if case == Case::ShippedCatalogue {
-        assert!(native.reward_table().row(creature).is_err());
-        assert!(native.reward_table().reward_boss_corpse(creature).is_some());
-    } else if creature != death_objectives::GRAVE_NICTROS {
-        assert!(native.reward_table().row(creature).is_ok());
+    let reward_table = native.reward_table();
+    match creature {
+        SCARLETT => {
+            assert_eq!(
+                reward_table.row(creature).err(),
+                Some(NoSettlementReason::LootItemInadmissible),
+            );
+            assert!(reward_table.reward_boss_corpse(creature).is_some());
+        }
+        death_objectives::GRAVE_NICTROS => {
+            assert!(
+                reward_table
+                    .row(creature)
+                    .map_err(debug)?
+                    .loot_table
+                    .entries
+                    .is_empty()
+            );
+            assert!(reward_table.reward_boss_corpse(creature).is_none());
+        }
+        _ => {
+            let row = reward_table.row(creature).map_err(debug)?;
+            assert_eq!(
+                row.loot_table.entries.len(),
+                if creature == ZELOS { 27 } else { 30 }
+            );
+            assert!(row.loot_table.entries.iter().any(|entry| {
+                entry.item.production_key == "oteryn:item.tibia.i3035"
+                    && (entry.min_count, entry.max_count, entry.probability_ppm)
+                        == (1, 5, Some(1_000_000))
+            }));
+        }
     }
     let objective = death_objectives::load()
         .map_err(debug)?
@@ -212,29 +237,7 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(active);
     let catalogue = loader::load_embedded_quest_state("content-1").map_err(debug)?;
-    owner.quest_catalogue = Some(Arc::new(
-        catalogue
-            .catalogue()
-            .with_fixture_transition(QuestTransition {
-                key: SEED.into(),
-                quest: objective.quest.clone(),
-                completes: false,
-                experience: None,
-                world_change: None,
-                effects: [
-                    (objective.stage.clone(), objective.stage_value),
-                    (objective.counter.clone(), 0),
-                ]
-                .into_iter()
-                .map(|(track, value)| QuestEffect {
-                    track,
-                    from: QuestComparison::Any,
-                    effect: QuestEffectKind::Set(value),
-                })
-                .collect(),
-            })
-            .map_err(debug)?,
-    ));
+    owner.quest_catalogue = Some(Arc::new(catalogue.catalogue().clone()));
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.item_fence = Some(
@@ -284,8 +287,8 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
         "peer progression must be admitted before seeding its quest"
     );
     let session = admitted.game_session_id;
-    let primary = prepare_player(&deps, &owner, session).await?;
-    let other = prepare_player(&deps, &owner, peer).await?;
+    let primary = prepare_player(h, &deps, &owner, session, objective).await?;
+    let other = prepare_player(h, &deps, &owner, peer, objective).await?;
     assert_eq!(progress(h, id(101), objective).await?, (0, -1));
     let queue = owner.states.attack.lock().await.kills().clone();
     let observed = owner.owner_now();
@@ -409,8 +412,7 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
         DrainOutcome::Drained
     );
     let earned = (1, if creature == ZELOS { 4 } else { -1 });
-    let peer_credit = matches!(case, Case::Contributors | Case::SecondCreditFault)
-        || (case == Case::ShippedCatalogue && creature == ZELOS);
+    let peer_credit = matches!(case, Case::Contributors | Case::SecondCreditFault);
     assert_eq!(progress(h, id(41), objective).await?, earned, "{creature}");
     assert_eq!(
         progress(h, id(101), objective).await?,
@@ -418,7 +420,7 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
     );
     let counts = rewards(h).await?;
     let contributors = 1 + i64::from(peer_credit);
-    if case == Case::ShippedCatalogue || creature == death_objectives::GRAVE_NICTROS {
+    if case == Case::RefusedPrivateLoot || creature == death_objectives::GRAVE_NICTROS {
         assert_eq!((counts.0, counts.1), (0, 0));
         let personal_rewards: bool = sqlx::query_scalar(
             "SELECT personal_rewards FROM game_boss_death_settlements WHERE boss_key=$1",
@@ -500,9 +502,11 @@ fn simulate_idle_think(
 }
 
 async fn prepare_player(
+    h: &Harness,
     deps: &Dependencies,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
+    objective: &DeathObjective,
 ) -> TestResult<ExactActorRef> {
     let fence = owner
         .current_quest_fence(session)
@@ -535,33 +539,61 @@ async fn prepare_player(
         controller: None,
         ..deps.admitted
     };
-    use crate::durability::quest_state::{
-        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
-    };
-    let outcome = owner
-        .revision_sequencer
-        .acquire(fence.character_id)
-        .await
-        .commit_quest_transition(
-            owner.root,
-            owner.character,
-            owner.holder,
-            fence,
-            QuestTransitionRequest {
-                transition_key: SEED.into(),
-                cause: QuestCause::Command(CommandRef::new(
-                    session,
-                    CommandId::new(1).map_err(debug)?,
-                )),
-            },
-            Arc::clone(owner.quest_catalogue.as_ref().ok_or("quest catalogue")?),
-        )
-        .await
-        .map_err(debug)?;
-    assert!(
-        matches!(outcome, QuestTransitionOutcome::Committed(_)),
-        "{outcome:?}"
-    );
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
+    let definition_hash = catalogue
+        .definition_hash(&objective.quest)
+        .ok_or("Grave Danger quest definition")?;
+    // Model a save that reached the fight through the authored callbacks.
+    let mut save = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *save)
+        .await?;
+    let revision = sqlx::query(
+        "WITH advanced AS (
+             UPDATE game_character_roots SET character_revision=character_revision+1
+             WHERE character_id=encode($1,'hex')::uuid AND character_revision=$2::text::numeric
+             RETURNING character_id, character_revision
+         )
+         UPDATE game_character_progression_state AS progression
+         SET character_revision=advanced.character_revision
+         FROM advanced WHERE progression.character_id=advanced.character_id",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(fence.expected_character_revision.get().to_string())
+    .execute(&mut *save)
+    .await?;
+    assert_eq!(revision.rows_affected(), 1);
+    let state = sqlx::query(
+        "INSERT INTO game_character_quest_states
+            (character_id, quest_key, pinned_content_revision, definition_hash,
+             started_character_revision, committed_character_revision)
+         SELECT character_id, $2, $3, $4, character_revision, character_revision
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(&objective.quest)
+    .bind(catalogue.content_revision())
+    .bind(definition_hash.as_slice())
+    .execute(&mut *save)
+    .await?;
+    assert_eq!(state.rows_affected(), 1);
+    let tracks = sqlx::query(
+        "INSERT INTO game_character_quest_tracks
+            (character_id, track_key, quest_key, value, committed_character_revision)
+         SELECT character_id, track_key, $2, value, character_revision
+         FROM game_character_roots
+         CROSS JOIN (VALUES ($3::text, $4::bigint), ($5::text, 0::bigint)) AS tracks(track_key, value)
+         WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(&objective.quest)
+    .bind(&objective.stage)
+    .bind(objective.stage_value)
+    .bind(&objective.counter)
+    .execute(&mut *save)
+    .await?;
+    assert_eq!(tracks.rows_affected(), 2);
+    save.commit().await?;
     owner.admit_quest_session(&admitted).await;
     assert!(owner.refresh_source_party_presence(actor, session).await);
     Ok(actor)

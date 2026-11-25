@@ -19,51 +19,6 @@ const VISITS: &str = "oteryn:quest-progress/questpc7/grave/visits";
 
 const PASSAGES: &str = "oteryn:quest-progress/questpc7/grave/passages";
 
-/// Keep one materializable source drop per reward boss in the positive PG
-/// fixture. The separate withheld-reward case uses the unmodified catalogue.
-pub(super) fn generation_with_qualified_grave_rewards(
-    world: crate::foundation::WorldId,
-) -> TestResult<(
-    crate::content::ContentActivationController,
-    crate::content::NativeEntryContentPin,
-)> {
-    use sha2::{Digest, Sha256};
-
-    let mut input =
-        super::death_ml_loss_composed_fixtures::production_input_with_source("content-1", None)?;
-    let loot = input.loot_tables.as_mut().ok_or("pinned loot section")?;
-    let mut section: serde_json::Value = serde_json::from_slice(&loot.bytes)?;
-    let objectives = oteryn_gameplay_quests::quest::death_objectives::load().map_err(debug)?;
-    let tables: Vec<_> = section["creature_loot"]
-        .as_array()
-        .ok_or("creature loot")?
-        .iter()
-        .filter(|row| {
-            objectives.iter().any(|objective| {
-                objective.quest == QUEST
-                    && objective.creature
-                        != oteryn_gameplay_quests::quest::death_objectives::GRAVE_NICTROS
-                    && row["creature"]["key"] == objective.creature
-            })
-        })
-        .map(|row| row["loot"].clone())
-        .collect();
-    for table in section["tables"].as_array_mut().ok_or("loot tables")? {
-        if tables.contains(&table["identity"]) {
-            let entries = table["entries"].as_array_mut().ok_or("loot entries")?;
-            // Every Grave Danger chest table has this admitted source drop.
-            entries.retain(|entry| entry["item"]["key"] == "oteryn:item.tibia.i3035");
-            assert_eq!(entries.len(), 1);
-        }
-    }
-    loot.bytes = serde_json::to_vec(&section)?;
-    loot.sha256 = Sha256::digest(&loot.bytes)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect();
-    crate::content::native_gameplay::test_support::try_activate_input(world, &input).map_err(debug)
-}
-
 fn callbacks() -> TestResult<Vec<oteryn_gameplay_quests::quest::world_callbacks::Callback>> {
     Ok(oteryn_gameplay_quests::quest::world_callbacks::load()
         .map_err(debug)?

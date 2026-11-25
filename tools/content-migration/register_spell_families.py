@@ -101,6 +101,7 @@ COIN_ADMISSION = {
 
 def refresh_registered_loot(root: Path, generated: dict[str, bytes]) -> None:
     from cake_native_successor import loot_successor
+    import native_goal_loot_items
     import questpc7_hot_corpse_loot
     import questpc7_marsh_loot
     import questpc7_slug_loot
@@ -129,6 +130,9 @@ def refresh_registered_loot(root: Path, generated: dict[str, bytes]) -> None:
         questpc7_hot_corpse_loot,
     ):
         overlay.apply(root, generated, item_path, NATIVE_MANIFEST, canonical)
+    native_goal_loot_items.refresh_outfit_boss_loot(
+        root, generated, item_path, NATIVE_MANIFEST, canonical,
+    )
 
 
 def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
@@ -1841,9 +1845,6 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
 
     pin_repository_inputs(root, generated)
-    native_goal_loot_items.refresh_outfit_boss_loot(
-        root, generated, item_path, NATIVE_MANIFEST, spell_import.canonical_bytes,
-    )
 
     # The model bootstraps from this same fresh provider without recursively
     # requiring the very Prey results it is about to produce.
