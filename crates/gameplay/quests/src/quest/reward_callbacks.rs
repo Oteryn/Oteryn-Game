@@ -2553,8 +2553,22 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Every source shard and the Kingsday journal contribute 514 callbacks.
-        assert_eq!(load()?.len(), 514);
+        // The shards, Colours peer and Kingsday journal contribute 514 callbacks.
+        // Crystal 201189f8 storkus.lua:60-72,121-141 adds 229 partial-deposit
+        // variants around the published full deposit and one already-paid callback.
+        let callbacks = load()?;
+        assert_eq!(callbacks.len(), 514 + 230);
+        assert_eq!(
+            callbacks
+                .iter()
+                .filter(|callback| {
+                    callback
+                        .key
+                        .starts_with("oteryn:quest-reward/inquisition-vampire-hunt-dust/")
+                })
+                .count(),
+            230
+        );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
