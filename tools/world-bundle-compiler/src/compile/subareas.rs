@@ -95,14 +95,6 @@ struct Position {
 }
 
 impl Source {
-    pub(crate) fn qualification_hometown(&mut self, name: &str) -> Result<(), Error> {
-        let town = self.table.areas.iter().find(|area| area.hometown && area.name == name)
-            .and_then(|area| area.town_id.zip(area.temple))
-            .ok_or_else(|| fail(format!("qualification hometown {name}")))?;
-        self.table.default_town = Some(town.0);
-        Ok(())
-    }
-
     /// Decode and verify the source assets before native World admission in `compile`.
     pub fn load(root: &Path) -> Result<Self, Error> {
         let mut source = Self::default();

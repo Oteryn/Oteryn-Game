@@ -459,24 +459,38 @@ async fn cross_portal(
     entrance: TilePos,
     arrival: TilePos,
 ) -> TestResult {
-    if world.floors().teleport(entrance) != Some(arrival) {
-        return Err(format!("C12 compiled portal {entrance:?} does not land at {arrival:?}").into());
-    }
+    use oteryn_protocol_oteryn::{world_map::MapOrigin, world_object::UseDisposition};
+
     let start = tile(client.world_spatial().actor_position)?;
-    // Bound the approach by the normal town window. The final real STEP crosses
-    // the explicit portal edge and is verified against its far landing.
-    let path = route_with_landings(start, |at| at == entrance, |_| true, |at, step| {
-        if destination_with_teleports(world, at, step, false) == Some(entrance)
-            && destination(world, at, step) == Some(arrival)
-        {
-            Some(entrance)
-        } else {
-            destination(world, at, step)
-        }
-    }).ok_or_else(|| format!("C12 portal approach unavailable from {start:?} to {entrance:?}"))?;
+    let path = route(world, start, |at| {
+        at.floor == entrance.floor && at.x.abs_diff(entrance.x).max(at.y.abs_diff(entrance.y)) == 1
+    }).ok_or_else(|| format!("C12 bell approach unavailable from {start:?} to {entrance:?}"))?;
     walk(client, world, &path).await?;
-    if tile(client.world_spatial().actor_position)? != arrival {
-        return Err(format!("C12 portal STEP did not land at {arrival:?}").into());
+
+    // Crystal 201189f8 actions_blue_valley_teleports.lua:2,4,9.
+    const BELL: u16 = 49948;
+    let map = client.session_mut().world_map_snapshot().ok_or("C12 bell map view unavailable")?;
+    let (ordinal, revision) = map.tiles.iter()
+        .find(|entry| tile(entry.position).ok() == Some(entrance))
+        .and_then(|entry| entry.items.iter().find_map(|item| match item.origin {
+            MapOrigin::BaseOrdinal { ordinal, object_revision } if item.appearance_id == BELL => {
+                Some((ordinal, object_revision))
+            }
+            _ => None,
+        })).ok_or_else(|| format!("C12 donor bell absent at {entrance:?}"))?;
+    let key = crate::map::view::placement_key(entrance, ordinal).ok_or("C12 bell placement key")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let reply = client.use_object(&placement, revision).await?;
+    if reply.disposition != UseDisposition::Committed {
+        return Err(format!("C12 donor bell USE at {entrance:?}: {:?}", reply.disposition).into());
+    }
+    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
+    while tile(client.world_spatial().actor_position)? != arrival {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("C12 donor bell USE did not land at {arrival:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
     }
     Ok(())
 }

@@ -142,49 +142,23 @@ pub fn project_regions(root: &Path, selected: &[(u16, u16)]) -> Result<Project, 
     project_selected(root, Some(selected))
 }
 
-/// The Thais qualification declares its birth town and source-backed crossing edges.
+/// The disposable node-boot town bundle includes an automatic floor change for M03.
 pub fn project_town_qualification(root: &Path, selected: &[(u16, u16)]) -> Result<Project, Error> {
-    let mut project = project_regions(root, selected)?;
-    project.families.subareas.qualification_hometown("Thais")?;
-    add_qualification_portal(&mut project, (32377, 32219, 6), (32377, 32219, 7), None)?;
-    if selected.contains(&(131, 122)) {
-        // Crystal 201189f8 actions_blue_valley_teleports.lua:2,4. The qualification
-        // bundle exposes these coordinates as STEP-triggered portal edges.
-        add_qualification_portal(
-            &mut project,
-            (32456, 32290, 7),
-            (33614, 31494, 7),
-            Some("oteryn:item.tibia.i49948"),
-        )?;
-        add_qualification_portal(
-            &mut project,
-            (33605, 31468, 7),
-            (32456, 32291, 7),
-            Some("oteryn:item.tibia.i49948"),
-        )?;
-    }
-    Ok(project)
-}
-
-fn add_qualification_portal(
-    project: &mut Project,
-    entrance: LegacyPosition,
-    landing: LegacyPosition,
-    replace: Option<&str>,
-) -> Result<(), Error> {
+    // Enter from the street to repeat Scorch on the same upper landing and in the
+    // same direction as the stair experiment. Only the floor-change owner differs.
+    const ENTRANCE: LegacyPosition = (32377, 32217, 7);
+    const LANDING: LegacyPosition = (32376, 32219, 6);
     const PORTAL: &str = "oteryn:item.tibia.i1949";
-    let error = |what| Error::Format(format!("qualification portal {entrance:?}: {what}"));
-    let palette_index = |key| {
-        project.index["palette"]
-            .as_array()
-            .and_then(|palette| palette.iter().position(|entry| entry["key"] == key))
-            .and_then(|index| u32::try_from(index).ok())
-            .ok_or_else(|| error("missing portal palette entry"))
-    };
-    let palette = palette_index(PORTAL)?;
-    let replace = replace.map(palette_index).transpose()?;
+
+    let mut project = project_regions(root, selected)?;
+    let error = |what| Error::Format(format!("M03 qualification portal: {what}"));
+    let palette = project.index["palette"]
+        .as_array()
+        .and_then(|palette| palette.iter().position(|entry| entry["key"] == PORTAL))
+        .and_then(|index| u32::try_from(index).ok())
+        .ok_or_else(|| error("missing portal palette entry"))?;
     let mut budget = bundle::BUNDLE_BUDGET;
-    for at in [landing, entrance] {
+    for at in [LANDING, ENTRANCE] {
         let (x, y, z) = at;
         let [rx_lo, rx_hi] = (x / 256).to_le_bytes();
         let [ry_lo, ry_hi] = (y / 256).to_le_bytes();
@@ -201,46 +175,31 @@ fn add_qualification_portal(
             .flat_map(|(_, _, tiles)| tiles)
             .find(|tile| (tile.x, tile.y) == (x, y))
             .ok_or_else(|| error("missing tile"))?;
-        if tile.house != 0
+        if tile.flags & compile::FLAG_PROTECTION_ZONE != 0
+            || tile.house != 0
             || tile.items.is_empty()
-            || (replace.is_none() && tile.flags & compile::FLAG_PROTECTION_ZONE != 0)
         {
-            return Err(error("expected a non-house tile"));
+            return Err(error("expected a non-house tile outside protection"));
         }
-        if at == entrance {
+        if at == ENTRANCE {
             if project.families.teleports.contains_key(&at)
                 || tile.items.iter().any(|item| item.attrs.teleport.is_some())
             {
                 return Err(error("entrance already has an authored teleport"));
             }
-            let portal = sector::Item {
+            tile.items.push(sector::Item {
                 palette,
                 depth: 0,
                 attrs: sector::Attrs {
-                    teleport: Some(landing),
+                    teleport: Some(LANDING),
                     ..sector::Attrs::default()
                 },
-            };
-            if let Some(bell) = replace {
-                let mut matching = tile
-                    .items
-                    .iter_mut()
-                    .filter(|item| item.depth == 0 && item.palette == bell);
-                let entry = matching
-                    .next()
-                    .ok_or_else(|| error("missing donor portal bell"))?;
-                if matching.next().is_some() {
-                    return Err(error("ambiguous donor portal bell"));
-                }
-                *entry = portal;
-            } else {
-                tile.items.push(portal);
-            }
+            });
             *bytes = crate::authored_props::encode(&region)?;
-            project.families.teleports.insert(at, landing);
+            project.families.teleports.insert(at, LANDING);
         }
     }
-    Ok(())
+    Ok(project)
 }
 
 fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Project, Error> {

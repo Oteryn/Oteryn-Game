@@ -866,14 +866,11 @@ async fn temple_respawn(
         {
             return Err("temple journey requires the native bundle map capability".into());
         }
-        // This unprovisioned Character has made no citizenship change. The bundle's
-        // configured hometown fixes the expected temple BEFORE observing the death.
-        let towns = &world.base().subareas;
-        let home = towns
-            .default_town
-            .and_then(|id| towns.town(id))
+        // The Thais journey requires the fixture character to come home to Thais.
+        // Resolve the expected temple before observing the death.
+        let home = world.base().subareas.town(8)
             .and_then(|town| town.temple)
-            .ok_or("compiled world has no default home temple")?;
+            .ok_or("compiled world has no Thais home temple")?;
         let basis = spatial_basis::current(&mut client)?;
         let temple = ActorPosition {
             x: i32::from(home.x),

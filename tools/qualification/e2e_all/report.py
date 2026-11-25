@@ -9,7 +9,7 @@ import re
 
 RESULT = re.compile(
     r"^SEAM_EVIDENCE e2e_all scenario=([A-Z]\d\d[a-z]?\.[a-z0-9-]+) "
-    r"status=(PASS|FAIL|SKIPPED|MISSING-SERVER|MISSING-CLIENT|OUT_OF_SCOPE) seconds=([0-9]+(?:\.[0-9]+)?)"
+    r"status=(PASS|FAIL|SKIPPED|MISSING-SERVER|MISSING-CLIENT) seconds=([0-9]+(?:\.[0-9]+)?)"
     r"(?: evidence=(\S+))?"
     # A failing scenario names its own cause and the first failing row/check.
     r"(?: cause=([a-z][a-z-]*) root=(\S+))?$"
@@ -156,13 +156,6 @@ def results(text):
             raise ValueError(f"missing exact content id: {scenario}")
         if status == "MISSING-SERVER" and not re.fullmatch(r"source:[A-Za-z0-9_./-]+:\d+", evidence):
             raise ValueError(f"missing file:line source evidence: {scenario}")
-        if status == "OUT_OF_SCOPE" and (
-            scenario not in {"S16a.full", "S16a.client", "C11.full", "C11.client"}
-            or evidence != "Dawnport_owner-excluded"
-        ):
-            raise ValueError(f"unknown owner exclusion: {scenario}")
-        if status == "OUT_OF_SCOPE":
-            evidence = "Dawnport owner-excluded"
         found[scenario] = (status, seconds, evidence)
     for scenario, result in combat_results(text).items():
         if scenario in found:
@@ -209,12 +202,12 @@ def summary(rows, found, node_status=0, client_status=0, map_evidence=None,
         status, seconds, evidence = found.get(
             f"{row_id}.full", ("FAIL", 0.0, "complete scenario unimplemented or not reached")
         )
-        complete &= status in {"PASS", "OUT_OF_SCOPE"}
+        complete &= status == "PASS"
         output.append(f"{row_id} {name} | {status} | {seconds:.3f} | {evidence or ''}")
     for scenario, (status, seconds, evidence) in sorted(found.items()):
         if not scenario.endswith(".full"):
             output.append(f"slice {scenario} | {status} | {seconds:.3f} | {evidence or 'bounded assertion only'}")
-            complete &= status in {"PASS", "OUT_OF_SCOPE"}
+            complete &= status == "PASS"
     for name, status in [("node_boot", node_status), ("client_tests", client_status)]:
         output.append(f"{name} | {'PASS' if status == 0 else 'FAIL'} | - | exit={status}")
     if map_evidence is not None:
