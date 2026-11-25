@@ -8,11 +8,14 @@ use crate::durability::{
     character_progression::CharacterProgressionError,
     db::{begin_semantic_transaction, commit_semantic_transaction},
     item_transfer::CurrentCharacterItemFence,
-    runtime_scope_assignment::NodeIncarnationProof,
+    runtime_scope_assignment::{
+        AssignmentState, NodeIncarnationProof, assignment_scope_key, load_assignment,
+    },
     spell_owner_commit::SpellLanePermit,
 };
-use crate::foundation::{CommandRef, ExactActorRef};
+use crate::foundation::{ActorLocalGeneration, ActorLocalId, ActorRef, CommandRef, ExactActorRef};
 use oteryn_gameplay_quests::quest::world_callbacks::{VAMPIRE_COFFIN_QUESTLINE, VampireCoffinKind};
+use sqlx::Row;
 
 impl DurabilityRoot {
     /// Selection advice for a fresh coffin use after the in-memory encounter was lost.
@@ -39,7 +42,8 @@ impl DurabilityRoot {
     }
 
     /// Record the exact Count before publication. Its durable death settlement
-    /// ends recovery. An unpublished or lost runtime actor can be replaced.
+    /// ends recovery. Replacing a published actor requires the original owner
+    /// to prove retirement or the persisted assignment to prove supersession.
     #[allow(
         clippy::too_many_arguments,
         reason = "the publication uses the same current item fence as payment"
@@ -54,7 +58,7 @@ impl DurabilityRoot {
         content: [u8; 32],
         kind: VampireCoffinKind,
         count: ExactActorRef,
-        publish: impl FnOnce() + Send,
+        mut retains_previous: impl FnMut(ExactActorRef) -> bool + Send,
     ) -> Result<bool, DurabilityError> {
         permit.check_scope(fence.runtime_scope)?;
         if count.runtime_scope() != fence.runtime_scope
@@ -72,44 +76,106 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        let ready = self
-            .try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_current_equipment_in_transaction(
-                        &mut tx,
-                        &recovery,
-                        &node,
-                        &fence,
-                        Some(command),
-                        content,
-                    )
-                    .await
-                    .map_err(|_| DurabilityError::Unavailable)?;
-                    if pending_encounter(&mut tx, fence.character_id).await? != Some(kind) {
-                        return Ok(false);
-                    }
-                    sqlx::query(
-                        "INSERT INTO game_pending_vampire_coffin_payments \
-                             (character_id, death_id) \
-                             VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid) \
-                             ON CONFLICT (character_id) DO UPDATE SET death_id=EXCLUDED.death_id",
-                    )
-                    .bind(fence.character_id.as_bytes().as_slice())
-                    .bind(death_id.as_slice())
-                    .execute(&mut *tx)
-                    .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(true)
-                })
-            })
-            .await?;
-        if ready {
-            publish();
-        }
-        Ok(ready)
+        self.try_issue_semantic_pass()?
+            .run_with_context(
+                &mut retains_previous,
+                move |holder, deadline, retains_previous| {
+                    Box::pin(async move {
+                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                        assert_current_equipment_in_transaction(
+                            &mut tx,
+                            &recovery,
+                            &node,
+                            &fence,
+                            Some(command),
+                            content,
+                        )
+                        .await
+                        .map_err(|_| DurabilityError::Unavailable)?;
+                        if pending_encounter(&mut tx, fence.character_id).await? != Some(kind) {
+                            return Ok(false);
+                        }
+                        let scope_key = assignment_scope_key(fence.runtime_scope);
+                        if !previous_spawn_ended(&mut tx, &fence, &scope_key, retains_previous)
+                            .await?
+                        {
+                            return Ok(false);
+                        }
+                        sqlx::query(
+                            "INSERT INTO game_pending_vampire_coffin_payments \
+                             (character_id, death_id, spawn_scope, spawn_scope_generation, \
+                              spawn_actor_id, spawn_actor_generation) \
+                             VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, \
+                                     $4::text::numeric, $5, $6::text::numeric) \
+                             ON CONFLICT (character_id) DO UPDATE SET death_id=EXCLUDED.death_id, \
+                               spawn_scope=EXCLUDED.spawn_scope, \
+                               spawn_scope_generation=EXCLUDED.spawn_scope_generation, \
+                               spawn_actor_id=EXCLUDED.spawn_actor_id, \
+                               spawn_actor_generation=EXCLUDED.spawn_actor_generation",
+                        )
+                        .bind(fence.character_id.as_bytes().as_slice())
+                        .bind(death_id.as_slice())
+                        .bind(scope_key.as_slice())
+                        .bind(count.scope_generation().get().to_string())
+                        .bind(i64::from(count.actor_local_id()))
+                        .bind(count.actor_local_generation().to_string())
+                        .execute(&mut *tx)
+                        .await?;
+                        commit_semantic_transaction(tx, deadline).await?;
+                        Ok(true)
+                    })
+                },
+            )
+            .await
     }
+}
+
+async fn previous_spawn_ended(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    current_scope: &[u8; 33],
+    retains_previous: impl FnOnce(ExactActorRef) -> bool,
+) -> Result<bool, DurabilityError> {
+    // The current Character fence locks the root before reading or replacing
+    // this row. A prior assignment's generation can only advance.
+    let row = sqlx::query(
+        "SELECT spawn_scope, spawn_scope_generation::text, spawn_actor_id, \
+                spawn_actor_generation::text FROM game_pending_vampire_coffin_payments \
+         WHERE character_id=encode($1,'hex')::uuid AND death_id IS NOT NULL",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(row) = row else { return Ok(true) };
+    let Some(scope) = row.try_get::<Option<Vec<u8>>, _>("spawn_scope")? else {
+        // Older records cannot prove a still-live spawn has been retired.
+        return Ok(false);
+    };
+    let generation = row
+        .try_get::<String, _>("spawn_scope_generation")?
+        .parse::<u64>()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if scope.as_slice() == current_scope && generation == fence.scope_ownership_generation.get() {
+        let id = u32::try_from(row.try_get::<i64, _>("spawn_actor_id")?)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let actor_generation = row
+            .try_get::<String, _>("spawn_actor_generation")?
+            .parse::<u64>()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let previous = ExactActorRef(ActorRef::from_scoped_owner_parts(
+            fence.runtime_scope,
+            fence.scope_ownership_generation,
+            ActorLocalId(id),
+            ActorLocalGeneration(actor_generation),
+        ));
+        return Ok(!retains_previous(previous));
+    }
+    let previous = load_assignment(tx, &scope, false).await?;
+    Ok(previous.is_some_and(|assignment| {
+        assignment.ownership_generation > generation
+            || (assignment.ownership_generation == generation
+                && assignment.state == AssignmentState::Revoked)
+    }))
 }
 
 /// The hunt-stage writer determines the variant. For saves published before

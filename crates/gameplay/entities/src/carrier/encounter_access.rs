@@ -32,6 +32,11 @@ impl<'owner, T> StagedQuestEncounter<'owner, T> {
         &self.output.1
     }
 
+    /// Observe the original owner, before any staged replacement is published.
+    pub fn retains_creature(&self, actor: ExactActorRef) -> bool {
+        self.runtime.contains_live_creature(actor) || self.runtime.corpse_projection_pinned(actor)
+    }
+
     pub fn publish(
         self,
     ) -> (

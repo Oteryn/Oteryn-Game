@@ -34,6 +34,8 @@ IDS |= {3460, 12171, 12173}
 IDS |= {12186, 12260}
 # M12 selected daily harvest: existing Juicy Roots identity, exact portable facts.
 IDS |= {21291}
+# Black Bert sells the source-priced portable Dust of Arthei.
+IDS |= {8720}
 # Storkus takes stackable lord tokens and grants a portable Vampire Doll.
 IDS |= {8191, 8192}
 # The Pale Count's reward table closes as a whole, including its other yields.

@@ -4314,7 +4314,7 @@
             "key": "oteryn:item.tibia.i8720",
             "revision": "definition-r1"
           },
-          "unit_price": 40000,
+          "unit_price": 4000,
           "requirements": [
             {
               "quest": "oteryn:quest.the_thieves_guild_quest",

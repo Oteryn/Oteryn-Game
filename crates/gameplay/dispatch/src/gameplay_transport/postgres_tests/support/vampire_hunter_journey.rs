@@ -35,6 +35,73 @@ pub(super) async fn loot(
     Ok(())
 }
 
+pub(super) async fn dust(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::qengine_outfit_stories_fixtures::seed_quest_prerequisites;
+    use super::{classic_quests_fixtures, quest_world_callbacks_fixtures};
+
+    const DUST: &str = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust";
+    let [npc] = classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.storkus"]).await?;
+    seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[(INQUISITION.into(), 6), (VAMPIRE_HUNT.into(), 1)],
+        112,
+    )
+    .await?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(super::fixture::debug)?
+        .ok_or("Storkus dust fence")?;
+    quest_world_callbacks_fixtures::input_item(
+        owner,
+        fence.item_fence(),
+        &Offering {
+            position: Position { x: 33294, y: 31677, floor: -15 },
+            item: "oteryn:item.tibia.i5905".into(),
+            count: 20,
+        },
+        113,
+        true,
+    )
+    .await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    let first = admitted.continuity.next_command_id;
+    for (offset, (word, expected)) in [
+        ("hi", None),
+        ("mission", None),
+        ("yes", Some((6, 1, 1, 0))),
+        ("mission", None),
+        ("yes", Some((6, 1, 21, 20))),
+        ("mission", Some((7, 2, 21, 20))),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let _ = talk(owner, admitted, npc, first + u64::try_from(offset)?, word).await?;
+        if let Some(expected) = expected {
+            let state: (i64, i64, i64, i64) = sqlx::query_as(
+                "SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1), \
+                        (SELECT value FROM game_character_quest_tracks WHERE track_key=$2), \
+                        (SELECT value FROM game_character_quest_tracks WHERE track_key=$3), \
+                        (SELECT coalesce(sum(quantity), 0)::bigint FROM game_quest_callback_consumptions)",
+            )
+            .bind(INQUISITION)
+            .bind(VAMPIRE_HUNT)
+            .bind(DUST)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(state, expected, "Storkus step {offset} ({word})");
+        }
+    }
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,

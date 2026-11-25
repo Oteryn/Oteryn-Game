@@ -706,8 +706,10 @@ fn append_storkus_dust_deposits(callbacks: &mut Vec<RewardCallback>) -> Result<(
     let [payment] = full.take.as_slice() else {
         return Err("Storkus dust payment".into());
     };
-    if dust.minimum != 0
-        || dust.maximum != 0
+    if !questline.preserve
+        || !mission.preserve
+        || dust.minimum != 1
+        || dust.maximum != 1
         || dust.set != i64::from(payment.count) + 1
         || !(1..=20).contains(&payment.count)
     {
@@ -732,27 +734,13 @@ fn append_storkus_dust_deposits(callbacks: &mut Vec<RewardCallback>) -> Result<(
             }];
             deposit.storage[2].minimum = saved;
             deposit.storage[2].maximum = saved;
+            deposit.storage[2].set = saved + i64::from(count);
             if !finished {
-                deposit.storage[0].preserve = true;
-                deposit.storage[0].set = questline.minimum;
-                deposit.storage[1].preserve = true;
-                deposit.storage[1].set = mission.minimum;
-                deposit.storage[2].set = saved.max(1) + i64::from(count);
                 deposit.reply = vec!["Bring me more vampire dust when you have it.".into()];
             }
             callbacks.push(deposit);
         }
     }
-    let paid_value = dust.set;
-    let mut paid = full;
-    paid.key.push_str("/already-paid");
-    paid.keywords = vec!["mission".into()];
-    paid.topic = 0;
-    paid.storage[2].minimum = paid_value;
-    paid.storage[2].maximum = paid_value;
-    paid.take.clear();
-    paid.inventory.clear();
-    callbacks.push(paid);
     Ok(())
 }
 
@@ -2553,11 +2541,11 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // The shards, Colours peer and Kingsday journal contribute 514 callbacks.
-        // Crystal 201189f8 storkus.lua:60-72,121-141 adds 229 partial-deposit
-        // variants around the published full deposit and one already-paid callback.
+        // The shards, Colours peer and Kingsday journal contribute 516 callbacks.
+        // Storkus's authored acceptance, full deposit and paid confirmation
+        // are joined by 209 additional quantities and partial-deposit states.
         let callbacks = load()?;
-        assert_eq!(callbacks.len(), 514 + 230);
+        assert_eq!(callbacks.len(), 516 + 209);
         assert_eq!(
             callbacks
                 .iter()
@@ -2567,7 +2555,7 @@ mod tests {
                         .starts_with("oteryn:quest-reward/inquisition-vampire-hunt-dust/")
                 })
                 .count(),
-            230
+            211
         );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;

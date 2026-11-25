@@ -585,6 +585,40 @@
           "maximum": 6,
           "set": 6,
           "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you ready to help me hunt vampires?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust",
+          "minimum": 1,
+          "maximum": 20,
+          "set": 1,
+          "preserve": true
         }
       ],
       "reply": [

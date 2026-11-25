@@ -1138,25 +1138,27 @@
       "keywords": [
         "yes"
       ],
-      "topic": 9,
+      "topic": 1,
       "next_topic": 0,
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
           "minimum": 6,
           "maximum": 6,
-          "set": 7
+          "set": 6,
+          "preserve": true
         },
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
           "minimum": 1,
           "maximum": 1,
-          "set": 2
+          "set": 1,
+          "preserve": true
         },
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust",
-          "minimum": 0,
-          "maximum": 0,
+          "minimum": 1,
+          "maximum": 1,
           "set": 21
         }
       ],
@@ -1178,6 +1180,89 @@
       "achievement": null,
       "reply": [
         "That is all the vampire dust I need. Ask me about your next mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:121-141:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/inquisition-vampire-hunt-dust/accept",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Bring me twenty ounces of vampire dust."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:198-202:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/inquisition-vampire-hunt-dust/already-paid",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust",
+          "minimum": 21,
+          "maximum": 21,
+          "set": 21,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The dust is paid. Ask me about your next mission."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:60-72:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"

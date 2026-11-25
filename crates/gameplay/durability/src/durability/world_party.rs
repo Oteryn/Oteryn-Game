@@ -1014,6 +1014,56 @@ impl super::DurabilityRoot {
             .await
             .map_err(SpellItemError::from)
     }
+    /// Freeze the native kill's roster on its first durable settlement pass.
+    /// The World lock orders the read with membership and shared-XP writes in
+    /// every Channel, and the queued death retains the result across retries.
+    pub async fn read_source_death_party(
+        &self,
+        recovery: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        node: &super::runtime_scope_assignment::NodeIncarnationProof,
+        fence: super::item_transfer::CurrentCharacterItemFence,
+        died_at_unix_ms: u64,
+    ) -> std::result::Result<Vec<[u8; 16]>, super::DurabilityError> {
+        let record = recovery.record_for(self).map_err(|_| super::DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                super::character_authority::assert_recovery_fence(&mut tx, &record).await?;
+                super::character_progression::assert_item_only_fence(&mut tx, &fence, &node)
+                    .await?.map_err(|_| super::DurabilityError::Unavailable)?;
+                let world = *fence.runtime_scope.world_id().as_bytes();
+                let principal = *fence.character_id.as_bytes();
+                sqlx::query("SELECT pg_advisory_xact_lock(45,hashtext(encode($1::bytea,'hex')))")
+                    .bind(world.as_slice()).execute(&mut *tx).await?;
+                let party = observe_world_party(&mut tx, world, principal)
+                    .await.map_err(|_| super::DurabilityError::Unavailable)?;
+                let roster = if let Some(party_id) = party.party_id.filter(|_| party.shared_xp_enabled) {
+                    // A player who joined between death and the first pass cannot
+                    // use an earlier lethal snapshot as proof of membership.
+                    sqlx::query_scalar::<_, Vec<u8>>(
+                        "SELECT uuid_send(member.character_id) FROM game_party_members member \
+                         JOIN game_party_members principal USING (party_id) \
+                         WHERE member.party_id=encode($1,'hex')::uuid \
+                           AND principal.character_id=encode($2,'hex')::uuid \
+                           AND floor(extract(epoch FROM principal.joined_at)*1000) <= $3::text::numeric \
+                           AND floor(extract(epoch FROM member.joined_at)*1000) <= $3::text::numeric \
+                         ORDER BY member.seq LIMIT 50",
+                    )
+                    .bind(party_id.as_slice()).bind(principal.as_slice()).bind(died_at_unix_ms.to_string())
+                    .fetch_all(&mut *tx).await?
+                    .into_iter()
+                    .map(|id| id.try_into().map_err(|_| super::DurabilityError::InvalidStoredState))
+                    .collect::<std::result::Result<Vec<_>, _>>()?
+                } else {
+                    Vec::new()
+                };
+                super::db::commit_semantic_transaction(tx, deadline).await?;
+                Ok(roster)
+            })
+        }).await
+    }
+
     /// Complete current Channel-census source pass for node refresh/revision checks.
     /// The membership batch and its source authority stay inside one native transaction.
     pub async fn read_current_world_party_views(

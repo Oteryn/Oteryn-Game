@@ -2,7 +2,7 @@
 //! the task runs observed at death never change while a delayed settlement is retried.
 //! Crystal 201189f `creaturescripts_monster_kill.lua:18-56`, `party.lua:129-139`.
 
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 mod encounters;
 pub(super) use encounters::PreparedEncounter;
 mod guardians;
@@ -89,6 +89,7 @@ pub(super) struct FrozenGrizzlyDeath {
     source: Option<PartySnapshot>,
     recipients: Vec<Recipient>,
     pub(super) native: Vec<super::quest_kills::Recipient>,
+    pub(super) source_party: OnceLock<Vec<[u8; 16]>>,
     native_goals: Option<native_goals::Recipient>,
 }
 
@@ -265,6 +266,7 @@ fn freeze_at(
         source: Some(source),
         recipients,
         native,
+        source_party: OnceLock::new(),
         native_goals: None,
     }
 }

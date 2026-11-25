@@ -18,6 +18,9 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
 pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1088;
+const MAX_COFFIN_RECOVERY_VARIANTS: usize = 2;
+pub(super) const MAX_EMBEDDED_CALLBACKS: usize =
+    MAX_RUNTIME_CALLBACKS + MAX_COFFIN_RECOVERY_VARIANTS;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -953,7 +956,9 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         .iter()
         .filter(|callback| callback.vampire_coffin_fallback().is_some())
         .count();
-    if coffin_variants > 2 || callbacks.len() - coffin_variants > MAX_RUNTIME_CALLBACKS {
+    if coffin_variants > MAX_COFFIN_RECOVERY_VARIANTS
+        || callbacks.len() - coffin_variants > MAX_RUNTIME_CALLBACKS
+    {
         return Err("callback runtime registry bounds".into());
     }
     let mut keys = BTreeSet::new();

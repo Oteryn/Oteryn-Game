@@ -355,6 +355,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     let left_party = mode == "nomad_excludes_former_member_with_stale_top_damage_roster";
     let kicked_by_leader = mode == "nomad_excludes_member_kicked_by_leader";
     let shared_xp_disabled = mode == "nomad_respects_leader_disabling_shared_xp";
+    let remote_shared_xp_disabled = mode == "nomad_ignores_shared_xp_disabled_in_the_world_owner";
     let leader_changed_party = kicked_by_leader || shared_xp_disabled;
     let mut death_peers = Vec::new();
     let peer_source = if nomad || rule.creature.ends_with("_overlord") {
@@ -462,6 +463,38 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             }
             death_peers.push((peer_actor, peer_session, *fence.character_id.as_bytes()));
         }
+    }
+    if nomad {
+        // The World owner has committed the toggle, while both killing-Channel
+        // projections below still reflect the earlier shared-XP roster.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query(
+            "INSERT INTO game_parties \
+             (party_id,world_id,leader_character_id,revision,next_seq,shared_xp_enabled) \
+             VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,2,4,$4)",
+        )
+        .bind(id(81).as_slice())
+        .bind(owner.world_id.as_bytes().as_slice())
+        .bind(if leader_changed_party { death_peers[2].2 } else { id(41) }.as_slice())
+        .bind(!remote_shared_xp_disabled && !shared_xp_disabled)
+        .execute(&mut *tx)
+        .await?;
+        let characters = std::iter::once(id(41))
+            .chain((!left_party && !kicked_by_leader).then_some(death_peers[1].2))
+            .chain(leader_changed_party.then(|| death_peers[2].2));
+        for (sequence, character) in (1_i64..).zip(characters) {
+            sqlx::query(
+                "INSERT INTO game_party_members (character_id,party_id,seq,presence_state,presence_channel_id) \
+                 VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,1,encode($4,'hex')::uuid)",
+            )
+            .bind(character.as_slice())
+            .bind(id(81).as_slice())
+            .bind(sequence)
+            .bind(owner.channel_id.as_bytes().as_slice())
+            .execute(&mut *tx)
+            .await?;
+        }
+        tx.commit().await?;
     }
     if mode == "overlordcr_old_pin" {
         let previous = source_deaths::overlord_predecessor(&catalogue)?;
@@ -1046,6 +1079,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 if index == 0
                     || left_party
                     || shared_xp_disabled
+                    || remote_shared_xp_disabled
                     || (kicked_by_leader && index == 1)
                 {
                     Some(before)
@@ -1122,7 +1156,11 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             1
         } else {
             i64::try_from(kills)?
-                + if death_peers.is_empty() || left_party || shared_xp_disabled {
+                + if death_peers.is_empty()
+                    || left_party
+                    || shared_xp_disabled
+                    || remote_shared_xp_disabled
+                {
                     0
                 } else if mode == "overlordcr_seventeen" {
                     16

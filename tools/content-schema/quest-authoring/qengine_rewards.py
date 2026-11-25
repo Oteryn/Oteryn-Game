@@ -1174,9 +1174,11 @@ def build():
     bert_shop = lua_tables.as_python(lua_tables.assignments(bert_source.decode(), {'shop'})['shop'])
     # Keep source stock already admitted by the Item catalogue and the two
     # previously reviewed Global variants (special flask and lump of clay).
-    stock_ids = {row['clientid'] for row in bert_shop if 'buy' in row} | {125, 11329}
-    stock_keys = {f'oteryn:item.tibia.i{item}' for item in stock_ids}
-    retained = [row for row in stock
+    prices = {f"oteryn:item.tibia.i{row['clientid']}": row['buy']
+              for row in bert_shop if 'buy' in row}
+    stock_keys = prices.keys() | {'oteryn:item.tibia.i125', 'oteryn:item.tibia.i11329'}
+    retained = [row | {'unit_price': prices.get(row['item']['key'], row['unit_price'])}
+                for row in stock
                 if row['direction'] == 'SellToPlayer' and row['item']['key'] in stock_keys]
     requirement = {'quest': 'oteryn:quest.the_thieves_guild_quest',
                    'track': 'oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline',
@@ -1213,8 +1215,16 @@ def build():
     sys.path.insert(0,str(ROOT/'tools/content-migration'))
     import qengine_reward_item_profiles as reward_items
     import register_spell_families as native
+    import srx1_profile_updates
     generated[reward_items.PROFILE]=(ROOT/reward_items.PROFILE).read_bytes()
-    reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,cosmetics.canonical)
+    manifest_path = 'content/spells.manifest.json'
+    reward_items.admit(ROOT,generated,reward_items.PROFILE,manifest_path,native.provider_order,cosmetics.canonical)
+    updates = json.loads((ROOT / srx1_profile_updates.PATH).read_bytes())
+    if updates['base_sha256'] != sha(generated[reward_items.PROFILE]):
+        srx1_profile_updates.generate(
+            ROOT, generated, reward_items.PROFILE, manifest_path,
+            native.provider_order, cosmetics.canonical,
+        )
     generated.update(lane.outputs(ROOT,inputs,PIN,load_module,lane_data))
     # The selected smith port owns these keys and the explicit cache placement.
     # Retain all other authored programmes; do not mount the older native-cache

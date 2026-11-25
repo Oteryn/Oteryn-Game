@@ -241,14 +241,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None,
             Some(&mut staged),
         );
-        let Some(staged) = staged else {
+        let Some(mut staged) = staged else {
             return disposition;
         };
         let [count] = staged.native.prepared().actors.as_slice() else {
             return UseDisposition::Rejected;
         };
         let count = *count;
-        let mut published = false;
+        let native = &mut staged.native;
         let delivery = self
             .root
             .deliver_vampire_coffin(
@@ -260,12 +260,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 content,
                 kind,
                 count,
-                || {
-                    self.publish_staged_encounter(staged, states, map, coffin, Some(reservation));
-                    published = true;
-                },
+                move |previous| native.retains_creature(previous),
             )
             .await;
+        let published = matches!(delivery, Ok(true));
+        if published {
+            self.publish_staged_encounter(staged, states, map, coffin, Some(reservation));
+        }
         #[cfg(test)]
         let delivery = if matches!(delivery, Ok(true))
             && self
@@ -284,6 +285,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             UseDisposition::Committed
         } else {
+            // A definite refusal leaves the payment available for a fresh use.
+            if matches!(delivery, Ok(false))
+                && let Ok(mut pending) = self.states.quest_callbacks.records.lock()
+            {
+                pending.remove(&session);
+            }
             UseDisposition::Rejected
         }
     }

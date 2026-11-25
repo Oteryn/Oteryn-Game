@@ -309,6 +309,12 @@ mod tests {
             .and_then(|key| model.services().get(key))
             .ok_or("Black Bert's shop")?;
         assert_eq!(service.offers.len(), 127);
+        let arthei = service
+            .offers
+            .iter()
+            .find(|offer| offer.item.key == "oteryn:item.tibia.i8720")
+            .ok_or("Dust of Arthei stock")?;
+        assert_eq!(arthei.unit_price, 4_000, "Dust of Arthei live shop price");
         for offer in &service.offers {
             let guard = required(
                 shops()?,

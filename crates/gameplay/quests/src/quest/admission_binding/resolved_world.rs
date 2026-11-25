@@ -1,8 +1,9 @@
 //! Extend admission with an immutable resolved World source, preserving published owners.
 use super::*;
 
-// Caller-supplied sets keep the original bound.
-const MAX_RESOLVED_CALLBACKS: usize = 1024;
+// Existing native readers can supply the entire embedded source, including
+// both paid coffin routes. The unpublished subset keeps its document bound.
+const MAX_RESOLVED_CALLBACKS: usize = world_callbacks::MAX_EMBEDDED_CALLBACKS;
 
 pub fn validate_resolved_world(
     catalogue: &super::super::QuestStateCatalogue,
@@ -129,6 +130,7 @@ mod tests {
         let callbacks = world_callbacks::load_for(catalogue)?;
         // The two paid-coffin recovery routes share existing selectors.
         assert_eq!(base.len(), 1_088 + 2);
+        assert_eq!(base.len(), MAX_RESOLVED_CALLBACKS);
         assert_eq!(bindings.world_callbacks().count(), 96);
         assert_eq!(
             callbacks.len(),
@@ -177,7 +179,17 @@ mod tests {
             validate_resolved_world(catalogue, transition, false, &additional),
             Err("resolved World source bounds".into())
         );
-        let oversized = vec![callback.clone(); MAX_RESOLVED_CALLBACKS + 1];
+        let mut oversized = world_callbacks::load()?;
+        let mut extra = callback.clone();
+        extra.key = reward_callbacks::load()?
+            .first()
+            .ok_or("published reward callback")?
+            .key
+            .clone();
+        assert!(registry()?.owners.contains_key(&extra.key));
+        assert!(!oversized.iter().any(|callback| callback.key == extra.key));
+        oversized.push(extra);
+        assert_eq!(oversized.len(), MAX_RESOLVED_CALLBACKS + 1);
         assert_eq!(
             validate_resolved_world(catalogue, transition, false, &oversized),
             Err("resolved World source bounds".into())
@@ -186,8 +198,8 @@ mod tests {
     }
 
     #[test]
-    fn embedded_fallback_accepts_only_the_exact_registry_over_the_resolved_bound()
-    -> Result<(), String> {
+    fn embedded_fallback_accepts_the_registry_and_keeps_the_resolved_bounds() -> Result<(), String>
+    {
         let catalogue =
             super::super::super::QuestStateCatalogue::new("resolved-fixture", vec![], vec![])
                 .map_err(|error| format!("{error:?}"))?;

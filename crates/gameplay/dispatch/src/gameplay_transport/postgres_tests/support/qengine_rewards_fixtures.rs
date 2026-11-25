@@ -913,6 +913,12 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     // Keep each route's future state out of this shared dispatcher's inline state.
+    if name == "qengine-rewards-black-bert-arthei" {
+        return Box::pin(questl2_djinn_journeys::black_bert(owner, admitted, h)).await;
+    }
+    if name == "qengine-rewards-storkus-dust" {
+        return Box::pin(super::vampire_hunter_journey::dust(owner, admitted, h)).await;
+    }
     if name == "qengine-rewards-vampire-hunter" {
         return Box::pin(super::vampire_hunter_journey::exercise(owner, admitted, h)).await;
     }

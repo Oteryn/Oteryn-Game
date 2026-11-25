@@ -43,6 +43,7 @@ pub(super) async fn exercise(
     );
     let rolled_back_delete = matches!(variant, "rolled_back_delete" | "ordinary_rolled_back_delete");
     let lost_ack = variant == "lost_delivery_ack";
+    let live_without_reservation = variant == "live_without_reservation";
     let delivered_case = variant == "delivered" || rolled_back_delete;
     let native = owner
         .active_generation
@@ -93,7 +94,7 @@ pub(super) async fn exercise(
             u64::try_from(weakened.offerings.len())?
         );
         tx.commit().await?;
-    } else if !delivered_case && !lost_ack && !published_restart {
+    } else if !delivered_case && !lost_ack && !published_restart && !live_without_reservation {
         owner
             .states
             .quest_callbacks
@@ -188,6 +189,68 @@ pub(super) async fn exercise(
         );
     }
     let mut count = creatures[0].actor;
+    if live_without_reservation {
+        let death_id = async || -> TestResult<Vec<u8>> {
+            Ok(sqlx::query_scalar(
+                "SELECT uuid_send(death_id) FROM game_pending_vampire_coffin_payments",
+            )
+            .fetch_one(&h.pool)
+            .await?)
+        };
+        let original = death_id().await?;
+        return_to_coffin(owner, admitted).await?;
+        // The original Count has walked off its spawn square. Occupancy at the
+        // spawn point cannot mask losing the per-Channel reservation.
+        {
+            use crate::domain::carrier_values::LocalPosition;
+            let mut runtime = owner.runtime.lock().await;
+            assert_eq!(
+                owner.switch_encounter_lock(
+                    &runtime,
+                    admitted.runtime_actor.ok_or("coffin user")?,
+                    admitted.game_session_id,
+                ),
+                None,
+                "the player can leave this Channel after leaving the Count's room",
+            );
+            let context = runtime.encounter_position_context();
+            let at = runtime.read_actor_position(count).map_err(debug)?.position();
+            let (carrier, continuity) = runtime.encounter_parts_mut();
+            let position = carrier.read_position(continuity, count.0).map_err(debug)?;
+            carrier
+                .compare_commit_position(
+                    continuity,
+                    position,
+                    context,
+                    LocalPosition { x: at.x - 1, y: at.y, floor: at.floor },
+                )
+                .map_err(debug)?;
+        }
+        owner.forget_coffin_cohort_for_test()?;
+        owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+        assert_ne!(
+            use_coffin(owner, admitted, weakened, 63).await?,
+            UseDisposition::Committed,
+            "a live Count still owns the original payment"
+        );
+        assert_eq!(death_id().await?, original);
+        {
+            let mut runtime = owner.runtime.lock().await;
+            assert!(runtime.contains_live_creature(count));
+            assert_eq!(runtime.visible_entities().creatures.len(), 1);
+            runtime.remove_encounter_actor(count).map_err(debug)?;
+        }
+        owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+        assert_eq!(
+            use_coffin(owner, admitted, weakened, 64).await?,
+            UseDisposition::Committed,
+            "the source owner can prove retirement and safely recover the payment",
+        );
+        assert_ne!(death_id().await?, original);
+        assert_eq!(owner.runtime.lock().await.visible_entities().creatures.len(), 1);
+        return Ok(());
+    }
+
     if published_restart || rolled_back_delete {
         return_to_coffin(owner, admitted).await?;
         owner

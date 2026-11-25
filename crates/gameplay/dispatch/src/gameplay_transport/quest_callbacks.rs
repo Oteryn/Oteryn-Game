@@ -739,6 +739,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     #[cfg(test)]
+    pub(super) fn forget_coffin_cohort_for_test(&self) -> Result<(), &'static str> {
+        self.states.quest_callbacks.personal.clear_for_test()
+    }
+
+    #[cfg(test)]
     pub(super) fn forget_coffin_projection_for_test(
         &self,
         session: GameSessionId,

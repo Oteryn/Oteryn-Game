@@ -52,6 +52,12 @@ fn scope(runtime: &ChannelRuntimeV1) -> Scope {
 }
 
 impl Cohorts {
+    #[cfg(test)]
+    pub(super) fn clear_for_test(&self) -> Result<(), &'static str> {
+        self.0.lock().map_err(|_| "encounter cohorts")?.clear();
+        Ok(())
+    }
+
     /// Completion retires only the original character/session's eligible projections.
     pub(super) fn complete(
         &self,

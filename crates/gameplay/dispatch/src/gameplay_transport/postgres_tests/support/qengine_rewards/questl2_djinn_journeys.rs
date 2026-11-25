@@ -351,6 +351,47 @@ async fn supply(
     .await
 }
 
+pub(super) async fn black_bert(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &super::super::fixture::Harness,
+) -> TestResult {
+    use super::super::{classic_quests_fixtures, quest_world_callbacks_fixtures};
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(), &[3, 4, 6, 11, 15, 18],
+        ).ok_or("Black Bert shop capabilities")?;
+    let [npc] = classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.black_bert"]).await?;
+    super::super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[("oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline".into(), 9)],
+        191,
+    )
+    .await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    let fence = owner.current_quest_fence(admitted.game_session_id).await.map_err(debug)?.ok_or("Black Bert fence")?;
+    quest_world_callbacks_fixtures::input_item(
+        owner,
+        fence.item_fence(),
+        &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+            position: Position { x: 33294, y: 31677, floor: -15 },
+            item: "oteryn:item.tibia.i3035".into(),
+            count: 40,
+        },
+        192,
+        true,
+    ).await?;
+    shop(owner, admitted, npc, "oteryn:npc.black_bert", 9, (8720, NpcTradeSide::Buy), NpcIntentDisposition::Ok).await?;
+    let bought: i64 = sqlx::query_scalar(
+        "SELECT coalesce(sum(quantity), 0)::bigint FROM game_item_instances \
+         WHERE definition_production_key='oteryn:item.tibia.i8720' AND lifecycle=1",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(bought, 1, "exactly 4,000 gold buys one Dust of Arthei");
+    Ok(())
+}
+
 async fn shop(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
