@@ -138,6 +138,7 @@ enum NativeScenario {
 enum PortalRecovery {
     Poll,
     Restart,
+    RestartOutsideArena,
     Replay,
     ReadInFlight,
 }
@@ -150,6 +151,15 @@ fn arena_victory_committed_before_relocation_is_relocated_by_recovery() -> TestR
 #[test]
 fn arena_victory_committed_before_relocation_is_relocated_after_restart() -> TestResult {
     portal_case(10, PortalRecovery::Restart, "arena_victory_committed_before_relocation_is_relocated_after_restart")
+}
+
+#[test]
+fn arena_victory_recovers_from_an_off_pit_checkpoint() -> TestResult {
+    portal_case(
+        u8::try_from(donor::CENTERS.len())?,
+        PortalRecovery::RestartOutsideArena,
+        "arena_victory_recovers_from_an_off_pit_checkpoint",
+    )
 }
 
 #[test]
@@ -802,12 +812,18 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                              WHERE (r.before_state->>'pit')::int=$1 AND p.relocated_at IS NOT NULL"
                         ).bind(i32::from(pit)).fetch_one(&harness.pool);
                     assert_eq!(count().await?, 0, "relocation receipt is still missing");
-                    if matches!(recovery, PortalRecovery::Restart) {
+                    if matches!(recovery, PortalRecovery::Restart | PortalRecovery::RestartOutsideArena) {
                         let generation = restart_scope(&harness, admitted.game_session_id).await?;
                         let mut restarted = Dependencies::new()?;
                         let booted_map = fixture::boot_world(&restarted, native, &bytes, &pins)?;
+                        let checkpoint = if matches!(recovery, PortalRecovery::RestartOutsideArena) {
+                            let (x, y, floor) = donor::KICK;
+                            (x + 1, y, floor)
+                        } else {
+                            portal
+                        };
                         fixture::runtime_at_generation(&mut restarted, active, &pin, &booted_map,
-                            crate::foundation::MovementLocalPosition { x, y, floor: -floor as i16 },
+                            crate::foundation::MovementLocalPosition { x: checkpoint.0, y: checkpoint.1, floor: checkpoint.2 },
                             generation,
                         )?;
                         let restarted_cells = booted_map.movement_cells(restarted.room.movement_cells()).map_err(debug)?;
@@ -828,7 +844,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                             crate::gameplay_transport::arena_match::tick(&rebooted, &mut runtime);
                             let snapshot = runtime.read_actor_position(restarted.actor).map_err(debug)?;
                             let at = snapshot.position();
-                            assert_eq!((at.x, at.y, at.floor), portal, "the orphan sweep must leave a pending relocation alone");
+                            assert_eq!((at.x, at.y, at.floor), checkpoint, "the orphan sweep must leave a pending relocation alone");
                             snapshot
                         };
                         let pending = restarted_command(&rebooted, &mut readmitted, A::Status).await?;
@@ -837,7 +853,8 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                         rebooted.drain_monster_melee().await;
                         let relocated = restarted.runtime.lock().await.read_actor_position(restarted.actor).map_err(debug)?;
                         let at = relocated.position();
-                        assert_eq!((at.x, at.y, at.floor), expected, "the fresh runtime recovers the committed portal");
+                        assert_eq!((at.x, at.y, at.floor), expected,
+                            "the fresh runtime recovers the committed portal (acknowledgements: {})", count().await?);
                         assert_eq!(relocated.revision(), before_relocation.revision() + 1, "only one movement committed");
                         let persisted: (i32, i32, i64) = sqlx::query_as(
                             "SELECT (body->>'phase')::int,(body->>'pit')::int,(body->>'scope_generation')::bigint FROM game_character_arena_matches"

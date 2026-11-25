@@ -127,15 +127,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 if projection.legacy_victory_pit.is_none() && projection.relocation_pending && state.phase == 3 {
                     let Ok(current) = runtime.read_actor_position(actor) else { continue };
-                    // Boot can load the entrance checkpoint, or an earlier orphan
-                    // sweep can already have moved the actor to the kick tile.
-                    if current.position() == position(donor::KICK) {
-                        let reward = position(donor::REWARD_ROOM);
-                        if !walkable(self, &runtime, reward)
-                            || runtime.relocate_arena_player(actor, session, current, reward).is_err()
-                        {
-                            continue;
-                        }
+                    // Admission can restore any saved cell. Prove the reward destination
+                    // before acknowledging a committed victory.
+                    let reward = position(donor::REWARD_ROOM);
+                    if current.position() != reward
+                        && (!walkable(self, &runtime, reward)
+                            || runtime.relocate_arena_player(actor, session, current, reward).is_err())
+                    {
+                        continue;
                     }
                 }
                 projection.legacy_victory_pit.is_some_and(|pit| {

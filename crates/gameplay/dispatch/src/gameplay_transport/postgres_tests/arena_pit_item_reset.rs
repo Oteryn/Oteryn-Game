@@ -75,7 +75,22 @@ fn arena_reset_proof_preserves_runtime_ground_removal_guard() -> TestResult {
 enum ResetCase {
     Top,
     Container,
+    CorpseLoot,
+    NativeFloor,
     ProjectionRetry,
+}
+
+#[test]
+fn arena_wire_entry_retires_corpse_and_loot() -> TestResult {
+    run_reset_case(ResetCase::CorpseLoot, "arena_wire_entry_retires_corpse_and_loot")
+}
+
+#[test]
+fn arena_wire_entry_retires_ground_with_positive_storage_floor() -> TestResult {
+    run_reset_case(
+        ResetCase::NativeFloor,
+        "arena_wire_entry_retires_ground_with_positive_storage_floor",
+    )
 }
 
 #[test]
@@ -239,7 +254,15 @@ fn scenario(case: ResetCase, test: &'static str) -> TestResult {
             )
             .await?;
         }
-        let tree = if case == ResetCase::Container {
+        let (entry_table, child_count) = if case == ResetCase::CorpseLoot {
+            (
+                "game_item_corpse_container_entries",
+                i64::from(crate::durability::item_mint::CORPSE_CONTAINER_ENTRIES_MAX),
+            )
+        } else {
+            ("game_item_nested_entries", 1)
+        };
+        let tree = if matches!(case, ResetCase::Container | ResetCase::CorpseLoot) {
             super::quest_world_callbacks_fixtures::input_item(
                 &owner, fence,
                 &Offering {
@@ -256,19 +279,21 @@ fn scenario(case: ResetCase, test: &'static str) -> TestResult {
                  JOIN game_item_ground_locations g USING(item_instance_id)
                  WHERE i.definition_production_key='oteryn:item.tibia.i2854'"
             ).fetch_one(&mut *tx).await?;
-            sqlx::query(
+            sqlx::query(sqlx::AssertSqlSafe(format!(
                 "WITH child AS (
                     INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
                       definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
                     SELECT game_character_uuid_v7(),world_id,'Item','oteryn:item.tibia.i3031',
                        'definition-r1',3,1,game_character_uuid_v7()
-                    FROM game_item_instances WHERE item_instance_id=$1::uuid
+                    FROM game_item_instances CROSS JOIN generate_series(1, $2::bigint)
+                    WHERE item_instance_id=$1::uuid
                     RETURNING item_instance_id, world_id
                  )
-                 INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,
+                 INSERT INTO {entry_table}(item_instance_id,world_id,parent_item_instance_id,
                     placement_ordinal,placed_transaction_id)
-                 SELECT item_instance_id,world_id,$1::uuid,1,game_character_uuid_v7() FROM child"
-            ).bind(&root).execute(&mut *tx).await?;
+                 SELECT item_instance_id,world_id,$1::uuid,row_number() OVER (ORDER BY item_instance_id),
+                    game_character_uuid_v7() FROM child"
+            ))).bind(&root).bind(child_count).execute(&mut *tx).await?;
             tx.commit().await?;
             Some(root)
         } else {
@@ -324,31 +349,50 @@ fn scenario(case: ResetCase, test: &'static str) -> TestResult {
                    FOR EACH ROW EXECUTE FUNCTION refuse_test_pit_reset();"
             ).execute(&h.pool).await?;
             let before = deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?;
-            assert!(owner.arena_match_wire(admitted, entry, &payload).await.is_none());
+            let original_admission = admitted;
+            let sent = super::guild_wire_fixtures::exchange(
+                &owner, &mut admitted, entry, wire::COMMAND_TYPE_ARENA_MATCH, &payload,
+            ).await;
+            let replay = owner.arena_match_wire(original_admission, entry, &payload).await;
+            let (status, bytes) = sent.map_err(|error| format!(
+                "committed Enter lost its wire reply during Ground refusal: {error}; replay replied: {}",
+                replay.is_some()
+            ))?;
+            assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+            let result = wire::decode_match_result(&bytes).map_err(debug)?;
+            assert_eq!(result.disposition, ArenaDisposition::Applied);
+            assert_eq!(result.state.pit, 1);
+            let replay = replay.ok_or("committed Enter replay returned no reply during Ground refusal")?;
+            assert_eq!(replay, bytes);
             assert_eq!(deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?, before);
             assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_svargrond_pit_leases").fetch_one(&h.pool).await?, 1);
             sqlx::query("DROP TRIGGER refuse_test_pit_reset ON game_arena_pit_item_resets")
                 .execute(&h.pool).await?;
-            owner.drain_arena_matches(0).await;
+            owner.drain_monster_melee().await;
             assert_ne!(deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?, before,
                 "native polling must project a committed entry after the reset becomes available");
             let replay = owner.arena_match_wire(admitted, entry, &payload).await.ok_or("entry replay")?;
-            assert_eq!(wire::decode_match_result(&replay).map_err(debug)?.state.pit, 1);
+            assert_eq!(replay, bytes);
             assert_eq!(ground_roots(&h).await?, 3);
             return Ok(());
         }
         if let Some(tree) = tree {
-            let bytes = owner.arena_match_wire(admitted, entry, &payload).await.ok_or("entry response")?;
-            assert_eq!(wire::decode_match_result(&bytes).map_err(debug)?.disposition, ArenaDisposition::Applied);
-            let retired: (i16, i64, i64, i64) = sqlx::query_as(
+            let reply = owner.arena_match_wire(admitted, entry, &payload).await;
+            let retired: (i16, i64, i64, i64) = sqlx::query_as(sqlx::AssertSqlSafe(format!(
                 "SELECT i.lifecycle,
                  (SELECT count(*) FROM game_item_decay_retire_receipts WHERE ground_root_item_instance_id=i.item_instance_id AND cause_kind='ARENA_RESET'),
-                 (SELECT count(*) FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id),
+                 (SELECT count(*) FROM {entry_table} WHERE parent_item_instance_id=i.item_instance_id),
                  (SELECT count(*) FROM game_item_audit_outbox o JOIN game_item_decay_retire_receipts r USING(event_id)
                     WHERE r.ground_root_item_instance_id=i.item_instance_id)
                  FROM game_item_instances i WHERE i.item_instance_id=$1::uuid"
-            ).bind(&tree).fetch_one(&h.pool).await?;
-            assert_eq!(retired, (2, 2, 0, 2), "the root and its child retire together");
+            ))).bind(&tree).fetch_one(&h.pool).await?;
+            assert_eq!(
+                retired,
+                (2, child_count + 1, 0, child_count + 1),
+                "the root and every child retire together"
+            );
+            let bytes = reply.ok_or("entry response")?;
+            assert_eq!(wire::decode_match_result(&bytes).map_err(debug)?.disposition, ArenaDisposition::Applied);
             let replay = owner.arena_match_wire(admitted, entry, &payload).await.ok_or("entry replay")?;
             assert_eq!(replay, bytes);
             assert_eq!(ground_roots(&h).await?, 4, "only the exposed tree retires");
@@ -370,6 +414,21 @@ fn scenario(case: ResetCase, test: &'static str) -> TestResult {
                     &owner, world.base(), Some(index),
                 ).await.ok_or("concurrent Ground rebuild")?;
                 assert_eq!(ground_roots(&h).await?, 4, "rebuild sees the pre-reset Ground");
+                if case == ResetCase::NativeFloor {
+                    // The reset has already observed map coordinates. Persist the
+                    // corresponding native Ground encoding before its locked read.
+                    let mut tx = h.pool.begin().await?;
+                    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                    let encoded = sqlx::query(
+                        "UPDATE game_item_ground_locations g
+                         SET spatial_position=substring(g.spatial_position for 8)||int2send(7::smallint)
+                         FROM game_item_instances i
+                         WHERE g.item_instance_id=i.item_instance_id
+                           AND i.definition_production_key='oteryn:item.tibia.i3035'",
+                    ).execute(&mut *tx).await?;
+                    assert_eq!(encoded.rows_affected(), 1);
+                    tx.commit().await?;
+                }
                 Ok::<_, Box<dyn std::error::Error>>(ground)
             }.await;
             barrier.1.notify_one();

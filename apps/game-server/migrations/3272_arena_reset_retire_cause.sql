@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS game_arena_pit_item_edges (
     ground_root_item_instance_id UUID NOT NULL,
     parent_item_instance_id UUID NOT NULL,
     placement_ordinal NUMERIC(20,0) NOT NULL CHECK (placement_ordinal BETWEEN 1 AND 18446744073709551615),
-    entry_kind SMALLINT NOT NULL CHECK (entry_kind IN (1,2)),
+    entry_kind SMALLINT NOT NULL CHECK (entry_kind IN (1,2,3)),
     UNIQUE (ground_root_item_instance_id,parent_item_instance_id,placement_ordinal),
     CHECK (item_instance_id<>parent_item_instance_id AND item_instance_id<>ground_root_item_instance_id)
 );
@@ -140,7 +140,8 @@ BEGIN
     IF NOT FOUND THEN RETURN OLD; END IF;
     ancestor:=OLD.parent_item_instance_id;
     visited:=ARRAY[OLD.item_instance_id];
-    kind:=CASE TG_TABLE_NAME WHEN 'game_item_container_entries' THEN 1 ELSE 2 END;
+    kind:=CASE TG_TABLE_NAME WHEN 'game_item_container_entries' THEN 1
+        WHEN 'game_item_corpse_container_entries' THEN 3 ELSE 2 END;
     FOR level IN 1..8 LOOP
         IF ancestor=ANY(visited) OR NOT EXISTS(SELECT 1 FROM game_item_instances
             WHERE item_instance_id=ancestor AND world_id=OLD.world_id AND lifecycle=1 AND quantity>0)
@@ -160,6 +161,8 @@ BEGIN
                 WHERE item_instance_id=ancestor AND world_id=OLD.world_id
             UNION ALL SELECT parent_item_instance_id FROM game_item_nested_entries
                 WHERE item_instance_id=ancestor AND world_id=OLD.world_id
+            UNION ALL SELECT parent_item_instance_id FROM game_item_corpse_container_entries
+                WHERE item_instance_id=ancestor AND world_id=OLD.world_id
         ) edges;
         IF cardinality(parents) IS DISTINCT FROM 1 THEN EXIT; END IF;
         ancestor:=parents[1];
@@ -172,6 +175,9 @@ CREATE TRIGGER game_arena_reset_capture_edge BEFORE DELETE ON game_item_nested_e
     FOR EACH ROW EXECUTE FUNCTION game_arena_reset_capture_edge();
 DROP TRIGGER IF EXISTS game_arena_reset_capture_edge ON game_item_container_entries;
 CREATE TRIGGER game_arena_reset_capture_edge BEFORE DELETE ON game_item_container_entries
+    FOR EACH ROW EXECUTE FUNCTION game_arena_reset_capture_edge();
+DROP TRIGGER IF EXISTS game_arena_reset_capture_edge ON game_item_corpse_container_entries;
+CREATE TRIGGER game_arena_reset_capture_edge BEFORE DELETE ON game_item_corpse_container_entries
     FOR EACH ROW EXECUTE FUNCTION game_arena_reset_capture_edge();
 
 CREATE OR REPLACE FUNCTION game_arena_reset_item_proven(p_item UUID) RETURNS BOOLEAN
@@ -225,7 +231,9 @@ BEGIN
                  AND child.cause_kind='ARENA_RESET'))>0))
        OR (r.placement_ordinal IS NULL AND EXISTS (
            SELECT 1 FROM game_arena_pit_item_edges e WHERE e.ground_root_item_instance_id=p_item
-           GROUP BY e.parent_item_instance_id HAVING count(*)>20))
+           GROUP BY e.parent_item_instance_id
+           HAVING count(*)>CASE WHEN bool_and(e.entry_kind=3) THEN 48 ELSE 20 END
+              OR (bool_or(e.entry_kind=3) AND NOT bool_and(e.entry_kind=3))))
        OR NOT EXISTS (SELECT 1 FROM game_item_transfer_quantity_evidence e WHERE e.item_instance_id=p_item
            AND e.transaction_id=r.transaction_id AND e.quantity_before=r.quantity_before)
        OR EXISTS (SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=p_item)
@@ -262,7 +270,8 @@ BEGIN
         IF begin_at=0 THEN RAISE EXCEPTION 'missing retirement guard %',f; END IF;
         EXECUTE overlay(body placing 'BEGIN IF game_arena_reset_item_proven('||item_ref||') THEN RETURN NULL; END IF;' FROM begin_at FOR 5);
     END LOOP;
-    FOREACH f IN ARRAY ARRAY['game_item_container_entry_removal_proven','game_item_nested_entry_proven'] LOOP
+    FOREACH f IN ARRAY ARRAY['game_item_container_entry_removal_proven','game_item_nested_entry_proven',
+        'game_item_corpse_entry_removal_proven'] LOOP
         SELECT pg_get_functiondef((f||'()')::regprocedure) INTO STRICT body;
         CONTINUE WHEN position('game_arena_reset_item_proven(' IN body)>0;
         begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
@@ -271,7 +280,8 @@ BEGIN
         IF TG_OP='DELETE' AND EXISTS (SELECT 1 FROM game_arena_pit_item_edges e
             WHERE e.item_instance_id=OLD.item_instance_id AND e.parent_item_instance_id=OLD.parent_item_instance_id
               AND e.placement_ordinal=OLD.placement_ordinal
-              AND e.entry_kind=CASE TG_TABLE_NAME WHEN 'game_item_container_entries' THEN 1 ELSE 2 END)
+              AND e.entry_kind=CASE TG_TABLE_NAME WHEN 'game_item_container_entries' THEN 1
+                  WHEN 'game_item_corpse_container_entries' THEN 3 ELSE 2 END)
             AND game_arena_reset_item_proven(OLD.item_instance_id) THEN RETURN NULL; END IF;
         $gate$;
         EXECUTE overlay(body placing gate FROM begin_at FOR 5);
@@ -279,7 +289,7 @@ BEGIN
     -- The existing bounded batch writes the same reservation, edge removal,
     -- terminal quantity, receipt and audit rows for each supported cause.
     FOR definition IN
-        SELECT pg_get_functiondef(oid) AS sql FROM pg_proc
+        SELECT proname, pg_get_functiondef(oid) AS sql FROM pg_proc
         WHERE pronamespace=current_schema()::regnamespace
           AND proname IN ('game_player_death_retire_entry','game_player_death_retire_entries')
     LOOP
@@ -288,7 +298,21 @@ BEGIN
         IF (length(definition.sql)-length(replace(definition.sql,anchor,'')))/length(anchor)<>1 THEN
             RAISE EXCEPTION 'unexpected bounded retirement writer';
         END IF;
-        EXECUTE replace(definition.sql,anchor,'IN(''WORLD_RESET'',''ACTIVITY_RETIREMENT'',''ARENA_RESET'')');
+        definition.sql:=replace(definition.sql,anchor,'IN(''WORLD_RESET'',''ACTIVITY_RETIREMENT'',''ARENA_RESET'')');
+        IF definition.proname='game_player_death_retire_entry' THEN
+            anchor:=' ELSIF p_entry_kind=2 THEN';
+            IF (length(definition.sql)-length(replace(definition.sql,anchor,'')))/length(anchor)<>1 THEN
+                RAISE EXCEPTION 'unexpected retirement edge writer';
+            END IF;
+            definition.sql:=replace(definition.sql,anchor,$corpse$
+ ELSIF p_entry_kind=3 AND v.cause_kind='ARENA_RESET' AND p_parent=v.ground_root_item_instance_id THEN
+  DELETE FROM game_item_corpse_container_entries
+   WHERE item_instance_id=p_item AND parent_item_instance_id=p_parent
+    AND placement_ordinal=v.placement_ordinal;
+  GET DIAGNOSTICS affected=ROW_COUNT;
+ ELSIF p_entry_kind=2 THEN$corpse$);
+        END IF;
+        EXECUTE definition.sql;
     END LOOP;
     FOREACH f IN ARRAY ARRAY['game_arena_pit_item_reset_guard()','game_arena_reset_ground_top()',
         'game_arena_reset_item_proven(uuid)','game_arena_reset_capture_edge()'] LOOP
