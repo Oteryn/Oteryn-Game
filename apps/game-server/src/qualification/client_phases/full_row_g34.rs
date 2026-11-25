@@ -1,32 +1,28 @@
 //! G34: ENGNPC NPC/quest receipts (#3050). A quest NPC offer commits its track write and the
 //! quest receipt atomically (`crates/gameplay/dispatch/src/gameplay_transport/npc_command/
 //! reward_callbacks.rs`).
-//! 1. Pick, from the committed offers (`content/quests/shared-reward-offers.json` and
-//!    `npc-offers/*.json`), the nearest NPC whose first-step offer (topic 0, plain keyword,
-//!    track write) a fresh character can trigger, reachable by walking.
-//! 2. Walk to it, say "hi" and the offer keyword through the real NPC talk command; require
-//!    `Ok` replies and the NPC's reply text in the chat log.
-//! 3. Read the track before the talk (it must differ from the offer's `set`), then require the
-//!    durable track (`game_character_quest_tracks`, read-only SQL) to hold `set` and a receipt
-//!    that wrote that track from another value at the track's own last-write revision.
-//! 4. Log out, freshly admit and require the track value and that receipt again.
+//! Start Hanna's citizen-hat mission through the authored prompt and confirmation.
+//! Require the NPC conversation reply, then verify each track and its bound receipt
+//! before logout and after fresh admission.
 use super::*;
-use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::chat::ChatLine;
+use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_protocol_oteryn::CommandStatus;
 use sqlx::Connection;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+const NPC: &str = "oteryn:npc.hanna";
+const TRANSITION: &str = "oteryn:quest-reward/qb-citizen-hat-start";
+
 struct Offer {
-    npc: String,
     keyword: String,
     reply: String,
-    track: String,
-    set: i64,
+    tracks: Vec<(String, i64)>,
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", detail),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -42,77 +38,43 @@ fn token(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join("-")
 }
 
-/// First-step offers of one offers file: topic 0, only the plain fields, a first storage
-/// condition a fresh (absent or zero) track satisfies and a non-preserving write of `set >= 0`.
-fn parse_offers(file: &serde_json::Value) -> Vec<Offer> {
-    let Some(offers) = file["offers"].as_array() else {
-        return Vec::new();
-    };
-    offers
-        .iter()
-        .filter_map(|offer| {
-            let object = offer.as_object()?;
-            if !object.keys().all(|key| {
-                matches!(
-                    key.as_str(),
-                    "npc" | "keywords" | "topic" | "next_topic" | "storage" | "reply"
-                )
-            }) || offer["topic"].as_i64()? != 0
-            {
-                return None;
-            }
-            let storage = offer["storage"].as_array()?;
-            if storage.is_empty()
-                || !storage
-                    .iter()
-                    .all(|entry| entry["minimum"].as_i64().is_some_and(|m| m <= 0))
-            {
-                return None;
-            }
-            let first = storage.first()?;
-            let set = first["set"].as_i64().filter(|set| *set >= 0)?;
-            if first["preserve"].as_bool().unwrap_or(false) {
-                return None;
-            }
-            let keyword = offer["keywords"].as_array()?.first()?.as_str()?.to_owned();
-            Some(Offer {
-                npc: offer["npc"].as_str()?.to_owned(),
-                keyword,
-                reply: offer["reply"].as_array()?.first()?.as_str()?.to_owned(),
-                track: first["track"].as_str()?.to_owned(),
-                set,
-            })
-        })
-        .collect()
-}
-
-fn load_offers() -> TestResult<Vec<Offer>> {
+fn load_offer() -> TestResult<Offer> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/quests");
-    let mut offers = parse_offers(&serde_json::from_slice(&std::fs::read(
-        root.join("shared-reward-offers.json"),
-    )?)?);
-    for entry in std::fs::read_dir(root.join("npc-offers"))? {
-        let path = entry?.path();
-        if path
-            .extension()
-            .is_some_and(|extension| extension == "json")
-        {
-            offers.extend(parse_offers(&serde_json::from_slice(&std::fs::read(
-                path,
-            )?)?));
-        }
-    }
-    Ok(offers)
-}
-
-/// Whether the chat log holds a line that starts with the reply's first words.
-fn reply_seen(client: &DevClientSession, reply: &str) -> bool {
-    let head: String = reply.chars().take(24).collect();
-    client.chat_log().is_some_and(|log| {
-        log.lines().any(|line| match line {
-            ChatLine::Local { text, .. } | ChatLine::Private { text, .. } => text.contains(&head),
-            _ => false,
+    let file: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(root.join("shared-reward-callbacks.json"))?)?;
+    let callback = file["callbacks"]
+        .as_array()
+        .and_then(|callbacks| {
+            callbacks
+                .iter()
+                .find(|entry| entry["key"] == TRANSITION && entry["npc"] == NPC)
         })
+        .ok_or("step=select;needed=authored-citizen-hat-start-callback")?;
+    let keyword = callback["keywords"][0]
+        .as_str()
+        .ok_or("callback has no keyword")?;
+    let reply = callback["reply"][0]
+        .as_str()
+        .ok_or("callback has no reply")?;
+    let tracks = callback["storage"]
+        .as_array()
+        .ok_or("callback has no storage")?
+        .iter()
+        .map(|entry| {
+            let key = entry["track"]
+                .as_str()
+                .ok_or("callback track key missing")?;
+            let set = entry["set"].as_i64().ok_or("callback track set missing")?;
+            Ok((key.to_owned(), set))
+        })
+        .collect::<TestResult<Vec<_>>>()?;
+    if tracks.is_empty() {
+        return Err("callback does not write a track".into());
+    }
+    Ok(Offer {
+        keyword: keyword.into(),
+        reply: reply.into(),
+        tracks,
     })
 }
 
@@ -172,30 +134,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let offers = load_offers()?;
+    let offer = load_offer()?;
+    let npc = metadata
+        .npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == NPC)
+        .ok_or("step=select;needed=hanna-placement")?;
     let mut client = connect_world(clients, 0xe4).await?;
     let here = tile(client.world_spatial().actor_position)?;
-    let (offer, npc, path) = offers
-        .iter()
-        .filter_map(|offer| {
-            let npc = metadata.npcs.npcs.iter().find(|npc| npc.key == offer.npc)?;
-            let path = route(world, here, |at| {
-                npc.placements
-                    .iter()
-                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-            })?;
-            Some((offer, npc, path))
+    let path = route(world, here, |at| {
+        npc.placements.iter().any(|p| {
+            p.floor == at.floor
+                && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= wire::TALK_RANGE_TILES
         })
-        .min_by_key(|(_, _, path)| path.len())
-        .ok_or("step=select;needed=walkable-quest-npc-with-first-step-offer")?;
-    let track_before = track_value(clients, &offer.track).await?;
-    if track_before == Some(offer.set) {
-        let _ = logout(&mut client).await;
-        return Err(format!(
-            "step=initial;track={};observed=already:{track_before:?};needed=track-not-yet-set",
-            offer.track
-        )
-        .into());
+    })
+    .ok_or("step=select;needed=walkable-hanna-approach")?;
+    let mut before = Vec::new();
+    for (track, set) in &offer.tracks {
+        let value = track_value(clients, track).await?;
+        if value == Some(*set) {
+            let _ = logout(&mut client).await;
+            return Err(format!("step=initial;track={track};observed=already:{value:?}").into());
+        }
+        before.push(value);
     }
     walk(&mut client, world, &path).await?;
     let actor = client
@@ -212,7 +174,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         })
         .map(|entry| entry.entity)
         .ok_or("step=walk;observed=npc-not-visible")?;
-    for text in ["hi", offer.keyword.as_str()] {
+    for text in ["hi", "addon"] {
         let reply = runtime::talk(
             client.session_mut(),
             &wire::NpcTalkIntent {
@@ -225,38 +187,77 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err(format!("step=talk;text={text};observed={reply:?}").into());
         }
     }
+    let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
+        npc_actor: actor,
+        text: offer.keyword.clone(),
+    })
+    .map_err(|error| format!("step=talk;encode={error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_NPC_SERVICE_V1,
+            wire::COMMAND_TYPE_NPC_TALK_INTENT,
+            &payload,
+        )
+        .await?;
+    if !matches!(
+        reply.status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) || wire::decode_npc_intent_result(&reply.payload).ok()
+        != Some(wire::NpcIntentDisposition::Ok)
+    {
+        return Err(format!("step=talk;keyword={};observed={reply:?}", offer.keyword).into());
+    }
+    let head: String = offer.reply.chars().take(24).collect();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while !reply_seen(&client, &offer.reply) {
+    loop {
+        if client.take_events().into_iter().any(|event| {
+            matches!(event, SessionEvent::NpcConversation(delta)
+                if delta.server_sequence > reply.server_sequence
+                    && delta.value.open.map(|(npc, _)| npc) == Some(actor)
+                    && delta.value.lines.iter().any(|line| line.contains(&head)))
+        }) {
+            break;
+        }
         if tokio::time::Instant::now() >= deadline {
             let _ = logout(&mut client).await;
             return Err(format!(
                 "step=reply;npc={};keyword={};observed=no-npc-reply-line",
-                offer.npc, offer.keyword
+                NPC, offer.keyword
             )
             .into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
     }
-    let value = track_value(clients, &offer.track).await?;
-    let bound = bound_receipts(clients, &offer.track, offer.set).await?;
+    for ((track, set), before) in offer.tracks.iter().zip(before) {
+        let value = track_value(clients, track).await?;
+        let bound = bound_receipts(clients, track, *set).await?;
+        if value != Some(*set) || bound == 0 {
+            let _ = logout(&mut client).await;
+            return Err(format!(
+                "step=receipt;track={track};observed=value:{before:?}->{value:?},bound-receipts:{bound};needed=change-to-set:{set}-with-receipt-of-that-revision"
+            ).into());
+        }
+    }
     logout(&mut client).await?;
     drop(client);
-    if value != Some(offer.set) || bound == 0 {
-        return Err(format!(
-            "step=receipt;track={};observed=value:{track_before:?}->{value:?},bound-receipts:{bound};needed=change-to-set:{}-with-receipt-of-that-revision",
-            offer.track, offer.set
-        )
-        .into());
-    }
     let mut fresh = connect_world(clients, 0xe5).await?;
-    let durable = track_value(clients, &offer.track).await;
-    let durable_bound = bound_receipts(clients, &offer.track, offer.set).await;
-    logout(&mut fresh).await?;
-    if durable? != Some(offer.set) || durable_bound? == 0 {
-        return Err("step=fresh;observed=track-or-bound-receipt-not-durable".into());
+    for (track, set) in &offer.tracks {
+        let value = track_value(clients, track).await?;
+        let bound = bound_receipts(clients, track, *set).await?;
+        if value != Some(*set) || bound == 0 {
+            let _ = logout(&mut fresh).await;
+            return Err(format!(
+                "step=fresh;track={track};observed=value:{value:?},bound-receipts:{bound}"
+            )
+            .into());
+        }
     }
-    Ok(format!("npc={};track-set={}", offer.npc, offer.set))
+    logout(&mut fresh).await?;
+    Ok(format!(
+        "npc={NPC};transition={TRANSITION};durable-tracks={}",
+        offer.tracks.len()
+    ))
 }
 
 #[cfg(test)]
@@ -264,25 +265,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_offers_keeps_only_fresh_first_step_offers() {
-        let file = serde_json::json!({"offers": [
-            {"npc":"oteryn:npc.a","keywords":["task"],"topic":0,"next_topic":1,
-             "storage":[{"track":"oteryn:quest-progress/x","minimum":-1,"maximum":0,"set":1}],
-             "reply":["Help me."]},
-            {"npc":"oteryn:npc.b","keywords":["task"],"topic":0,"next_topic":1,
-             "storage":[{"track":"oteryn:quest-progress/y","minimum":2,"maximum":2,"set":3}],
-             "reply":["No."]},
-            {"npc":"oteryn:npc.c","keywords":["task"],"topic":0,"next_topic":0,
-             "storage":[{"track":"oteryn:quest-progress/z","minimum":0,"maximum":0,"set":0,"preserve":true}],
-             "reply":["No."]},
-            {"npc":"oteryn:npc.d","keywords":["task"],"topic":0,"next_topic":0,"items":[1],
-             "storage":[{"track":"oteryn:quest-progress/w","minimum":0,"maximum":0,"set":1}],
-             "reply":["No."]}
-        ]});
-        let offers = parse_offers(&file);
-        assert_eq!(offers.len(), 1);
-        assert_eq!(offers[0].npc, "oteryn:npc.a");
-        assert_eq!(offers[0].set, 1);
+    fn authored_confirmation_writes_tracks() -> TestResult {
+        let offer = load_offer()?;
+        assert_eq!(offer.keyword, "yes");
+        assert!(!offer.reply.is_empty());
+        assert_eq!(offer.tracks.len(), 2);
+        assert!(offer.tracks.iter().all(|(_, set)| *set == 1));
         assert_eq!(token("a  b"), "a-b");
+        Ok(())
     }
 }
