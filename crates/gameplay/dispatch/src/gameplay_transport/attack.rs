@@ -1316,19 +1316,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
-        let now = now.unwrap_or_else(|| self.owner_now());
+        let requested_at = now.unwrap_or_else(|| self.owner_now());
         let digest = self
             .runtime
             .lock()
             .await
             .content_pin()
             .server_artifact_digest();
-        let Some(epoch) = self
-            .states
-            .attack
-            .lock()
-            .await
-            .weapon_read_due(actor, session, &digest, now)
+        let Some(epoch) =
+            self.states
+                .attack
+                .lock()
+                .await
+                .weapon_read_due(actor, session, &digest, requested_at)
         else {
             return;
         };
@@ -1336,6 +1336,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
+        let read_at = now.unwrap_or_else(|| self.owner_now());
         if equipment.content_digest != digest || content.source_digest() != digest {
             return;
         }
@@ -1435,7 +1436,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 item_key,
                 ranged,
                 content_digest: digest,
-                read_at: now,
+                read_at,
             },
         );
         let _ = self.refresh_cyclopedia_combat(actor, session, None).await;
