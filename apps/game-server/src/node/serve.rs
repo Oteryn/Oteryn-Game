@@ -524,6 +524,58 @@ fn private_key(key: &'static str, pem: &[u8]) -> Result<PrivateKeyDer<'static>, 
     PrivateKeyDer::from_pem_slice(pem).map_err(|_| invalid(key))
 }
 
+fn leaf_spki(chain: &[CertificateDer<'_>]) -> Option<Vec<u8>> {
+    chain
+        .first()
+        .and_then(|leaf| rustls::server::ParsedCertificate::try_from(leaf).ok())
+        .map(|parsed| parsed.subject_public_key_info().as_ref().to_vec())
+}
+
+fn store_descriptor(
+    config: &NodeConfig,
+    evidence: &ProducerDescriptor,
+    endpoint: &(String, u16),
+    roots: &[CertificateDer<'static>],
+    secret: impl Fn(&'static str, &Path, usize) -> Result<Vec<u8>, StartupError>,
+) -> Result<ProducerDescriptor, BootError> {
+    let platform = &config.platform;
+    let Some(store) = &platform.store else {
+        return Ok(evidence.clone());
+    };
+    let read_chain = |key, path: &Path| {
+        certificates(&secret(key, path, MAX_PEM_BYTES)?).map_err(|_| invalid(key))
+    };
+    let chain = read_chain(
+        "platform.store.client_certificate_file",
+        &store.client_certificate_file,
+    )?;
+    let key = private_key(
+        "platform.store.client_key_file",
+        &secret(
+            "platform.store.client_key_file",
+            &store.client_key_file,
+            MAX_GAMEPLAY_KEY_BYTES,
+        )?,
+    )?;
+    let own = leaf_spki(&chain).ok_or_else(|| invalid("platform.store"))?;
+    for (key, path) in platform_client_identity_paths(config) {
+        let other = leaf_spki(&read_chain(key, path)?).ok_or_else(|| invalid(key))?;
+        if own == other {
+            return Err(invalid("platform.store"));
+        }
+    }
+    ProducerDescriptor::new(
+        platform.source_authority.clone(),
+        endpoint.clone(),
+        platform.peer_name.clone(),
+        platform.peer_name.clone(),
+        roots.to_vec(),
+        chain,
+        key,
+    )
+    .map_err(|_| invalid("platform.store"))
+}
+
 /// The projection identity is its own, never the evidence or status one (§3); the
 /// runtime-status chain is compared only when `[platform.runtime_status]` is configured.
 fn projection_descriptor(
@@ -964,20 +1016,16 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 )?,
             )?;
             // Same issuer and compiled endpoint; refuse reuse of the evidence key.
-            let spki = |chain: &[rustls::pki_types::CertificateDer<'_>]| {
-                chain
-                    .first()
-                    .and_then(|leaf| rustls::server::ParsedCertificate::try_from(leaf).ok())
-                    .map(|parsed| parsed.subject_public_key_info().as_ref().to_vec())
-            };
-            let own = spki(&chain).ok_or_else(|| invalid("platform.bootstrap_intents"))?;
-            let evidence = spki(&client).ok_or_else(|| invalid("platform.bootstrap_intents"))?;
+            let own = leaf_spki(&chain).ok_or_else(|| invalid("platform.bootstrap_intents"))?;
+            let evidence =
+                leaf_spki(&client).ok_or_else(|| invalid("platform.bootstrap_intents"))?;
             if own == evidence {
                 return Err(invalid("platform.bootstrap_intents"));
             }
             (chain, key)
         }
     };
+    let store = store_descriptor(&config, &evidence, &endpoint, &roots, secret)?;
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
@@ -1028,7 +1076,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         config,
         gameplay_chain,
         gameplay_key,
-        store: evidence.clone(),
+        store,
         evidence: FreshEvidenceSource::new(evidence),
         intents,
         runtime_status,
@@ -3585,11 +3633,9 @@ fn enforcement_startup(
     Ok(clients)
 }
 
-fn platform_client_identities(
-    config: &NodeConfig,
-) -> Result<Vec<(&'static str, Vec<u8>)>, BootError> {
+fn platform_client_identity_paths(config: &NodeConfig) -> Vec<(&'static str, &Path)> {
     let platform = &config.platform;
-    let mut paths = vec![(
+    let mut paths: Vec<(&'static str, &Path)> = vec![(
         "platform.client_certificate_file",
         &platform.client_certificate_file,
     )];
@@ -3655,7 +3701,13 @@ fn platform_client_identities(
             &v.client_certificate_file,
         ));
     }
-    let identities = paths
+    paths
+}
+
+fn platform_client_identities(
+    config: &NodeConfig,
+) -> Result<Vec<(&'static str, Vec<u8>)>, BootError> {
+    let identities = platform_client_identity_paths(config)
         .into_iter()
         .map(|(key, path)| {
             read_file(key, path, FileClass::Secret, effective_uid(), MAX_PEM_BYTES)
@@ -4491,11 +4543,14 @@ source_authority = "OTERYN_GAME_JOURNAL"
         assert!(crate::gameplay_transport::validate_gameplay_tls(&chain, &foreign).is_err());
     }
 
+    fn issue_client_certificate() -> rcgen::CertifiedKey<rcgen::KeyPair> {
+        rcgen::generate_simple_self_signed(vec!["localhost".to_owned()]).expect("leaf")
+    }
+
     #[test]
     fn account_characters_boots_without_a_runtime_status_section() {
         let issue = || {
-            let pair =
-                rcgen::generate_simple_self_signed(vec!["localhost".to_owned()]).expect("leaf");
+            let pair = issue_client_certificate();
             let key = PrivateKeyDer::Pkcs8(rustls::pki_types::PrivatePkcs8KeyDer::from(
                 pair.signing_key.serialize_der(),
             ));
@@ -4525,6 +4580,149 @@ source_authority = "OTERYN_GAME_JOURNAL"
             }))
         ));
         assert!(build(&status, Some(&status.0)).is_err());
+    }
+
+    const STORE_SECTION: &str = r#"
+[platform.world_event_outcomes]
+enabled = false
+
+[platform.store]
+client_certificate_file = "/etc/oteryn/node/store.crt"
+client_key_file = "/etc/oteryn/node/store.key"
+"#;
+
+    fn select_store_descriptor(
+        section: &str,
+        evidence: &rcgen::CertifiedKey<rcgen::KeyPair>,
+        store: &rcgen::Certificate,
+        key: &rcgen::KeyPair,
+        status: Option<&rcgen::Certificate>,
+    ) -> Result<ProducerDescriptor, BootError> {
+        use super::super::config::tests::NODE;
+        use base64::Engine as _;
+        let pem = |label: &str, der: &[u8]| {
+            let encoded = base64::engine::general_purpose::STANDARD.encode(der);
+            format!("-----BEGIN {label}-----\n{encoded}\n-----END {label}-----\n").into_bytes()
+        };
+        let certificate = |cert: &rcgen::Certificate| pem("CERTIFICATE", cert.der().as_ref());
+        let status_section = if status.is_some() {
+            r#"
+[platform.runtime_status]
+client_certificate_file = "/etc/oteryn/node/status.crt"
+client_key_file = "/etc/oteryn/node/status.key"
+assignment_epoch = 1
+"#
+        } else {
+            ""
+        };
+        let config = NodeConfig::parse(format!("{NODE}{section}{status_section}").as_bytes())
+            .expect("Store node config");
+        let endpoint = ("127.0.0.1".to_owned(), 8443);
+        let roots = vec![evidence.cert.der().clone()];
+        let descriptor = ProducerDescriptor::new(
+            "fixture-evidence".into(),
+            endpoint.clone(),
+            "localhost".into(),
+            "localhost".into(),
+            roots.clone(),
+            roots.clone(),
+            PrivateKeyDer::Pkcs8(evidence.signing_key.serialize_der().into()),
+        )
+        .expect("evidence descriptor");
+        store_descriptor(
+            &config,
+            &descriptor,
+            &endpoint,
+            &roots,
+            |config_key, _, _| {
+                match config_key {
+                    "platform.client_certificate_file" => Some(certificate(&evidence.cert)),
+                    "platform.store.client_certificate_file" => Some(certificate(store)),
+                    "platform.store.client_key_file" => {
+                        Some(pem("PRIVATE KEY", &key.serialize_der()))
+                    }
+                    "platform.runtime_status.client_certificate_file" => status.map(certificate),
+                    _ => None,
+                }
+                .ok_or(StartupError::Invalid { key: config_key })
+            },
+        )
+    }
+
+    #[test]
+    fn store_section_absent_keeps_evidence_identity() {
+        let evidence = issue_client_certificate();
+        let descriptor =
+            select_store_descriptor("", &evidence, &evidence.cert, &evidence.signing_key, None)
+                .expect("evidence fallback");
+        assert_eq!(descriptor.source_authority(), "fixture-evidence");
+    }
+
+    #[test]
+    fn store_section_present_uses_dedicated_identity() {
+        let (evidence, store) = (issue_client_certificate(), issue_client_certificate());
+        let descriptor = select_store_descriptor(
+            STORE_SECTION,
+            &evidence,
+            &store.cert,
+            &store.signing_key,
+            None,
+        )
+        .expect("distinct Store identity");
+        assert_eq!(
+            descriptor.source_authority(),
+            "urn:oteryn:platform:game-auth"
+        );
+        assert!(matches!(
+            select_store_descriptor(
+                STORE_SECTION,
+                &evidence,
+                &store.cert,
+                &evidence.signing_key,
+                None
+            ),
+            Err(BootError::Startup(StartupError::Invalid {
+                key: "platform.store"
+            }))
+        ));
+    }
+
+    #[test]
+    fn store_identity_equal_to_evidence_is_refused() {
+        let evidence = issue_client_certificate();
+        let reissued = rcgen::CertificateParams::new(vec!["store.localhost".to_owned()])
+            .expect("Store certificate parameters")
+            .self_signed(&evidence.signing_key)
+            .expect("Store certificate with reused key");
+        assert!(matches!(
+            select_store_descriptor(
+                STORE_SECTION,
+                &evidence,
+                &reissued,
+                &evidence.signing_key,
+                None
+            ),
+            Err(BootError::Startup(StartupError::Invalid {
+                key: "platform.store"
+            }))
+        ));
+    }
+
+    #[test]
+    fn store_identity_equal_to_other_purpose_is_refused() {
+        let (evidence, status) = (issue_client_certificate(), issue_client_certificate());
+        assert!(matches!(
+            select_store_descriptor(
+                STORE_SECTION,
+                &evidence,
+                &status.cert,
+                &status.signing_key,
+                Some(&status.cert)
+            ),
+            Err(BootError::Startup(StartupError::Invalid {
+                key: "platform.store"
+            }))
+        ));
     }
 
     #[test]
