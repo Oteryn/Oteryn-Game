@@ -864,11 +864,20 @@ where
         event.emission_ordinal == 2
             && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. })
     };
+    let strip_perfect_shot = |event: &mut wire::PresentationEvent| {
+        if let wire::PresentationEventKind::ValueText { perfect_shot, .. } = &mut event.kind {
+            *perfect_shot = false;
+        }
+    };
     if session.selected_capabilities.contains(290) {
         let public: Vec<_> = events
             .iter()
             .copied()
             .filter(|event| !combat_effect(event))
+            .map(|mut event| {
+                strip_perfect_shot(&mut event);
+                event
+            })
             .collect();
         authority.cast_effects(session.admitted, &public).await;
     }
@@ -883,6 +892,9 @@ where
             && !matches!(event.kind, wire::PresentationEventKind::AmbientSound { .. })
             && !item_effect(event)
     });
+    if !session.selected_capabilities.contains(wire::CAPABILITY_PERFECT_SHOT_PRESENTATION_V1) {
+        events.iter_mut().for_each(strip_perfect_shot);
+    }
     if !events.is_empty() {
         let payload =
             wire::encode_presentation_batch(&events).map_err(|_| ServeEnd::Disconnected)?;

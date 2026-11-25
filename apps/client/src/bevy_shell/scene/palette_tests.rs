@@ -122,6 +122,7 @@ fn palette_gauges_health_icons_and_text_reach_bevy_and_native_capture() -> TestR
                     color: PresentationColor::Orange,
                 },
                 secondary: None,
+                perfect_shot: false,
             },
         }],
     })]);

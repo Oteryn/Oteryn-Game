@@ -28,6 +28,8 @@ use crate::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
 
 /// Registered capability `PRESENTATION_V1`: no command type, state domains 19 and 20, requires 6.
 pub const CAPABILITY_PRESENTATION_V1: u32 = 23;
+/// Marks a direct ranged hit that received the Crystal perfect-shot bonus.
+pub const CAPABILITY_PERFECT_SHOT_PRESENTATION_V1: u32 = 619;
 /// B24: independently negotiated private ambience; capability 23 remains unchanged.
 pub const CAPABILITY_AMBIENT_SOUND_V1: u32 = 288;
 pub const STATE_DOMAIN_AMBIENT_SOUND: u32 = 101;
@@ -55,8 +57,8 @@ pub const SNAPSHOT_TYPE_ACTOR_COOLDOWNS_V1: u32 = 1;
 /// `SPELLPRES0-RL-01`: events in one session's batch of one sync unit.
 pub const MAX_PRESENTATION_EVENTS: usize = 1_024;
 /// `SPELLPRES0-RL-02`: bytes of one event, its batch tag and length included. The worst case is
-/// a `value_text` with both references, both 10-byte values and both ordinals at `u32::MAX`: 126
-/// bytes.
+/// a `value_text` with both references, both 10-byte values, both ordinals at `u32::MAX`,
+/// and the perfect-shot marker: 128 bytes.
 pub const MAX_PRESENTATION_EVENT_BYTES: usize = 128;
 /// `SPELLPRES0-RL-03`: bytes of one batch (1,024 x 128 plus the decision's 64-byte header slack).
 pub const MAX_PRESENTATION_BATCH_BYTES: usize = 131_136;
@@ -162,6 +164,7 @@ pub enum PresentationEventKind {
         attacker: Option<EntityRef>,
         primary: PresentationValue,
         secondary: Option<PresentationValue>,
+        perfect_shot: bool,
     },
     Sound {
         position: ActorPosition,
@@ -414,6 +417,7 @@ fn encode_kind(kind: &PresentationEventKind) -> (u64, Vec<u8>) {
             attacker,
             primary,
             secondary,
+            perfect_shot,
         } => {
             push_varint_field(&mut output, 1, *kind as u64);
             push_message_field(&mut output, 2, &encode_position(position));
@@ -424,6 +428,9 @@ fn encode_kind(kind: &PresentationEventKind) -> (u64, Vec<u8>) {
             push_message_field(&mut output, 5, &encode_value(primary));
             if let Some(secondary) = secondary {
                 push_message_field(&mut output, 6, &encode_value(secondary));
+            }
+            if *perfect_shot {
+                push_varint_field(&mut output, 7, 1);
             }
             6
         }
@@ -597,6 +604,7 @@ struct KindFields {
     value_kind: Option<PresentationValueKind>,
     refs: [Option<EntityRef>; 2],
     values: [Option<PresentationValue>; 2],
+    perfect_shot: Option<()>,
 }
 
 fn decode_kind(field: u64, input: &[u8]) -> WireResult<PresentationEventKind> {
@@ -620,6 +628,7 @@ fn decode_kind(field: u64, input: &[u8]) -> WireResult<PresentationEventKind> {
             (6, 4, 2) => set_once(&mut f.refs[1], read_ref(input, cursor)?),
             (6, 5, 2) => set_once(&mut f.values[0], read_value(input, cursor)?),
             (6, 6, 2) => set_once(&mut f.values[1], read_value(input, cursor)?),
+            (6, 7, 0) if read_varint(input, cursor)? == 1 => set_once(&mut f.perfect_shot, ()),
             _ => malformed(),
         }
     })?;
@@ -652,6 +661,7 @@ fn decode_kind(field: u64, input: &[u8]) -> WireResult<PresentationEventKind> {
             attacker: f.refs[1],
             primary: f.values[0].ok_or_else(missing)?,
             secondary: f.values[1],
+            perfect_shot: f.perfect_shot.is_some(),
         },
         7 => PresentationEventKind::Sound {
             position: position?,

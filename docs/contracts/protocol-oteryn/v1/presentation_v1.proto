@@ -97,6 +97,9 @@ message PresentationValueTextV1 {
   PresentationValueV1 primary = 5;
   // Absent unless the value is split (an elemental part).
   PresentationValueV1 secondary = 6;
+  // Present with value true only for direct ranged damage with a Perfect Shot bonus.
+  // Requires selected capability 619. Absence preserves the original payload.
+  bool perfect_shot = 7;
 }
 
 // B24 additive private ambient channel; ids never share the positional sound namespace.

@@ -2880,6 +2880,7 @@ mod continuation_two_tests {
                 color: PresentationColor::Red,
             },
             secondary: None,
+            perfect_shot: false,
         };
         assert!(attributed_damage(
             &event(PresentationValueKind::DamageReceived, Some(source), victim),

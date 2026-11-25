@@ -211,6 +211,7 @@ pub struct PendingPvpHit {
     ordinal: u16,
     binding: [u8; 32],
     effect: Option<u16>,
+    perfect_shot: bool,
 }
 
 impl PendingPvpHit {
@@ -241,6 +242,7 @@ impl PendingPvpHit {
                 position,
                 amount,
                 self.effect,
+                self.perfect_shot,
             );
         }
         receipt.applied
@@ -363,6 +365,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         expected_black: bool,
         damage: crate::spell::cast::PreparedWheelAttackHit,
         hit_effect: Option<u16>,
+        perfect_shot: bool,
     ) -> Result<bool, DurabilityError> {
         let Some(effect) = batch.effects.first() else {
             return Ok(false);
@@ -416,6 +419,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ordinal,
             binding,
             effect: hit_effect,
+            perfect_shot,
         };
         let mut window = permit.open_commit_window(hit, park);
         // Even cancellation before COMMIT retains enough state to prove rollback and release.

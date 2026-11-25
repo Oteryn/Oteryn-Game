@@ -1,0 +1,15 @@
+{
+  "mechanic": "0619-perfect-shot-presentation",
+  "kind": "handlers",
+  "id": "0619-perfect-shot-presentation-unsupported",
+  "status": "unsupported",
+  "reason": "The session and qualification clients consume this marker. Native client rendering awaits the client owner.",
+  "commands": [],
+  "not_applicable": {
+    "state": "The marker lives on the existing damage event.",
+    "protocol": "The session decodes the negotiated extension.",
+    "view": "No native-client marker rendering is registered.",
+    "input": "The marker is emitted by the server.",
+    "settings": "No setting is associated with this marker."
+  }
+}

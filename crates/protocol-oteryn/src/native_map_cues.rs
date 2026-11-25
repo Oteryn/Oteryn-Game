@@ -179,6 +179,7 @@ mod tests {
                     color: presentation::PresentationColor::Red,
                 },
                 secondary: None,
+                perfect_shot: false,
             },
             K::Sound {
                 position,
@@ -199,6 +200,7 @@ mod tests {
                     value: 2,
                     color: presentation::PresentationColor::Blue,
                 }),
+                perfect_shot: false,
             },
             K::Sound {
                 position,

@@ -100,6 +100,9 @@ pub(super) fn apply<S: SessionStream>(
     if native_delta && !native_basis {
         return Err(SessionError::SessionUnusable);
     }
+    let perfect_shot_selected = session.is_selected(
+        oteryn_protocol_oteryn::presentation::CAPABILITY_PERFECT_SHOT_PRESENTATION_V1,
+    );
     let row = session
         .gated_revisions
         .iter_mut()
@@ -116,6 +119,14 @@ pub(super) fn apply<S: SessionStream>(
         })
     } else if ambient || delta.domain_id == STATE_DOMAIN_WORLD_PRESENTATION {
         let value = decode_events(delta.payload, native_delta, native_basis && !ambient)?;
+        if !perfect_shot_selected
+            && value.iter().any(|event| matches!(
+                event.kind,
+                PresentationEventKind::ValueText { perfect_shot: true, .. }
+            ))
+        {
+            return Err(SessionError::SessionUnusable);
+        }
         if ambient
             && (value.len() != 1
                 || !matches!(value[0].kind, PresentationEventKind::AmbientSound { .. }))

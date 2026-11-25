@@ -214,6 +214,7 @@ fn value_event(floor: i16) -> PresentationEventKind {
             value: 12,
             color: oteryn_session::PresentationColor::Blue,
         }),
+        perfect_shot: false,
     }
 }
 

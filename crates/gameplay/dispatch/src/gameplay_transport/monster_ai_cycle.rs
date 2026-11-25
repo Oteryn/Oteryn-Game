@@ -1065,6 +1065,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                         position.position(),
                                         u64::from(applied.damage.applied),
                                         None,
+                                        false,
                                     );
                                 }
                                 attack.kills().boss_damage_received(

@@ -24,6 +24,12 @@ fn ranged_attack_postgres_bow_kills_at_four_consumes_and_reloads() -> TestResult
     })
 }
 #[test]
+fn ranged_attack_postgres_perfect_shot_marks_the_committed_bow_hit() -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-perfect-shot", || {
+        scenario_with_quiver(3350, 4, true, 100, false, false, None, true)
+    })
+}
+#[test]
 fn ranged_attack_postgres_wand_pays_mana_and_deals_death() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("ranged-wand", || {
         scenario(25760, 3, false, 100, false, false)
@@ -64,25 +70,25 @@ fn ranged_attack_postgres_reconcile_spends_once_without_late_damage_or_training(
 #[test]
 fn quick_loot_quiver_extra_postgres_selects_compatible_and_consumes_exact_stack() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("quick-quiver-extra", || {
-        scenario_with_quiver(3350, 4, true, 100, false, false, Some(10))
+        scenario_with_quiver(3350, 4, true, 100, false, false, Some(10), false)
     })
 }
 #[test]
 fn quick_loot_quiver_shield_postgres_selects_compatible_and_consumes_exact_stack() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("quick-quiver-shield", || {
-        scenario_with_quiver(3350, 4, true, 100, false, false, Some(6))
+        scenario_with_quiver(3350, 4, true, 100, false, false, Some(6), false)
     })
 }
 #[test]
 fn quick_loot_quiver_empty_postgres_refuses_without_cost() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("quick-quiver-empty", || {
-        scenario_with_quiver(3350, 4, false, 100, false, false, Some(10))
+        scenario_with_quiver(3350, 4, false, 100, false, false, Some(10), false)
     })
 }
 #[test]
 fn quick_loot_quiver_replay_postgres_does_not_spend_twice() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("quick-quiver-replay", || {
-        scenario_with_quiver(3350, 4, true, 100, false, true, Some(10))
+        scenario_with_quiver(3350, 4, true, 100, false, true, Some(10), false)
     })
 }
 fn scenario(
@@ -93,7 +99,7 @@ fn scenario(
     blocked: bool,
     reconcile: bool,
 ) -> TestResult {
-    scenario_with_quiver(weapon, distance, ammo, mana, blocked, reconcile, None)
+    scenario_with_quiver(weapon, distance, ammo, mana, blocked, reconcile, None, false)
 }
 #[allow(clippy::too_many_arguments)]
 fn scenario_with_quiver(
@@ -104,6 +110,7 @@ fn scenario_with_quiver(
     blocked: bool,
     reconcile: bool,
     quiver_slot: Option<i16>,
+    perfect_shot: bool,
 ) -> TestResult {
     let starter = weapon == 21348;
     let initial_ammo = if quiver_slot.is_some() && reconcile {
@@ -611,6 +618,15 @@ fn scenario_with_quiver(
             drop(seal);
             return harness.cleanup().await;
         }
+        if perfect_shot {
+            let runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let state = states.get_mut(&runtime, actor, session).ok_or("bow caster")?;
+            let mut offence = state.equipped_offence();
+            // Crystal items.xml:67795-67796, eldritch quiver.
+            offence.perfect_shot.insert(4, 20);
+            state.install_equipped_offence(offence);
+        }
         let mut shots = 0;
         let mut killed = false;
         for _ in 0..if weapon == 3287 { 100 } else { 30 } {
@@ -638,6 +654,27 @@ fn scenario_with_quiver(
                 break;
             }
             owner.clock_origin = owner.clock_origin.checked_sub(PASS).ok_or("clock")?;
+        }
+        if perfect_shot {
+            use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+            use oteryn_protocol_oteryn::presentation::PresentationEventKind;
+            let (_, events) = owner
+                .observe_sounds(actor, session, 0)
+                .await
+                .ok_or("perfect-shot publication")?;
+            assert!(
+                events.iter().any(|event| matches!(
+                    event.kind,
+                    PresentationEventKind::ValueText {
+                        attacker: Some(from),
+                        target,
+                        perfect_shot: true,
+                        ..
+                    } if from.identity == actor.placement_identity() && target == rat
+                )),
+                "the attack owner must attribute its committed perfect shot"
+            );
+            eprintln!("RANGED_PERFECT_SHOT_ASSERTED range=4 bonus=20");
         }
         if weapon == 3350 && distance <= 6 && ammo && !blocked {
             assert!(killed, "bow kills from range {distance}");

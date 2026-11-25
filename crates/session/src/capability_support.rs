@@ -199,6 +199,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1,
     // CORPSE48: domain 11 shows up to 48 corpse entries (requires 4).
     oteryn_protocol_oteryn::item_view::CAPABILITY_CORPSE_CONTAINER_48_V1,
+    oteryn_protocol_oteryn::presentation::CAPABILITY_PERFECT_SHOT_PRESENTATION_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

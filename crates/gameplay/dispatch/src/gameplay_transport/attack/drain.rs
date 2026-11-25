@@ -970,24 +970,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else {
                     landed
                 };
-                let landed =
+                let perfect_damage =
                     if !extension
                         && selected.weapon.ranged.as_ref().is_some_and(|r| {
                             matches!(r.damage, ranged::RangedDamage::Distance { .. })
                         })
                     {
-                        let bonus = runtime
+                        Some(runtime
                             .read_actor_position(entry.actor)
                             .ok()
                             .zip(runtime.read_actor_position(target).ok())
                             .map_or(0, |(from, to)| {
                                 let (from, to) = (from.position(), to.position());
                                 offence.perfect_damage(from.x.abs_diff(to.x), from.y.abs_diff(to.y))
-                            });
-                        landed.saturating_add(bonus).max(0)
+                            }))
                     } else {
-                        landed
+                        None
                     };
+
+                let landed = perfect_damage
+                    .map_or(landed, |bonus| landed.saturating_add(bonus).max(0));
 
                 let prey = states.prey_percent(
                     &runtime,
@@ -1134,6 +1136,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         snapshot.position,
                         u64::from(value),
                         effect,
+                        perfect_damage.is_some_and(|bonus| bonus != 0),
                     );
                     let primary = reported_primary(final_parts, value);
                     let element = ranged::analyser_element(resolved_element);
@@ -1870,6 +1873,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 hit.black,
                 damage,
                 hit.effect,
+                perfect_damage != 0,
             )
             .await
         {

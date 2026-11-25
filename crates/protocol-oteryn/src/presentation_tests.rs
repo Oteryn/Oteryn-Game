@@ -88,6 +88,7 @@ fn worst_value_text(decision: u32, emission: u32) -> PresentationEvent {
                 value: u64::MAX,
                 color: PresentationColor::MayaBlue,
             }),
+            perfect_shot: false,
         },
     )
 }
@@ -127,6 +128,7 @@ fn every_kind() -> Vec<PresentationEvent> {
                     color: PresentationColor::Red,
                 },
                 secondary: None,
+                perfect_shot: false,
             },
         ),
         event(
@@ -319,6 +321,7 @@ fn malformed_events_fail_closed() {
                     color: PresentationColor::PastelRed,
                 },
                 secondary: None,
+                perfect_shot: false,
             },
         ),
         event(
@@ -337,6 +340,7 @@ fn malformed_events_fail_closed() {
                     value: 0,
                     color: PresentationColor::Purple,
                 }),
+                perfect_shot: false,
             },
         ),
         event(
@@ -901,3 +905,19 @@ fn registry_binds_the_presentation_wire_ids_and_limits() -> Result<(), Box<dyn s
 #[cfg(test)]
 #[path = "presentation_fuzz_tests.rs"]
 mod fuzz_tests;
+
+#[test]
+fn perfect_shot_value_text_accepts_the_allocated_marker() -> WireResult<()> {
+    let event = worst_value_text(u32::MAX, u32::MAX);
+    let (_, mut body) = encode_kind(&event.kind);
+    body.extend([0x38, 1]);
+    let kind = decode_kind(6, &body)?;
+    assert!(matches!(kind, PresentationEventKind::ValueText { perfect_shot: true, .. }));
+    let marked = PresentationEvent { kind, ..event };
+    let encoded = encode_presentation_batch(&[marked])?;
+    assert_eq!(encoded.len(), MAX_PRESENTATION_EVENT_BYTES);
+    assert_eq!(decode_presentation_batch(&encoded)?, [marked]);
+    body.extend([0x38, 1]);
+    assert!(decode_kind(6, &body).is_err());
+    Ok(())
+}

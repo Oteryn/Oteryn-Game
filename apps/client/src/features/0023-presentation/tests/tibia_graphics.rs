@@ -80,6 +80,7 @@ fn value_numbers_draw_the_tibia_game_font_outlined_in_their_colour() -> TestResu
                 color: PresentationColor::LightGreen,
             },
             secondary: None,
+            perfect_shot: false,
         }],
         now,
     );

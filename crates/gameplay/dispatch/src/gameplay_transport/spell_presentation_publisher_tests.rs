@@ -820,10 +820,10 @@ fn committed_attack_damage_and_its_effect_share_a_presentation_decision() {
     let (runtime, attacker, target, session) = runtime();
     let at = runtime.read_actor_position(target).unwrap().position();
     let mut publisher = SoundPublisher::default();
-    publisher.record_damage(&runtime, attacker, target, at, 7, Some(173));
-    publisher.record_damage(&runtime, attacker, target, at, 6, None);
-    publisher.record_damage(&runtime, attacker, target, at, 8, Some(230));
-    publisher.record_damage(&runtime, attacker, target, at, 0, Some(173));
+    publisher.record_damage(&runtime, attacker, target, at, 7, Some(173), true);
+    publisher.record_damage(&runtime, attacker, target, at, 6, None, false);
+    publisher.record_damage(&runtime, attacker, target, at, 8, Some(230), false);
+    publisher.record_damage(&runtime, attacker, target, at, 0, Some(173), true);
 
     let (cursor, events) = publisher
         .observe(&runtime, attacker, session, 0, true)
@@ -839,6 +839,7 @@ fn committed_attack_damage_and_its_effect_share_a_presentation_decision() {
         (
             PresentationEventKind::ValueText {
                 kind: PresentationValueKind::DamageDealt,
+                perfect_shot: true,
                 attacker: Some(source),
                 target: victim,
                 primary,

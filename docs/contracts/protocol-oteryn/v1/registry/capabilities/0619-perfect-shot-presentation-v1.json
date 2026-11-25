@@ -1,0 +1,13 @@
+{
+  "id": 619,
+  "name": "PERFECT_SHOT_PRESENTATION_V1",
+  "requires": [
+    23
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Available with the native presentation source. Field 7 of ValueText is emitted only when selected.",
+  "owner_decision": "2026-11-25 capability 619 allocation",
+  "owner": "Game combat ValueText publication (domain 19 delta 1)"
+}

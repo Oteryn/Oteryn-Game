@@ -36,6 +36,7 @@ fn damage_heal_and_hit_effect_reach_the_play_scene() -> Result<(), Box<dyn std::
                 value: 20,
                 color: PresentationColor::Blue,
             }),
+            perfect_shot: false,
         },
         PresentationEventKind::ValueText {
             kind: PresentationValueKind::Healed,
@@ -47,6 +48,7 @@ fn damage_heal_and_hit_effect_reach_the_play_scene() -> Result<(), Box<dyn std::
                 color: PresentationColor::LightGreen,
             },
             secondary: None,
+            perfect_shot: false,
         },
         PresentationEventKind::MagicEffect {
             position,

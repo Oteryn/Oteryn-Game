@@ -584,6 +584,7 @@ struct DamageCue {
     target: ExactActorRef,
     amount: u64,
     effect: Option<u16>,
+    perfect_shot: bool,
 }
 impl SoundPublisher {
     /// Channel outbox ownership does not change when its caster enters a House
@@ -607,6 +608,7 @@ impl SoundPublisher {
         self.record_positional(runtime, actor, position, cue, secondary, None);
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn record_damage(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -615,6 +617,7 @@ impl SoundPublisher {
         position: MovementLocalPosition,
         amount: u64,
         effect: Option<u16>,
+        perfect_shot: bool,
     ) {
         if amount > 0 {
             self.record_positional(
@@ -627,6 +630,7 @@ impl SoundPublisher {
                     target,
                     amount,
                     effect,
+                    perfect_shot,
                 }),
             );
         }
@@ -864,6 +868,7 @@ impl SoundPublisher {
                             color: PresentationColor::Red,
                         },
                         secondary: None,
+                        perfect_shot: hit.perfect_shot,
                     },
                 });
                 continue;

@@ -66,6 +66,7 @@ fn fixtures() -> Result<(Vec<u8>, Vec<u8>, u32, u32), BoxError> {
                 color: PresentationColor::Red,
             },
             secondary: None,
+            perfect_shot: false,
         },
     }];
     Ok((
@@ -79,7 +80,17 @@ fn fixtures() -> Result<(Vec<u8>, Vec<u8>, u32, u32), BoxError> {
 #[test]
 fn real_challenge_payloads_update_vitals_and_deliver_forced_target_damage() -> Result<(), BoxError>
 {
+    check_damage(false)?;
+    check_damage(true)
+}
+
+fn check_damage(extension: bool) -> Result<(), BoxError> {
     block_on(async {
+        let caps: &'static [u32] = if extension {
+            &[6, 23, presentation::CAPABILITY_PERFECT_SHOT_PRESENTATION_V1]
+        } else {
+            &[6, 23]
+        };
         let (vitals_payload, presentation_payload, expected_mana, expected_damage) = fixtures()?;
         let initial = ActorVitals {
             health: 150,
@@ -121,15 +132,15 @@ fn real_challenge_payloads_update_vitals_and_deliver_forced_target_damage() -> R
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[6, 23],
-                &[6, 23],
+                caps,
+                caps,
                 &[],
                 entity_snapshot(vec![]),
                 &raw,
             )
             .await
         });
-        let mut session = Session::admit(client, admission_with(&[6, 23])?).await?;
+        let mut session = Session::admit(client, admission_with(caps)?).await?;
         peer.await??;
 
         let vitals_frame = encode_state_delta(
@@ -159,23 +170,48 @@ fn real_challenge_payloads_update_vitals_and_deliver_forced_target_damage() -> R
             Some(expected_mana)
         );
         assert!(matches!(&presentation_event,
-            SessionEvent::Presentation(delta) if delta.value.iter().any(|event| matches!(event.kind,
-                PresentationEventKind::ValueText { attacker: Some(_), primary, .. }
-                    if primary.value == u64::from(expected_damage)))));
+        SessionEvent::Presentation(delta) if delta.value.iter().any(|event| matches!(event.kind,
+            PresentationEventKind::ValueText { attacker: Some(_), primary, .. }
+                if primary.value == u64::from(expected_damage)))));
 
-        let unchanged = session.actor_vitals().copied();
-        let malformed = encode_state_delta(
+        let mut events = presentation::decode_presentation_batch(&presentation_payload)
+            .map_err(|error| format!("{error:?}"))?;
+        for event in &mut events {
+            if let PresentationEventKind::ValueText { perfect_shot, .. } = &mut event.kind {
+                *perfect_shot = true;
+            }
+        }
+        let marked = presentation::encode_presentation_batch(&events)
+            .map_err(|error| format!("{error:?}"))?;
+        let frame = encode_state_delta(
             1,
             43,
             presentation::STATE_DOMAIN_WORLD_PRESENTATION,
             1,
             2,
             1,
+            &marked,
+        )?;
+        let applied = session.apply_state_delta(43, decode_wire_envelope(&frame)?.payload());
+        if extension {
+            assert!(matches!(applied?, SessionEvent::Presentation(delta) if delta.value == events));
+        } else {
+            assert!(applied.is_err());
+        }
+        let revision = if extension { 2 } else { 1 };
+        let unchanged = session.actor_vitals().copied();
+        let malformed = encode_state_delta(
+            1,
+            44,
+            presentation::STATE_DOMAIN_WORLD_PRESENTATION,
+            revision,
+            revision + 1,
+            1,
             &[0xff],
         )?;
         assert!(
             session
-                .apply_state_delta(43, decode_wire_envelope(&malformed)?.payload())
+                .apply_state_delta(44, decode_wire_envelope(&malformed)?.payload())
                 .is_err()
         );
         assert_eq!(session.actor_vitals().copied(), unchanged);

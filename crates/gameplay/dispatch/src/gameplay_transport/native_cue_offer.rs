@@ -62,6 +62,21 @@ pub(super) fn offered(
             },
         );
     }
+    use oteryn_protocol_oteryn::presentation::CAPABILITY_PERFECT_SHOT_PRESENTATION_V1;
+    if source_available
+        && !result
+            .iter()
+            .any(|offer| offer.id == CAPABILITY_PERFECT_SHOT_PRESENTATION_V1)
+    {
+        let at = result.partition_point(|offer| offer.id < CAPABILITY_PERFECT_SHOT_PRESENTATION_V1);
+        result.insert(
+            at,
+            OfferedCapability {
+                id: CAPABILITY_PERFECT_SHOT_PRESENTATION_V1,
+                requires: &[CAPABILITY_PRESENTATION_V1],
+            },
+        );
+    }
     result
 }
 
@@ -184,6 +199,8 @@ mod boot_tests {
                     offered.iter().any(|offer| offer.id == 385 && offer.requires == [23, 30]),
                     "qualified native BOOT must retain explicit-basis support through later scope handoff"
                 );
+                let perfect_shot = oteryn_protocol_oteryn::presentation::CAPABILITY_PERFECT_SHOT_PRESENTATION_V1;
+                assert!(offered.iter().any(|offer| offer.id == perfect_shot && offer.requires == [23]));
                 let bound = BoundRequiredCapabilities::for_channel_boot(
                     &[11, 18, 30],
                     boot.binding().runtime_scope(),
@@ -197,6 +214,11 @@ mod boot_tests {
                     .authenticate_support(&supported)
                     .map_err(|e| format!("{e:?}"))?;
                 assert!(first.selected().contains(23));
+                assert!(first.selected().contains(perfect_shot));
+                let legacy = supported.iter().copied().filter(|id| *id != perfect_shot).collect::<Vec<_>>();
+                let legacy = bound.authenticate_support(&legacy).map_err(|e| format!("{e:?}"))?;
+                assert!(legacy.selected().contains(23));
+                assert!(!legacy.selected().contains(perfect_shot));
                 assert!(first.selected().contains(385), "both required dependencies select the explicit-basis capability");
                 assert!(matches!(scene.runtime.binding().runtime_scope(),
                     crate::foundation::RuntimeScopeRefV1::Instance { .. }),

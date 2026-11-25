@@ -39,7 +39,6 @@ const COMBAT_TARGET: (&str, &str) = ("oteryn:creature.poison_spider", "Poison Sp
 // Crystal 201189f8 src/utils/utils_definitions.hpp:141,195.
 const CRITICAL_EFFECT: u32 = 173;
 const FATAL_EFFECT: u32 = 230;
-const PERFECT_SHOT_CONTRACT: &str = "needed=ValueText.perfect_shot;Crystal-201189f8:src/game/game.cpp:7992;src/server/network/protocol/protocolgame.cpp:5637";
 
 struct Row {
     started: std::time::Instant,
@@ -430,8 +429,8 @@ async fn visible_monster(
     Ok(None)
 }
 
-/// One attributed ValueText observation: batch decision, target, attacker, damage, effect.
-type Seen = (u64, EntityRef, Option<EntityRef>, u64, Option<u32>);
+/// One attributed ValueText observation: batch decision, target, attacker, damage, effect, perfect shot.
+type Seen = (u64, EntityRef, Option<EntityRef>, u64, Option<u32>, bool);
 
 #[derive(Default)]
 struct Fight {
@@ -449,7 +448,7 @@ impl Fight {
     fn own_hits(&self, me: EntityRef) -> Vec<u64> {
         self.seen
             .iter()
-            .filter(|(_, t, a, _, _)| *a == Some(me) && *t != me)
+            .filter(|(_, t, a, _, _, _)| *a == Some(me) && *t != me)
             .map(|s| s.3)
             .collect()
     }
@@ -457,9 +456,15 @@ impl Fight {
     fn own_marked_hit(&self, me: EntityRef, id: u32) -> Option<u64> {
         self.seen
             .iter()
-            .find_map(|(_, target, attacker, value, effect)| {
+            .find_map(|(_, target, attacker, value, effect, _)| {
                 (*target != me && *attacker == Some(me) && *effect == Some(id)).then_some(*value)
             })
+    }
+
+    fn own_perfect_shot(&self, me: EntityRef, engaged: EntityRef) -> Option<u64> {
+        self.seen.iter().find_map(|(_, target, attacker, value, _, marked)| {
+            (*target == engaged && *attacker == Some(me) && *marked).then_some(*value)
+        })
     }
 
     fn collect(&mut self, event: &SessionEvent) {
@@ -478,6 +483,7 @@ impl Fight {
                 attacker,
                 primary,
                 position,
+                perfect_shot,
                 ..
             } = &e.kind
                 && matches!(
@@ -508,7 +514,7 @@ impl Fight {
                 // Decision ordinals are scoped to one presentation batch.
                 let decision = (self.batch << 32) | u64::from(e.decision_ordinal);
                 self.seen
-                    .push((decision, *target, *attacker, primary.value, marked));
+                    .push((decision, *target, *attacker, primary.value, marked, *perfect_shot));
             }
         }
     }
@@ -801,10 +807,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if reflection <= 0 {
         row.fail("reflect", needed("physical-reflection", reflection));
     } else {
-        let reflected = hunt.seen.iter().any(|(ordinal, victim, attacker, _, _)| {
+        let reflected = hunt.seen.iter().any(|(ordinal, victim, attacker, _, _, _)| {
             *victim != me
                 && *attacker != Some(me)
-                && hunt.seen.iter().any(|(o, t, a, _, _)| o == ordinal && *t == me && *a == Some(*victim))
+                && hunt.seen.iter().any(|(o, t, a, _, _, _)| o == ordinal && *t == me && *a == Some(*victim))
         });
         let taken = hunt.seen.iter().filter(|s| s.1 == me).count();
         if reflected {
@@ -819,7 +825,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if cleave <= 0 {
         row.fail("cleave", needed("cleave", cleave));
     } else if let Some(flank) = hunt.flank {
-        let second: Vec<u64> = hunt.seen.iter().filter(|(_, t, a, _, _)| *t == flank && *a == Some(me)).map(|s| s.3).collect();
+        let second: Vec<u64> = hunt.seen.iter().filter(|(_, t, a, _, _, _)| *t == flank && *a == Some(me)).map(|s| s.3).collect();
         if second.is_empty() {
             row.fail("cleave", format!("projection={cleave};second-monster-adjacent-but-took-no-player-damage"));
         } else {
@@ -833,12 +839,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let shots = with.perfect_shots();
     if shots.is_empty() {
         row.fail("perfect-shot", needed("perfect-shot", 0));
-    } else if let Some((distance, bonus)) = shots.iter().copied().find(|(d, _)| *d == 1) {
-        // An ordinary hit can exceed the flat bonus, so the lowest hit proves nothing on its own.
-        let floor = hits.iter().copied().min().unwrap_or(0);
-        row.fail("perfect-shot", format!("{PERFECT_SHOT_CONTRACT};distance={distance};bonus={bonus};lowest-hit={floor}"));
+    } else if let Some(value) = hunt.own_perfect_shot(me, engaged) {
+        row.pass("perfect-shot", (&shots, value));
     } else {
-        row.fail("perfect-shot", format!("projected={shots:?};needed=ranged-attack-at-the-projected-distance-that-this-adjacent-fight-cannot-produce"));
+        row.fail("perfect-shot", format!("projected={shots:?};needed=attributed-perfect-shot-at-the-projected-distance"));
     }
 
     // fatal: a hit marked fatal by the server while the onslaught projection is positive.
@@ -932,7 +936,7 @@ mod tests {
         let entity = |byte| EntityRef { identity: [byte; 16], generation: 1 };
         let (me, other, target) = (entity(1), entity(2), entity(3));
         let position = ActorPosition { x: 7, y: 8, floor: 7 };
-        let hit = |attacker| PresentationEvent {
+        let hit = |attacker, perfect_shot| PresentationEvent {
             decision_ordinal: 1,
             emission_ordinal: 1,
             kind: PresentationEventKind::ValueText {
@@ -942,6 +946,7 @@ mod tests {
                 attacker: Some(attacker),
                 primary: PresentationValue { value: 4, color: PresentationColor::Red },
                 secondary: None,
+                perfect_shot,
             },
         };
         let mark = |decision_ordinal, position, source, effect_id| PresentationEvent {
@@ -956,22 +961,28 @@ mod tests {
             mark(1, position, PresentationSource::Others, CRITICAL_EFFECT),
         ] {
             let mut log = Fight::default();
-            log.collect_presentation(&[hit(me), cue]);
+            log.collect_presentation(&[hit(me, false), cue]);
             assert_eq!(log.own_hits(me), vec![4]);
             assert_eq!(log.own_marked_hit(me, CRITICAL_EFFECT), None);
         }
         let mut log = Fight::default();
-        log.collect_presentation(&[hit(me)]);
+        log.collect_presentation(&[hit(me, false)]);
         log.collect_presentation(&[critical]);
-        log.collect_presentation(&[hit(other), critical]);
+        log.collect_presentation(&[hit(other, false), critical]);
         assert_eq!(log.own_marked_hit(me, CRITICAL_EFFECT), None);
-        log.collect_presentation(&[hit(me), critical]);
+        log.collect_presentation(&[hit(me, false), critical]);
         log.collect_presentation(&[
-            hit(me),
+            hit(me, false),
             mark(1, position, PresentationSource::Own, FATAL_EFFECT),
         ]);
         assert_eq!(log.own_marked_hit(me, CRITICAL_EFFECT), Some(4));
         assert_eq!(log.own_marked_hit(me, FATAL_EFFECT), Some(4));
+        assert_eq!(log.own_perfect_shot(me, target), None);
+        log.collect_presentation(&[hit(other, true)]);
+        assert_eq!(log.own_perfect_shot(me, target), None);
+        log.collect_presentation(&[hit(me, true)]);
+        assert_eq!(log.own_perfect_shot(me, other), None);
+        assert_eq!(log.own_perfect_shot(me, target), Some(4));
     }
 
     #[test]
