@@ -18,7 +18,7 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
         "tools/content-schema/quest-authoring/questpc7_goblin_programme.py",
     )
     goblin_tracks = goblin.append(root, lane_callbacks, inputs, pin, offers)
-    selected.append_tokens(root, lane_callbacks, inputs, pin)
+    selected.append_tokens(root, lane_callbacks, offers, inputs)
     selected.append_eligibility_starts(root, lane_callbacks, inputs, pin)
     programmes.append(root, lane_callbacks, inputs, pin)
     formal_worlds = programmes.append_formal(root, lane_callbacks, inputs, pin)
@@ -95,9 +95,7 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
         "questpc7_forgotten_programme",
         "tools/content-schema/quest-authoring/questpc7_forgotten_programme.py",
     )
-    forgotten_worlds, forgotten_objectives, forgotten_callbacks = forgotten.build(
-        root, inputs, pin
-    )
+    forgotten_worlds, forgotten_objectives, forgotten_callbacks = forgotten.build(root, inputs, pin)
     formal_worlds.extend(forgotten_worlds)
     lane_callbacks.extend(forgotten_callbacks)
     smith = load_module(
@@ -140,24 +138,17 @@ def outputs(root, inputs, pin, load_module, lane):
 
     from questpc7_feaster_programme import PHASE_ROUTE_KEYS
 
-    encoded = lambda value: (
-        json.dumps(value, ensure_ascii=False, indent=2) + "\n"
-    ).encode()
+    encoded = lambda value: (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode()
     worlds, objectives, bindings, _ = lane
     phase_routes = [row for row in worlds if row["key"] in PHASE_ROUTE_KEYS]
-    if (
-        len(phase_routes) != 2
-        or {row["key"] for row in phase_routes} != PHASE_ROUTE_KEYS
-    ):
+    if len(phase_routes) != 2 or {row["key"] for row in phase_routes} != PHASE_ROUTE_KEYS:
         raise ValueError("QUESTPC7_FEASTER_PHASE_OWNERSHIP_DRIFT")
     main_worlds = [row for row in worlds if row["key"] not in PHASE_ROUTE_KEYS]
     knowledge = load_module(
         "questpc7_knowledge",
         "tools/content-schema/quest-authoring/questpc7_knowledge.py",
     )
-    props = load_module(
-        "questpc7_props", "tools/content-schema/quest-authoring/questpc7_props.py"
-    )
+    props = load_module("questpc7_props", "tools/content-schema/quest-authoring/questpc7_props.py")
     planned_props = props.outputs(root)
     smith = load_module(
         "questpc7_smith_programme",
@@ -185,8 +176,6 @@ def outputs(root, inputs, pin, load_module, lane):
         "content/quests/native-world-callback-bindings.json": encoded(
             {"schema": 1, "bindings": bindings}
         ),
-        "content/quests/imbuement-knowledge.json": encoded(
-            knowledge.build(root, inputs, pin)
-        ),
+        "content/quests/imbuement-knowledge.json": encoded(knowledge.build(root, inputs, pin)),
         **planned_props,
     }

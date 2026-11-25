@@ -82,6 +82,12 @@ pub enum QuestCallbackProjection {
         due: u64,
         restore: EntryFacts,
     },
+    /// The last strike starts one restoration deadline for all four amphoras.
+    TimedAmphoras {
+        due: u64,
+        restore: EntryFacts,
+        others: [(u64, u64, EntryFacts); 3],
+    },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -135,6 +141,7 @@ pub enum QuestCallbackProjection {
     Scene {
         mutations: Vec<QuestSceneMutation>,
         remove_self: bool,
+        source_reset: Option<(u64, EntryFacts)>,
     },
     ItemCycle {
         position: TilePos,
@@ -368,6 +375,39 @@ impl CallbackStates {
                     }
                 }
             }
+            QuestCallbackProjection::TimedAmphoras {
+                due,
+                restore,
+                others,
+            } => {
+                if close
+                    || others.iter().any(|(key, _, _)| *key == owner)
+                    || !self
+                        .readset_matches(others.iter().map(|(key, revision, _)| (*key, *revision)))
+                {
+                    return false;
+                }
+                if !self.project(
+                    owner,
+                    &QuestCallbackProjection::TimedTransform {
+                        due: *due,
+                        restore: *restore,
+                    },
+                    false,
+                ) {
+                    return false;
+                }
+                for (key, revision, restore) in others {
+                    self.movement_decays.insert(
+                        (*due, *key),
+                        MovementDecay {
+                            revision: *revision,
+                            restore: *restore,
+                            overlay: None,
+                        },
+                    );
+                }
+            }
             QuestCallbackProjection::TimedTransform { due, restore }
             | QuestCallbackProjection::TimedRemoval { due, restore } => {
                 let Some(revision) = self
@@ -534,8 +574,21 @@ impl CallbackStates {
             QuestCallbackProjection::Scene {
                 mutations,
                 remove_self,
+                source_reset,
             } => {
                 if !project_scene(self, owner, mutations, *remove_self) {
+                    return false;
+                }
+                if let Some((due, restore)) = source_reset
+                    && !self.project(
+                        owner,
+                        &QuestCallbackProjection::TimedTransform {
+                            due: *due,
+                            restore: *restore,
+                        },
+                        close,
+                    )
+                {
                     return false;
                 }
             }
@@ -1832,9 +1885,14 @@ impl BundleFacts {
                     .saturating_mul(3)
                     .saturating_add(1 + usize::from(source_reset.is_some()))
             }
-            Some(QuestCallbackProjection::Scene { mutations, .. }) => {
-                mutations.len().saturating_mul(3).saturating_add(1)
-            }
+            Some(QuestCallbackProjection::Scene {
+                mutations,
+                source_reset,
+                ..
+            }) => mutations
+                .len()
+                .saturating_mul(3)
+                .saturating_add(1 + usize::from(source_reset.is_some())),
             _ => usize::from(projection.is_some()) * 8,
         };
         if states
@@ -1887,6 +1945,9 @@ impl BundleFacts {
                             states.position_reserved(*position)
                         }
                     })
+                }
+                QuestCallbackProjection::TimedAmphoras { others, .. } => {
+                    others.iter().any(|(key, _, _)| states.key_reserved(*key))
                 }
                 QuestCallbackProjection::TimedTransform { .. }
                 | QuestCallbackProjection::TimedRemoval { .. } => false,
@@ -2517,6 +2578,91 @@ mod lifecycle_tests {
             state.changed.get(&2).map(|(_, value)| value.appearance_id),
             Some(2074)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn fourth_amphora_starts_one_expiry_for_the_group() -> Result<(), String> {
+        let facts = BundleFacts::default();
+        let original = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 4995,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: true,
+            count: 1,
+            sub_type: 0,
+        };
+        let broken = EntryFacts {
+            appearance_id: 4996,
+            ..original
+        };
+        for key in 1..=3 {
+            assert!(facts.apply_quest_callback(key, 0, broken, &[], &[], false, None));
+        }
+        assert_eq!(facts.next_movement_decay_time(), None);
+        let deadline = 320_000_000;
+        let reset = QuestCallbackProjection::TimedAmphoras {
+            due: deadline,
+            restore: original,
+            others: [(1, 1, original), (2, 1, original), (3, 1, original)],
+        };
+        assert!(facts.apply_quest_callback(4, 0, broken, &[], &[], false, Some(&reset)));
+        assert_eq!(facts.next_movement_decay_time(), Some(deadline));
+        assert_eq!(facts.expire_movement_items(deadline - 1), 0);
+        assert_eq!(facts.expire_movement_items(deadline), 4);
+        let state = facts.callbacks.lock().map_err(|_| "callback lock")?;
+        for key in 1..=4 {
+            assert_eq!(state.changed.get(&key), Some(&(2, original)));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn source_scene_item_remains_after_lever_reset() -> Result<(), String> {
+        let facts = BundleFacts::default();
+        let resting = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 1,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: true,
+            count: 1,
+            sub_type: 0,
+        };
+        let lever = EntryFacts {
+            appearance_id: 2,
+            ..resting
+        };
+        let item = EntryFacts {
+            appearance_id: 3,
+            ..resting
+        };
+        let position = TilePos {
+            x: 1,
+            y: 2,
+            floor: -7,
+        };
+        let deadline = 4_000_000;
+        let projection = QuestCallbackProjection::Scene {
+            mutations: vec![QuestSceneMutation::Create {
+                position,
+                facts: item,
+                passable: true,
+            }],
+            remove_self: false,
+            source_reset: Some((deadline, resting)),
+        };
+        assert!(facts.apply_quest_callback(1, 0, lever, &[], &[], false, Some(&projection)));
+        assert_eq!(facts.expire_movement_items(deadline - 1), 0);
+        assert_eq!(facts.expire_movement_items(deadline), 1);
+        let state = facts.callbacks.lock().map_err(|_| "callback lock")?;
+        assert_eq!(state.changed.get(&1), Some(&(2, resting)));
+        let entries = state.movement_items.get(&position).ok_or("scene item")?;
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].facts, item);
         Ok(())
     }
 

@@ -108,6 +108,7 @@
     "oteryn:npc.billy",
     "oteryn:npc.black_bert",
     "oteryn:npc.blind_orc",
+    "oteryn:npc.bloodshade_rotten",
     "oteryn:npc.blossom_bonecrusher",
     "oteryn:npc.bo_ques",
     "oteryn:npc.bob_the_worker",
@@ -317,6 +318,7 @@
     "oteryn:npc.giri",
     "oteryn:npc.gladys",
     "oteryn:npc.gnomadness",
+    "oteryn:npc.gnomally",
     "oteryn:npc.gnomewart",
     "oteryn:npc.gnomfurry",
     "oteryn:npc.gnominer",
@@ -685,6 +687,7 @@
     "oteryn:npc.siflind",
     "oteryn:npc.sigurd",
     "oteryn:npc.silas",
+    "oteryn:npc.simon_the_beggar",
     "oteryn:npc.sinatuki",
     "oteryn:npc.sinclair",
     "oteryn:npc.sirik",
@@ -733,6 +736,7 @@
     "oteryn:npc.thanita",
     "oteryn:npc.the_beggar_king",
     "oteryn:npc.the_blind_prophet",
+    "oteryn:npc.the_bone_master",
     "oteryn:npc.the_crone",
     "oteryn:npc.the_dream_master",
     "oteryn:npc.the_empress",
@@ -776,6 +780,7 @@
     "oteryn:npc.ukea",
     "oteryn:npc.umar",
     "oteryn:npc.uncle",
+    "oteryn:npc.undal",
     "oteryn:npc.urkalio",
     "oteryn:npc.urks_the_mute",
     "oteryn:npc.ursula",
@@ -785,6 +790,7 @@
     "oteryn:npc.uzon",
     "oteryn:npc.uzon_back",
     "oteryn:npc.vad_inchi",
+    "oteryn:npc.vanys",
     "oteryn:npc.vascalir",
     "oteryn:npc.velvet",
     "oteryn:npc.vescu",
@@ -932,6 +938,7 @@
     "oteryn:npc.emma",
     "oteryn:npc.fayla",
     "oteryn:npc.frosty",
+    "oteryn:npc.gnomally",
     "oteryn:npc.gnomewart",
     "oteryn:npc.gnomfurry",
     "oteryn:npc.gnommander",
@@ -1570,7 +1577,9 @@
             "y": 32810,
             "z": 6
           },
-          "direction": "NORTH"
+          "direction": "NORTH",
+          "spawn_interval_s": 60,
+          "spawn_radius": 1
         }
       ]
     },
@@ -4399,6 +4408,27 @@
         }
       ]
     },
+    "oteryn:npc.gnomally": {
+      "basis": "Crystal Global NPC XML, matching the retained promotion candidate cell.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32795,
+            "y": 31746,
+            "z": 10
+          },
+          "spawn_interval_s": 60,
+          "spawn_radius": 1
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
     "oteryn:npc.gnomish_operative_catching": {
       "basis": "Edron region. Crystal world-npc.xml line(s) 3327. The source cell is the spawn center plus its child offsets. Explicit XML facing takes precedence over the north default.",
       "source": {
@@ -5889,6 +5919,27 @@
         }
       ]
     },
+    "oteryn:npc.lee_delle": {
+      "basis": "Crystal Global NPC XML, matching the retained promotion candidate cell.",
+      "placements": [
+        {
+          "direction": "NORTH",
+          "position": {
+            "x": 32024,
+            "y": 32195,
+            "z": 7
+          },
+          "spawn_interval_s": 60,
+          "spawn_radius": 1
+        }
+      ],
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      }
+    },
     "oteryn:npc.lesh_the_seer": {
       "basis": "Liberty Bay region. Crystal world-npc.xml line(s) 953. The source cell is the spawn center plus its child offsets. Explicit XML facing takes precedence over the north default.",
       "source": {
@@ -7093,6 +7144,25 @@
             "y": 31087,
             "z": 6
           }
+        }
+      ]
+    },
+    "oteryn:npc.padreia": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal world NPC spawn at line 1664.",
+      "placements": [
+        {
+          "position": {
+            "x": 32302,
+            "y": 31814,
+            "z": 7
+          },
+          "direction": "NORTH"
         }
       ]
     },

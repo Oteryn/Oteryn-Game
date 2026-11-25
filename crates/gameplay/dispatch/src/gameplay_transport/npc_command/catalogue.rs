@@ -289,6 +289,10 @@ pub(super) fn prepare(
         message: intent.text.clone(),
         topic: if greeting {
             0
+        } else if context.2 == crate::durability::quest_state::carlos_trade::NPC
+            && tracks.get(crate::durability::quest_state::carlos_trade::GREETING) == Some(&7)
+        {
+            7
         } else {
             previous.as_ref().map_or(0, |p| p.topic)
         },
@@ -364,7 +368,9 @@ pub(super) fn prepare(
     if teleport.as_ref().is_some_and(|p| {
         !matches!(
             p.source.quest.as_str(),
-            "oteryn:quest.the_paradox_tower_quest" | "oteryn:quest.in_service_of_yalahar_quest"
+            "oteryn:quest.in_service_of_yalahar_quest"
+                | "oteryn:quest.the_ape_city_quest"
+                | "oteryn:quest.the_paradox_tower_quest"
         )
     }) {
         return Some(Step::Refused);

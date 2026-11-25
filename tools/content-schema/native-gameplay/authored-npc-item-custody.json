@@ -2,13 +2,14 @@
   "schema": "OTERYN_AUTHORED_NPC_ITEM_CUSTODY/v1",
   "inputs": [
     {
-      "path": "content/dialogues/quest-rules-supplemental/postman.json",
-      "sha256": "7494cdd360f45864d6f0c852b128488b6b0bf150fb57adc1e2e13e5455faef23",
-      "quest": "oteryn:quest.the_postman_missions_quest"
+      "path": "content/quests/authoring/the_ape_city_quest-item-custody.json",
+      "sha256": "8a3eff7dcb81b020e88487b0bbeab9f39dedc20648146abff9da8d2a6afbd7f0",
+      "quest": "oteryn:quest.the_ape_city_quest"
     },
     {
-      "path": "tools/content-schema/native-gameplay/crystal-npc-shop-item-custody.json",
-      "sha256": "cf0b46544f4c6e2c9fe5892e81aa19ea6bdd422bb2cbd02c701bea900117f3ab"
+      "path": "content/quests/authoring/the_beginning_quest-item-custody.json",
+      "sha256": "de6f474907858e6c2df5750cf9114667d4686d4255dc7a215ab627abe67f032c",
+      "quest": "oteryn:quest.the_beginning_quest"
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/fathers_burden.json",

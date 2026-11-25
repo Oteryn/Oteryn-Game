@@ -260,6 +260,7 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
     // An empty binding snapshot keeps the predecessor set from the legacy loader.
     if lowered.catalogue.authored_bindings.is_some() {
         super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
@@ -404,9 +405,7 @@ pub(super) fn lower_embedded_quest_state(
         .map_err(QuestLoadError::Json)?;
     super::rottin_walls::retain_predecessor(&mut lowered.catalogue)
         .map_err(QuestLoadError::Json)?;
-    let mut lowered = restrict_runtime_scope(lowered, content_revision)?;
-    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
-    Ok(lowered)
+    restrict_runtime_scope(lowered, content_revision)
 }
 
 fn restrict_runtime_scope(
@@ -577,6 +576,45 @@ mod tests {
 
     fn embedded() -> LoweredQuestState {
         load_embedded_quest_state("content-1").expect("embedded quest state loads")
+    }
+
+    #[test]
+    fn quest_gap_loader_billy_pan_exchange() -> Result<(), String> {
+        let loaded = embedded();
+        let offered = super::super::reward_callbacks::offered_for(loaded.catalogue())?;
+        assert!(offered.iter().any(|row| row.npc == "oteryn:npc.billy"
+            && row.key == "oteryn:quest-reward/billy-pan-first"
+            && row.completes));
+        Ok(())
+    }
+
+    #[test]
+    fn quest_gap_loader_lee_delle_studded_legs_exchange() -> Result<(), String> {
+        let loaded = embedded();
+        let offered = super::super::reward_callbacks::offered_for(loaded.catalogue())?;
+        assert!(offered.iter().any(|row| row.npc == "oteryn:npc.lee_delle"
+            && row.key == "oteryn:quest-reward/lee-delle-flower-first"
+            && row.completes));
+        Ok(())
+    }
+
+    #[test]
+    fn quest_gap_loader_ahmet_oasis_box() -> Result<(), String> {
+        let loaded = embedded();
+        let callbacks = super::super::world_callbacks::load_for(loaded.catalogue())?;
+        let chest = callbacks
+            .iter()
+            .find(|row| row.key == "oteryn:quest-callback/qd-steal-from-thieves-oasis-box")
+            .ok_or("oasis box must be in the live callback catalogue")?;
+        assert_eq!(chest.selector.action, Some(19910));
+        assert_eq!(
+            chest
+                .item_reward()
+                .as_ref()
+                .map(|reward| reward.item.as_str()),
+            Some("oteryn:item.tibia.i235")
+        );
+        Ok(())
     }
 
     #[test]
@@ -1011,6 +1049,7 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/children-grease.json"),
             include_str!("../../../../../content/quests/world-callbacks/dream-courts.json"),
             include_str!("../../../../../content/quests/world-callbacks/engenc2-cults.json"),
+            include_str!("../../../../../content/quests/world-callbacks/hot-cuisine-books.json"),
             include_str!("../../../../../content/quests/world-callbacks/ice-islands-seals.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-lion-offerings.json"),
@@ -1033,6 +1072,7 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/qm48-mammoth.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-clocks.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-crafts.json"),
+            include_str!("../../../../../content/quests/world-callbacks/source-outfits.json"),
             include_str!("../../../../../content/quests/world-callbacks/nomads-land.json"),
             include_str!(
                 "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
@@ -1197,6 +1237,8 @@ mod tests {
             "worldchg-m31/fury_gates/seal",
             "worldchg-m31/grimvale/island",
             "worldchg-m31/grimvale/survey",
+            "worldchg-m31/hive_born/eastern-inner",
+            "worldchg-m31/hive_born/western-inner",
             "worldchg-m31/hive_outpost/outpost",
             "worldchg-m31/hive_outpost/survey",
             "worldchg-m31/insectoid_invasion/incursion",
@@ -1204,7 +1246,43 @@ mod tests {
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
-        assert_eq!(expected.len() - before_qmech_native, 79);
+        assert_eq!(expected.len() - before_qmech_native, 81);
+        let before_ape_city_and_beginning = expected.len();
+        for suffix in [
+            "ape-city-amphora-40092",
+            "ape-city-amphora-40093",
+            "ape-city-amphora-40094",
+            "ape-city-amphora-40095",
+            "ape-city-cask-32495",
+            "ape-city-cask-32497",
+            "ape-city-cask-32499",
+            "ape-city-cask-32501",
+            "ape-city-cask-32503",
+            "ape-city-cask-32505",
+            "ape-city-cask-32507",
+            "ape-city-catacombs-amphora-gate",
+            "ape-city-catacombs-entry",
+            "ape-city-decipher",
+            "ape-city-destroy-monument",
+            "ape-city-holy-hair",
+            "ape-city-lever-1",
+            "ape-city-lever-2",
+            "ape-city-lever-3",
+            "ape-city-lever-4",
+            "ape-city-lever-5",
+            "ape-city-lever-6",
+            "ape-city-wall-1040",
+            "ape-city-wall-1041",
+            "ape-city-witches-cap",
+            "beginning-santiago-cellar",
+            "beginning-santiago-coat",
+            "beginning-zirella-rope",
+            "beginning-zirella-shovel",
+        ] {
+            assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
+        }
+        assert_eq!(expected.len() - before_ape_city_and_beginning, 29);
+        assert!(expected.insert("oteryn:quest-callback/qd-steal-from-thieves-oasis-box".into()));
         assert_eq!(
             callbacks
                 .into_iter()

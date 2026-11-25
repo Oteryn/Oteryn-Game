@@ -41,6 +41,12 @@ fn scenario_case(
     use super::super::new_frontier_journey_fixtures;
     let recover_bait = name == new_frontier_journey_fixtures::BAIT_RECOVERY;
     let frontier = name == new_frontier_journey_fixtures::NAME || recover_bait;
+    let dread_lord_retirement = name == "dreamer-dread-lord-scroll/retirement";
+    let name = if dread_lord_retirement {
+        "dreamer-dread-lord-scroll"
+    } else {
+        name
+    };
     let classic_access = super::super::classic_quest_parity_fixtures::access(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
@@ -56,6 +62,7 @@ fn scenario_case(
         "lions-rock-strength-first" | "lions-rock-beauty" | "lions-rock-tears"
     );
     let m07_lion = name.starts_with("m07/lion-");
+    let dread_lord = name == "dreamer-dread-lord-scroll";
     let m07_dreamer = name.starts_with("m07/dreamer-lever-");
     let m49 = name.starts_with("m49-");
     let qm03 = name.starts_with("qm03/");
@@ -103,9 +110,10 @@ fn scenario_case(
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let pinned_qc_world = classic_access.is_some() || name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
+    let hot_cuisine_books = name == "m42-hot-cookbooks";
     let katana_lever = name == "katana-hidden-lever";
     let hunter_hymn = name == "hunter-hymn-piano";
-    let native_crop = pinned_qc_world
+    let native_crop = hot_cuisine_books || pinned_qc_world
         || katana_lever
         || hunter_hymn
         || explorer
@@ -127,6 +135,7 @@ fn scenario_case(
         || m07_lion
         || lion_trial
         || m07_dreamer
+        || dread_lord
         || qready_workbench
         || qready_craft
         || m03_pits
@@ -150,7 +159,9 @@ fn scenario_case(
         || native_story
         || native_upper
         || paradox_journey;
-    let start = if hunter_hymn {
+    let start = if hot_cuisine_books {
+        Position { x: 33066, y: 32529, floor: -5 }
+    } else if hunter_hymn {
         Position { x: trigger.x + 1, ..trigger }
     } else if katana_lever {
         super::super::classic_katana_lever_fixtures::START
@@ -202,6 +213,8 @@ fn scenario_case(
         })
     } else if m07_lion {
         super::super::m07_lion_offerings_fixtures::start(name)
+    } else if dread_lord {
+        super::super::m07_dreamer_levers_fixtures::DREAD_LORD_START
     } else if m07_dreamer {
         Position {
             x: 32762,
@@ -454,6 +467,8 @@ fn scenario_case(
         callback("questpc7-heart-entry")?
     } else if name == "qengine-rewards-grimvale-story" {
         callback("questpc7-grimvale-entry")?
+    } else if hot_cuisine_books {
+        callback("hot-cuisine-cookbook-1")?
     } else if name == "questpc7-grave" {
         callback("questpc7-grave-entry")?
     } else if name == "questpc7-ferumbras" {
@@ -1105,7 +1120,15 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if let Some(access) = classic_access {
+        let world = if hot_cuisine_books {
+            use crate::map::overlay::TilePos;
+            super::super::source_world_crop::world(
+                TilePos { x: 33064, y: 32529, floor: -5 },
+                TilePos { x: 33066, y: 32531, floor: -5 },
+                TilePos { x: start.x, y: start.y, floor: start.floor },
+                generation.native_gameplay().ok_or("native cookbook policies")?,
+            )?
+        } else if let Some(access) = classic_access {
             let native = generation.native_gameplay().ok_or("native pinned world policies")?;
             if super::super::classic_quest_parity_fixtures::ICE_DELIVERY.contains(&access.name) {
                 super::super::classic_quest_parity_fixtures::ice_delivery_world(native, access)?
@@ -1339,6 +1362,11 @@ fn scenario_case(
                     .key
                     .strip_prefix("oteryn:quest-callback/")
                     .ok_or("Lion callback key")?,
+            )?
+        } else if dread_lord {
+            super::super::m07_dreamer_levers_fixtures::dread_lord_world(
+                generation.native_gameplay().ok_or("native Dreamer policies")?,
+                &callback,
             )?
         } else if m07_dreamer {
             super::super::m07_dreamer_levers_fixtures::world(
@@ -1729,11 +1757,12 @@ fn scenario_case(
             || name.contains("l6-beggar-")
             || name == "npcfix-m38-mistrock"
             || name == "qengine-rewards-m01a-sven"
-            || name == "qengine-rewards-qd-steal-from-thieves"
+            || name == super::super::qd_world_fixtures::AHMET
             || (qm03 && name.ends_with("-premium"))
             || name.contains("l7-knight-")
             || name.contains("l8-")
             || name.contains("l9-")
+            || name == super::super::between_the_lines_fixtures::PHILLIP_SCENARIO
             || name.contains("l10-documents-")
             || name.contains("l11-")
             || name.contains("l12-")
@@ -2042,6 +2071,7 @@ fn scenario_case(
             || m44_lions
             || m07_realm
             || name == "npcfix-m38-mistrock"
+            || name == super::super::qd_world_fixtures::AHMET
         {
             owner.admit_premium(id(40), admitted.game_session_id);
         }
@@ -2208,6 +2238,16 @@ fn scenario_case(
                 &h,
                 fence,
                 &callback,
+            ))
+            .await?;
+        } else if dread_lord {
+            Box::pin(super::super::m07_dreamer_levers_fixtures::exercise_dread_lord(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence.item_fence(),
+                &callback,
+                dread_lord_retirement,
             ))
             .await?;
         } else if m07_dreamer {
@@ -2832,6 +2872,8 @@ fn scenario_case(
             super::super::questpc7_hydra_fixtures::replenishment(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hoist-story" {
             super::super::questpc7_hoist_story_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if hot_cuisine_books {
+            super::super::m42_hot_cuisine_fixtures::exercise_books(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-tokens" {
             super::super::questpc7_tokens_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name.starts_with("questpc7-hidden-") {

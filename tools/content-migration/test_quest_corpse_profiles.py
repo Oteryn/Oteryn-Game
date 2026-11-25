@@ -233,6 +233,7 @@ class CorpseQualification(unittest.TestCase):
         for number, capacity, target in [
             (5960, 7, 3987),
             (5962, 30, 3989),
+            (5966, 10, 4001),
             (5967, 10, 4266),
             (5968, 5, 4007),
             (5975, 20, 4291),
@@ -261,6 +262,13 @@ class CorpseQualification(unittest.TestCase):
             self.plan.records["oteryn:item.tibia.i4292"]["semantics"]["container"],
             corpse.grizzly.source.K({"capacity": corpse.grizzly.source.K(20)}),
         )
+        bones = self.plan.records["oteryn:item.tibia.i4317"]
+        self.assertEqual(
+            bones["semantics"]["physical"]["value"]["weight"], corpse.grizzly.source.K(10000)
+        )
+        self.assertEqual(bones["semantics"]["container"], corpse.grizzly.source.NA)
+        with self.assertRaisesRegex(ValueError, "QUEST_CORPSE_CLIENT_KIND"):
+            self.qualify(4317, fresh=True)
         for number in (50029, 50028):
             self.assertEqual(
                 self.plan.records[f"oteryn:item.tibia.i{number}"]["semantics"]["container"],
@@ -271,10 +279,49 @@ class CorpseQualification(unittest.TestCase):
             corpse.grizzly.source.NA,
         )
 
+    def test_cockroach_corpse_exposes_the_tutorial_leg_drop(self):
+        section = json.loads(
+            (corpse.ROOT / "tools/content-schema/native-gameplay/loot-tables.json").read_bytes()
+        )
+        creature = next(
+            row
+            for row in section["creature_loot"]
+            if row["creature"]["key"] == "oteryn:creature.cockroach"
+        )
+        table = next(row for row in section["tables"] if row["identity"] == creature["loot"])
+        self.assertEqual(
+            table["entries"],
+            [
+                {
+                    "item": {
+                        "family": "Item",
+                        "key": "oteryn:item.tibia.i7882",
+                        "revision": "definition-r1",
+                    },
+                    "max_count": 1,
+                    "min_count": 1,
+                    "probability_ppm": 1_000_000,
+                }
+            ],
+        )
+        key = "oteryn:item.tibia.i7763"
+        facts = next(row for row in section["items"] if row["item"]["key"] == key)
+        self.assertTrue(facts["materializable"])
+        self.assertEqual(facts["container_capacity"], 8)
+        temporal = self.plan.records[key]["semantics"]["temporal"]["value"]
+        self.assertEqual(temporal["duration"], corpse.grizzly.source.K(90_000))
+        self.assertEqual(temporal["decay_target"], corpse.grizzly.source.NA)
+
     def test_queen_corpse_keeps_source40_within_the_corpse48_bound(self):
         # CORPSE48 (owner 2026-11-17): corpses up to 48 keep their source capacity.
         key = "oteryn:item.tibia.i30272"
         self.assertEqual(corpse.grizzly.source.attrs(self.xml[30272])["containersize"], "40")
+        projections = {
+            "oteryn:item.tibia.i5999": 50,
+            "oteryn:item.tibia.i18030": 50,
+            "oteryn:item.tibia.i18110": 60,
+        }
+        self.assertEqual(self.plan.projected_source_capacities, projections)
         self.assertEqual(
             self.plan.records[key]["semantics"]["container"],
             corpse.grizzly.source.K({"capacity": corpse.grizzly.source.K(40)}),

@@ -25,6 +25,7 @@ SPECS = (
     ("teleport.lua", "TeleportAction", 4253, "action"),
     ("door_level.lua", "LevelDoorAction", 1070, "action"),
     ("lever.lua", "LeverUnique", 30008, "unique"),
+    ("lever.lua", "LeverUnique", 30009, "unique"),
     ("lever.lua", "LeverUnique", 30034, "unique"),
     ("item.lua", "ItemAction", 4503, "action"),
     ("door_key.lua", "KeyDoorAction", 4502, "action"),

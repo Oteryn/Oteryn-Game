@@ -1153,6 +1153,82 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/between-the-lines-ink-trace",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32508,
+          "y": 31746,
+          "floor": -8
+        },
+        "position_aliases": [
+          {
+            "x": 32518,
+            "y": 31751,
+            "floor": -8
+          },
+          {
+            "x": 32519,
+            "y": 31753,
+            "floor": -9
+          },
+          {
+            "x": 32534,
+            "y": 31770,
+            "floor": -9
+          },
+          {
+            "x": 32533,
+            "y": 31777,
+            "floor": -9
+          },
+          {
+            "x": 32532,
+            "y": 31778,
+            "floor": -9
+          },
+          {
+            "x": 32529,
+            "y": 31780,
+            "floor": -9
+          }
+        ],
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/between_the_lines/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/between_the_lines/ink_trace",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You find traces of ink leading deeper into the cave.",
+      "requires_world_admission": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+        "tibia_fandom:108521:1206800:Pen and Sword/Inkwing"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/between-the-lines-one-to-edron",
       "quest": "oteryn:quest.between_the_lines_quest",
       "trigger": "use",

@@ -27,6 +27,14 @@ TABLE_PINS = {
 STARTUP_PINS = {
     CURRENT_REVISION: "897c4ea5572c6adef1d2b300fd75c141910d608a093ca15c3d3bf65fcf56826c"
 }
+TELEPORT_SHA256 = "9e8f807264ec6ab85e263976136666ff38c195f1921cc30e73fd4431370fe87e"
+ROUTE_DOORS = {
+    (33265, 32278, 7): (5293, 1040),
+    (33266, 32278, 7): (5293, 1040),
+    (32483, 31722, 15): (5111, 1060),
+}
+FIBULA_RETURNS = (38001, 38002)
+STARTUP_TELEPORT_NAMESPACE = "crystalserver/startup-teleport-unique"
 LEVEL_SHA256 = "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc"
 KEY_SHA256 = "e5368703030072fcb400980274408ee2cbcfa51a6bf7d435da3dc2c9fcd2438b"
 NUMBERED_DOORS = {
@@ -59,8 +67,14 @@ MARID_LAMP = {"position": [33048, 32630, 1], "appearance": 3263, "unique": 3024}
 ITEM_ACCESS = {
     "oteryn:reward-claim.kv.naginata": ((32356, 32074, 10), 1791, 40031),
 }
-# Crystal door_level.lua:65-83. Restoring a reward must retain its source level gate.
+# Restoring a reward must retain its pinned Crystal expertise door.
 LEVEL_ACCESS = {
+    **{
+        f"oteryn:reward-claim.kv.behemothquest{i}": ((33297, 31670, 14), 1648, 1080)
+        for i in range(1, 5)
+    },
+    "oteryn:reward-claim.kv.blackknight1": ((32874, 31974, 12), 5102, 1050),
+    "oteryn:reward-claim.kv.blackknight2": ((32875, 31974, 12), 5102, 1050),
     **{f"oteryn:reward-claim.kv.desert{i}": ((32673, 32100, 8), 5102, 1020) for i in (1, 2)},
     # Pinned door_level.lua:173-178; the raw B3 omits startup attributes.
     "oteryn:reward-claim.quest.u7_24.the_annihilator.reward": (
@@ -94,6 +108,8 @@ def level_doors(claim):
         "oteryn:reward-claim.kv.griffinshield3",
     ):
         return MAZE_OF_LOST_SOULS_DOORS
+    if claim == MEDUSA_CLAIM:
+        return MEDUSA_GATES
     return (LEVEL_ACCESS[claim],) if claim in LEVEL_ACCESS else ()
 
 
@@ -177,6 +193,10 @@ def supported_claim(definition):
             and native.get("revision") == REVISION
             and [p.get("unique_id") for p in native.get("placements", [])] == [6183]
         )
+        or numbered_key_claim(definition) is not None
+        or fibula_amulet_claim(definition)
+        or panpipe_key_claim(definition)
+        or outlaw_key_claim(definition)
         or (
             definition.get("definition_profile") == "authored_variant_v1"
             and definition.get("readiness") == "waiting_implementation"
@@ -210,6 +230,67 @@ def outlaw_key_claim(definition):
 
 def numbered_key_claim(definition):
     return any(key_claim(definition, number, 2969) for number in (3620, 3667, 4055, 4603))
+
+
+def fibula_amulet_claim(definition):
+    native = definition.get("native_contents", {})
+    return (
+        definition["identity"]["key"] == "oteryn:reward-claim.kv.deeperfibula4"
+        and definition["readiness"] == "waiting_item_semantics"
+        and definition.get("data_holds", []) == []
+        and native.get("schema") == "OTERYN_NATIVE_CONTAINER_REWARD/v1"
+        and native.get("revision") == REVISION
+        and native.get("source_difference") == "EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"
+        and native.get("source_sha256")
+        == "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
+        and [(p["unique_id"], p["root_charges_remaining"]) for p in native["placements"]]
+        == [(6011, 1)]
+    )
+
+
+def numbered_key_claim(definition):
+    """Recognize the complete native key-only rewards selected for startup."""
+    variant = definition.get("source_variant", {})
+    numbers = {
+        "oteryn:reward-claim.quest.key.id3980": (3980, 2972, 1),
+        "oteryn:reward-claim.quest.key.id4055": (4055, 2969, 1),
+        "oteryn:reward-claim.quest.key.id5010": (5010, 2969, 2),
+    }
+    selection = numbers.get(definition["identity"]["key"])
+    if selection is None:
+        return None
+    number, item, placements = selection
+    reward = {
+        "items": [
+            {
+                "item": {
+                    "family": "Item",
+                    "key": f"oteryn:item.tibia.i{item}",
+                    "revision": "definition-r1",
+                },
+                "count": 1,
+            }
+        ],
+        "key_binding": f"canary:door-key/{number}",
+    }
+    if (
+        definition.get("definition_profile") == "authored_variant_v1"
+        and definition.get("readiness") == "waiting_implementation"
+        and definition.get("native_admission") == "WAITING_IMPLEMENTATION"
+        and definition.get("data_holds") == []
+        and variant.get("achievement_grants") == []
+        and variant.get("charge_dispositions") == []
+        and variant.get("source_data", {}).get("status") == "COMPLETE"
+        and variant.get("native_lowering")
+        == {
+            "status": "WAITING_IMPLEMENTATION",
+            "pending_implementation": ["KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED"],
+        }
+        and len(definition["placements"]) == placements
+        and all(p["reward"] == reward for p in definition["placements"])
+    ):
+        return number
+    return None
 
 
 def key_claim(definition, number, item):
@@ -247,7 +328,7 @@ def key_claim(definition, number, item):
     )
 
 
-def capture(source_root, selected, root=ROOT, *, marid_lamp=False):
+def capture(source_root, selected, root=ROOT, *, marid_lamp=False, route_access=False):
     """Read exact pinned source facts; never execute donor Lua."""
     import sys
 
@@ -336,6 +417,17 @@ def capture(source_root, selected, root=ROOT, *, marid_lamp=False):
                 and source_reward == [[leaf[1], leaf[2]]]
             ):
                 source_reward = [[leaf[1], 1]]
+            if unique in container_native.ACCEPTED_TWO_STACKS:
+                stacked_item = container_native.ACCEPTED_TWO_STACKS[unique]
+                source_reward = [
+                    stack
+                    for item, count in source_reward
+                    for stack in (
+                        [[item, 100], [item, 100]]
+                        if item == stacked_item and count == 200
+                        else [[item, count]]
+                    )
+                ]
             if (
                 setting["itemPos"] != position
                 or setting["itemId"] != placement["appearance_tibia_id"]
@@ -343,12 +435,14 @@ def capture(source_root, selected, root=ROOT, *, marid_lamp=False):
                 or setting.get("container") != container_id
             ):
                 raise ValueError("QUEST_CHEST_SOURCE_SELECTOR_OR_REWARD_DRIFT")
-            if source_key_claim(definition):
-                number = placement["reward"]["key_binding"].rsplit("/", 1)[1]
-                if setting.get("isKey") is not True or setting.get("storage") != {
-                    "expr": f"Storage.Quest.Key.ID{number}"
-                }:
-                    raise ValueError("QUEST_CHEST_SOURCE_KEY_DRIFT")
+            number = numbered_key_claim(definition)
+            if number is None and source_key_claim(definition):
+                number = int(placement["reward"]["key_binding"].rsplit("/", 1)[1])
+            if number is not None and (
+                setting.get("isKey") is not True
+                or setting.get("storage") != {"expr": f"Storage.Quest.Key.ID{number}"}
+            ):
+                raise ValueError("QUEST_CHEST_SOURCE_KEY_DRIFT")
             rows.append(
                 {
                     "claim": key,
@@ -466,12 +560,61 @@ def capture(source_root, selected, root=ROOT, *, marid_lamp=False):
             )
         document["item_source_sha256"] = ITEM_SHA256
         document["item_access"] = access
+    if route_access:
+        if revision != REVISION:
+            raise ValueError("QUEST_ROUTE_REVISION")
+        teleport_path = "data-global/startup/tables/teleport.lua"
+        teleport_raw = (source_root / teleport_path).read_bytes()
+        if hashlib.sha256(teleport_raw).hexdigest() != TELEPORT_SHA256:
+            raise ValueError("QUEST_ROUTE_TELEPORT_SOURCE_PIN")
+        document["teleport_source_sha256"] = TELEPORT_SHA256
+        teleports = lua_tables.assignments(teleport_raw.decode(), {"TeleportUnique"})
+        document["returns"] = [
+            {
+                "position": [value["itemPos"][axis] for axis in "xyz"],
+                "appearance": value["itemId"],
+                "teleport": [value["destination"][axis] for axis in "xyz"],
+                "source_line": field["line"],
+            }
+            for field in teleports["TeleportUnique"]["fields"]
+            if field["key"] in FIBULA_RETURNS
+            for value in [lua_tables.as_python(field["value"])]
+        ]
+        level_fields = lua_tables.assignments(level_raw.decode(), {"LevelDoorAction"})
+        route_doors = {}
+        for field in level_fields["LevelDoorAction"]["fields"]:
+            if field["key"] not in (1040, 1060):
+                continue
+            groups = lua_tables.as_python(field["value"])
+            for group in groups:
+                positions = group["itemPos"]
+                for position in positions if isinstance(positions, list) else [positions]:
+                    xyz = tuple(position[axis] for axis in "xyz")
+                    if xyz not in ROUTE_DOORS:
+                        continue
+                    appearance, action = ROUTE_DOORS[xyz]
+                    if field["key"] != action or group["itemId"] not in (
+                        False,
+                        appearance,
+                    ):
+                        raise ValueError("QUEST_ROUTE_LEVEL_ACCESS_SOURCE_DRIFT")
+                    route_doors[xyz] = {
+                        "position": list(xyz),
+                        "appearance": appearance,
+                        "action": action,
+                        "source_line": field["line"],
+                    }
+        if route_doors.keys() != ROUTE_DOORS.keys() or len(document["returns"]) != len(
+            FIBULA_RETURNS
+        ):
+            raise ValueError("QUEST_ROUTE_SOURCE_SELECTORS_MISSING")
+        document["route_doors"] = [route_doors[xyz] for xyz in sorted(route_doors)]
     return document
 
 
 def selections(root=ROOT):
     claims = claim_definitions(root)
-    bindings, doors, pickups, sources = {}, {}, {}, []
+    bindings, doors, returns, pickups, sources = {}, {}, {}, {}, []
     for path in sorted((root / CAPTURES).glob("*.json")):
         raw = path.read_bytes()
         document = json.loads(raw)
@@ -567,6 +710,19 @@ def selections(root=ROOT):
         for key in captured_claims:
             if any(position not in doors for position, _, _ in level_doors(key)):
                 raise ValueError("QUEST_CHEST_LEVEL_ACCESS_MISSING")
+        for row in document.get("route_doors", []):
+            position = tuple(row["position"])
+            if position in doors or ROUTE_DOORS.get(position) != (
+                row["appearance"],
+                row["action"],
+            ):
+                raise ValueError("QUEST_ROUTE_LEVEL_ACCESS_DRIFT")
+            doors[position] = row
+        for row in document.get("returns", []):
+            position = tuple(row["position"])
+            if document.get("teleport_source_sha256") != TELEPORT_SHA256 or position in returns:
+                raise ValueError("QUEST_ROUTE_TELEPORT_DRIFT")
+            returns[position] = {**row, "teleport": tuple(row["teleport"])}
         for row in document.get("item_access", []):
             position = tuple(row["position"])
             if (
@@ -702,7 +858,26 @@ def selections(root=ROOT):
             evidence = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
             if evidence not in sources:
                 sources.append(evidence)
-    return {"unique": bindings, "action": doors, "wiki_items": pickups}, sources
+    # The source OTBM box is plain. Crystal registers this USE action in Lua.
+    path = "content/quests/world-callbacks/qd-steal-from-thieves.json"
+    raw = (root / path).read_bytes()
+    [callback] = json.loads(raw)["callbacks"]
+    selector = callback["selector"]
+    cell = selector["position"]
+    position = (cell["x"], cell["y"], -cell["floor"])
+    if position in bindings or position in doors or position in returns:
+        raise ValueError("STEAL_FROM_THIEVES_BOX_CONFLICT")
+    doors[position] = {
+        "position": list(position),
+        "appearance": selector["appearance"],
+        "action": selector["action"],
+    }
+    world_use = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
+    return (
+        {"unique": bindings, "action": doors, "wiki_items": pickups, "teleport": returns},
+        sources,
+        (position, world_use),
+    )
 
 
 def overlay_region(raw, palette, bindings, attribute="unique", wiki_attributes=None):
@@ -779,7 +954,7 @@ def overlay_region(raw, palette, bindings, attribute="unique", wiki_attributes=N
 
 
 def overlay_outputs(outputs, root=ROOT, require_all=False):
-    selections_by_attribute, sources = selections(root)
+    selections_by_attribute, sources, (world_use_cell, world_use) = selections(root)
     index = json.loads(outputs[INDEX])
     imported, byte_delta = 0, 0
     added = {attribute: 0 for attribute in selections_by_attribute}
@@ -828,13 +1003,25 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
         regions[path]["sha256"] = hashlib.sha256(raw).hexdigest()
     if require_all and imported != len(bindings):
         raise ValueError("QUEST_CHEST_INCOMPLETE_OVERLAY")
+    x, y, z = world_use_cell
+    world_use_region = f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"
+    world_use_imported = int(world_use_region in paths)
+    index["source"]["quest_chests"] = {
+        "captures": sources,
+        "imported": imported - world_use_imported,
+    }
+    if world_use_imported:
+        index["source"]["quest_world_uses"] = {
+            "captures": [world_use],
+            "imported": world_use_imported,
+        }
     # The original QREADY1 overlay records its own witness for the same capture.
     # Keep that witness current when this aggregate overlay validates the capture.
     qualified = {source["path"]: source["sha256"] for source in sources}
     for source in index["source"].get("quest_chests_qready1", {}).get("captures", []):
         if source["path"] in qualified:
             source["sha256"] = qualified[source["path"]]
-    evidence = {"captures": sources, "imported": imported}
+    evidence = index["source"]["quest_chests"]
     if wiki_items:
         # Count the exact authored objects verified by overlay_region, even when
         # reapplying to a published map where this run adds no new entries.
@@ -860,8 +1047,64 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
     return imported
 
 
+def apply_return_transitions(returns, check):
+    import convert_world_metadata as metadata
+
+    family = "Transition.Teleport"
+    index_path = ROOT / "content/world/transitions/index.json"
+    index = json.loads(index_path.read_bytes())
+    existing = {
+        row["declaration"]["identity"]["key"]: row
+        for path in index["shards"]
+        for row in json.loads((ROOT / path).read_bytes())["records"]
+    }
+    candidates = [
+        {
+            "from": position,
+            "to": row["teleport"],
+            "item": row["appearance"],
+            "namespace": STARTUP_TELEPORT_NAMESPACE,
+        }
+        for position, row in returns.items()
+    ]
+    rows, _ = metadata.teleports(
+        candidates,
+        {row["to"] for row in candidates},
+        {1949: "oteryn:item.tibia.i1949"},
+        {},
+        {},
+    )
+    for row in rows:
+        row["source_bindings"][0]["source_revision"] = REVISION
+        key = row["declaration"]["identity"]["key"]
+        if existing.setdefault(key, row) != row:
+            raise ValueError(f"QUEST_ROUTE_TRANSITION_CONFLICT: {key}")
+    result = metadata.shard_files(
+        family, metadata.unique(list(existing.values()), family), index["source"]
+    )
+    summary_path = metadata.SUMMARY.relative_to(ROOT).as_posix()
+    summary = json.loads((ROOT / summary_path).read_bytes())
+    summary["families"][family] = len(existing)
+    for name in summary["teleport_object_families"]:
+        summary["teleport_object_families"][name] = sum(
+            row["declaration"]["object"]["family"] == name for row in existing.values()
+        )
+    result[summary_path] = canonical(summary)
+    for path, raw in result.items():
+        destination = ROOT / path
+        if not destination.exists() or destination.read_bytes() != raw:
+            if check:
+                raise ValueError(f"QUEST_ROUTE_TRANSITION_DRIFT: {path}")
+            destination.write_bytes(raw)
+    for path in index_path.parent.glob("teleports-*.json"):
+        if path.relative_to(ROOT).as_posix() not in result:
+            if check:
+                raise ValueError(f"QUEST_ROUTE_TRANSITION_STALE_SHARD: {path.name}")
+            path.unlink()
+
+
 def apply(check):
-    selected, _ = selections()
+    selected, _, _ = selections()
     bindings = {p: row for rows in selected.values() for p, row in rows.items()}
     paths = {INDEX, SUMMARY} | {
         f"content/world/placements/{codec.region_name(z, x // 256, y // 256)}"
@@ -874,6 +1117,7 @@ def apply(check):
             if check:
                 raise ValueError(f"QUEST_CHEST_BINDING_DRIFT: {path}")
             (ROOT / path).write_bytes(raw)
+    apply_return_transitions(selected["teleport"], check)
     print(f"quest chest/access startup attributes verified: {count}")
 
 
@@ -894,6 +1138,7 @@ if __name__ == "__main__":
         action="store_true",
         help="capture the Marid lamp UID with the chest cohort",
     )
+    parser.add_argument("--route-access", action="store_true")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
@@ -915,8 +1160,13 @@ if __name__ == "__main__":
     elif args.capture:
         if not args.claims or not args.output:
             parser.error("--capture requires --claims and --output")
-        document = capture(args.capture, args.claims, marid_lamp=args.marid_lamp)
-        raw = (json.dumps(document, indent=2) + "\n").encode()
+        raw = (
+            json.dumps(
+                capture(args.capture, args.claims, marid_lamp=args.marid_lamp, route_access=args.route_access),
+                indent=2,
+            )
+            + "\n"
+        ).encode()
         if args.check:
             if args.output.read_bytes() != raw:
                 raise ValueError("QUEST_CHEST_CAPTURE_DRIFT")

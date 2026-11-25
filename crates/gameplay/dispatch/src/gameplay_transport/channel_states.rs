@@ -225,6 +225,7 @@ impl ChannelSessionStates {
         self.inspection_permissions.forget(session);
         self.npc_conversations.forget(session);
         self.grizzly_boss.forget(session);
+        self.quest_callbacks.forget(session);
         if let Ok(mut sessions) = self.quest_sessions.lock() {
             sessions.remove(&session);
         }

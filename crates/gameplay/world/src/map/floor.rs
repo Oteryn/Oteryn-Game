@@ -271,6 +271,12 @@ pub trait CellBlocker: Sync {
     fn suppresses_native_teleport(&self, _cell: LogicalCell) -> bool {
         false
     }
+
+    /// An exact, unambiguous callback owns the tile's floor change or teleport.
+    /// Ordinary movement stops at that tile so dispatch can enforce the callback.
+    fn owns_native_transition(&self, _cell: LogicalCell) -> bool {
+        false
+    }
 }
 
 impl CellBlocker for BTreeSet<LogicalCell> {
@@ -359,7 +365,7 @@ fn resolve_landing_with_exhaust(
     origin: Cell,
     direction: CardinalStep,
     mask: &impl Fn(Cell) -> u8,
-    suppress_teleport: &impl Fn(Cell) -> bool,
+    owns_transition: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
     resolve_landing_with_teleports(
         ground,
@@ -368,7 +374,7 @@ fn resolve_landing_with_exhaust(
         direction,
         mask,
         |at| table.teleport(at),
-        suppress_teleport,
+        owns_transition,
     )
 }
 
@@ -379,14 +385,14 @@ fn resolve_landing_with_teleports(
     direction: CardinalStep,
     mask: &impl Fn(Cell) -> u8,
     teleport: impl Fn(TilePos) -> Option<TilePos>,
-    suppress_teleport: &impl Fn(Cell) -> bool,
+    owns_transition: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
     let (dx, dy) = direction.delta();
     let next = (origin.0 + dx, origin.1 + dy, origin.2);
     match ground(next) {
         Ground::Absent => Err(Refusal::Absent),
         Ground::Blocked => Err(Refusal::Blocked),
-        Ground::Walkable => follow(&ground, &landable, &teleport, next, mask, suppress_teleport),
+        Ground::Walkable => follow(&ground, &landable, &teleport, next, mask, owns_transition),
     }
 }
 
@@ -397,25 +403,32 @@ fn follow(
     teleport: &impl Fn(TilePos) -> Option<TilePos>,
     mut next: Cell,
     floor_mask: &impl Fn(Cell) -> u8,
-    suppress_teleport: &impl Fn(Cell) -> bool,
+    owns_transition: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
     let mut changed_floor = false;
     let land = |cell: Cell, changed_floor: bool| match ground(cell) {
         Ground::Walkable => {
-            let target = if suppress_teleport(cell) {
-                cell
-            } else {
-                teleported(ground, landable, teleport, cell)
-            };
+            let target = teleported(
+                ground,
+                landable,
+                &|at| teleport(at).filter(|_| !owns_transition(cell)),
+                cell,
+            );
             Ok((target, changed_floor || target != cell))
         }
         _ => Err(Refusal::Blocked),
     };
     for _ in 0..MAX_DESTINATIONS {
-        if ground(next) == Ground::Blocked {
+        let entered = ground(next);
+        if entered == Ground::Blocked {
             return Err(Refusal::Blocked);
         }
         let mask = floor_mask(next);
+        if mask != 0 && owns_transition(next) {
+            return (entered == Ground::Walkable)
+                .then_some((next, changed_floor))
+                .ok_or(Refusal::Blocked);
+        }
         if mask == 0 {
             return land(next, changed_floor);
         }
@@ -832,7 +845,7 @@ fn destination(
                 current_teleport(cells, at)
             }
         },
-        &|(x, y, z)| closed.suppresses_native_teleport(LogicalCell { x, y, z }),
+        &|(x, y, z)| closed.owns_native_transition(LogicalCell { x, y, z }),
     )
     .map_err(movement_error)?;
     Ok((
@@ -1241,6 +1254,34 @@ mod tests {
         assert_eq!(
             resolve(&t, world(&[7, 8], &[]), (2, 3, 8), CardinalStep::East),
             Ok((6, 6, 8))
+        );
+    }
+
+    #[test]
+    fn callback_owned_step_stops_before_cellar_floor_change() {
+        let origin = (32035, 32277, 6);
+        let cellar = (32036, 32277, 6);
+        let table = table(&[(
+            cellar,
+            palette_mask(Family::Item, "oteryn:item.tibia.i7767"),
+        )]);
+        assert_eq!(
+            resolve_landing_with_exhaust(
+                &table,
+                |cell| {
+                    if [origin, cellar, (32036, 32277, 7)].contains(&cell) {
+                        Ground::Walkable
+                    } else {
+                        Ground::Absent
+                    }
+                },
+                |_| true,
+                origin,
+                CardinalStep::East,
+                &|cell| table.mask(cell),
+                &|cell| cell == cellar,
+            ),
+            Ok((cellar, false))
         );
     }
 

@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 
 GOLDEN_OWNED_CONFIRMATION = "already owned"
 GOLDEN_OWNED_PROMPT = " If your account already owns it, say {already owned}."
@@ -94,9 +95,7 @@ def append_golden(root, callbacks, offers, inputs, pin):
             if addon == 0:
                 row["forbids_outfits"] = ["oteryn:outfit.golden"]
             else:
-                row["forbids_addons"] = [
-                    {"outfit": "oteryn:outfit.golden", "addons": addon}
-                ]
+                row["forbids_addons"] = [{"outfit": "oteryn:outfit.golden", "addons": addon}]
         if completes:
             row["completes"] = True
         callbacks.append(row)
@@ -124,10 +123,7 @@ def append_golden(root, callbacks, offers, inputs, pin):
                 "topic": 0,
                 "next_topic": topic,
                 "storage": guards,
-                "reply": [
-                    f"The {label} costs {price} gold. Do you agree?"
-                    + GOLDEN_OWNED_PROMPT
-                ],
+                "reply": [f"The {label} costs {price} gold. Do you agree?" + GOLDEN_OWNED_PROMPT],
             }
         )
         add(
@@ -181,7 +177,9 @@ def append_friends(root, callbacks, offers, inputs, pin):
     if prayer_targets != priests or recipe["repeat"]["kind"] != "once":
         raise ValueError("FRIENDS_SELECTED_RECIPE_DRIFT")
     track = "oteryn:quest-progress/questpc7/friends/program"
-    canonical = f"canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}"
+    canonical = (
+        f"canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}"
+    )
 
     def add(
         name,
@@ -219,9 +217,7 @@ def append_friends(root, callbacks, offers, inputs, pin):
             "next_topic": 0,
             "storage": [state],
             "take": [{"item": f"oteryn:item.tibia.i{i}", "count": n} for i, n in take],
-            "present": [
-                {"item": f"oteryn:item.tibia.i{i}", "count": n} for i, n in present
-            ],
+            "present": [{"item": f"oteryn:item.tibia.i{i}", "count": n} for i, n in present],
             "give": None
             if give is None
             else {
@@ -313,9 +309,7 @@ def append_friends(root, callbacks, offers, inputs, pin):
                         "preserve": True,
                     }
                 ],
-                "reply": [
-                    "Follow the selected prayer order and keep your wooden stake."
-                ],
+                "reply": ["Follow the selected prayer order and keep your wooden stake."],
             }
         )
     add(
@@ -409,9 +403,7 @@ def append_eligibility_starts(root, callbacks, inputs, pin):
                 )
     for quest, slug, npc, words in wanted:
         path, index, raw, definition = definitions[quest]
-        recipe = (
-            definition.get("recipe") or definition["oteryn_recipe"]["payload"]["recipe"]
-        )
+        recipe = definition.get("recipe") or definition["oteryn_recipe"]["payload"]["recipe"]
         requirements = recipe["requirements"]
         source_path = f"data-global/npc/{npc}.lua"
         source_pin = (
@@ -459,96 +451,117 @@ def append_eligibility_starts(root, callbacks, inputs, pin):
         )
 
 
-def append_tokens(root, callbacks, inputs, pin):
-    import hashlib
-    import json
+def append_tokens(root, callbacks, offers, inputs):
+    quest = "oteryn:quest.hunting_for_tokens"
+    npc = "oteryn:npc.jorge"
+    track = "oteryn:quest-progress/questpc7/tokens/programme"
+    path = "content/quests/definitions/quests-00100-00199.json"
+    raw = (root / path).read_bytes()
+    index, definition = next(
+        (i, row["definition"])
+        for i, row in enumerate(json.loads(raw)["records"])
+        if row["definition"]["identity"]["key"] == quest
+    )
+    recipe = definition.get("recipe") or definition["oteryn_recipe"]["payload"]["recipe"]
+    if (
+        [(row["kind"], row["count"]) for row in recipe["stages"]]
+        != [("talk", 1), ("collect", 20), ("use", 20), ("complete", 1)]
+        or recipe["repeat"]["kind"] != "once"
+        or recipe["requirements"]["prerequisites"]
+    ):
+        raise ValueError("QUESTPC7_TOKEN_SELECTED_RECIPE_DRIFT")
 
-    for path in sorted((root / "content/quests/definitions").glob("quests-*.json")):
-        raw = path.read_bytes()
-        for index, row in enumerate(json.loads(raw)["records"]):
-            definition = row["definition"]
-            if definition["identity"]["key"] != "oteryn:quest.hunting_for_tokens":
-                continue
-            recipe = (
-                definition.get("recipe")
-                or definition["oteryn_recipe"]["payload"]["recipe"]
-            )
-            if (
-                [(s["kind"], s["count"]) for s in recipe["stages"]]
-                != [("talk", 1), ("collect", 20), ("use", 20), ("complete", 1)]
-                or recipe["repeat"]["kind"] != "once"
-                or recipe["requirements"]["prerequisites"]
-            ):
-                raise ValueError("QUESTPC7_TOKEN_SELECTED_RECIPE_DRIFT")
-            source = "data-global/npc/jorge.lua"
-            if (
-                b'name = "Abacus", id = 19151' not in inputs[source]
-                or b"doPlayerRemoveItem(creature, 19083, 20)" not in inputs[source]
-            ):
-                raise ValueError("QUESTPC7_JORGE_EXACT_TOKEN_SOURCE_DRIFT")
-            sources = [
-                f"canonical:{path.relative_to(root).as_posix()}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}",
-                f"crystal:{pin}:{source}:61,115,125-128:sha256:{hashlib.sha256(inputs[source]).hexdigest()}",
-            ]
-            for name, before, after, take, give, completes, reply in [
-                (
-                    "replica rewards",
-                    -1,
-                    0,
-                    [],
-                    None,
-                    False,
-                    "Bring twenty Silver Raid Tokens and ask for an {abacus replica}.",
-                ),
-                (
-                    "abacus replica",
-                    0,
-                    1,
-                    [{"item": "oteryn:item.tibia.i19083", "count": 20}],
-                    {"item": "oteryn:item.tibia.i19151", "count": 1, "contents": []},
-                    False,
-                    "Your twenty Silver Raid Tokens paid for this Abacus replica. Ask to {finish the commission}.",
-                ),
-                (
-                    "finish the commission",
-                    1,
-                    2,
-                    [],
-                    None,
-                    True,
-                    "Your replica commission is complete. Enjoy your Abacus!",
-                ),
-            ]:
-                callbacks.append(
-                    {
-                        "key": "oteryn:quest-reward/questpc7-tokens-"
-                        + name.replace(" ", "-"),
-                        "quest": definition["identity"]["key"],
-                        "npc": "oteryn:npc.jorge",
-                        "keywords": [name],
-                        "topic": 0,
-                        "next_topic": 0,
-                        "storage": [
-                            {
-                                "track": "oteryn:quest-progress/questpc7/tokens/programme",
-                                "minimum": before,
-                                "maximum": before,
-                                "set": after,
-                            }
-                        ],
-                        "requirements": {
-                            "min_level": recipe["requirements"]["min_level"],
-                            "premium": recipe["requirements"]["premium"],
-                            "completed_quests": [],
-                        },
-                        "take": take,
-                        "give": give,
-                        "outfit": None,
-                        "achievement": None,
-                        "completes": completes,
-                        "reply": [reply],
-                        "sources": sources,
-                    }
-                )
-            return
-    raise ValueError("QUESTPC7_TOKEN_CANONICAL_MISSING")
+    source_path = "data-global/npc/jorge.lua"
+    source = inputs[source_path]
+    digest = hashlib.sha256(source).hexdigest()
+    # The retained Jorge blob matches Crystal 201189f byte for byte.
+    if digest != "127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0":
+        raise ValueError("QUESTPC7_JORGE_EXACT_TOKEN_SOURCE_DRIFT")
+    replicas = [
+        (name.decode(), int(item))
+        for name, item in re.findall(rb'name = "([^"]+)", id = (\d+)', source)
+    ]
+    sources = [
+        f"canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}",
+        f"crystal:201189f871d23597b82caf88fd611454a2ddefb8:{source_path}:60-132:sha256:{digest}",
+    ]
+
+    def add(key, keywords, storage, reply, *, topic=0, next_topic=0, **reward):
+        callbacks.append(
+            {
+                "key": "oteryn:quest-reward/questpc7-tokens-" + key,
+                "quest": quest,
+                "npc": npc,
+                "keywords": keywords,
+                "topic": topic,
+                "next_topic": next_topic,
+                "storage": [storage],
+                "requirements": {"min_level": 0, "premium": False, "completed_quests": []},
+                "take": [],
+                "give": None,
+                "outfit": None,
+                "achievement": None,
+                "completes": False,
+                "reply": reply,
+                "sources": sources,
+                **reward,
+            }
+        )
+
+    menu_words = ["replica rewards", "souvenir"]
+    menu = ["Each replica costs 20 Silver Raid Tokens. Which would you like?"]
+    for start in range(0, len(replicas), 8):
+        menu.append(", ".join("{" + name + "}" for name, _ in replicas[start : start + 8]))
+    add(
+        "replica-rewards",
+        menu_words,
+        dict(track=track, minimum=-1, maximum=-1, set=0),
+        menu,
+        next_topic=1,
+    )
+    offers.append(
+        {
+            "npc": npc,
+            "keywords": menu_words,
+            "topic": 0,
+            "any_topic": True,
+            "next_topic": 1,
+            "storage": [dict(track=track, minimum=0, maximum=2, set=0, preserve=True)],
+            "reply": menu,
+        }
+    )
+
+    token = "oteryn:item.tibia.i19083"
+    for name, item in replicas:
+        word = name.lower()
+        alias = word + " replica"
+        slug = re.sub(r"[^a-z0-9]+", "-", word) + "-replica"
+        payment = {
+            "take": [{"item": token, "count": 20}],
+            "give": {"item": f"oteryn:item.tibia.i{item}", "count": 1, "contents": []},
+            "failure_reply": ["You need 20 Silver Raid Tokens for this exchange."],
+        }
+        add(
+            slug,
+            [alias, word],
+            dict(track=track, minimum=0, maximum=0, set=1),
+            [f"Here is your {name} replica. You can now {{finish the commission}}."],
+            topic=1,
+            **payment,
+        )
+        add(
+            slug + "-repeat",
+            [alias, word],
+            dict(track=track, minimum=1, maximum=2, set=1, preserve=True),
+            [f"Here is your {name} replica."],
+            topic=1,
+            repeatable=True,
+            **payment,
+        )
+    add(
+        "finish-the-commission",
+        ["finish the commission"],
+        dict(track=track, minimum=1, maximum=1, set=2),
+        ["Your replica commission is complete."],
+        completes=True,
+    )

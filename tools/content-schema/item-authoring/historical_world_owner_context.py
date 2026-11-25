@@ -126,6 +126,21 @@ def original_marker(root):
     marker = json.loads(raw)
     if (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode() != raw:
         raise ValueError("source digest drift: terrain marker serialization")
+    if (root / "content/world/terrain/terrain-08886-08887.json").exists():
+        import sys
+
+        source_dir = Path(__file__).resolve().parents[1] / "world-object-authoring"
+        sys.path.insert(0, str(source_dir))
+        try:
+            import blood_vestibule_ground as vestibule
+        finally:
+            sys.path.pop(0)
+        generated = vestibule.outputs(root)
+        if (root / vestibule.SHARD).read_bytes() != generated[
+            vestibule.SHARD
+        ] or marker["notes"].count(vestibule.NOTE) != 1:
+            raise ValueError("source digest drift: Blood Vestibule terrain witness")
+        marker["notes"] = marker["notes"].replace(vestibule.NOTE, "", 1)
     marker["notes"] = without_spawn_ground(root, marker["notes"])
     crystal_ground = root / CRYSTAL_SPAWN_GROUND
     if crystal_ground.exists():

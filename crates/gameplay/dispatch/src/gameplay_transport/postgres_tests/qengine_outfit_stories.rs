@@ -20,6 +20,10 @@ fn qengine_l3_demon_whole_outfit_story() -> TestResult {
     super::qengine_rewards_fixtures::scenario("qengine-rewards-l3-demon-story")
 }
 #[test]
+fn qengine_l3_demon_true_dedication_also_grants_when_shield_is_last() -> TestResult {
+    super::qengine_rewards_fixtures::scenario("qengine-rewards-l3-demon-helmet-first-story")
+}
+#[test]
 fn qengine_l3_glooth_engineer_high_votes_preserve_source_priority() -> TestResult {
     super::qengine_rewards_fixtures::scenario("qengine-rewards-l3-glooth-engineer-story")
 }

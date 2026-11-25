@@ -1454,6 +1454,48 @@ mod protected_loot_tests {
     }
 
     #[test]
+    fn active_private_raid_loot_admits_exact_silver_token_drops()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let table = CreatureRewardTable::from_pin(&creatures, Some(&loot));
+        for (creature, corpse, chance) in [
+            ("furyosa", 18118, 450_000),
+            ("hirintror", 7282, 2_000),
+            ("ocyakao", 7320, 2_000),
+            ("the_welter", 18974, 2_000),
+            ("tyrn", 18970, 50_000),
+            ("weakened_shlorg", 18982, 30_000),
+            ("white_pale", 18978, 2_000),
+            ("willi_wasp", 5989, 50_000),
+            ("zushuka", 18265, 920_000),
+        ] {
+            let key = format!("oteryn:creature.{creature}");
+            let row = table
+                .row(&key)
+                .map_err(|reason| format!("{key}: {}", reason.as_str()))?;
+            assert_eq!(
+                row.corpse_item
+                    .as_ref()
+                    .map(|item| item.production_key.as_str()),
+                Some(format!("oteryn:item.tibia.i{corpse}").as_str()),
+            );
+            let tokens: Vec<_> = row
+                .loot_table
+                .entries
+                .iter()
+                .filter(|entry| entry.item.production_key == "oteryn:item.tibia.i19083")
+                .map(|entry| (entry.min_count, entry.max_count, entry.probability_ppm))
+                .collect();
+            assert_eq!(tokens, [(1, 1, Some(chance))], "{key}");
+        }
+        Ok(())
+    }
+
+    #[test]
     fn explorer_society_butterflies_admit_the_authored_plain_corpses()
     -> Result<(), Box<dyn std::error::Error>> {
         let (creatures, _) = documents()?;
@@ -1612,6 +1654,49 @@ mod protected_loot_tests {
             }),
             "Merlkin's 10,000 ppm ape fur is missing"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn source_quest_loot_settles_the_backpack_and_hunter_music_sheets()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let table = CreatureRewardTable::from_pin(&creatures, Some(&loot));
+        for (creature, corpse, item, chance) in [
+            ("orc_sambackpack", 5966, 3244, 1_000_000),
+            ("novice_of_the_cult", 18186, 6087, 9_700),
+            ("acolyte_of_the_cult", 18038, 6088, 4_800),
+            ("adept_of_the_cult", 18030, 6089, 7_000),
+            ("enlightened_of_the_cult", 18110, 6090, 4_900),
+        ] {
+            let row = table
+                .row(&format!("oteryn:creature.{creature}"))
+                .map_err(|error| format!("{creature}: {}", error.as_str()))?;
+            let corpse_key = format!("oteryn:item.tibia.i{corpse}");
+            assert_eq!(
+                row.corpse_item
+                    .as_ref()
+                    .map(|item| item.production_key.as_str()),
+                Some(corpse_key.as_str()),
+                "{creature} source corpse"
+            );
+            let key = format!("oteryn:item.tibia.i{item}");
+            let entry = row
+                .loot_table
+                .entries
+                .iter()
+                .find(|entry| entry.item.production_key == key)
+                .ok_or_else(|| format!("{creature} drops no {key}"))?;
+            assert_eq!(
+                (entry.min_count, entry.max_count, entry.probability_ppm),
+                (1, 1, Some(chance)),
+                "{creature} source loot"
+            );
+        }
         Ok(())
     }
 

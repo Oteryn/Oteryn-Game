@@ -591,84 +591,652 @@
       ]
     },
     {
-      "npc": "oteryn:npc.cael",
-      "service": "oteryn:service.quest_shop.cael",
+      "npc": "oteryn:npc.yaman",
+      "service": "oteryn:service.quest.djinn.yaman",
       "offers": [
         {
           "item": {
             "family": "Item",
-            "key": "oteryn:item.tibia.i2965",
+            "key": "oteryn:item.tibia.i3077",
             "revision": "definition-r1"
           },
-          "direction": "SellToPlayer",
-          "unit_price": 5000,
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
           "requirements": [
             {
-              "quest": "oteryn:quest.the_new_frontier_quest",
-              "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
               "initial": 0,
-              "minimum": 6,
-              "maximum": 12
+              "minimum": 3,
+              "maximum": 3
             }
           ]
         },
         {
           "item": {
             "family": "Item",
-            "key": "oteryn:item.tibia.i2966",
+            "key": "oteryn:item.tibia.i3085",
             "revision": "definition-r1"
           },
           "direction": "SellToPlayer",
           "unit_price": 1000,
+          "count": 1,
+          "sub_type": 200,
           "requirements": [
             {
-              "quest": "oteryn:quest.the_new_frontier_quest",
-              "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
               "initial": 0,
-              "minimum": 6,
-              "maximum": 12
+              "minimum": 3,
+              "maximum": 3
             }
           ]
         },
         {
           "item": {
             "family": "Item",
-            "key": "oteryn:item.tibia.i10216",
+            "key": "oteryn:item.tibia.i3085",
             "revision": "definition-r1"
           },
-          "direction": "SellToPlayer",
-          "unit_price": 2500,
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": 200,
           "requirements": [
             {
-              "quest": "oteryn:quest.the_new_frontier_quest",
-              "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
               "initial": 0,
-              "minimum": 11,
-              "maximum": 12
+              "minimum": 3,
+              "maximum": 3
             }
           ]
         },
         {
           "item": {
             "family": "Item",
-            "key": "oteryn:item.tibia.i10288",
+            "key": "oteryn:item.tibia.i3097",
             "revision": "definition-r1"
           },
           "direction": "SellToPlayer",
-          "unit_price": 5000,
+          "unit_price": 2000,
+          "count": 1,
+          "sub_type": null,
           "requirements": [
             {
-              "quest": "oteryn:quest.the_new_frontier_quest",
-              "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
               "initial": 0,
-              "minimum": 12,
-              "maximum": 12
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3097",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3051",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 2000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3051",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i16118",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 6500,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3067",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 3000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3052",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 900,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3052",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 50,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3048",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 25000,
+          "count": 1,
+          "sub_type": 20,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3048",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 250,
+          "count": 1,
+          "sub_type": 20,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3070",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 200,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i16117",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 6000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3078",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 50,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3069",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 1000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8083",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 1500,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3084",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 700,
+          "count": 1,
+          "sub_type": 250,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3084",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": 250,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3098",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 2000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3098",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3054",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": 200,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3054",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 50,
+          "count": 1,
+          "sub_type": 200,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3066",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8084",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 3600,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3045",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": 200,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3045",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 30,
+          "count": 1,
+          "sub_type": 200,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3065",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 2000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3053",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 2000,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3053",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 100,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8082",
+            "revision": "definition-r1"
+          },
+          "direction": "BuyFromPlayer",
+          "unit_price": 4400,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "initial": 0,
+              "minimum": 3,
+              "maximum": 3
             }
           ]
         }
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cael.lua:30-37:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yaman.lua:177:sha256:83953a0c7968d7dc81b5a56c00e843dc7f73ab2bd188f40c9dd9f30c5829a351"
       ]
     },
     {
@@ -1990,652 +2558,141 @@
       ]
     },
     {
-      "npc": "oteryn:npc.yaman",
-      "service": "oteryn:service.quest.djinn.yaman",
+      "npc": "oteryn:npc.carlos",
+      "service": "oteryn:service.trade.carlos",
       "offers": [
         {
           "item": {
             "family": "Item",
-            "key": "oteryn:item.tibia.i3077",
+            "key": "oteryn:item.tibia.i3577",
             "revision": "definition-r1"
           },
           "direction": "BuyFromPlayer",
-          "unit_price": 100,
+          "unit_price": 2,
           "count": 1,
           "sub_type": null,
           "requirements": [
             {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "quest": "oteryn:quest.the_beginning_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_trade_storage",
               "initial": 0,
-              "minimum": 3,
-              "maximum": 3
+              "minimum": 1,
+              "maximum": 1
             }
           ]
         },
         {
           "item": {
             "family": "Item",
-            "key": "oteryn:item.tibia.i3085",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 1000,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3085",
+            "key": "oteryn:item.tibia.i3582",
             "revision": "definition-r1"
           },
           "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3097",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 2000,
+          "unit_price": 2,
           "count": 1,
           "sub_type": null,
           "requirements": [
             {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+              "quest": "oteryn:quest.the_beginning_quest",
+              "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_trade_storage",
               "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3097",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3051",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 2000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3051",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i16118",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 6500,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3067",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 3000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3052",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 900,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3052",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 50,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3048",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 25000,
-          "count": 1,
-          "sub_type": 20,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3048",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 250,
-          "count": 1,
-          "sub_type": 20,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3070",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 200,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i16117",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 6000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3078",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 50,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3069",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 1000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i8083",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 1500,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3084",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 700,
-          "count": 1,
-          "sub_type": 250,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3084",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": 250,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3098",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 2000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3098",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3054",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3054",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 50,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3066",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i8084",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 3600,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3045",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3045",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 30,
-          "count": 1,
-          "sub_type": 200,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3065",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 2000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3053",
-            "revision": "definition-r1"
-          },
-          "direction": "SellToPlayer",
-          "unit_price": 2000,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i3053",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 100,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
-            }
-          ]
-        },
-        {
-          "item": {
-            "family": "Item",
-            "key": "oteryn:item.tibia.i8082",
-            "revision": "definition-r1"
-          },
-          "direction": "BuyFromPlayer",
-          "unit_price": 4400,
-          "count": 1,
-          "sub_type": null,
-          "requirements": [
-            {
-              "quest": "oteryn:quest.the_djinn_war_efreet_faction",
-              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
-              "initial": 0,
-              "minimum": 3,
-              "maximum": 3
+              "minimum": 1,
+              "maximum": 1
             }
           ]
         }
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yaman.lua:177:sha256:83953a0c7968d7dc81b5a56c00e843dc7f73ab2bd188f40c9dd9f30c5829a351"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/carlos.lua:33-43"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "service": "oteryn:service.trade.hairycles",
+      "offers": [
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3587",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 2,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+              "initial": 0,
+              "minimum": 18,
+              "maximum": 18
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i5046",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 65,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+              "initial": 0,
+              "minimum": 18,
+              "maximum": 18
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i5055",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 65,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+              "initial": 0,
+              "minimum": 18,
+              "maximum": 18
+            }
+          ]
+        },
+        {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i5056",
+            "revision": "definition-r1"
+          },
+          "direction": "SellToPlayer",
+          "unit_price": 65,
+          "count": 1,
+          "sub_type": null,
+          "requirements": [
+            {
+              "quest": "oteryn:quest.the_ape_city_quest",
+              "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+              "initial": 0,
+              "minimum": 18,
+              "maximum": 18
+            }
+          ]
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:498-517"
       ]
     }
   ]

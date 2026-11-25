@@ -6,9 +6,12 @@ use std::sync::OnceLock;
 
 const MAX_OFFERS: usize = 640;
 const SOURCES: &[&str] = &[
+    // The free-account price takes precedence over the shared Hunter addon offer.
+    include_str!("../../../../../../../content/quests/npc-offers/hunter-glove-sales.json"),
     include_str!("../../../../../../../content/quests/shared-reward-offers.json"),
     include_str!("../../../../../../../content/quests/chosen-reward-offers.json"),
     include_str!("../../../../../../../content/quests/npc-offers/an-interest-in-botany.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/ape-city.json"),
     include_str!("../../../../../../../content/quests/npc-offers/classic-quests.json"),
     include_str!("../../../../../../../content/quests/npc-offers/explorer-society.json"),
     include_str!("../../../../../../../content/quests/npc-offers/l6-stories.json"),
@@ -18,6 +21,7 @@ const SOURCES: &[&str] = &[
     include_str!("../../../../../../../content/quests/npc-offers/qd-steal-from-thieves.json"),
     include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"),
     include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-m10.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/rookgaard-exchanges.json"),
     include_str!("../../../../../../../content/quests/npc-offers/threatened-dreams.json"),
 ];
 
@@ -64,10 +68,9 @@ fn valid(offers: &[Offer]) -> bool {
         && !offers.iter().any(|offer| {
             offer.requires.len() > 8
                 || offer.inventory.len() > 8
-                || offer
-                    .inventory
-                    .iter()
-                    .any(|rule| rule.minimum > rule.maximum)
+                || offer.inventory.iter().any(|rule| {
+                    !rule.item.starts_with("oteryn:item.") || rule.minimum > rule.maximum
+                })
                 || offer.minimum_level == Some(0)
                 || offer.failure_reply.len() > 8
                 || offer.failure_reply.iter().any(|line| {
@@ -104,4 +107,28 @@ mod tests {
         assert!(!valid(&vec![parsed.offers[0].clone(); MAX_OFFERS + 1]));
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn pirate_and_oriental_offers_accept_the_named_source_materials()
+-> Result<(), Box<dyn std::error::Error>> {
+    let shared: Offers = serde_json::from_str(SHARED_OFFERS)?;
+    for (npc, topic, keywords) in [
+        ("duncan", 5, &["hooks", "pirate hooks"][..]),
+        ("habdel", 3, &["comb", "mermaid comb", "mermaid's comb"]),
+        ("ishina", 3, &["comb", "mermaid comb", "mermaid's comb"]),
+    ] {
+        let offer = shared
+            .offers
+            .iter()
+            .find(|offer| {
+                offer.npc.strip_prefix("oteryn:npc.") == Some(npc)
+                    && offer.matches_topic(0)
+                    && offer.next_topic == topic
+            })
+            .ok_or_else(|| format!("source offer for {npc}"))?;
+        assert_eq!(offer.keywords, keywords, "{npc}");
+    }
+    Ok(())
 }

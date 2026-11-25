@@ -118,7 +118,10 @@ pub async fn hive_gate_permitted(
         // Loading the current World here also refuses a missing/retired epoch.
         return Ok(super::load(tx, world, epoch).await?.is_some());
     }
-    let Some(gate) = hive_access::gate(callback) else {
+    let Some(minimum_stage) = hive_access::gate(callback)
+        .map(|gate| gate.minimum_stage)
+        .or_else(|| hive_access::checkpoint_stage(callback))
+    else {
         return Ok(true);
     };
     let Some(day) = super::load(tx, world, epoch).await? else {
@@ -128,7 +131,7 @@ pub async fn hive_gate_permitted(
         return Ok(false);
     }
     if day.counter_stages[oteryn_gameplay_world_change::counter::CounterKind::HiveBorn.index()]
-        < gate.minimum_stage
+        < minimum_stage
     {
         return Ok(false);
     }

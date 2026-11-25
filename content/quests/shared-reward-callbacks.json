@@ -12,6 +12,16 @@
       ]
     },
     {
+      "key": "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "content/encounters/bosses/selected-first-dragon.json#stage-s5"
+      ]
+    },
+    {
       "key": "oteryn:quest-progress/outfit_quest/ref",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "initial": 0,
@@ -133,6 +143,29 @@
       ]
     },
     {
+      "key": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/door",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_bone_master.lua:78-80,123-128:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1"
+      ]
+    },
+    {
       "key": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/document_claim_0",
       "quest": "oteryn:quest.brotherhood_outfits_quest",
       "initial": 0,
@@ -163,6 +196,17 @@
       "writable": true,
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:27-59:durable-one-shot-owned-guard"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/door",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
       ]
     },
     {
@@ -309,6 +353,36 @@
     }
   ],
   "callbacks": [
+    {
+      "key": "oteryn:quest-reward/between-the-lines-phillip-accept",
+      "quest": "oteryn:quest.between_the_lines_quest",
+      "npc": "oteryn:npc.phillip",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/between_the_lines/phase",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Follow the ink traces outside Carlin to find the creature."
+      ],
+      "sources": [
+        "tibia_fandom:108521:1206800:Pen and Sword/Inkwing"
+      ],
+      "minimum_level": 200,
+      "requires_premium": true
+    },
     {
       "key": "oteryn:quest-reward/deepling-helmet",
       "quest": "oteryn:quest.outfit_and_addon_quests",
@@ -1088,6 +1162,58 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l10-brotherhood-dread-lord",
+      "quest": "oteryn:quest.brotherhood_outfits_quest",
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6499",
+          "count": 1500
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/dread_lord",
+      "reply": [
+        "You advanced to Dread Lord rank."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_bone_master.lua:78-80,123-128:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "requires_premium": true
+    },
+    {
       "key": "oteryn:quest-reward/l10-brotherhood-join",
       "quest": "oteryn:quest.brotherhood_outfits_quest",
       "npc": "oteryn:npc.the_bone_master",
@@ -1130,7 +1256,20 @@
           "maximum": 0
         }
       ],
-      "requires_premium": true
+      "requires_premium": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.dreamer_s_challenge_quest",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
+              "minimum": -1,
+              "maximum": 1,
+              "set": 1
+            }
+          ]
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l10-brotherhood-leader",
@@ -1158,7 +1297,13 @@
       "give": {
         "item": "oteryn:item.tibia.i770",
         "count": 1,
-        "contents": []
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i6432",
+            "count": 1
+          }
+        ]
       },
       "outfit": null,
       "achievement": "oteryn:achievement/skull_and_bones",
@@ -1578,7 +1723,20 @@
           "maximum": 0
         }
       ],
-      "requires_premium": true
+      "requires_premium": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.dreamer_s_challenge_quest",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
+              "minimum": -1,
+              "maximum": 1,
+              "set": 1
+            }
+          ]
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l10-nightmare-leader",
@@ -1606,12 +1764,70 @@
       "give": {
         "item": "oteryn:item.tibia.i770",
         "count": 1,
-        "contents": []
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i6390",
+            "count": 1
+          }
+        ]
       },
       "outfit": null,
       "achievement": "oteryn:achievement/nightmare_walker",
       "reply": [
         "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l10-nightmare-lord-protector",
+      "quest": "oteryn:quest.nightmare_outfits_quest",
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6499",
+          "count": 1500
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/lord_protector",
+      "reply": [
+        "You advanced to {Lord Protector} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls."
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
@@ -1944,18 +2160,6 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/vanys.lua:sha256:fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a"
       ],
-      "requires": [
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
-          "minimum": 3,
-          "maximum": 3
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
-          "minimum": 1,
-          "maximum": 1
-        }
-      ],
       "minimum_level": 250,
       "requires_premium": true,
       "requires_outfits": [
@@ -1965,6 +2169,12 @@
         {
           "outfit": "oteryn:outfit.dream_warrior",
           "addons": 1
+        }
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/dream_warrior",
+          "target": 2
         }
       ]
     },
@@ -1996,6 +2206,47 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/vanys.lua:sha256:fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a"
       ],
+      "minimum_level": 250,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.dream_warrior"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.dream_warrior",
+          "addons": 2
+        }
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/dream_warrior",
+          "target": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l11-dream-warrior-task-base",
+      "quest": "oteryn:quest.dream_warrior_outfits_quest",
+      "npc": "oteryn:npc.vanys",
+      "keywords": [
+        "task"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.dream_warrior",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "You defeated the Nightmare Beast. Accept this Dream Warrior outfit from the Court."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/vanys.lua:sha256:fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a"
+      ],
       "requires": [
         {
           "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
@@ -2010,6 +2261,127 @@
       ],
       "minimum_level": 250,
       "requires_premium": true,
+      "forbids_outfits": [
+        "oteryn:outfit.dream_warrior"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l11-dream-warrior-undal-base",
+      "quest": "oteryn:quest.dream_warrior_outfits_quest",
+      "npc": "oteryn:npc.undal",
+      "keywords": [
+        "task"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.dream_warrior",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "You defeated the Nightmare Beast. Accept this Dream Warrior outfit from the Court."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/undal.lua:sha256:48ff00f79ac6a7e89a4be2ae03e863a86a6349162634a68f940dfe9f0dfe18cc"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_winter_court",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "minimum_level": 250,
+      "requires_premium": true,
+      "forbids_outfits": [
+        "oteryn:outfit.dream_warrior"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l11-dream-warrior-undal-first",
+      "quest": "oteryn:quest.dream_warrior_outfits_quest",
+      "npc": "oteryn:npc.undal",
+      "keywords": [
+        "pomegranates"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i30169",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.dream_warrior",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/undal.lua:sha256:48ff00f79ac6a7e89a4be2ae03e863a86a6349162634a68f940dfe9f0dfe18cc"
+      ],
+      "minimum_level": 250,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.dream_warrior"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.dream_warrior",
+          "addons": 1
+        }
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/dream_warrior",
+          "target": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l11-dream-warrior-undal-second",
+      "quest": "oteryn:quest.dream_warrior_outfits_quest",
+      "npc": "oteryn:npc.undal",
+      "keywords": [
+        "ice shield"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i30168",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.dream_warrior",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/undal.lua:sha256:48ff00f79ac6a7e89a4be2ae03e863a86a6349162634a68f940dfe9f0dfe18cc"
+      ],
+      "minimum_level": 250,
+      "requires_premium": true,
       "requires_outfits": [
         "oteryn:outfit.dream_warrior"
       ],
@@ -2019,10 +2391,10 @@
           "addons": 2
         }
       ],
-      "requires_addons": [
+      "achievement_progress": [
         {
-          "outfit": "oteryn:outfit.dream_warrior",
-          "addons": 1
+          "key": "oteryn:achievement/dream_warrior",
+          "target": 2
         }
       ]
     },
@@ -3125,6 +3497,44 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l2-festive-base-earned",
+      "quest": "oteryn:quest.the_first_dragon_quest",
+      "npc": "oteryn:npc.the_first_dragon",
+      "keywords": [
+        "reward"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.festive",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_first_dragon.lua:sha256:645852a73164653b3ae894eaeba26c31f672ca6802223ee9ac47a35c74a0c8aa"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l2-festive-feather",
       "quest": "oteryn:quest.festive_outfits_quest",
       "npc": "oteryn:npc.muriel",
@@ -3165,6 +3575,15 @@
           "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
           "minimum": 2,
           "maximum": 2
+        }
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.festive"
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/reason_to_celebrate",
+          "target": 2
         }
       ]
     },
@@ -3250,6 +3669,15 @@
           "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
           "minimum": 2,
           "maximum": 2
+        }
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.festive"
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/reason_to_celebrate",
+          "target": 2
         }
       ]
     },
@@ -3593,6 +4021,61 @@
           "track": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward",
           "minimum": 2,
           "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet",
+          "minimum": -1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-demon-helmet-complete",
+      "quest": "oteryn:quest.demon_oak",
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "helmet"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.demon",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/true_dedication",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/avar_tar.lua:sha256:2262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3",
+        "wiki:True Dedication:achievementid=324:full Demon Outfits"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward",
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.demon",
+          "addons": 1
         }
       ]
     },
@@ -3631,6 +4114,61 @@
           "track": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward",
           "minimum": 2,
           "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "minimum": -1,
+          "maximum": 3
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l3-demon-shield-complete",
+      "quest": "oteryn:quest.demon_helmet_quest",
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "shield"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.demon",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/true_dedication",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/avar_tar.lua:sha256:2262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3",
+        "wiki:True Dedication:achievementid=324:full Demon Outfits"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward",
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+          "minimum": 4,
+          "maximum": 4
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.demon",
+          "addons": 2
         }
       ]
     },
@@ -7437,7 +7975,13 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eruaran.lua:sha256:6da2bd991078e0b7ac9cf96f855f4e931800e5609ba82280ea19bd749ae49936"
       ],
-      "requires_premium": true
+      "requires_premium": true,
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/dream_warden",
+          "target": 2
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l8-dream-warden-mask",
@@ -7474,7 +8018,13 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/eruaran.lua:sha256:6da2bd991078e0b7ac9cf96f855f4e931800e5609ba82280ea19bd749ae49936"
       ],
-      "requires_premium": true
+      "requires_premium": true,
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/dream_warden",
+          "target": 2
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l8-hunter-crossbow",
@@ -7508,6 +8058,91 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-hunter-elane-gloves",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
+      ],
+      "requires_premium": true,
+      "outfits": [
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 2,
+          "sex": "male"
+        },
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 1,
+          "sex": "female"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-hunter-elane-gloves-sale",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
+      ],
+      "repeatable": true
     },
     {
       "key": "oteryn:quest-reward/l8-hunter-gloves",
@@ -7554,6 +8189,45 @@
           "sex": "female"
         }
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/l8-hunter-gloves-sale",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/legola.lua:sha256:26084a8748e9d3a01d59745bb30e67fb3610924430ce86034828c893c9b8dfc2"
+      ],
+      "repeatable": true
     },
     {
       "key": "oteryn:quest-reward/l8-hunter-hat",
@@ -9003,7 +9677,7 @@
         "outfit": "oteryn:outfit.barbarian",
         "addons": 1
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/brutal_politeness",
       "reply": [
         "Axe is done! For you. Take. Wear like me."
       ],

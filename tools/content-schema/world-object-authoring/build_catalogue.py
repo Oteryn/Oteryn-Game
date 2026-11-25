@@ -76,12 +76,8 @@ def marker(directory, family, count, source):
 
 
 # Existing admitted donor routes, restricted to the reviewed ownerless Item keys.
-DONOR_QUALIFICATION = (
-    world_objects.ROOT / "samples/qualified-donor-routes-00ce02a5.json"
-)
-DONOR_QUALIFICATION_SHA256 = (
-    "63bf279a03caf45f6564e9ce7292c342902ae3135228e14791ad344100f96d83"
-)
+DONOR_QUALIFICATION = world_objects.ROOT / "samples/qualified-donor-routes-00ce02a5.json"
+DONOR_QUALIFICATION_SHA256 = "63bf279a03caf45f6564e9ce7292c342902ae3135228e14791ad344100f96d83"
 DONOR_CENSUS = world_objects.ROOT / "samples/census-crystal-donor-00ce02a5.json"
 DONOR_PROFILE = "OTERYN_ITEM_DONOR_CENSUS/v1"
 
@@ -106,22 +102,17 @@ def qualified_donor_routes():
 
 
 def membership_projection(label, appearances_sha256):
-    index = json.loads(
-        (ROOT / "imports/official/appearance-membership/admitted.json").read_bytes()
-    )
+    index = json.loads((ROOT / "imports/official/appearance-membership/admitted.json").read_bytes())
     if label == "client-15.30" and index["newest"] != label:
         raise ValueError("DONOR_CURRENT_MEMBERSHIP_GENERATION")
     spec = next(row for row in index["files"] if row["label"] == label)
-    raw = (
-        ROOT / "imports/official/appearance-membership" / spec["manifest"]
-    ).read_bytes()
+    raw = (ROOT / "imports/official/appearance-membership" / spec["manifest"]).read_bytes()
     document = json.loads(raw)
     if (
         spec["appearances_sha256"] != appearances_sha256
         or hashlib.sha256(raw).hexdigest() != spec["manifest_sha256"]
         or document["appearances_sha256"] != appearances_sha256
-        or appearance_membership.entries_digest(document["entries"])
-        != document["entries_sha256"]
+        or appearance_membership.entries_digest(document["entries"]) != document["entries_sha256"]
     ):
         raise ValueError("DONOR_MEMBERSHIP_DIGEST")
     return {row[0]: row for row in document["entries"]}
@@ -145,8 +136,7 @@ def build_qualified_donor_record(
         or (definition or {}).get("identity") != expected_binding["target"]
         # The Summer overlay admits these corpse stages as Items too; the WorldObject
         # route below is unchanged.
-        or (definition or {}).get("materializable")
-        is not (item_id in SUMMER_CORPSE_ITEMS)
+        or (definition or {}).get("materializable") is not (item_id in SUMMER_CORPSE_ITEMS)
     ):
         raise ValueError("DONOR_EXACT_IDENTITY_BINDING")
     old, current = (membership.get(item_id) for membership in memberships)
@@ -205,9 +195,7 @@ def build_qualified_donor_record(
 def donor_outputs(sources, donor_source, existing_keys, base_counts):
     qualification = qualified_donor_routes()
     donor = donor_census.load_donor_artifacts(donor_source)
-    bindings = json.loads(
-        (ROOT / "imports/crystalserver/bindings/items.json").read_bytes()
-    )
+    bindings = json.loads((ROOT / "imports/crystalserver/bindings/items.json").read_bytes())
     by_key = {}
     for binding in bindings["bindings"]:
         key = binding["target"]["key"]
@@ -221,17 +209,11 @@ def donor_outputs(sources, donor_source, existing_keys, base_counts):
             definitions[identity["key"]] = row["definition"]
     taxonomy = {
         row["target"]["key"]
-        for row in json.loads(
-            (ROOT / "content/items/taxonomy/items.json").read_bytes()
-        )["records"]
+        for row in json.loads((ROOT / "content/items/taxonomy/items.json").read_bytes())["records"]
     }
     memberships = (
-        membership_projection(
-            "crystal-donor-00ce02a5", donor_census.DONOR_APPEARANCES_SHA256
-        ),
-        membership_projection(
-            "client-15.30", qualification["current_appearances_sha256"]
-        ),
+        membership_projection("crystal-donor-00ce02a5", donor_census.DONOR_APPEARANCES_SHA256),
+        membership_projection("client-15.30", qualification["current_appearances_sha256"]),
     )
     records = {family: [] for family in CATALOGUES}
     for entry in qualification["records"]:
@@ -267,18 +249,14 @@ def donor_outputs(sources, donor_source, existing_keys, base_counts):
             "total": len(all_records),
             "by_family": {family: len(rows) for family, rows in records.items()},
             "digest_sha256": hashlib.sha256(
-                b"".join(
-                    world_objects.canonical_bytes(row) + b"\n" for row in all_records
-                )
+                b"".join(world_objects.canonical_bytes(row) + b"\n" for row in all_records)
             ).hexdigest(),
         },
     }
     return files, world_objects.canonical_bytes(census) + b"\n", records
 
 
-def outputs(
-    sources, donor_source=None, include_official=False, include_qualified=False
-):
+def outputs(sources, donor_source=None, include_official=False, include_qualified=False):
     """Return ({relative path: bytes} for both catalogues, census bytes)."""
     records = {family: [] for family in CATALOGUES}
     result = world_objects.build_census(
@@ -291,18 +269,14 @@ def outputs(
             chunk = rows[start : start + SHARD]
             name = f"{prefix}-{start:05d}-{start + len(chunk) - 1:05d}.json"
             document = {"family": family, "records": chunk}
-            files[f"{directory}/{name}"] = (
-                world_objects.canonical_bytes(document) + b"\n"
-            )
+            files[f"{directory}/{name}"] = world_objects.canonical_bytes(document) + b"\n"
         index = marker(directory, family, len(rows), result["source"])
         files[f"{directory}/index.json"] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode("utf-8")
     if donor_source is not None:
         existing_keys = {
-            row["provenance"]["item_pointer"]["key"]
-            for rows in records.values()
-            for row in rows
+            row["provenance"]["item_pointer"]["key"] for rows in records.values() for row in rows
         }
         supplemental, census, donor_records = donor_outputs(
             sources,
@@ -320,9 +294,9 @@ def outputs(
                 f"{donor_census.DONOR_REPOSITORY}@{donor_census.DONOR_COMMIT[:8]}; "
                 f"total {len(records[family]) + len(donor_records[family])}."
             )
-            files[index_path] = (
-                json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-            ).encode("utf-8")
+            files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode(
+                "utf-8"
+            )
     if include_official:
         import official_corpses
 
@@ -341,9 +315,7 @@ def outputs(
             f" Additionally 40 qualified official client 15.30 corpse records; "
             f"total {count + 40} WorldObject records."
         )
-        files[index_path] = (
-            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-        ).encode()
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
     if include_qualified:
         import qualified_world
 
@@ -367,9 +339,7 @@ def outputs(
                 f" Additionally {count} qualified own-Wiki/official fixed-world records; "
                 f"total {starts[family] + count} {family} records."
             )
-            files[index_path] = (
-                json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-            ).encode()
+            files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
     if include_qualified:
         import summer_ground
 
@@ -377,9 +347,7 @@ def outputs(
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += summer_ground.MARKER_NOTE
-        files[index_path] = (
-            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-        ).encode()
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
     if include_qualified:
         import grizzly_ground
 
@@ -387,9 +355,7 @@ def outputs(
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += grizzly_ground.MARKER_NOTE
-        files[index_path] = (
-            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-        ).encode()
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
     if include_qualified:
         import activity_static
 
@@ -417,8 +383,7 @@ def outputs(
         if (
             previous["identity"] != restore["identity"]
             or previous["provenance"]["source_item_id"] != 23049
-            or previous["provenance"]["source"]["profile"]
-            != "crystal_ff7ede5_item_definition_v1"
+            or previous["provenance"]["source"]["profile"] != "crystal_ff7ede5_item_definition_v1"
         ):
             raise ValueError("unreviewed Anomaly base source body")
         base_shard["records"][matches[0]] = restore
@@ -427,26 +392,20 @@ def outputs(
             name = f"content/world/{directory}/index.json"
             index = json.loads(files[name])
             index["notes"] += activity_static.NOTE
-            files[name] = (
-                json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-            ).encode()
+            files[name] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
         import soulpit_static
 
         files[soulpit_static.SHARD] = soulpit_static.outputs()[soulpit_static.SHARD]
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += soulpit_static.NOTE
-        files[index_path] = (
-            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-        ).encode()
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
         import sugar_room
 
         files[sugar_room.SHARD] = sugar_room.outputs()[sugar_room.SHARD]
         index = json.loads(files[index_path])
         index["notes"] += sugar_room.MARKER_NOTE
-        files[index_path] = (
-            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-        ).encode()
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
     if include_qualified:
         import qm50_ground
 
@@ -454,32 +413,24 @@ def outputs(
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += qm50_ground.MARKER_NOTE
-        files[index_path] = (
-            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-        ).encode()
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
         import elemental_ground
 
         files[elemental_ground.SHARD] = elemental_ground.output()
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += elemental_ground.NOTE
-        files[index_path] = (
-            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-        ).encode()
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
         import feroxa_static
 
         files[feroxa_static.SHARD] = feroxa_static.outputs()[feroxa_static.SHARD]
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         index["notes"] += feroxa_static.NOTE
-        files[index_path] = (
-            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-        ).encode()
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
         import engnpc2_ram_world
 
-        files[engnpc2_ram_world.SHARD] = engnpc2_ram_world.outputs()[
-            engnpc2_ram_world.SHARD
-        ]
+        files[engnpc2_ram_world.SHARD] = engnpc2_ram_world.outputs()[engnpc2_ram_world.SHARD]
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
         import crystal_delta_ground
@@ -489,23 +440,23 @@ def outputs(
         ]
         index["notes"] += engnpc2_ram_world.NOTE + crystal_delta_ground.MARKER_NOTE
         index["notes"] = activity_static.compose_terrain_notes(index["notes"])
-        files[index_path] = (
-            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-        ).encode()
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
+        import blood_vestibule_ground
         import spawn_ground
         import spawn_map_ground
         from scoped_spawn_ground import catalogue_outputs
 
         files[spawn_ground.SHARD] = spawn_ground.terrain_output()
         files.update(catalogue_outputs(files[index_path]))
+        files[blood_vestibule_ground.SHARD] = blood_vestibule_ground.outputs()[
+            blood_vestibule_ground.SHARD
+        ]
         files[spawn_map_ground.SHARD] = spawn_map_ground.terrain_output()
         index = json.loads(files[index_path])
         index["notes"] = activity_static.compose_terrain_notes(
-            index["notes"] + spawn_map_ground.NOTE
+            index["notes"] + blood_vestibule_ground.NOTE + spawn_map_ground.NOTE
         )
-        files[index_path] = (
-            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-        ).encode()
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
         import alawar_static
 
         files[alawar_static.SHARD] = alawar_static.output()
@@ -521,9 +472,7 @@ def committed_files():
 
 
 def donor_shards():
-    baseline = json.loads(world_objects.DEFAULT_SAMPLE.read_bytes())["records"][
-        "by_family"
-    ]
+    baseline = json.loads(world_objects.DEFAULT_SAMPLE.read_bytes())["records"]["by_family"]
     reviewed = qualified_donor_routes()["records"]
     limits = {
         family: baseline[family] + sum(row["owner"] == family for row in reviewed)
@@ -541,9 +490,7 @@ def donor_shards():
 def official_shards():
     import official_corpses
 
-    baseline = json.loads(world_objects.DEFAULT_SAMPLE.read_bytes())["records"][
-        "by_family"
-    ]
+    baseline = json.loads(world_objects.DEFAULT_SAMPLE.read_bytes())["records"]["by_family"]
     start = baseline["WorldObject"] + sum(
         row["owner"] == "WorldObject" for row in qualified_donor_routes()["records"]
     )
@@ -558,6 +505,7 @@ def qualified_shards():
     import activity_static
     import alawar_static
     import crystal_delta_ground
+    import blood_vestibule_ground
     import feroxa_static
     import spawn_ground
     import spawn_map_ground
@@ -579,6 +527,7 @@ def qualified_shards():
             alawar_static.SHARD,
             crystal_delta_ground.SHARD,
             feroxa_static.SHARD,
+            blood_vestibule_ground.SHARD,
             spawn_ground.SHARD,
             SCOPED_SPAWN_GROUND_SHARD,
             spawn_map_ground.SHARD,
@@ -613,33 +562,19 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     if args.donor_source is None and (donor_shards() or DONOR_CENSUS.exists()):
-        raise SystemExit(
-            "--donor-source is required for the supplemental donor catalogue"
-        )
+        raise SystemExit("--donor-source is required for the supplemental donor catalogue")
     sources = world_objects.engine_items.load_engine_sources("crystal", args.source)
     import official_corpses
 
-    if (
-        official_corpses.CENSUS.exists() or official_shards()
-    ) and not args.official_client:
-        raise SystemExit(
-            "--official-client is required for the official corpse catalogue"
-        )
+    if (official_corpses.CENSUS.exists() or official_shards()) and not args.official_client:
+        raise SystemExit("--official-client is required for the official corpse catalogue")
     import qualified_world
 
-    if (
-        qualified_world.CENSUS.exists() or qualified_shards()
-    ) and not args.qualified_world:
-        raise SystemExit(
-            "--qualified-world is required for the qualified world catalogue"
-        )
+    if (qualified_world.CENSUS.exists() or qualified_shards()) and not args.qualified_world:
+        raise SystemExit("--qualified-world is required for the qualified world catalogue")
     if args.qualified_world and (args.donor_source is None or not args.official_client):
-        raise SystemExit(
-            "--qualified-world requires the retained donor and official corpora"
-        )
-    files, census = outputs(
-        sources, args.donor_source, args.official_client, args.qualified_world
-    )
+        raise SystemExit("--qualified-world requires the retained donor and official corpora")
+    files, census = outputs(sources, args.donor_source, args.official_client, args.qualified_world)
     census_path = world_objects.DEFAULT_SAMPLE
     if args.check:
         drift = sorted(
@@ -651,9 +586,7 @@ def main(argv=None):
         if census_path.read_bytes() != census:
             drift.append(census_path.relative_to(ROOT).as_posix())
         if drift or extra:
-            print(
-                json.dumps({"drift": drift[:10], "extra": extra[:10]}), file=sys.stderr
-            )
+            print(json.dumps({"drift": drift[:10], "extra": extra[:10]}), file=sys.stderr)
             return 1
         print(json.dumps({"check": "PASS", "files": len(files)}))
         return 0

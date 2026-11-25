@@ -113,3 +113,15 @@ fn qb3_outfit_hand_in_npcs_are_admitted_at_their_source_cells() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn dream_outfit_contacts_compile_at_their_source_cells() -> TestResult {
+    for (key, x, y, z) in [
+        ("oteryn:npc.eruaran", 33618, 32372, 5),
+        ("oteryn:npc.undal", 33710, 32113, 4),
+        ("oteryn:npc.vanys", 33685, 32180, 8),
+    ] {
+        admitted_at(key, x, y, z)?;
+    }
+    Ok(())
+}

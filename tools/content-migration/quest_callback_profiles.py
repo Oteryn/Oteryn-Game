@@ -371,7 +371,7 @@ def requested_keys(root, extra_keys=()):
 def _requested_inputs(root, extra_keys=()):
     # Retain both the selected startup source cohort and authored callback custody.
     sys.path.insert(0, str(root / "tools/content-schema/world-authoring"))
-    from quest_chest_bindings import source_key_claim, supported_claim
+    from quest_chest_bindings import numbered_key_claim, source_key_claim, supported_claim
 
     sys.path.insert(0, str(root / "tools/content-schema/reward-claim-authoring"))
 
@@ -472,10 +472,13 @@ def _requested_inputs(root, extra_keys=()):
         for row in json.loads(path.read_bytes())["records"]:
             definition = row["definition"]
             if definition["identity"]["key"] in selected_chests:
-                # Filled-container/text claims already enter through the exact
-                # W15b native projection below; selection adds only map binding.
+                if not supported_claim(definition):
+                    raise ValueError("SELECTED_QUEST_CHEST_REWARD_NOT_READY")
+                # Charge, container and text recipes enter through their existing
+                # native projections below, keeping the complete reward closure.
                 if (
                     definition.get("readiness") == "ready"
+                    or numbered_key_claim(definition) is not None
                     or source_key_claim(definition)
                 ):
                     keys.update(
@@ -483,8 +486,6 @@ def _requested_inputs(root, extra_keys=()):
                         for placement in definition["placements"]
                         for item in placement["reward"]["items"]
                     )
-                elif not supported_claim(definition):
-                    raise ValueError("SELECTED_QUEST_CHEST_REWARD_NOT_READY")
                 selected_chests.remove(definition["identity"]["key"])
             # QUEST-FINISH owner scope: retain the donor record as evidence,
             # but do not admit Dawnport's rewards into the Newhaven start path.

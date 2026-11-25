@@ -330,7 +330,19 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         "oteryn:creature.demodras",
         "oteryn:creature.duke_krule",
         "oteryn:creature.earl_osam",
+        "oteryn:creature.furyosa",
         "oteryn:creature.goshnar_s_spite",
+        "oteryn:creature.hirintror",
+        "oteryn:creature.ocyakao",
+        "oteryn:creature.shardhead",
+        "oteryn:creature.the_percht_queen",
+        "oteryn:creature.the_welter",
+        "oteryn:creature.tyrn",
+        "oteryn:creature.weakened_shlorg",
+        "oteryn:creature.white_pale",
+        "oteryn:creature.willi_wasp",
+        "oteryn:creature.yakchal",
+        "oteryn:creature.zushuka",
         "oteryn:creature.king_zelos",
         "oteryn:creature.lord_azaram",
         "oteryn:creature.magma_bubble",
@@ -681,7 +693,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 257, 37, 50)
+        (52, 245, 39, 53)
     );
     assert_eq!(
         admitted,
@@ -693,6 +705,8 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.armenius_creature",
             "oteryn:creature.ascending_ferumbras",
             "oteryn:creature.bakragore",
+            "oteryn:creature.brother_chill",
+            "oteryn:creature.brother_freeze",
             "oteryn:creature.chagorz",
             "oteryn:creature.chayenne",
             "oteryn:creature.clubarc_the_plunderer",
@@ -707,6 +721,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.enraged_arbaziloth",
             "oteryn:creature.eradicator",
             "oteryn:creature.eradicator2",
+            "oteryn:creature.furyosa",
             "oteryn:creature.glooth_fairy",
             "oteryn:creature.gorga",
             "oteryn:creature.gorgo",
@@ -720,6 +735,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.goshnar_s_spite",
             "oteryn:creature.gralvalon",
             "oteryn:creature.grand_mother_foulscale",
+            "oteryn:creature.hirintror",
             "oteryn:creature.ice_overlord",
             "oteryn:creature.ichgahal",
             "oteryn:creature.king_zelos",
@@ -731,9 +747,12 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.mitmah_vanguard",
             "oteryn:creature.morbol",
             "oteryn:creature.murcion",
+            "oteryn:creature.ocyakao",
             "oteryn:creature.outburst",
             "oteryn:creature.professor_maxxen",
             "oteryn:creature.rupture",
+            "oteryn:creature.shardhead",
+            "oteryn:creature.solid_frozen_horror",
             "oteryn:creature.sir_baeloc",
             "oteryn:creature.sugar_daddy",
             "oteryn:creature.tazhadur",
@@ -742,8 +761,15 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.the_percht_queen",
             "oteryn:creature.the_primal_menace",
             "oteryn:creature.the_scion_of_havoc",
+            "oteryn:creature.the_welter",
+            "oteryn:creature.tyrn",
             "oteryn:creature.twisterror",
             "oteryn:creature.vemiath",
+            "oteryn:creature.weakened_shlorg",
+            "oteryn:creature.white_pale",
+            "oteryn:creature.willi_wasp",
+            "oteryn:creature.yakchal",
+            "oteryn:creature.zushuka",
         ]
     );
     newly_materializable_body_loot_refusals.sort_unstable();
@@ -759,6 +785,8 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.king_zelos",
             "oteryn:creature.lord_azaram",
             "oteryn:creature.lord_retro",
+            "oteryn:creature.melting_frozen_horror",
+            "oteryn:creature.professor_maxxen",
             "oteryn:creature.scarlett_etzel",
             "oteryn:creature.sharpclaw",
             "oteryn:creature.the_blazing_time_guardian",
@@ -1012,6 +1040,56 @@ pub fn activated_loop_monster_missing_child(
     refresh_fixture_attack_roots(rat);
     supplied.creature_profiles = pinned(&serde_json::to_vec(&creatures).unwrap());
     activate(world, &supplied)
+}
+
+#[cfg(test)]
+#[test]
+fn knightwatch_diamond_lever_creates_crystal_ground_item() -> Result<(), String> {
+    use crate::content::native_gameplay::NativeItemDestination;
+
+    let levers: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"
+    ))
+    .map_err(|error| error.to_string())?;
+    let lever = levers["callbacks"]
+        .as_array()
+        .and_then(|rows| rows.iter().find(|row| row["selector"]["unique"] == 3047))
+        .ok_or("Dread Lord lever")?;
+    assert!(lever["item_reward"].is_null());
+    let [offering] = lever["offerings"].as_array().ok_or("offerings")?.as_slice() else {
+        return Err("expected one offering".into());
+    };
+    assert_eq!(offering["item"], "oteryn:item.tibia.i3028");
+    assert_eq!(offering["count"], 1);
+    let [created] = lever["effects"]["scene"]["open"]
+        .as_array()
+        .ok_or("scene")?
+        .as_slice()
+    else {
+        return Err("expected one ground item".into());
+    };
+    assert_eq!(created["position"], offering["position"]);
+    assert_eq!(created["create"], 7845);
+
+    let world = test_source(1)
+        .map_err(|error| format!("source world: {error:?}"))?
+        .world_id;
+    let (controller, _) = try_activate_input(world, &manifest_input())
+        .map_err(|error| format!("native activation: {error:?}"))?;
+    let native = controller
+        .active()
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("active native gameplay")?;
+    let record = native
+        .item_policy_for_source_id(7845)
+        .ok_or("missing policy for Crystal lever ground item")?
+        .record();
+    assert!(record.admission.materializable);
+    assert_eq!(
+        record.admission.legal_destinations,
+        [NativeItemDestination::Ground]
+    );
+    Ok(())
 }
 
 #[cfg(test)]

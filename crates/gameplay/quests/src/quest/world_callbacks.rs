@@ -724,6 +724,12 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
         &serde_json::json!({"schema":1,"callbacks":[nomads_window::callback()?]}).to_string(),
     )?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/ape-city.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/beginning.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/children-grease.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -740,6 +746,9 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m09-treasure.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/hot-cuisine-books.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/ice-islands-seals.json"
@@ -814,6 +823,9 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/qready1-clocks.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qd-steal-from-thieves.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qready1-crafts.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -821,6 +833,9 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/rottin-wood.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/source-outfits.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/threatened-dreams-mosaic-treasure.json"
@@ -1597,6 +1612,20 @@ fn extend_callbacks(
         .map_err(|e| format!("{e:?}"))
 }
 
+pub(super) const TOWER_BROTHERHOOD_RANK: &str =
+    "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits";
+
+/// Crystal movement_tower.lua admits rank four from either order on these three cells.
+pub fn tower_nightmare_rank(key: &str) -> Option<&'static str> {
+    matches!(
+        key,
+        "oteryn:quest-callback/dreamer-dread-lord-tower-3054"
+            | "oteryn:quest-callback/dreamer-dread-lord-tower-3055"
+            | "oteryn:quest-callback/dreamer-dread-lord-tower-3056"
+    )
+    .then_some("oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits")
+}
+
 /// Exact canonical state operation used by both lowering and the mutation boundary.
 pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
@@ -1694,6 +1723,12 @@ pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
     }
     if let Some(policy) = super::world_change_journals::policy_binding(&callback.key)? {
         fields.insert("journal_policy".into(), policy);
+    }
+    if let Some(alternate) = tower_nightmare_rank(&callback.key) {
+        fields.insert(
+            "tower_nightmare_rank".into(),
+            serde_json::json!([alternate, 4]),
+        );
     }
     fields.remove("sources");
     fields.remove("success_message");
@@ -3347,6 +3382,10 @@ mod phase_tests;
 #[path = "world_callbacks/readable_text_tests.rs"]
 mod readable_text_tests;
 
+#[cfg(test)]
+#[path = "world_callbacks/source_outfit_tests.rs"]
+mod source_outfit_tests;
+
 /// A child completion is usable only as a participant of its native primary callback.
 /// The durable owner refuses direct requests for this synthetic transition.
 pub fn completion_transition(callback: &Callback) -> Option<QuestTransition> {
@@ -3587,4 +3626,205 @@ mod srvenc_live_requirements_tests {
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod ape_city_map_tests {
+    use super::*;
+
+    #[test]
+    fn ape_city_callbacks_are_admitted_by_the_world_loader() -> Result<(), String> {
+        let callbacks = load()?;
+        let ape: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| callback.quest == "oteryn:quest.the_ape_city_quest")
+            .collect();
+        let decipher = ape
+            .iter()
+            .find(|callback| callback.selector.action == Some(12124))
+            .ok_or("parchment step")?;
+        assert_eq!(decipher.trigger, Trigger::StepIn);
+        assert_eq!(decipher.storage[0].minimum, 7);
+        assert_eq!(decipher.storage[1].set, 1);
+        assert_eq!(
+            ape.iter()
+                .filter(|callback| {
+                    callback.selector.action == Some(12129)
+                        && callback.lever == Some([2772, 2773])
+                        && callback.effects.reset_after_ms == Some(600_000)
+                })
+                .count(),
+            6
+        );
+        for unique in [1040, 1041, 9257] {
+            assert!(
+                ape.iter()
+                    .any(|callback| callback.selector.unique == Some(unique))
+            );
+        }
+        let casks: Vec<_> = ape
+            .iter()
+            .filter(|callback| {
+                callback
+                    .key
+                    .starts_with("oteryn:quest-callback/ape-city-cask-")
+            })
+            .collect();
+        assert_eq!(casks.len(), 7);
+        for cask in casks {
+            let tool = cask.item_on_target.as_ref().ok_or("cask tool")?;
+            assert_eq!(tool.item, "oteryn:item.tibia.i3304");
+            assert!(tool.reusable && tool.selected_instance);
+            assert_eq!(cask.storage.len(), 1);
+            assert_eq!(cask.storage[0].maximum, 2);
+            assert_eq!(cask.storage[0].add, Some(1));
+            assert_eq!(cask.storage[0].set, 3);
+            assert_eq!(cask.effects.transform, Some(3134));
+            assert_eq!(cask.effects.reset_after_ms, Some(180_000));
+        }
+        let destroy = ape
+            .iter()
+            .find(|callback| callback.key.ends_with("/ape-city-destroy-monument"))
+            .ok_or("monument callback")?;
+        let tool = destroy.item_on_target.as_ref().ok_or("monument tool")?;
+        assert_eq!(tool.item, "oteryn:item.tibia.i4835");
+        assert!(tool.selected_instance);
+        assert!(!tool.reusable);
+        assert_eq!(destroy.storage[0].minimum, 17);
+        assert_eq!(destroy.storage[1].set, 1);
+        assert_eq!(destroy.effects.transform, Some(4851));
+        Ok(())
+    }
+
+    #[test]
+    fn beginning_cellar_and_tool_chests_are_admitted_by_the_world_loader() -> Result<(), String> {
+        let callbacks = load()?;
+        let cellar = callbacks
+            .iter()
+            .find(|callback| callback.key.ends_with("/beginning-santiago-cellar"))
+            .ok_or("beginning cellar")?;
+        assert_eq!(cellar.trigger, Trigger::StepIn);
+        assert_eq!(cellar.storage[0].minimum, 5);
+        assert!(
+            (cellar.storage[0].minimum..=cellar.storage[0].maximum).contains(&6),
+            "the active cockroach task must allow returning to the cellar"
+        );
+        assert_eq!(cellar.storage[0].set, 6);
+        assert!(cellar.return_on_failure);
+        assert_eq!(cellar.teleport.ok_or("cellar destination")?.floor, -7);
+
+        for (unique, item) in [
+            (50080, "oteryn:item.tibia.i2853"),
+            (50093, "oteryn:item.tibia.i3457"),
+            (50094, "oteryn:item.tibia.i3003"),
+        ] {
+            let chest = callbacks
+                .iter()
+                .find(|callback| callback.selector.unique == Some(unique))
+                .ok_or("beginning chest")?;
+            assert_eq!(chest.quest, "oteryn:quest.the_beginning_quest");
+            assert_eq!(chest.trigger, Trigger::Use);
+            let reward = chest.item_reward.as_ref().ok_or("beginning chest reward")?;
+            assert_eq!(reward.item, item);
+            assert_eq!(reward.count, 1);
+            if unique == 50080 {
+                assert_eq!(reward.contents.len(), 1);
+                assert_eq!(reward.contents[0].item, "oteryn:item.tibia.i3562");
+            } else {
+                assert!(reward.contents.is_empty());
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn ape_city_amphoras_and_dread_lord_benefits_are_admitted() -> Result<(), String> {
+    use std::collections::BTreeMap;
+
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = load_for(catalogue)?;
+    let by_uid = |uid| {
+        callbacks
+            .iter()
+            .find(|callback| {
+                callback.selector.unique == Some(uid) && callback.selector.native.is_some()
+            })
+            .ok_or_else(|| format!("native callback UID {uid}"))
+    };
+
+    let gate = by_uid(9258)?;
+    assert_eq!(gate.trigger, Trigger::StepIn);
+    assert!(gate.return_on_failure);
+    assert_eq!(gate.world_requirements.len(), 4);
+    for uid in 40092..=40095 {
+        let strike = by_uid(uid)?;
+        assert_eq!(strike.trigger, Trigger::Use);
+        assert!(strike.item_on_target.as_ref().is_some_and(|tool| {
+            tool.item == "oteryn:item.tibia.i4835" && tool.selected_instance && tool.reusable
+        }));
+        assert_eq!(strike.effects.reset_after_ms, Some(300_000));
+        assert!(gate.world_requirements.iter().any(|requirement| {
+            Some(requirement.position) == strike.selector.position
+                && Some(requirement.appearance) == strike.effects.transform
+        }));
+        let transition = catalogue
+            .transition(&strike.key)
+            .ok_or("amphora transition")?;
+        for (stage, eligible) in [(16, false), (17, true), (18, true)] {
+            let tracks = BTreeMap::from([(strike.storage[0].track.clone(), stage)]);
+            assert_eq!(catalogue.evaluate(transition, &tracks, 0).is_ok(), eligible);
+        }
+    }
+
+    for uid in [3047, 3054, 3055, 3056] {
+        let benefit = by_uid(uid)?;
+        let transition = catalogue
+            .transition(&benefit.key)
+            .ok_or("Dread Lord transition")?;
+        let rank = benefit.storage[0].track.clone();
+        let nightmare = rank.replace("brotherhood_", "nightmare_");
+        for (brotherhood, nightmare_rank, eligible) in [
+            (3, 0, false),
+            (0, 3, false),
+            (4, 0, true),
+            (0, 4, uid != 3047),
+        ] {
+            let tracks = BTreeMap::from([
+                (rank.clone(), brotherhood),
+                (nightmare.clone(), nightmare_rank),
+            ]);
+            assert_eq!(
+                catalogue.evaluate(transition, &tracks, 0).is_ok(),
+                eligible,
+                "UID {uid}"
+            );
+        }
+        if uid == 3047 {
+            assert_eq!(benefit.trigger, Trigger::Use);
+            assert_eq!(benefit.offerings.len(), 1);
+            assert!(benefit.item_reward().is_none());
+            let scene = benefit
+                .effects
+                .scene
+                .as_ref()
+                .ok_or("Crystal offering output")?;
+            let [created] = scene.open.as_slice() else {
+                return Err("expected one offering output".into());
+            };
+            assert_eq!(created.position, benefit.offerings[0].position);
+            assert_eq!(created.create, Some(7845));
+            assert_eq!(benefit.effects.reset_after_ms, Some(4000));
+        } else {
+            assert_eq!(benefit.trigger, Trigger::StepIn);
+            assert!(benefit.teleport.is_some() && benefit.return_on_failure);
+            assert!(benefit.item_on_target.as_ref().is_some_and(|crystal| {
+                crystal.on_step && !crystal.reusable && crystal.item == "oteryn:item.tibia.i5021"
+            }));
+        }
+    }
+    Ok(())
 }

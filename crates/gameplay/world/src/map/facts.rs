@@ -416,15 +416,17 @@ impl BundleFacts {
         // 3682, 12187, 12189: Bushwhacking entrance, laid net and captured merchant.
         // 4851, 4996: Ape City spent statue and jar (Crystal actions_mission9_snake_destroyer.lua).
         // 6473, 6474: the timed Rottin wall repairs.
+        // 4851 and 4996: Banuta monument and broken amphora after Snake Destroyer strikes.
         // 7252: painted baby seal (Crystal actions_paint.lua:27), absent from the base palette.
+        // 7845: the lava created by Crystal Brotherhood lever 3047.
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
         let mut movement_solidities = BTreeMap::new();
         let movement_definitions: BTreeMap<_, _> = [
-            188, 430, 435, 1025, 1841, 1949, 3682, 4851, 4996, 5022, 6473, 6474, 7252, 9125, 9126,
-            9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187, 12187, 12189, 12369,
-            13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077, 14163,
-            14164, 14255, 17678, 17680, 17939, 21804, 21805, 21812, 22059, 22074, 26077, 26087,
-            26100, 49362,
+            188, 430, 435, 1025, 1841, 1949, 3682, 4851, 4996, 5022, 6473, 6474, 7252, 7845, 9125,
+            9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187, 12187, 12189,
+            12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077,
+            14163, 14164, 14255, 17939, 21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100,
+            49362,
         ]
         .into_iter()
         .chain(6594..=6608)
@@ -1590,6 +1592,160 @@ mod tests {
     use super::*;
     use crate::foundation::{ChannelId, WorldId};
     use crate::map::boot::{boot, tests as fixture};
+
+    #[test]
+    fn ape_city_monument_replacement_is_qualified_outside_the_palette() {
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes).expect("source bundle");
+        let reference = NonZeroU32::new(3).expect("monument item");
+        let definitions = |key: &str| match key {
+            "oteryn:item.tibia.i4851" => Some(ItemDefinition {
+                reference,
+                solid: Some(true),
+                blocks_projectile: true,
+                pickupable: false,
+                door: false,
+            }),
+            _ => fixture::items(key),
+        };
+        let facts = BundleFacts::palette(&bundle.manifest, definitions).expect("palette");
+        assert_eq!(
+            facts.override_blocks(EntryFacts {
+                definition: MapDefinition::Item(reference),
+                terrain_kind: None,
+                appearance_id: 4851,
+                blocks_projectile: true,
+                pickupable: false,
+                bound: false,
+                count: 1,
+                sub_type: 0,
+            }),
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn quest_routes_load_locked_doors_and_pick_action() {
+        use crate::map::door::DoorUse;
+        use oteryn_world_bundle::sector::{Item, Tile};
+
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes).expect("source bundle");
+        let mut facts = BundleFacts::palette(&bundle.manifest, fixture::items).expect("palette");
+        let mut push = |x, y, floor, appearance, door| {
+            facts.palette[3].facts.appearance_id = appearance;
+            facts.palette[3].door = door;
+            facts.push(
+                &bundle.manifest,
+                &Sector {
+                    floor,
+                    sx: x / 32,
+                    sy: y / 32,
+                    tiles: vec![Tile {
+                        x,
+                        y,
+                        flags: 0,
+                        house: 0,
+                        zones: Vec::new(),
+                        items: vec![
+                            Item {
+                                palette: 0,
+                                depth: 0,
+                                attrs: Attrs::default(),
+                            },
+                            Item {
+                                palette: 3,
+                                depth: 0,
+                                attrs: Attrs::default(),
+                            },
+                        ],
+                    }],
+                },
+                &mut BTreeSet::new(),
+            );
+            placement_key(TilePos { x, y, floor }, 1).expect("placement")
+        };
+        let door_item = |key: &str| {
+            let id = key
+                .strip_prefix("oteryn:item.tibia.i")?
+                .parse::<u32>()
+                .ok()?;
+            let open = matches!(id, 5099 | 5108 | 5112 | 7713 | 7716);
+            Some(ItemDefinition {
+                reference: NonZeroU32::new(id)?,
+                solid: Some(!open),
+                blocks_projectile: !open,
+                pickupable: false,
+                door: true,
+            })
+        };
+        let doors = [
+            (32645, 31906, -3, 7714, 3800),
+            (32600, 31926, -6, 7711, 3801),
+            (32450, 31967, -10, 5106, 3802),
+            (32452, 31972, -10, 5097, 3802),
+            (32456, 31972, -10, 5097, 3802),
+            (32457, 31966, -10, 5106, 3802),
+            (32602, 31975, -14, 7714, 3802),
+            (32603, 31975, -14, 7714, 3802),
+            (32624, 31929, -3, 7714, 3802),
+        ]
+        .map(|(x, y, z, id, action)| {
+            let door = palette_door(&format!("oteryn:item.tibia.i{id}"), &door_item);
+            (push(x, y, z, id, door), action)
+        });
+        let level_door = push(
+            33085,
+            31650,
+            -10,
+            5111,
+            palette_door("oteryn:item.tibia.i5111", &door_item),
+        );
+        let pick_tile = push(33081, 31651, -11, 355, PaletteDoor::No);
+        facts.finish();
+
+        for (key, action) in doors {
+            assert_eq!(
+                facts.doors().toggle(key, 0, false, 100, false),
+                Some(DoorUse::Locked)
+            );
+            assert_eq!(
+                facts.doors().use_key(key, 0, action + 1),
+                Some(DoorUse::Locked)
+            );
+            assert_eq!(
+                facts.doors().use_key(key, 0, action),
+                Some(DoorUse::Toggled {
+                    revision: 1,
+                    open: true
+                })
+            );
+        }
+        assert_eq!(
+            facts.doors().toggle(level_door, 0, false, 59, false),
+            Some(DoorUse::Locked)
+        );
+        assert_eq!(
+            facts.doors().toggle(level_door, 0, false, 60, false),
+            Some(DoorUse::Toggled {
+                revision: 1,
+                open: true
+            })
+        );
+        let action = facts.terrain_tool_action(pick_tile).expect("pick target");
+        assert_eq!(action, Some(101));
+        let catalogue = crate::terrain_tools::crystal_core_bindings();
+        let plan = crate::terrain_tools::dispatch(
+            &catalogue,
+            "oteryn:item.tibia.i3456",
+            355,
+            action,
+            1_000,
+        )
+        .expect("source pick route");
+        assert_eq!(plan.binding.transformed, 394);
+        assert_eq!(plan.first_deadline_unix_ms, Some(301_000));
+    }
 
     #[test]
     fn source_house_membership_keeps_adjacent_identities_and_refuses_ambiguity() {

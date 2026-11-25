@@ -142,6 +142,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Ok(Some(QuestCallbackProjection::Scene {
             mutations,
             remove_self: scene.remove_self,
+            source_reset: None,
         }))
     }
 }

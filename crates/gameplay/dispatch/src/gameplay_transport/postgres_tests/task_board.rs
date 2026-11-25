@@ -211,13 +211,13 @@ fn task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust() -> TestRes
 }
 
 fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) -> TestResult {
-    scenario_with_bootstrap(fault, elite_case_enabled, BootstrapCase::Standard, None)
+    scenario_with_bootstrap(fault, elite_case_enabled, BootstrapCase::Standard, None, false)
 }
 
 #[test]
 fn task_board_control_epoch_initializer_allows_live_query_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-control-epoch", || {
-        scenario_with_bootstrap(None, false, BootstrapCase::ControlEpoch, None)
+        scenario_with_bootstrap(None, false, BootstrapCase::ControlEpoch, None, false)
     })
 }
 
@@ -231,7 +231,7 @@ enum BoardUpdateCase {
 fn task_board_canonical_delivery_uses_active_catalogue_in_dispatch() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-canonical-delivery", || {
-        scenario_with_bootstrap(None, false, BootstrapCase::Standard, Some(BoardUpdateCase::CanonicalDelivery))
+        scenario_with_bootstrap(None, false, BootstrapCase::Standard, Some(BoardUpdateCase::CanonicalDelivery), false)
     })
 }
 
@@ -239,7 +239,17 @@ fn task_board_canonical_delivery_uses_active_catalogue_in_dispatch() -> TestResu
 fn task_board_daily_bounty_claim_is_fenced_replayable_and_once_per_reset_in_dispatch() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-daily-bounty", || {
-        scenario_with_bootstrap(None, false, BootstrapCase::Standard, Some(BoardUpdateCase::DailyBounty))
+        scenario_with_bootstrap(None, false, BootstrapCase::Standard, Some(BoardUpdateCase::DailyBounty), false)
+    })
+}
+
+#[test]
+fn task_board_stock_falconer_and_feral_trapper_outfits_debit_and_unlock() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-stock-outfits", || {
+        scenario_with_bootstrap(None, false, BootstrapCase::Standard, None, true)
     })
 }
 
@@ -249,7 +259,7 @@ fn task_board_postgres_stock_cosmetic_achievement_awards() -> TestResult {
         return Ok(());
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-cosmetic-awards", || {
-        scenario_with_bootstrap(None, false, BootstrapCase::StockCosmeticAwards, None)
+        scenario_with_bootstrap(None, false, BootstrapCase::StockCosmeticAwards, None, false)
     })
 }
 
@@ -266,6 +276,7 @@ fn scenario_with_bootstrap(
     elite_case_enabled: bool,
     case: BootstrapCase,
     update_case: Option<BoardUpdateCase>,
+    stock_outfits: bool,
 ) -> TestResult {
     run(async move |admin| {
         let tag = match update_case {
@@ -284,7 +295,7 @@ fn scenario_with_bootstrap(
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let cosmetics = (case != BootstrapCase::StockCosmeticAwards)
+        let cosmetics = (!stock_outfits && case != BootstrapCase::StockCosmeticAwards)
             .then(cosmetic_cases::cosmetics_packet)
             .transpose()?;
         let (controller, pin) =
@@ -1093,7 +1104,12 @@ fn scenario_with_bootstrap(
             return Ok(());
         }
         let cosmetic_fault = fault == Some(RollbackFault::CosmeticGrant);
-        cosmetic_cases::cosmetics_case(&owner, &harness, &mut admitted, cosmetic_fault).await?;
+        if stock_outfits {
+            let previous_balance = 340_000 - i64::try_from(accrued.weekly.pending_points)?;
+            fixture_track(&harness, task_board::POINTS, previous_balance).await?;
+        } else {
+            cosmetic_cases::cosmetics_case(&owner, &harness, &mut admitted, cosmetic_fault).await?;
+        }
         if cosmetic_fault {
             drop(owner);
             drop(authority);
@@ -1114,6 +1130,17 @@ fn scenario_with_bootstrap(
             reset.soulseals,
             before_reset.soulseals + before_reset.weekly.pending_soulseals
         );
+        if stock_outfits {
+            assert!(before_reset.weekly.pending_points > 0);
+            assert_eq!(reset.points, 340_000, "the settled week funds the final purchase");
+            cosmetic_cases::stock_outfit_purchases(&owner, &harness, &mut admitted, reset.points)
+                .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
+        }
         let settled_points = reset.points;
         let again = full_board(&owner, &mut admitted, 4, 0, "").await?;
         assert_eq!(

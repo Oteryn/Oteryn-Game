@@ -9,7 +9,7 @@ pub const ITEM_MOVABLE_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20261003-item-movable-promotion-v2.json"
 );
 pub const ITEM_MOVABLE_PACKET_SHA256: &str =
-    "33253d78cb23e9f8ffdeb276b9b77a3833e64f47296cb65d37fcf183e55ca3cd";
+    "7e7de7820a8b8d9296f053c5bedf0885df84f88d693d4294cf97fdaae865ea6e";
 
 pub fn apply_item_movable_promotion_v1(
     draft: &mut ProjectV2Draft,

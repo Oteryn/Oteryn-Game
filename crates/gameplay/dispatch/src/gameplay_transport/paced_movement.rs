@@ -571,6 +571,10 @@ impl crate::map::floor::CellBlocker for PlayerDoorAccess<'_> {
             .admits_door_requirement(self.session, self.level, requirement)
     }
 
+    fn owns_native_transition(&self, cell: crate::content::LogicalCell) -> bool {
+        self.inner.owns_native_transition(cell)
+    }
+
     fn suppresses_native_teleport(&self, cell: crate::content::LogicalCell) -> bool {
         self.inner.suppresses_native_teleport(cell)
     }

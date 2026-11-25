@@ -63,6 +63,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .player_control_facts(actor, session)
                     .is_ok_and(|f| f.control_loss.is_none())
                 || runtime.bound_attacker_lease(actor, session).is_err()
+                || !self.paid_callback_can_start(session, initiator, |pending| {
+                    pending.callback == callback.key && pending.participants.contains(&session)
+                })
                 || !self.states.player_trades.physical(session, None)
                 || self.party_member_has_foreign_pending(session, initiator)
             {

@@ -266,8 +266,19 @@ def qualify(
     flags = appearance["flags"]
     corpse = bool(flags.get("flags.corpse", False))
     plain = number in BUTTERFLY_CORPSES
+    player_corpse = bool(flags.get("flags.player_corpse", False))
+    # The XML orc decay chain ends in the same loose bones used by player corpses.
+    # Keep that appearance's client flag and admit it solely as a terminal decay stage.
+    attributes = grizzly.source.attrs(node)
+    terminal_bones = (
+        number == 4317
+        and not fresh
+        and not corpse
+        and attributes.get("decayto") == "0"
+        and "containersize" not in attributes
+    )
     if (
-        bool(flags.get("flags.player_corpse", False))
+        (player_corpse and not terminal_bones)
         or bool(flags.get("flags.cumulative", False))
         or (fresh and (not corpse or (not plain and not flags.get("flags.container", False))))
     ):
@@ -276,7 +287,7 @@ def qualify(
         if (
             world["kind"] != grizzly.source.K("corpse")
             or world["corpse"]["corpse"] != grizzly.source.K(corpse)
-            or world["corpse"]["player_corpse"] != grizzly.source.K(False)
+            or world["corpse"]["player_corpse"] != grizzly.source.K(player_corpse)
             or world["provenance"].get("item_pointer") != identity
             or world["client_projection"] != grizzly.source.K({"appearance_id": number})
             or world["movable"] != grizzly.source.K(physical["movable"])
@@ -287,7 +298,7 @@ def qualify(
         # They cannot authorize a fresh corpse: only this verified root's decay edge admits
         # them, and their accepted container fact must exactly equal their source XML.
         capacity = definition.get("semantics", {}).get("container")
-        source_capacity = grizzly.source.attrs(node).get("containersize")
+        source_capacity = attributes.get("containersize")
         rabbit_remains = number in (4302, 4303) and source_capacity is None
         if (
             fresh
@@ -309,6 +320,13 @@ def qualify(
     if (not fresh or plain) and "containersize" not in grizzly.source.attrs(node):
         source["semantics"]["container"] = copy.deepcopy(grizzly.source.NA)
     expected = source["semantics"]
+    if terminal_bones:
+        # The shared bones already have an accepted weight. This admission supplies decay.
+        canonical_weight = definition["semantics"]["physical"]["value"]["weight"]
+        source_weight = expected["physical"]["value"]["weight"]
+        if canonical_weight != grizzly.source.K(10000) or source_weight != grizzly.source.K(60000):
+            raise ValueError("QUEST_CORPSE_TERMINAL_BONES_WEIGHT")
+        expected["physical"]["value"]["weight"] = copy.deepcopy(canonical_weight)
     for group in GROUPS:
         accepted = definition.get("semantics", {}).get(group, grizzly.source.U)
         if grizzly.known_conflict(accepted, expected[group]):

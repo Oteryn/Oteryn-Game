@@ -31,9 +31,7 @@ def source_qualified_item_references(reference, root):
 
     # Match the converter: overlays update existing legacy rows in place, while
     # reference-only extensions belong to the separate Item vector.
-    records = [
-        row for row in reference["records"] if row["identity"]["family"] == "Item"
-    ]
+    records = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
     conditional(records, root)
     movement(records, root)
     terminal(records, root)
@@ -47,8 +45,10 @@ def source_qualified_item_references(reference, root):
 
     arbaziloth_fire(records, root)
     from writable_item_profiles import old_paper_definition
+
     records.append(old_paper_definition(root))
     from crystal_ordinary_items import extend_references as doors
+
     doors(records, root)
     return records
 
@@ -81,9 +81,7 @@ PROFICIENCY_BINDING_COUNT = 665  # ITEM-ADD-1 plus the admitted appearance-only 
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring).
 REWARD_CLAIM_COUNT = len(
     json.loads(
-        (
-            ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json"
-        ).read_text()
+        (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text()
     )["claims"]
 )
 sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
@@ -119,8 +117,7 @@ def load(path: Path) -> Any:
 
 def canonical_bytes(value: Any) -> bytes:
     return (
-        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-        + "\n"
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
     ).encode("utf-8")
 
 
@@ -133,9 +130,7 @@ def require(condition: bool, code: str) -> None:
         raise ValidationError(code)
 
 
-def staged_item_target(
-    target: dict[str, Any], aliases: dict[str, str]
-) -> tuple[str, str, str]:
+def staged_item_target(target: dict[str, Any], aliases: dict[str, str]) -> tuple[str, str, str]:
     """A staged (historical) Item target through the append-only alias table (A12, ITEM-ID-1)."""
     require(
         target["family"] == "Item" and target["key"] in aliases,
@@ -148,11 +143,7 @@ def item_alias_targets() -> dict[str, str]:
     current: dict[str, dict[str, Any]] = {}
     for entry in load(ROOT / "content/items/aliases.json")["entries"]:
         current[entry["key"]] = entry
-    return {
-        key: entry["target"]
-        for key, entry in current.items()
-        if entry["state"] == "ALIAS"
-    }
+    return {key: entry["target"] for key, entry in current.items() if entry["state"] == "ALIAS"}
 
 
 def target_id(target: dict[str, Any]) -> tuple[str, str, str]:
@@ -176,9 +167,7 @@ def known_paths(definition: dict[str, Any]) -> dict[str, Any]:
 def authoring_value(entry: dict[str, Any], path: str) -> Any:
     value: Any = entry
     for part in path.split("."):
-        require(
-            isinstance(value, dict) and part in value, f"AUTHORING_FACT_ABSENT:{path}"
-        )
+        require(isinstance(value, dict) and part in value, f"AUTHORING_FACT_ABSENT:{path}")
         value = value[part]
     return value
 
@@ -213,8 +202,7 @@ def closed_forge_owner():
 def closed_weapon_metadata():
     """Sealed103 source properties; absolute percentages are not relative hit ratios."""
     raw = (
-        ROOT
-        / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json"
+        ROOT / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json"
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
@@ -243,11 +231,7 @@ def closed_weapon_metadata():
             "attack_modifier": 78,
             "absolute_hit_percent": 25,
         }
-        and len(rows)
-        == len(packet["promotions"])
-        == len(sources)
-        == len(proof["records"])
-        == 103
+        and len(rows) == len(packet["promotions"]) == len(sources) == len(proof["records"]) == 103
         and set(rows) == set(sources),
         "CLOSED_WEAPON_METADATA_SCOPE",
     )
@@ -266,9 +250,7 @@ def closed_weapon_metadata():
             "CLOSED_WEAPON_METADATA_VALUE",
         )
         counts[source["field"]] += 1
-    require(
-        counts == {"atk_mod": 78, "hit_chance": 25}, "CLOSED_WEAPON_METADATA_FIELDS"
-    )
+    require(counts == {"atk_mod": 78, "hit_chance": 25}, "CLOSED_WEAPON_METADATA_FIELDS")
     return rows, proof["current_parent_receipt"]
 
 
@@ -277,8 +259,7 @@ def extend_weapon_owners(expected):
     parent = {target_id(row["item"]): row for row in receipt["parent_authoring"]}
     require(
         len(parent) == len(receipt["parent_authoring"]) == len(expected) == 316
-        and canonical_sorted(list(parent.values()))
-        == canonical_sorted(list(expected.values())),
+        and canonical_sorted(list(parent.values())) == canonical_sorted(list(expected.values())),
         "WEAPON_METADATA_PARENT_OWNERS",
     )
     require(len(set(rows).intersection(parent)) == 8, "WEAPON_METADATA_OWNER_OVERLAP")
@@ -287,8 +268,7 @@ def extend_weapon_owners(expected):
         require(owner["item"] == row["target"], "WEAPON_METADATA_OWNER_IDENTITY")
         for field, value in row["facts"].items():
             require(
-                field not in owner
-                or canonical_bytes(owner[field]) == canonical_bytes(value),
+                field not in owner or canonical_bytes(owner[field]) == canonical_bytes(value),
                 "WEAPON_METADATA_OWNER_CONFLICT",
             )
             owner[field] = value
@@ -297,9 +277,7 @@ def extend_weapon_owners(expected):
 
 def closed_forge289():
     """Exactly289 qualified metadata pairs/bindings; no inferred maximum/default."""
-    raw = (
-        ROOT / "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json"
-    ).read_bytes()
+    raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json").read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
         == "69bf44d0e7aea723e634f2fba199bdd39b2e5c80a3a64a3d74597d68aafe95aa",
@@ -307,8 +285,7 @@ def closed_forge289():
     )
     packet = json.loads(raw)
     proof_raw = (
-        ROOT
-        / "docs/agents/evidence/OTV2-20261002-item-forge289-source-qualification-v1.json"
+        ROOT / "docs/agents/evidence/OTV2-20261002-item-forge289-source-qualification-v1.json"
     ).read_bytes()
     require(
         hashlib.sha256(proof_raw).hexdigest()
@@ -318,8 +295,7 @@ def closed_forge289():
     proof = json.loads(proof_raw)
     rows = {target_id(row["item"]): row for row in packet["promotions"]}
     sources = {
-        target_id(row["qualification"]["target"]): row["qualification"]
-        for row in proof["records"]
+        target_id(row["qualification"]["target"]): row["qualification"] for row in proof["records"]
     }
     require(
         packet["schema"] == "OTERYN_ITEM_FORGE289_SOURCE_IMPORT/v1"
@@ -337,16 +313,11 @@ def closed_forge289():
     for key, row in rows.items():
         q = sources[key]
         require(
-            canonical_bytes(row)
-            == canonical_bytes({"item": q["target"], "forge": q["forge"]}),
+            canonical_bytes(row) == canonical_bytes({"item": q["target"], "forge": q["forge"]}),
             "FORGE289_LITERAL_PAIR",
         )
         slot = q["native_definition"]["semantics"].get("imbuement", {})
-        slot = (
-            slot.get("value", {}).get("slot_count", {})
-            if slot.get("state") == "KNOWN"
-            else {}
-        )
+        slot = slot.get("value", {}).get("slot_count", {}) if slot.get("state") == "KNOWN" else {}
         refs = [
             {
                 "relation": "CAPABILITY_GOVERNED_BY",
@@ -354,11 +325,7 @@ def closed_forge289():
                 "basis": "forge",
             }
         ]
-        if (
-            slot.get("state") == "KNOWN"
-            and type(slot.get("value")) is int
-            and slot["value"] >= 1
-        ):
+        if slot.get("state") == "KNOWN" and type(slot.get("value")) is int and slot["value"] >= 1:
             refs.append(
                 {
                     "relation": "CAPABILITY_GOVERNED_BY",
@@ -377,8 +344,7 @@ def closed_forge289():
 def extend_forge289_owners(expected):
     rows, parent, _, _ = closed_forge289()
     require(
-        canonical_sorted(list(expected.values()))
-        == canonical_sorted(list(parent.values())),
+        canonical_sorted(list(expected.values())) == canonical_sorted(list(parent.values())),
         "FORGE289_PARENT_OWNERS",
     )
     expected.update(rows)
@@ -387,22 +353,15 @@ def extend_forge289_owners(expected):
 
 def validate_forge289_relation(row, definition, closed, source):
     require(
-        canonical_bytes(row) == canonical_bytes(closed)
-        and row["source"] == definition["identity"],
+        canonical_bytes(row) == canonical_bytes(closed) and row["source"] == definition["identity"],
         "FORGE289_FULL_RELATION",
     )
     expected = source["native_definition"]["semantics"].get("imbuement", {})
     expected = (
-        expected.get("value", {}).get("slot_count", {})
-        if expected.get("state") == "KNOWN"
-        else {}
+        expected.get("value", {}).get("slot_count", {}) if expected.get("state") == "KNOWN" else {}
     )
     actual = definition["semantics"].get("imbuement", {})
-    actual = (
-        actual.get("value", {}).get("slot_count", {})
-        if actual.get("state") == "KNOWN"
-        else {}
-    )
+    actual = actual.get("value", {}).get("slot_count", {}) if actual.get("state") == "KNOWN" else {}
     require(
         canonical_bytes(actual) == canonical_bytes(expected),
         "FORGE289_CURRENT_NATIVE_SLOT",
@@ -416,7 +375,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
-        == "7b1740ecbc8537fa5bd75c43614e0b4ffcc245099d990b41be145a268ee7883f",
+        == "72ab77e4f793f1547599f9fd6ce2b5bc0563c20d9c24ee5a7faccd3c64fb1c3f",
         "HIT_MAGIC_PACKET_DIGEST",
     )
     magic = {
@@ -425,9 +384,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
         if "required_magic_level" in row["facts"]
     }
     require(
-        len(staged_items) == 164
-        and len(magic) == 39
-        and not set(magic).intersection(staged_items),
+        len(staged_items) == 164 and len(magic) == 39 and not set(magic).intersection(staged_items),
         "CLOSED_ML_OWNER_SCOPE",
     )
     expected = {
@@ -443,12 +400,11 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
             "required_magic_level": row["facts"]["required_magic_level"],
         }
     raw = (
-        ROOT
-        / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json"
+        ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json"
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
-        == "2d1dc0291dcad4e877fa1c88841bb9367e0580522212e43d3d474c7ff17ac0b4",
+        == "9f83ef163365cf089d75ae9bd7207103b79ded1f6d366fcd29686573a060e949",
         "USE_OBSERVATION_PACKET_DIGEST",
     )
     packet = json.loads(raw)
@@ -475,9 +431,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
         owner["use_observation"] = row["facts"]
     forge = closed_forge_owner()
     forge_key = target_id(forge["item"])
-    require(
-        len(expected) == 315 and forge_key not in expected, "CLOSED_FORGE_OWNER_SCOPE"
-    )
+    require(len(expected) == 315 and forge_key not in expected, "CLOSED_FORGE_OWNER_SCOPE")
     expected[forge_key] = forge
     extend_weapon_owners(expected)
     extend_forge289_owners(expected)
@@ -529,12 +483,11 @@ def validate_forge_relation(row, definition):
 def use_relation_targets():
     """The sealed Use owners; only these rows are the PR's Use relations (D322)."""
     raw = (
-        ROOT
-        / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json"
+        ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json"
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
-        == "2d1dc0291dcad4e877fa1c88841bb9367e0580522212e43d3d474c7ff17ac0b4",
+        == "9f83ef163365cf089d75ae9bd7207103b79ded1f6d366fcd29686573a060e949",
         "USE_OBSERVATION_PACKET_DIGEST",
     )
     return {target_id(p["target"]) for p in json.loads(raw)["promotions"]}
@@ -633,9 +586,7 @@ def source_loot_stack_promotions(root: Path) -> dict[str, int]:
     import native_goal_loot_items
     import questpc2_soul_loot_items
 
-    selected_ids = native_goal_loot_items.selected(
-        root
-    ) | questpc2_soul_loot_items.selected(root)
+    selected_ids = native_goal_loot_items.selected(root) | questpc2_soul_loot_items.selected(root)
     for key, profile in native_goal_loot_items.profiles(root, selected_ids).items():
         require(
             key not in profiles or profiles[key] == profile,
@@ -673,12 +624,8 @@ def validate_item_enrichment(
     crystal_equipment = source_profiles(ROOT)
     reward_admissions = load_admissions(ROOT)
     loot_stack_promotions = source_loot_stack_promotions(ROOT)
-    staged = load(
-        ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json"
-    )
-    stats = load(
-        ROOT / "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json"
-    )
+    staged = load(ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json")
+    stats = load(ROOT / "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json")
     content_path = {"weapon.range_cells": "weapon.range"}
     superseding = {
         (
@@ -689,9 +636,7 @@ def validate_item_enrichment(
     }
     # E06 (owner decision 2026-10-31): Crystal's market flag supersedes a Wave 1 Wiki
     # `marketable: false`; the parity row names the fact it supersedes.
-    parity = load(
-        ROOT / "docs/agents/evidence/OTV2-20261031-item-market-crystal-parity-v1.json"
-    )
+    parity = load(ROOT / "docs/agents/evidence/OTV2-20261031-item-market-crystal-parity-v1.json")
     superseding.update(
         {
             (
@@ -703,14 +648,11 @@ def validate_item_enrichment(
         }
     )
     assignments = load(
-        ROOT
-        / "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
+        ROOT / "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
     )["family_assignments"]
     authoring_rows = declarations.get("item_authoring", [])
     legacy_authoring = {target_id(row["item"]): row for row in authoring_rows}
-    require(
-        len(legacy_authoring) == len(authoring_rows), "DUPLICATE_ITEM_AUTHORING_OWNER"
-    )
+    require(len(legacy_authoring) == len(authoring_rows), "DUPLICATE_ITEM_AUTHORING_OWNER")
     taxonomy = load(ROOT / "content/items/taxonomy/items.json")
     relations = load(ROOT / "content/items/relations/items.json")
     facts = load(ROOT / "imports/tibiawiki/facts/items-wave1.json")
@@ -736,18 +678,14 @@ def validate_item_enrichment(
         if "source_evidence" in row:
             continue  # Source-qualified navigation supplement; never legacy authoring.
         require(
-            row["family_profile"]
-            == legacy_profile(row["source_taxonomy"]["primary"], assignments),
+            row["family_profile"] == legacy_profile(row["source_taxonomy"]["primary"], assignments),
             "TAXONOMY_FAMILY_PROFILE",
         )
         require(
-            row["family_profile"] is None
-            or row["family_profile"] in set(assignments.values()),
+            row["family_profile"] is None or row["family_profile"] in set(assignments.values()),
             "TAXONOMY_PROFILE_UNKNOWN",
         )
-        rebuilt.setdefault(key, {"item": row["target"]})["taxonomy"] = row[
-            "source_taxonomy"
-        ]
+        rebuilt.setdefault(key, {"item": row["target"]})["taxonomy"] = row["source_taxonomy"]
     # Ranged profiles have their own owner; sealed authoring still round-trips exactly.
     require(
         canonical_sorted(list(rebuilt.values()))
@@ -756,9 +694,7 @@ def validate_item_enrichment(
     )
 
     aliases = item_alias_targets()
-    staged_items = {
-        staged_item_target(item["target"], aliases): item for item in staged["items"]
-    }
+    staged_items = {staged_item_target(item["target"], aliases): item for item in staged["items"]}
     validate_item_authoring_targets(legacy_authoring, staged_items)
     use_relation_count = 0
     forge_relation_count = 0
@@ -767,9 +703,7 @@ def validate_item_enrichment(
     weapon_relations = {
         target_id(row["source"]): row for row in weapon_receipt["new_derived_relations"]
     }
-    prior_relations = {
-        target_id(row["source"]): row for row in weapon_receipt["parent_relations"]
-    }
+    prior_relations = {target_id(row["source"]): row for row in weapon_receipt["parent_relations"]}
     require(
         len(weapon_relations) == len(weapon_receipt["new_derived_relations"]) == 47
         and len(prior_relations) == len(weapon_receipt["parent_relations"]) == 203
@@ -796,9 +730,7 @@ def validate_item_enrichment(
     ]
     for row in historical_relations:
         key = target_id(row["source"])
-        require(
-            key in definitions and key not in seen_sources, "RELATION_SOURCE_UNRESOLVED"
-        )
+        require(key in definitions and key not in seen_sources, "RELATION_SOURCE_UNRESOLVED")
         seen_sources.add(key)
         rulesets = sorted(relation["ruleset"] for relation in row["relations"])
         if key in forge289_relations:
@@ -807,9 +739,7 @@ def validate_item_enrichment(
             )
             forge289_relation_count += 1
         elif key in weapon_relations:
-            validate_weapon_relation(
-                row, definitions[key], weapon_rows, weapon_relations
-            )
+            validate_weapon_relation(row, definitions[key], weapon_rows, weapon_relations)
             weapon_relation_count += 1
         elif key in staged_items:
             require(
@@ -866,11 +796,7 @@ def validate_item_enrichment(
     )
     require(
         canonical_sorted(
-            [
-                row
-                for row in historical_relations
-                if target_id(row["source"]) in prior_relations
-            ]
+            [row for row in historical_relations if target_id(row["source"]) in prior_relations]
         )
         == canonical_sorted(list(prior_relations.values())),
         "WEAPON_PARENT_RELATIONS_CHANGED",
@@ -890,8 +816,7 @@ def validate_item_enrichment(
     bindings = {
         (row["target"]["key"], row["external_id"])
         for row in sources["source_identity_bindings"]
-        if row["source_key"] == staged["source"]["source_key"]
-        and row["disposition"] == "EXACT"
+        if row["source_key"] == staged["source"]["source_key"] and row["disposition"] == "EXACT"
     }
     canonical_keys = {key for _, key, _ in definitions}
     fact_count = 0
@@ -930,9 +855,7 @@ def validate_item_enrichment(
             if blocked in known:
                 admitted = reward_admissions.get(key[1])
                 reward_proof = (
-                    admitted is not None
-                    and admitted[0]["stackable"]
-                    and known[blocked] == 100
+                    admitted is not None and admitted[0]["stackable"] and known[blocked] == 100
                 )
                 loot_proof = (
                     key[1] in loot_stack_promotions
@@ -942,10 +865,7 @@ def validate_item_enrichment(
         equipment = superseding.get((key, "equipment.patterns"))
         if equipment is None:
             require(
-                definitions[key]
-                .get("semantics", {})
-                .get("equipment", {})
-                .get("state", "UNKNOWN")
+                definitions[key].get("semantics", {}).get("equipment", {}).get("state", "UNKNOWN")
                 == "UNKNOWN",
                 "BLOCKED_EQUIPMENT_PROMOTED",
             )
@@ -956,17 +876,14 @@ def validate_item_enrichment(
             )
         # The historical receipts retain the Wiki facts. Crystal's qualified
         # equipment patterns belong to the effective Item view.
-        crystal_pattern = known_paths(crystal_equipment.get(key[1], {})).get(
-            "equipment.patterns"
-        )
+        crystal_pattern = known_paths(crystal_equipment.get(key[1], {})).get("equipment.patterns")
         if crystal_pattern is not None:
             require(
                 known_paths(effective[key]).get("equipment.patterns") == crystal_pattern,
                 "EQUIPMENT_WITHOUT_QUALIFIED_SOURCE_PATTERN",
             )
     require(
-        fact_count
-        == staged["counts"]["definition_facts"] + staged["counts"]["authoring_facts"],
+        fact_count == staged["counts"]["definition_facts"] + staged["counts"]["authoring_facts"],
         "PROVENANCE_FACT_COUNT",
     )
     return (
@@ -1005,9 +922,7 @@ def validate_creature_families(
     migrated_profiles: dict[tuple[str, str, str], Any] = {}
     migrated_bindings: list[Any] = []
     for family, node in CREATURE_FAMILY_NODES.items():
-        legacy = [
-            row for row in reference["records"] if row["identity"]["family"] == family
-        ]
+        legacy = [row for row in reference["records"] if row["identity"]["family"] == family]
         require(len(legacy) == family_counts[family], f"LEGACY_{family.upper()}_COUNT")
         index = load(ROOT / node / "index.json")
         require(
@@ -1024,8 +939,7 @@ def validate_creature_families(
             )
             payload = load(ROOT / shard_path)
             require(
-                payload["family"] == family
-                and payload["shard"]["start"] == expected_start,
+                payload["family"] == family and payload["shard"]["start"] == expected_start,
                 f"{family.upper()}_SHARD_GAP",
             )
             require(
@@ -1036,9 +950,7 @@ def validate_creature_families(
                 definition = row["definition"]
                 migrated.append(definition)
                 if family == "Creature":
-                    details = (
-                        row.get("authoring", {}).get("profile", {}).get("details", {})
-                    )
+                    details = row.get("authoring", {}).get("profile", {}).get("details", {})
                     cap = details.get("reference_level")
                     require(
                         "reference_level" in details
@@ -1046,40 +958,37 @@ def validate_creature_families(
                         "CREATURE_REFERENCE_LEVEL",
                     )
                 if "authoring" in row:
-                    migrated_profiles[target_id(definition["identity"])] = row[
-                        "authoring"
-                    ]
+                    migrated_profiles[target_id(definition["identity"])] = row["authoring"]
                 for binding in row.get("source_bindings", []):
                     require(
-                        target_id(binding["target"])
-                        == target_id(definition["identity"]),
+                        target_id(binding["target"]) == target_id(definition["identity"]),
                         f"{family.upper()}_BINDING_TARGET",
                     )
                     migrated_bindings.append(binding)
             expected_start = payload["shard"]["end"] + 1
         require(migrated == legacy, f"{family.upper()}_DEFINITION_ROUNDTRIP")
     require(migrated_profiles == legacy_profiles, "CREATURE_AUTHORING_ROUNDTRIP")
-    legacy_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] in CREATURE_FAMILY_NODES]
-    require(canonical_sorted(migrated_bindings) == canonical_sorted(legacy_bindings), "CREATURE_BINDING_ROUNDTRIP")
-    require(len(legacy_bindings) == family_counts["Creature"] + 16, "CREATURE_BINDING_COUNT")
-    require(len({target_id(row["target"]) for row in legacy_bindings}) == family_counts["Creature"],
-            "CREATURE_BINDING_TARGET_COUNT")
-    canary_creatures = load(ROOT / "imports/canary/bindings/creatures.json")["bindings"]
-    wiki_creatures = load(ROOT / "imports/tibiawiki/bindings/creatures.json")[
-        "bindings"
-    ]
-    crystal_creatures = load(ROOT / "imports/crystalserver/bindings/creatures.json")[
-        "bindings"
+    legacy_bindings = [
+        row
+        for row in sources["source_identity_bindings"]
+        if row["target"]["family"] in CREATURE_FAMILY_NODES
     ]
     require(
+        canonical_sorted(migrated_bindings) == canonical_sorted(legacy_bindings),
+        "CREATURE_BINDING_ROUNDTRIP",
+    )
+    require(len(legacy_bindings) == family_counts["Creature"] + 16, "CREATURE_BINDING_COUNT")
+    require(
+        len({target_id(row["target"]) for row in legacy_bindings}) == family_counts["Creature"],
+        "CREATURE_BINDING_TARGET_COUNT",
+    )
+    canary_creatures = load(ROOT / "imports/canary/bindings/creatures.json")["bindings"]
+    wiki_creatures = load(ROOT / "imports/tibiawiki/bindings/creatures.json")["bindings"]
+    crystal_creatures = load(ROOT / "imports/crystalserver/bindings/creatures.json")["bindings"]
+    require(
         all(row["source_key"] == "oteryn:source.canary" for row in canary_creatures)
-        and all(
-            row["source_key"] == "oteryn:source.tibiawiki" for row in wiki_creatures
-        )
-        and all(
-            row["source_key"] == "oteryn:source.crystalserver"
-            for row in crystal_creatures
-        )
+        and all(row["source_key"] == "oteryn:source.tibiawiki" for row in wiki_creatures)
+        and all(row["source_key"] == "oteryn:source.crystalserver" for row in crystal_creatures)
         and canonical_sorted(canary_creatures + wiki_creatures + crystal_creatures)
         == canonical_sorted(legacy_bindings),
         "IMPORT_CREATURE_BINDINGS",
@@ -1094,8 +1003,7 @@ def validate_creature_families(
 def validate_native_bank_admission(declarations: Any) -> None:
     """Closed Paulie admission plus S10 registered-source BANK0 consumers."""
     raw = (
-        ROOT
-        / "docs/agents/evidence/OTV2-20261015-npc-bank-services/native-bank-admission.json"
+        ROOT / "docs/agents/evidence/OTV2-20261015-npc-bank-services/native-bank-admission.json"
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
@@ -1178,8 +1086,7 @@ def validate_native_bank_admission(declarations: Any) -> None:
     expected_npc = json.loads(json.dumps(packet["before_npc"]))
     expected_npc["services"].append(reference)
     if any(
-        field["field_path"] == "oteryn:source.npc.base_speed"
-        for field in expected_npc["fields"]
+        field["field_path"] == "oteryn:source.npc.base_speed" for field in expected_npc["fields"]
     ):
         expected_npc["fields"].append(
             {
@@ -1200,14 +1107,11 @@ def validate_native_bank_admission(declarations: Any) -> None:
     require(consumers == [expected_npc], "BANK_NPC_CLOSED_CONSUMER")
     expected_dialogue = json.loads(json.dumps(packet["before_dialogue"]))
     expected_dialogue["greet"] = packet["original_oteryn_authored_dialogue"]["greet"]
-    expected_dialogue["keywords"] = [
-        packet["original_oteryn_authored_dialogue"]["bank_keyword"]
-    ]
+    expected_dialogue["keywords"] = [packet["original_oteryn_authored_dialogue"]["bank_keyword"]]
     dialogue = [
         row
         for row in declarations["records"]
-        if row.get("kind") == "Dialogue"
-        and row["identity"] == expected_dialogue["identity"]
+        if row.get("kind") == "Dialogue" and row["identity"] == expected_dialogue["identity"]
     ]
     require(dialogue == [expected_dialogue], "BANK_DIALOGUE_PRESERVES_ADMITTED_FACTS")
 
@@ -1218,16 +1122,13 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
     legacy_npcs = [row for row in declarations["records"] if row.get("kind") == "NPC"]
     require(len(legacy_npcs) == NPC_COUNT, "LEGACY_NPC_COUNT")
     legacy_npc_bindings = [
-        row
-        for row in sources["source_identity_bindings"]
-        if row["target"]["family"] == "NPC"
+        row for row in sources["source_identity_bindings"] if row["target"]["family"] == "NPC"
     ]
     require(len(legacy_npc_bindings) == NPC_BINDING_COUNT, "LEGACY_NPC_BINDING_COUNT")
 
     npc_index = load(ROOT / "content/npcs/definitions/index.json")
     require(
-        npc_index["schema"] == "OTERYN_FAMILY_INDEX/v1"
-        and npc_index["family"] == "NPC",
+        npc_index["schema"] == "OTERYN_FAMILY_INDEX/v1" and npc_index["family"] == "NPC",
         "NPC_INDEX",
     )
     require(npc_index["record_count"] == len(legacy_npcs), "NPC_INDEX_COUNT")
@@ -1236,8 +1137,7 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
     expected_start = 0
     for shard_path in npc_index["shards"]:
         require(
-            isinstance(shard_path, str)
-            and shard_path.startswith("content/npcs/definitions/"),
+            isinstance(shard_path, str) and shard_path.startswith("content/npcs/definitions/"),
             "NPC_SHARD_REF",
         )
         payload = load(ROOT / shard_path)
@@ -1264,8 +1164,7 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
     require(expected_start == NPC_COUNT, "NPC_SHARD_COVERAGE")
     require(migrated_npcs == legacy_npcs, "NPC_DECLARATION_ROUNDTRIP")
     require(
-        canonical_sorted(migrated_npc_bindings)
-        == canonical_sorted(legacy_npc_bindings),
+        canonical_sorted(migrated_npc_bindings) == canonical_sorted(legacy_npc_bindings),
         "NPC_BINDING_ROUNDTRIP",
     )
     require(
@@ -1273,19 +1172,12 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
         "NPC_INDEX_BINDING_COUNT",
     )
     require(
-        len(
-            {
-                (row["identity"]["key"], row["identity"]["revision"])
-                for row in migrated_npcs
-            }
-        )
+        len({(row["identity"]["key"], row["identity"]["revision"]) for row in migrated_npcs})
         == NPC_COUNT,
         "NPC_IDENTITY_UNIQUENESS",
     )
 
-    legacy_services = [
-        row for row in declarations["records"] if row.get("kind") == "Service"
-    ]
+    legacy_services = [row for row in declarations["records"] if row.get("kind") == "Service"]
     require(
         len(legacy_services) == sum(SERVICE_FAMILY_COUNTS.values()),
         "LEGACY_SERVICE_COUNT",
@@ -1297,8 +1189,7 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
         legacy = [
             row
             for row in legacy_services
-            if field in row
-            or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")
+            if field in row or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")
         ]
         require(len(legacy) == count, f"LEGACY_{family.upper()}_COUNT")
         index = load(ROOT / node / "index.json")
@@ -1316,8 +1207,7 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
             )
             payload = load(ROOT / shard_path)
             require(
-                payload["family"] == family
-                and payload["shard"]["start"] == expected_start,
+                payload["family"] == family and payload["shard"]["start"] == expected_start,
                 f"{family.upper()}_SHARD_GAP",
             )
             require(
@@ -1350,9 +1240,7 @@ def validate_encounters(declarations: Any, sources: Any) -> int:
 
     apply_spite_global_event_rule(legacy_profiles, ROOT)
     legacy_bindings = [
-        row
-        for row in sources["source_identity_bindings"]
-        if row["target"]["family"] == "Encounter"
+        row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Encounter"
     ]
     require(
         len(legacy_profiles) == len(legacy_bindings) == ENCOUNTER_COUNT,
@@ -1376,8 +1264,7 @@ def validate_encounters(declarations: Any, sources: Any) -> int:
         )
         payload = load(ROOT / shard_path)
         require(
-            payload["family"] == "Encounter"
-            and payload["shard"]["start"] == expected_start,
+            payload["family"] == "Encounter" and payload["shard"]["start"] == expected_start,
             "ENCOUNTER_SHARD_GAP",
         )
         require(
@@ -1395,9 +1282,7 @@ def validate_encounters(declarations: Any, sources: Any) -> int:
             if "authoring" in row:
                 migrated_profiles[target] = row["authoring"]
             for binding in row.get("source_bindings", []):
-                require(
-                    target_id(binding["target"]) == target, "ENCOUNTER_BINDING_TARGET"
-                )
+                require(target_id(binding["target"]) == target, "ENCOUNTER_BINDING_TARGET")
                 migrated_bindings.append(binding)
         expected_start = payload["shard"]["end"] + 1
     require(expected_start == ENCOUNTER_COUNT, "ENCOUNTER_SHARD_COVERAGE")
@@ -1412,9 +1297,7 @@ def validate_encounters(declarations: Any, sources: Any) -> int:
 
 def validate_dialogue(declarations: Any) -> int:
     """Round-trip the admitted Dialogue declarations (no source bindings exist for Dialogue)."""
-    legacy_dialogues = [
-        row for row in declarations["records"] if row.get("kind") == "Dialogue"
-    ]
+    legacy_dialogues = [row for row in declarations["records"] if row.get("kind") == "Dialogue"]
     require(len(legacy_dialogues) == DIALOGUE_COUNT, "LEGACY_DIALOGUE_COUNT")
 
     dialogue_index = load(ROOT / "content/dialogues/definitions/index.json")
@@ -1423,26 +1306,20 @@ def validate_dialogue(declarations: Any) -> int:
         and dialogue_index["family"] == "Dialogue",
         "DIALOGUE_INDEX",
     )
-    require(
-        dialogue_index["record_count"] == len(legacy_dialogues), "DIALOGUE_INDEX_COUNT"
-    )
+    require(dialogue_index["record_count"] == len(legacy_dialogues), "DIALOGUE_INDEX_COUNT")
     migrated_dialogues: list[Any] = []
     expected_start = 0
     for shard_path in dialogue_index["shards"]:
         require(
-            isinstance(shard_path, str)
-            and shard_path.startswith("content/dialogues/definitions/"),
+            isinstance(shard_path, str) and shard_path.startswith("content/dialogues/definitions/"),
             "DIALOGUE_SHARD_REF",
         )
         payload = load(ROOT / shard_path)
         require(
-            payload["family"] == "Dialogue"
-            and payload["shard"]["start"] == expected_start,
+            payload["family"] == "Dialogue" and payload["shard"]["start"] == expected_start,
             "DIALOGUE_SHARD_GAP",
         )
-        require(
-            payload["shard"]["count"] == len(payload["records"]), "DIALOGUE_SHARD_COUNT"
-        )
+        require(payload["shard"]["count"] == len(payload["records"]), "DIALOGUE_SHARD_COUNT")
         for row in payload["records"]:
             require(set(row) == {"declaration"}, "DIALOGUE_ROW_SHAPE")
             migrated_dialogues.append(row["declaration"])
@@ -1450,12 +1327,7 @@ def validate_dialogue(declarations: Any) -> int:
     require(expected_start == DIALOGUE_COUNT, "DIALOGUE_SHARD_COVERAGE")
     require(migrated_dialogues == legacy_dialogues, "DIALOGUE_DECLARATION_ROUNDTRIP")
     require(
-        len(
-            {
-                (row["identity"]["key"], row["identity"]["revision"])
-                for row in migrated_dialogues
-            }
-        )
+        len({(row["identity"]["key"], row["identity"]["revision"]) for row in migrated_dialogues})
         == DIALOGUE_COUNT,
         "DIALOGUE_IDENTITY_UNIQUENESS",
     )
@@ -1469,14 +1341,12 @@ def validate_document_rows(rows: list[Any], declarations: Any, sources: Any) -> 
     migrated = [row["declaration"] for row in rows]
     require(migrated == legacy, "DOCUMENT_DECLARATION_ROUNDTRIP")
     identities = {
-        ("Document", row["identity"]["key"], row["identity"]["revision"])
-        for row in migrated
+        ("Document", row["identity"]["key"], row["identity"]["revision"]) for row in migrated
     }
     require(len(identities) == DOCUMENT_COUNT, "DOCUMENT_IDENTITY_UNIQUENESS")
     require(
         not any(
-            row["target"]["family"] == "Document"
-            for row in sources["source_identity_bindings"]
+            row["target"]["family"] == "Document" for row in sources["source_identity_bindings"]
         ),
         "DOCUMENT_SOURCE_BINDING_FABRICATED",
     )
@@ -1485,9 +1355,7 @@ def validate_document_rows(rows: list[Any], declarations: Any, sources: Any) -> 
             continue
         ref = row["data"]["profile"].get("details", {}).get("encyclopedia_document")
         if ref is not None:
-            require(
-                target_id(ref) in identities, "CREATURE_DOCUMENT_REFERENCE_UNRESOLVED"
-            )
+            require(target_id(ref) in identities, "CREATURE_DOCUMENT_REFERENCE_UNRESOLVED")
     return len(migrated)
 
 
@@ -1513,9 +1381,7 @@ def validate_documents(declarations: Any, sources: Any) -> int:
             "DOCUMENT_SHARD_SCHEMA",
         )
         require(shard["shard"]["start"] == expected_start, "DOCUMENT_SHARD_GAP")
-        require(
-            shard["shard"]["count"] == len(shard["records"]), "DOCUMENT_SHARD_COUNT"
-        )
+        require(shard["shard"]["count"] == len(shard["records"]), "DOCUMENT_SHARD_COUNT")
         require(
             shard["shard"]["end"] == expected_start + len(shard["records"]) - 1,
             "DOCUMENT_SHARD_END",
@@ -1592,9 +1458,7 @@ def _main() -> int:
             "QUEST_PROJECT_REGISTRATION",
         )
         require(
-            set(quest_paths).issubset(
-                {row["path"] for row in manifest["managed_files"]}
-            ),
+            set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]}),
             "QUEST_MANAGED_FILES",
         )
     expected_items = source_qualified_item_references(reference, ROOT)
@@ -1608,9 +1472,7 @@ def _main() -> int:
             **creature_family_counts(reference),
             "NPC": NPC_COUNT,
             # RAIDS-GLOBAL 2026-11-01; raid_catalogue.py --check pins the full source reconciliation.
-            "Encounter.Raid": load(ROOT / "content/encounters/raids/index.json")[
-                "record_count"
-            ],
+            "Encounter.Raid": load(ROOT / "content/encounters/raids/index.json")["record_count"],
             "Encounter": ENCOUNTER_COUNT,
             "Dialogue": DIALOGUE_COUNT,
             "Document": DOCUMENT_COUNT,
@@ -1629,8 +1491,7 @@ def _main() -> int:
         "LOCK_NPC_BINDING_COUNT",
     )
     require(
-        item_index["record_count"] == expected_item_count
-        and len(item_index["shards"]) == 69,
+        item_index["record_count"] == expected_item_count and len(item_index["shards"]) == 69,
         "ITEM_INDEX",
     )
     require(
@@ -1647,16 +1508,13 @@ def _main() -> int:
         require(isinstance(shard_path, str), "ITEM_SHARD_REF")
         payload = load(ROOT / shard_path)
         require(payload["shard"]["start"] == expected_start, "ITEM_SHARD_GAP")
-        require(
-            payload["shard"]["count"] == len(payload["records"]), "ITEM_SHARD_COUNT"
-        )
+        require(payload["shard"]["count"] == len(payload["records"]), "ITEM_SHARD_COUNT")
         for row in payload["records"]:
             definition = row["definition"]
             migrated_items.append(definition)
             if "editor" in row:
                 require(
-                    target_id(row["editor"]["target"])
-                    == target_id(definition["identity"]),
+                    target_id(row["editor"]["target"]) == target_id(definition["identity"]),
                     "ITEM_EDITOR_TARGET",
                 )
                 item_editors.append(row["editor"])
@@ -1668,8 +1526,7 @@ def _main() -> int:
                 item_bindings.append(binding)
             if "authoring" in row:
                 require(
-                    "item" not in row["authoring"]
-                    and "taxonomy" not in row["authoring"],
+                    "item" not in row["authoring"] and "taxonomy" not in row["authoring"],
                     "ITEM_AUTHORING_ROW_SHAPE",
                 )
                 migrated_authoring[target_id(definition["identity"])] = {
@@ -1747,21 +1604,13 @@ def _main() -> int:
             )
             mount_bindings.append(binding)
 
-    legacy_item_editors = [
-        row for row in editor["entries"] if row["target"]["family"] == "Item"
-    ]
-    legacy_mount_editors = [
-        row for row in editor["entries"] if row["target"]["family"] == "Mount"
-    ]
+    legacy_item_editors = [row for row in editor["entries"] if row["target"]["family"] == "Item"]
+    legacy_mount_editors = [row for row in editor["entries"] if row["target"]["family"] == "Mount"]
     legacy_item_bindings = [
-        row
-        for row in sources["source_identity_bindings"]
-        if row["target"]["family"] == "Item"
+        row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Item"
     ]
     legacy_mount_bindings = [
-        row
-        for row in sources["source_identity_bindings"]
-        if row["target"]["family"] == "Mount"
+        row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Mount"
     ]
 
     require(
@@ -1782,8 +1631,7 @@ def _main() -> int:
     )
 
     require(
-        len({target_id(row["identity"]) for row in migrated_items})
-        == expected_item_count,
+        len({target_id(row["identity"]) for row in migrated_items}) == expected_item_count,
         "ITEM_IDENTITY_UNIQUENESS",
     )
     require(
@@ -1798,32 +1646,26 @@ def _main() -> int:
     )
 
     require(
-        load(ROOT / "imports/tibiawiki/bindings/items.json")["bindings"]
-        == legacy_item_bindings,
+        load(ROOT / "imports/tibiawiki/bindings/items.json")["bindings"] == legacy_item_bindings,
         "IMPORT_ITEM_BINDINGS",
     )
     require(
-        load(ROOT / "imports/tibiawiki/bindings/mounts.json")["bindings"]
-        == legacy_mount_bindings,
+        load(ROOT / "imports/tibiawiki/bindings/mounts.json")["bindings"] == legacy_mount_bindings,
         "IMPORT_MOUNT_BINDINGS",
     )
 
-    authoring_count, taxonomy_count, relation_count, fact_count = (
-        validate_item_enrichment(
-            reference,
-            declarations,
-            sources,
-            imports_batches(),
-            migrated_authoring,
-            effective_items,
-        )
+    authoring_count, taxonomy_count, relation_count, fact_count = validate_item_enrichment(
+        reference,
+        declarations,
+        sources,
+        imports_batches(),
+        migrated_authoring,
+        effective_items,
     )
     creature_records, creature_profiles, creature_bindings = validate_creature_families(
         reference, declarations, sources
     )
-    npc_records, npc_bindings, service_records = validate_npc_services(
-        declarations, sources
-    )
+    npc_records, npc_bindings, service_records = validate_npc_services(declarations, sources)
     document_records = validate_documents(declarations, sources)
     require(
         manifest["families"]["Document"]
@@ -1835,8 +1677,7 @@ def _main() -> int:
     encounter_records = validate_encounters(declarations, sources)
     charm_index = load(ROOT / "content" / "charms" / "index.json")
     require(
-        charm_index["schema"] == "OTERYN_FAMILY_INDEX/v1"
-        and charm_index["family"] == "Charm",
+        charm_index["schema"] == "OTERYN_FAMILY_INDEX/v1" and charm_index["family"] == "Charm",
         "CHARM_INDEX",
     )
     require(
@@ -1869,13 +1710,10 @@ def _main() -> int:
     for shard_path in proficiency_index["shards"]:
         shard = load(ROOT / shard_path)
         require(
-            shard["family"] == "Proficiency"
-            and shard["shard"]["count"] == len(shard["records"]),
+            shard["family"] == "Proficiency" and shard["shard"]["count"] == len(shard["records"]),
             "PROFICIENCY_SHARD",
         )
-        proficiency_keys |= {
-            row["definition"]["identity"]["key"] for row in shard["records"]
-        }
+        proficiency_keys |= {row["definition"]["identity"]["key"] for row in shard["records"]}
         proficiency_refs |= {
             (
                 "Proficiency",
@@ -1884,15 +1722,11 @@ def _main() -> int:
             )
             for row in shard["records"]
         }
-    require(
-        len(proficiency_keys) == PROFICIENCY_COUNT, "PROFICIENCY_IDENTITY_UNIQUENESS"
-    )
+    require(len(proficiency_keys) == PROFICIENCY_COUNT, "PROFICIENCY_IDENTITY_UNIQUENESS")
     proficiency_bindings = load(ROOT / "content" / "proficiencies" / "bindings.json")
     binding_rows = proficiency_bindings["records"]
     require(
-        proficiency_bindings["record_count"]
-        == len(binding_rows)
-        == PROFICIENCY_BINDING_COUNT,
+        proficiency_bindings["record_count"] == len(binding_rows) == PROFICIENCY_BINDING_COUNT,
         "PROFICIENCY_BINDING_COUNT",
     )
     item_refs = {
@@ -1946,9 +1780,7 @@ def _main() -> int:
         and proficiency_bindings["excluded"] == expected_excluded,
         "PROFICIENCY_BINDING_COMPLETENESS",
     )
-    reward_claim_index = load(
-        ROOT / "content" / "interactions" / "reward_claims" / "index.json"
-    )
+    reward_claim_index = load(ROOT / "content" / "interactions" / "reward_claims" / "index.json")
     require(
         reward_claim_index["schema"] == "OTERYN_FAMILY_INDEX/v1"
         and reward_claim_index["family"] == "RewardClaim",
@@ -1962,16 +1794,11 @@ def _main() -> int:
     for shard_path in reward_claim_index["shards"]:
         shard = load(ROOT / shard_path)
         require(
-            shard["family"] == "RewardClaim"
-            and shard["shard"]["count"] == len(shard["records"]),
+            shard["family"] == "RewardClaim" and shard["shard"]["count"] == len(shard["records"]),
             "REWARD_CLAIM_SHARD",
         )
-        reward_claim_keys |= {
-            row["definition"]["identity"]["key"] for row in shard["records"]
-        }
-    require(
-        len(reward_claim_keys) == REWARD_CLAIM_COUNT, "REWARD_CLAIM_IDENTITY_UNIQUENESS"
-    )
+        reward_claim_keys |= {row["definition"]["identity"]["key"] for row in shard["records"]}
+    require(len(reward_claim_keys) == REWARD_CLAIM_COUNT, "REWARD_CLAIM_IDENTITY_UNIQUENESS")
     starter_kit_index = load(ROOT / "content" / "starter" / "index.json")
     require(
         starter_kit_index["schema"] == "OTERYN_FAMILY_INDEX/v1"
@@ -1986,17 +1813,14 @@ def _main() -> int:
     for shard_path in starter_kit_index["shards"]:
         shard = load(ROOT / shard_path)
         require(
-            shard["family"] == "StarterKit"
-            and shard["shard"]["count"] == len(shard["records"]),
+            shard["family"] == "StarterKit" and shard["shard"]["count"] == len(shard["records"]),
             "STARTER_KIT_SHARD",
         )
         starter_kit_keys |= {
             (row["definition"]["template"], row["definition"]["identity"]["key"])
             for row in shard["records"]
         }
-    require(
-        len(starter_kit_keys) == STARTER_KIT_COUNT, "STARTER_KIT_IDENTITY_UNIQUENESS"
-    )
+    require(len(starter_kit_keys) == STARTER_KIT_COUNT, "STARTER_KIT_IDENTITY_UNIQUENESS")
     # Reject invalid ownership/structure before replaying the complete native
     # generation. Successful validation still compares every generated byte.
     for relative, expected in ranged_outputs(ROOT).items():

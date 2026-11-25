@@ -582,8 +582,12 @@ struct Document {
 
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/ape-city.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/beginning.json"),
     include_str!("../../../../../content/quests/npc-callbacks/classic-quests.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/hunter-glove-sales.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/hunter-hymn.json"),
     include_str!("../../../../../content/quests/npc-callbacks/battle-mage-completions.json"),
     include_str!("../../../../../content/quests/npc-callbacks/forbidden-fruit.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
@@ -608,6 +612,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/rookgaard-exchanges.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
     WARRIOR_COMPLETIONS,
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
@@ -1489,6 +1494,21 @@ const MAIN_OUTFIT_DEFINITION: [u8; 32] = [
     0x69, 0xae, 0x32, 0xea, 0xdd, 0x91, 0x87, 0x72, 0x7e, 0x78, 0x82, 0xe4, 0xc9, 0x0e, 0x3c, 0xcf,
 ];
 
+// Active Outfit definition captured by quest_definition_hashes at 3e0991642.
+const OUTFIT_BEFORE_SOURCE_ACTIONS: [u8; 32] = super::published_quest_pins::hash(
+    b"ce65daca1c0a3c499c3f23fe60ae01aeb517e1aaea4689022c055971de786e6f",
+);
+const OUTFIT_REWARDS_BEFORE_CITIZEN: [u8; 32] = super::published_quest_pins::hash(
+    b"bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8",
+);
+const OUTFIT_TRACKS_BEFORE_CITIZEN: [u8; 32] = super::published_quest_pins::hash(
+    b"8ae9fff068d9af51c1be88777aad3ac82e5c6551314a5ac185b17ce766a6ef1f",
+);
+// Active Sam's Old Backpack definition captured by quest_definition_hashes at 3e0991642.
+const SAMS_BACKPACK_BEFORE_KROOX_ALIAS: [u8; 32] = super::published_quest_pins::hash(
+    b"e618fcebed1f65d871a0228c3f508c8fa74abae80f6c162585dda4dcff2e0364",
+);
+
 // The published Rookgaard definition before Norma's mission-zero restart.
 const ROOK_CITIZEN_BEFORE_NORMA_RESTART: [u8; 32] = [
     0xb7, 0xfb, 0x18, 0x3d, 0x7d, 0xfa, 0x0a, 0xd8, 0x8b, 0x80, 0x6e, 0xcc, 0xb3, 0xcf, 0xc7, 0xdb,
@@ -1550,6 +1570,18 @@ pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue,
         (
             "oteryn:quest.outfit_and_addon_quests",
             MAIN_OUTFIT_DEFINITION,
+        ),
+        (
+            "oteryn:quest.outfit_and_addon_quests",
+            OUTFIT_BEFORE_SOURCE_ACTIONS,
+        ),
+        (
+            "oteryn:quest.outfit_and_addon_quests",
+            OUTFIT_REWARDS_BEFORE_CITIZEN,
+        ),
+        (
+            "oteryn:quest.outfit_and_addon_quests",
+            OUTFIT_TRACKS_BEFORE_CITIZEN,
         ),
     ]
     .into_iter()
@@ -1823,10 +1855,38 @@ fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
         })
 }
 
+fn later_outfit_reward(callback: &RewardCallback) -> bool {
+    is_qb_outfit_extension(callback)
+        || callback
+            .key
+            .starts_with("oteryn:quest-reward/hunter-hymn-verse-")
+        || matches!(
+            callback.key.as_str(),
+            "oteryn:quest-reward/l8-hunter-elane-gloves"
+                | "oteryn:quest-reward/l8-hunter-elane-gloves-sale"
+                | "oteryn:quest-reward/l8-hunter-gloves-sale"
+                | "oteryn:quest-reward/l8-hunter-elane-gloves-sale-free"
+                | "oteryn:quest-reward/l8-hunter-gloves-sale-free"
+        )
+}
+
 /// Preserve published definition hashes and absent-track values for changed quests.
 pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
     type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
     const PREVIOUS: &[DefinitionPin] = &[
+        (
+            "oteryn:quest.brotherhood_outfits_quest",
+            super::published_quest_pins::BROTHERHOOD_BEFORE_DREAD_LORD,
+            &[(
+                "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/door",
+                0,
+            )],
+        ),
+        (
+            "oteryn:quest.sam_s_old_backpack_quest",
+            SAMS_BACKPACK_BEFORE_KROOX_ALIAS,
+            &[],
+        ),
         // Main at 3e09916423, before the Marid source dialogue and purchase.
         (
             "oteryn:quest.factions",
@@ -1975,9 +2035,7 @@ pub(super) fn retain_outfit_reward_predecessor(
     let callbacks = document
         .callbacks
         .into_iter()
-        .filter(|callback| {
-            !is_qb_outfit_extension(callback) && !callback.key.ends_with("-full-outfit")
-        })
+        .filter(|callback| !later_outfit_reward(callback) && !callback.key.ends_with("-full-outfit"))
         .filter(|callback| {
             callback.quest == QUEST
                 || callback
@@ -2930,7 +2988,7 @@ mod tests {
         for (key, expected) in [
             (
                 "oteryn:quest.outfit_and_addon_quests",
-                "97baa2233c218843fe0f6064ba4c8d4d79e079ffe1e229a7ffc59afe23042d2f",
+                "07a7bd955f9e7c83357f91bbfd039f306ca1b69debc80afab943ae4dd8c3efc2",
             ),
             // Includes the source seal callbacks, packed counter and Siflind vial grant.
             (
@@ -2976,11 +3034,12 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Outfit completions add four to the shared shard. Package 4 also adds the
-        // chosen routes (19), Prisoner (2), classic contacts (5), Nomads (4) and Explorer Society (89).
+        // Shared and QuestPC7 are counted separately from the original shards,
+        // the extended Fibula, Hunter, Rookgaard, Ape City and Beginning shards,
+        // and the Forgemaster and Rottin Wood additions.
         assert_eq!(
             load()?.len(),
-            (238 + 4) + 59 + 125 + 1 + 1 + 13 + 12 + 19 + 2 + 5 + 4 + 89
+            251 + 132 + 125 + 4 + 4 + 4 + 3 + 2 + 1 + 1 + 13 + 12 + 2
         );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
@@ -3012,6 +3071,14 @@ mod tests {
         let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
         assert_eq!(qb.len(), 31);
         let added_keys = [
+            "oteryn:quest-reward/between-the-lines-phillip-accept",
+            "oteryn:quest-reward/l10-brotherhood-dread-lord",
+            "oteryn:quest-reward/l10-nightmare-lord-protector",
+            "oteryn:quest-reward/l11-dream-warrior-task-base",
+            "oteryn:quest-reward/l11-dream-warrior-undal-base",
+            "oteryn:quest-reward/l11-dream-warrior-undal-first",
+            "oteryn:quest-reward/l11-dream-warrior-undal-second",
+            "oteryn:quest-reward/l2-festive-base-earned",
             "oteryn:quest-reward/l1-warmaster-crest-complete",
             "oteryn:quest-reward/l1-warmaster-tribal-complete",
             "oteryn:quest-reward/l1-wayfarer-cape-complete",
@@ -3026,6 +3093,11 @@ mod tests {
             "oteryn:quest-reward/l2-wizard-shield",
             "oteryn:quest-reward/l2-wizard-skull",
             "oteryn:quest-reward/l2-wizard-start",
+            "oteryn:quest-reward/l3-demon-helmet-complete",
+            "oteryn:quest-reward/l3-demon-shield-complete",
+            "oteryn:quest-reward/l8-hunter-elane-gloves",
+            "oteryn:quest-reward/l8-hunter-elane-gloves-sale",
+            "oteryn:quest-reward/l8-hunter-gloves-sale",
             "oteryn:quest-reward/m36-rock-steady-confirm",
             "oteryn:quest-reward/m36-rock-steady-first",
             "oteryn:quest-reward/m36-rock-steady-second",
@@ -3038,7 +3110,7 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 207 + 4);
+        assert_eq!(legacy.len(), 220);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
@@ -3047,7 +3119,7 @@ mod tests {
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;
-        assert_eq!(programmes.len(), 95);
+        assert_eq!(programmes.len(), 132);
         let published = published_markers::keys()?;
         for callback in &programmes {
             assert!(callback.key.starts_with("oteryn:quest-reward/questpc7-"));
@@ -3883,10 +3955,26 @@ mod outfit_reward_predecessor_tests {
         let loaded = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
-        let hash = MAIN_OUTFIT_DEFINITION;
-        assert_ne!(catalogue.definition_hash(QUEST), Some(hash));
+        for hash in [MAIN_OUTFIT_DEFINITION, OUTFIT_BEFORE_SOURCE_ACTIONS] {
+            assert_ne!(catalogue.definition_hash(QUEST), Some(hash));
+            assert_eq!(
+                super::super::npc_rules::legacy_defaults(catalogue, QUEST, &hash),
+                Some(&BTreeMap::new())
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn sams_backpack_keeps_the_exact_published_definition() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let quest = "oteryn:quest.sam_s_old_backpack_quest";
+        let hash = SAMS_BACKPACK_BEFORE_KROOX_ALIAS;
+        assert_ne!(catalogue.definition_hash(quest), Some(hash));
         assert_eq!(
-            super::super::npc_rules::legacy_defaults(catalogue, QUEST, &hash),
+            super::super::npc_rules::legacy_defaults(catalogue, quest, &hash),
             Some(&BTreeMap::new())
         );
         Ok(())
@@ -3900,12 +3988,12 @@ mod outfit_reward_predecessor_tests {
                 .iter()
                 .filter(|callback| callback.quest == QUEST)
                 .count(),
-            // 114 retained rows, 31 QB rows and 14 full-outfit branches.
-            159
+            // 112 retained rows, 31 QB rows, and nine Hunter callbacks.
+            152
         );
-        document.callbacks.retain(|callback| {
-            !is_qb_outfit_extension(callback) && !callback.key.ends_with("-full-outfit")
-        });
+        document
+            .callbacks
+            .retain(|callback| !later_outfit_reward(callback) && !callback.key.ends_with("-full-outfit"));
         let owned = document
             .callbacks
             .iter()

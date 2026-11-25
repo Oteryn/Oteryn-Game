@@ -213,10 +213,53 @@ class QuestChestBindings(unittest.TestCase):
             chests.captured_level_access(raw + b"changed", {key})
 
     def test_annihilator_retains_exact_level100_startup_gate_with_reward(self):
-        selected, _ = chests.selections()
+        selected, _, _ = chests.selections()
         gate = selected["action"][(33214, 31671, 13)]
         self.assertEqual((gate["appearance"], gate["action"]), (5111, 1100))
         self.assertEqual(gate["claims"], ["oteryn:reward-claim.quest.u7_24.the_annihilator.reward"])
+
+    def test_restored_native_quest_chests_and_expertise_doors(self):
+        selected, _, _ = chests.selections()
+        for position, appearance, unique in (
+            ((32800, 31959, 7), 3634, 5006),
+            ((32813, 31964, 7), 3634, 5007),
+            ((32868, 31955, 11), 3634, 6047),
+            ((32880, 31955, 11), 3634, 6048),
+            ((33295, 31658, 13), 2472, 6052),
+            ((33297, 31658, 13), 2472, 6053),
+            ((33298, 31658, 13), 2472, 6054),
+            ((33199, 31923, 11), 2469, 6066),
+            ((33294, 31658, 13), 2472, 6075),
+            ((32490, 31192, 10), 4024, 6218),
+        ):
+            with self.subTest(position=position):
+                row = selected["unique"][position]
+                self.assertEqual(
+                    (row["appearance"], row["unique"]), (appearance, unique)
+                )
+        for position, appearance, action in (
+            ((32874, 31974, 12), 5102, 1050),
+            ((32875, 31974, 12), 5102, 1050),
+            ((33297, 31670, 14), 1648, 1080),
+        ):
+            with self.subTest(position=position):
+                row = selected["action"][position]
+                self.assertEqual(
+                    (row["appearance"], row["action"]), (appearance, action)
+                )
+
+    def test_ape_city_mission_chests_have_startup_claim_selectors(self):
+        selected, _, _ = chests.selections()
+        for position, appearance, unique in (
+            ((32782, 32910, 8), 2469, 6102),
+            ((32935, 32886, 7), 2473, 6103),
+        ):
+            with self.subTest(position=position):
+                row = selected["unique"][position]
+                self.assertEqual(
+                    (row["appearance"], row["unique"]), (appearance, unique)
+                )
+        chests.apply(check=True)
 
     def test_panpipe_key_uses_the_existing_complete_key_lowering(self):
         definition = chests.claim_definitions(chests.ROOT)["oteryn:reward-claim.quest.key.id4055"]
@@ -244,12 +287,32 @@ class QuestChestBindings(unittest.TestCase):
                 self.assertFalse(chests.supported_claim(changed))
 
     def test_panpipe_reward_retains_its_saved_key_door_binding(self):
-        selected, _ = chests.selections()
+        selected, _, _ = chests.selections()
         door = selected["action"][(32643, 32128, 8)]
         self.assertEqual((door["appearance"], door["action"]), (1631, 4055))
 
+    def test_oasis_action_is_a_world_use_capture(self):
+        index = json.loads((chests.ROOT / chests.INDEX).read_bytes())
+        path = "content/quests/world-callbacks/qd-steal-from-thieves.json"
+        captures = index["source"]["quest_world_uses"]
+        self.assertEqual(captures["imported"], 1)
+        self.assertEqual(
+            captures["captures"],
+            [
+                {
+                    "path": path,
+                    "sha256": hashlib.sha256(
+                        (chests.ROOT / path).read_bytes()
+                    ).hexdigest(),
+                }
+            ],
+        )
+        self.assertNotIn(
+            path, [pin["path"] for pin in index["source"]["quest_chests"]["captures"]]
+        )
+
     def test_naginata_pick_access_is_selected_with_its_reward(self):
-        selected, _ = chests.selections()
+        selected, _, _ = chests.selections()
         rock = selected["action"][(32356, 32074, 10)]
         self.assertEqual((rock["appearance"], rock["action"]), (1791, 40031))
         self.assertEqual(rock["claims"], ["oteryn:reward-claim.kv.naginata"])
@@ -372,10 +435,11 @@ class QuestChestBindings(unittest.TestCase):
                 }
             ),
         }
+        _, _, world_use = chests.selections()
         with patch.object(
             chests,
             "selections",
-            return_value=({"unique": self.binding, "action": {}}, []),
+            return_value=({"unique": self.binding, "action": {}}, [], world_use),
         ):
             self.assertEqual(chests.overlay_outputs(outputs, require_all=True), 1)
             once = copy.deepcopy(outputs)
@@ -390,10 +454,11 @@ class QuestChestBindings(unittest.TestCase):
     def test_repository_check_requires_regions_while_unrelated_world_is_unchanged(self):
         outputs = {chests.INDEX: chests.canonical({"source": {}, "regions": []})}
         before = copy.deepcopy(outputs)
+        _, _, world_use = chests.selections()
         with patch.object(
             chests,
             "selections",
-            return_value=({"unique": self.binding, "action": {}}, []),
+            return_value=({"unique": self.binding, "action": {}}, [], world_use),
         ):
             with self.assertRaisesRegex(ValueError, "REGION_MISSING"):
                 chests.overlay_outputs(outputs, require_all=True)

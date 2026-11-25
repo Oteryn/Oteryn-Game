@@ -38,13 +38,13 @@ pub(super) struct Offer {
     storage: Vec<Storage>,
     #[serde(default)]
     requires: Vec<reward_callbacks::TrackRequirement>,
+    #[serde(default)]
+    inventory: Vec<reward_callbacks::InventoryRequirement>,
     reply: Vec<String>,
     #[serde(default)]
     minimum_level: Option<u32>,
     #[serde(default, alias = "premium")]
     requires_premium: Option<bool>,
-    #[serde(default)]
-    inventory: Vec<reward_callbacks::InventoryRequirement>,
     #[serde(default)]
     failure_reply: Vec<String>,
 }
@@ -151,6 +151,12 @@ pub(super) fn prepare(
                         && c.npc == context.2
                         && c.topic == topic
                         && c.keywords.contains(&text)
+                        // Hairycles continues a saved source journey before
+                        // offering the start of the separate authored route.
+                        && !(c.key == "oteryn:quest-reward/ape-city/start"
+                            && tracks
+                                .get("oteryn:quest-progress/quest/u7_6/the_ape_city/questline")
+                                .is_some_and(|stage| *stage > 0))
                         && eligible(&c.storage)
                         && c.state_ops
                             .iter()
@@ -201,24 +207,29 @@ pub(super) fn prepare(
             if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
                 return rottin_dialogue(topic, &text, tracks, refusal);
             }
-            if let Some(offer) = offers.iter().find(|offer| {
-                offer.admits(&context.2, topic.number, &text, catalogue, tracks)
-                    && offer.requires_premium.is_none_or(|required| {
-                        let premium = admission
-                            .session_account(command.game_session_id)
-                            .zip(admission.premium_coordinator)
-                            .is_some_and(|(account, owner)| {
-                                owner.view(account).premium_gate().premium_current()
-                            });
-                        premium == required
-                    })
+            let account_matches = |offer: &Offer| {
+                offer.requires_premium.is_none_or(|required| {
+                    let premium = admission
+                        .session_account(command.game_session_id)
+                        .zip(admission.premium_coordinator)
+                        .is_some_and(|(account, owner)| {
+                            owner.view(account).premium_gate().premium_current()
+                        });
+                    premium == required
+                })
+            };
+            let carried_matches = |offer: &Offer| {
+                offer
+                    .inventory
+                    .iter()
+                    .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
+            };
+            if let Some(offer) = offers.iter().find(|c| {
+                c.admits(&context.2, topic.number, &text, catalogue, tracks)
+                    && carried_matches(c)
+                    && account_matches(c)
             }) {
-                if !meets_level(offer.minimum_level)
-                    || !offer
-                        .inventory
-                        .iter()
-                        .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
-                {
+                if !meets_level(offer.minimum_level) {
                     return refusal(&offer.failure_reply);
                 }
                 return Some(Choice {
@@ -250,6 +261,8 @@ pub(super) fn prepare(
                     && offer.matches_topic(topic.number)
                     && offer.keywords.contains(&text)
                     && eligible(&offer.storage)
+                    && carried_matches(offer)
+                    && account_matches(offer)
                     && !offer.requires.iter().all(|r| r.holds(catalogue, tracks))
             });
             if let Some(offer) = blocked.next()

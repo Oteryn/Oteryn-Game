@@ -19,6 +19,13 @@
     {
       "repository": "zimbadev/crystalserver",
       "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/startup/tables/tile_pick.lua",
+      "sha256": "b4839e13c284d32724d0b304bde18bb0d5d9924f6dd3cbd27c884e76c69a48a6",
+      "git_blob_sha1": "9b7f1cb43878b2f34a5a99efc77f14a784799647"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
       "path": "data-global/startup/tables/door_key.lua",
       "sha256": "e5368703030072fcb400980274408ee2cbcfa51a6bf7d435da3dc2c9fcd2438b",
       "git_blob_sha1": "61414780c50287cb7982e4286eafa1224b7e2b65"
@@ -269,6 +276,34 @@
       "storage_line": 358,
       "map_path": "content/world/placements/region-z03-x127-y124.b3",
       "map_sha256": "419ed104a313cf6f29347036375b2f94c2bbfdef9721d264d9d442d2792e2b1a"
+    },
+    {
+      "position": [
+        33081,
+        31651,
+        11
+      ],
+      "item": 355,
+      "attribute": "action",
+      "value": 101,
+      "source_path": "data-global/startup/tables/tile_pick.lua",
+      "source_line": 6,
+      "map_path": "content/world/placements/region-z11-x129-y123.b3",
+      "map_sha256": "bacc5232de80a6b14714aeef1bd98e7b4ee77735a6eeb19f2100aa10c91b782e"
+    },
+    {
+      "position": [
+        33085,
+        31650,
+        10
+      ],
+      "item": 5111,
+      "attribute": "action",
+      "value": 1060,
+      "source_path": "data-global/startup/tables/door_level.lua",
+      "source_line": 132,
+      "map_path": "content/world/placements/region-z10-x129-y123.b3",
+      "map_sha256": "89fc1e39c2aed1f442f544897cf9e51c07f3b5c0236a5bfda91729d59b93f6ad"
     }
   ]
 }

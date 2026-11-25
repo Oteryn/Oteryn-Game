@@ -16,7 +16,9 @@ IDENTIFIER = 44576
 KEY = f"oteryn:terrain.tibia.i{IDENTIFIER}"
 SHARD = "content/world/terrain/terrain-08612-08612.json"
 APPEARANCES_SHA256 = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
-MARKER_NOTE = " Additionally one decision-21 appearance-only Summer ground; total 8613 Terrain records."
+MARKER_NOTE = (
+    " Additionally one decision-21 appearance-only Summer ground; total 8613 Terrain records."
+)
 
 
 def ground_records(identifiers, root=ROOT):
@@ -40,12 +42,8 @@ def ground_records(identifiers, root=ROOT):
     admitted = json.loads(
         (root / "imports/official/appearance-membership/admitted.json").read_bytes()
     )
-    membership = next(
-        row for row in admitted["files"] if row["label"] == "client-15.30"
-    )
-    raw = (
-        root / "imports/official/appearance-membership" / membership["manifest"]
-    ).read_bytes()
+    membership = next(row for row in admitted["files"] if row["label"] == "client-15.30")
+    raw = (root / "imports/official/appearance-membership" / membership["manifest"]).read_bytes()
     members = json.loads(raw)
     digest = file["sha256"]
     if (
@@ -62,11 +60,7 @@ def ground_records(identifiers, root=ROOT):
 
 
 def ground_record(identifier, appearance, digest, artifact, membership, members):
-    if (
-        "bank" not in appearance.flags
-        or not appearance.speed
-        or "unpass" in appearance.flags
-    ):
+    if "bank" not in appearance.flags or not appearance.speed or "unpass" in appearance.flags:
         raise ValueError(f"appearance {identifier} is not walkable ground")
     key = f"oteryn:terrain.tibia.i{identifier}"
     known = lambda value: {"state": "KNOWN", "value": value}
@@ -119,12 +113,12 @@ def ground_record(identifier, appearance, digest, artifact, membership, members)
 
 def outputs_for(root, ground_speeds, shard, marker_note):
     records = ground_records(ground_speeds, root)
-    if any(row["ground_speed"]["value"] != ground_speeds[row["provenance"]["source_item_id"]]
-           for row in records):
+    if any(
+        row["ground_speed"]["value"] != ground_speeds[row["provenance"]["source_item_id"]]
+        for row in records
+    ):
         raise ValueError("Ground speed differs from the accepted appearance")
-    bindings = json.loads(
-        (root / "imports/crystalserver/bindings/items.json").read_bytes()
-    )
+    bindings = json.loads((root / "imports/crystalserver/bindings/items.json").read_bytes())
     external_ids = set(map(str, ground_speeds))
     if any(row["external_id"] in external_ids for row in bindings["bindings"]):
         raise ValueError("appearance-only ground unexpectedly has an Item binding")
@@ -137,8 +131,7 @@ def outputs_for(root, ground_speeds, shard, marker_note):
             raise ValueError(f"ground {item} must have one stable palette position")
         selected[0].update(key=record["identity"]["key"], provisional=False)
     encode = lambda value: (
-        json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-        + "\n"
+        json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n"
     ).encode()
     marker_path = "content/world/terrain/index.json"
     marker = json.loads((root / marker_path).read_bytes())
@@ -152,8 +145,8 @@ def outputs_for(root, ground_speeds, shard, marker_note):
     }
 
 
-def outputs(root=ROOT):
-    return outputs_for(root, {IDENTIFIER: 150}, SHARD, MARKER_NOTE)
+def outputs(root=ROOT, *, identifiers=(IDENTIFIER,), shard=SHARD, note=MARKER_NOTE):
+    return outputs_for(root, dict.fromkeys(identifiers, 150), shard, note)
 
 
 def main():

@@ -39,6 +39,10 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             name,
             if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps_fixtures::SOURCE
+            } else if name == super::between_the_lines_fixtures::PHILLIP_SCENARIO {
+                super::between_the_lines_fixtures::PHILLIP
+            } else if name == "qengine-rewards-l10-documents-brotherhood-story" {
+                super::qengine_document_stories_fixtures::BONE_MASTER
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
                     x: 32248,
@@ -206,7 +210,8 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         | "l2-battle-mage-epaulettes-complete" => &["addon", "yes", "yes"],
         "l2-elementalist-start" | "l2-elementalist-base" => &["slime", "yes"],
         "l2-festive-mask-start" | "l2-festive-feather-start" => &["addons"],
-        "l3-demon-base" | "l3-demon-shield" | "l3-demon-helmet" => &["outfit", "yes"],
+        "l3-demon-base" | "l3-demon-shield" | "l3-demon-helmet"
+        | "l3-demon-shield-complete" | "l3-demon-helmet-complete" => &["outfit", "yes"],
         "l4-nobleman-first-start" => &["addon", "yes", "dress", "yes", "yes"],
         "l4-nobleman-second-start" => &["addon", "yes", "hat", "yes", "yes"],
         "l4-nobleman-first" | "l4-nobleman-second" => &["addon"],
@@ -246,10 +251,14 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l7-assassin-white" => &["50 white cloth"],
         "l7-assassin-yarn" => &["10 spools of yarn"],
         "l11-makeshift-base" => &["salvage"],
-        "l11-dream-warrior-first" | "l11-dream-warrior-second" => &["addon", "yes", "yes"],
+        "l11-dream-warrior-task-base" | "l11-dream-warrior-undal-base" => &["talk"],
+        "l11-dream-warrior-first" | "l11-dream-warrior-second"
+        | "l11-dream-warrior-undal-first" | "l11-dream-warrior-undal-second" => &["addon", "yes", "yes"],
+        "between-the-lines-phillip-accept" => &["book"],
         "l10-brotherhood-join" | "l10-nightmare-join" => &["join", "yes"],
         "l10-brotherhood-officer"
         | "l10-nightmare-officer"
+        | "l10-brotherhood-dread-lord"
         | "l10-brotherhood-leader"
         | "l10-nightmare-leader" => &["advancement"],
         "l10-golden-base" => &["outfit", "yes", "armor"],
@@ -266,7 +275,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l8-hunter-leather" => &["leather"],
         "l8-hunter-wings" => &["chicken wing"],
         "l8-hunter-hat" => &["steel"],
-        "l8-hunter-gloves" | "elane-gloves" | "elane-gloves-sale" => &["sniper gloves"],
+        "l8-hunter-gloves" | "l8-hunter-elane-gloves" | "elane-gloves" | "elane-gloves-sale" => &["sniper gloves"],
         "l8-mage-male-wand-start" => &["angelina", "yes"],
         "l8-mage-male-wands" => &["wand"],
         "l8-mage-male-sulphur" => &["sulphur"],
@@ -301,7 +310,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l6-druid-rook-body" => &["paws"],
         "l5-norseman-first-shards" | "l5-norseman-second-shards" => &["shard"],
         "l5-oriental-female-first-start" => &["outfit", "yes"],
-        "l5-oriental-female-comb" => &["comb"],
+        "l5-oriental-female-comb" => &["mermaid's comb"],
         "l5-oriental-female-second-start" => &["task", "yes"],
         "l5-oriental-female-ape-fur" => &["ape fur"],
         "l5-oriental-female-fish-fins" => &["fish fins"],
@@ -310,7 +319,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-pirate-sabre-start" => &["task", "yes"],
         "l4-pirate-eye-patches" => &["eye patches"],
         "l4-pirate-peg-legs" => &["peg legs"],
-        "l4-pirate-hooks" => &["hooks"],
+        "l4-pirate-hooks" => &["pirate hooks"],
         "l4-pirate-hat-start" => &["addon", "task", "yes"],
         "l4-pirate-hat" => &["task"],
         "hallowed-holy-water" => &["holy water"],
@@ -1077,11 +1086,8 @@ pub(super) async fn exercise(
         ))
         .await;
     }
-    if name == "qengine-rewards-qd-steal-from-thieves" {
-        return Box::pin(super::qd_steal_from_thieves_fixtures::exercise(
-            owner, admitted, h, authority,
-        ))
-        .await;
+    if name.starts_with("qengine-rewards-rookgaard-") {
+        return Box::pin(super::rookgaard_exchanges_fixtures::exercise(owner, admitted, h, name)).await;
     }
     if name.starts_with("qengine-rewards-qnpcfx-koshei") {
         return Box::pin(super::qnpcfx_koshei_fixtures::exercise(
@@ -1188,6 +1194,9 @@ pub(super) async fn exercise(
             owner, admitted, h, authority, name,
         ))
         .await;
+    }
+    if name == super::between_the_lines_fixtures::PHILLIP_SCENARIO {
+        return Box::pin(super::between_the_lines_fixtures::phillip(owner, admitted, h, authority)).await;
     }
     if name.starts_with("qengine-rewards-l10-documents-") {
         return Box::pin(super::qengine_document_stories_fixtures::exercise(
