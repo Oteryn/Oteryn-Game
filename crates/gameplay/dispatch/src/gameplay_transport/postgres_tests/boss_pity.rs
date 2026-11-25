@@ -62,6 +62,7 @@ fn death(seed: u8, fence: CurrentCharacterItemFence, minted: u64, item: &str) ->
                     revision_ref: "definition-r1".into(),
                 },
                 quantity: 1,
+                parent_ordinal: None,
             }],
         }],
     }

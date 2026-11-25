@@ -1,7 +1,11 @@
 //! KOSHEI: real framed USE on current Ground handles through the composed owner.
 use crate::bestiary_postgres_harness as fixture;
+use crate::durability::premium_fence::{EntitlementState, PremiumEvidence};
 use crate::foundation::{
     ChannelContentPin, ChannelRuntimeV1, CharacterId, CharacterLease, GameSessionId, NodeId,
+};
+use crate::gameplay_transport::spell_premium_coordinator::{
+    PremiumActivation, RegisteredPremiumClock, SpellPremiumCoordinator, clock_registration,
 };
 use fixture::{Harness, debug, id};
 use composed_test_owner::fresh_fixture;
@@ -32,6 +36,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_world::map;
 use oteryn_gameplay_world::map::boot::{BundleCollisionIndexExt, BundleWorld};
 use oteryn_gameplay_world::map::view::MapFacts;
+use oteryn_gameplay_social::premium::{self, PremiumConsumer, TrustedNow};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
 const CREATURE: &str = "oteryn:creature.koshei_the_deathless";
@@ -47,6 +52,16 @@ const CORPSE: MovementLocalPosition = MovementLocalPosition {
     y: 32406,
     floor: 12,
 };
+
+struct QuestPremiumClock(TrustedNow);
+
+impl clock_registration::Registered for QuestPremiumClock {}
+
+impl RegisteredPremiumClock for QuestPremiumClock {
+    fn read_current_window(&self) -> Option<TrustedNow> {
+        Some(self.0)
+    }
+}
 
 #[test]
 fn koshei_current_ground_handles_real_use_with_refusals_door_and_replay() -> TestResult {
@@ -296,6 +311,7 @@ async fn exercise(
     runtime_connection.close().await?;
     let runtime_root = crate::durability::DurabilityRoot::connect_test_runtime(runtime_url)?;
     assert!(runtime_root.maintain_ready_once().await?);
+    let premium = active_quest_premium(h, &runtime_root).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = runtime_root
         .open_character_authority(&seal)
@@ -318,6 +334,7 @@ async fn exercise(
     }
     .build();
     owner.active_generation = Some(generation);
+    owner.premium_coordinator = Some(&premium);
     owner.rooms = SeamRooms::new(None, Some(&room));
     owner.quest_catalogue = Some(Arc::new(
         oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -415,11 +432,11 @@ async fn exercise(
         let [(points, _)] = sources.as_slice() else {
             return Err("unique Koshei spawn source".into());
         };
-        let [(position, delay, key, _, _)] = points.as_slice() else {
+        let [point] = points.as_slice() else {
             return Err("unique Koshei spawn point".into());
         };
         assert_eq!(
-            (*position, *delay, key.as_str()),
+            (point.position, point.respawn_ms, point.creature.as_str()),
             ((CORPSE.x, CORPSE.y, CORPSE.floor), 15_000, CREATURE)
         );
         runtime
@@ -743,6 +760,46 @@ async fn exercise(
 }
 
 /// Restore the pinned mainland save with contiguous receipts for its prior actions.
+async fn active_quest_premium(
+    h: &Harness,
+    runtime: &crate::durability::DurabilityRoot,
+) -> TestResult<SpellPremiumCoordinator> {
+    const START: i64 = 1_790_000_000_000_000;
+    const MINUTE: i64 = 60_000_000;
+    let activation = PremiumActivation {
+        activation_id: "koshei-quest-test".into(),
+        switch_over_us: START,
+    };
+    h.root
+        .latch_premium_activation(&activation.activation_id, START, START)
+        .await
+        .map_err(debug)?;
+    let consumer = Arc::new(PremiumConsumer::default());
+    consumer.prove_for_test(PremiumEvidence {
+        account_id: id(40),
+        producer_revision: "1".repeat(40),
+        producer_profile: premium::PRODUCER_PROFILE.into(),
+        product_id: premium::PRODUCT_ID.into(),
+        product_version: premium::PRODUCT_VERSION,
+        entitlement_id: Some("01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70".into()),
+        state: EntitlementState::Active,
+        lifecycle_revision: 1,
+        authority_revision: 1,
+        effective_from_us: START,
+        effective_until_us: START + 60 * MINUTE,
+        authority_issued_at_us: START,
+        authority_valid_until_us: START + 60 * MINUTE,
+        refresh_after_us: START + 30 * MINUTE,
+    });
+    let now = TrustedNow::new(START + MINUTE, 0).ok_or("fixture Premium clock")?;
+    Ok(SpellPremiumCoordinator::new(
+        consumer,
+        Some(Arc::new(QuestPremiumClock(now))),
+        Some(activation),
+        Some(runtime.clone()),
+    ))
+}
+
 async fn restore_predecessor_save(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
 ) -> TestResult<i64> {

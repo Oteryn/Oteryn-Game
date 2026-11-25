@@ -148,6 +148,7 @@ fn roll(
             return Err(LootPlanError::TooManyPlanItems);
         }
         placement_ordinal += 1;
+        let index = state.entries.len();
         state.entries.push(LootPlanEntry {
             item: entry.item.clone(),
             quantity,
@@ -163,9 +164,9 @@ fn roll(
         if entry.details.unique {
             state.unique.insert(entry.item.production_key.clone());
         }
-        // Reward-boss Lua iterates only getLoot() top-level entries; addRewardBossItems
-        // adds each selected Item directly, unlike corpse addLoot() recursion.
-        state.ordinal += validate_tree(&entry.details.children, 0)? as u32;
+        // A missed container still reserves its children's draw ordinals. A selected
+        // container owns the selected children in that roll (Crystal reward_boss.lua:24–46).
+        roll(context, &entry.details.children, Some(index), state)?;
     }
     Ok(())
 }
