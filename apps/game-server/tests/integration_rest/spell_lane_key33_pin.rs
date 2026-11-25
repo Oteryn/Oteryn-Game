@@ -53,6 +53,7 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/field_removal.rs", "retire_restarted_fields"),
     ("crates/gameplay/durability/src/durability/item_craft/elemental_energy.rs", "create"),
     ("crates/gameplay/durability/src/durability/item_craft/elemental_energy.rs", "has_room"),
+    ("crates/gameplay/durability/src/durability/item_craft/event_containers.rs", "place_drop"),
     ("crates/gameplay/durability/src/durability/item_craft/harvest.rs", "write"),
     ("crates/gameplay/durability/src/durability/item_craft/skinning.rs", "prepare"),
     ("crates/gameplay/durability/src/durability/item_craft/soulpit.rs", "place_output"),
