@@ -28,6 +28,7 @@ CANARY_COMMIT = "52550d5e"
 SOURCE = "data/modules/scripts/gamestore/catalog/consumables_exercise_weapons.lua"
 CATEGORY = "consumables.exercise-weapons"
 PREY_EXPANSION = ROOT / "rulesets/economy/store/prey-list-expansion.json"
+BLESSINGS = ROOT / "rulesets/character/blessings/catalogue.json"
 CRYSTAL_CHARGED = Path(__file__).with_name("crystal-charged-offers.json")
 CONVERTER_VARIANTS = {"25719", "28526"}
 
@@ -261,12 +262,27 @@ def build(lua: str) -> dict:
 
 def platform_catalogue(catalogue: dict, platform_base: dict | None = None) -> bytes:
     """Project all enabled quotes onto Platform's exact S-5 import shape."""
+    blessing_offers = []
+    for blessing in json.loads(BLESSINGS.read_bytes())["blessings"]:
+        storage_key = blessing["storage_key"]
+        prefix = "oteryn:blessing."
+        suffix = storage_key.removeprefix(prefix)
+        if not suffix or suffix == storage_key:
+            raise ValueError(f"invalid blessing storage key: {storage_key}")
+        blessing_offers.append(
+            {
+                "key": f"store:blessing:{suffix}",
+                "price": blessing["store_tibia_coins"],
+                "unlock_key": f"store-blessing:{storage_key}",
+            }
+        )
     catalogues = [
         catalogue,
         *(
             json.loads((STORE / f"{name}.json").read_bytes())
             for name in ("cosmetics", "hirelings")
         ),
+        {"offers": blessing_offers},
     ]
     current_offers = sorted(
         (
