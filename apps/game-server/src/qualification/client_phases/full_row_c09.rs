@@ -125,6 +125,7 @@ async fn wait_quantity(
 }
 
 // The pinned Frodo behavior wanders two tiles from his authored placement.
+const FRODO_INTERIOR_RANGE: u32 = 2;
 const FRODO_WANDER_RADIUS: u16 = 2;
 
 fn meat_seller_at(
@@ -397,9 +398,9 @@ async fn buy_meat_from_frodo(
         .find(|npc| npc.key == "oteryn:npc.frodo")
         .ok_or("Frodo absent from compiled World bundle")?;
     let approach = if tavern_interior {
-        // Enter the tavern interior before looking for Frodo. The first tile
-        // within nominal talk range can still be at the doorway.
-        1
+        // The interior landing is two tiles from Frodo's authored position.
+        // Do not route onto the tile in front of the counter where he can wander.
+        FRODO_INTERIOR_RANGE
     } else {
         wire::TALK_RANGE_TILES - u32::from(FRODO_WANDER_RADIUS)
     };
@@ -770,7 +771,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         frodo
             .placements
             .iter()
-            .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 1)
+            .any(|p| {
+                p.floor == at.floor
+                    && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= FRODO_INTERIOR_RANGE
+            })
     })
     .await?;
     // Seven meats can fill the 20-minute stomach. Keep an additional unit
