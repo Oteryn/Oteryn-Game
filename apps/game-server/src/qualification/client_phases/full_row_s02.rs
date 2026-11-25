@@ -245,7 +245,7 @@ fn invitation_retained(view: &PartyResult, handle: u64) -> bool {
     view.invitations.iter().any(|entry| entry.handle == handle)
 }
 
-struct PvpWorld {
+pub(super) struct PvpWorld {
     address: std::net::SocketAddr,
     url: String,
     accounts: [String; 2],
@@ -255,7 +255,23 @@ struct PvpWorld {
     scope_generation: u64,
 }
 
-async fn pvp_world() -> TestResult<PvpWorld> {
+impl PvpWorld {
+    pub(super) fn clients<'a>(&'a self, core: &SeamClients<'a>) -> SeamClients<'a> {
+        SeamClients {
+            address: self.address,
+            accounts: &self.accounts,
+            characters: &self.characters,
+            world: self.world,
+            channel: self.channel,
+            scope_generation: self.scope_generation,
+            url: &self.url,
+            runtime: None,
+            ..*core
+        }
+    }
+}
+
+pub(super) async fn pvp_world() -> TestResult<PvpWorld> {
     let url = required("NODE_BOOT_PVP_DATABASE_URL")?;
     let accounts = [
         required("NODE_BOOT_PVP_ACCOUNT_ID")?,
@@ -477,17 +493,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         let fixture = pvp_world()
             .await
             .map_err(|error| format!("step=open-pvp-fixture observed={error}"))?;
-        let pvp = SeamClients {
-            address: fixture.address,
-            accounts: &fixture.accounts,
-            characters: &fixture.characters,
-            world: fixture.world,
-            channel: fixture.channel,
-            scope_generation: fixture.scope_generation,
-            url: &fixture.url,
-            runtime: None,
-            ..*clients
-        };
+        let pvp = fixture.clients(clients);
         let outcome = journey(&mut row, &pvp).await;
         let released = release_row_characters(&pvp).await;
         outcome.and(released)

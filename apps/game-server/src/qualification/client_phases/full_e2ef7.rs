@@ -3595,13 +3595,16 @@ async fn continuation_rows(clients: &SeamClients<'_>) {
         let mut connections = [None, None];
         let mut pvp_connections = [None, None];
         let result = async {
+            // Both nodes serve the same pinned bundle for route planning.
             let world = qualification_world(clients)?;
             if id == "S08" {
+                let fixture = super::full_row_s02::pvp_world().await?;
+                let pvp = fixture.clients(clients);
                 pvp_journey(
                     &mut row,
                     &mut connections,
                     &mut pvp_connections,
-                    clients,
+                    &pvp,
                     world,
                 )
                 .await
@@ -4223,9 +4226,11 @@ async fn pvp_journey(
         let player = tokio::time::timeout_at(deadline, async {
             let mut player = prep.connect_at(clients, 0xf2 + u8::try_from(index)?, index, "NODE_BOOT_PVP_CONTROL_SOCKET").await?;
             let level = player_level(&mut player).await?;
-            if level < oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL {
-                return Err(format!("S08 seeded participant {index} is ineligible at level {level}").into());
+            let required = oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL;
+            if level != required {
+                return Err(format!("S08 seeded participant {index} served level {level}; required {required}").into());
             }
+            evidence(&format!("S08 seeded profile={profile} served_level={level}"));
             Ok::<_, Box<dyn std::error::Error>>(player)
         }).await.map_err(|_| format!("S08 participant {index} preparation exceeded {budget:?}"))?
             .map_err(|error| format!("S08 participant {index} {profile} Open PvP preparation: {error}"))?;
