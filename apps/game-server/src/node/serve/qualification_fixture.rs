@@ -64,9 +64,10 @@ pub(super) async fn prepare(
                 return "rejected";
             }
         };
-    match Box::pin(prepare_build(
+    // The supervisor polls other owners in the same task as the control loop.
+    match Box::pin(DurabilityRoot::with_holder_owner(prepare_build(
         root, authority, proof, config, native, session, profile,
-    ))
+    )))
     .await
     {
         Ok(()) => "qualified",
