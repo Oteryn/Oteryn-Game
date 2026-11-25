@@ -81,7 +81,6 @@ pub(super) async fn run(
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
 ) {
-    use verdict::Need::Row as After;
     // Own a connection per row: an error/timeout cannot prevent the next row's verdict.
     let mut temple = Row::new("C20d", TEMPLE).needs(&[character_release_need(clients, 1)]);
     let watch = temple.0.watch();
@@ -94,6 +93,87 @@ pub(super) async fn run(
         .await;
     temple.finish(result);
 
+    first_vocation_rows(clients, world, spawns, npcs).await;
+
+    let mut custody = Row::new("C20b", ITEM_LOSS).needs(&[character_release_need(clients, 1)]);
+    let watch = custody.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(850),
+            "item-loss journey deadline; remaining actions unproven",
+            item_loss(&mut custody, clients, world, spawns, npcs),
+        )
+        .await;
+    custody.finish(result);
+
+    run_blessing_services(clients, world, spawns, npcs).await;
+
+    let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[character_release_need(clients, 0), character_release_need(clients, 1)]);
+    let watch = consumption.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(1500),
+            "blessing consumption journey deadline; remaining actions unproven",
+            blessing_death(&mut consumption, clients, world, spawns, npcs),
+        )
+        .await;
+    finish_blessing_row(consumption, result);
+
+    let mut resting = Row::new("P10", RESTING_BONUSES).needs(&[character_release_need(clients, 1)]);
+    let watch = resting.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(1800),
+            "P10 resting journey deadline; remaining actions unproven",
+            resting_bonuses(&mut resting, clients, world, spawns),
+        )
+        .await;
+    finish_resting_row(resting, result);
+}
+
+pub(super) async fn run_blessing_services(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    npcs: &oteryn_world_bundle::npc::Table,
+) {
+    // Purchase qualification precedes consumption: Character 0 must retain its
+    // never-aggressed low-level Adventurer eligibility for both protected deaths.
+    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[character_release_need(clients, 1), character_release_need(clients, 0)]);
+    let watch = services.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(1800),
+            "blessing services journey deadline; remaining actions unproven",
+            blessing_services(&mut services, clients, world, spawns, npcs),
+        )
+        .await;
+    finish_blessing_row(services, result);
+}
+
+async fn first_vocation_rows(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    npcs: &oteryn_world_bundle::npc::Table,
+) {
+    use verdict::Need::Row as After;
+    character_prep::declare_seeded("S16a", "unassigned-level-1-zero-xp-birth", "first vocation and earned level progression");
+    let scope = async {
+        let dedicated = character_prep::dedicated_named_character(
+            clients, "NODE_BOOT_C11_UNASSIGNED_ACCOUNT", Some("First Vocation Candidate"),
+        ).await?;
+        dedicated.replace_slot(clients, 1)
+    }.await;
+    let (accounts, characters) = match scope {
+        Ok(scope) => scope,
+        Err(error) => {
+            Row::new("S16a", VOCATION).finish(Err(error));
+            Row::new("C20a", EXPERIENCE_LOSS).finish(Err("S16a dedicated birth unavailable".into()));
+            return;
+        }
+    };
+    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
     let mut vocation = Row::new("S16a", VOCATION).needs(&[character_release_need(clients, 1)]);
     let watch = vocation.0.watch();
     let result = watch
@@ -120,51 +200,6 @@ pub(super) async fn run(
         other => loss.finish(other.map(|_| ())),
     }
 
-    let mut custody = Row::new("C20b", ITEM_LOSS).needs(&[character_release_need(clients, 1)]);
-    let watch = custody.0.watch();
-    let result = watch
-        .bound(
-            Duration::from_secs(850),
-            "item-loss journey deadline; remaining actions unproven",
-            item_loss(&mut custody, clients, world, spawns, npcs),
-        )
-        .await;
-    custody.finish(result);
-
-    // Purchase qualification precedes consumption: Character 0 must retain its
-    // never-aggressed low-level Adventurer eligibility for both protected deaths.
-    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[character_release_need(clients, 1), character_release_need(clients, 0)]);
-    let watch = services.0.watch();
-    let result = watch
-        .bound(
-            Duration::from_secs(1800),
-            "blessing services journey deadline; remaining actions unproven",
-            blessing_services(&mut services, clients, world, spawns, npcs),
-        )
-        .await;
-    finish_blessing_row(services, result);
-
-    let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[character_release_need(clients, 0), character_release_need(clients, 1)]);
-    let watch = consumption.0.watch();
-    let result = watch
-        .bound(
-            Duration::from_secs(1500),
-            "blessing consumption journey deadline; remaining actions unproven",
-            blessing_death(&mut consumption, clients, world, spawns, npcs),
-        )
-        .await;
-    finish_blessing_row(consumption, result);
-
-    let mut resting = Row::new("P10", RESTING_BONUSES).needs(&[character_release_need(clients, 1)]);
-    let watch = resting.0.watch();
-    let result = watch
-        .bound(
-            Duration::from_secs(1800),
-            "P10 resting journey deadline; remaining actions unproven",
-            resting_bonuses(&mut resting, clients, world, spawns),
-        )
-        .await;
-    finish_resting_row(resting, result);
 }
 
 // P10 owns its connection and never borrows the fixture-provisioned character.
@@ -1265,6 +1300,9 @@ async fn first_vocation(
     let result: TestResult = async {
         let initial = progress(&mut client).await?;
         assert_build(&mut client, initial, "no vocation").await?;
+        if initial != (0, 1) {
+            return Err(format!("S16a birth must start at zero XP and level one: {initial:?}").into());
+        }
         if initial.1 >= 8 {
             return Err(format!("underlevel refusal prerequisite blocked: ordinary character already level {}; no level reset permitted", initial.1).into());
         }

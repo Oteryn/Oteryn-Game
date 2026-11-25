@@ -2,11 +2,8 @@
 //! matrix row, and `reward_bag_use`'s generation-fenced consume/mint owner.
 //!
 //! Player scenario:
-//! 1. Walk to the compiled Messenger of Santa, TALK "hi" and "trade", and read the
-//!    live offer price. If needed, walk to a real rat spawn, ATTACK and loot until
-//!    the character can afford two bags. Return on foot and open the shop again.
-//! 2. BUY two red Christmas bundles; expect an accepted purchase reply and the exact
-//!    inventory changes for the bundles and paid gold.
+//! 1. Admit the player. Record a purchase GAP because the donor Messenger is unplaced.
+//! 2. Seed two red Christmas bundles and verify their exact backpack quantity.
 //! 3. Send USE-WITH-POSITION for one bundle; expect Accepted/NothingToUse and no
 //!    inventory change (the refusal must not consume or mint anything).
 //! 4. Send ordinary USE for one bundle; expect Accepted/Committed and an inventory
@@ -115,7 +112,7 @@ fn bag_handle(
                 .find(|entry| entry.item_definition_ref == reference)
         })
         .map(|entry| entry.handle)
-        .ok_or_else(|| "step 3: purchased red Christmas bundle has no server-issued handle".into())
+        .ok_or_else(|| "step 3: red Christmas bundle has no server-issued handle".into())
 }
 
 async fn use_intent(
@@ -135,42 +132,35 @@ async fn use_intent(
     Ok((reply.status, disposition, reply.server_sequence))
 }
 
+const MESSENGER: &str = "oteryn:npc.messenger_of_santa";
 async fn quote(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<(npc::NpcTradeIntent, u32)> {
     use oteryn_dev_client::client_runtime::npc_shop as shop;
-    let seller = npcs
-        .npcs
-        .iter()
-        .find(|entry| entry.key == "oteryn:npc.messenger_of_santa")
-        .ok_or("step 2: compiled world has no Messenger of Santa acquisition actor")?;
+    let seller = npcs.npcs.iter().find(|entry| entry.key == MESSENGER && !entry.placements.is_empty())
+        .ok_or("step 2: compiled world has no Messenger of Santa placement")?;
+    let near_placement = |at: TilePos, placement: TilePos| {
+        at.floor == placement.floor && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+    };
+    let placements = seller.placements.iter().map(|p| TilePos { x: p.x, y: p.y, floor: p.floor });
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        seller
-            .placements
-            .iter()
-            .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-    })
-    .ok_or("step 2: no player-walk route to Messenger of Santa")?;
+        placements.clone().any(|placement| near_placement(at, placement))
+    }).ok_or("step 2: no player-walk route within three tiles of a compiled Messenger placement")?;
     walk(client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entry| {
-                entry.kind == oteryn_dev_client::EntityKind::Npc
-                    && seller.placements.iter().any(|p| {
-                        entry.position
-                            == ActorPosition {
-                                x: i32::from(p.x),
-                                y: i32::from(p.y),
-                                floor: -i16::from(p.floor),
-                            }
-                    })
-            })
-        })
-        .map(|entry| entry.entity)
-        .ok_or("step 2: Messenger of Santa absent after walking to compiled placement")?;
+    let here = tile(client.world_spatial().actor_position)?;
+    let actor = client.world_entities().and_then(|entities| {
+        let mut matches = entities.iter().filter(|entry| {
+            entry.kind == oteryn_dev_client::EntityKind::Npc
+                && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Messenger of Santa"))
+                && placements.clone().any(|placement| {
+                    near_placement(here, placement) && tile(entry.position).ok() == Some(placement)
+                })
+        });
+        let actor = matches.next()?.entity;
+        matches.next().is_none().then_some(actor)
+    }).ok_or("step 2: expected one live Messenger of Santa at a compiled placement")?;
     for text in ["hi", "trade"] {
         let reply = shop::talk(
             client.session_mut(),
@@ -290,8 +280,11 @@ pub(super) async fn acquire_bundles(client: &mut DevClientSession, clients: &Sea
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W19A_ACCOUNT").await?;
+    let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
+    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
     let mut client = connect_world(clients, 0xa9).await?;
-    let purchase_sequence = acquire_bundles(&mut client, clients).await?;
+    let source_sequence = acquire_bundles(&mut client, clients).await?;
     let before_refusal = quantities(&client)?;
     let position = client.world_spatial().actor_position;
     let source = bag_handle(&client)?;
@@ -380,7 +373,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step 5: final LOGOUT refused".into());
     }
     evidence(&format!(
-        "W19A_CHECK purchase_sequence={purchase_sequence} refusal_sequence={} committed_sequence={} durable_outcomes={}",
+        "W19A_CHECK source_sequence={source_sequence} purchased=true refusal_sequence={} committed_sequence={} durable_outcomes={}",
         refused.2, committed.result_server_sequence, rule.picks
     ));
     Ok(())
