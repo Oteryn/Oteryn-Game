@@ -111,3 +111,37 @@ class RuntimeCatalogueTests(unittest.TestCase):
                 with self.subTest(key=row["key"]):
                     # Platform creates CLAIM for each committed ITEM delivery.
                     self.assertEqual(imported[row["key"]] == "ITEM", "item" in row)
+
+    def test_platform_import_matches_all_blessing_grants(self):
+        ruleset = runtime.ROOT / "rulesets/character/blessings/catalogue.json"
+        blessings = json.loads(ruleset.read_bytes())["blessings"]
+        catalogue = json.loads(runtime.OUT.read_bytes())
+        imported = {
+            row["offer_key"]: row
+            for row in json.loads(runtime.platform_catalogue(catalogue))["offers"]
+        }
+        for blessing in blessings:
+            storage_key = blessing["storage_key"]
+            key = "store:blessing:" + storage_key.removeprefix("oteryn:blessing.")
+            with self.subTest(key=key):
+                self.assertIn(key, imported)
+                self.assertEqual(
+                    imported[key],
+                    {
+                        "offer_key": key,
+                        "currency": "COINS",
+                        "unit_price": str(blessing["store_tibia_coins"]),
+                        "max_quantity": 1,
+                        "purchasable": True,
+                        "units": [
+                            {
+                                "product_id": "oteryn.store.character_service",
+                                "product_version": "1",
+                                "unit_kind": "COSMETIC",
+                                "grant_key": f"store-blessing:{storage_key}",
+                                "grant_revision": "1",
+                                "quantity": 1,
+                            }
+                        ],
+                    },
+                )
