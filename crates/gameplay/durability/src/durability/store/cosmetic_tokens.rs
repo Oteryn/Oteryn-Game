@@ -409,9 +409,10 @@ async fn apply_paid_cosmetic(
     offer: &str,
 ) -> Result<DeliveryReceipt, StoreDurabilityError> {
     if store_cosmetics::offer(offer).is_none() { return Err(StoreDurabilityError::AuthorityRejected); }
-    // This is an account entitlement. The active purchaser may use
-    // a different character, but the receipt retains the original
-    // Platform-bound buyer, world and operation.
+    // Foreground delivery and receipt insertion both need the buyer root. Take it
+    // before the reservation row, including offline or a retry from another character.
+    sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR KEY SHARE")
+        .bind(identity.character_id.as_slice()).fetch_one(&mut **tx).await?;
     let row: Option<(sqlx::types::Uuid,Option<sqlx::types::Uuid>)> = sqlx::query_as(
         "SELECT c.purchase_id,c.operation_id FROM game_character_store_cosmetics c
          JOIN store_purchase_requests p ON p.purchase_request_id=c.purchase_id

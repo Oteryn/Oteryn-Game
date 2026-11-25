@@ -37,6 +37,9 @@ pub(super) struct Ledger {
     pub(super) intents:BTreeMap<String,serde_json::Value>,
     pub(super) answers:BTreeMap<String,serde_json::Value>,
     pub(super) lose_next_answer:bool,
+    pub(super) pending_claim: Option<String>,
+    pub(super) claim_receipt: Option<serde_json::Value>,
+    pub(super) claim_ready: Arc<tokio::sync::Notify>,
 }
 
 pub(super) struct FakePlatform(pub(super) Arc<SyncMutex<Ledger>>);
@@ -71,7 +74,25 @@ impl StoreTransport for FakePlatform {
                 let operation=request["operation_id"].as_str().expect("operation");
                 ledger.intents[operation].clone()
             }
-            Operation::PublishStoreDeliveryReceiptV1=>serde_json::json!({"contract_version":1,"result":"accepted"}),
+            Operation::ListPendingStoreOperationsV1 => {
+                let entries: Vec<_> = ledger.pending_claim.iter()
+                    .filter(|_| ledger.claim_receipt.is_none())
+                    .map(|id| serde_json::json!({
+                        "operation_kind": "CLAIM", "operation_id": id, "source_revision": "2",
+                    })).collect();
+                serde_json::json!({"contract_version":1,"pending":entries})
+            }
+            Operation::PublishStoreDeliveryReceiptV1 => {
+                if request["operation_kind"] == "CLAIM" {
+                    if let Some(receipt) = &ledger.claim_receipt {
+                        assert_eq!(receipt, &request);
+                    } else {
+                        ledger.claim_receipt = Some(request);
+                        ledger.claim_ready.notify_one();
+                    }
+                }
+                serde_json::json!({"contract_version":1,"result":"accepted"})
+            }
             _=>return Box::pin(async{Err(TransportFailure::NotFound)}),
         };
         Box::pin(async move{Ok(platform_bytes(&answer))})
@@ -240,7 +261,55 @@ pub(super) async fn house_scenario(
     assert_eq!(count(harness, "SELECT count(*) FROM store_delivery_receipts").await?, 2);
     assert_eq!(count(harness, "SELECT count(*) FROM game_store_hireling_effects").await?, 2);
     assert_eq!(count(harness, "SELECT count(*) FROM game_hireling_store_reservations WHERE state=1").await?, 0);
+    let claim_id = uuid(&id(141));
+    let ready = {
+        let mut held = ledger.lock().expect("ledger");
+        assert_eq!((held.debits, held.balance), (2, 9600));
+        let delivery = uuid(&operation);
+        let mut claim = held.intents[&delivery].clone();
+        assert_eq!(claim["unit_kind"], "ITEM");
+        claim["operation_id"] = claim_id.clone().into();
+        claim["operation_kind"] = "CLAIM".into();
+        claim["source_revision"] = "2".into();
+        claim["delivery_operation_id"] = delivery.into();
+        held.intents.insert(claim_id.clone(), claim);
+        held.pending_claim = Some(claim_id.clone());
+        held.claim_ready.clone()
+    };
+    use oteryn_protocol_oteryn::world_object as use_wire;
+    let lamp_index = {
+        let runtime = owner.runtime.lock().await;
+        let index = crate::gameplay_transport::item_ref_admission::pinned_index(
+            &runtime, owner.active_generation,
+        ).ok_or("lamp definition index")?;
+        let revision = index.revision(LAMP).ok_or("lamp revision")?;
+        index.definition_ref("Item", LAMP, revision).ok_or("lamp wire definition")?
+    };
+    let use_lamp = use_wire::encode_item_use_intent(&use_wire::UseIntent {
+        target: use_wire::UseTarget::ItemByDefinition(lamp_index),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    }).map_err(debug)?;
+    let placed = serve(owner, &mut admitted, (use_wire::COMMAND_TYPE_USE_INTENT, use_lamp)).await?;
+    assert_eq!(placed.0, CommandStatus::Accepted);
+    assert_eq!(use_wire::decode_use_result(&placed.1).map_err(debug)?, use_wire::UseDisposition::Committed);
+    assert_eq!(count(harness, "SELECT count(*) FROM game_hireling_lamp_transitions WHERE kind=1").await?, 1);
+
+    let client = StoreClient::new(
+        Box::new(FakePlatform(ledger.clone())), "oteryn-game/store-consumer".into(),
+    );
+    let worker = crate::gameplay_transport::run_store_receipt_outbox(owner.root, owner.character, client);
+    tokio::select! {
+        () = worker => return Err("Store worker exited".into()),
+        published = tokio::time::timeout(std::time::Duration::from_secs(3), ready.notified()) =>
+            published.map_err(|_| "placed Store lamp never published its Platform claim")?,
+    }
     let held = ledger.lock().expect("ledger");
-    assert_eq!((held.debits, held.balance), (2, 9600));
+    let claim = held.claim_receipt.as_ref().ok_or("lamp claim receipt")?;
+    assert_eq!(claim["operation_id"], claim_id);
+    assert_eq!(claim["outcome"], "COMMITTED");
+    assert_eq!(claim["minted_quantity"], 1);
+    assert_eq!(held.debits, 2);
     Ok(())
 }

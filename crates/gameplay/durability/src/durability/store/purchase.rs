@@ -37,8 +37,8 @@ impl DurabilityRoot {
     }
 
     /// Select unfinished purchases, including legacy journals identified by an exact quote.
-    /// Removed-offer recovery only considers the supplied bindings and includes paid deliveries
-    /// that stopped before committing the native receipt.
+    /// Paid journals without a receipt require one of the supplied exact quote bindings.
+    /// Removed-offer recovery also limits unanswered journals to those bindings.
     pub async fn pending_store_item_purchases(
         &self,
         account: [u8; 16],
@@ -59,7 +59,7 @@ impl DurabilityRoot {
                          SELECT 1 FROM game_store_item_reservations r
                          WHERE r.purchase_request_id=p.purchase_request_id AND r.character_id=p.character_id
                      ))))
-                     OR ($5 AND p.state=2 AND p.binding_digest=ANY($4::bytea[])
+                     OR (p.state=2 AND p.binding_digest=ANY($4::bytea[])
                          AND convert_from(p.answer,'UTF8')::jsonb ->> 'result' = 'ACCEPTED'
                          AND NOT EXISTS (SELECT 1 FROM store_delivery_receipts r
                              WHERE r.operation_id=(convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids' ->> 0)::uuid)
@@ -312,6 +312,18 @@ pub(super) async fn record_request(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     request: &PurchaseRequest,
 ) -> Result<PurchaseRequestState, StoreDurabilityError> {
+    lock_request(tx, request).await?;
+    if let Some(state) = read_request(tx, request).await? {
+        return Ok(state);
+    }
+    insert_request(tx, request).await?;
+    Ok(PurchaseRequestState::Sent)
+}
+
+pub(super) async fn lock_request(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    request: &PurchaseRequest,
+) -> Result<(), DurabilityError> {
     sqlx::query(
         "SELECT pg_advisory_xact_lock(hashtextextended(\
          'oteryn:store-purchase:'||encode($1,'hex'),0))",
@@ -319,6 +331,14 @@ pub(super) async fn record_request(
     .bind(request.purchase_request_id.as_slice())
     .execute(&mut **tx)
     .await?;
+    Ok(())
+}
+
+/// Read an exact binding while the caller holds the purchase advisory lock.
+pub(super) async fn read_request(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    request: &PurchaseRequest,
+) -> Result<Option<PurchaseRequestState>, StoreDurabilityError> {
     let digest = request.binding_digest();
     if let Some(row) = sqlx::query(
         "SELECT account_id::text,character_id::text,binding_digest,state,answer \
@@ -335,11 +355,20 @@ pub(super) async fn record_request(
             return Err(StoreDurabilityError::ConflictingBinding);
         }
         return match row.try_get::<i16, _>("state")? {
-            1 => Ok(PurchaseRequestState::Sent),
-            2 => Ok(PurchaseRequestState::Answered(row.try_get("answer")?)),
+            1 => Ok(Some(PurchaseRequestState::Sent)),
+            2 => Ok(Some(PurchaseRequestState::Answered(row.try_get("answer")?))),
             _ => Err(DurabilityError::InvalidStoredState.into()),
         };
     }
+    Ok(None)
+}
+
+/// Insert only after checking the binding under the purchase advisory lock.
+pub(super) async fn insert_request(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    request: &PurchaseRequest,
+) -> Result<(), StoreDurabilityError> {
+    let digest = request.binding_digest();
     sqlx::query(
         "INSERT INTO store_purchase_requests \
          (purchase_request_id,account_id,character_id,binding_digest,state) \
@@ -351,7 +380,7 @@ pub(super) async fn record_request(
     .bind(digest.as_slice())
     .execute(&mut **tx)
     .await?;
-    Ok(PurchaseRequestState::Sent)
+    Ok(())
 }
 
 pub(super) fn refused(answer: &[u8]) -> bool {

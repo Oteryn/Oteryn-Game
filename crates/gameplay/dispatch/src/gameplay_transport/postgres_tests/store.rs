@@ -93,6 +93,9 @@ enum Case {
     RemovedOffer,
     RemovedOfferAccepted,
     LegacyLostAnswer,
+    LegacyAnsweredWithoutHistory,
+    RetryLockOrder,
+    RemovedOfferBelowCapacity,
     ReceiptRecovery,
     RestoreReceiptGeneration,
     RestoreMissingDelivery,
@@ -162,6 +165,36 @@ fn store_crystal_keg_checks_capacity_before_platform_debit() -> TestResult {
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("store-crystal-capacity", || {
         scenario_with_answer(Case::CrystalCapacity)
+    })
+}
+
+#[test]
+fn store_accepted_legacy_sword_without_history_recovers_on_new_confirmation() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-legacy-journal", || {
+        scenario_with_answer(Case::LegacyAnsweredWithoutHistory)
+    })
+}
+
+#[test]
+fn store_item_retry_leaves_character_unlocked_while_answer_writer_holds_purchase() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-item-lock-order", || {
+        scenario_with_answer(Case::RetryLockOrder)
+    })
+}
+
+#[test]
+fn store_paid_legacy_keg_replays_after_capacity_drops() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-legacy-keg-capacity", || {
+        scenario_with_answer(Case::RemovedOfferBelowCapacity)
     })
 }
 
@@ -418,6 +451,40 @@ fn scenario_with_answer(case: Case) -> TestResult {
             return harness.cleanup().await;
         }
 
+        if matches!(case, Case::RetryLockOrder) {
+            ledger.lock().expect("ledger").malformed = true;
+            let command = purchase_request(80, SWORD, 25)?;
+            assert_eq!(serve(&owner, &mut admitted, std::slice::from_ref(&command)).await?,
+                [(CommandStatus::Rejected, Vec::new())]);
+            ledger.lock().expect("ledger").malformed = false;
+
+            // The answer writer locks the purchase before its history row takes the
+            // Character foreign-key lock. Hold it while the real retry queues.
+            let mut writer = harness.pool.begin().await?;
+            let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()").fetch_one(&mut *writer).await?;
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:store-purchase:'||encode($1,'hex'),0))")
+                .bind(id(80).as_slice()).execute(&mut *writer).await?;
+            let (character_available, accepted) = {
+            let retry = purchase(&owner, &mut admitted, command);
+            tokio::pin!(retry);
+            tokio::select! {
+                result = &mut retry => return Err(format!("retry skipped purchase serialization: {result:?}").into()),
+                result = super::store_fixtures::wait_for_advisory_waiter(&harness.pool, pid) => result?,
+            }
+            let character_available = sqlx::query("SELECT character_id FROM game_character_roots FOR KEY SHARE NOWAIT")
+                .fetch_one(&mut *writer).await.is_ok();
+            writer.rollback().await?;
+            let accepted = tokio::time::timeout(std::time::Duration::from_secs(3), &mut retry).await??;
+            (character_available, accepted)
+            };
+            assert!(character_available, "ordinary retry locked the character ahead of the purchase");
+            assert_eq!(accepted.code, wire::StorePurchaseCode::Accepted);
+            assert_eq!(ledger.lock().expect("ledger").debits, [25]);
+            assert_eq!(swords(&harness).await?, 1);
+            drop(owner); drop(authority); drop(seal);
+            return harness.cleanup().await;
+        }
+
         if matches!(case, Case::LostAnswer) {
             ledger.lock().expect("ledger").malformed = true;
             assert_eq!(
@@ -551,7 +618,7 @@ fn scenario_with_answer(case: Case) -> TestResult {
             } else {
                 retained_purchase(&owner, admitted, include_bytes!(
                     "../../../../../../rulesets/economy/store/predecessors/catalogue.json"
-                ), SWORD, false).await?;
+                ), SWORD, RetainedAnswer::Lost).await?;
             }
             drop(owner);
             drop(authority);
@@ -686,10 +753,17 @@ fn scenario_with_answer(case: Case) -> TestResult {
             return harness.cleanup().await;
         }
 
-        if matches!(case, Case::LegacyLostAnswer) {
+        if matches!(case, Case::LegacyLostAnswer | Case::LegacyAnsweredWithoutHistory) {
+            let saved = if matches!(case, Case::LegacyAnsweredWithoutHistory) {
+                RetainedAnswer::Journal
+            } else {
+                RetainedAnswer::Lost
+            };
             let old = retained_purchase(&owner, admitted, include_bytes!(
                 "../../../../../../rulesets/economy/store/predecessors/catalogue.json"
-            ), SWORD, false).await?;
+            ), SWORD, saved).await?;
+            assert_eq!(count(&harness, "SELECT count(*) FROM game_store_purchase_history").await?, 0);
+            assert_eq!(swords(&harness).await?, 0);
             let result = purchase(&owner, &mut admitted, purchase_request(82, SWORD, old.price)?).await?;
             assert_eq!(result.code, wire::StorePurchaseCode::Accepted);
             assert_eq!(ledger.lock().expect("ledger").debits, [old.price]);
@@ -700,12 +774,18 @@ fn scenario_with_answer(case: Case) -> TestResult {
             return harness.cleanup().await;
         }
 
-        if matches!(case, Case::RemovedOffer | Case::RemovedOfferAccepted) {
+        if matches!(case, Case::RemovedOffer | Case::RemovedOfferAccepted | Case::RemovedOfferBelowCapacity) {
             let answered = matches!(case, Case::RemovedOfferAccepted);
             ledger.lock().expect("ledger").balance = 2_000;
             let request = retained_purchase(&owner, admitted, include_bytes!(
                 "../../../../../../rulesets/economy/store/predecessors/charged-catalogue.json"
-            ), "store:ultimate-health-keg", answered).await?;
+            ), "store:ultimate-health-keg", if answered { RetainedAnswer::History } else { RetainedAnswer::Lost }).await?;
+            if matches!(case, Case::RemovedOfferBelowCapacity) {
+                super::item_look_fixtures::seed_main_backpack(
+                    &harness,
+                    &[("oteryn:item.tibia.i25905", 1), ("oteryn:item.tibia.i25910", 1)],
+                ).await?;
+            }
             assert_eq!(count(&harness, "SELECT count(*) FROM store_purchase_requests WHERE state=1").await?, i64::from(!answered));
             assert_eq!(count(&harness, "SELECT count(*) FROM game_store_purchase_history").await?, i64::from(answered));
             assert_eq!(count(&harness, "SELECT count(*) FROM store_delivery_receipts").await?, 0);
@@ -730,7 +810,7 @@ fn scenario_with_answer(case: Case) -> TestResult {
         if matches!(case, Case::OldQuote) {
             let request = retained_purchase(&owner, admitted, include_bytes!(
                 "../../../../../../rulesets/economy/store/predecessors/catalogue.json"
-            ), SWORD, false).await?;
+            ), SWORD, RetainedAnswer::Lost).await?;
             assert_eq!(swords(&harness).await?, 0);
             let command = |request: &wire::StorePurchaseRequest| -> TestResult<_> {
                 Ok((wire::COMMAND_TYPE_STORE_PURCHASE, wire::encode_purchase_request(request).map_err(debug)?))
@@ -1054,12 +1134,19 @@ async fn verify_claim_discovery_yields(
     }
 }
 
+#[derive(Clone, Copy)]
+enum RetainedAnswer {
+    Lost,
+    Journal,
+    History,
+}
+
 async fn retained_purchase(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
     catalogue: &[u8],
     offer: &str,
-    answered: bool,
+    saved: RetainedAnswer,
 ) -> TestResult<wire::StorePurchaseRequest> {
     use crate::durability::store::{PurchaseRequest, PurchaseRequestState};
     use crate::native_admission_source::store::{PurchaseResult, PurchaseStoreOffer};
@@ -1105,14 +1192,14 @@ async fn retained_purchase(
     let PurchaseResult::Accepted { order_id, operation_ids } = answer else {
         return Err("fixture purchase refused".into());
     };
-    if answered {
+    if !matches!(saved, RetainedAnswer::Lost) {
         let order_id = *sqlx::types::Uuid::parse_str(&order_id)?.as_bytes();
         owner.root.record_store_answer_with_history(
             journal,
             serde_json::to_vec(&serde_json::json!({
                 "result": "ACCEPTED", "order_id": uuid(&order_id), "operation_ids": operation_ids,
             }))?,
-            Some(crate::durability::store::StorePurchaseHistoryEntry {
+            matches!(saved, RetainedAnswer::History).then(|| crate::durability::store::StorePurchaseHistoryEntry {
                 order_id,
                 offer_key: offer.into(),
                 catalog_revision: revision.clone(),

@@ -264,6 +264,28 @@ pub(super) async fn serve(
     Ok(values)
 }
 
+/// Wait until an actual PostgreSQL writer queues behind the transaction's advisory lock.
+pub(super) async fn wait_for_advisory_waiter(pool: &sqlx::PgPool, holder: i32) -> TestResult {
+    tokio::time::timeout(std::time::Duration::from_secs(2), async {
+        loop {
+            let queued: bool = sqlx::query_scalar(
+                "SELECT EXISTS (
+                   SELECT 1 FROM pg_locks blocked
+                   JOIN pg_locks held USING(locktype,database,classid,objid,objsubid)
+                   WHERE held.pid=$1 AND held.locktype='advisory' AND held.granted AND NOT blocked.granted
+                 )",
+            )
+            .bind(holder)
+            .fetch_one(pool)
+            .await?;
+            if queued {
+                return Ok(());
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    }).await.map_err(|_| "Store writer did not reach the advisory barrier")?
+}
+
 pub(super) fn purchase_request(seed: u8, offer: &str, price: u64) -> TestResult<(u32, Vec<u8>)> {
     let request = wire::StorePurchaseRequest {
         purchase_request_id: id(seed),

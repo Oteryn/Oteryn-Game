@@ -49,6 +49,7 @@ enum Regression {
     LegacyRefusal,
     PaidBeforeGrant,
     OfflinePaid,
+    OfflineLockOrder,
     OfflineLostAnswer,
     Transfer,
     Earned,
@@ -82,6 +83,11 @@ fn coin_cosmetic_paid_grant_recovers_under_a_new_id() -> TestResult {
 #[test]
 fn coin_cosmetic_worker_recovers_before_game_grant() -> TestResult {
     regression("cosmetic-offline-paid", Regression::OfflinePaid)
+}
+
+#[test]
+fn coin_cosmetic_recovery_locks_the_buyer_before_its_grant() -> TestResult {
+    regression("cosmetic-recovery-lock-order", Regression::OfflineLockOrder)
 }
 
 #[test]
@@ -826,8 +832,8 @@ async fn cosmetic_regression(
                 [request.price; 2]
             );
         }
-        Regression::Abandoned | Regression::LegacyRefusal | Regression::PaidBeforeGrant | Regression::OfflinePaid | Regression::OfflineLostAnswer => {
-            let paid = matches!(case, Regression::PaidBeforeGrant | Regression::OfflinePaid);
+        Regression::Abandoned | Regression::LegacyRefusal | Regression::PaidBeforeGrant | Regression::OfflinePaid | Regression::OfflineLostAnswer | Regression::OfflineLockOrder => {
+            let paid = matches!(case, Regression::PaidBeforeGrant | Regression::OfflinePaid | Regression::OfflineLockOrder);
             let lost = matches!(case, Regression::OfflineLostAnswer);
             if lost {
                 ledger.lock().map_err(|_| "ledger")?.malformed = true;
@@ -854,6 +860,51 @@ async fn cosmetic_regression(
             } else {
                 ledger.lock().map_err(|_| "ledger")?.fail_before_debit = false;
             }
+            if matches!(case, Regression::OfflineLockOrder) {
+                sqlx::raw_sql(
+                    "CREATE FUNCTION pause_cosmetic_grant() RETURNS trigger LANGUAGE plpgsql AS
+                     $$ BEGIN PERFORM pg_advisory_xact_lock(3485,1); RETURN NEW; END $$;
+                     CREATE TRIGGER pause_cosmetic_grant BEFORE UPDATE ON game_character_store_cosmetics
+                     FOR EACH ROW WHEN (OLD.operation_id IS NULL AND NEW.operation_id IS NOT NULL)
+                     EXECUTE FUNCTION pause_cosmetic_grant();"
+                ).execute(&harness.pool).await?;
+                let mut barrier = harness.pool.begin().await?;
+                let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()").fetch_one(&mut *barrier).await?;
+                sqlx::query("SELECT pg_advisory_xact_lock(3485,1)").execute(&mut *barrier).await?;
+                let ready = {
+                    let mut platform = ledger.lock().map_err(|_| "ledger")?;
+                    platform.advertise_deliveries = true;
+                    platform.receipt_ready.clone()
+                };
+                let client = StoreClient::new(
+                    Box::new(FakePlatform(ledger.clone())), "oteryn-game/store-consumer".into(),
+                );
+                let worker = crate::gameplay_transport::run_store_receipt_outbox(owner.root, owner.character, client);
+                tokio::pin!(worker);
+                tokio::select! {
+                    () = &mut worker => return Err("cosmetic worker exited".into()),
+                    queued = super::store_fixtures::wait_for_advisory_waiter(&harness.pool, pid) => queued?,
+                }
+                let competing = sqlx::query("SELECT character_id FROM game_character_roots FOR UPDATE NOWAIT")
+                    .fetch_one(&harness.pool).await;
+                let buyer_locked = competing.as_ref().err().and_then(sqlx::Error::as_database_error)
+                    .and_then(|error| error.code()).is_some_and(|code| code == "55P03");
+                barrier.commit().await?;
+                assert!(buyer_locked, "cosmetic recovery reached the grant before locking the buyer root");
+                tokio::select! {
+                    () = &mut worker => return Err("cosmetic worker exited".into()),
+                    replay = async {
+                        tokio::time::timeout(std::time::Duration::from_secs(10), ready.notified()).await?;
+                        purchase(owner, admitted, command(&request)?).await
+                    } => assert_eq!(replay?.code, wire::StorePurchaseCode::Accepted),
+                }
+                assert_eq!(ledger.lock().map_err(|_| "ledger")?.debits, [request.price]);
+                let grants: i64 = sqlx::query_scalar("SELECT count(*) FROM store_delivery_receipts")
+                    .fetch_one(&harness.pool).await?;
+                assert_eq!(grants, 1);
+                return Ok(());
+            }
+
             if matches!(case, Regression::OfflinePaid | Regression::OfflineLostAnswer) {
                 let ready = {
                     let mut platform = ledger.lock().map_err(|_| "ledger")?;

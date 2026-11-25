@@ -159,7 +159,7 @@ impl DurabilityRoot {
         })).await?
     }
 
-    /// A committed native receipt and its realized unit are the proof for a Platform CLAIM.
+    /// A committed Inbox retrieval or lamp placement is the proof for a Platform CLAIM.
     pub async fn read_store_claim_source(
         &self,
         delivery_id: [u8; 16],
@@ -167,14 +167,24 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             let row: Option<(Vec<u8>, sqlx::types::Uuid, i64, String)> = sqlx::query_as(
-                "SELECT d.receipt,d.item_instance_id,floor(extract(epoch FROM m.created_at))::bigint,
-                        COALESCE(m.inbox_recovery_generation,d.recovery_generation)::text
+                "SELECT d.receipt,d.item_instance_id,floor(extract(epoch FROM proof.decided_at))::bigint,
+                        proof.recovery_generation::text
                  FROM store_delivery_receipts d
-                 JOIN game_item_loop_move_lines l ON l.item_instance_id=d.item_instance_id
-                 JOIN game_item_loop_move_receipts m ON m.transaction_id=l.transaction_id
-                 WHERE d.operation_id=encode($1,'hex')::uuid AND l.from_kind=6 AND l.to_kind=1
-                   AND m.character_id=d.character_id AND m.world_id=d.world_id
-                 ORDER BY m.created_at,m.transaction_id LIMIT 1",
+                 CROSS JOIN LATERAL (
+                     SELECT m.created_at AS decided_at,m.transaction_id,
+                            COALESCE(m.inbox_recovery_generation,d.recovery_generation) AS recovery_generation
+                     FROM game_item_loop_move_lines l
+                     JOIN game_item_loop_move_receipts m USING(transaction_id)
+                     WHERE l.item_instance_id=d.item_instance_id AND l.from_kind=6 AND l.to_kind=1
+                       AND m.character_id=d.character_id AND m.world_id=d.world_id
+                     UNION ALL
+                     SELECT to_timestamp(u.occurred_at::double precision / 1000),u.transaction_id,d.recovery_generation
+                     FROM game_item_use_records u
+                     WHERE u.source_item_instance_id=d.item_instance_id AND u.source_kind=2 AND u.cause_kind=470
+                       AND u.character_id=d.character_id AND u.world_id=d.world_id
+                 ) proof
+                 WHERE d.operation_id=encode($1,'hex')::uuid
+                 ORDER BY proof.decided_at,proof.transaction_id LIMIT 1",
             ).bind(delivery_id.as_slice()).fetch_optional(&mut *tx).await?;
             let source = row.map(|(bytes, unit, decided_at, generation)| {
                 let mut receipt: DeliveryReceipt =

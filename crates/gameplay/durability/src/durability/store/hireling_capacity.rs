@@ -95,31 +95,34 @@ impl super::super::DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
+            // The answer writer holds this lock before its history FK locks the buyer.
+            super::purchase::lock_request(&mut tx, &request).await?;
             if !assert_store_fence(&mut tx, &fence, &node, None).await?
                 || !account_matches(&mut tx, &fence, &request.account_id).await?
             {
                 return Ok(Err(StoreDurabilityError::AuthorityRejected));
             }
             super::hireling_reservation::lock_character(&mut tx, request.character_id).await?;
-            let state = match super::purchase::record_request(&mut tx, &request).await {
-                Ok(state) => state,
-                Err(error) => return Ok(Err(error)),
-            };
-            if state == PurchaseRequestState::Sent {
-                let held: bool = sqlx::query_scalar(
-                    "SELECT EXISTS(SELECT 1 FROM game_store_item_reservations WHERE purchase_request_id=encode($1,'hex')::uuid)",
-                ).bind(request.purchase_request_id.as_slice()).fetch_one(&mut *tx).await?;
-                if !held {
+            // Older Sent journals may already have debited Platform. Their exact binding
+            // is enough to replay the debit. The delivery transaction still checks Inbox space.
+            let state = match super::purchase::read_request(&mut tx, &request).await {
+                Ok(Some(state)) => state,
+                Ok(None) => {
                     if !can_receive_item(&mut tx, &fence, *weights, &definition).await? {
                         return Ok(Ok(None));
+                    }
+                    if let Err(error) = super::purchase::insert_request(&mut tx, &request).await {
+                        return Ok(Err(error));
                     }
                     sqlx::query(
                         "INSERT INTO game_store_item_reservations(purchase_request_id,character_id)
                          VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid)"
                     ).bind(request.purchase_request_id.as_slice()).bind(request.character_id.as_slice())
                         .execute(&mut *tx).await?;
+                    PurchaseRequestState::Sent
                 }
-            }
+                Err(error) => return Ok(Err(error)),
+            };
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(Some(state)))
         })).await?
