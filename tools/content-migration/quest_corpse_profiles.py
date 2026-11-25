@@ -29,8 +29,8 @@ CREATURES = 'content/creatures/definitions/spell-native-profiles.json'
 # crates/gameplay/domain/src/domain/loot_data.rs CORPSE_CONTAINER_ENTRIES_MAX.
 CORPSE_CAPACITY_MAX = 48
 GROUPS = ('physical', 'stack', 'container', 'temporal', 'classification')
-# The package adds two distinct Vampire Hunter roots to the 40 existing roots.
-MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 42, 8, 152
+# The Vampire Hunter package adds two roots to the source projection budget.
+MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 66, 8, 256
 
 
 def item_id(reference):

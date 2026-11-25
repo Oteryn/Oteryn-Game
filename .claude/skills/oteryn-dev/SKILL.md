@@ -58,7 +58,8 @@ The references point here instead of repeating these.
 - A change that touches another subsystem's crate needs that owner's review of
   the consumer map before code (`docs/architecture/subsystems/README.md`).
 - Main red: revert the culprit PR at once. The revert tree must equal the last
-  green `main` tree. A forward fix only when a revert is impossible or the fix
+  green `main` tree, or, when independent PRs merged after the culprit, the
+  revert must be the culprit's exact inverse. A forward fix only when a revert is impossible or the fix
   is already green (`references/ci-merge.md`, *Red `main`*).
 - Tests stay as strict as they were: a red test is fixed, not skipped,
   ignored, quarantined, loosened or deleted.

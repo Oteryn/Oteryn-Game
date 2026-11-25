@@ -233,6 +233,11 @@ def run(command: list[str]) -> None:
     subprocess.run(command, cwd=ROOT, check=True)
 
 
+def refresh_starter_attack_profiles() -> None:
+    run(["python3", "tools/content-schema/native-gameplay/build_newhaven_starter_profiles.py"])
+    run(["python3", "tools/content-migration/ranged_item_profiles.py"])
+
+
 def refresh_world_metadata() -> None:
     """Recount final overlays using the already committed, hash-pinned XML."""
     donor = ROOT / "tools/content-schema/quest-authoring/samples/donor-source"
@@ -1101,6 +1106,7 @@ def main() -> int:
             parser.error(
                 "--native-only cannot be combined with --resolve, --no-stage or --check"
             )
+        refresh_starter_attack_profiles()
         run(
             [
                 "python3",
@@ -1165,6 +1171,7 @@ def main() -> int:
     if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
+    refresh_starter_attack_profiles()
     run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     run(
