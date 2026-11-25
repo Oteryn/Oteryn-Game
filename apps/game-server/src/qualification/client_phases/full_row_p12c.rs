@@ -406,11 +406,13 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    // Both nodes serve this bundle. Reuse the core map for route planning and
+    // keep every player connection scoped to the Open PvP node.
     let world = load_world(
         bytes,
         &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
+        WorldId::decode(&core.world)?,
+        ChannelId::decode(&core.channel)?,
     )?;
     let mut client = connect_character(clients, 0xca, 0).await.map_err(|error| {
         verdict::context(
