@@ -100,20 +100,20 @@ COIN_ADMISSION = {
 
 
 def refresh_registered_loot(root: Path, generated: dict[str, bytes]) -> None:
+    from build_full_spell_artifact import loot_item_profiles
     from cake_native_successor import loot_successor
-    import questpc7_hot_corpse_loot
-    import questpc7_marsh_loot
-    import questpc7_slug_loot
-    import questpc7_smith_corpse_loot
-    import world_change_loot_inputs
+    from srx1_profile_updates import PATH as item_updates
+    from starting_loadout_profiles import FRAGMENT
 
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     loot_path = REPOSITORY_PINS["loot_tables"]
     canonical = spell_import.canonical_bytes
     # Build the closure from this registration's Creature and Item candidates.
+    items = loot_item_profiles(generated[item_path], generated.get(item_updates))
+    items["records"].extend(json.loads(generated[FRAGMENT])["records"])
     generated[loot_path] = loot_successor(
-        root, json.loads(generated[creature_path]), json.loads(generated[item_path])
+        root, json.loads(generated[creature_path]), items
     )
     manifest = json.loads(generated[NATIVE_MANIFEST])
     manifest["loot_tables"] = {
@@ -121,6 +121,17 @@ def refresh_registered_loot(root: Path, generated: dict[str, bytes]) -> None:
         "sha256": hashlib.sha256(generated[loot_path]).hexdigest(),
     }
     generated[NATIVE_MANIFEST] = canonical(manifest)
+    refine_loot_inputs(root, generated)
+
+
+def refine_loot_inputs(root: Path, generated: dict[str, bytes]) -> None:
+    import questpc7_hot_corpse_loot
+    import questpc7_marsh_loot
+    import questpc7_slug_loot
+    import questpc7_smith_corpse_loot
+    import world_change_loot_inputs
+
+    item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     for overlay in (
         world_change_loot_inputs,
         questpc7_marsh_loot,
@@ -128,7 +139,7 @@ def refresh_registered_loot(root: Path, generated: dict[str, bytes]) -> None:
         questpc7_smith_corpse_loot,
         questpc7_hot_corpse_loot,
     ):
-        overlay.apply(root, generated, item_path, NATIVE_MANIFEST, canonical)
+        overlay.apply(root, generated, item_path, NATIVE_MANIFEST, spell_import.canonical_bytes)
 
 
 def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
@@ -1745,6 +1756,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
+    import loot_slice_one
+    loot_slice_one.admit_native(root, generated, item_path, starting_loadout_profiles.FRAGMENT,
+                                provider_order, spell_import.canonical_bytes)
     items = json.loads(generated[item_path])
     energy = next(
         row
@@ -1772,6 +1786,10 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         (root / house_decoration_actions.PROFILES).read_bytes()
     )
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
+    import cloot2_item_admissions
+    cloot2_item_admissions.admit(root, items, provider_order)
+    import cloot3_item_profiles
+    cloot3_item_profiles.complete_records(root, items["records"], provider_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
     import forge_item_profiles
 

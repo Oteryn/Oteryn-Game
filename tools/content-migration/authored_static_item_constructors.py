@@ -144,7 +144,7 @@ def prepare(root, intent):
             'attributes': {'speed_bonus': 0, 'blocks_movement': flags.get('flags.unpass', False),
                            'blocks_projectile': flags.get('flags.unsight', False),
                            'immovable_block_solid': False, 'has_height': flags.get('flags.height', False),
-                           'field_replaceable': None, 'field_condition': None, 'rune_consumption': None},
+                           'field_replaceable': None},
             'admission': {'materializable': True, 'stack_class': 'NonStackable',
                           'legal_destinations': ['CharacterInventory', 'Ground']},
             'production_definition': {'family': 'Item', 'production_key': key, 'revision_ref': identity['revision']},
