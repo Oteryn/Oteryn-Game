@@ -162,7 +162,7 @@ These cut reading, writing and waiting; they change no authority, review or inte
 ## Review and Merge Queue rules (owner decisions 2026-09-30)
 
 - **Review split (D245).** Codex is the default exact-head reviewer, under `OWNER_FUNDED_AI_POLICY.md`, for every frozen candidate that needs review, docs-only architecture decisions included.
-  - Codex's part: after the live de-duplication check above, start one read-only Codex Cloud review (`gpt-6.2-astra`, effort high) under the owner's per-PR rule in `OWNER_FUNDED_AI_POLICY.md` (once after the first push over the whole diff; a second only after a material logic change, over the new diff; never a third). `@codex review` comments are not used.
+  - Codex's part: after the live de-duplication check above, start one read-only holistic Codex Cloud review from your own chat session (`gpt-6.2-sol`, effort high; a risk-class PR also gets one `gpt-6.2-astra` run at effort high on the same head) under the owner's per-PR rule in `OWNER_FUNDED_AI_POLICY.md` (once after the first push over the whole diff; a second only after a material logic change, over the new diff; never a third). An exact-head `@codex review` comment is used only by a review owner without Codex Cloud (`OWNER_FUNDED_AI_POLICY.md`).
   - Your part is a light qualification, with no local full-suite run:
     - `merge-tree` against current `main`;
     - changed paths against the allocation and owned paths;

@@ -422,7 +422,8 @@ Owner decision 2026-11-25; it replaces the older package and batch wording.
 - **Merge and regenerate.** The writer merges the unit branches with the merge
   drivers (`tools/merge-driver/install.sh`), then runs `cargo fmt` and
   regenerates the derived files (pins, registries, goldens) once, on the
-  train, not per unit.
+  train. Each unit still carries its own regenerated derived files and
+  passes its own `pin-check`, so it can land or be dropped alone.
 - **A unit is a coherent piece that can be dropped alone.** Its risk class
   (`oteryn-coding`, *Risk classes*) matters more than its size. There is no
   line cap.
@@ -441,9 +442,13 @@ Owner decision 2026-11-25; it replaces the older package and batch wording.
 Owner decision 2026-11-25.
 
 - Revert the culprit PR at once. Find it by bisecting the post-merge runs
-  (`oteryn-debugging` section 6). The revert is good only when its tree equals
-  the last green `main` tree: `git rev-parse <revert>^{tree}` and
-  `git rev-parse <last-green>^{tree}` are the same.
+  (`oteryn-debugging` section 6). When the culprit is the last merge, the
+  revert is good only when its tree equals the last green `main` tree
+  (`git rev-parse <revert>^{tree}` and `git rev-parse <last-green>^{tree}`
+  are the same). When independent PRs merged after it, check instead that the
+  revert is a plain `git revert <culprit>` with no hand edit (`git show
+  <culprit> | git patch-id --stable` equals `git diff <revert> <revert>^ |
+  git patch-id --stable`) and that the red job is green on the revert head.
 - A forward fix is allowed only when a revert is impossible (later merges
   depend on the culprit, a migration is already applied) or the fix is
   already green on its own head. Search the open PRs for an existing fix

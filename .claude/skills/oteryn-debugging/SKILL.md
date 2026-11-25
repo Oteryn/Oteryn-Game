@@ -84,11 +84,12 @@ Note the failure and its root cause in the report; the wave retro
 (`oteryn-waves`, *Close the wave*) decides whether it becomes a check or a
 skill line.
 
-## 6. Red main: targeted fix
+## 6. Red main: revert first, then the fix
 
 A red post-merge run blocks every merge, so the loop above must run in
-minutes, not CI cycles. The owner's default (2026-11-02) is a targeted fix,
-not a revert. MAINRED13 was red for about 37 hours because three rounds
+minutes, not CI cycles. The owner's default is a revert (2026-11-25; it
+replaces the targeted-fix default of 2026-11-02, see the end of this
+section); the root-cause loop below then finds the fix for the reverted PR. MAINRED13 was red for about 37 hours because three rounds
 searched the whole code base and used CI (about 30 minutes per try) as the
 loop; the CI history named the culprit commit in minutes.
 

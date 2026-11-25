@@ -26,7 +26,8 @@ review is requested on a head, the head has:
   while it is red on `main` for an unrelated reason, the same rows compared
   against `main`. A PG case counts only with proof it ran against PostgreSQL
   (a route-less case returns `Ok(())` without running). Where the session
-  cannot run it (no PostgreSQL route), say so and leave it to CI;
+  cannot run it (no PostgreSQL route), say so: the coordinator runs it when it
+  has a route, otherwise CI (`heavy-tests`) does;
 - the head that will merge: a train PR is reviewed on its integrated train
   head, and a unit that lands only through the train PR gets no review of its own. A
   PR that merges on its own, a train unit merged through its own PR included,
@@ -38,7 +39,8 @@ review is requested on a head, the head has:
   included; until a lane's file exists, the lane's owning contracts in
   `docs/contracts/` and its guard tests), with the consumer map of the packet checked against the diff;
 - the pre-push list of `oteryn-coding` (*Before you push*): own PostgreSQL
-  cases proven to reach assertions, every changed literal grepped and updated,
+  cases proven to reach assertions, every changed literal grepped and each
+  real consumer in the owned paths updated (the others named),
   full tests of changed crates after any main-merge.
 
 A head that fails the gate goes back to its author, not to review.
@@ -133,17 +135,17 @@ with CI and never blocks or delays it.
   reviewed again. A session without the PC still runs it in Codex Cloud;
   "not reviewed, no PC" is not an accepted result. A Codex lane never reviews its
   own code.
-- How: the review owner starts it in Codex Cloud, read-only, model
-  gpt-6.2-astra, reasoning effort high, or, from a
-  session without the PC, with one native `@codex review` PR comment naming the
-  exact head (it answers again since 2026-11-15). Either way it is one round of parallel lens
-  runs over the same head, each with the
-  diff, `CODEX-CHECKLIST.md`, its lens and, for a CI fix, the failing log
-  lines. Each run is told to report every finding, with no cap on lines or
-  count, and every other instance of the same class in the diff. A train
-  PR or a chunked diff also gets the two holistic whole-diff runs
-  (`whole-integration`, `whole-flows`) in the same round; chunk runs alone are
-  not a covered review of a train. Lenses, holistic runs,
+- How: the review owner starts it from its own chat session in Codex Cloud,
+  read-only, model gpt-6.2-sol at reasoning effort high (owner decision
+  2026-11-25, calibration), never through the PC; a PR with code in a risk
+  class also gets one gpt-6.2-astra run at effort high on the same head,
+  whose P0/P1 count only after a traced REAL verdict (§6). Never at effort
+  medium. From a session without Codex Cloud, one native `@codex review` PR
+  comment naming the exact head. By default the round is one holistic run
+  over the whole diff and the callers of what it changes, told to report
+  every finding with no cap, every other instance of the same class, a
+  quoted caller for each P0/P1 and a refute attempt before its output; a
+  diff above about 1500 lines is also split into chunks. The holistic run,
   chunking of big diffs, the prompt, the merge, verify and sweep steps and the
   stop rule are in `references/batch-review.md`; read it before you start a
   review or delegate one. Code Codex wrote is
@@ -158,10 +160,10 @@ with CI and never blocks or delays it.
   them, with every instance the pattern sweep found, to one code-writing
   Codex run, model gpt-6.2-sol (one run for the whole batch, never one per
   finding), at reasoning effort `high` when a P0/P1 is in a risk class and
-  `medium` for any other fix (owner decision 2026-11-25): on the PC
-  `bash ~/oteryn-cache/codex-review.sh <worktree> <tag> --fix-confirmed <file>`
-  (it runs `codex-task.sh` as `fix-<tag>`); elsewhere a Codex Cloud packet with
-  the same list. Per finding it writes a red test first, reports `NOT
+  `medium` for any other fix (owner decision 2026-11-25), as one Codex Cloud
+  packet with the same list, launched from the review owner's chat session
+  (owner rule 2026-11-25: never through the PC); when another session holds
+  the branch as its writer, the list goes to that writer instead. Per finding it writes a red test first, reports `NOT
   REPRODUCED` without a code change when the test cannot fail, then makes the
   smallest fix and reruns the test green; it changes no existing assertion,
   timeout or budget and nothing outside the listed findings. Nothing is

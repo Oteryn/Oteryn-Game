@@ -29,7 +29,7 @@ fencing, the protocol wire, authority, a durable value (gold, items,
 bounties), a migration, or a symbol with several consumers. Owner decision 2026-11-25:
 
 - Write a half-page plan before code and have it reviewed: the invariant, the
-  consumer map (`oteryn-waves` `references/delegation.md`, item 1), the states
+  consumer map (`oteryn-waves` `references/delegation.md`, item 0), the states
   and error paths, and the tests. Code starts after the plan is accepted.
 - Code in a risk class runs at effort high; data, content, tests and simple
   slices run at medium (`oteryn-waves` `references/delegation.md`).
@@ -121,7 +121,8 @@ Beyond it:
   literal in the test: no hand-typed spawn counts, coordinates, floors,
   versions or item counts that a content or schema change moves. A test that
   must pin a number reads it from its one central source.
-- A defect class that Codex or CI found twice becomes a guard test (a source
+- The class of every confirmed P0/P1, and any other defect class that Codex
+  or CI found twice, becomes a guard test (a source
   scan, a table test over every variant or an invariant over the data) in the
   fix PR, not a note in a skill (`oteryn-review` §7).
 
@@ -131,12 +132,18 @@ Owner decision 2026-11-25; each item comes from a class that reached review
 or `main` (retro 2026-11-25).
 
 1. Run the touched module's own PostgreSQL cases and prove they reached
-   their assertions (the test's duration, or a marker or a deliberately red
-   run). A case that returned `Ok(())` without a database proves nothing.
+   their assertions: a marker the test prints after its database setup, an
+   assertion output, or a deliberately red run; elapsed time alone is not
+   proof. A worker without a database route says so in its report; the
+   coordinator runs the cases when it has a route, otherwise CI
+   (`heavy-tests`) does (`oteryn-waves` `references/delegation.md`,
+   item 6). A case that returned `Ok(())` without a database proves nothing.
    Run the scenario variants too: solo and party, every consumer, the error
    paths.
 2. Grep every literal, version and count you changed across tests, fixtures,
-   contracts, docs and other languages. Update all hits in the same commit.
+   contracts, docs and other languages. Inspect every hit; update in the same
+   commit each one that really consumes the changed value and is inside your
+   owned paths, and name the others in your report for their owner.
 3. After any merge of `origin/main`, rebuild, then run the full non-PostgreSQL
    tests of the changed crates and your own PostgreSQL cases before the push.
    A clean merge does not mean the merged code still compiles or agrees.
