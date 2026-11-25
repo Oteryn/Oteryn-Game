@@ -486,7 +486,7 @@ fn prepare_acquisition_excluding(
     let owned = owned_ids(runtime, owner, session)?;
     let (kind, policy, target, position) = match &source {
         AcquisitionSource::Named(name) => {
-            let policy = runtime.companion_policy(name)?;
+            let policy = runtime.named_summon_policy(name)?;
             let anchor = runtime.read_actor_position(owner)?.position();
             let position = placement_excluding(
                 runtime,

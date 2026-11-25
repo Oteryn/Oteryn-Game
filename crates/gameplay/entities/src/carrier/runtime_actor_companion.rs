@@ -850,6 +850,32 @@ impl ChannelRuntimeV1 {
         }
         Ok(Arc::clone(first))
     }
+    /// Resolve the player-facing monster name for Summon Creature. A unique
+    /// production definition takes precedence over reference definitions of the
+    /// same name. Other name lookups still reject ambiguous matches.
+    pub fn named_summon_policy(
+        &self,
+        name: &str,
+    ) -> Result<Arc<CompiledCreaturePolicy>, CarrierError> {
+        match self.companion_policy(name) {
+            Err(CarrierError::InvalidCreatureTarget) => {}
+            resolved => return resolved,
+        }
+        let table = self
+            .companion_policies
+            .as_ref()
+            .ok_or(CarrierError::InvalidCreatureTarget)?;
+        let mut production = table.policies().iter().filter(|policy| {
+            policy.definition_key.starts_with("oteryn:creature.")
+                && policy.display_name.eq_ignore_ascii_case(name)
+        });
+        let preferred = production
+            .next()
+            .filter(|_| production.next().is_none())
+            .ok_or(CarrierError::InvalidCreatureTarget)?;
+        self.companion_policy(&preferred.definition_key)
+    }
+
     /// Active spawn realization binds its wild creature to its actual decoded policy. Convince
     /// subsequently reads this binding, never guesses the definition from a spawn instance id.
     pub fn install_creature_policy(

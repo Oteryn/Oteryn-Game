@@ -37,6 +37,8 @@ use oteryn_protocol_oteryn::{
 
 use std::time::Duration;
 
+pub(super) const NAMED_SUMMON: u8 = 254;
+
 pub(super) fn scenario(case: u8) -> TestResult {
     scenario_in_world(case, None)
 }
@@ -69,7 +71,8 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     );
     prepare_current_session(&h).await?;
     h.seed_pvp_target().await?;
-    if !matches!(case, 1 | 5 | 6) {
+    let with_observer = !matches!(case, 1 | 5 | 6 | NAMED_SUMMON);
+    if with_observer {
         observer::admit(&h).await?;
     }
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -107,7 +110,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         cp,
         room.clone(),
         native.spell_book().clone(),
-        if matches!(case, 5 | 6) { 4 } else { 2 },
+        if matches!(case, 5 | 6 | NAMED_SUMMON) {
+            4
+        } else {
+            2
+        },
     )?;
     deps.combat_room = Some(room);
     let mut owner = deps.owner(&h, &authority);
@@ -135,6 +142,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         )
         .await
         .map_err(debug)?;
+    let (level, experience) = if case == NAMED_SUMMON {
+        (35, 601_800)
+    } else {
+        (20, 98_800)
+    };
     h.root
         .commit_character_experience(
             &authority,
@@ -142,7 +154,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             current_fence(&owner, session).await?,
             ExperienceAwardRequest {
                 occurrence: ExperienceRewardOccurrence::from_bytes(id(91)).map_err(debug)?,
-                amount: oteryn_simulation_determinism::ExactI64::new(98_800),
+                amount: oteryn_simulation_determinism::ExactI64::new(experience),
                 context: progression.context.clone(),
                 policy_revision: progression.policy_revision.clone(),
                 reward_revision: progression.reward_revision.clone(),
@@ -168,6 +180,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                 .map_err(debug)?,
             )
             .map_err(debug)?;
+        if matches!(case, 5 | 6 | NAMED_SUMMON) {
+            runtime
+                .install_companion_policies(native.policies().clone())
+                .map_err(debug)?;
+        }
         if matches!(case, 5 | 6) {
             // This equipment-projection case remains nonlethal, so actual HP
             // delta equals the admitted damage. Separate owner regressions
@@ -181,9 +198,6 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                 y: p.y,
                 floor: p.floor,
             };
-            runtime
-                .install_companion_policies(native.policies().clone())
-                .map_err(debug)?;
             let health = runtime
                 .companion_policy("oteryn:creature.demon")
                 .map_err(debug)?
@@ -213,7 +227,12 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                     actor,
                     session,
                     crate::spell::cast::CharacterCastFacts {
-                        level: 20,
+                        level,
+                        max_mana: if case == NAMED_SUMMON {
+                            500
+                        } else {
+                            crate::gameplay_transport::actor_spell::tests::FACTS.max_mana
+                        },
                         ..crate::gameplay_transport::actor_spell::tests::FACTS
                     },
                     (0, 0),
@@ -229,7 +248,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .map_err(debug)?;
     }
     let target_session = GameSessionId::decode(&id(110)).map_err(debug)?;
-    let target_actor = if !matches!(case, 1 | 5 | 6) {
+    let target_actor = if with_observer {
         Some(observer::initialize(&deps, &owner).await?)
     } else {
         None
@@ -251,12 +270,9 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     }
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
-    for current_session in [
-        Some(session),
-        (!matches!(case, 1 | 5 | 6)).then_some(target_session),
-    ]
-    .into_iter()
-    .flatten()
+    for current_session in [Some(session), with_observer.then_some(target_session)]
+        .into_iter()
+        .flatten()
     {
         h.root
             .initialize_familiar_group(
@@ -294,6 +310,79 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
+    if case == NAMED_SUMMON {
+        let expected_key = "oteryn:creature.rat";
+        let cost = {
+            let runtime = deps.runtime.lock().await;
+            assert!(
+                runtime
+                    .owned_companions(actor, session)
+                    .map_err(debug)?
+                    .is_empty()
+            );
+            let canonical = runtime.companion_policy(expected_key).map_err(debug)?;
+            let alias = runtime
+                .companion_policy("canary:creature/rat")
+                .map_err(debug)?;
+            assert_eq!(canonical.display_name, alias.display_name);
+            assert!(
+                runtime.companion_policy("rat").is_err(),
+                "unqualified lookup must remain ambiguous"
+            );
+            canonical.mana_cost.ok_or("Rat mana cost")?
+        };
+        let before = owner
+            .observe_vitals(actor, session)
+            .await
+            .ok_or("before vitals")?
+            .1
+            .mana;
+        assert!(before >= cost, "summon fixture must afford the Rat");
+        let command = chat::encode_chat_intent(&chat::ChatIntent::Say {
+            mode: chat::ChatSpeechMode::Say,
+            text: "utevo res \"rat\"".into(),
+        })
+        .map_err(debug)?;
+        let (results, _) = exchange(
+            &owner,
+            &mut admitted,
+            &[(chat::COMMAND_TYPE_CHAT_INTENT, command)],
+            false,
+            false,
+        )
+        .await?;
+        let [(status, payload)] = results.as_slice() else {
+            return Err("expected one summon result".into());
+        };
+        let result = chat::decode_chat_intent_result(payload).map_err(debug)?;
+        assert_eq!(
+            (*status, result.disposition),
+            (CommandStatus::Accepted, chat::ChatDisposition::Ok)
+        );
+        let owned = deps
+            .runtime
+            .lock()
+            .await
+            .owned_companions(actor, session)
+            .map_err(debug)?;
+        let [summon] = owned.as_slice() else {
+            return Err("expected one owned summon".into());
+        };
+        assert_eq!(summon.state.policy.definition_key, expected_key);
+        assert_eq!(
+            owner
+                .observe_vitals(actor, session)
+                .await
+                .ok_or("after vitals")?
+                .1
+                .mana,
+            before - cost
+        );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
     if case == 255 {
         use oteryn_protocol_oteryn::actor_spell_v2 as wire;
         admitted.continuity.selected_capabilities =
