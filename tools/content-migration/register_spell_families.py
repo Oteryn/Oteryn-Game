@@ -1762,16 +1762,22 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     protected_loot_yields.admit(root, items, provider_order)
     # These late Item admissions belong to the base provider. Apply their
     # verified top-order facts before deriving the separate SRX-1 supplement.
-    hard_items = [
+    robbery_creatures = native_goal_corpse_items.bank_robbery_creatures(root)
+    robbery_corpses, _ = native_goal_corpse_items.policies(root, creatures=robbery_creatures)
+    robbery_items = {
+        f"oteryn:item.tibia.i{item}"
+        for item in robbery_corpses.keys() | native_goal_loot_items.selected(root, robbery_creatures)
+    }
+    base_items = [
         row
         for row in items["records"]
         if row["production_definition"]["production_key"]
-        in protected_loot_yields.ARBAZILOTH_HARD_ITEMS
+        in protected_loot_yields.ARBAZILOTH_HARD_ITEMS | robbery_items
     ]
     house_top_order = json.loads(
         (root / house_decoration_actions.PROFILES).read_bytes()
     )
-    house_decoration_actions.apply_top_order(hard_items, house_top_order)
+    house_decoration_actions.apply_top_order(base_items, house_top_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
     import forge_item_profiles
 

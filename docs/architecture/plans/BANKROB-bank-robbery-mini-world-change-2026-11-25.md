@@ -45,7 +45,7 @@ Plan **one migration** from reserved **3313–3316** for World robbery lifecycle
 | Goldhunter | Free account per Fandom and the shipped achievement catalogue, despite the BR wiki's Premium listing. Fifth credited return. Cross-character aggregation of the five returns **PARITY_PENDING**. |
 | Coin maxima | Bosses drop the bag and reported 0–100 platinum. Exact per-boss maxima and no-drop distribution **PARITY_PENDING**. Oteryn loot shards `content/loot/loot-{00000-00499,00500-00999}.json:1` have maxima 99/100/100/100 in city order, while Crystal Jesse/Robby have 99/85. These are donor values. [Crystal Robby loot](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/bosses/robby_the_reckless.lua#L74-L76) |
 | Several banks per day | One active city with its named bankers. Choose one occurrence per save epoch, consistent with the walkthrough's return lockout. Additional same-day occurrences before a return **PARITY_PENDING**. |
-| Hourly selection | Exact hourly probability and city-selection weights **PARITY_PENDING** and unpublished. Use the observed mean of roughly 13–14 days between kills as the calibration target. No numeric probability selected. |
+| Hourly selection | Exact hourly probability and city-selection weights **PARITY_PENDING** and unpublished. Use the content-configured hourly probability 1/324 (mean 13.5 days) and uniform city weights of 1/4 each. Both are **PARITY_PENDING**. |
 
 ## Implementation order and PG acceptance
 

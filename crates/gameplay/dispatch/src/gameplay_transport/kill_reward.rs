@@ -2015,6 +2015,15 @@ pub fn record_creature_kill(
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
         native_room_placement_context: pin.frame_binding_digest().to_vec(),
     };
+    let robbery = runtime
+        .raid_identity_for_actor_including_dead(target)
+        .ok()
+        .flatten()
+        .filter(|identity| {
+            identity.wave == crate::durability::world_event::bank_robbery::RAID_WAVE
+                && identity.entry == 0
+        })
+        .map(|identity| identity.firing_id);
     let daily_boost = runtime.daily_boost().cloned();
     // Freeze the principal's Prey boost on the death turn, before any command can reroll it.
     if crate::combat::project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), target)
@@ -2100,6 +2109,7 @@ pub fn record_creature_kill(
     else {
         return;
     };
+    facts.bank_robbery = robbery;
     facts.died_at_unix_ms =
         u64::try_from(overlord_death_at.unwrap_or_else(super::npc_trade_command::unix_ms_now))
             .unwrap_or(0);
@@ -4101,7 +4111,21 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .lock()
             .await
             .live_stamina(entry.facts.principal.actor, entry.facts.principal.session);
+        let robbery_bag = entry.facts.bank_robbery.and_then(|_| {
+            loot_table
+                .entries
+                .iter()
+                .find(|loot| {
+                    loot.item.production_key == crate::durability::world_event::bank_robbery::BAG
+                })
+                .cloned()
+        });
         apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
+        if loot_table.entries.is_empty()
+            && let Some(bag) = &robbery_bag
+        {
+            loot_table.entries.push(bag.clone());
+        }
         // SV09: two full rolls for Double Loot; Reward System loot is excluded.
         if entry.boss_reward.is_none() {
             apply_scheduled_loot_rate(&mut loot_table, self.event_rates.loot);
@@ -4127,6 +4151,19 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     verdict: SettleVerdict::Retry,
                     no_progression: false,
                 };
+            }
+        }
+        if let Some(bag) = robbery_bag {
+            // The recovery item remains guaranteed under ordinary loot-rate
+            // modifiers. Full additional rolls retain their distinct causes.
+            let bag_key = &bag.item.production_key;
+            for loot in loot_table
+                .entries
+                .iter_mut()
+                .filter(|loot| &loot.item.production_key == bag_key)
+            {
+                loot.probability_ppm = bag.probability_ppm;
+                loot.details.rated_probability_ppm = None;
             }
         }
         super::quest_death_loot::append(&mut loot_table, &entry);

@@ -70,6 +70,7 @@ pub(super) async fn mint(
             f::id(f::CHARACTER),
             None,
             None,
+            None,
         )
         .await
         .map_err(f::debug)?;

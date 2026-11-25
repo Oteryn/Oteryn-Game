@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "941d2977a41a3422ee95e2d220080330f617bf5fecdfee56ec3d2f92ea7d325a",
+  "input_sha256": "4fdd395e8dbb899d13650ec230f0f25122214f4de2bb5f5860aafe482ab5b9f1",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2055,7 +2055,6 @@
     "oteryn:creature.duskbringer",
     "oteryn:creature.dwarf",
     "oteryn:creature.dwarf_geomancer",
-    "oteryn:creature.dwarf_guard",
     "oteryn:creature.dwarf_henchman",
     "oteryn:creature.dwarf_soldier",
     "oteryn:creature.dworc_fleshhunter",
@@ -2581,8 +2580,6 @@
     "oteryn:creature.barbarian_brutetamer",
     "oteryn:creature.barbarian_headsplitter",
     "oteryn:creature.barbarian_skullhunter",
-    "oteryn:creature.barkless_devotee",
-    "oteryn:creature.barkless_fanatic",
     "oteryn:creature.bashmu",
     "oteryn:creature.betrayed_wraith",
     "oteryn:creature.biting_book",
@@ -2721,7 +2718,6 @@
     "oteryn:creature.duskbringer",
     "oteryn:creature.dwarf",
     "oteryn:creature.dwarf_geomancer",
-    "oteryn:creature.dwarf_guard",
     "oteryn:creature.dwarf_henchman",
     "oteryn:creature.dwarf_soldier",
     "oteryn:creature.dworc_fleshhunter",
