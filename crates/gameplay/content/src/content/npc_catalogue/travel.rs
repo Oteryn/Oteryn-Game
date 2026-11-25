@@ -33,6 +33,8 @@ pub struct TravelRoute {
     pub service: String,
     pub route: ProjectV2TravelRoute,
     pub keyword: String,
+    /// Use Crystal's MsgContains for the route key and confirmation.
+    pub crystal_callback: bool,
     pub postman: bool,
     pub carpet: bool,
     pub held: bool,
@@ -56,6 +58,11 @@ struct Correction {
     x: i32,
     y: i32,
     floor: i16,
+    premium_override: Option<bool>,
+    #[serde(default)]
+    use_authored_fare_and_premium: bool,
+    #[serde(default)]
+    crystal_callback: bool,
     postman: bool,
     carpet: bool,
     held: bool,
@@ -123,30 +130,38 @@ pub fn resolve(
             if template.is_none() && !correction.native_addition {
                 return None;
             }
+            let (x, y, floor) = (correction.x, correction.y, correction.floor);
+            let (price, premium) = template
+                .filter(|_| correction.use_authored_fare_and_premium)
+                .map_or((correction.price, correction.premium), |route| {
+                    (route.price, route.premium)
+                });
+            let premium = correction.premium_override.unwrap_or(premium);
             let mut route = template.cloned().unwrap_or(ProjectV2TravelRoute {
                 key: key.to_owned(),
                 destination: crate::content::ProjectV2TravelDestination {
                     coordinate_frame: "global-target-2026-09-27".to_owned(),
-                    x: correction.x,
-                    y: correction.y,
-                    floor: correction.floor,
+                    x,
+                    y,
+                    floor,
                 },
-                price: correction.price,
-                premium: correction.premium,
+                price,
+                premium,
                 min_level: None,
                 required_quest_tracks: Vec::new(),
             });
             route.key = key.to_owned();
-            route.price = correction.price;
-            route.premium = correction.premium;
+            route.price = price;
+            route.premium = premium;
             route.min_level = None;
-            route.destination.x = correction.x;
-            route.destination.y = correction.y;
-            route.destination.floor = correction.floor;
+            route.destination.x = x;
+            route.destination.y = y;
+            route.destination.floor = floor;
             Some(TravelRoute {
                 service: service.to_owned(),
                 route,
                 keyword: correction.keyword.clone(),
+                crystal_callback: correction.crystal_callback,
                 postman: correction.postman,
                 carpet: correction.carpet,
                 held: correction.held,
@@ -186,6 +201,7 @@ pub fn resolve(
                     service: reference.key.clone(),
                     route: route.clone(),
                     keyword: route.key.replace('_', " "),
+                    crystal_callback: false,
                     postman: false,
                     carpet: false,
                     held: false,
@@ -450,7 +466,7 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 248);
+        assert_eq!(corrections.len(), 252);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
@@ -676,7 +692,10 @@ mod tests {
             assert_eq!(found.route.price, price);
             assert_eq!(
                 found.route.premium,
-                !matches!(npc, "captain_jack_rat" | "captain_waverider")
+                !matches!(
+                    npc,
+                    "captain_jack_rat" | "captain_max" | "captain_waverider"
+                )
             );
             assert_eq!(
                 (
@@ -689,6 +708,75 @@ mod tests {
         }
         Ok(())
     }
+
+    #[test]
+    fn regional_captain_routes_resolve_to_donor_fares_and_premium()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &root.join("content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        let model = catalogue.service_model_for_project()?;
+        let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
+            root.join("docs/reference/content-prep/travel-content-1/source-correction-check.json"),
+        )?)?;
+        let rows = source["rows"].as_array().ok_or("travel source rows")?;
+        for (npc, slug, held) in [
+            ("captain_gulliver", "issavi", false),
+            ("captain_gulliver", "krailos", true),
+            ("captain_gulliver", "thais", false),
+            ("petros", "issavi", true),
+        ] {
+            let key = format!("oteryn:npc.{npc}");
+            let entry = model
+                .npcs()
+                .iter()
+                .find(|(reference, _)| reference.key == key)
+                .map(|(_, entry)| entry)
+                .ok_or("NPC")?;
+            let route = super::resolve(&model, &key, &entry.services)
+                .into_iter()
+                .find(|candidate| candidate.route.key == slug)
+                .ok_or("route")?;
+            let route_key = format!("{}/{slug}", route.service);
+            let donor = rows
+                .iter()
+                .find(|row| row["key"] == route_key)
+                .ok_or("donor route")?;
+            assert_eq!(
+                (
+                    route.route.price,
+                    route.route.premium,
+                    route.held,
+                    route.postman
+                ),
+                (
+                    donor["donor_cost"].as_u64().ok_or("donor fare")?,
+                    donor["donor_premium"].as_bool().ok_or("donor premium")?,
+                    held,
+                    true
+                ),
+                "{route_key}"
+            );
+            let destination = &route.route.destination;
+            let x = donor["destination"]["x"].as_i64().ok_or("donor x")?;
+            let y = donor["destination"]["y"].as_i64().ok_or("donor y")?;
+            let floor = donor["destination"]["z"].as_i64().ok_or("donor floor")?;
+            assert_eq!(
+                (
+                    i64::from(destination.x),
+                    i64::from(destination.y),
+                    i64::from(destination.floor)
+                ),
+                (x, y, floor),
+                "{route_key}"
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn remaining_captain_routes_preserve_unlocks_and_custom_fares()
     -> Result<(), Box<dyn std::error::Error>> {

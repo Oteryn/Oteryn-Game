@@ -19,6 +19,7 @@ use crate::foundation::{
     NpcPlacements,
 };
 use crate::gameplay_transport::NpcTalkBook;
+use oteryn_gameplay_world_change::daily::DailyWorldChanges;
 use oteryn_world_bundle::{bundle, npc};
 use std::collections::BTreeSet;
 use std::path::Path;
@@ -513,6 +514,7 @@ pub(super) fn talk_book(boot: Option<&NpcBoot>) -> Option<Arc<NpcTalkBook>> {
 pub(super) fn place(
     runtime: &mut ChannelRuntimeV1,
     boot: Option<&NpcBoot>,
+    daily: Option<&DailyWorldChanges>,
 ) -> Result<usize, BootError> {
     if let Some(catalogue_sha256) = catalogue_sha256(boot) {
         event(&format!(
@@ -538,6 +540,12 @@ pub(super) fn place(
             ..
         }) => {
             let mut table = table.clone();
+            if let Some(daily) = daily {
+                table.npcs.retain_mut(|npc| {
+                    !admitted.contains(&npc.key)
+                        || super::daily_world_changes::retain_bundle_npc(daily, npc)
+                });
+            }
             table.npcs.retain(|npc| {
                 !conditional::seasonal_merchant(&npc.key)
                     && !event_contacts::owns_presence(&npc.key)
@@ -738,7 +746,7 @@ pub(crate) mod tests {
         let boot = bind(frame, Some(&loaded(&[SMITH, TRADER], &catalogue)), true).expect("bind");
         assert_eq!(catalogue_sha256(Some(&boot)), Some(catalogue.as_str()));
         let mut runtime = channel_runtime();
-        assert_eq!(place(&mut runtime, Some(&boot)).expect("placed"), 2);
+        assert_eq!(place(&mut runtime, Some(&boot), None).expect("placed"), 2);
         assert_eq!(catalogue_sha256(Some(&boot)), Some(catalogue.as_str()));
         let binding = runtime.binding();
         // W02: the scoped binding now returns Option; this fixture still requires Channel.
@@ -768,7 +776,7 @@ pub(crate) mod tests {
         assert!(visible.creatures.is_empty());
         // Placement runs once, at Channel start.
         assert!(matches!(
-            place(&mut runtime, Some(&boot)),
+            place(&mut runtime, Some(&boot), None),
             Err(BootError::Readiness("NPC actor placement"))
         ));
         Ok(())
@@ -847,7 +855,7 @@ pub(crate) mod tests {
         let (x, y) = (32_652, 32_201);
         let boot = repository_npc_boot(x, y)?;
         let mut runtime = channel_runtime_with(128);
-        place(&mut runtime, boot.as_ref()).map_err(|error| error.to_string())?;
+        place(&mut runtime, boot.as_ref(), None).map_err(|error| error.to_string())?;
         let visible = runtime.visible_entities();
         let positions: Vec<_> = visible
             .npcs
@@ -867,6 +875,42 @@ pub(crate) mod tests {
             production: true,
             talk: Arc::new(NpcTalkBook::default()),
         }
+    }
+
+    #[test]
+    fn christmas_messengers_share_the_season_with_santa_on_distinct_cells() {
+        let messenger = "oteryn:npc.messenger_of_santa";
+        let santa = "oteryn:npc.santa_claus";
+        let boot = timed_boot(&[messenger, santa]);
+        let mut runtime = channel_runtime_with(32);
+
+        let mut closed = seasonal::SeasonalNpcSpawns::admit(Some(&boot), &[], |_| true);
+        closed.tick(&mut runtime).expect("out of season");
+        assert!(runtime.visible_entities().npcs.is_empty());
+
+        let christmas = ["christmas".into()];
+        let mut active = seasonal::SeasonalNpcSpawns::admit(Some(&boot), &christmas, |at| {
+            (at.x, at.y, at.floor) != (32654, 31665, -8)
+        });
+        active.tick(&mut runtime).expect("seasonal placements");
+        active.tick(&mut runtime).expect("idempotent retry");
+        let positions: BTreeSet<_> = runtime
+            .visible_entities()
+            .npcs
+            .into_iter()
+            .filter(|npc| runtime.npc_key(npc.actor) == Some(messenger))
+            .map(|npc| (npc.position.x, npc.position.y, npc.position.floor))
+            .collect();
+        assert_eq!(
+            positions,
+            BTreeSet::from([
+                (32308, 31837, 8),
+                (32641, 31892, 9),
+                (32356, 32210, 7),
+                (32916, 32070, 9),
+            ])
+        );
+        assert_eq!(runtime.visible_entities().npcs.len(), 19);
     }
 
     #[test]
@@ -1247,7 +1291,7 @@ pub(crate) mod tests {
         let boot = bind(read(&bytes).expect("frame"), Some(&only_smith), true).expect("bind");
         let mut runtime = channel_runtime();
         assert!(matches!(
-            place(&mut runtime, Some(&boot)),
+            place(&mut runtime, Some(&boot), None),
             Err(BootError::ContentActivation(
                 "NPC not admitted by the NPC catalogue"
             ))
@@ -1258,7 +1302,7 @@ pub(crate) mod tests {
 
         let boot = bind(read(&bytes).expect("frame"), Some(&only_smith), false).expect("bind");
         let mut runtime = channel_runtime();
-        assert_eq!(place(&mut runtime, Some(&boot)).expect("placed"), 1);
+        assert_eq!(place(&mut runtime, Some(&boot), None).expect("placed"), 1);
         let visible = runtime.visible_entities();
         assert_eq!(visible.npcs.len(), 1);
         assert_eq!(runtime.npc_key(visible.npcs[0].actor), Some(SMITH));
@@ -1287,7 +1331,7 @@ pub(crate) mod tests {
                 }
             ));
             let mut runtime = channel_runtime();
-            assert_eq!(place(&mut runtime, Some(&boot)).expect("skipped"), 0);
+            assert_eq!(place(&mut runtime, Some(&boot), None).expect("skipped"), 0);
             assert!(runtime.visible_entities().npcs.is_empty());
         }
         // A bundle without NPCs needs no catalogue, in production too.

@@ -565,6 +565,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_gulliver/issavi",
+    "use_authored_fare_and_premium": true,
     "keyword": "issavi",
     "price": 120,
     "premium": true,
@@ -577,6 +578,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_gulliver/krailos",
+    "use_authored_fare_and_premium": true,
     "keyword": "krailos",
     "price": 60,
     "premium": true,
@@ -589,6 +591,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_gulliver/thais",
+    "use_authored_fare_and_premium": true,
     "keyword": "thais",
     "price": 150,
     "premium": true,
@@ -678,6 +681,7 @@
     "keyword": "calassa",
     "price": 200,
     "premium": true,
+    "premium_override": false,
     "x": 31911,
     "y": 32710,
     "floor": 6,
@@ -2484,6 +2488,7 @@
   },
   {
     "key": "oteryn:service.travel.petros/issavi",
+    "use_authored_fare_and_premium": true,
     "keyword": "issavi",
     "price": 130,
     "premium": true,
@@ -2886,6 +2891,62 @@
     "postman": true,
     "held": false,
     "carpet": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_inner/monument_tower",
+    "crystal_callback": true,
+    "keyword": "monument tower",
+    "price": 50,
+    "premium": false,
+    "x": 32940,
+    "y": 31182,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_inner/passage",
+    "crystal_callback": true,
+    "keyword": "monument tower",
+    "price": 50,
+    "premium": false,
+    "x": 32940,
+    "y": 31182,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_inner/trip",
+    "crystal_callback": true,
+    "keyword": "monument tower",
+    "price": 50,
+    "premium": false,
+    "x": 32940,
+    "y": 31182,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_sunken/passage",
+    "crystal_callback": true,
+    "keyword": "yalahar",
+    "price": 0,
+    "premium": false,
+    "x": 32916,
+    "y": 31199,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
   },
   {
     "key": "oteryn:service.travel.thorgrin/cormaya",
