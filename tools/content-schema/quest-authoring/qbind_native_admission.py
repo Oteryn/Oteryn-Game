@@ -173,10 +173,17 @@ def _admit(root, plan, candidate, input_error=None):
 
 
 def _report(root):
-    receipt = json.loads((root / RECEIPT).read_bytes())
-    plan_raw = (root / PLAN).read_bytes()
-    if (receipt["binding_plan"]["path"] != PLAN
-            or sha(plan_raw) != receipt["binding_plan"]["sha256"]):
+    try:
+        receipt = json.loads((root / RECEIPT).read_bytes())
+        plan_raw = (root / PLAN).read_bytes()
+        _require(receipt["binding_plan"]["path"] == PLAN
+                 and sha(plan_raw) == receipt["binding_plan"]["sha256"],
+                 f"digest mismatch: {PLAN}")
+        plan = json.loads(plan_raw)
+        records = plan["records"]
+        _require(isinstance(records, list) and records
+                 and all(isinstance(row["quest"], str) for row in records), "invalid completion plan roster")
+    except (ValueError, OSError, KeyError, TypeError) as error:
         # The two pinned event packets retain the cohort identities even if
         # the derived plan is missing owners or no longer parses.
         roster = {"records": [
@@ -184,8 +191,7 @@ def _report(root):
             for path in (EVENTS, SOURCE_EVENTS)
             for row in pinned(root, path, _PACKETS[path])["records"]
         ]}
-        return _admit(root, roster, None, input_error=f"digest mismatch: {PLAN}")
-    plan = json.loads(plan_raw)
+        return _admit(root, roster, None, input_error=str(error))
     try:
         candidate_raw = (root / OUTPUT).read_bytes()
         _require(receipt["path"] == OUTPUT and sha(candidate_raw) == receipt["sha256"],
@@ -201,9 +207,10 @@ def _report(root):
         _require(owner_pins == [sha((root / path).read_bytes())], f"digest mismatch: {path}")
         for path, digest in _PACKETS.items():
             _require(sha((root / path).read_bytes()) == digest, f"digest mismatch: {path}")
-    except (ValueError, OSError, KeyError, TypeError) as error:
-        return _admit(root, plan, None, input_error=str(error))
-    return _admit(root, plan, json.loads(candidate_raw))
+        candidate = json.loads(candidate_raw)
+    except (ValueError, OSError, KeyError, TypeError, IndexError, StopIteration) as error:
+        return _admit(root, plan, None, input_error=str(error) or "missing control quest owner")
+    return _admit(root, plan, candidate)
 
 
 def _main():
