@@ -128,10 +128,28 @@ class KnobTests(unittest.TestCase):
         self.assertIn('PG_PORT="${NODE_BOOT_PG_PORT:-15433}"', RUN_TEXT)
         self.assertIn('WP5_PORT="${NODE_BOOT_PLATFORM_PORT:-18463}"', RUN_TEXT)
 
-    def test_pvp_override_cannot_alias_another_listener(self):
-        for port in ('15433', '18463'):
-            result = self.knobs(NODE_BOOT_PVP_GAME_PORT=port)
-            self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+    def test_port_allocator_preserves_overrides_and_skips_occupied_ports(self):
+        prepare = HERE.parent / "game_platform" / "prepare.py"
+        with socket.socket() as occupied, socket.socket() as explicit:
+            occupied.bind(("127.0.0.1", 0))
+            occupied.listen()
+            explicit.bind(("127.0.0.1", 0))
+            override = str(explicit.getsockname()[1])
+            command = [sys.executable, str(prepare), "--select-ports"]
+            result = subprocess.run(command, env={"GAME_PLATFORM_NATIVE_PORT": override},
+                                    check=True, capture_output=True, text=True)
+            ports = dict(line.split("=") for line in result.stdout.splitlines())
+            self.assertEqual(ports["GAME_PLATFORM_NATIVE_PORT"], override)
+            self.assertEqual(len(ports), len(set(ports.values())))
+            self.assertNotIn(str(occupied.getsockname()[1]), ports.values())
+            for name, port in ports.items():
+                if name != "GAME_PLATFORM_NATIVE_PORT":
+                    with socket.socket() as probe:
+                        probe.bind(("127.0.0.1", int(port)))
+            conflict = subprocess.run(command, env={"NODE_BOOT_GAME_PORT": override,
+                                                      "NODE_BOOT_PVP_GAME_PORT": override},
+                                      capture_output=True, text=True)
+            self.assertNotEqual(conflict.returncode, 0)
 
     def test_pvp_auto_port_is_allocated_by_the_real_listener(self):
         script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s" "$PVP_GAME_PORT"\n'
@@ -588,6 +606,31 @@ class PgObserveTests(unittest.TestCase):
 
 
 class CloudRunSummaryTests(unittest.TestCase):
+    def test_cloud_uses_first_eligible_work_parent(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("select_work_parent()"):cloud.index("summarize()")]
+        with tempfile.TemporaryDirectory() as temp:
+            work = Path(temp, "work")
+            work.mkdir()
+            alias = Path(temp, "alias")
+            alias.symlink_to(work, target_is_directory=True)
+            foreign = Path(temp, "foreign")
+            foreign.mkdir()
+            command = helper + textwrap.dedent("""
+                stat() {
+                    if [[ "${@: -1}" == "$foreign" ]]; then
+                        printf '424242\n'
+                    else
+                        printf '0\n'
+                    fi
+                }
+                foreign="$1/foreign"
+                select_work_parent /srv "$1/missing" "$foreign" "$1/alias" /tmp
+                """)
+            result = subprocess.run(["bash", "-c", command, "test", temp],
+                                    check=True, capture_output=True, text=True)
+            self.assertEqual(result.stdout.strip(), str(work.resolve()))
+
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(
             ['bash', str(HERE / 'cloud_run.sh'), '--summarize',

@@ -191,8 +191,16 @@ jobs:
               # One canonical feature/profile build is shared with the real PG lane.
               # This helper owns all manifest-bound files in the role directory.
               if [[ -f tools/ci/shared_dispatch_archive.py ]]; then
-                python3 tools/ci/shared_dispatch_archive.py build "$artifact" "$ARCHIVE"
-                exit 0
+                # A healthy build takes 10-14 min. A rare dispatch-2 build stalls the runner
+                # until the 45 min job limit plus a lost-runner delay (55 min); fail it at 25.
+                status=0
+                timeout --kill-after=60s 25m \
+                  python3 tools/ci/shared_dispatch_archive.py build "$artifact" "$ARCHIVE" || status=$?
+                if [[ "$status" == 124 || "$status" == 137 ]]; then
+                  echo "::error title=Dispatch archive stalled::$ARCHIVE build exceeded 25 min (healthy: 10-14 min); rerun this job once"
+                  free -m || true
+                fi
+                exit "$status"
               fi
               # Exact older PR heads still have the original dedicated target.
               export OTERYN_DISPATCH_TEST_ARCHIVE=dedicated OTERYN_DISPATCH_PG_SHARD="${ARCHIVE#dispatch-}/3"

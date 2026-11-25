@@ -77,6 +77,19 @@ pub(super) fn initial(callback: &Callback, storage: &Storage) -> i64 {
     if let Some(initial) = super::character_requirements::entry_initial(callback, storage) {
         return initial;
     }
+    // These native observations share the authored route's zero-based progress.
+    if matches!(
+        (callback.key.as_str(), storage.track.as_str()),
+        (
+            "oteryn:quest-callback/alawars-vault-exit",
+            "oteryn:quest-progress/alawars-vault/return"
+        ) | (
+            "oteryn:quest-callback/alawars-vault-lever",
+            "oteryn:quest-progress/alawars-vault/lever"
+        )
+    ) {
+        return 0;
+    }
     let chosen_entry = callback
         .quest
         .strip_prefix("oteryn:quest.")
