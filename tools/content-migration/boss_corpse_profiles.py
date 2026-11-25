@@ -13,6 +13,8 @@ import re
 import sys
 from pathlib import Path
 
+from srx1_profile_updates import compact_item_record
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
@@ -238,7 +240,7 @@ def admit(root, generated, destination, manifest_path, order, canonical):
                 for name in ('always_on_top', 'always_on_top_order'):
                     if name in decorated['attributes']:
                         expected['attributes'][name] = decorated['attributes'][name]
-            if previous != expected:
+            if compact_item_record(copy.deepcopy(previous)) != compact_item_record(expected):
                 raise ValueError(f'BOSS_CORPSE_PROFILE_CONFLICT:{key}')
         else:
             document['records'].append(record)

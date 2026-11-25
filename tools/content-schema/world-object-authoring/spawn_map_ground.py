@@ -135,9 +135,9 @@ def outputs():
         row.update(key=key, provisional=False)
     marker_path = "content/world/terrain/index.json"
     marker = json.loads((ROOT / marker_path).read_bytes())
-    marker["notes"] = activity_static.compose_terrain_notes(
-        marker["notes"].replace(NOTE, "") + NOTE
-    )
+    if NOTE not in marker["notes"]:
+        marker["notes"] += NOTE
+    marker["notes"] = activity_static.compose_terrain_notes(marker["notes"])
     return {
         SHARD: terrain_output(),
         PLACEMENTS: canonical(index),

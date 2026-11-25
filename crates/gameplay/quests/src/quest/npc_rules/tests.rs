@@ -698,7 +698,7 @@ fn storage_owner_preserves_order_and_rejects_unowned_effects() -> Result<(), Npc
 
 // The accepted source cohorts from both parents retain these exact predecessors.
 // Draconia has no historical definition; Stag and schema2 have separate owners.
-const EXPECTED_LEGACY_QUESTS: [&str; 27] = [
+const EXPECTED_LEGACY_QUESTS: [&str; 28] = [
     "oteryn:quest.a_father_s_burden_quest",
     "oteryn:quest.a_pirates_tail",
     "oteryn:quest.bigfoot_s_burden_quest",
@@ -1269,7 +1269,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .filter(|program| program.document.schema == 1)
             .count(),
-        30
+        31
     );
     // Canonical main adds the exact source cohort checked above; schema2
     // Mystery has no fabricated legacy definition or absent-value mapping.

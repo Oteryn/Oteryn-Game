@@ -8,45 +8,65 @@ fn donor_quest_hunter_piano_requires_all_four_independent_verse_receipts() -> Re
     let catalogue = loaded.catalogue();
     let rewards = reward_callbacks::load_for(catalogue)?;
     let worlds = world_callbacks::load_for(catalogue)?;
-    let piano = worlds
-        .iter()
-        .find(|callback| callback.key.ends_with("hunter-hymn-piano"))
-        .ok_or("missing live piano binding")?;
-    assert_eq!(piano.trigger, world_callbacks::Trigger::Use);
-    assert_eq!(piano.selector.appearance, Some(6123));
-    assert_eq!(
-        piano.teleport,
-        Some(world_callbacks::Position {
-            x: 32402,
-            y: 32794,
-            floor: -9
-        })
-    );
-    let mut progress = BTreeMap::new();
-    assert!(piano.is_read_only());
-    assert_eq!(piano.storage.len(), 4);
-    let gate = world_callbacks::primary_transition(piano)?;
-    for source in [6089, 6087, 6090, 6088] {
-        assert!(catalogue.evaluate(&gate, &progress, 0).is_err());
-        let item = format!("oteryn:item.tibia.i{source}");
-        let callback = rewards
+    for (piano_key, verse_prefix) in [
+        (
+            "oteryn:quest-callback/authored-hunter-hymn-piano",
+            "oteryn:quest-reward/chosen/hunter-outfits/verse-",
+        ),
+        (
+            "oteryn:quest-callback/hunter-hymn-piano",
+            "oteryn:quest-reward/hunter-hymn-verse-",
+        ),
+    ] {
+        let piano = worlds
             .iter()
-            .find(|reward| reward.carried_item.as_deref() == Some(item.as_str()))
-            .ok_or_else(|| format!("missing verse {source}"))?;
-        assert_eq!(callback.take.len(), 1);
-        assert_eq!(callback.take[0].item, item);
-        assert_eq!(callback.take[0].count, 1);
-        let transition = catalogue
-            .transition(&callback.key)
-            .ok_or("verse transition")?;
-        let changes = catalogue
-            .evaluate(transition, &progress, 0)
-            .map_err(|err| format!("{err:?}"))?;
-        assert_eq!(changes.len(), 1);
-        progress.insert(changes[0].track.clone(), changes[0].after);
-        assert!(catalogue.evaluate(transition, &progress, 0).is_err());
+            .find(|callback| callback.key == piano_key)
+            .ok_or(piano_key)?;
+        assert_eq!(piano.trigger, world_callbacks::Trigger::Use);
+        let appearance = piano
+            .selector
+            .native
+            .as_ref()
+            .map(|native| native.appearance)
+            .or(piano.selector.appearance);
+        assert_eq!(appearance, Some(6123));
+        assert_eq!(
+            piano.teleport,
+            Some(world_callbacks::Position {
+                x: 32402,
+                y: 32794,
+                floor: -9,
+            })
+        );
+        let mut progress = BTreeMap::new();
+        assert!(piano.is_read_only());
+        assert_eq!(piano.storage.len(), 4);
+        let gate = world_callbacks::primary_transition(piano)?;
+        for (source, verse) in [(6089, 3), (6087, 1), (6090, 4), (6088, 2)] {
+            assert!(catalogue.evaluate(&gate, &progress, 0).is_err());
+            let item = format!("oteryn:item.tibia.i{source}");
+            let key = format!("{verse_prefix}{verse}");
+            let callback = rewards
+                .iter()
+                .find(|reward| reward.key == key)
+                .ok_or_else(|| format!("missing verse {key}"))?;
+            assert_eq!(callback.carried_item.as_deref(), Some(item.as_str()));
+            assert_eq!(callback.take.len(), 1);
+            assert_eq!(callback.take[0].item, item);
+            assert_eq!(callback.take[0].count, 1);
+            let transition = catalogue.transition(&key).ok_or("verse transition")?;
+            let changes = catalogue
+                .evaluate(transition, &progress, 0)
+                .map_err(|err| format!("{err:?}"))?;
+            assert_eq!(changes.len(), 1);
+            progress.insert(changes[0].track.clone(), changes[0].after);
+            assert!(catalogue.evaluate(transition, &progress, 0).is_err());
+        }
+        assert!(
+            catalogue.evaluate(&gate, &progress, 0).is_ok(),
+            "{piano_key}"
+        );
     }
-    assert!(catalogue.evaluate(&gate, &progress, 0).is_ok());
     Ok(())
 }
 

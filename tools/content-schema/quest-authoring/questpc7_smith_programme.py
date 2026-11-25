@@ -5,6 +5,7 @@ import json
 QUEST = 'oteryn:quest.giant_smithhammer_quest'
 TRACK = 'oteryn:quest-progress/chosen/smith-cache/'
 MAP = 'content/world/placements/region-z08-x128-y125.b3'
+RETIRED_PROP_PATH = 'content/world/placements/authored-questpc7-smith.json'
 # The QMECH overlay changes only (32769, 32026, 8); the complete 31x31
 # Smith area and its three source anchors retain their reviewed map semantics.
 MAP_SHA = 'c5d2aefe37c52ffa0648e346bbd928e3291cc9541d1fc6d4fdae3583719318ef'
@@ -58,9 +59,8 @@ def build(root):
 
 def placements(root, generated):
     index_path = 'content/world/placements/index.json'
-    retired = 'content/world/placements/authored-questpc7-smith.json'
     before = generated[index_path]
     index = json.loads(before)
-    index['authored_props'] = [r for r in index.get('authored_props', []) if r['path'] != retired]
+    index['authored_props'] = [r for r in index.get('authored_props', []) if r['path'] != RETIRED_PROP_PATH]
     rendered = json.dumps(index, ensure_ascii=False, indent=2) if b'\n  "' in before else json.dumps(index, ensure_ascii=False, separators=(',', ':'))
     generated[index_path] = (rendered+'\n').encode()

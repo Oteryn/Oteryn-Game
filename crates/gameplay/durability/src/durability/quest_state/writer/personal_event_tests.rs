@@ -6,7 +6,7 @@ fn registered_native_surveys_keep_all_admission_guards() -> std::result::Result<
     let state = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
         .map_err(|error| format!("{error:?}"))?;
     let catalogue = state.catalogue();
-    let callbacks = world_callbacks::load()?;
+    let callbacks = world_callbacks::load_for(catalogue)?;
     let session = GameSessionId::decode(&[7, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 7])
         .map_err(|error| format!("{error:?}"))?;
     let command = CommandRef::new(

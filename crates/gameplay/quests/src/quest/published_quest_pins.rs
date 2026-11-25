@@ -356,6 +356,33 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
         hash(b"5605ff5538ecb520e1a22c62ec5d64f8e6b7ffef27712b0c1492174247b9ee74"),
         hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
     ),
+    // Placement citations changed when the seven units were integrated.
+    (
+        "oteryn:quest.formogar_mine_hoist",
+        hash(b"23b3dd6ef1bb877686122ca1d97412221ec735bab162680a08b94743d8016bf9"),
+        hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
+    ),
+    (
+        "oteryn:quest.heart_of_destruction_quest",
+        hash(b"939300991b2aeba03d7caea13110e0c65acc2ba02d6edeca688d7bb010e49f80"),
+        hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
+    ),
+    (
+        "oteryn:quest.hero_of_rathleton_quest",
+        hash(b"ad269982a9bdcc24960f74f743fe239aa043e4a10e123272b0f6949027847954"),
+        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
+    ),
+    (
+        "oteryn:quest.hidden_threats_quest",
+        hash(b"53345631c518ee8fd246468ff795ad043eb77d207ad03daaf2b368d5789015f7"),
+        hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
+    ),
+    // Exact pre-Zelos projection, with the integrated placement citations.
+    (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"daec3ae8d16f98a0793bb3fdee1d20baacb36333f8f28bfa06b9f810d7a5c1be"),
+        GRAVE_DANGER_PRE_ZELOS,
+    ),
 ];
 
 type GameplayPredecessors = (&'static str, DefinitionHash, &'static [DefinitionHash]);
@@ -673,9 +700,70 @@ pub(super) const BROTHERHOOD_BEFORE_DREAD_LORD: DefinitionHash =
 const TIBIA_TALES_TRAIN_SUCCESSOR: DefinitionHash =
     hash(b"08ddd97de427afb52741eacdef7781de95f438f5a86a88915d484b447e885db7");
 
+// Exact successors captured from the integrated production loader. The unit
+// hashes remain valid predecessors for their own quest.
+const CONTENT_TRAIN_SUCCESSORS: &[(&str, DefinitionHash, DefinitionHash)] = &[
+    (
+        "oteryn:quest.ferumbras_ascension_quest",
+        hash(b"69a1b3cfaa0d7f3b921da0ea7bb3bafd1de62a22e484e4c333541ba29c9b2a79"),
+        hash(b"e612ad0f379b601b86b10d7c2b46d8e8ac7ce64c828cc12c5e4d686b9bf49620"),
+    ),
+    (
+        "oteryn:quest.forgotten_knowledge_quest",
+        hash(b"cbc0d3c2dfe847aa97daad45f4d322331ea90416ed774d5dddfc4cc7b4567281"),
+        hash(b"2c3b037dd13d724ea7b0371afc5756318c94d91285bfc6620aa710bb3005899f"),
+    ),
+    (
+        "oteryn:quest.giant_smithhammer_quest",
+        hash(b"02d322ad993f1194f9b16fab996570c08b8d23b29d85d1cc39c19f1473e5c3e4"),
+        hash(b"4242553063eec3ce16dd533c848c3f6a5cd716943b713c53a713ff42d8c80ce1"),
+    ),
+    (
+        "oteryn:quest.goblin_merchant_quest",
+        hash(b"75ed65085049b76c051ac4d92a8af8d59a3d015fa4cf1c0a973d0c5287f661f2"),
+        hash(b"52f34079861497c5687b92fc1b02cc48bfd5072af466ca308c112c946c25f81f"),
+    ),
+    (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"9f8957002452ecfe907a4be7430a5910db697ac88b74efe8dfaeab0dce568531"),
+        hash(b"d1cdf6655a94744e239e485b9051f8e7d073be20d228a64e2fd1e19eda40840a"),
+    ),
+    (
+        "oteryn:quest.grimvale_quest",
+        hash(b"ec073be1d536c213bf81c914202b663a7f862ae7f78316fd97053173e3127823"),
+        hash(b"a12ba535924a59362bc81815385cc2164cd29b0a666f71c94340ff98a5a3970d"),
+    ),
+    (
+        "oteryn:quest.hydra_egg_quest",
+        hash(b"c2247451fc15ba29360c581a59805205a6b8d3a606392342f1c99660cfdea6fa"),
+        hash(b"ae002be99d3196b93a23087bd929766e6160482da9fc3f36e054d91e5acc32e6"),
+    ),
+    (
+        "oteryn:quest.outfit_and_addon_quests",
+        hash(b"f9785be106728cc026d6515c8e092eb08965d3d8e65bcb3a54f0816041a4d9dc"),
+        hash(b"a9f70bb9fb2d498c4b82ff905d5b51dc774eb99e51d4701d651971dc15fb5831"),
+    ),
+    (
+        "oteryn:quest.the_new_frontier_quest",
+        hash(b"61034f9e3365c8817d659f8ffa59a0f21e404d2a41dfc6099a48a5cedd71018f"),
+        hash(b"6aba631a049bcb9213d7192bcc98fcaf7c94ef7ce643c4c741c7f738f3e0a233"),
+    ),
+];
+
+fn is_content_train_successor(
+    quest: &str,
+    current: DefinitionHash,
+    active: Option<DefinitionHash>,
+) -> bool {
+    CONTENT_TRAIN_SUCCESSORS
+        .iter()
+        .any(|&(owner, unit, train)| owner == quest && unit == current && active == Some(train))
+}
+
 fn is_successor(quest: &str, current: DefinitionHash, active: Option<DefinitionHash>) -> bool {
     active == Some(current)
         || (quest == "oteryn:quest.tibia_tales" && active == Some(TIBIA_TALES_TRAIN_SUCCESSOR))
+        || is_content_train_successor(quest, current, active)
 }
 
 pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> DefinitionHash {
@@ -690,9 +778,11 @@ pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
         .iter()
         .chain([&NEW_FRONTIER_NATIVE_PREDECESSORS])
     {
-        if is_successor(quest, current, catalogue.definition_hash(quest)) {
+        let active = catalogue.definition_hash(quest);
+        if is_successor(quest, current, active) {
+            let unit_pin = is_content_train_successor(quest, current, active).then_some(current);
             let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
-            for &hash in previous {
+            for hash in previous.iter().copied().chain(unit_pin) {
                 if !predecessors
                     .iter()
                     .any(|predecessor| predecessor.hash == hash)
@@ -806,21 +896,20 @@ mod tests {
 
         for &(quest, refreshed, published) in CITATION_REFRESHES {
             assert_eq!(published_hash(quest, refreshed), published, "{quest}");
-            if matches!(
-                quest,
-                "oteryn:quest.ferumbras_ascension_quest"
-                    | "oteryn:quest.forgotten_knowledge_quest"
-                    | "oteryn:quest.grimvale_quest"
-                    | "oteryn:quest.hydra_egg_quest"
-            ) || (quest == "oteryn:quest.grave_danger_quest"
-                && published == GRAVE_DANGER_PRE_ZELOS)
+            let active = catalogue.definition_hash(quest);
+            if CONTENT_TRAIN_SUCCESSORS
+                .iter()
+                .any(|&(owner, _, train)| owner == quest && active == Some(train))
             {
                 // These quests have since gained gameplay changes. Each citation
                 // variant still resolves to the exact published predecessor.
-                assert_ne!(catalogue.definition_hash(quest), Some(published));
-                assert!(npc_rules::legacy_defaults(catalogue, quest, &published).is_some());
+                assert_ne!(active, Some(published));
+                assert!(
+                    npc_rules::legacy_defaults(catalogue, quest, &published).is_some(),
+                    "{quest}"
+                );
             } else {
-                assert_eq!(catalogue.definition_hash(quest), Some(published), "{quest}");
+                assert_eq!(active, Some(published), "{quest}");
             }
             let mut unrelated_revision = refreshed;
             unrelated_revision[0] ^= 1;
@@ -832,12 +921,25 @@ mod tests {
         for &(quest, current, previous) in GAMEPLAY_PREDECESSORS {
             let active = catalogue.definition_hash(quest);
             assert!(is_successor(quest, current, active), "{quest}: {active:?}");
-            for &pin in previous {
-                assert_eq!(
-                    npc_rules::legacy_defaults(catalogue, quest, &pin),
-                    Some(&Default::default()),
-                    "{quest}"
-                );
+            let unit_pin = is_content_train_successor(quest, current, active).then_some(current);
+            for pin in previous.iter().copied().chain(unit_pin) {
+                let actual = npc_rules::legacy_defaults(catalogue, quest, &pin);
+                let defaults = if pin == GRAVE_DANGER_PRE_ZELOS {
+                    catalogue
+                        .declared_tracks()
+                        .filter(|track| track.quest == quest)
+                        .map(|track| (track.key.clone(), track.initial))
+                        .collect()
+                } else {
+                    Default::default()
+                };
+                if pin == super::super::reward_callbacks::OUTFIT_REWARDS_BEFORE_CITIZEN {
+                    let historical = actual.ok_or("published Outfit defaults")?;
+                    assert_eq!(historical.len(), 52);
+                    assert_eq!(historical.get("oteryn:quest-progress/navigator"), Some(&-1));
+                } else {
+                    assert_eq!(actual, Some(&defaults), "{quest}");
+                }
                 let mut foreign = pin;
                 foreign[0] ^= 1;
                 assert!(npc_rules::legacy_defaults(catalogue, quest, &foreign).is_none());

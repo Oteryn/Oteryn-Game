@@ -320,8 +320,29 @@ class CorpseQualification(unittest.TestCase):
         self.assertEqual(corpse.grizzly.source.attrs(self.xml[30272])["containersize"], "40")
         projections = {
             "oteryn:item.tibia.i5999": 50,
+            "oteryn:item.tibia.i7091": 50,
+            "oteryn:item.tibia.i7344": 52,
+            "oteryn:item.tibia.i7893": 60,
+            "oteryn:item.tibia.i15868": 50,
+            "oteryn:item.tibia.i15872": 50,
+            "oteryn:item.tibia.i15911": 50,
+            "oteryn:item.tibia.i15991": 50,
+            "oteryn:item.tibia.i16071": 50,
+            "oteryn:item.tibia.i16083": 50,
             "oteryn:item.tibia.i18030": 50,
+            "oteryn:item.tibia.i18070": 50,
             "oteryn:item.tibia.i18110": 60,
+            "oteryn:item.tibia.i18134": 60,
+            "oteryn:item.tibia.i18142": 50,
+            "oteryn:item.tibia.i18190": 50,
+            "oteryn:item.tibia.i18194": 50,
+            "oteryn:item.tibia.i18198": 50,
+            "oteryn:item.tibia.i18202": 50,
+            "oteryn:item.tibia.i18210": 50,
+            "oteryn:item.tibia.i18230": 50,
+            "oteryn:item.tibia.i18281": 50,
+            "oteryn:item.tibia.i20996": 50,
+            "oteryn:item.tibia.i21004": 50,
         }
         self.assertEqual(self.plan.projected_source_capacities, projections)
         self.assertEqual(

@@ -1502,12 +1502,29 @@ const MAIN_OUTFIT_DEFINITION: [u8; 32] = [
 const OUTFIT_BEFORE_SOURCE_ACTIONS: [u8; 32] = super::published_quest_pins::hash(
     b"ce65daca1c0a3c499c3f23fe60ae01aeb517e1aaea4689022c055971de786e6f",
 );
-const OUTFIT_REWARDS_BEFORE_CITIZEN: [u8; 32] = super::published_quest_pins::hash(
+pub(super) const OUTFIT_REWARDS_BEFORE_CITIZEN: [u8; 32] = super::published_quest_pins::hash(
     b"bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8",
 );
 const OUTFIT_TRACKS_BEFORE_CITIZEN: [u8; 32] = super::published_quest_pins::hash(
     b"8ae9fff068d9af51c1be88777aad3ac82e5c6551314a5ac185b17ce766a6ef1f",
 );
+const OUTFIT_PKQ4_REWARDS_BEFORE_CITIZEN: [u8; 32] = super::published_quest_pins::hash(
+    b"97baa2233c218843fe0f6064ba4c8d4d79e079ffe1e229a7ffc59afe23042d2f",
+);
+const OUTFIT_PKQ3_REWARDS_BEFORE_CITIZEN: [u8; 32] = super::published_quest_pins::hash(
+    b"07a7bd955f9e7c83357f91bbfd039f306ca1b69debc80afab943ae4dd8c3efc2",
+);
+const OUTFIT_TRAIN_REWARDS_BEFORE_CITIZEN: [u8; 32] = super::published_quest_pins::hash(
+    b"f1267841995a84edbc1ffc43fbbd9707214f32ec2a423e9e81dd6f0675908f9e",
+);
+const OUTFIT_SOURCE_ACTION_TRACKS: &[&str] = &[
+    "oteryn:quest-progress/quest/u7_8/druid_outfits/wolf_tooth_chain",
+    "oteryn:quest-progress/quest/u7_8/hunter_outfits/elane_crossbow",
+    "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet01",
+    "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet02",
+    "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet03",
+    "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_music_sheet04",
+];
 // Active Sam's Old Backpack definition captured by quest_definition_hashes at 3e0991642.
 const SAMS_BACKPACK_BEFORE_KROOX_ALIAS: [u8; 32] = super::published_quest_pins::hash(
     b"e618fcebed1f65d871a0228c3f508c8fa74abae80f6c162585dda4dcff2e0364",
@@ -1591,14 +1608,13 @@ pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue,
     .into_iter()
     .chain(BEFORE_FULL_OUTFIT_REWARDS)
     {
-        catalogue
-            .predecessors
-            .entry(quest.into())
-            .or_default()
-            .push(super::NpcDefinitionPredecessor {
+        let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
+        if !predecessors.iter().any(|entry| entry.hash == hash) {
+            predecessors.push(super::NpcDefinitionPredecessor {
                 hash,
                 defaults: BTreeMap::new(),
             });
+        }
     }
     extend_document(catalogue, document)
 }
@@ -2091,13 +2107,44 @@ pub(super) fn retain_outfit_reward_predecessor(
     }
     // Keep the exact declaration-only pin already accepted by the current loader,
     // including its own absent-track defaults. No stored rows or pins are changed.
-    if retained.is_none() {
-        active.predecessors.entry(QUEST.into()).or_default().push(
+    let needs_capture = retained.is_none();
+    let predecessors = active.predecessors.entry(QUEST.into()).or_default();
+    if complete.0 == OUTFIT_TRAIN_REWARDS_BEFORE_CITIZEN {
+        // The earlier reward projections predate the six donor source actions.
+        // The pkq3 completion branches use the same full set of absent values.
+        let historical_defaults = |defaults: &BTreeMap<String, i64>| {
+            defaults
+                .iter()
+                .filter(|(key, _)| !OUTFIT_SOURCE_ACTION_TRACKS.contains(&key.as_str()))
+                .map(|(key, &value)| (key.clone(), value))
+                .collect()
+        };
+        let tracks = historical_defaults(&before.1);
+        let rewards: BTreeMap<_, _> = historical_defaults(&complete.1);
+        predecessors.extend([
             super::NpcDefinitionPredecessor {
-                hash: before.0,
-                defaults: before.1,
+                hash: OUTFIT_TRACKS_BEFORE_CITIZEN,
+                defaults: tracks,
             },
-        );
+            super::NpcDefinitionPredecessor {
+                hash: OUTFIT_REWARDS_BEFORE_CITIZEN,
+                defaults: rewards.clone(),
+            },
+            super::NpcDefinitionPredecessor {
+                hash: OUTFIT_PKQ4_REWARDS_BEFORE_CITIZEN,
+                defaults: rewards,
+            },
+            super::NpcDefinitionPredecessor {
+                hash: OUTFIT_PKQ3_REWARDS_BEFORE_CITIZEN,
+                defaults: complete.1.clone(),
+            },
+        ]);
+    }
+    if needs_capture {
+        predecessors.push(super::NpcDefinitionPredecessor {
+            hash: before.0,
+            defaults: before.1,
+        });
     }
     active.npc_legacy.insert(QUEST.into(), complete);
     Ok(())
@@ -2825,14 +2872,22 @@ mod tests {
                         .find(|c| c.key == format!("oteryn:quest-reward/{name}"))
                 };
                 let first = callback(name).ok_or(name)?;
-                let second_key = format!("{name}-full-outfit");
+                let suffix =
+                    if name.starts_with("l1-warmaster-") || name.starts_with("l1-wayfarer-") {
+                        "complete"
+                    } else {
+                        "full-outfit"
+                    };
+                let second_key = format!("{name}-{suffix}");
                 let second = callback(&second_key).ok_or(second_key.as_str())?;
                 let other = callback(other).ok_or(other)?;
-                assert_eq!(first.achievement, None);
+                let achievement = format!("oteryn:achievement/{achievement}");
                 assert_eq!(
-                    second.achievement.as_deref(),
-                    Some(format!("oteryn:achievement/{achievement}").as_str())
+                    first.achievement.as_deref(),
+                    (suffix == "complete").then_some(achievement.as_str())
                 );
+                assert_eq!(first.achievement_requires_full_outfit, suffix == "complete");
+                assert_eq!(second.achievement.as_deref(), Some(achievement.as_str()));
                 assert_eq!(
                     (
                         &first.npc,
@@ -2991,11 +3046,30 @@ mod tests {
     fn published_ungated_quest_hash_baseline() -> Result<(), String> {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
+        let catalogue = lowered.catalogue();
+        let outfit = "oteryn:quest.outfit_and_addon_quests";
+        let (pre_citizen_pin, pre_citizen_defaults) = catalogue
+            .npc_legacy
+            .get(outfit)
+            .ok_or("published Citizen predecessor")?;
+        assert_eq!(*pre_citizen_pin, OUTFIT_TRAIN_REWARDS_BEFORE_CITIZEN);
+        for (pin, tracks) in [
+            (OUTFIT_TRACKS_BEFORE_CITIZEN, 51),
+            (OUTFIT_REWARDS_BEFORE_CITIZEN, 52),
+            (OUTFIT_PKQ4_REWARDS_BEFORE_CITIZEN, 52),
+            (OUTFIT_PKQ3_REWARDS_BEFORE_CITIZEN, 58),
+        ] {
+            assert_ne!(catalogue.definition_hash(outfit), Some(pin));
+            let defaults = super::super::npc_rules::legacy_defaults(catalogue, outfit, &pin)
+                .ok_or("published Outfit defaults")?;
+            assert_eq!(defaults.len(), tracks);
+            assert!(
+                defaults
+                    .iter()
+                    .all(|(key, value)| pre_citizen_defaults.get(key) == Some(value))
+            );
+        }
         for (key, expected) in [
-            (
-                "oteryn:quest.outfit_and_addon_quests",
-                "07a7bd955f9e7c83357f91bbfd039f306ca1b69debc80afab943ae4dd8c3efc2",
-            ),
             // Includes the source seal callbacks, packed counter and Siflind vial grant.
             (
                 "oteryn:quest.the_ice_islands_quest",
@@ -3008,27 +3082,7 @@ mod tests {
                 "0df1f07a25989a00e27d16a890e8598556f37bcb08deb2a3b2feab8958747414",
             ),
         ] {
-            let hash = lowered
-                .catalogue()
-                .definition_hash(key)
-                .ok_or("published quest")?;
-            // Citizen source scopes promote the shared quest through the existing
-            // exact-predecessor adapter; its published hash must remain loadable.
-            let hash = if key == "oteryn:quest.outfit_and_addon_quests" {
-                let legacy = lowered
-                    .catalogue()
-                    .npc_legacy
-                    .get(key)
-                    .ok_or("published Citizen predecessor")?
-                    .0;
-                assert_ne!(
-                    hash, legacy,
-                    "source scopes must bind the active definition"
-                );
-                legacy
-            } else {
-                hash
-            };
+            let hash = catalogue.definition_hash(key).ok_or("published quest")?;
             assert_eq!(
                 hash.iter().map(|b| format!("{b:02x}")).collect::<String>(),
                 expected,
@@ -3040,13 +3094,22 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared and QuestPC7 are counted separately from the original shards,
-        // the extended Fibula, Hunter, Rookgaard, Ape City and Beginning shards,
-        // and the Forgemaster and Rottin Wood additions.
-        assert_eq!(
-            load()?.len(),
-            251 + 132 + 125 + 4 + 4 + 4 + 3 + 2 + 1 + 1 + 13 + 12 + 2
+        let counts = DOCUMENTS
+            .iter()
+            .map(|source| {
+                serde_json::from_str::<Document>(source)
+                    .map(|document| document.callbacks.len())
+                    .map_err(|error| error.to_string())
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        assert!(
+            counts
+                .iter()
+                .all(|count| *count <= questpc7_registry_bounds::PER_DOCUMENT)
         );
+        assert_eq!(counts.iter().sum::<usize>(), 736);
+        // The embedded builder adds the two validated personal journal offers.
+        assert_eq!(load()?.len(), 738);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -3118,7 +3181,7 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 220);
+        assert_eq!(legacy.len(), 228);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
@@ -3127,7 +3190,7 @@ mod tests {
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;
-        assert_eq!(programmes.len(), 132);
+        assert_eq!(programmes.len(), 168);
         let published = published_markers::keys()?;
         for callback in &programmes {
             assert!(callback.key.starts_with("oteryn:quest-reward/questpc7-"));
@@ -3996,8 +4059,9 @@ mod outfit_reward_predecessor_tests {
                 .iter()
                 .filter(|callback| callback.quest == QUEST)
                 .count(),
-            // 112 retained rows, 31 QB rows, and nine Hunter callbacks.
-            152
+            // 114 retained rows, 31 QB rows, nine Hunter callbacks, and 14
+            // later full-outfit branches outside the QB cohort.
+            168
         );
         document.callbacks.retain(|callback| {
             !later_outfit_reward(callback) && !callback.key.ends_with("-full-outfit")

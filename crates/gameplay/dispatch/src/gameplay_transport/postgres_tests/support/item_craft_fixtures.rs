@@ -51,8 +51,7 @@ pub(super) async fn exchange_with_map_item(
         payload,
         current_source,
         source_offset,
-        None,
-        map_item,
+        map_item.map(|(x, y, floor, appearance)| SelectedTarget::OnMap(x, y, floor, appearance)),
     )
     .await
 }
@@ -72,10 +71,15 @@ pub(super) async fn exchange_carried(
         payload,
         current_source,
         0,
-        current_target,
-        None,
+        current_target.map(SelectedTarget::Carried),
     )
     .await
+}
+
+#[derive(Clone, Copy)]
+enum SelectedTarget {
+    Carried(std::num::NonZeroU32),
+    OnMap(i32, i32, i16, u16),
 }
 
 async fn exchange_selected_operands(
@@ -85,8 +89,7 @@ async fn exchange_selected_operands(
     payload: &[u8],
     current_source: Option<std::num::NonZeroU32>,
     source_offset: usize,
-    current_target: Option<std::num::NonZeroU32>,
-    map_item: Option<(i32, i32, i16, u16)>,
+    selected_target: Option<SelectedTarget>,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
     use oteryn_protocol_oteryn::world_map::{MapOrigin, STATE_DOMAIN_WORLD_MAP_VIEW, decode_world_map_snapshot};
     use oteryn_protocol_oteryn::world_object::MapUseTarget;
@@ -117,14 +120,16 @@ async fn exchange_selected_operands(
                             .filter(|entry| Some(entry.item_definition_ref) == current_source)
                             .nth(source_offset)
                             .map(|entry| entry.handle);
-                        target = inventory
-                            .entries
-                            .iter()
-                            .find(|entry| Some(entry.item_definition_ref) == current_target)
-                            .map(|entry| entry.handle);
+                        if let Some(SelectedTarget::Carried(definition)) = selected_target {
+                            target = inventory
+                                .entries
+                                .iter()
+                                .find(|entry| entry.item_definition_ref == definition)
+                                .map(|entry| entry.handle);
+                        }
                     }
                     if domain.domain_id == STATE_DOMAIN_WORLD_MAP_VIEW
-                        && let Some((x, y, floor, appearance)) = map_item
+                        && let Some(SelectedTarget::OnMap(x, y, floor, appearance)) = selected_target
                     {
                         let map = decode_world_map_snapshot(domain.payload).map_err(debug)?;
                         target = map.tiles.iter()
@@ -138,12 +143,12 @@ async fn exchange_selected_operands(
             }
             if envelope.message_type() == crate::foundation::MessageType::SnapshotCommit { break; }
         }
-        let actual = if current_source.is_some() || current_target.is_some() || map_item.is_some() {
+        let actual = if current_source.is_some() || selected_target.is_some() {
             let mut intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(admitted.continuity.selected_capabilities.as_slice(), payload).map_err(debug)?;
             if current_source.is_some() {
                 intent.target = UseTarget::Item(source.ok_or("current source handle")?);
             }
-            if current_target.is_some() || map_item.is_some() {
+            if selected_target.is_some() {
                 intent.use_with_map_item = Some(MapUseTarget::Item(target.ok_or("current map item handle")?));
             }
             encode_item_use_intent(&intent).map_err(debug)?

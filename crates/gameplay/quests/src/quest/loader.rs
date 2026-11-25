@@ -260,11 +260,7 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
-    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
     // An empty binding snapshot keeps the predecessor set from the legacy loader.
-    if lowered.catalogue.authored_bindings.is_some() {
-        super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
-    }
     super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
     Ok(lowered)
 }
@@ -405,7 +401,9 @@ pub(super) fn lower_embedded_quest_state(
         .map_err(QuestLoadError::Json)?;
     super::rottin_walls::retain_predecessor(&mut lowered.catalogue)
         .map_err(QuestLoadError::Json)?;
-    restrict_runtime_scope(lowered, content_revision)
+    let mut lowered = restrict_runtime_scope(lowered, content_revision)?;
+    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
+    Ok(lowered)
 }
 
 fn restrict_runtime_scope(

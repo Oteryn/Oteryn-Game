@@ -1176,15 +1176,13 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                     | "oteryn:item.tibia.i9221"
                     | "oteryn:item.tibia.i31268"
             ) {
-                // Jorge's Jade Amulet has portable custody and retains its source equipment facts.
+                // The writing admission and Jorge's Jade Amulet retain their equipment
+                // facts and portable custody while speed remains unqualified.
                 assert!(matches!(
                     record.semantics.equipment,
                     ReferenceItemField::Known(_)
                 ));
-                assert_eq!(
-                    record.admission.materializable,
-                    record.production_definition.production_key == "oteryn:item.tibia.i31268"
-                );
+                assert!(record.admission.materializable);
             } else {
                 assert!(!matches!(
                     record.semantics.equipment,

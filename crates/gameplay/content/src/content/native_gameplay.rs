@@ -2669,11 +2669,12 @@ mod tests {
                     ("defense", "defense"),
                     ("extradef", "extra_defense"),
                 ] {
-                    assert_eq!(
-                        weapon[field]["value"],
-                        number(name).unwrap_or_default(),
-                        "{key} {field}"
-                    );
+                    let expected = match (id, field) {
+                        // Current Global Cyclopedia supersedes the Crystal defence.
+                        (6390 | 6432, "defense") => 49,
+                        _ => number(name).unwrap_or_default(),
+                    };
+                    assert_eq!(weapon[field]["value"], expected, "{key} {field}");
                 }
             }
             if let Some(armor) = number("armor") {
@@ -4094,9 +4095,14 @@ mod tests {
                     "defense" => &weapon.defense,
                     _ => &weapon.extra_defense,
                 };
+                let expected = match (id, field) {
+                    // Current Global Cyclopedia supersedes the Crystal defence.
+                    (19363, "defense") => 41,
+                    _ => points.parse()?,
+                };
                 assert_eq!(
                     *projected,
-                    F::Known(ReferenceSignedPoints(points.parse()?)),
+                    F::Known(ReferenceSignedPoints(expected)),
                     "Item {id} {field}"
                 );
             }
@@ -6489,9 +6495,10 @@ mod equipment_projection_tests {
                 .ok_or("ranged loot profile")?
                 .record();
             let claims = projected_equipment_claims(&record.semantics, 5, true)?;
+            assert_eq!((claims.slots, claims.level), (vec![5], level), "Item {id}");
             assert_eq!(
-                (claims.slots, claims.level),
-                (vec![5, 6], level),
+                claims.groups,
+                ["oteryn:equipment-group.non_quiver_left_hand"],
                 "Item {id}"
             );
             assert_eq!(

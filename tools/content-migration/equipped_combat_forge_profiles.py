@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 
 import house_decoration_actions
 from forge_item_profiles import owners, project
-from grizzly_shop_profiles import accepted_first
+from grizzly_shop_profiles import accepted_first, known_conflict
 from import_cyclopedia_global import load_capture
 from starting_loadout_profiles import FRAGMENT
 
@@ -26,6 +26,8 @@ NATIVE_CUSTODY = {
     "stack_class": "NonStackable",
     "legal_destinations": ["CharacterInventory", "Ground"],
 }
+# Crystal's Forge cohort also supplies the loot classification for these weapons.
+FORGE_LOOT_OVERLAPS = {3309, 7423, 7453, 8096, 8100, 11692, 11693}
 
 
 def records(document):
@@ -185,7 +187,19 @@ def apply(root, items, generated, manifest_path, order, canonical):
         if key not in active:
             new.append(portable_profile(fact, admitted[key], source, bindings, packet))
         else:
-            cohort.append(active[key])
+            record = active[key]
+            if fact["id"] in FORGE_LOOT_OVERLAPS:
+                qualified = portable_profile(fact, admitted[key], source, bindings, packet)
+                observed = qualified["semantics"]["classification"]
+                existing = record["semantics"]["classification"]
+                if (
+                    record["production_binding"] != bindings[str(fact["id"])]
+                    or observed["state"] != "KNOWN"
+                    or known_conflict(existing, observed)
+                ):
+                    raise ValueError(f"CRYSTAL_FORGE_LOOT_CLASSIFICATION:{key}")
+                record["semantics"]["classification"] = accepted_first(existing, observed)
+            cohort.append(record)
 
     bound = source.bind_profiles(
         {"schema": items["schema"], "records": new},

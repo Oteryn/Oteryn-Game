@@ -22,6 +22,7 @@ import qb_barbarian
 import qb_citizen_warrior
 import qengine_mounts
 import qmech_m39
+import questpc7_smith_programme
 import questl2_ready
 import taming_cosmetics
 import wizard_cosmetics
@@ -4324,6 +4325,12 @@ def main():
                 raise ValueError("stale QENGINE reward output: " + path)
         elif not target.is_file() or target.read_bytes() != raw:
             target.write_bytes(raw)
+    retired = ROOT / questpc7_smith_programme.RETIRED_PROP_PATH
+    if args.check:
+        if retired.exists():
+            raise ValueError("retired QENGINE reward output: " + retired.relative_to(ROOT).as_posix())
+    else:
+        retired.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

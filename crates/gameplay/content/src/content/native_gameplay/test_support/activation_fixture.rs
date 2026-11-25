@@ -347,13 +347,6 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         "oteryn:creature.lord_azaram",
         "oteryn:creature.magma_bubble",
         "oteryn:creature.sir_baeloc",
-        "oteryn:creature.the_percht_queen",
-        // Crystal equipment admits their three remaining source yields (31577–31579).
-        "oteryn:creature.count_vlarkorth",
-        "oteryn:creature.duke_krule",
-        "oteryn:creature.earl_osam",
-        "oteryn:creature.lord_azaram",
-        "oteryn:creature.sir_baeloc",
     ];
     let mut missing = 0;
     let mut inadmissible = 0;
@@ -421,7 +414,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 "oteryn:creature.the_old_widow" => {
                     ("oteryn:item.tibia.i5977", &["oteryn:item.tibia.i12320"])
                 }
-                _ => ("oteryn:item.tibia.i4097", &["oteryn:item.tibia.i3116"]),
+                _ => ("oteryn:item.tibia.i4097", &[]),
             };
             assert_eq!(corpse.key, body);
             let binding = loot
@@ -469,13 +462,15 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 "{}",
                 policy.definition_key
             );
-            assert_eq!(
-                source.reward_table().row(&policy.definition_key).err(),
-                Some(NoSettlementReason::LootItemInadmissible)
-            );
-            inadmissible_loot += 1;
-            refreshed_body_loot_refusals.push(policy.definition_key.as_str());
-            continue;
+            if !refused.is_empty() {
+                assert_eq!(
+                    source.reward_table().row(&policy.definition_key).err(),
+                    Some(NoSettlementReason::LootItemInadmissible)
+                );
+                inadmissible_loot += 1;
+                refreshed_body_loot_refusals.push(policy.definition_key.as_str());
+                continue;
+            }
         }
         if materializable_corpse.is_some()
             && matches!(
@@ -496,14 +491,12 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             && matches!(
                 policy.definition_key.as_str(),
                 "oteryn:creature.an_observer_eye"
-                    | "oteryn:creature.bazir"
                     | "oteryn:creature.dharalion"
                     | "oteryn:creature.earth_overlord"
                     | "oteryn:creature.energy_overlord"
                     | "oteryn:creature.fire_overlord"
                     | "oteryn:creature.gelidrazah_the_frozen"
                     | "oteryn:creature.gravelord_oshuran"
-                    | "oteryn:creature.infernatil"
                     | "oteryn:creature.irgix_the_flimsy"
                     | "oteryn:creature.orshabaal"
                     | "oteryn:creature.soul_of_dragonking_zyrtarch"
@@ -693,7 +686,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 245, 39, 53)
+        (52, 241, 28, 75)
     );
     assert_eq!(
         admitted,
@@ -705,14 +698,15 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.armenius_creature",
             "oteryn:creature.ascending_ferumbras",
             "oteryn:creature.bakragore",
+            "oteryn:creature.bazir",
             "oteryn:creature.brother_chill",
             "oteryn:creature.brother_freeze",
             "oteryn:creature.chagorz",
             "oteryn:creature.chayenne",
             "oteryn:creature.clubarc_the_plunderer",
+            "oteryn:creature.count_vlarkorth",
             "oteryn:creature.cublarc_the_plunderer",
             "oteryn:creature.deep_terror",
-            "oteryn:creature.count_vlarkorth",
             "oteryn:creature.demodras",
             "oteryn:creature.dragonking_zyrtarch",
             "oteryn:creature.dreadful_disruptor",
@@ -738,12 +732,12 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.hirintror",
             "oteryn:creature.ice_overlord",
             "oteryn:creature.ichgahal",
+            "oteryn:creature.infernatil",
             "oteryn:creature.king_zelos",
             "oteryn:creature.koshei_the_deathless",
-            "oteryn:creature.malvaroth",
             "oteryn:creature.lord_azaram",
             "oteryn:creature.magma_bubble",
-            "oteryn:creature.lord_azaram",
+            "oteryn:creature.malvaroth",
             "oteryn:creature.mitmah_vanguard",
             "oteryn:creature.morbol",
             "oteryn:creature.murcion",
@@ -751,9 +745,10 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.outburst",
             "oteryn:creature.professor_maxxen",
             "oteryn:creature.rupture",
+            "oteryn:creature.scarlett_etzel",
             "oteryn:creature.shardhead",
-            "oteryn:creature.solid_frozen_horror",
             "oteryn:creature.sir_baeloc",
+            "oteryn:creature.solid_frozen_horror",
             "oteryn:creature.sugar_daddy",
             "oteryn:creature.tazhadur",
             "oteryn:creature.the_first_dragon",
@@ -762,9 +757,10 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.the_primal_menace",
             "oteryn:creature.the_scion_of_havoc",
             "oteryn:creature.the_welter",
-            "oteryn:creature.tyrn",
             "oteryn:creature.twisterror",
+            "oteryn:creature.tyrn",
             "oteryn:creature.vemiath",
+            "oteryn:creature.weakened_arbaziloth",
             "oteryn:creature.weakened_shlorg",
             "oteryn:creature.white_pale",
             "oteryn:creature.willi_wasp",
@@ -781,29 +777,19 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.darkfang",
             "oteryn:creature.ferumbras",
             "oteryn:creature.ferumbras_mortal_shell",
-            "oteryn:creature.glooth_fairy",
-            "oteryn:creature.king_zelos",
-            "oteryn:creature.lord_azaram",
             "oteryn:creature.lord_retro",
             "oteryn:creature.melting_frozen_horror",
-            "oteryn:creature.professor_maxxen",
-            "oteryn:creature.scarlett_etzel",
             "oteryn:creature.sharpclaw",
             "oteryn:creature.the_blazing_time_guardian",
             "oteryn:creature.the_freezing_time_guardian",
             "oteryn:creature.the_time_guardian",
-            "oteryn:creature.weakened_arbaziloth",
         ]
     );
     shared_body.sort_unstable();
     refreshed_body_loot_refusals.sort_unstable();
     assert_eq!(
         refreshed_body_loot_refusals,
-        [
-            "oteryn:creature.bazir",
-            "oteryn:creature.infernatil",
-            "oteryn:creature.the_old_widow"
-        ]
+        ["oteryn:creature.the_old_widow"]
     );
     assert_eq!(
         shared_body,

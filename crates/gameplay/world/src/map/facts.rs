@@ -1691,7 +1691,13 @@ mod tests {
             (32624, 31929, -3, 7714, 3802),
         ]
         .map(|(x, y, z, id, action)| {
-            let door = palette_door(&format!("oteryn:item.tibia.i{id}"), &door_item);
+            let closed = u32::from(id);
+            let door = palette_door(
+                &format!("oteryn:item.tibia.i{id}"),
+                closed,
+                closed,
+                &door_item,
+            );
             (push(x, y, z, id, door), action)
         });
         let level_door = push(
@@ -1699,7 +1705,7 @@ mod tests {
             31650,
             -10,
             5111,
-            palette_door("oteryn:item.tibia.i5111", &door_item),
+            palette_door("oteryn:item.tibia.i5111", 5111, 5111, &door_item),
         );
         let pick_tile = push(33081, 31651, -11, 355, PaletteDoor::No);
         facts.finish();
