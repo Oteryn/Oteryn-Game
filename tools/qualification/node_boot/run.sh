@@ -627,7 +627,7 @@ if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "
   if [[ "${NODE_BOOT_E2E_ONLY:-}" == p20 || "${NODE_BOOT_E2E_ONLY:-}" == thaisroutes ]]; then
     premium_accounts=("$SECOND_ACCOUNT_ID")
     if [[ "$NODE_BOOT_E2E_ONLY" == thaisroutes ]]; then
-      premium_accounts+=("$C12_MONK_ACCOUNT")
+      premium_accounts+=("${EXTRA_WORLD_ACCOUNTS[1]}")
     fi
     python3 "$GAME_SOURCE/tools/qualification/node_boot/platform_premium.py" \
       "$WORK" "$GP_PG_CONTAINER" "${premium_accounts[@]}" \
