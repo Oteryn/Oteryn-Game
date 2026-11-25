@@ -6,10 +6,7 @@
 //! The live auction projection is owned by crates/gameplay/durability/src/durability/
 //! house_management/query.rs:135. Settlement and first rent are owned by
 //! crates/gameplay/durability/src/durability/house_ownership/settlement.rs:130.
-//! Ownership is observed via the same live query used to observe the bid. The fixture never
-//! inserts ownership, bid or rent results. Once the real bid is visible, the fixture
-//! advances only the auction deadline in its disposable database, as in
-//! apps/game-server/src/lifted_tests/auto/house_ownership_tests.rs:223.
+//! The fixture observes ownership, bids and rent without mutating the auction deadline.
 
 use super::*;
 use oteryn_dev_client::{
@@ -236,11 +233,53 @@ async fn query(
     Err("auction pagination exceeded maximum catalogue size".into())
 }
 
-fn open_auction(row: &panel::Row, rent: u64, now: u64) -> TestResult {
-    if row.state != 2 || row.owned || row.rent != rent || row.ends.is_none_or(|ends| ends <= now) {
-        return Err(format!("expected open auction with rent {rent}, observed {row:?}").into());
+const SEVEN_DAYS_MS: u64 = 7 * 24 * 60 * 60 * 1_000;
+const BID_MAXIMUM: u64 = 100;
+const UNCONTESTED_PRICE: u64 = 0;
+
+fn vacant_listing(row: &panel::Row, rent: u64) -> TestResult {
+    if row.state != 1
+        || row.owned
+        || row.rent != rent
+        || row.ends.is_some()
+        || row.maximum.is_some()
+        || row.price != UNCONTESTED_PRICE
+    {
+        return Err(format!("expected vacant listing with rent {rent}, observed {row:?}").into());
     }
     Ok(())
+}
+
+fn open_auction(row: &panel::Row, rent: u64, before: u64, after: u64) -> TestResult {
+    let earliest = before
+        .checked_add(SEVEN_DAYS_MS)
+        .ok_or("auction deadline overflow")?;
+    let latest = after
+        .checked_add(SEVEN_DAYS_MS)
+        .ok_or("auction deadline overflow")?;
+    if row.state != 2
+        || row.owned
+        || row.rent != rent
+        || row.maximum != Some(BID_MAXIMUM)
+        || row.price != UNCONTESTED_PRICE
+        || row
+            .ends
+            .is_none_or(|ends| !(earliest..=latest).contains(&ends))
+    {
+        return Err(format!(
+            "expected first-bid deadline {earliest}..={latest} and rent {rent}, observed {row:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+async fn database_ms(db: &mut sqlx::PgConnection) -> TestResult<u64> {
+    let millis: i64 =
+        sqlx::query_scalar("SELECT (extract(epoch FROM clock_timestamp())*1000)::bigint")
+            .fetch_one(db)
+            .await?;
+    Ok(u64::try_from(millis)?)
 }
 
 async fn bank(client: &mut DevClientSession) -> TestResult<u64> {
@@ -279,27 +318,39 @@ async fn bid(
     if disposition != wire::HouseDisposition::Ok as u64 {
         return Err(format!("bid disposition {disposition}").into());
     }
-    if query(client, world, house).await?.maximum != Some(maximum) {
-        return Err("accepted bid missing from live auction projection".into());
+    Ok(())
+}
+
+async fn first_rent_ledger(clients: &SeamClients<'_>, house: &House) -> TestResult {
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let (price, rent, rent_entries, price_entries, rent_amount): (i64, i64, i64, i64, i64) =
+        sqlx::query_as(
+            "SELECT o.price, o.first_rent,
+                    count(e.entry_id) FILTER (WHERE e.kind=10),
+                    count(e.entry_id) FILTER (WHERE e.kind=9),
+                    coalesce(sum(e.amount) FILTER (WHERE e.kind=10),0)::bigint
+             FROM game_house_properties p
+             JOIN game_house_operations o ON o.operation_id=p.acquisition_receipt_ref
+               AND o.world_id=p.world_id AND o.house_key=p.house_key
+             LEFT JOIN game_account_bank_entries e ON e.house_operation_id=o.operation_id
+             WHERE p.world_id=encode($1,'hex')::uuid AND p.house_key=$2
+               AND o.kind=2 AND o.character_id=encode($3,'hex')::uuid
+             GROUP BY o.operation_id",
+        )
+        .bind(clients.world.as_slice())
+        .bind(&house.identity.key)
+        .bind(clients.characters[0].as_slice())
+        .fetch_one(&mut db)
+        .await?;
+    let expected = i64::try_from(house.rent_gold)?;
+    if (price, rent, rent_entries, price_entries, rent_amount) != (0, expected, 1, 0, expected) {
+        return Err(format!("wrong first-rent ledger: price={price}, rent={rent}, rent entries={rent_entries}, price entries={price_entries}, rent amount={rent_amount}").into());
     }
     Ok(())
 }
 
-async fn expire_auction(clients: &SeamClients<'_>, house: &House) -> TestResult {
-    let mut db = sqlx::PgConnection::connect(clients.url).await?;
-    let changed = sqlx::query(
-        "UPDATE game_house_auctions SET ends_at=clock_timestamp()-interval '1 second'
-         WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND NOT settled",
-    )
-    .bind(clients.world.as_slice())
-    .bind(&house.identity.key)
-    .execute(&mut db)
-    .await?
-    .rows_affected();
-    if changed != 1 {
-        return Err(format!("expected one active auction to expire, found {changed}").into());
-    }
-    Ok(())
+fn wire_position(at: TilePos) -> [i32; 3] {
+    [i32::from(at.x), i32::from(at.y), -i32::from(at.floor)]
 }
 
 // The server seals House doors out of the ordinary Channel DoorBook
@@ -314,6 +365,41 @@ async fn doors(
     use oteryn_dev_client::client_runtime::house_transfer as transfer;
     let key = &house.identity.key;
     let entry = position((house.entrance.x, house.entrance.y, house.entrance.z));
+    let house_id = house
+        .provenance
+        .as_ref()
+        .ok_or("missing house source ID")?
+        .engine_house
+        .house_id;
+    let expected_door = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+        .into_iter()
+        .find_map(|(dx, dy)| {
+            let at = TilePos {
+                x: entry.x.checked_add_signed(dx)?,
+                y: entry.y.checked_add_signed(dy)?,
+                floor: entry.floor,
+            };
+            world.facts().house_door(at, house_id).map(|_| at)
+        })
+        .ok_or("authored entrance has no adjoining numbered door")?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    for (index, expected_grants) in [(0, (1, 1)), (1, (0, 0))] {
+        let grants: (i64, i64) = sqlx::query_as(
+            "SELECT count(*), count(*) FILTER (WHERE NOT content_fenced)
+             FROM game_house_access(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid)",
+        )
+        .bind(clients.world.as_slice())
+        .bind(key)
+        .bind(clients.characters[index].as_slice())
+        .fetch_one(&mut db)
+        .await?;
+        if grants != expected_grants {
+            return Err(format!(
+                "unexpected house access grants {grants:?} for character index {index}"
+            )
+            .into());
+        }
+    }
     let request = |exit| {
         transfer::encode_house_transfer_intent(&transfer::HouseTransferIntent {
             exit,
@@ -382,22 +468,25 @@ async fn doors(
             &exit,
         )
         .await?;
-    if left.status != CommandStatus::Accepted
-        || !transfer::decode_house_transfer_ack(&left.payload).is_ok_and(|ack| ack.house.is_none())
-    {
-        return Err("owner could not return to the Channel".into());
+    if left.status != CommandStatus::Accepted {
+        return Err(format!("owner exit disposition {:?}", left.status).into());
     }
+    let exit_ack = transfer::decode_house_transfer_ack(&left.payload)
+        .map_err(|error| format!("owner exit acknowledgement: {error:?}"))?;
     if ack.house.as_deref() != Some(key)
-        || !house
-            .doors
-            .iter()
-            .any(|&(x, y, z)| ack.position == [i32::from(x), i32::from(y), i32::from(z)])
+        || ack.position != wire_position(expected_door)
+        || ack.world != clients.world
+        || ack.channel != clients.channel
     {
-        return Err(format!(
-            "owner handoff did not land at an authored house door: {:?}",
-            ack.position
-        )
-        .into());
+        return Err(format!("owner handoff missed the numbered entrance door: {ack:?}").into());
+    }
+    if exit_ack.house.is_some()
+        || exit_ack.position != wire_position(entry)
+        || exit_ack.world != clients.world
+        || exit_ack.channel != clients.channel
+        || tile(owner.world_spatial().actor_position)? != entry
+    {
+        return Err(format!("owner return missed the Channel entrance: {exit_ack:?}").into());
     }
     Ok(())
 }
@@ -461,25 +550,13 @@ async fn sweep_house(
     let has_world = rows.emit(world_check, "compiled_world");
     let auction = async {
         let row = query(client, clients.world, house).await?;
-        let now = u64::try_from(
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)?
-                .as_millis(),
-        )?;
-        open_auction(&row, house.rent_gold, now)?;
-        Ok::<_, Box<dyn std::error::Error>>(row)
+        vacant_listing(&row, house.rent_gold)?;
+        Ok("live-vacant-listing".into())
     }
     .await;
-    let auction = match auction {
-        Ok(row) => {
-            rows.emit(Ok("live-open-auction".into()), "");
-            row
-        }
-        Err(error) => {
-            rows.emit(Err(error), "auction");
-            return;
-        }
-    };
+    if !rows.emit(auction, "auction") {
+        return;
+    }
     if !*prepared {
         let Some(unprepared) = session.take() else {
             rows.emit(Err("bidder session absent".into()), "preparation");
@@ -502,15 +579,34 @@ async fn sweep_house(
     };
     let bid_result = async {
         let balance = bank(client).await?;
-        let maximum = auction.price.checked_add(1).ok_or("bid overflow")?;
-        bid(client, clients.world, house, maximum).await?;
-        Ok::<_, Box<dyn std::error::Error>>(balance)
+        let reserve = BID_MAXIMUM.checked_add(house.rent_gold).ok_or("escrow overflow")?;
+        let mut db = sqlx::PgConnection::connect(clients.url).await?;
+        let start = database_ms(&mut db).await?;
+        bid(client, clients.world, house, BID_MAXIMUM).await?;
+        let finish = database_ms(&mut db).await?;
+        let row = query(client, clients.world, house).await?;
+        open_auction(&row, house.rent_gold, start, finish)?;
+        let ends = row.ends.ok_or("first bid has no deadline")?;
+        let after = bank(client).await?;
+        if balance.checked_sub(after) != Some(reserve) {
+            return Err(format!("bank {balance}->{after}, expected bid escrow {reserve}").into());
+        }
+        let escrow: i64 = sqlx::query_scalar(
+            "SELECT b.escrow_gold FROM game_house_auctions a JOIN game_house_bids b USING(auction_id)
+             WHERE a.world_id=encode($1,'hex')::uuid AND a.house_key=$2 AND NOT a.settled
+               AND b.character_id=encode($3,'hex')::uuid AND b.state=1",
+        ).bind(clients.world.as_slice()).bind(&house.identity.key)
+            .bind(clients.characters[0].as_slice()).fetch_one(&mut db).await?;
+        if u64::try_from(escrow)? != reserve {
+            return Err(format!("durable bid escrow {escrow}, expected {reserve}").into());
+        }
+        Ok::<_, Box<dyn std::error::Error>>((balance, ends))
     }
     .await;
-    let before = match bid_result {
-        Ok(balance) => {
-            rows.emit(Ok("bid-confirmed-by-live-list".into()), "");
-            balance
+    let (before, ends) = match bid_result {
+        Ok(result) => {
+            rows.emit(Ok("first-bid-deadline-and-reserved-escrow".into()), "");
+            result
         }
         Err(error) => {
             rows.emit(Err(error), "bid");
@@ -518,10 +614,30 @@ async fn sweep_house(
         }
     };
     let transfer = tokio::time::timeout(Duration::from_secs(15), async {
-        expire_auction(clients, house).await?;
+        let mut db = sqlx::PgConnection::connect(clients.url).await?;
         loop {
             let current = query(client, clients.world, house).await?;
             if current.owned && current.state == 3 && current.ends.is_none() {
+                let (stored_deadline, deadline_floor, settled_at): (i64, i64, i64) =
+                    sqlx::query_as(
+                        "SELECT (extract(epoch FROM a.ends_at)*1000)::bigint,
+                            floor(extract(epoch FROM a.ends_at)*1000)::bigint, evidence.occurred_at
+                     FROM game_house_properties p
+                     JOIN game_house_operations o ON o.operation_id=p.acquisition_receipt_ref
+                     JOIN game_house_auctions a ON a.auction_id=o.auction_id AND a.settled
+                     JOIN game_house_audit_outbox evidence ON evidence.operation_id=o.operation_id
+                     WHERE p.world_id=encode($1,'hex')::uuid AND p.house_key=$2 AND o.kind=2",
+                    )
+                    .bind(clients.world.as_slice())
+                    .bind(&house.identity.key)
+                    .fetch_one(&mut db)
+                    .await?;
+                if u64::try_from(stored_deadline)? != ends || settled_at < deadline_floor {
+                    return Err(
+                        "auction settled before its original deadline or the deadline changed"
+                            .into(),
+                    );
+                }
                 return Ok::<_, Box<dyn std::error::Error>>(());
             }
             tokio::time::sleep(Duration::from_millis(500)).await;
@@ -529,7 +645,10 @@ async fn sweep_house(
     })
     .await
     .unwrap_or_else(|_| {
-        Err("auction settlement did not project winning bidder as owner within 15s".into())
+        Err(
+            "natural auction settlement was not observed within the 15s qualification budget"
+                .into(),
+        )
     });
     if !rows.emit(
         transfer.map(|()| "bidder-is-effective-owner".into()),
@@ -547,7 +666,13 @@ async fn sweep_house(
         rows.emit(Err("blocked-by-world".into()), "blocked");
     }
     let rent = async {
-        first_rent(before, bank(client).await?, auction.price, house.rent_gold)?;
+        first_rent(
+            before,
+            bank(client).await?,
+            UNCONTESTED_PRICE,
+            house.rent_gold,
+        )?;
+        first_rent_ledger(clients, house).await?;
         Ok(format!("first-rent-{}", house.rent_gold))
     }
     .await;
@@ -562,14 +687,15 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) -> TestR
     }?;
     let (start, len) = batch;
     let houses = houses(&directory())?;
-    let end = start.saturating_add(len).min(houses.len());
-    if start >= end {
-        return Err(format!(
-            "{BATCH_VARIABLE} start {start} is beyond {} houses",
-            houses.len()
-        )
-        .into());
-    }
+    let end = start
+        .checked_add(len)
+        .filter(|end| *end <= houses.len())
+        .ok_or_else(|| {
+            format!(
+                "{BATCH_VARIABLE} slice {start}:{len} exceeds {} houses",
+                houses.len()
+            )
+        })?;
     evidence(&format!(
         "house_sweep batch start={start} len={len} selected={} total={} mode=seeded",
         end - start,
@@ -685,8 +811,8 @@ mod tests {
                 owned: false,
                 move_out_ms: None,
                 price: 0,
-                ends_ms: Some(101),
-                own_maximum: None,
+                ends_ms: Some(101 + SEVEN_DAYS_MS),
+                own_maximum: Some(BID_MAXIMUM),
             }],
             None,
             true,
@@ -696,9 +822,9 @@ mod tests {
         let [listing] = page.rows.as_slice() else {
             return Err("expected one house row".into());
         };
-        open_auction(listing, 50, 100)?;
-        assert!(open_auction(listing, 51, 100).is_err());
-        assert!(open_auction(listing, 50, 101).is_err());
+        open_auction(listing, 50, 100, 101)?;
+        assert!(open_auction(listing, 51, 100, 101).is_err());
+        assert!(open_auction(listing, 50, 102, 103).is_err());
         Ok(())
     }
 

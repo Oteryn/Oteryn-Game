@@ -2,10 +2,11 @@ use crate::bestiary_postgres_harness as fixture;
 use crate::durability::DurabilityRoot;
 use crate::durability::house_management::{HouseManagementPage, QualifiedHouse};
 use crate::durability::house_ownership::{
-    HouseBidRequest, HouseCatalogueActivation, HouseOwnershipOutcome,
+    HouseBidRequest, HouseCatalogueActivation, HouseOwnershipError, HouseOwnershipOutcome,
 };
 use crate::foundation::{ChannelId, CommandId, CommandRef, WorldId};
 use oteryn_gameplay_dispatch::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator;
+use oteryn_gameplay_housing::house_auction::AuctionError;
 use oteryn_gameplay_social::premium::PremiumConsumer;
 use std::sync::Arc;
 
@@ -67,7 +68,11 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         )
     };
     assert!(listing().await.map_err(debug)?.is_empty());
-    assert!(root.activate_house_catalogue(&h.node, catalogue(2)).await.is_err());
+    let stale = root.activate_house_catalogue(&h.node, catalogue(2)).await;
+    assert!(
+        matches!(stale, Err(HouseOwnershipError::AuthorityRejected)),
+        "{stale:?}"
+    );
     assert_eq!(h.count("game_house_properties").await?, 0);
     for _ in 0..2 {
         root.activate_house_catalogue(&h.node, catalogue(1)).await.map_err(debug)?;
@@ -93,26 +98,65 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             house_key: HOUSE.into(), maximum, content_digest: DIGEST, kind: "private_house", catalogue_rent: 100,
         })
     };
-    assert!(root.house_bid(&authority, &h.node, &gate, fence, request(80, 701)?).await.is_err());
+    let unfunded = root
+        .house_bid(&authority, &h.node, &gate, fence, request(80, 701)?)
+        .await;
+    assert!(
+        matches!(
+            unfunded,
+            Err(HouseOwnershipError::Value(AuctionError::Unfunded))
+        ),
+        "{unfunded:?}"
+    );
     assert_eq!(h.count("game_house_auctions").await?, 0);
     fund_account(h).await?;
+    let clock = || {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT (extract(epoch FROM clock_timestamp())*1000000)::bigint",
+        )
+        .fetch_one(&h.pool)
+    };
     let first = request(81, 300)?;
-    assert_eq!(root.house_bid(&authority, &h.node, &gate, fence, first.clone()).await.map_err(debug)?, HouseOwnershipOutcome::Applied);
-    assert_eq!(root.house_bid(&authority, &h.node, &gate, fence, first).await.map_err(debug)?, HouseOwnershipOutcome::Replayed);
-    root.activate_house_catalogue(&h.node, catalogue(1)).await.map_err(debug)?;
-    let opened: (i16, i64, i64, bool) = sqlx::query_as(
-        "SELECT p.state,a.first_rent,b.escrow_gold,a.ends_at>statement_timestamp()+interval '6 days'
+    let before = clock().await?;
+    assert_eq!(
+        root.house_bid(&authority, &h.node, &gate, fence, first.clone())
+            .await
+            .map_err(debug)?,
+        HouseOwnershipOutcome::Applied
+    );
+    let after = clock().await?;
+    assert_eq!(
+        root.house_bid(&authority, &h.node, &gate, fence, first)
+            .await
+            .map_err(debug)?,
+        HouseOwnershipOutcome::Replayed
+    );
+    root.activate_house_catalogue(&h.node, catalogue(1))
+        .await
+        .map_err(debug)?;
+    let opened: (i16, i64, i64, i64, i64) = sqlx::query_as(
+        "SELECT p.state,a.first_rent,b.escrow_gold,(extract(epoch FROM a.ends_at)*1000000)::bigint,(extract(epoch FROM a.ends_at)*1000)::bigint
          FROM game_house_properties p JOIN game_house_auctions a USING(world_id,house_key)
          JOIN game_house_bids b USING(auction_id) WHERE p.house_key=$1",
     ).bind(HOUSE).fetch_one(&h.pool).await?;
-    assert_eq!(opened, (2, 100, 400, true));
+    assert_eq!((opened.0, opened.1, opened.2), (2, 100, 400));
+    const SEVEN_DAYS_US: i64 = 7 * 24 * 60 * 60 * 1_000_000;
+    let expected = before + SEVEN_DAYS_US..=after + SEVEN_DAYS_US;
+    assert!(
+        expected.contains(&opened.3),
+        "deadline {} outside {expected:?}",
+        opened.3
+    );
     assert_eq!(h.count("game_house_auctions").await?, 1);
     let rows = listing().await.map_err(debug)?;
     let [row] = rows.as_slice() else {
         return Err("live town query must return exactly one auction".into());
     };
-    assert_eq!((row.house.as_str(), row.state, row.rent, row.own_maximum), (HOUSE, 2, 100, Some(300)));
-    assert!(row.ends_ms.is_some());
+    assert_eq!(
+        (row.house.as_str(), row.state, row.rent, row.own_maximum),
+        (HOUSE, 2, 100, Some(300))
+    );
+    assert_eq!(row.ends_ms, Some(u64::try_from(opened.4)?));
     Ok(())
 }
 

@@ -8,7 +8,7 @@ blocked() {
 }
 
 summarize() {
-  local log=$1 group=$2 seconds=${3:-0} status=${4:-0} result rows row
+  local log=$1 group=$2 seconds=${3:-0} status=${4:-0} result rows row missing_house_rows=0
   result=$(awk '/^NODE_BOOT_RESULT=(NODE_BOOT_[A-Z0-9_]+|BLOCKED)([[:space:]]|$)/ {
     sub(/^NODE_BOOT_RESULT=/, "", $1)
     result = $1
@@ -37,6 +37,12 @@ summarize() {
       printf "%s|%s|%s\n", row, verdict, reason
     }' < "$log") || return 1
 
+  if [[ "$group" == house_sweep && "$result" == NODE_BOOT_PASS ]] &&
+    ! grep -Eq '^HS\.' <<< "$rows"; then
+    result=NODE_BOOT_FAIL
+    missing_house_rows=1
+  fi
+
   printf 'CLOUD_RUN group=%s result=%s seconds=%s\nROWS-BEGIN\n' "$group" "$result" "$seconds"
   [[ -z "$rows" ]] || printf '%s\n' "$rows"
   printf 'ROWS-END\n'
@@ -45,6 +51,7 @@ summarize() {
     grep -aFw -- "$row" "$log" | grep -Ei 'GAP|Error|refus|DIAG' \
       | grep -vEi 'password|postgres://|postgresql://|secret|token|key=' | head -n 6
   done < <(awk -F '|' '$2 == "FAIL" && !seen[$1]++ { print $1 }' <<< "$rows")
+  return "$missing_house_rows"
 }
 
 if [[ ${1:-} == --summarize ]]; then

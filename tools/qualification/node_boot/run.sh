@@ -177,8 +177,8 @@ houses = sorted(
      for house in json.loads(shard.read_bytes())["houses"]),
     key=lambda house: house["identity"]["key"],
 )
-if length == 0 or start >= len(houses):
-    sys.exit("OTERYN_E2E_HOUSE_SWEEP_BATCH has no entries")
+if length == 0 or start + length > len(houses):
+    sys.exit("OTERYN_E2E_HOUSE_SWEEP_BATCH exceeds the catalogue")
 regions = set(base.split(";"))
 for house in houses[start:start + length]:
     for x, y, _ in house["tiles"] + house["doors"]:
@@ -196,7 +196,9 @@ readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
   && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
   && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
-  NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
+  basic_groups="${NODE_BOOT_E2E_ONLY:-}"
+  if [[ ",${house_sweep_groups// /}," == *,house_sweep,* ]]; then basic_groups=""; fi
+  NODE_BOOT_WORLD=0 NODE_BOOT_E2E_ONLY="$basic_groups" bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
