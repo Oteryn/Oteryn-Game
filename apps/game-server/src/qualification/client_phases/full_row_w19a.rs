@@ -159,16 +159,27 @@ async fn walk_to_messenger(
     walk(client, world, &path).await?;
     let position = client.world_spatial().actor_position;
     let entities = client.world_entities().ok_or("step 2: no served world entities at the Christmas location")?;
-    let mut candidates = entities.iter().filter(|entry| {
+    let candidates = entities.iter().filter(|entry| {
         entry.kind == oteryn_dev_client::EntityKind::Npc
             && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Messenger of Santa"))
             && entry.position.floor == position.floor
             && entry.position.x.abs_diff(position.x).max(entry.position.y.abs_diff(position.y))
                 <= npc::TALK_RANGE_TILES
     });
-    let actor = candidates.next().map(|entry| entry.entity);
-    if candidates.next().is_some() {
-        return Err("step 2: ambiguous live Messenger of Santa in talk range".into());
+    let mut actor = None;
+    for entry in candidates {
+        let at = tile(entry.position)?;
+        let placed = if let Some(seller) = seller {
+            seller.placements.iter().any(|p| (p.x, p.y, p.floor) == (at.x, at.y, at.floor))
+        } else {
+            at == THAIS_CHRISTMAS
+        };
+        if !placed {
+            return Err(format!("step 2: live Messenger of Santa is outside its authored placement at {at:?}").into());
+        }
+        if actor.replace(entry.entity).is_some() {
+            return Err("step 2: ambiguous live Messenger of Santa in talk range".into());
+        }
     }
     Ok(actor)
 }

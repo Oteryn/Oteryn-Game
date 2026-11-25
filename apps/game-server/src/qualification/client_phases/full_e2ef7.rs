@@ -1559,11 +1559,9 @@ struct JourneyRow {
 impl JourneyRow {
     fn new(id: &'static str, required: &'static [&'static str]) -> Self {
         let seeded = match id {
-            "S08" => Some(("knight-and-sorcerer-builds,pvp-eligible-levels", "combat and protection")),
             "S13a" | "S13b" => Some(("level-32-premium-caster,clean-peer", "party spell gates and cost")),
-            "W20b" => Some(("sorcerer-level-26,premium", "light casts, relog and expiry")),
             "P21" => Some((
-                "dedicated-character-birth,fee-gold-if-needed",
+                "dedicated-character-birth",
                 "Basic Strike application and persistence",
             )),
             _ => None,
@@ -2879,21 +2877,21 @@ async fn party_spell_journey(
     }
     gate.pass("two-admissions");
     cost.pass("two-admissions");
-    use crate::durability::highscore_snapshot::{CutLimits, SnapshotCatalogues};
-    let root = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)?;
-    root.await_ready().await?;
-    let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
-        .map_err(|error| format!("S13 achievement catalogue: {error:?}"))?;
-    let catalogues = SnapshotCatalogues::activated(std::sync::Arc::new(achievements))
-        .map_err(|error| format!("S13 ranking catalogues: {error:?}"))?;
-    let snapshots = root.refresh_highscore_world_within(
-        wire::WorldId::decode(&clients.world)?, catalogues, CutLimits::REGISTERED,
-    ).await.map_err(|error| format!("S13 fresh ranking cut publication: {error:?}"))?;
-    let cut = snapshots.iter().find(|snapshot| snapshot.category == 10)
-        .ok_or("S13 fresh cut missing achievement category")?;
-    evidence(&format!("S13 fixture-ranking-cut snapshot_id={}", cut.snapshot_id));
     require_current_light_premium(caster).await?;
-    let words = "utori mas sio";
+    // The retained server-owned ranking row carries the durable vocation.
+    // Read it rather than guessing class from a generic refusal or profile env.
+    let observed = query(caster, request(1, 0, 1, 0)).await?;
+    let own = observed
+        .own_row
+        .ok_or("party prerequisite: server ranking has no own build row")?;
+    let words = match oteryn_gameplay_progression::wheel::base_vocation(&own.vocation) {
+        Some("sorcerer") => "utori mas sio",
+        Some("druid") => "utura mas sio",
+        Some("paladin") => "utamo mas sio",
+        Some("knight") => "utito mas sio",
+        Some("monk") => "utevo mas sio",
+        _ => return Err(format!("party-prerequisite-blocked:served-vocation={};served-level={};required=class,level-32,premium;ordinary-admission-has-no-party-spell-vocation", own.vocation, own.level).into()),
+    };
     let index = qualification_spell_index(book, words)?;
     let spell = book.indexed(index).ok_or("party compiled index absent")?;
     let level = full_e2ef5::prepare_spell_access(caster, spell).await?;
@@ -2902,7 +2900,7 @@ async fn party_spell_journey(
         .copied()
         .ok_or("party initial vitals absent")?;
     if level != 32 || before.mana < 216 {
-        return Err(format!("S13 requires Sorcerer level 32 with at least 216 mana: level={level}, mana={}", before.mana).into());
+        return Err(format!("S13 requires level 32 with at least 216 mana: vocation={}, level={level}, mana={}", own.vocation, before.mana).into());
     }
     let solo = caster.cast_spell(index, casts::SpellTarget::None, false).await
         .map_err(|e| format!("party solo cast: {e};served-level={level};required-level={},premium={}", spell.level, spell.premium))?;
@@ -3561,7 +3559,7 @@ use native::item_view::{ItemEntry, ItemHandle};
 use native::{attack as attacks, cyclopedia_character as character, imbuement as imbues};
 
 const PVP_ACTIONS: &[&str] = &[
-    "eligible-levels",
+    "earned-levels",
     "two-admissions",
     "expert-modes",
     "secure-refusal",
@@ -3575,7 +3573,7 @@ const PVP_ACTIONS: &[&str] = &[
     "final-logout",
 ];
 const IMBUE_ACTIONS: &[&str] = &[
-    "seeded-prerequisites",
+    "earned-prerequisites",
     "shrine-apply",
     "occupied-refusal",
     "worn-effect",
@@ -3890,6 +3888,30 @@ async fn wait_for_hunt_target<T>(
             return Err("ordinary rat route reached endpoint but no adjacent served Rat frame before the respawn deadline".into());
         }
         wait = remaining.min(Duration::from_millis(250));
+    }
+}
+
+pub(super) async fn earn_player_level(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    required_level: u32,
+    budget: Duration,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + budget;
+    loop {
+        let level = player_level(client).await?;
+        if level >= required_level {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("player-level-acquisition-blocked:served-level={level};required={required_level};ordinary-rat-hunt-budget={budget:?}").into());
+        }
+        let hunt = acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await;
+        hunt.map_err(|e| {
+            format!(
+                "player-level-acquisition-blocked:served-level={level};required={required_level};ordinary-hunt={e}"
+            )
+        })?;
     }
 }
 
@@ -4272,44 +4294,39 @@ async fn pvp_journey(
         ..*clients
     };
     let clients = &arena;
-    for (index, profile) in ["s08-knight", "s08-sorcerer"].into_iter().enumerate() {
-        let prep = character_prep::Seeded {
-            profile,
-            reason: "Open PvP tests combat and protection with two eligible players",
-        };
+    for index in 0..pair.len() {
         let budget = Duration::from_secs(150);
         let deadline = tokio::time::Instant::now() + budget;
         verdict::Harness::global().bounded_wait(deadline, "S08-eligible-build");
         tokio::time::timeout_at(deadline, async {
-            pair[index] = Some(
-                prep.connect_at(
-                    clients,
-                    0xf2 + u8::try_from(index)?,
-                    index,
-                    "NODE_BOOT_PVP_CONTROL_SOCKET",
-                )
-                .await?,
-            );
+            pair[index] = Some(connect_character(clients, 0xf2 + u8::try_from(index)?, index).await?);
             let player = pair[index]
                 .as_mut()
                 .ok_or("S08 participant admission absent")?;
+            let required_level = oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL;
+            let initial_level = player_level(player).await?;
+            if initial_level >= required_level {
+                return Err(format!("S08 participant {index} must earn PvP eligibility in play; initial level={initial_level}").into());
+            }
             let entry = tile(player.world_spatial().actor_position)?;
             qualification_hunt_route(player, world, None, Some(entry), deadline).await?;
             acquisition_step("hunt", hunt_one_inner(player, world, Some(deadline))).await?;
+            earn_player_level(
+                player,
+                world,
+                required_level,
+                deadline.saturating_duration_since(tokio::time::Instant::now()),
+            ).await?;
             qualification_hunt_route(player, world, Some(entry), None, deadline).await?;
-            let level = player_level(player).await?;
-            if level < oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL {
-                return Err(format!("S08 seeded participant {index} is ineligible at level {level}").into());
-            }
             Ok::<_, Box<dyn std::error::Error>>(())
         }).await.map_err(|_| format!("S08 participant {index} preparation exceeded {budget:?}"))?
-            .map_err(|error| format!("S08 participant {index} {profile} Open PvP preparation: {error}"))?;
+            .map_err(|error| format!("S08 participant {index} Open PvP preparation: {error}"))?;
         if index == 0 {
             release_when_unlocked(pair[0].as_mut().ok_or("first admission")?, Duration::from_secs(70)).await?;
             pair[0] = None;
         }
     }
-    row.pass("eligible-levels");
+    row.pass("earned-levels");
     release_when_unlocked(
         pair[1].as_mut().ok_or("second admission")?,
         Duration::from_secs(70),
@@ -4591,7 +4608,23 @@ pub(super) async fn acquire(
 ) -> TestResult<std::num::NonZeroU32> {
     acquisition_step(
         "item",
-        acquire_inner(client, world, definitions, key, count),
+        acquire_inner(client, world, definitions, key, count, None),
+    )
+    .await
+}
+
+// A seller-specific check must obtain the item through that seller's live trade.
+pub(super) async fn acquire_from_vendor(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    definitions: &crate::content::item_ref::ItemDefinitionIndex,
+    key: &str,
+    count: u32,
+    seller: (&str, &str),
+) -> TestResult<std::num::NonZeroU32> {
+    acquisition_step(
+        "item",
+        acquire_inner(client, world, definitions, key, count, Some(seller)),
     )
     .await
 }
@@ -4602,6 +4635,7 @@ async fn acquire_inner(
     definitions: &crate::content::item_ref::ItemDefinitionIndex,
     key: &str,
     count: u32,
+    seller: Option<(&str, &str)>,
 ) -> TestResult<std::num::NonZeroU32> {
     let basis = spatial_basis::current(client)?;
     use native::npc_service as npc;
@@ -4613,6 +4647,9 @@ async fn acquire_inner(
         .definition_ref("Item", key, revision)
         .ok_or("acquisition reference absent")?;
     if units(client, reference) >= u64::from(count) {
+        if seller.is_some() {
+            return Err(format!("seller-specific purchase requires new inventory for {key}").into());
+        }
         return Ok(reference);
     }
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -4638,6 +4675,9 @@ async fn acquire_inner(
         else {
             continue;
         };
+        if seller.is_some_and(|(expected, _)| name != expected) {
+            continue;
+        }
         let Some(vendor) = metadata
             .npcs
             .npcs
@@ -4667,14 +4707,19 @@ async fn acquire_inner(
         evidence(&format!(
             "acquisition step=vendor-attempt item={key} vendor={name} elapsed_ms=0"
         ));
-        earn_gold(
-            client,
-            world,
-            planned_price
-                .checked_mul(u64::from(count).saturating_sub(units(client, reference)))
-                .ok_or("vendor price overflow")?,
-        )
-        .await?;
+        let required = planned_price
+            .checked_mul(u64::from(count).saturating_sub(units(client, reference)))
+            .ok_or("vendor price overflow")?;
+        let funding = earn_gold(client, world, required);
+        if seller.is_some() {
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+            verdict::Harness::global().bounded_wait(deadline, "vendor-purchase-funds");
+            tokio::time::timeout_at(deadline, funding)
+                .await
+                .map_err(|_| format!("{name} purchase funding exceeded 120s"))??;
+        } else {
+            funding.await?;
+        }
         // Hunting may move the player; resolve the actual route again.
         let placements = vendor.placements.clone();
         let path = route_live(client, world, move |at| {
@@ -4690,19 +4735,21 @@ async fn acquire_inner(
             .world_entities()
             .and_then(|es| {
                 es.iter().find(|e| {
+                    let display = e.display_name.as_ref().and_then(|name| name.as_str().ok());
+                    let named_actor = if let Some((_, expected_display)) = seller {
+                        display.is_some_and(|display| display == expected_display)
+                    } else {
+                        display.is_some_and(|display| display.eq_ignore_ascii_case(&vendor_name))
+                    };
                     e.kind == oteryn_dev_client::EntityKind::Npc
+                        && (seller.is_none() || named_actor)
                         && vendor.placements.iter().any(|p| {
                             let distance = e.position.x.abs_diff(i32::from(p.x)).max(
                                 e.position.y.abs_diff(i32::from(p.y)),
                             );
                             e.position.floor == basis.floor(p.floor)
                                 && (distance == 0
-                                    || (distance <= 2
-                                        && e.display_name.is_some_and(|display| {
-                                            display.as_str().is_ok_and(|display| {
-                                                display.eq_ignore_ascii_case(&vendor_name)
-                                            })
-                                        })))
+                                    || (seller.is_none() && distance <= 2 && named_actor))
                         })
                 })
             })
@@ -4756,6 +4803,10 @@ async fn acquire_inner(
             }
             let window = npc::decode_npc_trade_window(&delta.payload)
                 .map_err(|e| format!("trade window:{e:?}"))?;
+            let (window_actor, revision) = window.open.ok_or("vendor window closed")?;
+            if seller.is_some() && window_actor != actor {
+                return Err(format!("vendor {name} served a trade window for a different actor").into());
+            }
             let (index, offer) = window
                 .offers
                 .iter()
@@ -4772,7 +4823,7 @@ async fn acquire_inner(
                     client.session_mut(),
                     &npc::NpcTradeIntent {
                         npc_actor: actor,
-                        catalogue_revision: window.open.ok_or("vendor window closed")?.1,
+                        catalogue_revision: revision,
                         offer_index: u32::try_from(index)?,
                         side: offer.side,
                         quantity,
@@ -4793,6 +4844,9 @@ async fn acquire_inner(
             .await?;
         }
         return Ok(reference);
+    }
+    if let Some((_, seller)) = seller {
+        return Err(format!("no reachable {seller} sale for {key}: {attempted:?}").into());
     }
     // Try the starter's actual loot route once before declaring an unmet item
     // prerequisite. This is bounded acquisition, not an assertion of global absence.
@@ -5122,15 +5176,8 @@ async fn imbuement_journey(
     character_prep::reload(client, clients).await?;
     carried(client, target)?;
     let required = basic.apply_gold.checked_add(15_000).ok_or("P21 fee overflow")?;
-    let shortfall = required.saturating_sub(player_gold(client).await?);
-    if shortfall > 0 {
-        character_prep::grant_item(client, 3043, u32::try_from(shortfall.div_ceil(10_000))?).await?;
-        character_prep::reload(client, clients).await?;
-    }
-    if player_gold(client).await? < required {
-        return Err("P21 seeded currency did not cover both real fees".into());
-    }
-    row.pass("seeded-prerequisites");
+    earn_gold(client, world, required).await?;
+    row.pass("earned-prerequisites");
     shrine(client, world).await?;
     let baseline = strike_effect(client).await?;
     let payment_before = player_gold(client).await?;

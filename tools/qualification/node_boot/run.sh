@@ -834,16 +834,6 @@ start_x = 32369
 start_y = 32238
 start_floor = 7''')
 PY_WORLD
-    # The pinned Platform fixture does not issue a T94 producer identity. The
-    # selected player journeys do not exercise Platform World Event export.
-    case "${NODE_BOOT_E2E_ONLY:-}" in
-      rows|f6|f7cont|f7add|f7forge|p16)
-        cat >> "$WORK/node.toml" <<'TOML'
-[platform.world_event_outcomes]
-enabled = false
-TOML
-        ;;
-    esac
     cat >> "$WORK/node.toml" <<'TOML'
 [premium_activation]
 activation_id = "node-boot-fixture-premium"

@@ -26,7 +26,7 @@ const PREPARATION: character_prep::Seeded = character_prep::Seeded {
     reason: "C12 tests spell augment behavior after obtaining the weapon and qualifying for the spell.",
 };
 const ITEM_ID: u32 = 50_271;
-const PREREQUISITES: &str = "level-20-monk,premium,purchase-gold,mana-potions";
+const PREREQUISITES: &str = "level-20-monk,premium,mana-potions";
 const MANA_POTION: u32 = 268;
 const CAST_MANA: u32 = 50;
 const SPELL_WORDS: &str = "exori nia";
@@ -585,12 +585,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     character_prep::grant_premium(&client).await?;
     character_prep::grant_item(&client, MANA_POTION, 12).await?;
-    character_prep::grant_item(&client, 3043, 2).await?;
     character_prep::reload(&mut client, clients).await?;
     let index = provisioning::item_index()?;
-    let purchased = full_e2ef7::acquire(
-        &mut client, world, &index, "oteryn:item.tibia.i50271", 1
-    ).await?;
+    let purchased = full_e2ef7::acquire_from_vendor(
+        &mut client,
+        world,
+        &index,
+        "oteryn:item.tibia.i50271",
+        1,
+        ("enpa_deia_pema", "Enpa-Deia Pema"),
+    )
+    .await?;
     if purchased != definition {
         return Err("live purchase returned the wrong weapon definition".into());
     }

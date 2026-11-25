@@ -21,21 +21,6 @@ const ILLUSION_ACTIONS: &[&str] = &[
 struct Row(verdict::Row);
 impl Row {
     fn new(id: &'static str, required: &'static [&'static str]) -> Self {
-        let prerequisites = match id {
-            "C13" => Some(("sorcerer-level-200", "companion custody and lifecycle")),
-            "C17a" => Some(("sorcerer-build,level-20,premium", "haste speed, cooldown and expiry")),
-            "C17c" => Some(("sorcerer-level-23", "illusion appearance and expiry")),
-            "C17d" => Some(("knight-build,level-20,premium", "Challenge aggro")),
-            "C18a" => Some(("sorcerer-level-1", "directional cast")),
-            "C16a" => Some(("runes-3180-and-3156", "barrier blocking and expiry")),
-            "C16b" => Some(("rune-3165", "Paralyze speed and persistence")),
-            "C16c" => Some(("runes-3177-and-3203", "companion rune effects")),
-            "C16d" => Some(("runes-3178-and-3197,movable-target-2854", "tile rune effects")),
-            _ => None,
-        };
-        if let Some((items, reason)) = prerequisites {
-            character_prep::declare_seeded(id, items, reason);
-        }
         Self(verdict::Row::new("E2EF5", id, required).evidence(
             "observed-all-required-actions",
             "required-actions-unproven-see-E2EF5_GAP",
@@ -76,20 +61,6 @@ async fn admit_row(
         .map_err(|source| admission_gap(character, source))
 }
 
-// Each spell row has its own Platform-born character because the fenced
-// progression fixture preserves existing play and exact replay receipts.
-fn spell_preparation(id: &str) -> Option<character_prep::Seeded> {
-    let (profile, reason) = match id {
-        "C17a" => ("f5-c17a", "Seeded: haste tests speed conditions and cooldown"),
-        "C17c" => ("f5-c17c", "Seeded: illusion tests appearance and expiry"),
-        "C13" => ("f5-c13", "Seeded: summons test companion custody and lifecycle"),
-        "C18a" => ("f5-c18a", "Seeded: directional aim tests the Sorcerer cast"),
-        "C17d" => ("f5-c17d", "Seeded: Challenge tests aggro on a Knight"),
-        _ => return None,
-    };
-    Some(character_prep::Seeded { profile, reason })
-}
-
 async fn spell_row_slots(
     clients: &SeamClients<'_>,
     id: &str,
@@ -128,7 +99,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
             let (accounts, characters) = spell_row_slots(clients, id, 1).await?;
             let fixture = SeamClients { accounts: &accounts, characters: &characters, ..*clients };
             let clients = &fixture;
-            let mut client = spell_preparation(id).ok_or("spell preparation absent")?.connect(clients, tag, 1).await?;
+            let mut client = admit_row(clients, tag, 1).await?;
             let mut completed = false;
             let deadline =
                 format!("{id} native journey exceeded {limit}s; remaining actions unproven");
@@ -839,7 +810,6 @@ async fn haste(
                 .ok_or("C17a invalid speed condition duration")?;
         Ok(Duration::from_millis(ms))
     };
-    character_prep::grant_premium(client).await?;
     let player_level = prepare_spell_access(client, haste).await?;
     let haste_duration = duration(haste)?;
     let strong_duration = duration(strong)?;
@@ -1087,7 +1057,7 @@ mod tests {
 }
 
 const PARALYZE_ACTIONS: &[&str] = &[
-    "seed-paralyze",
+    "buy-paralyze",
     "illegal-floor-no-cost",
     "target-baseline",
     "paralyze-cast-and-debit",
@@ -1096,13 +1066,13 @@ const PARALYZE_ACTIONS: &[&str] = &[
     "fresh-admission-rune-custody",
 ];
 const BARRIER_ACTIONS: &[&str] = &[
-    "seed-magic-wall",
+    "buy-magic-wall",
     "wall-illegal-floor-no-cost",
     "wall-cast-and-debit",
     "wall-map-item",
     "wall-blocked-traversal",
     "wall-expiry-and-traversal",
-    "seed-wild-growth",
+    "buy-wild-growth",
     "growth-illegal-floor-no-cost",
     "growth-cast-and-debit",
     "growth-map-item",
@@ -1252,26 +1222,6 @@ pub(super) async fn acquire_rune(
     id: u32,
 ) -> TestResult<(std::num::NonZeroU32, u64)> {
     acquire_rune_from(client, world, id, &rune_sellers(id)?).await
-}
-
-async fn seed_item_pair(
-    client: &mut DevClientSession,
-    clients: &SeamClients<'_>,
-    id: u32,
-) -> TestResult<(std::num::NonZeroU32, u64)> {
-    let reference = provisioning::item_reference(&provisioning::item_index()?, id)?;
-    let expected = rune_quantity(client, reference)?.checked_add(2).ok_or("seeded item quantity overflow")?;
-    character_prep::grant_item(client, id, 2).await?;
-    character_prep::reload(client, clients).await?;
-    // Admission returns a complete authoritative inventory snapshot. A seed
-    // written before logout creates no inventory delta in the new session.
-    let observed = rune_quantity(client, reference)?;
-    if observed != expected {
-        return Err(format!("seeded item inventory snapshot mismatch: definition={reference} expected={expected} observed={observed}").into());
-    }
-    let sequence = client.last_server_sequence();
-    evidence(&format!("E2EF5 item={id} source=seeded count=2"));
-    Ok((reference, sequence))
 }
 
 fn rune_sellers(id: u32) -> TestResult<BTreeSet<String>> {
@@ -1707,8 +1657,8 @@ async fn paralyze(
     let spell = book
         .rune(3165)
         .ok_or("C16b Paralyze rune not in pinned spell book")?;
-    let (reference, sequence) = seed_item_pair(client, clients, 3165).await?;
-    row.pass("seed-paralyze", sequence);
+    let (reference, sequence) = acquire_rune(client, world, 3165).await?;
+    row.pass("buy-paralyze", sequence);
     row.pass(
         "illegal-floor-no-cost",
         illegal_floor(client, reference).await?,
@@ -1863,7 +1813,7 @@ async fn barriers(
     for (id, acquire, refusal, cast, map, block, expiry) in [
         (
             3180,
-            "seed-magic-wall",
+            "buy-magic-wall",
             "wall-illegal-floor-no-cost",
             "wall-cast-and-debit",
             "wall-map-item",
@@ -1872,7 +1822,7 @@ async fn barriers(
         ),
         (
             3156,
-            "seed-wild-growth",
+            "buy-wild-growth",
             "growth-illegal-floor-no-cost",
             "growth-cast-and-debit",
             "growth-map-item",
@@ -1888,7 +1838,7 @@ async fn barriers(
             provisioning::item_reference(&index, ids[0])?,
             provisioning::item_reference(&index, ids[1])?,
         ];
-        let (reference, sequence) = seed_item_pair(client, clients, id).await?;
+        let (reference, sequence) = acquire_rune(client, world, id).await?;
         row.pass(acquire, sequence);
         row.pass(refusal, illegal_floor(client, reference).await?);
         let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
@@ -2074,7 +2024,7 @@ async fn combat_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
             let (accounts, characters) = spell_row_slots(clients, id, index).await?;
             let fixture = SeamClients { accounts: &accounts, characters: &characters, ..*clients };
             let clients = &fixture;
-            let mut client = spell_preparation(id).ok_or("spell preparation absent")?.connect(clients, tag, index).await?;
+            let mut client = admit_row(clients, tag, index).await?;
             let mut peer_cancelled = false;
             let mut completed = false;
             let deadline = format!("{id} 420s journey deadline; required actions unproven");
@@ -2713,7 +2663,6 @@ async fn challenge(
             spell.vocations
         ).into());
     }
-    character_prep::grant_premium(client).await?;
     row.pass(
         "player-challenge-access",
         combat_access(client, world, book, words).await?,
@@ -3036,8 +2985,8 @@ const SUMMON_ACTIONS: &[&str] = &[
     "death-fresh-admission",
 ];
 const ACQUIRE_ACTIONS: &[&str] = &[
-    "seed-convince",
-    "seed-animate",
+    "buy-convince",
+    "buy-animate",
     "convince-floor-refusal",
     "animate-floor-refusal",
     "convince-payment-master",
@@ -3068,11 +3017,7 @@ async fn companion_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
                 accounts, characters, ..*clients
             });
             let clients = fixture.as_ref().unwrap_or(clients);
-            let mut client = if let Some(preparation) = spell_preparation(id) {
-                preparation.connect(clients, tag, 1).await?
-            } else {
-                admit_row(clients, tag, 1).await?
-            };
+            let mut client = admit_row(clients, tag, 1).await?;
             let mut completed = false;
             let deadline =
                 format!("{id}: 600s companion journey deadline; required actions unproven");
@@ -4106,10 +4051,10 @@ async fn acquired_companions(
     let convince = book.rune(3177).ok_or("Convince Creature rune absent")?;
     let animate = book.rune(3203).ok_or("Animate Dead rune absent")?;
     let mana = companion_mana(input, "Rat")?;
-    let (convince_ref, sequence) = seed_item_pair(client, clients, 3177).await?;
-    row.pass("seed-convince", sequence);
-    let (animate_ref, sequence) = seed_item_pair(client, clients, 3203).await?;
-    row.pass("seed-animate", sequence);
+    let (convince_ref, sequence) = acquire_rune(client, world, 3177).await?;
+    row.pass("buy-convince", sequence);
+    let (animate_ref, sequence) = acquire_rune(client, world, 3203).await?;
+    row.pass("buy-animate", sequence);
     non_pz(client, world).await?;
     row.pass(
         "convince-floor-refusal",
@@ -4342,9 +4287,9 @@ mod companion_death_tests {
 }
 
 const TILE_ITEM_ACTIONS: &[&str] = &[
-    "seed-chameleon",
-    "seed-disintegrate",
-    "seed-movable-target",
+    "buy-chameleon",
+    "buy-disintegrate",
+    "buy-movable-target",
     "player-drop-target",
     "chameleon-floor-refusal",
     "chameleon-creature-refusal",
@@ -4370,7 +4315,7 @@ async fn tile_item_row(clients: &SeamClients<'_>, world: &BundleWorld) {
                 Duration::from_secs(400),
                 "C16d 400s journey deadline; required actions unproven",
                 async {
-                    let result = tile_items(&mut row, &mut client, clients).await;
+                    let result = tile_items(&mut row, &mut client, clients, world).await;
                     completed = true;
                     result
                 },
@@ -4518,6 +4463,7 @@ async fn tile_items(
     row: &mut Row,
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
+    world: &BundleWorld,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_map::MapDefinition;
     let book = native_spell_book()?;
@@ -4525,19 +4471,20 @@ async fn tile_items(
     let disintegrate = book.rune(3197).ok_or("C16d Disintegrate rune absent")?;
     let duration = tile_item_duration(chameleon)?;
     let baseline = own_binding(client)?.look;
-    let (chameleon_ref, sequence) = seed_item_pair(client, clients, 3178).await?;
-    row.pass("seed-chameleon", sequence);
-    let (disintegrate_ref, sequence) = seed_item_pair(client, clients, 3197).await?;
-    row.pass("seed-disintegrate", sequence);
+    let (chameleon_ref, sequence) = acquire_rune(client, world, 3178).await?;
+    row.pass("buy-chameleon", sequence);
+    let (disintegrate_ref, sequence) = acquire_rune(client, world, 3197).await?;
+    row.pass("buy-disintegrate", sequence);
     // Use a carried, player-dropped target so natural map-item decay cannot explain removal.
-    let (target_ref, sequence) = seed_item_pair(client, clients, 2854).await?;
-    row.pass("seed-movable-target", sequence);
-    let prepared = [
+    let (target_ref, sequence) = acquire_rune(client, world, 2854).await?;
+    row.pass("buy-movable-target", sequence);
+    // Shop travel changes the live viewport. Read a new join map before choosing a tile.
+    let purchased = [
         (chameleon_ref, rune_quantity(client, chameleon_ref)?),
         (disintegrate_ref, rune_quantity(client, disintegrate_ref)?),
         (target_ref, rune_quantity(client, target_ref)?),
     ];
-    tile_item_rejoin(client, clients, 0xe4, &prepared).await?;
+    tile_item_rejoin(client, clients, 0xe4, &purchased).await?;
     let here = client.world_spatial().actor_position;
     let map = client
         .session_mut()
@@ -4725,7 +4672,7 @@ mod tile_item_tests {
     }
     #[test]
     fn tile_item_verdict_rejects_invalid_receipts() {
-        for (action, sequence) in [("seed-chameleon", 0), ("unknown", 1), ("seed-chameleon", 1)] {
+        for (action, sequence) in [("buy-chameleon", 0), ("unknown", 1), ("buy-chameleon", 1)] {
             let mut row = Row::new("C16d", TILE_ITEM_ACTIONS);
             for required in TILE_ITEM_ACTIONS {
                 row.pass(required, 1);
