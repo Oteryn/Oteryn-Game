@@ -12,7 +12,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         .await
         .unwrap_or_else(|_| Err("C12 client capture deadline=45s".into()));
     let result = result.and(Err::<(), Box<dyn std::error::Error>>(
-        super::full_row_c02::PLATFORM_ADMISSION_GAP.into(),
+        super::full_row_c12::PLATFORM_PROFILE_B_GAP.into(),
     ));
     if let Err(error) = result {
         evidence(&format!(

@@ -7,7 +7,31 @@ import time
 import uuid
 
 
-PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "knight-underlevel", "c05-exiva", "w20b-light", "s13-party", "s08-knight", "s08-sorcerer", "f5-c17a", "f5-c17c", "f5-c13", "f5-c18a", "f5-c17d", "c11-unassigned", "c11-knight", "w11-soul-war", "c12-monk", "premium")
+PROFILES = (
+    "c05-exiva",
+    "c06-sorcerer",
+    "c11-knight",
+    "c11-unassigned",
+    "c12-monk",
+    "druid",
+    "explorer",
+    "f5-c13",
+    "f5-c17a",
+    "f5-c17c",
+    "f5-c17d",
+    "f5-c18a",
+    "knight",
+    "knight-underlevel",
+    "monk",
+    "paladin",
+    "premium",
+    "s08-knight",
+    "s08-sorcerer",
+    "s13-party",
+    "sorcerer",
+    "w11-soul-war",
+    "w20b-light",
+)
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
 NAMED_ITEM = re.compile(r"item-([1-9][0-9]{0,9})-(?:[1-9]|1[0-9]|20)")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")

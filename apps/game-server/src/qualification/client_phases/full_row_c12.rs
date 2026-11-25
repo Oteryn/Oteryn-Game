@@ -107,6 +107,9 @@ fn token(value: &str) -> String {
         .collect()
 }
 
+pub(super) const PLATFORM_PROFILE_B_GAP: &str =
+    "BLOCKED: Platform Profile B grant unavailable (owner decision pending)";
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
     let result = match verdict::indexed_timeout(Duration::from_secs(480), verdict::observe(journey(&mut row, clients))).await {
@@ -698,14 +701,20 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
     let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
     if !requires_platform_grant(&clients.accounts[1]) {
-        return Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into());
+        return Err(PLATFORM_PROFILE_B_GAP.into());
     }
     const LEVEL_PREPARATION: character_prep::Seeded = character_prep::Seeded {
         profile: "c12-monk",
         reason: "item 50271 wear level / exori nia min level 18",
     };
     character_prep::declare_seeded("C12", "dedicated-character-birth,level-20", LEVEL_PREPARATION.reason);
-    let mut client = LEVEL_PREPARATION.connect(clients, 0xc2, 1).await?;
+    let mut client = LEVEL_PREPARATION.connect(clients, 0xc2, 1).await.map_err(|error| {
+        if error.to_string() == "Platform-issued row grant unavailable" {
+            PLATFORM_PROFILE_B_GAP.into()
+        } else {
+            error
+        }
+    })?;
     let level = full_e2ef7::player_level(&mut client).await?;
     let vocation = full_e2ef5::current_vocation(&mut client).await?;
     if level != 20 || vocation != crate::spell::Vocation::Monk {

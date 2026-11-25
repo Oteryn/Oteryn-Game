@@ -79,9 +79,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .spoken(WORDS)
         .ok_or("missing authored Light spell")?
         .spell;
-    let mut client = connect_player_caster(
-        clients, spell.level, spell.premium, Duration::from_secs(60),
-    ).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    verdict::Harness::global().bounded_wait(deadline, "personal-light-preparation");
+    let mut client = tokio::time::timeout_at(deadline, async {
+        let identity = character_prep::dedicated_character(
+            clients, "NODE_BOOT_LIGHT_CAPTURE_ACCOUNT_ID",
+        ).await?;
+        let caster_clients = identity.clients(clients);
+        const BUILD: character_prep::Seeded = character_prep::Seeded {
+            profile: "c05-exiva",
+            reason: "Light's authored level-8 Sorcerer prerequisite",
+        };
+        character_prep::declare_seeded("W20b.client", "dedicated-character-birth,level-8", BUILD.reason);
+        let mut client = BUILD.connect(&caster_clients, 0x97, 0).await?;
+        character_prep::require_sorcerer_level(&mut client, spell.level).await?;
+        if spell.premium {
+            full_e2ef7::require_current_premium(&mut client).await?;
+        }
+        evidence(&format!("W20B_CLIENT_CASTER words={WORDS} served_level={}", spell.level));
+        Ok::<_, Box<dyn std::error::Error>>(client)
+    }).await.map_err(|_| "personal-light capture preparation exceeded 60s")??;
     let own = *client.world_entities().ok_or("step=entities absent")?.own_identity();
     let before = client
         .session_mut()
@@ -174,6 +191,9 @@ fn qualification_review_w20b_uses_only_the_declared_level_profile() -> TestResul
     assert!(setup.contains(concat!("profile: ", "\"w20b-light\"")));
     assert!(!setup.contains(concat!("character_prep::", "grant_premium")));
     let (packet, _) = packet.split_once("pub(super) async fn run_packet(").ok_or("missing W20b runner")?;
-    assert!(packet.contains(concat!("connect_player_", "caster(")));
+    assert!(packet.contains("NODE_BOOT_LIGHT_CAPTURE_ACCOUNT_ID"));
+    assert!(packet.contains(concat!("profile: ", "\"c05-exiva\"")));
+    assert!(packet.contains("require_sorcerer_level(&mut client, spell.level)"));
+    assert!(packet.contains("Duration::from_secs(60)"));
     Ok(())
 }
