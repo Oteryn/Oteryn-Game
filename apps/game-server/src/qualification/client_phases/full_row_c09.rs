@@ -214,6 +214,51 @@ fn visible_frodo(
     candidates.next().is_none().then_some(first.entity)
 }
 
+async fn walk_frodo_range(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    in_range: impl Fn(TilePos) -> bool,
+) -> TestResult {
+    let mut blocked = std::collections::BTreeSet::new();
+    'replan: loop {
+        let from = tile(client.world_spatial().actor_position)?;
+        let path = route_avoiding(world, from, &in_range, |at| !blocked.contains(&at))
+            .ok_or_else(|| format!("no STEP route to Frodo within talk range from {from:?} avoiding {blocked:?}"))?;
+        for direction in path {
+            let before = client.world_spatial().actor_position;
+            let expected = destination(world, tile(before)?, direction)
+                .ok_or("Frodo route landing disappeared")?;
+            let mut result = client.step_retrying(direction).await?;
+            for attempt in 1..=6 {
+                let Some(delay) = town_route_retry_delay(
+                    result.disposition,
+                    client.world_spatial().actor_position == before,
+                    attempt,
+                ) else {
+                    break;
+                };
+                tokio::time::sleep(delay).await;
+                result = client.step_retrying(direction).await?;
+            }
+            let after = client.world_spatial().actor_position;
+            if result.status == CommandStatus::Accepted && result.disposition == StepDisposition::Blocked
+                && after == before && blocked.len() < 8 && blocked.insert(expected)
+            {
+                evidence(&format!("C09_FRODO_ROUTE blocked={expected:?} from={before:?}"));
+                continue 'replan;
+            }
+            if result.status != CommandStatus::Accepted || result.disposition != StepDisposition::Moved
+                || result.world_spatial_delta.is_none() || tile(after)? != expected
+            {
+                return Err(format!("Frodo STEP {direction:?} from={before:?} expected={expected:?} observed={after:?}: {result:?}").into());
+            }
+            verdict::Harness::global().progress("walk");
+            client.take_events();
+        }
+        return Ok(());
+    }
+}
+
 async fn walk_to_frodo(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -318,13 +363,7 @@ async fn walk_to_frodo(
     evidence(&format!(
         "C09_TAVERN_DOOR placement={door:?} revision=1 disposition=Committed"
     ));
-    let path = route(
-        &oracle,
-        super::tile(client.world_spatial().actor_position)?,
-        within_talk_range,
-    )
-    .ok_or("no STEP route to Frodo within talk range after opening the tavern door")?;
-    walk(client, &oracle, &path).await?;
+    walk_frodo_range(client, &oracle, within_talk_range).await?;
     Ok(oracle)
 }
 
@@ -369,9 +408,12 @@ async fn buy_meat_from_frodo(
             p.floor == at.floor && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
         })
     };
-    let path =
-        route(world, here, within_talk_range).ok_or("no walk route to Frodo within talk range")?;
-    walk(client, world, &path).await?;
+    if tavern_interior {
+        walk_frodo_range(client, world, within_talk_range).await?;
+    } else {
+        let path = route(world, here, within_talk_range).ok_or("no walk route to Frodo within talk range")?;
+        walk(client, world, &path).await?;
+    }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let actor = loop {
         if let Some(actor) = visible_frodo(client, &npc.placements) {
