@@ -841,6 +841,27 @@ async fn remove_victim_equipment(bots: &mut [Bot<'_, '_>]) -> TestResult {
     .await
 }
 
+fn respawn_rejoin_route(
+    world: &BundleWorld,
+    temple: TilePos,
+    death: TilePos,
+    attacker: TilePos,
+) -> Option<Vec<StepDirection>> {
+    route_avoiding(
+        world,
+        temple,
+        |at| {
+            at.floor == attacker.floor
+                && at.x.abs_diff(attacker.x).max(at.y.abs_diff(attacker.y)) <= 1
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|t| !t.protection_zone())
+        },
+        |at| at != death && at != attacker,
+    )
+}
+
 /// A's attack, B's damage, death and temple respawn, the durable death receipt, A's frag
 /// points and white skull, checked in both clients and PostgreSQL.
 async fn pvp_journey(
@@ -917,6 +938,7 @@ async fn pvp_journey(
                     neighbor.floor == at.floor
                         && neighbor.x.abs_diff(at.x) + neighbor.y.abs_diff(at.y) == 1
                         && combat_tile(neighbor)
+                        && respawn_rejoin_route(world, temple, at, neighbor).is_some()
                 })
             })
     })?
@@ -927,6 +949,7 @@ async fn pvp_journey(
         at.floor == victim_tile.floor
             && at.x.abs_diff(victim_tile.x) + at.y.abs_diff(victim_tile.y) == 1
             && combat_tile(at)
+            && respawn_rejoin_route(world, temple, victim_tile, at).is_some()
     })?
     .ok_or("no reachable adjacent PvP-enabled attacker tile")?;
     bots::walk_bot(bots, 0, world, &path).await?;
@@ -1053,8 +1076,11 @@ async fn pvp_journey(
     {
         return Err(format!("MP01 durable frag points={points:?};death={}", death.id).into());
     }
-    // B has already proved its temple respawn; bring its new incarnation back into interest.
-    bots::approach(bots, 1, 0, world, true).await?;
+    // Rejoin outside protection without using the death tile, which now holds B's corpse.
+    let attacker_tile = tile(bots[0].client()?.world_spatial().actor_position)?;
+    let path = respawn_rejoin_route(world, temple, victim_tile, attacker_tile)
+        .ok_or("no route from the PvP temple to the attacker that avoids the death tile")?;
+    bots::walk_bot(bots, 1, world, &path).await?;
     for bot in bots.iter_mut() {
         let reply = bot
             .client()?
@@ -1107,6 +1133,39 @@ async fn pvp_journey(
 mod evidence_tests {
     use super::*;
     use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+
+    #[test]
+    fn respawn_route_excludes_a_death_tile_next_to_the_attacker() -> TestResult {
+        use crate::map::boot::{BootPins, boot, tests};
+
+        let (data, bundle) = tests::bundle();
+        let at = |x| TilePos { x, y: 0, floor: -7 };
+        let temple = at(1);
+        let death = at(2);
+        let attacker = at(3);
+        let digest: String = bundle
+            .digest
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        let world = boot(
+            &data,
+            &BootPins {
+                map_revision: format!("sha256:{digest}"),
+                bundle,
+                start: temple,
+            },
+            WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])?,
+            ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])?,
+            tests::items,
+        )?;
+        assert_eq!(
+            respawn_rejoin_route(&world, temple, at(4), attacker),
+            Some(vec![StepDirection::East])
+        );
+        assert!(respawn_rejoin_route(&world, temple, death, attacker).is_none());
+        Ok(())
+    }
 
     #[test]
     fn review_expert_observation_ignores_queued_mode() {
