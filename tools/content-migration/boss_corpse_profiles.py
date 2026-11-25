@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 from build_spell_item_identities import binding_index
+from srx1_profile_updates import omit_unknown_attributes
 
 PIN = '201189f871d23597b82caf88fd611454a2ddefb8'
 PATH = 'tools/content-schema/native-gameplay/boss-corpse-item-profiles.json'
@@ -238,6 +239,8 @@ def admit(root, generated, destination, manifest_path, order, canonical):
                 for name in ('always_on_top', 'always_on_top_order'):
                     if name in decorated['attributes']:
                         expected['attributes'][name] = decorated['attributes'][name]
+            if previous != expected:
+                omit_unknown_attributes(expected)
             if previous != expected:
                 raise ValueError(f'BOSS_CORPSE_PROFILE_CONFLICT:{key}')
         else:

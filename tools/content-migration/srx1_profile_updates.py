@@ -14,6 +14,15 @@ def omit_unknown_attributes(row):
             attributes.pop(name, None)
 
 
+def exact_source_keys(packet):
+    from lion_trial_item_profiles import SOURCE_RECORDS
+
+    return {row['production_definition']['production_key']
+            for group in ('records', 'custody_promotions') for row in packet[group]} | {
+                f'oteryn:item.tibia.i{item_id}' for item_id in SOURCE_RECORDS
+            }
+
+
 def coalesce_dispenser_top_order(document, source_records, house_overlay):
     """Coalesce only exact dispenser owner facts plus verified source top flags.
 
@@ -34,6 +43,7 @@ def coalesce_dispenser_top_order(document, source_records, house_overlay):
 def generate(root, generated, profile_path, manifest_path, order, canonical):
     import dispenser_item_profiles
     import house_decoration_actions
+    import qengine_reward_item_profiles
     import srx1_potion_variants
     import writing_item_admission
     base = generated[profile_path]
@@ -51,11 +61,14 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
     house_decoration_actions.apply_top_order(
         enriched['records'], json.loads((root / house_decoration_actions.PROFILES).read_bytes()))
     original_document = json.loads(base)
+    exact_keys = exact_source_keys(json.loads(generated[qengine_reward_item_profiles.PROOF]))
     # Omit redundant nulls after the exact source comparisons. Rust reads either
     # representation as Unknown and keeps the composed provider within 16 MiB.
+    # Quest and NPC source proofs compare the complete QENGINE and Lion Trial rows.
     for profile_document in (original_document, enriched):
         for row in profile_document['records']:
-            omit_unknown_attributes(row)
+            if row['production_definition']['production_key'] not in exact_keys:
+                omit_unknown_attributes(row)
     base = canonical(original_document)
     generated[profile_path] = base
     original = {row['production_definition']['production_key']: row

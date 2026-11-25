@@ -971,7 +971,7 @@ def main():
     from import_cyclopedia_global import load_capture
     from item_detail_source_facts import apply_capture_stats
     from ranged_item_profiles import apply_authoring
-    from srx1_profile_updates import omit_unknown_attributes
+    from srx1_profile_updates import exact_source_keys, omit_unknown_attributes
 
     capture = load_capture(ROOT)
     forge_owners = owners(ROOT)
@@ -981,9 +981,11 @@ def main():
         if name == "M25-GALTHEN-YIELDS":
             apply_authoring(ROOT, document)
     coowners = source_coowners(ROOT)
+    exact_keys = exact_source_keys(json.loads((ROOT / paths[2]).read_bytes()))
     for _, document, _ in (*srx3, *coowners):
         for row in document["records"]:
-            omit_unknown_attributes(row)
+            if row["production_definition"]["production_key"] not in exact_keys:
+                omit_unknown_attributes(row)
     generated, count = regenerate(
         register(source),
         *documents,

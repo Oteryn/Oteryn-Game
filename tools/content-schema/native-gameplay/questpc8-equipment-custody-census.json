@@ -5,11 +5,11 @@
   "inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "30a94172dd0d06d179ea84072785fc9ff4314ac75611ead2b37cd78b57682d37"
+      "sha256": "af5375ec72a28db6d0935eefd321f8bb355aee0099800312331f321d78133db5"
     },
     {
       "path": "content/items/definitions/srx1-item-updates.json",
-      "sha256": "e58db0ccb8c81f350affaf1efd120654ec14de7acb1a83fcc916272d0d4db4e8"
+      "sha256": "cb0bc89c2ecd751c10c32c2af60217abb71f988cd4009bd6e344a112120d4e26"
     },
     {
       "path": "content/items/definitions/starting-loadout-profiles.json",
