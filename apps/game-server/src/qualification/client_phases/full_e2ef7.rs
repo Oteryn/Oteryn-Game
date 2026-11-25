@@ -7354,3 +7354,13 @@ mod forge_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[test]
+fn paid_light_mana_is_observed_before_retry() {
+    let source = include_str!("full_e2ef7.rs");
+    let (_, journey) = source.split_once("async fn light_journey(").unwrap();
+    let (before_retry, _) = journey.split_once("let retry = client.cast(index).await?;").expect("retry must be sent only after observing the paid cast");
+    assert!(before_retry.contains("before.mana.checked_sub(client.vitals.mana) != Some(mana)"));
+    assert!(before_retry.contains("row.pass(paid);"));
+}
