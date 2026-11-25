@@ -19,6 +19,7 @@
 //!    tabs and equipment are unchanged.
 
 use super::*;
+use oteryn_dev_client::client_runtime::inventory::MoveRequest;
 use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::cyclopedia_character::{CharacterTab, combat};
@@ -190,7 +191,9 @@ impl Stats {
 
     /// The equipment-sourced offence projections that a clean baseline requires to be zero.
     fn offence_sources(&self) -> i64 {
-        [Stat::CriticalChance, Stat::LifeLeech, Stat::ManaLeech, Stat::Onslaught, Stat::Cleave].iter().map(|k| self.off(*k)).sum::<i64>()
+        let bonus_critical_chance = self.off(Stat::CriticalChance) - self.off(Stat::CriticalChanceBase);
+        [Stat::LifeLeech, Stat::ManaLeech, Stat::Onslaught, Stat::Cleave].iter().map(|k| self.off(*k)).sum::<i64>()
+            + bonus_critical_chance
             + self.perfect_shots().len() as i64
             + self.def(Stat::PhysicalReflection)
     }
@@ -521,7 +524,14 @@ async fn restore(client: &mut DevClientSession, slot: items::EquipmentSlot, defi
         .and_then(|inv| inv.entries.iter().find(|e| e.item_definition_ref == definition))
         .map(|e| e.handle)
         .ok_or("stripped item not carried")?;
-    let moved = client.move_item(&items::ItemMoveIntent { source: handle, destination: items::ItemMoveDestination::Equipment(slot) }).await?;
+    let moved = client
+        .session_mut()
+        .move_item_counted(MoveRequest {
+            source: handle,
+            destination: items::ItemMoveDestination::Equipment(slot),
+            count: None,
+        })
+        .await?;
     if moved.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("re-equip ITEM_MOVE reply={moved:?}").into());
     }
