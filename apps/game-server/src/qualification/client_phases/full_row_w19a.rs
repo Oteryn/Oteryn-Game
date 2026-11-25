@@ -121,40 +121,15 @@ async fn use_intent(
 ) -> TestResult<(CommandStatus, use_wire::UseDisposition, u64)> {
     let payload = use_wire::encode_item_use_intent(&intent)
         .map_err(|error| format!("W19a USE encode: {error:?}"))?;
-    let before = quantities(client)?;
-    let retry_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop {
-        let reply = client.session_mut().world_context_use(&payload).await?;
-        if let Some(disposition) = decode_w19a_use(reply.status, &reply.payload)? {
-            return Ok((reply.status, disposition, reply.server_sequence));
-        }
-        if quantities(client)? != before {
-            return Err("W19a untyped USE rejection changed inventory".into());
-        }
-        if tokio::time::Instant::now() >= retry_deadline {
-            return Err("W19a USE dispatch unavailable: Rejected reply omitted field 1 (disposition)".into());
-        }
-        client.service_liveness(Duration::from_millis(100)).await?;
-        if quantities(client)? != before {
-            return Err("W19a untyped USE rejection changed inventory".into());
-        }
-    }
-}
-
-fn decode_w19a_use(
-    status: CommandStatus,
-    payload: &[u8],
-) -> TestResult<Option<use_wire::UseDisposition>> {
-    // Input-guard deferral can reply with an empty Foundation rejection instead of a
-    // typed USE result. It is retryable here, but cannot prove the mechanic refusal.
-    if status == CommandStatus::Rejected && payload.is_empty() {
-        return Ok(None);
-    }
-    let (payload, _) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(payload)
+    let reply = client
+        .session_mut()
+        .world_context_use(&payload)
+        .await?;
+    let (payload, _) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&reply.payload)
         .map_err(|error| format!("W19a refusal detail: {error:?}"))?;
     let disposition = use_wire::decode_use_result(payload)
         .map_err(|error| format!("W19a USE result: {error:?}"))?;
-    Ok(Some(disposition))
+    Ok((reply.status, disposition, reply.server_sequence))
 }
 
 const MESSENGER: &str = "oteryn:npc.messenger_of_santa";
@@ -427,19 +402,6 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn w19a_use_result_distinguishes_untyped_rejection_from_mechanic_refusal() -> TestResult {
-        assert_eq!(decode_w19a_use(CommandStatus::Rejected, &[])?, None);
-        assert!(decode_w19a_use(CommandStatus::Accepted, &[]).is_err());
-        let payload = use_wire::encode_use_result(use_wire::UseDisposition::NothingToUse)
-            .map_err(|error| format!("test USE result: {error:?}"))?;
-        assert_eq!(
-            decode_w19a_use(CommandStatus::Accepted, &payload)?,
-            Some(use_wire::UseDisposition::NothingToUse)
-        );
-        Ok(())
-    }
 
     #[test]
     fn journey_regression_rejects_loss_of_unrelated_inventory() {
