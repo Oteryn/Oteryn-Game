@@ -52,7 +52,8 @@ code they touch, plus the astra run when the repair is in a risk class.
 Model and effort (owner decision 2026-11-25, calibration): every review run
 is a Codex Cloud task, read-only, model `gpt-6.2-sol` at reasoning effort
 `high`, plus the `gpt-6.2-astra` runs at effort `high` on the same head that
-the run-selection table below names, with the same prompt; all runs of the
+the run-selection table below names, each with the §2 prompt plus its role
+from the table; all runs of the
 round together are the one covered review of that head. An
 astra P0/P1 counts only after the review owner traced it (input, caller,
 wrong result) to a REAL verdict (§3); one disproved is recorded FALSE and
@@ -70,20 +71,22 @@ Every session picks the runs of a round from this table; the other rule files
 point here, and `docs/agents/OWNER_FUNDED_AI_POLICY.md` authorizes the runs it
 names. "Lines" are hand-written changed lines (generated data, pins and
 regenerated registries excluded). "Measured" rows rest on the calibration of
-2026-11-25 (one run per model per PR, n=1); "default" rows are not measured yet.
+2026-11-25 (mostly one run per model and PR; the large content diff had two
+holistic runs per model and one plain-prompt sol run); "default" rows are not measured yet.
 
 | Situation | Runs of the round | Basis |
 | --- | --- | --- |
 | Code PR up to about 1500 lines, no risk class | `gpt-6.2-sol` high, one holistic run | measured: sol found the real P1s with little noise on small and medium diffs |
 | Risk class (persistence, session fencing, protocol, authority, durable value, migrations, a symbol with several consumers) | sol high + `gpt-6.2-astra` high on the same head | measured: astra finds cross-module seams; its P0/P1 count only after a traced REAL verdict |
-| Content train or content diff above about 1500 lines | sol high per area + one astra high whole-diff integration run (seams) + one astra high content-fidelity run with external sources | measured: on the large content diff holistic sol missed a writer-key/guard seam in 2 of 2 runs (one plain-prompt sol run found it); astra found it in 2 of 2 |
+| Content train (any size) or content diff above about 1500 lines | sol high per area (one holistic sol run below about 1500 lines) + one astra high whole-diff integration run (seams) + one astra high content-fidelity run with external sources | measured: on the large content diff holistic sol missed a writer-key/guard seam in 2 of 2 runs (one plain-prompt sol run found it); astra found it in 2 of 2 |
 | Code diff above about 1500 lines | sol high per area + one astra high whole-diff integration run | default (by analogy with the content row) |
 | Docs, rules, skills, workflows or agent definitions | sol high + astra high | measured: on a rules PR astra found real P1s (an agent file that does not parse, a gate that passed unreviewed PRs) |
 | Small data-only PR | sol high | default |
 | Delta review (second round) | sol high over the fix commits; + astra when the repair is in a risk class | default |
 | CI-failure fix | sol high with the failing log lines in the prompt | default |
 
-Never astra alone (it missed a known bug that sol found) and never effort
+When rows overlap (a workflow fix for red CI, a content-train delta), run the
+union of their runs. Never astra alone (it missed a known bug that sol found) and never effort
 `medium`.
 
 ## 2. The prompt: all findings, no cap
@@ -97,8 +100,9 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
   defect class (the pattern sweep).
 - Format: `P0|P1|P2|P3 path:line - problem - concrete failure path`.
 - Grade with the severity rubric at the top of
-  `docs/agents/review/CODEX-CHECKLIST.md`: P1 is a player flow that breaks,
-  P2 is content fidelity or a contained defect. A real but non-breaking
+  `docs/agents/review/CODEX-CHECKLIST.md`: P1 is a wrong result a real caller
+  (a player, tool, workflow, gate or agent) reaches, P2 is content fidelity or
+  a contained defect. A real but non-breaking
   content gap is P2.
 - For content data (prices, loot, outfits, spells, NPC text and placement,
   quest steps), check the values against external sources, not only the
@@ -110,7 +114,7 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
   Canary/Crystal as hypothesis only. For bulk static content (items, NPCs,
   map objects) the order is the source registry's
   (`docs/agents/programs/OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md`
-  §6): TibiaWiki BR, then a second structured cross-check, then public official
+  §6a and §7): TibiaWiki BR, then a second structured cross-check, then public official
   evidence for exact conflicts, else `UNKNOWN`/`CONFLICT`. A value already
   accepted under that order with its cited source is not re-flagged. Cite the URL or
   the `docs/reference/` file for each value; when sources disagree, report

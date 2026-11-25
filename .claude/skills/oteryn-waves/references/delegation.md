@@ -84,7 +84,7 @@ name the effort by risk (owner decision 2026-11-25): `high` for a risk class
 consumers), `medium` for data, content, tests and simple slices. Start each
 packet with "Reasoning effort: <high|medium>."; a Codex lane on the PC that
 writes code uses the same setting. Codex review runs in Codex Cloud,
-read-only, with `gpt-6.2-sol` at reasoning effort `high`, plus one
+read-only, with `gpt-6.2-sol` at reasoning effort `high`, plus
 the `gpt-6.2-astra` runs at `high` that the run-selection table
 (`oteryn-review` `references/batch-review.md` §1) names, never at `medium` and
 never `codex exec` on the PC (`oteryn-review` §5). Its verified findings are
