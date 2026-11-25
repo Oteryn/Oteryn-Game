@@ -1,8 +1,10 @@
 //! SV15 command owner. The client requests transitions; only the current carrier's
-//! committed lethal projection can open the next pit. Lock order: command gate,
-//! revision slot, runtime, then the leaf live-match registry. No runtime guard awaits SQL.
+//! committed lethal projection can open the next pit. Commands take the spell
+//! lane before the gate. Polls use a short gate check after reading durable state.
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::arena_match::{self as durable, MatchState, MatchTransition, donor};
+use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
@@ -12,21 +14,26 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-#[path = "arena_match/pit_exit.rs"]
-mod pit_exit;
-
 #[path = "arena_match/death_poll.rs"]
 mod death_poll;
 #[path = "arena_match/departure_poll.rs"]
 mod departure_poll;
 #[path = "arena_match/pillar.rs"]
 mod pillar;
+#[path = "arena_match/pit_exit.rs"]
+mod pit_exit;
 #[path = "arena_match/pit_reset.rs"]
 mod pit_reset;
 #[path = "arena_match/portal_step.rs"]
 mod portal_step;
 #[path = "arena_match/timeout_poll.rs"]
 mod timeout_poll;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use death_poll::ARENA_POLL_READ_BARRIER;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use pit_reset::ARENA_ITEM_RESET_BARRIER;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use portal_step::ARENA_PORTAL_COMMIT_BARRIER;
 
 macro_rules! authority_methods {
     () => {
@@ -67,6 +74,7 @@ pub(in crate::gameplay_transport) struct Matches {
     command: tokio::sync::Mutex<()>,
     live: Mutex<HashMap<GameSessionId, LiveMatch>>,
     victory_poll: Mutex<Option<(u64, u64)>>,
+    relocation_cursor: Mutex<Option<crate::domain::CharacterId>>,
     #[cfg(test)]
     fixture_pit_ms: std::sync::atomic::AtomicU64,
 }
@@ -241,26 +249,6 @@ pub(in crate::gameplay_transport) fn tick(
         }
         false
     });
-    // A fresh login or reset cannot retain an unfenced placement in a pit.
-    if walkable(owner, runtime, position(donor::KICK))
-        && let Ok(players) = runtime.positioned_actor_census()
-    {
-        for (actor, at, session) in players {
-            let Some(session) = session else {
-                continue;
-            };
-            if !matches.contains_key(&session)
-                && (1..=10).any(|pit| in_pit(at.position(), pit))
-                && owner
-                    .states
-                    .spell_states
-                    .try_lock()
-                    .is_ok_and(|states| !states.is_dead(actor))
-            {
-                let _ = runtime.relocate_arena_player(actor, session, at, position(donor::KICK));
-            }
-        }
-    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -306,7 +294,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let bytes = self.arena_match_native(
             ArenaCaller { actor, supplied, world: admitted.world_id, channel: admitted.channel_id },
-            command.into(), action, payload, None,
+            command.into(), action, payload, None, None,
         ).await?;
         let result = wire::decode_match_result(&bytes).ok()?;
         if result.state.completed_rank == 3 && result.state.claimed_masks.iter().all(|mask| mask & 8 != 0) {
@@ -349,6 +337,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         action: A,
         payload: &[u8],
         expected: Option<crate::foundation::MovementPositionSnapshot>,
+        native_permit: Option<&SpellLanePermit>,
     ) -> Option<Vec<u8>> {
         let actor = caller.actor;
         let supplied = caller.supplied;
@@ -362,7 +351,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return None;
         }
-        let _gate = arena_command_gate(&self.states.arena_matches.command, matches!(cause, durable::MatchCause::Step { .. })).await?;
+        let owned_permit;
+        let permit = if let Some(permit) = native_permit {
+            permit
+        } else {
+            owned_permit = self.spell_lane_permit().await?;
+            &owned_permit
+        };
+        drop(arena_command_gate(&self.states.arena_matches.command, matches!(cause, durable::MatchCause::Step { .. })).await?);
         let mut fence = self
             .current_quest_fence(session)
             .await
@@ -416,6 +412,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 session,
                 &read.state,
                 read.now_ms,
+                permit,
+                fence,
             )
             .await?;
         }
@@ -440,7 +438,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || (read.dead && matches!(after.phase, 1 | 2))
                 || (!read.pit_owned && matches!(after.phase, 1 | 2)));
         let expired = matches!(after.phase, 1 | 2) && after.deadline_ms <= read.now_ms;
-        if stale || expired {
+        if stale && read.relocation_pending && !read.dead {
+            disposition = D::Busy;
+        } else if stale || expired {
             after = after.idle();
             disposition = if expired { D::TimedOut } else { D::WrongState };
         } else if after.phase == 1
@@ -651,9 +651,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(bytes);
         }
-        self.restore_arena_projection(actor, session, &after, read.now_ms)
+        self.restore_arena_projection(actor, session, &after, read.now_ms, permit, fence)
             .await?;
+        if after != before && after.phase != 2 {
+            let _ = self.root.acknowledge_arena_relocation(self.character, self.holder, fence, &after).await;
+        }
         Some(bytes)
+    }
+
+    fn arena_poll_current(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+    ) -> bool {
+        let Ok(_gate) = self.states.arena_matches.command.try_lock() else {
+            return false;
+        };
+        current_arena_actor(runtime, actor, fence)
+            && self.states.spell_states.try_lock().is_ok_and(|states| !states.is_dead(actor))
     }
 
     async fn restore_arena_projection(
@@ -662,6 +678,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         state: &MatchState,
         now_ms: i64,
+        permit: &SpellLanePermit,
+        fence: CurrentCharacterGameplayFence,
     ) -> Option<()> {
         let existing = self
             .states
@@ -677,7 +695,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && state.projection_remaining_ms(now_ms).is_some()
         });
         let mut runtime = self.runtime.lock().await;
-        if runtime.owner_fence().is_err()
+        if !current_arena_actor(&runtime, actor, fence)
             || self
                 .states
                 .spell_states
@@ -696,16 +714,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Some(());
         }
         if let Some(remaining_ms) = state.projection_remaining_ms(now_ms) {
-            if let Some(old) = &existing
-                && (old.state.pit != state.pit || old.state.run != state.run)
-            {
-                let _ = pillar::project(self, &old.state, PillarProjection::Release);
-            }
             let destination = center(state.pit)?;
             if !walkable(self, &runtime, destination) {
                 return None;
             }
             if state.phase == 2 {
+                if let Some(old) = &existing
+                    && (old.state.pit != state.pit || old.state.run != state.run)
+                {
+                    let _ = pillar::project(self, &old.state, PillarProjection::Release);
+                }
                 let _ = pillar::project(self, state, PillarProjection::Victory);
                 // Crystal svargrond_arena.lua:285-313: waiting at the victory
                 // portal still owns the original kick timer, including recovery.
@@ -723,11 +741,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
                 return Some(());
             }
-            let _ = pillar::project(self, state, PillarProjection::Fighting);
-            let current = runtime.read_actor_position(actor).ok()?.position();
-            if !at_entrance(current) && !(1..=10).any(|pit| in_pit(current, pit)) {
+            let current = runtime.read_actor_position(actor).ok()?;
+            let at = current.position();
+            if !at_entrance(at) && !(1..=10).any(|pit| in_pit(at, pit)) {
                 return None;
             }
+            drop(runtime);
+            pit_reset::reset_items(self, actor, session, permit, fence, state).await?;
+            let mut runtime = self.runtime.lock().await;
+            if let Some(old) = &existing
+                && (old.state.pit != state.pit || old.state.run != state.run)
+            {
+                let _ = pillar::project(self, &old.state, PillarProjection::Release);
+            }
+            if !current_arena_actor(&runtime, actor, fence)
+                || runtime.read_actor_position(actor) != Ok(current)
+                || self.states.spell_states.try_lock().ok()?.is_dead(actor)
+            {
+                return None;
+            }
+            let _ = pillar::project(self, state, PillarProjection::Fighting);
             pit_reset::reset_monsters(&mut runtime, actor, session, state)?;
             let mut summon = destination;
             summon.y += 2;
@@ -736,7 +769,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .spawn_arena_opponent(&key, summon, |runtime, at| Some(admits(self, runtime, at)))
                 .ok()?;
             let before = runtime.read_actor_position(actor).ok()?;
-            if runtime
+            if before.position() != destination && runtime
                 .relocate_arena_player(actor, session, before, destination)
                 .is_err()
             {
@@ -778,19 +811,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let _ = runtime.remove_arena_opponent(opponent);
                     }
                 }
+                let destination = position(if state.phase == 3 { donor::REWARD_ROOM } else { donor::KICK });
+                if !walkable(self, &runtime, destination) {
+                    return None;
+                }
                 let before = runtime.read_actor_position(actor).ok()?;
-                runtime
-                    .relocate_arena_player(
-                        actor,
-                        session,
-                        before,
-                        position(if state.phase == 3 {
-                            donor::REWARD_ROOM
-                        } else {
-                            donor::KICK
-                        }),
-                    )
-                    .ok()?;
+                runtime.relocate_arena_player(actor, session, before, destination).ok()?;
             }
         }
         Some(())
@@ -886,6 +912,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             None => facts(2854)?,
         };
+        let root_text = if category == 4 {
+            let name = self.root.read_character_chat_name(self.character, fence.character_id).await.ok()??;
+            Some(format!("Awarded to {}.", name.as_str()))
+        } else {
+            None
+        };
         let mut contents = Vec::new();
         for (source, quantity) in reward.contents {
             contents.push(RewardClaimMintContent {
@@ -918,7 +950,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             item: facts(reward.root)?,
             quantity: 1,
             contents,
-            root_text: None,
+            root_text,
             root_fluid_subtype: None,
             root_charges_remaining: None,
             backpack,
@@ -932,9 +964,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+fn current_arena_actor(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    fence: CurrentCharacterGameplayFence,
+) -> bool {
+    runtime.owner_fence().is_ok()
+        && runtime.binding().runtime_scope() == fence.runtime_scope
+        && runtime.binding().scope_generation() == fence.scope_ownership_generation
+        && runtime.player_control_facts(actor, fence.game_session_id)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+        && runtime.bound_attacker_lease(actor, fence.game_session_id)
+            .is_ok_and(|lease| {
+                lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                    && lease.generation() == fence.character_lease_generation
+            })
+}
+
 async fn arena_command_gate(gate: &tokio::sync::Mutex<()>, native_step: bool) -> Option<tokio::sync::MutexGuard<'_, ()>> {
-    // A command gate holder may be waiting for the spell lane held by STEP.
-    // Refuse this attempt without waiting; a later movement can retry it.
+    // Native STEP already owns the spell lane and must not queue for the gate.
     if native_step { gate.try_lock().ok() } else { Some(gate.lock().await) }
 }
 
@@ -952,4 +1000,23 @@ async fn review7_native_step_does_not_wait_for_arena_command_gate() {
     drop(held);
     assert!(arena_command_gate(&gate, true).await.is_some());
     assert!(arena_command_gate(&gate, false).await.is_some());
+}
+
+#[cfg(test)]
+#[test]
+fn arena_polls_never_hold_the_command_gate_across_an_await() -> std::io::Result<()> {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("src/gameplay_transport/arena_match");
+    for file in std::fs::read_dir(path)? {
+        let file = file?;
+        if file.file_name().to_string_lossy().ends_with("_poll.rs") {
+            let source = std::fs::read_to_string(file.path())?;
+            // Polls must call the synchronous fence check. A guard must never
+            // enter a poll future, so future durability reads are covered too.
+            let tokens: String = source.chars().filter(|c| !c.is_whitespace()).collect();
+            assert!(!tokens.contains("arena_matches.command") && !tokens.contains("arena_command_gate("),
+                "{} acquires the arena command gate directly", file.path().display());
+        }
+    }
+    Ok(())
 }

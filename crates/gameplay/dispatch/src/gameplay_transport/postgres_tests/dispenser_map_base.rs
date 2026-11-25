@@ -20,20 +20,20 @@ enum CaskCase {
 
 #[test]
 fn map_cask_capacity_refusal_leaves_the_authored_source_untouched() -> TestResult {
-    run_case(CaskCase::Capacity)
+    run_case(CaskCase::Capacity, "map_cask_capacity_refusal_leaves_the_authored_source_untouched")
 }
 
 #[test]
 fn retired_map_cask_allows_the_next_step_after_a_lost_acknowledgement() -> TestResult {
-    run_case(CaskCase::Step)
+    run_case(CaskCase::Step, "retired_map_cask_allows_the_next_step_after_a_lost_acknowledgement")
 }
 
 #[test]
 fn flask_on_map_base_cask_spends_only_available_charges_and_replays() -> TestResult {
-    run_case(CaskCase::Fill)
+    run_case(CaskCase::Fill, "flask_on_map_base_cask_spends_only_available_charges_and_replays")
 }
 
-fn run_case(case: CaskCase) -> TestResult {
+fn run_case(case: CaskCase, test: &'static str) -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -44,7 +44,7 @@ fn run_case(case: CaskCase) -> TestResult {
                 .enable_all()
                 .build()
                 .map_err(|error| error.to_string())?
-                .block_on(scenario(admin, case))
+                .block_on(scenario(admin, case, test))
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -52,12 +52,13 @@ fn run_case(case: CaskCase) -> TestResult {
     Ok(())
 }
 
-async fn scenario(admin: String, case: CaskCase) -> TestResult {
+async fn scenario(admin: String, case: CaskCase, test: &str) -> TestResult {
     const CASK: &str = "oteryn:item.tibia.i25880";
     const FLASK: &str = "oteryn:item.tibia.i283";
     const BAG: &str = "oteryn:item.tibia.i2854";
     let harness =
         Harness::create_with_admission_seed(admin, "dispenser_map_base", true, false).await?;
+    eprintln!("arenapkg-marker: {test} db ready");
     super::reset();
     prepare_current_session(&harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -296,11 +297,17 @@ async fn scenario(admin: String, case: CaskCase) -> TestResult {
         }
     }
     if case == CaskCase::Step {
+        let retired: bool = sqlx::query_scalar(
+            "SELECT lifecycle=2 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+        ).bind(&cask).fetch_one(&harness.pool).await?;
+        assert!(retired, "the last charge committed before cancellation");
+        assert!(!map.enterable(pos), "eager reconciliation has not cleared the tile");
         let (step, _) = owner.paced_step(
             deps.actor, session,
             oteryn_protocol_oteryn::world_spatial::StepDirection::East,
         ).await;
         assert!(step.moved_to.is_some(), "ordinary STEP must reconcile the retired cask before collision");
+        assert!(map.enterable(pos), "STEP clears the retired cask collision");
         return Ok(());
     }
     let depleted = crate::gameplay_transport::loop_move::loop_ground(&owner, map.base(), Some(index))
