@@ -577,6 +577,8 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/battle-mage-completions.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/forbidden-fruit.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
@@ -599,9 +601,38 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
+    WARRIOR_COMPLETIONS,
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
 ];
+
+const WARRIOR_COMPLETIONS: &str =
+    include_str!("../../../../../content/quests/npc-callbacks/warrior-completions.json");
+
+/// The two completion branches add transitions without changing any prior track defaults.
+pub(super) fn retain_warrior_reward_predecessor(
+    catalogue: &mut QuestStateCatalogue,
+) -> Result<(), String> {
+    let quest = "oteryn:quest.outfit_and_addon_quests";
+    let mut previous = catalogue.transitions.clone();
+    for callback in parse(WARRIOR_COMPLETIONS)? {
+        if previous.remove(&callback.key).is_none()
+            || previous.remove(&reward_rule_key(&callback)?).is_none()
+        {
+            return Err(format!("missing Warrior completion {}", callback.key));
+        }
+    }
+    let hash = super::definition_hash(quest, &catalogue.tracks, &previous);
+    catalogue
+        .predecessors
+        .entry(quest.into())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash,
+            defaults: BTreeMap::new(),
+        });
+    Ok(())
+}
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
 pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
@@ -1356,6 +1387,14 @@ fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
     }
 }
 
+fn reward_rule_key(callback: &RewardCallback) -> Result<String, String> {
+    let digest: String = Sha256::digest(value_plan(callback)?)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    Ok(format!("oteryn:quest-reward-rule/{digest}"))
+}
+
 /// Declare authored bounds before world and death adapters validate their stages.
 /// Their complete rewards and provenance are still installed by `extend` afterward.
 pub(crate) fn declare_tracks(
@@ -1376,6 +1415,50 @@ const ROOK_CITIZEN_BEFORE_NORMA_RESTART: [u8; 32] = [
     0x3b, 0x94, 0x9b, 0x19, 0x08, 0x96, 0x3c, 0x93, 0x5a, 0x57, 0xfb, 0x99, 0x24, 0x4d, 0xef, 0x4a,
 ];
 
+// Active definitions on 3e099164 before adding full-outfit reward branches.
+const BEFORE_FULL_OUTFIT_REWARDS: [(&str, [u8; 32]); 5] = [
+    (
+        "oteryn:quest.battle_mage_outfits_quest",
+        [
+            0x5a, 0xd0, 0xbf, 0xba, 0xd1, 0xd5, 0x80, 0x75, 0x0f, 0xf1, 0x70, 0xaf, 0x78, 0x86,
+            0x93, 0x57, 0x1d, 0xdf, 0x9d, 0xcd, 0x7c, 0xd5, 0x44, 0xa4, 0xa0, 0x01, 0xc3, 0x15,
+            0xe7, 0x4f, 0x38, 0xb9,
+        ],
+    ),
+    (
+        "oteryn:quest.elementalist_outfits_quest",
+        [
+            0x43, 0xd2, 0xf6, 0x18, 0x76, 0x5c, 0x66, 0xed, 0x20, 0x97, 0x93, 0x72, 0x60, 0x2b,
+            0xa4, 0x43, 0x03, 0xe3, 0xf7, 0x67, 0x0a, 0x55, 0x0f, 0x05, 0x4a, 0x4e, 0x13, 0xa9,
+            0x1d, 0xf7, 0x40, 0x4e,
+        ],
+    ),
+    (
+        "oteryn:quest.outfit_and_addon_quests",
+        [
+            0xce, 0x65, 0xda, 0xca, 0x1c, 0x0a, 0x3c, 0x49, 0x9c, 0x3f, 0x23, 0xfe, 0x60, 0xae,
+            0x01, 0xae, 0xb5, 0x17, 0xe1, 0xaa, 0xea, 0x46, 0x89, 0x02, 0x2c, 0x05, 0x59, 0x71,
+            0xde, 0x78, 0x6e, 0x6f,
+        ],
+    ),
+    (
+        "oteryn:quest.the_new_frontier_quest",
+        [
+            0xe9, 0x47, 0xf2, 0x48, 0x5c, 0xdf, 0x2c, 0x30, 0x94, 0xba, 0x30, 0x1e, 0x71, 0x36,
+            0x9a, 0x20, 0x8d, 0x98, 0xb0, 0x17, 0xd0, 0x8a, 0xef, 0x8e, 0x72, 0x77, 0x05, 0xa9,
+            0x92, 0xb6, 0xf0, 0xbe,
+        ],
+    ),
+    (
+        "oteryn:quest.wayfarer_outfits_quest",
+        [
+            0x68, 0xa6, 0x04, 0x5e, 0xa8, 0x8c, 0xf2, 0x41, 0xd8, 0xec, 0x6f, 0x88, 0x12, 0x45,
+            0x13, 0x1a, 0x90, 0x76, 0xd8, 0xd4, 0x23, 0x72, 0x25, 0x44, 0x57, 0x3e, 0x9c, 0x3b,
+            0x45, 0xda, 0xe4, 0x2c,
+        ],
+    ),
+];
+
 pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let document = embedded_document()?;
     // These changes preserve every track default.
@@ -1388,7 +1471,10 @@ pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue,
             "oteryn:quest.outfit_and_addon_quests",
             MAIN_OUTFIT_DEFINITION,
         ),
-    ] {
+    ]
+    .into_iter()
+    .chain(BEFORE_FULL_OUTFIT_REWARDS)
+    {
         catalogue
             .predecessors
             .entry(quest.into())
@@ -1575,17 +1661,12 @@ fn extend_callbacks(
 
         // Value participants are part of the pinned quest contract. Reply copy and
         // source citations remain journal metadata and do not invalidate progress.
-        let value_plan = value_plan(callback)?;
-        let digest: String = Sha256::digest(value_plan)
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect();
         if (!callback.storage.is_empty() || !callback.state_ops.is_empty())
             && published_markers::needs_marker(callback, &published)
         {
             transitions.push(QuestTransition {
                 world_change: None,
-                key: format!("oteryn:quest-reward-rule/{digest}"),
+                key: reward_rule_key(callback)?,
                 quest: callback.quest.clone(),
                 effects: vec![QuestEffect {
                     track: callback
@@ -1729,7 +1810,9 @@ pub(super) fn retain_outfit_reward_predecessor(
     let callbacks = document
         .callbacks
         .into_iter()
-        .filter(|callback| !is_qb_outfit_extension(callback))
+        .filter(|callback| {
+            !is_qb_outfit_extension(callback) && !callback.key.ends_with("-full-outfit")
+        })
         .filter(|callback| {
             callback.quest == QUEST
                 || callback
@@ -2308,6 +2391,212 @@ mod tests {
     }
 
     #[test]
+    fn slice_two_outfit_hand_ins_load_the_donor_achievement_rewards() -> Result<(), String> {
+        let callbacks = load()?;
+        for (name, key, outfit, addon) in [
+            ("qb-barbarian-ajax-axe", "brutal_politeness", "barbarian", 1),
+            ("l6-beggar-staff", "life_on_the_streets", "beggar", 2),
+            (
+                "l5-norseman-second-reward",
+                "out_in_the_snowstorm",
+                "norseman",
+                2,
+            ),
+            ("l1-yalaharian-sage", "yalahari_of_wisdom", "yalaharian", 1),
+            (
+                "l1-yalaharian-villain",
+                "yalahari_of_power",
+                "yalaharian",
+                2,
+            ),
+        ] {
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == format!("oteryn:quest-reward/{name}"))
+                .ok_or(name)?;
+            assert_eq!(
+                callback.achievement.as_deref(),
+                Some(format!("oteryn:achievement/{key}").as_str()),
+                "{name}"
+            );
+            assert!(
+                callback
+                    .cosmetic_targets()
+                    .any(|reward| reward.outfit == format!("oteryn:outfit.{outfit}")
+                        && reward.addons == addon)
+            );
+        }
+        for (name, addon) in [("qb-warrior-shoulder", 1), ("qb-warrior-sword", 2)] {
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == format!("oteryn:quest-reward/{name}"))
+                .ok_or(name)?;
+            assert!(
+                callback.cosmetic_targets().any(
+                    |reward| reward.outfit == "oteryn:outfit.warrior" && reward.addons == addon
+                )
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn battle_mage_loader_retains_the_published_definition() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("battle-mage-upgrade")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let quest = "oteryn:quest.battle_mage_outfits_quest";
+        let mut transitions = catalogue.transitions.clone();
+        for suffix in ["book", "epaulettes"] {
+            let key = format!("oteryn:quest-reward/l2-battle-mage-{suffix}-complete");
+            assert!(transitions.remove(&key).is_some(), "{key}");
+        }
+        let published = super::super::definition_hash(quest, &catalogue.tracks, &transitions);
+        assert_ne!(catalogue.definition_hash(quest), Some(published));
+        assert_eq!(
+            super::super::npc_rules::legacy_defaults(catalogue, quest, &published),
+            Some(&BTreeMap::new())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn slice_two_outfit_rewards_select_achievement_only_after_the_other_addon() -> Result<(), String>
+    {
+        let loaded = super::super::loader::load_embedded_quest_state("slice-two")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let callbacks = offered_for(catalogue)?;
+        for (quest, hash) in BEFORE_FULL_OUTFIT_REWARDS {
+            assert_ne!(catalogue.definition_hash(quest), Some(hash));
+            assert_eq!(
+                super::super::npc_rules::legacy_defaults(catalogue, quest, &hash),
+                Some(&BTreeMap::new())
+            );
+        }
+        for (achievement, pairs) in [
+            (
+                "wild_warrior",
+                [
+                    ("qb-warrior-shoulder", "qb-warrior-sword"),
+                    ("qb-warrior-sword", "qb-warrior-shoulder"),
+                ],
+            ),
+            (
+                "swift_death",
+                [
+                    ("l7-assassin-yarn", "l7-assassin-second"),
+                    ("l7-assassin-second", "l7-assassin-yarn"),
+                ],
+            ),
+            (
+                "hunting_with_style",
+                [
+                    ("l8-hunter-hat", "l8-hunter-gloves"),
+                    ("l8-hunter-gloves", "l8-hunter-hat"),
+                ],
+            ),
+            (
+                "in_shining_armor",
+                [
+                    ("knight-sword", "l7-knight-helmet-reward"),
+                    ("l7-knight-helmet-reward", "knight-sword"),
+                ],
+            ),
+            (
+                "one_thousand_and_one",
+                [
+                    ("l5-oriental-female-comb", "l5-oriental-female-blue-cloth"),
+                    ("l5-oriental-female-blue-cloth", "l5-oriental-female-comb"),
+                ],
+            ),
+            (
+                "one_thousand_and_one",
+                [
+                    ("l5-oriental-male-comb", "l5-oriental-male-blue-cloth"),
+                    ("l5-oriental-male-blue-cloth", "l5-oriental-male-comb"),
+                ],
+            ),
+            (
+                "swashbuckler",
+                [
+                    ("pirate-sabre", "l4-pirate-hat"),
+                    ("l4-pirate-hat", "pirate-sabre"),
+                ],
+            ),
+            (
+                "master_of_war",
+                [
+                    ("l1-warmaster-crest", "l1-warmaster-tribal"),
+                    ("l1-warmaster-tribal", "l1-warmaster-crest"),
+                ],
+            ),
+            (
+                "peazzekeeper",
+                [
+                    ("l1-wayfarer-cape", "l1-wayfarer-hat"),
+                    ("l1-wayfarer-hat", "l1-wayfarer-cape"),
+                ],
+            ),
+            (
+                "mystic_fabric_magic",
+                [
+                    ("l2-elementalist-cap", "l2-elementalist-staff"),
+                    ("l2-elementalist-staff", "l2-elementalist-cap"),
+                ],
+            ),
+        ] {
+            for (name, other) in pairs {
+                let callback = |name: &str| {
+                    callbacks
+                        .iter()
+                        .find(|c| c.key == format!("oteryn:quest-reward/{name}"))
+                };
+                let first = callback(name).ok_or(name)?;
+                let second_key = format!("{name}-full-outfit");
+                let second = callback(&second_key).ok_or(second_key.as_str())?;
+                let other = callback(other).ok_or(other)?;
+                assert_eq!(first.achievement, None);
+                assert_eq!(
+                    second.achievement.as_deref(),
+                    Some(format!("oteryn:achievement/{achievement}").as_str())
+                );
+                assert_eq!(
+                    (
+                        &first.npc,
+                        &first.keywords,
+                        first.topic,
+                        &first.take,
+                        &first.outfit,
+                        &first.outfits
+                    ),
+                    (
+                        &second.npc,
+                        &second.keywords,
+                        second.topic,
+                        &second.take,
+                        &second.outfit,
+                        &second.outfits
+                    )
+                );
+                let gate = second.requires.last().ok_or("missing completion gate")?;
+                let other_completion = other
+                    .storage
+                    .iter()
+                    .find(|step| !step.preserve && step.track == gate.track)
+                    .ok_or("missing other addon transition")?;
+                let first_only = first.requires.last().ok_or("missing first-addon gate")?;
+                assert!(first_only.holds(catalogue, &BTreeMap::new()));
+                assert!(!gate.holds(catalogue, &BTreeMap::new()));
+                let completed = BTreeMap::from([(gate.track.clone(), other_completion.set)]);
+                assert!(gate.holds(catalogue, &completed));
+                assert!(!first_only.holds(catalogue, &completed));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn qengine_reward_callbacks_are_bounded_and_never_repeatable_value_grants() -> Result<(), String>
     {
         let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
@@ -2479,9 +2768,10 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing and 31 QB routes. The final two terms are
-        // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12);
+        // Shared rewards contain 238 existing rows plus 18 full-outfit reward branches.
+        // The final terms cover Rottin Wood, the Forgemaster's routes, Forbidden Fruit,
+        // and the two Battle Mage completion routes.
+        assert_eq!(load()?.len(), 256 + 59 + 125 + 1 + 1 + 13 + 12 + 1 + 2 + 2);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2505,7 +2795,10 @@ mod tests {
     #[test]
     fn authored_shards_complete_only_the_selected_quest_and_preserve_old_plans()
     -> Result<(), String> {
-        let shared = parse(DOCUMENTS[0])?;
+        let (full_outfit, shared): (Vec<_>, Vec<_>) = parse(DOCUMENTS[0])?
+            .into_iter()
+            .partition(|callback| callback.key.ends_with("-full-outfit"));
+        assert_eq!(full_outfit.len(), 18);
         let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
         assert_eq!(qb.len(), 31);
         let added_keys = [
@@ -3381,12 +3674,12 @@ mod outfit_reward_predecessor_tests {
                 .iter()
                 .filter(|callback| callback.quest == QUEST)
                 .count(),
-            // 112 retained rows plus 31 QB Barbarian/Citizen/Warrior rows.
-            143
+            // 112 retained rows, 31 QB rows and 14 full-outfit branches.
+            157
         );
-        document
-            .callbacks
-            .retain(|callback| !is_qb_outfit_extension(callback));
+        document.callbacks.retain(|callback| {
+            !is_qb_outfit_extension(callback) && !callback.key.ends_with("-full-outfit")
+        });
         let owned = document
             .callbacks
             .iter()

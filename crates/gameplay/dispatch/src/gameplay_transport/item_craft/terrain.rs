@@ -645,7 +645,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let gathering = matches!(
                 row.item,
-                4012 | 4325 | 4026 | 4063 | 4098 | 4138 | 7442 | 7237 | 7200
+                4012 | 4325 | 4026 | 4063 | 4098 | 4138 | 7442 | 7444..=7446 | 7237 | 7200
             );
             if gathering {
                 let Some(policy) = native

@@ -32,21 +32,79 @@ pub(super) async fn exchange_selected(
     current_source: Option<std::num::NonZeroU32>,
     source_offset: usize,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+    exchange_selected_operands(
+        owner,
+        admitted,
+        command_id,
+        payload,
+        current_source,
+        source_offset,
+        None,
+    )
+    .await
+}
+
+pub(super) async fn exchange_carried(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+    current_source: Option<std::num::NonZeroU32>,
+    current_target: Option<std::num::NonZeroU32>,
+) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+    exchange_selected_operands(
+        owner,
+        admitted,
+        command_id,
+        payload,
+        current_source,
+        0,
+        current_target,
+    )
+    .await
+}
+
+async fn exchange_selected_operands(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+    current_source: Option<std::num::NonZeroU32>,
+    source_offset: usize,
+    current_target: Option<std::num::NonZeroU32>,
+) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
     if owner.root.has_ready_demand() {
         owner.root.maintain_ready_once().await.map_err(debug)?;
     }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_task = async {
         let mut source = None;
+        let mut target = None;
         loop {
             let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
             if envelope.message_type() == crate::foundation::MessageType::SnapshotChunk {
                 let (_, domains) = oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())?;
                 for domain in domains {
-                    if domain.domain_id == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY {
-                        let inventory = oteryn_protocol_oteryn::item_view::decode_character_inventory(domain.payload).map_err(debug)?;
-                        source = inventory.entries.iter().filter(|entry| Some(entry.item_definition_ref) == current_source).nth(source_offset).map(|entry| entry.handle);
+                    if domain.domain_id
+                        == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
+                    {
+                        let inventory =
+                            oteryn_protocol_oteryn::item_view::decode_character_inventory(
+                                domain.payload,
+                            )
+                            .map_err(debug)?;
+                        source = inventory
+                            .entries
+                            .iter()
+                            .filter(|entry| Some(entry.item_definition_ref) == current_source)
+                            .nth(source_offset)
+                            .map(|entry| entry.handle);
+                        target = inventory
+                            .entries
+                            .iter()
+                            .find(|entry| Some(entry.item_definition_ref) == current_target)
+                            .map(|entry| entry.handle);
                     }
                 }
             }
@@ -55,6 +113,12 @@ pub(super) async fn exchange_selected(
         let actual = if current_source.is_some() {
             let mut intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(admitted.continuity.selected_capabilities.as_slice(), payload).map_err(debug)?;
             intent.target = UseTarget::Item(source.ok_or("current source handle")?);
+            if current_target.is_some() {
+                intent.use_with_map_item =
+                    Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(
+                        target.ok_or("current target handle")?,
+                    ));
+            }
             encode_item_use_intent(&intent).map_err(debug)?
         } else { payload.to_vec() };
         let frame = oteryn_protocol_oteryn::encode_client_command(1, &oteryn_protocol_oteryn::ClientCommandValue { command_id, command_type: 2, payload: &actual })?;

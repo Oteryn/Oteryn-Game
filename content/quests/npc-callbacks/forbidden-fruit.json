@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/forgotten-knowledge/forbidden-fruit",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.albinius",
+      "carried_item": "oteryn:item.tibia.i24966",
+      "keywords": [
+        "eat"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_02/forgotten_knowledge/forbidden_fruit",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i24966",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/forbidden_fruit",
+      "reply": [
+        "You have now tasted the forbidden fruit. You wonder if this was a good idea."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/forgotten_knowledge/actions_forbidden_fruit.lua:3-20"
+      ]
+    }
+  ]
+}

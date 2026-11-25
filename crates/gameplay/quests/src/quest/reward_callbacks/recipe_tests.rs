@@ -134,3 +134,47 @@ fn m20_stateful_recipes_are_repeatable_paid_exchanges() -> Result<(), String> {
     }
     Ok(())
 }
+
+#[test]
+fn achievement_slice_three_loads_the_forbidden_fruit_consumption() -> Result<(), String> {
+    let callback = load()?
+        .into_iter()
+        .find(|callback| callback.carried_item.as_deref() == Some("oteryn:item.tibia.i24966"))
+        .ok_or("Forbidden Fruit carried use")?;
+    assert_eq!(callback.take.len(), 1);
+    assert_eq!(callback.take[0].count, 1);
+    assert_eq!(
+        callback.achievement.as_deref(),
+        Some("oteryn:achievement/forbidden_fruit")
+    );
+    assert_eq!(callback.storage[0].set, 1);
+    Ok(())
+}
+
+#[test]
+fn achievement_slice_three_loads_the_cave_completionist_final_addon() -> Result<(), String> {
+    let callback = load()?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-reward/l12-cave-explorer-second")
+        .ok_or("second Cave Explorer addon")?;
+    assert_eq!(
+        callback.achievement.as_deref(),
+        Some("oteryn:achievement/cave_completionist")
+    );
+    assert_eq!(callback.requires_addons[0].addons, 1);
+    Ok(())
+}
+
+#[test]
+fn achievement_slice_three_loads_the_professors_nut_final_chest() -> Result<(), String> {
+    let callback = super::super::world_callbacks::load()?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/questpc7-hero-reward")
+        .ok_or("Maxxen's final chest")?;
+    assert_eq!(
+        callback.achievements,
+        ["oteryn:achievement/the_professor_s_nut"]
+    );
+    assert!(callback.completes);
+    Ok(())
+}

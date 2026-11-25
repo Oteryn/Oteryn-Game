@@ -95,7 +95,7 @@ const KIND_CUSTODY_NESTED: i16 = 7;
 #[path = "item_quick_loot.rs"]
 mod quick_loot;
 pub use quick_loot::{QuickLootCommand, QuickLootInput, is_loot_coin};
-pub(super) use quick_loot::pouch_weight;
+pub(super) use quick_loot::{pouch_weight, preferred_category};
 #[path = "depot_move.rs"]
 mod depot_move;
 pub use depot_move::DepotMove;
@@ -2317,12 +2317,32 @@ impl DurabilityRoot {
         &self,
         scope: RuntimeScopeRefV1,
     ) -> std::result::Result<Vec<LoopGroundItem>, DurabilityError> {
+        self.read_item_loop_ground_for_scope_inner(scope, false).await
+    }
+
+    /// Read receipt-backed custody after a sculpture transaction has resolved.
+    pub async fn read_item_loop_ground_after_sculpture(
+        &self,
+        scope: RuntimeScopeRefV1,
+    ) -> std::result::Result<Vec<LoopGroundItem>, DurabilityError> {
+        self.read_item_loop_ground_for_scope_inner(scope, true).await
+    }
+
+    async fn read_item_loop_ground_for_scope_inner(
+        &self,
+        scope: RuntimeScopeRefV1,
+        synchronize_sculpture: bool,
+    ) -> std::result::Result<Vec<LoopGroundItem>, DurabilityError> {
         let world = scope.world_id();
         let (scope_kind, channel, instance) = ground_scope_columns(scope);
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    if synchronize_sculpture {
+                        super::spell_item_transaction::lock_ground_scope(&mut tx, scope)
+                            .await?;
+                    }
                     // MINT provenance remains historical after a fresh owner's
                     // fenced Ground drag updates the location's generation.
                     // Current mutation authority is checked by the move owner.

@@ -209,6 +209,9 @@ impl DurabilityRoot {
                 expansion::record(&mut tx, fence, &request, delivery).await?;
             }
             state::record(&mut tx, fence, &request, &binding, &outcome, Some(&effects)).await?;
+            super::achievements::award_completed_tasks(
+                &mut tx, fence.character_id, request.cause, &before.data, &outcome.view.data, &effects,
+            ).await?;
             tx.commit(deadline).await?;
             Ok(Ok(outcome))
         })).await?

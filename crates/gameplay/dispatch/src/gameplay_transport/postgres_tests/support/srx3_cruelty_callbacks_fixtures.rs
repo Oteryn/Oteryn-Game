@@ -179,10 +179,27 @@ pub(super) fn run_source_entry_case(
                     .map_err(debug)?
             };
             drop(view);
-            // Advance actual current native turns, never a wall-time shortcut to
-            // the source accumulated 15,000 ms onThink counter.
+            let player = admitted.runtime_actor.ok_or("actual source Maw player")?;
+            let session = admitted.game_session_id;
+            // Advance the actual 15-second onThink counter. Native repins change
+            // the combat rolls during setup, so keep the admitted Maw user alive
+            // through the health owner before each setup turn.
             for _ in 0..16 {
-                owner.runtime_view(&registered).drain_monster_melee().await;
+                let view = owner.runtime_view(&registered);
+                {
+                    let runtime = view.runtime.lock().await;
+                    let mut states = view.states.spell_states.lock().await;
+                    let maximum = states
+                        .get(&runtime, player, session)
+                        .ok_or("actual admitted Player vitals")?
+                        .character_facts()
+                        .max_health;
+                    states
+                        .apply_health_gain(&runtime, player, session, u64::from(maximum))
+                        .ok_or("actual current fixture health credit")?;
+                }
+                view.drain_monster_melee().await;
+                drop(view);
                 owner.clock_origin = owner
                     .clock_origin
                     .checked_sub(std::time::Duration::from_secs(1))
@@ -204,7 +221,6 @@ pub(super) fn run_source_entry_case(
             );
             let before_maw_health = current.health;
             drop(runtime);
-            let player = admitted.runtime_actor.ok_or("actual source Maw player")?;
             {
                 let mut runtime = view.runtime.lock().await;
                 let before = runtime.read_actor_position(player).map_err(debug)?;

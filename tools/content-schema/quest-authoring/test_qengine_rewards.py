@@ -377,13 +377,14 @@ class QuestRewards(unittest.TestCase):
 
     def test_repeatable_or_duplicate_value_grants_are_rejected(self):
         for duplicate in (False,True):
-            bad=copy.deepcopy(self.callbacks)
+            callback = copy.deepcopy(self.callbacks['callbacks'][0])
+            bad = {'schema': 1, 'callbacks': [callback]}
             if duplicate:
-                bad['callbacks'].append(copy.deepcopy(bad['callbacks'][0]))
+                bad['callbacks'].append(copy.deepcopy(callback))
             else:
-                for storage in bad['callbacks'][0]['storage']:
+                for storage in callback['storage']:
                     storage['set']=storage['minimum']
-            with self.assertRaises(ValueError):
+            with self.assertRaisesRegex(ValueError, 'invalid reward callback ' + callback['key']):
                 q.validate_callbacks(bad)
 
     def test_readonly_prerequisites_reject_overlap_duplicates_and_inverted_bounds(self):
@@ -494,10 +495,14 @@ class QuestRewards(unittest.TestCase):
                             and s['preserve'] for s in terminal['storage']))
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
-        callbacks=self.callbacks['callbacks'] + self.l13_callbacks['callbacks']
+        full_outfit = [c for c in self.callbacks['callbacks'] if c['key'].endswith('-full-outfit')]
+        self.assertEqual(len(full_outfit), 18)
+        battle_mage = json.loads(self.outputs['content/quests/npc-callbacks/battle-mage-completions.json'])
+        callbacks = [c for c in self.callbacks['callbacks'] if c not in full_outfit]
+        callbacks += self.l13_callbacks['callbacks'] + battle_mage['callbacks']
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-','l13-','m36-','qb-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),97)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),99)
         self.assertEqual(sum(c['outfit'] is None for c in callbacks),148)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))

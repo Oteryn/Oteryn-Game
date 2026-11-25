@@ -27,10 +27,16 @@
 use super::DurabilityError;
 use super::DurabilityRoot;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::character_progression::uuid_text;
+use super::character_progression::{CharacterProgressionError, assert_item_only_fence, uuid_text};
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::item_transfer::CurrentCharacterItemFence;
 use super::reward_claim_mint::RewardClaimFenceChecked;
 use crate::domain::CharacterId;
+use crate::foundation::{
+    ConnectionGeneration, CreatureDeathOccurrenceKey, GameSessionId, RuntimeScopeRefV1,
+    ScopeOwnershipGeneration,
+};
+use sha2::{Digest, Sha256};
 use sqlx::Row;
 
 pub use oteryn_gameplay_progression::account_achievement::*;
@@ -293,6 +299,235 @@ pub(super) async fn grant_missing(
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
     Ok(())
+}
+
+/// The exact damaging Character lease observed by the lethal owner.
+#[derive(Debug, Clone, Copy)]
+pub struct BossDeathAchievementRecipient {
+    pub character_id: CharacterId,
+    pub session: GameSessionId,
+    pub lease_generation: u64,
+}
+
+/// The achievement producer selected by the native wild creature death.
+#[derive(Debug, Clone, Copy)]
+#[repr(i16)]
+pub enum BossDeathAchievements {
+    Oberon = 1,
+    Scarlett = 2,
+    MitmahVanguard = 3,
+}
+
+impl BossDeathAchievements {
+    pub fn for_creature(creature: &str) -> Option<Self> {
+        match creature {
+            "oteryn:creature.grand_master_oberon" => Some(Self::Oberon),
+            "oteryn:creature.scarlett_etzel" => Some(Self::Scarlett),
+            "oteryn:creature.mitmah_vanguard" => Some(Self::MitmahVanguard),
+            _ => None,
+        }
+    }
+
+    fn awards(self) -> (&'static str, &'static [&'static str]) {
+        match self {
+            Self::Oberon => ("oteryn:oberon-death", &[
+                "oteryn:achievement/master_debater",
+                "oteryn:achievement/millennial_falcon",
+            ]),
+            Self::Scarlett => ("oteryn:boss-death", &["oteryn:achievement/a_study_in_scarlett"]),
+            Self::MitmahVanguard => ("oteryn:boss-death", &["oteryn:achievement/museum_goer"]),
+        }
+    }
+}
+
+/// The roster captured by the lethal owner and handed to the last reward writer.
+#[derive(Debug, Clone)]
+pub struct BossDeathAchievementWork {
+    pub boss: BossDeathAchievements,
+    pub recipients: Vec<BossDeathAchievementRecipient>,
+}
+
+impl BossDeathAchievementWork {
+    /// Call inside the completing reward transaction, after proving the source scope.
+    pub async fn retain(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        death: CreatureDeathOccurrenceKey,
+    ) -> Result<(), DurabilityError> {
+        let recipients: Vec<_> = self.recipients.iter().map(|recipient| (
+            *recipient.character_id.as_bytes(), *recipient.session.as_bytes(), recipient.lease_generation,
+        )).collect();
+        sqlx::query(
+            "INSERT INTO game_boss_death_achievement_pending(scope_key, death, generation, boss, recipients)
+             VALUES($1, $2, $3::text::numeric, $4, $5) ON CONFLICT (death) DO NOTHING",
+        )
+        .bind(super::runtime_scope_assignment::assignment_scope_key(death.runtime_scope()).as_slice())
+        .bind(death.native_bytes())
+        .bind(death.scope_ownership_generation().get().to_string())
+        .bind(self.boss as i16)
+        .bind(sqlx::types::Json(recipients))
+        .execute(&mut **tx)
+        .await?;
+        Ok(())
+    }
+}
+
+async fn qualify_boss_recipient(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &super::runtime_scope_assignment::NodeIncarnationProof,
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+    recipient: BossDeathAchievementRecipient,
+) -> Result<bool, DurabilityError> {
+    // Reconnect may advance the connection generation while retaining the lease.
+    let connection: Option<String> = sqlx::query_scalar(
+        "SELECT s.current_generation::text FROM game_durability_reconnect_sessions s
+         JOIN game_character_creation_receipts c USING (character_id)
+         WHERE s.game_session_id = encode($1,'hex')::uuid AND s.session_state IN (1,2)
+           AND NOT game_account_closure_detached(s.character_id) FOR SHARE OF s",
+    )
+    .bind(recipient.session.as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(connection) = connection else { return Ok(false); };
+    let connection = connection.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
+    let fence = CurrentCharacterItemFence {
+        character_id: recipient.character_id,
+        game_session_id: recipient.session,
+        connection_generation: ConnectionGeneration::new(connection)
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        character_lease_generation: recipient.lease_generation,
+        runtime_scope: scope,
+        scope_ownership_generation: generation,
+    };
+    match assert_item_only_fence(tx, &fence, node).await? {
+        Ok(_) => Ok(true),
+        Err(CharacterProgressionError::AuthorityRejected | CharacterProgressionError::ProgressionContextMismatch) => Ok(false),
+        Err(CharacterProgressionError::Unavailable(error)) => Err(error),
+        Err(_) => Err(DurabilityError::CommitRejected),
+    }
+}
+
+async fn finish_boss_achievement(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &super::runtime_scope_assignment::NodeIncarnationProof,
+    scope: RuntimeScopeRefV1,
+    live_generation: Option<ScopeOwnershipGeneration>,
+    death: &[u8],
+    mut work: BossDeathAchievementWork,
+) -> Result<(), DurabilityError> {
+    work.recipients.sort_unstable_by_key(|r| *r.character_id.as_bytes());
+    let (source, awards) = work.boss.awards();
+    let mut eligible_characters = Vec::with_capacity(work.recipients.len());
+    for recipient in work.recipients {
+        let eligible = if let Some(generation) = live_generation {
+            qualify_boss_recipient(tx, node, scope, generation, recipient).await?
+        } else {
+            // A successor has taken scope authority. The committed reward is
+            // the source proof and the dead owner's lease is no longer current.
+            sqlx::query_scalar::<_, i32>(
+                "SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
+                 AND world_id=encode($2,'hex')::uuid AND lifecycle=1
+                 AND NOT game_account_closure_detached(character_id) FOR UPDATE",
+            )
+            .bind(recipient.character_id.as_bytes().as_slice())
+            .bind(scope.world_id().as_bytes().as_slice())
+            .fetch_optional(&mut **tx)
+            .await?
+            .is_some()
+        };
+        if eligible {
+            eligible_characters.push(recipient.character_id);
+        }
+    }
+    for character in eligible_characters {
+        let occurrence = Sha256::new().chain_update(character.as_bytes())
+            .chain_update(death).finalize();
+        grant_missing(tx, character, awards, source, &occurrence).await?;
+    }
+    sqlx::query("DELETE FROM game_boss_death_achievement_pending WHERE death=$1")
+        .bind(death).execute(&mut **tx).await?;
+    Ok(())
+}
+
+impl DurabilityRoot {
+    /// Grant the eligible death roster together and consume its durable work.
+    pub async fn grant_boss_death_achievements(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &super::runtime_scope_assignment::NodeIncarnationProof,
+        death: CreatureDeathOccurrenceKey,
+        work: BossDeathAchievementWork,
+    ) -> Result<(), DurabilityError> {
+        let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            super::db::lock_admission_relations(&mut tx).await?;
+            sqlx::query("SELECT death FROM game_boss_death_achievement_pending WHERE death=$1 FOR UPDATE")
+                .bind(death.native_bytes()).fetch_optional(&mut *tx).await?;
+            finish_boss_achievement(&mut tx, &node, death.runtime_scope(),
+                Some(death.scope_ownership_generation()), &death.native_bytes(), work).await?;
+            commit_semantic_transaction(tx, deadline).await
+        })).await
+    }
+
+    /// Reconcile one pending death before accepting new work on an empty runtime.
+    /// True means the queue was empty. False leaves the caller's bounded drain active.
+    pub async fn reconcile_boss_death_achievement(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &super::runtime_scope_assignment::NodeIncarnationProof,
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
+    ) -> Result<bool, DurabilityError> {
+        let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let scope_key = super::runtime_scope_assignment::assignment_scope_key(scope);
+            if !sqlx::query_scalar::<_, bool>(
+                "SELECT EXISTS(SELECT 1 FROM game_boss_death_achievement_pending WHERE scope_key=$1)"
+            ).bind(scope_key.as_slice()).fetch_one(&mut *tx).await? {
+                tx.rollback().await?;
+                return Ok(true);
+            }
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            super::db::lock_admission_relations(&mut tx).await?;
+            if !super::character_progression::assert_runtime_scope_fence(&mut tx, scope, generation, &node).await? {
+                return Err(DurabilityError::CommitRejected);
+            }
+            let row = sqlx::query(
+                "SELECT death, generation::text, boss, recipients FROM game_boss_death_achievement_pending
+                 WHERE scope_key=$1 AND generation <= $2::text::numeric ORDER BY death LIMIT 1 FOR UPDATE",
+            ).bind(scope_key.as_slice()).bind(generation.get().to_string()).fetch_optional(&mut *tx).await?;
+            let Some(row) = row else {
+                tx.rollback().await?;
+                return Ok(true);
+            };
+            let death: Vec<u8> = row.try_get("death")?;
+            let prior_generation: u64 = row.try_get::<String,_>("generation")?.parse()
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let boss = match row.try_get::<i16, _>("boss")? {
+                1 => BossDeathAchievements::Oberon,
+                2 => BossDeathAchievements::Scarlett,
+                3 => BossDeathAchievements::MitmahVanguard,
+                _ => return Err(DurabilityError::InvalidStoredState),
+            };
+            type StoredRoster = sqlx::types::Json<Vec<([u8; 16], [u8; 16], u64)>>;
+            let recipients = row.try_get::<StoredRoster, _>("recipients")?.0.into_iter()
+                .map(|(character, session, lease_generation)| Ok(BossDeathAchievementRecipient {
+                    character_id: CharacterId::from_bytes(character).map_err(|_| DurabilityError::InvalidStoredState)?,
+                    session: GameSessionId::decode(&session).map_err(|_| DurabilityError::InvalidStoredState)?,
+                    lease_generation,
+                })).collect::<Result<Vec<_>, DurabilityError>>()?;
+            finish_boss_achievement(&mut tx, &node, scope, (prior_generation == generation.get()).then_some(generation),
+                &death, BossDeathAchievementWork { boss, recipients }).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(false)
+        })).await
+    }
 }
 
 /// Count one event toward `key` for the Character and grant it when the count reaches `total`.

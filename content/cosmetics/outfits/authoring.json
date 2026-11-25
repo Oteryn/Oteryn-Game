@@ -24102,6 +24102,80 @@
         ]
       },
       {
+        "grant_key": "oteryn:taskboard/shop/offer-0",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.feral_trapper"
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.feral_trapper",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.feral_trapper",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-3",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.falconer"
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-4",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.falconer",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-5",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.falconer",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-9",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.antelope"
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
         "grant_key": "oteryn:content.mount.reliable_ram/quest-grant",
         "target": {
           "kind": "Mount",
@@ -24116,7 +24190,7 @@
       {
         "item_key": "oteryn:item.tibia.i6579",
         "donor": "data-crystal/scripts/special/addon_doll.lua:53-71",
-        "catalogue_sha256": "eef796747c97e3fb35664956e632a9450cbf44076b1670f39da4f3ebfc41e578",
+        "catalogue_sha256": "ac44acfb367157e00e00ec9543ae1a26da3c7440259b59e3bf844dc8725da924",
         "decision": "owner:S06:source-bound-native-item-acquisitions:2026-11-07",
         "source": {
           "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
@@ -39470,6 +39544,80 @@
           ]
         },
         {
+          "grant_key": "oteryn:taskboard/shop/offer-0",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.feral_trapper"
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.feral_trapper",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.feral_trapper",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-3",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.falconer"
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-4",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.falconer",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-5",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.falconer",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-9",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.antelope"
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
           "grant_key": "oteryn:content.mount.reliable_ram/quest-grant",
           "target": {
             "kind": "Mount",
@@ -39495,7 +39643,7 @@
         {
           "item_key": "oteryn:item.tibia.i6579",
           "donor": "data-crystal/scripts/special/addon_doll.lua:53-71",
-          "catalogue_sha256": "eef796747c97e3fb35664956e632a9450cbf44076b1670f39da4f3ebfc41e578",
+          "catalogue_sha256": "ac44acfb367157e00e00ec9543ae1a26da3c7440259b59e3bf844dc8725da924",
           "decision": "owner:S06:source-bound-native-item-acquisitions:2026-11-07",
           "source": {
             "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",

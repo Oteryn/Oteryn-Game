@@ -24,6 +24,13 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let explorer = name == super::super::explorer_society_journey_fixtures::NAME;
+    let past_oberon_objective = name == "authored-secret-library-completed-oberon";
+    let past_scarlett_objective = name == "questpc7-grave-completed-scarlett";
+    let name = match name {
+        "authored-secret-library-completed-oberon" => "authored-secret-library",
+        "questpc7-grave-completed-scarlett" => "questpc7-grave",
+        other => other,
+    };
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let koshei = name == super::super::koshei_the_deathless_journey_fixtures::NAME;
@@ -1619,7 +1626,8 @@ fn scenario_case(
             } else if frontier {
                 12
             } else if name == "authored-secret-library" {
-                5
+                // The completed-objective case captures two additional damage contributors.
+                5 + 2 * usize::from(past_oberon_objective)
             } else if matches!(name, "authored-anniversary" | "authored-venore") {
                 12
             } else if super::super::qh_authored_cases_fixtures::is_city(name) {
@@ -2736,7 +2744,7 @@ fn scenario_case(
         } else if name == "qengine-rewards-grimvale-contacts" {
             super::super::questpc7_grimvale_fixtures::contacts(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-grave" {
-            super::super::questpc7_grave_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
+            super::super::questpc7_grave_fixtures::exercise(&mut owner, &mut admitted, &h, past_scarlett_objective).await?;
         } else if name == "questpc7-ferumbras" {
             super::super::questpc7_ferumbras_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hero" {
@@ -2924,6 +2932,7 @@ fn scenario_case(
                 &mut owner,
                 &mut admitted,
                 &h,
+                past_oberon_objective,
             ))
             .await?;
         } else if name == "authored-anniversary" {

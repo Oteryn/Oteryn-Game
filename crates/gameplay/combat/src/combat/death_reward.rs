@@ -231,6 +231,8 @@ impl<const N: usize> RewardProgressionBinding<N> {
 /// Complete semantic input of one death's reward composition.
 #[derive(Debug, Clone)]
 pub struct CreatureDeathRewardInput<const N: usize> {
+    /// Roster ready once this death's final physical rewards materialize.
+    pub boss_achievement: Option<crate::durability::account_achievement::BossDeathAchievementWork>,
     /// Trusted one-shot Newhaven gear; consumed in the atomic corpse/loot transaction.
     pub tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
     /// The corpse `ItemInstance`'s definition, supplied by the caller exactly
@@ -467,6 +469,7 @@ async fn settle_loot(
     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
     corpse_source: Option<TypedDefinitionRef>,
     tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+    boss_achievement: Option<crate::durability::account_achievement::BossDeathAchievementWork>,
 ) -> Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError> {
     let (corpse_item, loot_table_ref) = match (corpse_item, loot_table_ref) {
         (None, None) if loot_table.entries.is_empty() && tutorial_corruptor.is_none() => {
@@ -585,7 +588,10 @@ async fn settle_loot(
         .freeze_item_mint(session.authority, session.node, corpse_request)
         .await
         .map_err(CombatDeathRewardLootError::Corpse)?;
-    if tutorial_corruptor.is_some() || plan.entries.iter().any(|entry| entry.parent.is_some()) {
+    if boss_achievement.is_some()
+        || tutorial_corruptor.is_some()
+        || plan.entries.iter().any(|entry| entry.parent.is_some())
+    {
         let mut children = Vec::with_capacity(plan.entries.len());
         for entry in &plan.entries {
             let parent = match entry.parent {
@@ -637,6 +643,7 @@ async fn settle_loot(
                 top_damage_character_id,
                 ground.boss_spawn.clone(),
                 tutorial_corruptor,
+                boss_achievement.map(|work| (death, work)),
             )
             .await
             .map_err(CombatDeathRewardLootError::Corpse)?;
@@ -887,6 +894,7 @@ async fn settle_creature_death_rewards_inner<const N: usize>(
         &mut committed_loot,
         corpse_source,
         input.tutorial_corruptor.clone(),
+        input.boss_achievement,
     )
     .await;
 

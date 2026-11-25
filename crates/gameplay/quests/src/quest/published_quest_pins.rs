@@ -137,9 +137,17 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.forgotten_knowledge_quest",
-        hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+        hash(b"36dc40e6d6a64906e12007e748fb9e9790bc8c37793a1da53449d68d03fd25ea"),
+        &[
+            hash(b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a"),
+            hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+        ],
+    ),
+    (
+        "oteryn:quest.hero_of_rathleton_quest",
+        hash(b"3ea1856d04fd488aca761065893a3e582d547f7a50555be717fadd1d47175c65"),
         &[hash(
-            b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a",
+            b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38",
         )],
     ),
     (
@@ -212,6 +220,12 @@ mod tests {
                 // variants still resolve to the published predecessor.
                 assert_ne!(catalogue.definition_hash(quest), Some(published));
                 assert!(npc_rules::legacy_defaults(catalogue, quest, &published).is_some());
+            } else if let Some((_, current, previous)) = GAMEPLAY_PREDECESSORS
+                .iter()
+                .find(|(owner, current, _)| *owner == quest && *current != published)
+            {
+                assert!(previous.contains(&published), "{quest}");
+                assert_eq!(catalogue.definition_hash(quest), Some(*current), "{quest}");
             } else {
                 assert_eq!(catalogue.definition_hash(quest), Some(published), "{quest}");
             }

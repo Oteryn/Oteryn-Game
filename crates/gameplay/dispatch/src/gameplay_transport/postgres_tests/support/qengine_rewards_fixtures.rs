@@ -119,6 +119,7 @@ pub(super) async fn talk(
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
+    let key = key.strip_suffix("-full-outfit").unwrap_or(key);
     if key.contains("/l2-efreet-") || key.contains("/l2-marid-") {
         return match key.rsplit('/').next().unwrap_or(key) {
             "l2-efreet-thief-report" => &["mission", "yes"],
@@ -195,7 +196,10 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l2-wizard-skull" => &["ring"],
         "l2-wizard-flowers-start" => &["addon", "yes"],
         "l2-wizard-flowers" => &["orchid"],
-        "l2-battle-mage-book" | "l2-battle-mage-epaulettes" => &["addon", "yes", "yes"],
+        "l2-battle-mage-book"
+        | "l2-battle-mage-book-complete"
+        | "l2-battle-mage-epaulettes"
+        | "l2-battle-mage-epaulettes-complete" => &["addon", "yes", "yes"],
         "l2-elementalist-start" | "l2-elementalist-base" => &["slime", "yes"],
         "l2-festive-mask-start" | "l2-festive-feather-start" => &["addons"],
         "l3-demon-base" | "l3-demon-shield" | "l3-demon-helmet" => &["outfit", "yes"],
@@ -666,7 +670,11 @@ pub(super) async fn seed(
     let tracks = callback
         .storage
         .iter()
-        .map(|s| canonical.track(&s.track).cloned().ok_or("track"))
+        .map(|state| state.track.as_str())
+        .chain(callback.requires.iter().map(|state| state.track.as_str()))
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .map(|key| canonical.track(key).cloned().ok_or("track"))
         .collect::<Result<Vec<_>, _>>()?;
     let setup = "oteryn:quest-transition/qengine-rewards-fixture-ready";
     let mut transitions = vec![QuestTransition {
@@ -1116,6 +1124,9 @@ pub(super) async fn exercise(
     }
     if name == "qengine-rewards-authored-bindings" {
         return Box::pin(super::authored_quest_bindings_fixtures::exercise(owner, admitted, h)).await;
+    }
+    if name == "qengine-rewards-forbidden-fruit" {
+        return Box::pin(forbidden_fruit(owner, admitted, h)).await;
     }
     if name == "qengine-rewards-l13-rift-story" {
         return Box::pin(super::qengine_endgame_stories_fixtures::rift(
@@ -1733,3 +1744,50 @@ pub(super) mod m39_any_topic;
 
 #[path = "qengine_rewards/questl2_passages.rs"]
 pub(super) mod questl2_passages;
+
+async fn forbidden_fruit(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::qengine_voucher_stories_fixtures::{mint, quantity, use_native};
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1;
+    use oteryn_protocol_oteryn::world_object::{CAPABILITY_ITEM_USE_V1, UseDisposition};
+    use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
+
+    const FRUIT: u16 = 24966;
+    let required = [
+        CAPABILITY_ITEM_VIEW_MOVE_V1,
+        CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        CAPABILITY_ITEM_USE_V1,
+    ];
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &required)
+            .ok_or("carried item view and USE capabilities")?;
+    assert_eq!(admitted.continuity.selected_capabilities.as_slice(), required);
+    let mut ordinal = 99300;
+    for _ in 0..2 {
+        mint(owner, admitted, FRUIT, 1, &mut ordinal).await?;
+    }
+    use_native(owner, admitted, FRUIT, UseDisposition::Committed).await?;
+    assert_eq!(quantity(h, FRUIT).await?, 1, "exact replay consumes nothing");
+    use_native(owner, admitted, FRUIT, UseDisposition::Rejected).await?;
+    assert_eq!(quantity(h, FRUIT).await?, 1, "a second fruit is preserved");
+    let grants: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievement_grant_requests \
+         JOIN game_account_achievements USING (account_id, achievement_key) \
+         WHERE achievement_key = 'oteryn:achievement/forbidden_fruit'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(grants, 1);
+    let eaten: i64 = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks \
+         WHERE track_key = 'oteryn:quest-progress/crystalserver/quest/u11_02/forgotten_knowledge/forbidden_fruit'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(eaten, 1);
+    Ok(())
+}

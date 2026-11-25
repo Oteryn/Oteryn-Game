@@ -105,6 +105,11 @@ pub(super) async fn exercise(
         ),
         _ => return Err("unknown level story".into()),
     };
+    let achievement_key = match prefix {
+        "dream-warrior" => "oteryn:achievement/dream_warrior",
+        "issavi" => "oteryn:achievement/citizen_of_issavi",
+        _ => "oteryn:achievement/cobbled_and_patched",
+    };
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let mut callbacks = vec![];
     for stage in stages {
@@ -398,6 +403,13 @@ pub(super) async fn exercise(
             "exact token cost {index}"
         );
         super::qengine_voucher_stories_fixtures::mask(owner, admitted, &key, mask).await?;
+        let achievements: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
+        )
+        .bind(achievement_key)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(achievements, i64::from(mask == 3), "{achievement_key}");
     }
     let grants: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlock_receipts")

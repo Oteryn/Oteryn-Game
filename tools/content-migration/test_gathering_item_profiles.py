@@ -55,7 +55,22 @@ class GatheringItemProfileTests(unittest.TestCase):
         planned = {'profiles': b'{"records":[]}', 'manifest': b'{"item_profiles":{}}'}
         tool.admit(ROOT, planned, 'profiles', 'manifest',
                    lambda r: r['production_definition']['production_key'], lambda v: json.dumps(v).encode())
-        self.assertEqual(len(json.loads(planned['profiles'])['records']), 29)
+        self.assertEqual(len(json.loads(planned['profiles'])['records']), 32)
+
+    def test_all_final_ice_stages_are_admitted_for_ground_sculpting(self):
+        planned = {'profiles': b'{"records":[]}', 'manifest': b'{"item_profiles":{}}'}
+        tool.admit(ROOT, planned, 'profiles', 'manifest',
+                   lambda r: r['production_definition']['production_key'], lambda v: json.dumps(v).encode())
+        by_key = {row['production_definition']['production_key']: row
+                  for row in json.loads(planned['profiles'])['records']}
+        for item_id in (7444, 7445, 7446):
+            with self.subTest(item_id=item_id):
+                key = f'oteryn:item.tibia.i{item_id}'
+                row = by_key[key]
+                self.assertEqual(row['production_binding']['target'], {
+                    'family': 'Item', 'key': key, 'revision': 'definition-r1'})
+                self.assertTrue(row['admission']['materializable'])
+                self.assertIn('Ground', row['admission']['legal_destinations'])
 
     def test_mutated_rod_weight_or_binding_is_rejected_without_partial_output(self):
         for field in ('weight', 'binding'):

@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[3]
 SHARED = "content/dialogues/quests/shared-reward-greetings.json"
 CALLBACK_DOCUMENTS = (
     "content/quests/shared-reward-callbacks.json",
+    "content/quests/npc-callbacks/battle-mage-completions.json",
     "content/quests/npc-callbacks/m39-stories.json",
     "content/quests/npc-callbacks/l2-ready-stories.json",
     "content/quests/npc-callbacks/l13-outfits.json",

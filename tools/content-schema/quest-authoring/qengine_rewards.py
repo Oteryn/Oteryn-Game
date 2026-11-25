@@ -5,6 +5,7 @@ producer promotes the requested quest catalogue; it never contacts a donor host.
 """
 from __future__ import annotations
 import argparse
+from copy import deepcopy
 import hashlib
 import importlib.util
 import json
@@ -234,6 +235,17 @@ def build():
                     'sha256': sha(inputs['data/XML/mounts.xml'])}
     mounts, mount_mappings = qengine_mounts.populate(ROOT, inputs, looks, mount_source, item_packet)
     mappings.extend(mount_mappings)
+    # Crystal 201189f Task Board stock: Feral Trapper, Falconer and Antelope.
+    for first_offer, family in ((0, 'feral_trapper'), (3, 'falconer')):
+        key = 'oteryn:outfit.' + family
+        for addon in range(3):
+            target = {'kind': 'Outfit', 'outfit_key': key} if addon == 0 else {
+                'kind': 'Addon', 'outfit_key': key, 'addon': addon}
+            mappings.append({'grant_key': f'oteryn:taskboard/shop/offer-{first_offer + addon}',
+                             'target': target, 'compatible_provenance': ['task-board-shop-v1']})
+    mappings.append({'grant_key': 'oteryn:taskboard/shop/offer-9',
+                     'target': {'kind': 'Mount', 'mount_key': 'oteryn:content.mount.antelope'},
+                     'compatible_provenance': ['task-board-shop-v1']})
     lane_programmes=load_module('questpc7_costume_sources','tools/content-schema/quest-authoring/questpc7_outfit_programmes.py')
     lane_programmes.consumptive_mappings(ROOT,outfits,mappings)
     atlas = load_module('qengine_atlas_palette', 'tools/game-atlas-appearances/export.py')
@@ -412,7 +424,10 @@ def build():
         add('l1-yalaharian-'+name,'in_service_of_yalahar_quest','palimuth',['yes'],
             [storage(yalahar+'questline',54,55),
              storage(yalahar+'side_decision',side,side,preserve=True)],
-            outfit=('yalaharian',bit),topic=6)
+            outfit=('yalaharian',bit),topic=6,
+            achievement='oteryn:achievement/yalahari_of_'+('wisdom' if side==1 else 'power'))
+        page, revision = (62819, 753357) if side == 1 else (62818, 753121)
+        callbacks[-1]['sources'].append(f'https://tibia.fandom.com/index.php?curid={page}&oldid={revision}')
         # The captured NPC checks possession and retains the original crest.
         callbacks[-1]['present']=[{'item':'oteryn:item.tibia.i9041','count':1}]
         offers.append({'npc':'oteryn:npc.palimuth','keywords':['job','addon'],
@@ -427,11 +442,21 @@ def build():
         library_ready.append(storage(library+name+'/questline',value,value,preserve=True))
     add('l2-battle-mage-base','the_secret_library_quest','dedoras',['check'],library_ready,
         outfit=('battle_mage',0),achievement='oteryn:achievement/battle_mage')
+    battle_mage_completions = []
     library_done=[requirement(library+'library_permission',7)]
     for name,bit,item,count,words in [('book',1,28792,5,['book','books','sturdy books']),('epaulettes',2,28793,20,['epaulettes'])]:
-        add('l2-battle-mage-'+name,'battle_mage_outfits_quest','dedoras',words,
-            [storage(prefix+'u11_80/battle_mage_outfits/addon'+str(bit),-1,1,0)],
-            take=[(item,count)],outfit=('battle_mage',bit),topic=3,requires=library_done)
+        addon=prefix+'u11_80/battle_mage_outfits/addon'
+        other=addon+str(3-bit)
+        for complete in (False, True):
+            add('l2-battle-mage-'+name+('-complete' if complete else ''),'battle_mage_outfits_quest','dedoras',words,
+                [storage(addon+str(bit),-1,1,0)],
+                take=[(item,count)],outfit=('battle_mage',bit),topic=3,
+                requires=library_done+[requirement(other,1) if complete else requirement(other,-1,0)],
+                achievement='oteryn:achievement/exalted_battle_mage' if complete else None)
+            if complete:
+                completion = callbacks.pop()
+                completion['sources'].append('https://tibia.fandom.com/?curid=86073&oldid=847545')
+                battle_mage_completions.append(completion)
     for word,topic,next_topic in [('addon',0,1),('yes',1,2),('yes',2,3)]:
         offers.append({'npc':'oteryn:npc.dedoras','keywords':[word],'topic':topic,
             'next_topic':next_topic,'storage':[],'requires':library_done,
@@ -604,9 +629,12 @@ def build():
                 'storage':states,'reply':['Have you brought '+str(count)+' frostheart shards?']})
         bit=1 if name=='first' else 2
         add('l5-norseman-'+name+'-reward','the_ice_islands_quest','hjaern',['reward'],
-            [storage(ice+'questline',before+1,before+2)],outfit=('norseman',bit),next_topic=topic)
+            [storage(ice+'questline',before+1,before+2)],outfit=('norseman',bit),next_topic=topic,
+            achievement='oteryn:achievement/out_in_the_snowstorm' if bit==2 else None)
         callbacks[-1]['participants']=[{'quest':'oteryn:quest.outfit_and_addon_quests',
             'storage':[storage(norseman,0,bit+1,3)]}]
+        if bit == 2:
+            callbacks[-1]['sources'].append('https://tibia.fandom.com/index.php?curid=62872&oldid=752988')
     rook_body=prefix+'u7_8/druid_outfits_rook/druid_body_addon_rook'
     add('l6-druid-rook-start','druid_outfits_quest_on_rook','tom',['addon'],[storage(rook_body,-1,1,0)])
     add('l6-druid-rook-body','druid_outfits_quest_on_rook','tom',['yes'],[storage(rook_body,1,2)],
@@ -717,13 +745,16 @@ def build():
     for word,topic,next_topic in [('addon',0,4),('staff',4,5),('yes',5,6)]:
         beggar_offer('simon_the_beggar',[word],topic,next_topic,states,'Will you retrieve my favourite staff?')
     states=[storage(beggar_stage,11,11,preserve=True),storage(beggar+'beggar_second_addon',0,2,1)]
-    add('l6-beggar-staff',general,'simon_the_beggar',['yes'],states,take=[(6107,1)],outfit=('beggar',2),topic=7)
+    add('l6-beggar-staff',general,'simon_the_beggar',['yes'],states,take=[(6107,1)],outfit=('beggar',2),topic=7,
+        achievement='oteryn:achievement/life_on_the_streets')
     callbacks[-1]['requires_premium']=True
     beggar_offer('simon_the_beggar',['staff'],0,7,states,'Did you bring my favourite staff?')
     for callback in callbacks:
         if callback['key'].startswith('oteryn:quest-reward/l6-beggar-'):
             npc=callback['npc'].split('.')[-1]
             callback['sources']=[beggar_source(npc,'55-199' if npc=='hugo' else '84-222')]
+            if callback['achievement']:
+                callback['sources'].append('https://tibia.fandom.com/index.php?curid=62859&oldid=753124')
     def source_offer(npc,words,topic,next_topic,states):
         offers.append({'npc':'oteryn:npc.'+npc,'keywords':words,'topic':topic,'next_topic':next_topic,
             'storage':states,'reply':['Will you help me with this task?']})
@@ -1004,7 +1035,15 @@ def build():
                 achievement='oteryn:achievement/cobbled_and_patched' if label=='makeshift' and bit==2 else None)
             callback=callbacks[-1];callback.update(minimum_level=level,requires_premium=True,
                 requires_outfits=['oteryn:outfit.'+family],forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
-            if bit==2:callback['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
+            if bit==2:
+                callback['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
+                wiki = {
+                    'dream-warrior': 'https://tibia.fandom.com/?curid=86660&oldid=848561',
+                    'issavi': 'https://tibia.fandom.com/?curid=94721&oldid=869754',
+                }.get(label)
+                if wiki:
+                    callback['achievement']='oteryn:achievement/'+family
+                    callback['sources'].append(wiki)
             if carried:callback['carried_item']=f'oteryn:item.tibia.i{item}'
             if label=='issavi':callback['sources'].append('owner:chosen-Issavi-veil-addon1-scabbard-addon2:one-token-each')
         if not carried:
@@ -1045,11 +1084,16 @@ def build():
             add('l12-'+label+'-'+('first' if bit==1 else 'second'),quest,npc,[family.replace('_',' ')+' addon '+str(bit)],[],
                 take=[(39544 if bit==1 else 39545,1)] if label=='fire-fighter' else [],outfit=(family,bit),
                 fee={'gold':2000 if bit==1 else 3000,'include_bank':False} if label=='cave-explorer' else None,
-                achievement='oteryn:achievement/friendly_fire' if label=='fire-fighter' and bit==2 else None)
+                achievement={
+                    'cave-explorer':'oteryn:achievement/cave_completionist',
+                    'fire-fighter':'oteryn:achievement/friendly_fire',
+                }.get(label) if bit==2 else None)
             callbacks[-1].update(minimum_level=level,requires_premium=True,requires_outfits=['oteryn:outfit.'+family],
                 forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
             if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
             callbacks[-1]['sources'].append(provenance)
+            if label=='cave-explorer' and bit==2:
+                callbacks[-1]['sources'].append('https://tibia.fandom.com/index.php?curid=65413&oldid=846114')
     engoutfit_m36.append(add, storage, callbacks, offers, declarations,
         f'crystal:{PIN}:data-global/npc/rock_steady.lua:56-98:sha256:{sha(inputs["data-global/npc/rock_steady.lua"])}')
     qmech_m39.append(add, callbacks, offers, declarations, inputs, PIN)
@@ -1111,10 +1155,52 @@ def build():
             }
         elif name in ('l6-citizen-rook-backpack', 'qb-citizen-backpack'):
             callback['account_reservation'] = {'action': 'finish', 'key': backpack}
+    # The donor exposes these additive rewards in either order. Use the other
+    # hand-in's existing terminal track so characters with one older addon qualify.
+    by_name = {callback['key'].rsplit('/', 1)[-1]: callback for callback in callbacks}
+    warrior_completions = []
+    for achievement, page, revision, rewards in [
+        ('hunting_with_style', 62855, 753202, [('l8-hunter-hat', 'hunter_hat_addon'), ('l8-hunter-gloves', 'addon_glove')]),
+        ('in_shining_armor', 62856, 753037, [('knight-sword', 'addon_sword'), ('l7-knight-helmet-reward', 'addon_helmet')]),
+        ('master_of_war', 62865, 753026, [('l1-warmaster-crest', 'warmaster_addon_1'), ('l1-warmaster-tribal', 'warmaster_addon_2')]),
+        ('mystic_fabric_magic', 62867, 844815, [('l2-elementalist-cap', 'addon1'), ('l2-elementalist-staff', 'addon2')]),
+        ('one_thousand_and_one', 62871, 753214, [('l5-oriental-female-comb', 'first_oriental_addon'), ('l5-oriental-female-blue-cloth', 'second_oriental_addon')]),
+        ('one_thousand_and_one', 62871, 753214, [('l5-oriental-male-comb', 'first_oriental_addon'), ('l5-oriental-male-blue-cloth', 'second_oriental_addon')]),
+        ('peazzekeeper', 62873, 753184, [('l1-wayfarer-cape', 'wayfarer_outfit'), ('l1-wayfarer-hat', 'wayfarer_outfit_1')]),
+        ('swift_death', 62886, 753279, [('l7-assassin-yarn', 'assassin_first_addon'), ('l7-assassin-second', 'assassin_second_addon')]),
+        ('swashbuckler', 62885, 753261, [('pirate-sabre', 'pirate_sabre_addon'), ('l4-pirate-hat', 'pirate_hat_addon')]),
+        (
+            "wild_warrior",
+            None,
+            None,
+            [
+                ("qb-warrior-shoulder", "warrior_shoulder_addon"),
+                ("qb-warrior-sword", "warrior_sword_addon"),
+            ],
+        ),
+    ]:
+        for (name, _), (other, completion) in (rewards, rewards[::-1]):
+            original = by_name[name]
+            earned = next(state for state in by_name[other]['storage'] if state['track'].endswith('/'+completion))
+            finishing = deepcopy(original)
+            original.setdefault('requires', []).append(requirement(earned['track'], -1, earned['set'] - 1))
+            finishing.setdefault('requires', []).append(requirement(earned['track'], earned['set']))
+            finishing['key'] += '-full-outfit'
+            finishing['achievement'] = 'oteryn:achievement/'+achievement
+            if page is not None:
+                finishing['sources'].append(f'https://tibia.fandom.com/index.php?curid={page}&oldid={revision}')
+            if achievement == "wild_warrior":
+                warrior_completions.append(finishing)
+            else:
+                callbacks.append(finishing)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises})
+    battle_mage_document = {'schema':1,'callbacks':sorted(battle_mage_completions,key=lambda c:c['key'])}
+    validate_callbacks(battle_mage_document)
+    warrior_document = {"schema": 1, "callbacks": sorted(warrior_completions, key=lambda c: c["key"])}
+    validate_callbacks(warrior_document)
     validate_callbacks({'schema':1,'callbacks':fibula_callbacks})
     validate_callbacks({'schema':1,'callbacks':l13_callbacks})
     validate_callbacks({'schema':1,'callbacks':programme_callbacks})
@@ -1129,6 +1215,8 @@ def build():
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises}),
+            'content/quests/npc-callbacks/battle-mage-completions.json': encoded(battle_mage_document),
+            "content/quests/npc-callbacks/warrior-completions.json": encoded(warrior_document),
             'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'callbacks':fibula_callbacks}),
             'content/quests/npc-callbacks/l13-outfits.json': encoded({'schema':1,'callbacks':l13_callbacks}),
             'content/quests/npc-callbacks/questpc7-programmes.json': encoded({'schema':1,'callbacks':programme_callbacks}),
@@ -1154,7 +1242,7 @@ def build():
         'bags':[{'constant':'QENGINE_GNOMISH_SUPPLY','bag':'oteryn:item.tibia.i15698','playable':True,
             'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
             'rewards':rewards}]})
-    greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
+    greetings = reward_greetings(callbacks + battle_mage_completions + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
     generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))
