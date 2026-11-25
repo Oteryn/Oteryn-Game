@@ -18,7 +18,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         418,
-        "d5cc864ca56b9e6466f605284cb748ea1a86e51b27789cbf76b53f116ff68f84",
+        "61659c9e85e98d3689347ebc5d17c4152786d088a7495b25f8cfcb5d5d082592",
     ),
     (
         "definitions/declarations.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1957,
-        "b68e76a343f684d554ed5fb371456c13fd4a079b7d794b50c07ff57b366937e5",
+        "fafb3d70e14c667a6a77394db67fe783a3da573e393780705e56e738f4be6e2b",
     ),
     (
         "presentations/bindings.json",
@@ -48,12 +48,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         408,
-        "bc21471e19a5b3c1c78edc1e840faba649fb7c61143843b488352fc6ee2e62c1",
+        "2150d112ed3cf6c6b421f10025a8ba1208ef66ff33387de7e1c3c112d257843a",
     ),
     (
         "provenance/imports.json",
         6_774_564,
-        "d087dd3afb20f557970e14e8c9a268f2e3557986aa850d00abb186fd002119cb",
+        "ecb20fae1e635670866a1cf2d62038e47bd71ad34385b1b768ea0f6c7eaa0240",
     ),
     (
         "provenance/sources.json",
@@ -143,7 +143,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "da1c61a09380ae5a3d7a799ccd72847202fdd824c374fb48a398d013e87e75c9";
+const TREE_SHA256: &str = "5e6e3594a7632668c7678d97d68a920dbf6a70f3e37f476bf30a5aa6f9c68f65";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -317,6 +317,16 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
     collect_files(&root, &root, &mut files);
     // The reviewed World pins (`pins/`, WORLD-BUNDLE-CI-1) are CI inputs, not package documents.
     files.retain(|locator| !locator.starts_with("pins/"));
+    // The collision table is a pinned compiler input outside the WorldProject documents.
+    let collision_table = "terrain/crystal-item-collision.bin";
+    assert!(files.iter().any(|locator| locator == collision_table));
+    let collision_bytes =
+        fs::read(root.join(collision_table)).expect("read Crystal collision table");
+    assert_eq!(
+        world_project_sha256(&collision_bytes),
+        "eb1df914bdb45a89332448c6bb969d8a3b06bfc419d930599b09bb4754d6fff7"
+    );
+    files.retain(|locator| locator != collision_table);
     let files_seen = files.clone();
     assert!(
         files_seen

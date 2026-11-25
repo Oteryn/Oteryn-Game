@@ -3,35 +3,43 @@
 import hashlib
 import json
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "world-authoring"))
 import world_region_codec as codec
+from scoped_spawn_ground import captured_grounds
 
 MAX_MISSING_TILE_DISTANCE = 4
 FLAG_PROTECTION_ZONE = 1  # OTBM TILESTATE_PROTECTIONZONE.
 
 
-def ground_item(root, palette_index):
-    """Walkable native ground: a terrain of kind ground that is known walkable."""
-    if not hasattr(ground_item, "cache"):
-        palette = json.loads(
-            (root / "content/world/placements/index.json").read_bytes()
-        )["palette"]
-        grounds = set()
-        for path in sorted((root / "content/world/terrain").glob("terrain-*.json")):
-            for row in json.loads(path.read_bytes())["records"]:
-                if row["kind"].get("value") == "ground" and row.get("walkable") == {
-                    "state": "KNOWN",
-                    "value": True,
-                }:
-                    grounds.add(row["identity"]["key"].rsplit(".i", 1)[1])
-        ground_item.cache = {
-            index
-            for index, entry in enumerate(palette)
-            if str(entry["source_item_id"]) in grounds
-        }
-    return palette_index in ground_item.cache
+@lru_cache(maxsize=1)
+def ground_slots(root):
+    palette = json.loads((root / "content/world/placements/index.json").read_bytes())[
+        "palette"
+    ]
+    grounds, scoped = set(), set()
+    for path in sorted((root / "content/world/terrain").glob("terrain-*.json")):
+        for row in json.loads(path.read_bytes())["records"]:
+            if row["kind"].get("value") == "ground" and row.get("walkable") == {
+                "state": "KNOWN",
+                "value": True,
+            }:
+                if row["provenance"]["route"]["reason"] == "scoped_spawn_ground":
+                    scoped.add(row["identity"]["key"])
+                else:
+                    grounds.add(row["provenance"]["source_item_id"])
+    return grounds, scoped, palette
+
+
+def ground_item(root, palette_index, cell):
+    grounds, scoped, palette = ground_slots(root)
+    entry = palette[palette_index]
+    item = entry["source_item_id"]
+    if entry.get("scoped_spawn_ground"):
+        return entry["key"] in scoped and captured_grounds(root).get(cell) == item
+    return item in grounds
 
 
 def choose_cell(root, actual_source, choice, occupied, *, require_walkable=False):
@@ -70,7 +78,7 @@ def choose_cell(root, actual_source, choice, occupied, *, require_walkable=False
             and not (tile[2] & ~allowed_flags)
             and not tile[3]
             and len(tile[5]) == 1
-            and (not walkable or ground_item(root, tile[5][0][0]))
+            and (not walkable or ground_item(root, tile[5][0][0], (*cell, z)))
         )
 
     distance = sum(abs(a - b) for a, b in zip(before[:2], after[:2]))

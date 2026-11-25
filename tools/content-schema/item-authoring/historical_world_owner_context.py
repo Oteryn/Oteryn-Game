@@ -3,6 +3,7 @@
 import hashlib
 import importlib.util
 import json
+import sys
 from functools import lru_cache
 from pathlib import Path
 
@@ -24,6 +25,37 @@ SOULPIT_NOTE = (
 )
 SUGAR_GROUND = "terrain-08614-08692.json"
 FEROXA_STATIC = "terrain-08748-08748.json"
+
+
+def without_spawn_ground(root, notes):
+    """Remove only the exact annotations backed by the spawn Terrain generators."""
+    tools = Path(__file__).resolve().parents[1]
+    sys.path[:0] = [
+        str(tools / "world-object-authoring"),
+        str(tools / "world-authoring"),
+    ]
+    import scoped_spawn_ground
+    import spawn_map_ground
+
+    for note, shard in (
+        (scoped_spawn_ground.NOTE, scoped_spawn_ground.SHARD),
+        (spawn_map_ground.NOTE, spawn_map_ground.SHARD),
+    ):
+        target = root / shard
+        if note not in notes and not target.exists():
+            continue
+        if notes.count(note) != 1 or not target.is_file():
+            raise ValueError("source digest drift: spawn Terrain marker note")
+        if shard == scoped_spawn_ground.SHARD:
+            expected = scoped_spawn_ground.catalogue_outputs(
+                (root / MARKER).read_bytes(), root
+            )[shard]
+        else:
+            expected = spawn_map_ground.terrain_output()
+        if target.read_bytes() != expected:
+            raise ValueError("source digest drift: spawn Terrain witness")
+        notes = notes.replace(note, "")
+    return notes
 
 
 @lru_cache(maxsize=1)
@@ -93,6 +125,7 @@ def original_marker(root):
     marker = json.loads(raw)
     if (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode() != raw:
         raise ValueError("source digest drift: terrain marker serialization")
+    marker["notes"] = without_spawn_ground(root, marker["notes"])
     for note in (
         " Additionally M49 Earth altar ground7748 retains its canonical Item identity.",
         " Additionally one source-qualified Rafzan elevator ground; total 8694 Terrain records.",

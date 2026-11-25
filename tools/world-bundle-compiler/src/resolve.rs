@@ -291,10 +291,19 @@ impl Registry {
                     || (p.production_definition.production_key == *key
                         && p.production_definition.revision_ref == identity.revision)
             });
-            if profile.is_some_and(|p| p.attributes.blocks_movement == Some(false)) {
-                self.open.insert(key.clone());
-            } else if profile.is_some_and(|p| p.attributes.blocks_movement == Some(true)) {
-                self.closed.insert(key.clone());
+            let solid = profile
+                .and_then(|p| p.attributes.blocks_movement)
+                .or_else(|| {
+                    oteryn_world_bundle::crystal_item_collision::for_key(key).map(|item| item.solid)
+                });
+            match solid {
+                Some(false) => {
+                    self.open.insert(key.clone());
+                }
+                Some(true) => {
+                    self.closed.insert(key.clone());
+                }
+                None => {}
             }
         }
         let too_many = || Error::Limit("more than 2^32 keys in one family".into());
