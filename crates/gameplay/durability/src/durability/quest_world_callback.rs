@@ -1132,6 +1132,12 @@ pub(super) async fn consume_npc_inputs(
         return Ok(false);
     };
     use oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect;
+    // Kevin takes the complete carried count of both bone definitions. The
+    // locked inventory query below still caps the number of consumed instances.
+    let all_postman_bones = plan
+        .selected_rule_keys
+        .first()
+        .is_some_and(|key| key == "oteryn:quest-npc/postman/kevin/bones_complete");
     let mut remaining = std::collections::BTreeMap::<(String, Option<u16>), i64>::new();
     for effect in &plan.effects {
         if let NpcRuleEffect::TakeItem {
@@ -1145,7 +1151,7 @@ pub(super) async fn consume_npc_inputs(
             *total = total
                 .checked_add(i64::from(*count))
                 .ok_or(DurabilityError::InvalidStoredState)?;
-            if *total > 100 {
+            if *total > 100 && !all_postman_bones {
                 return Ok(false);
             }
         }

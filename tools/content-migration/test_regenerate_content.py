@@ -584,7 +584,7 @@ def test_source_cohort_includes_installed_successors() -> None:
         pass
 
     def measure():
-        assert installed == [rc.ROOT, rc.WORLD, rc.WORLD, rc.WORLD, rc.WORLD], (
+        assert installed == [rc.ROOT, rc.WORLD, rc.WORLD, (rc.ROOT, rc.WORLD), rc.WORLD, rc.WORLD], (
             "measure only the complete installed World"
         )
         raise Measured
@@ -602,6 +602,10 @@ def test_source_cohort_includes_installed_successors() -> None:
         patch(
             "travel_route_corrections.project_routes",
             side_effect=lambda _, world: installed.append(world),
+        ),
+        patch(
+            "native_world_canonicalization.install_trade_successors",
+            side_effect=lambda *args: installed.append(args),
         ),
         patch(
             "regional_npc_prices.install",
@@ -727,6 +731,10 @@ def full_generation_trace(
                 side_effect=lambda *_: record(("project-travel-routes",)),
             ),
             patch(
+                "native_world_canonicalization.install_trade_successors",
+                side_effect=lambda *_: record(("install-trade-successors",)),
+            ),
+            patch(
                 "regional_npc_prices.install",
                 side_effect=lambda *_: record(("install-regional-npc-prices",)),
             ),
@@ -779,6 +787,7 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
         ("install-thaian",),
         ("install-buddel",),
         ("project-travel-routes",),
+        ("install-trade-successors",),
         ("install-regional-npc-prices",),
         ("install-regional-npc-dialogue",),
         ("canonicalize-world",),
@@ -803,7 +812,7 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
         assert error.cmd == ["canonicalize-world"]
     else:
         raise AssertionError("canonical rewrite refusal must stop generation")
-    after_canonicalization = ordered[ordered.index(("canonicalize-world",)) + 1:]
+    after_canonicalization = ordered[ordered.index(("canonicalize-world",)) + 1 :]
     assert not any(command in refused for command in after_canonicalization), refused
 
 

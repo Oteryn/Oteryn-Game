@@ -462,7 +462,7 @@ def test_package_tree_contract():
         )["record_count"],
         "NPC": 1282,
         "Dialogue": 852,
-        "Service.Trade": 324,
+        "Service.Trade": 325,
         "Service.Travel": 57,
         "Service.Bank": 2,
         "Service.Promotion": 7,
@@ -516,7 +516,7 @@ def test_package_tree_contract():
         "index": "content/dialogues/definitions/index.json",
     }
     assert manifest["families"]["Service.Trade"] == {
-        "records": 324,
+        "records": 325,
         "index": "content/services/trade/index.json",
     }
     assert manifest["families"]["Service.Travel"] == {

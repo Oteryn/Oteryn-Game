@@ -1,6 +1,8 @@
 //! Paid travel corrections and qualified additions to admitted captain services.
 //! `travel_routes.json` projects source-correction-check and admission-evidence in
 //! docs/reference/content-prep/travel-content-1, plus native S10S/S10T captain additions.
+//! Crystal 201189f8 NPC scripts supply the Cormaya return, Nostalgia return,
+//! Meluna ferry, Vengoth return, Ingol ferries and Oskayaat passage.
 //! Unmapped custom/quest guards stay held.
 use super::NpcServiceModel;
 use crate::content::{ProjectV2DefinitionRef, ProjectV2TravelRoute};
@@ -10,6 +12,10 @@ use std::sync::OnceLock;
 #[path = "travel_return.rs"]
 mod return_policy;
 pub use return_policy::TravelReturnRequirement;
+
+/// The donor storage advanced by each settled Postman tour passage.
+pub const POSTMAN_TOUR_TRACK: &str =
+    "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01";
 
 /// A paid ticket's purchase time is a Quest-owned Unix-second track.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -53,6 +59,8 @@ pub struct TravelRoute {
 struct Correction {
     key: String,
     keyword: String,
+    #[serde(default)]
+    aliases: Vec<String>,
     price: u64,
     premium: bool,
     x: i32,
@@ -88,9 +96,54 @@ struct Correction {
     partial_quest_callback: Option<PartialTravelQuestCallback>,
 }
 
+/// Source-qualified helpers that supersede older held route corrections.
+pub const CRYSTAL_HELPERS: &str =
+    include_str!("../../../../../../content/services/travel/crystal-helpers.json");
+
 /// Bind route corrections to the same revision as their production conversation book.
 pub fn revision_material() -> &'static str {
     include_str!("travel_routes.json")
+}
+
+fn corrections() -> &'static [Correction] {
+    static CORRECTIONS: OnceLock<Vec<Correction>> = OnceLock::new();
+    CORRECTIONS.get_or_init(|| {
+        let Ok(mut historical) = serde_json::from_str::<Vec<Correction>>(revision_material())
+        else {
+            return Vec::new();
+        };
+        let Ok(helpers) = serde_json::from_str::<Vec<Correction>>(CRYSTAL_HELPERS) else {
+            return historical;
+        };
+        historical.retain(|row| !helpers.iter().any(|helper| helper.key == row.key));
+        historical.extend(helpers);
+        historical
+    })
+}
+
+impl TravelRoute {
+    /// The before and after Postman stages for the exact route settled by paid travel.
+    pub fn postman_tour_passage(&self) -> Option<(i64, i64)> {
+        match (self.service.as_str(), self.route.key.as_str()) {
+            ("oteryn:service.travel.captain_bluebear", "carlin") => Some((1, 2)),
+            ("oteryn:service.travel.uzon", "edron") => Some((2, 3)),
+            ("oteryn:service.travel.captain_seahorse", "venore") => Some((3, 4)),
+            ("oteryn:service.travel.brodrosch", "cormaya") => Some((4, 5)),
+            _ => None,
+        }
+    }
+
+    /// Existing routes retain both their spoken destination and their route key.
+    pub fn matches_keyword(&self, text: &str) -> bool {
+        text == self.keyword
+            || text == self.route.key.replace('_', " ")
+            || corrections().iter().any(|row| {
+                !row.aliases.is_empty()
+                    && row.key.split_once('/')
+                        == Some((self.service.as_str(), self.route.key.as_str()))
+                    && row.aliases.iter().any(|alias| alias == text)
+            })
+    }
 }
 
 fn corrections() -> &'static [Correction] {
@@ -266,27 +319,43 @@ mod tests {
                     .ok_or("Postman stage")?
                     .parse()?)
             };
-            if npc == "brodrosch" {
-                // The admitted service offers Gnomprona, and has no Cormaya route.
-                assert_eq!(destination, "cormaya");
-                assert!(production_route(&model, npc, destination)?.is_none());
-                continue;
-            }
             let route = production_route(&model, npc, destination)?.ok_or("Postman route")?;
-            let callback = route
-                .partial_quest_callback
-                .ok_or("missing Postman callback")?;
+            let (before, after) = (stage("condition")?, stage("effect")?);
             assert_eq!(
-                callback.track,
-                "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01"
+                route.postman_tour_passage(),
+                Some((before, after)),
+                "{npc}/{destination}"
             );
+            let legacy_callback = route
+                .partial_quest_callback
+                .as_ref()
+                .map(|callback| (callback.track.as_str(), callback.stage, callback.next_stage));
             assert_eq!(
-                (callback.stage, callback.next_stage),
-                (stage("condition")?, stage("effect")?)
+                legacy_callback,
+                (npc == "captain_bluebear").then_some((super::POSTMAN_TOUR_TRACK, before, after)),
+                "{npc}/{destination} legacy receipt metadata"
+            );
+            let fare = source["condition"]
+                .as_str()
+                .and_then(|condition| condition.split_once(";travel koszt"))
+                .and_then(|(_, fare)| fare.split_once(' '))
+                .ok_or("Postman donor fare")?
+                .0
+                .parse::<u64>()?;
+            let cell = &route.route.destination;
+            let landing = format!(
+                "Mission01={after};podróż do{},{},{}",
+                cell.x, cell.y, cell.floor
+            );
+            assert_eq!(source["effect"], landing, "{npc}/{destination}");
+            assert_eq!(route.route.price, fare, "{npc}/{destination}");
+            assert!(
+                route.postman && !route.held && !route.route.premium,
+                "{npc}/{destination}"
             );
             callbacks += 1;
         }
-        assert_eq!(callbacks, 3);
+        assert_eq!(callbacks, 4);
         Ok(())
     }
 
@@ -476,7 +545,7 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 240);
+        assert_eq!(corrections.len(), 242);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
@@ -512,7 +581,13 @@ mod tests {
                 keyword => keyword,
             };
             assert_eq!(row.keyword, keyword);
-            assert_eq!(serde_json::json!(row.price), source["selected_fare"]);
+            // Crystal harlow_vengoth.lua:53-55 supplies a free return.
+            let price = if row.key == "oteryn:service.travel.harlow_vengoth/yalahar" {
+                serde_json::json!(0)
+            } else {
+                source["selected_fare"].clone()
+            };
+            assert_eq!(serde_json::json!(row.price), price);
             assert_eq!(serde_json::json!(row.premium), source["selected_premium"]);
             match row.key.as_str() {
                 // The native Marapur landing is one tile north of the donor destination.
@@ -788,6 +863,27 @@ mod tests {
                 "{route_key}"
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn postman_tour_routes_accept_free_accounts() -> Result<(), Box<dyn std::error::Error>> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        let model = catalogue.service_model_for_project()?;
+        let mut routes = Vec::new();
+        for (key, npc) in model.npcs() {
+            for route in super::resolve(&model, &key.key, &npc.services) {
+                if let Some((stage, _)) = route.postman_tour_passage() {
+                    routes.push((stage, route.route.premium));
+                }
+            }
+        }
+        routes.sort_unstable();
+        assert_eq!(routes, [(1, false), (2, false), (3, false), (4, false)]);
         Ok(())
     }
 

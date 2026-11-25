@@ -679,6 +679,7 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/m09-treasure.json"),
             include_str!("../../../../../content/quests/world-callbacks/m39-stories.json"),
             include_str!("../../../../../content/quests/world-callbacks/oramond-native-roots.json"),
+            include_str!("../../../../../content/quests/world-callbacks/postman.json"),
             include_str!("../../../../../content/quests/world-callbacks/qc-chests.json"),
             include_str!("../../../../../content/quests/world-callbacks/qc-lizard-sanctuary.json"),
             include_str!("../../../../../content/quests/world-callbacks/qm48-mammoth.json"),

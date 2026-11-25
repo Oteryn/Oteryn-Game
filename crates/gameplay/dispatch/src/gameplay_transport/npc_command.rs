@@ -330,7 +330,7 @@ impl NpcConversations {
     }
 
     /// The closed window to send when the session was shown one for an NPC it no longer talks to.
-    fn close_window(
+    pub(super) fn close_window(
         &self,
         session: GameSessionId,
         talking_to: Option<[u8; 16]>,
@@ -742,10 +742,11 @@ impl NpcConversations {
             position: there,
             entry,
         }];
+        let female = chat.female_npc_speaker(session);
         let Some((reply, had, engaged)) = chat.converse(session, |engaged| {
             let prior = *engaged;
             let had = prior.is_some();
-            let reply = talk(at, &text, &npcs, engaged);
+            let reply = talk(at, &text, &npcs, engaged, female);
             if reply.is_none() {
                 // Only the NPC this command names was offered to the rule, so a command it does not
                 // answer must not end a conversation held with another NPC.
@@ -771,13 +772,7 @@ impl NpcConversations {
             disposition: Disposition::Ok,
             conversation: Some(NpcConversation {
                 open,
-                // Native conditional greetings may open focus without literal text.
-                // Empty lines are invalid on domain 7; an empty line list is valid.
-                lines: if reply.text.is_empty() {
-                    Vec::new()
-                } else {
-                    vec![reply.text]
-                },
+                lines: reply.into_lines().collect(),
             }),
             window: None,
         }
@@ -905,14 +900,15 @@ pub(super) async fn npc_bank_talk(
     {
         state.quest_dialogue.restart_topic();
     }
-    // A live route quote owns its confirmation before any quest adapter runs.
-    // The paid owner repeats this exact scope/expiry check before departure.
+    // A live route quote owns its answer before any quest adapter runs.
+    // The paid owner repeats this exact scope and expiry check.
     if admission
         .states
         .npc_conversations
         .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
         .is_some_and(|context| {
             admission.has_pending_paid_confirmation(command, &intent, &context, received_at)
+                || admission.has_pending_paid_decline(command, &intent, &context, received_at)
         })
     {
         return ordinary;

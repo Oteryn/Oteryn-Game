@@ -92,7 +92,7 @@
     },
     "Service.Trade": {
       "index": "content/services/trade/index.json",
-      "records": 324
+      "records": 325
     },
     "Service.Travel": {
       "index": "content/services/travel/index.json",
@@ -763,6 +763,9 @@
       "path": "content/services/trade/trade-00000-00323.json"
     },
     {
+      "path": "content/services/trade/trade-00324-00324.json"
+    },
+    {
       "path": "content/services/travel/index.json"
     },
     {
@@ -987,7 +990,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "28e64fa6e8f59886e70750580fca20e7357fe8772f68140455c9e76598dee106"
+          "sha256": "61c5411735b236ce040d5b436615f4bdfdfbe8f992db86ecd977a3e677251abe"
         },
         {
           "creates_canonical_identities": false,
@@ -1058,7 +1061,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 7278,
+          "record_count": 6665,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1066,7 +1069,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "0c93a2004b965c46bb13820ffd70e5b783c74b47021d50d6819d3a5ff922efc5"
+          "sha256": "ac3b7c64f26eaaf7e011a551479e7afb545ee95052241c4255858e15089dea62"
         },
         {
           "creates_canonical_identities": false,

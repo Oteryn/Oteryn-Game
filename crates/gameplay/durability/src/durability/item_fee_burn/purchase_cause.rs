@@ -106,9 +106,8 @@ impl FeeBurnCause {
                 Ok(())
             }
             Self::QuestAccessPurchase { .. } => Ok(()),
-            Self::QuestRewardPayment { callback, gold, .. }
-                if callback.starts_with("oteryn:quest-reward/")
-                    && callback.len() <= 128
+            Self::QuestRewardPayment { callback, gold, include_bank, .. }
+                if super::super::quest_state::npc_program::valid_quest_fee_key(callback, *gold, *include_bank)
                     && (1..=1_000_000_000_000).contains(gold) =>
             {
                 Ok(())

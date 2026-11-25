@@ -1131,7 +1131,7 @@ def main(*, items_only: bool = False) -> int:
     service_records = [
         row for row in declarations["records"] if row.get("kind") == "Service"
     ]
-    if len(service_records) != 400:
+    if len(service_records) != 401:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}
@@ -1147,10 +1147,12 @@ def main(*, items_only: bool = False) -> int:
         ]
         service_counts[family] = len(records)
         service_shards[family] = []
-        for start in range(0, len(records), ITEM_SHARD_SIZE):
+        # Keep the published legacy trade shard stable when adding service variants.
+        shard_size = 324 if family == "Service.Trade" else ITEM_SHARD_SIZE
+        for start in range(0, len(records), shard_size):
             rows = [
                 {"declaration": declaration}
-                for declaration in records[start : start + ITEM_SHARD_SIZE]
+                for declaration in records[start : start + shard_size]
             ]
             end = start + len(rows) - 1
             relative = f"{node}{stem}-{start:05d}-{end:05d}.json"
@@ -1162,7 +1164,7 @@ def main(*, items_only: bool = False) -> int:
                     "family": family,
                     "source_legacy_role": "content/world/definitions/declarations.json",
                     "shard": {
-                        "index": start // ITEM_SHARD_SIZE,
+                        "index": start // shard_size,
                         "start": start,
                         "end": end,
                         "count": len(rows),
@@ -1176,7 +1178,7 @@ def main(*, items_only: bool = False) -> int:
                 "schema": "OTERYN_FAMILY_INDEX/v1",
                 "family": family,
                 "record_count": len(records),
-                "shard_size": ITEM_SHARD_SIZE,
+                "shard_size": shard_size,
                 "shards": service_shards[family],
                 "legacy_source": {
                     "path": "content/world/definitions/declarations.json",

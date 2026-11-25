@@ -36,7 +36,7 @@
     "Service.Bank": 2,
     "Service.Blessing": 10,
     "Service.Promotion": 7,
-    "Service.Trade": 324,
+    "Service.Trade": 325,
     "Service.Travel": 57,
     "StarterKit": 1,
     "item_conversion": 130
@@ -47,7 +47,7 @@
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "966dd79ac593ce739dfbec84f639b25812d291fe",
+    "declarations": "ce2c0433729c45c13f4cc802e91384ae68b9cf07",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "2612aed1054650d66dafb0828220dfefa66e19f4",
     "reference": "e8c4487697f321137afbd4b4962a7d0e202a4331",
@@ -71,15 +71,15 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "8a166461b34dde5415a0c915e8547af6d63d27fd12f8e5abed116facf8317dcc"
+        "sha256": "b35dcc15a406aec369a80dad261b94a98012614169ee76d3e6129254cc82ed33"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
-        "sha256": "e83bbeb969653fb133dd4110331126c053b262a2ba9f341d7a872c58361d0281"
+        "sha256": "86f093c8a6e1db90f3651d6a3939ce84f33fb3a75800d22701a820e4173df9b4"
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "d53281c1581f52a1b111d89f9c0b8be79dc77ec4ab703474e746341fd9fe4b7e"
+        "sha256": "6b976e6f7c1fe4e1cddef0b83b0519f68b6640dc03a81d03659201f2a9073969"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "28e64fa6e8f59886e70750580fca20e7357fe8772f68140455c9e76598dee106"
+          "sha256": "61c5411735b236ce040d5b436615f4bdfdfbe8f992db86ecd977a3e677251abe"
         },
         {
           "creates_canonical_identities": false,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 7278,
+          "record_count": 6665,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "0c93a2004b965c46bb13820ffd70e5b783c74b47021d50d6819d3a5ff922efc5"
+          "sha256": "ac3b7c64f26eaaf7e011a551479e7afb545ee95052241c4255858e15089dea62"
         },
         {
           "creates_canonical_identities": false,

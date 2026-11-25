@@ -401,10 +401,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 "oteryn:creature.the_old_widow" => {
                     ("oteryn:item.tibia.i5977", &["oteryn:item.tibia.i12320"])
                 }
-                _ => (
-                    "oteryn:item.tibia.i4097",
-                    &["oteryn:item.tibia.i3116", "oteryn:item.tibia.i3309"],
-                ),
+                _ => ("oteryn:item.tibia.i4097", &["oteryn:item.tibia.i3309"]),
             };
             assert_eq!(corpse.key, body);
             let binding = loot
@@ -418,9 +415,39 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 .iter()
                 .find(|table| table.identity == *reference)
                 .ok_or("source refused boss table")?;
+            if matches!(
+                policy.definition_key.as_str(),
+                "oteryn:creature.bazir" | "oteryn:creature.infernatil"
+            ) {
+                // Crystal drops one big bone at 9%; Postman now admits that same Item.
+                let bones = table
+                    .entries
+                    .iter()
+                    .filter(|entry| entry.item.key == "oteryn:item.tibia.i3116")
+                    .collect::<Vec<_>>();
+                let [bone] = bones.as_slice() else {
+                    return Err(format!(
+                        "{} must have one big bone loot entry",
+                        policy.definition_key
+                    ));
+                };
+                assert_eq!(
+                    (bone.min_count, bone.max_count, bone.probability_ppm),
+                    (1, 1, Some(90_000))
+                );
+                assert_eq!(bone.item.family, "Item");
+                assert_eq!(bone.item.revision, "definition-r1");
+                assert!(
+                    loot.items
+                        .iter()
+                        .any(|facts| facts.item == bone.item && facts.materializable)
+                );
+            }
             assert_eq!(
                 source_loot_refusals::items(&table.entries, &loot.items),
-                refused
+                refused,
+                "{}",
+                policy.definition_key
             );
             assert_eq!(
                 source.reward_table().row(&policy.definition_key).err(),

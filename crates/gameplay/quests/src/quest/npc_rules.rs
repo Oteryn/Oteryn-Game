@@ -144,6 +144,10 @@ pub enum NpcRuleGuard {
         #[serde(default)]
         op: NpcComparison,
     },
+    ItemTotal {
+        items: [String; 2],
+        minimum: u32,
+    },
     Money {
         amount: u64,
         #[serde(default)]
@@ -219,6 +223,9 @@ pub enum NpcRuleEffect {
         /// call consumes nothing when the complete requested count is absent.
         #[serde(default)]
         optional: bool,
+    },
+    TakeAllItems {
+        items: [String; 2],
     },
     GiveItem {
         item: String,
@@ -511,6 +518,7 @@ impl NpcRuleCatalog {
                 let supplemental = Self::from_json_documents(&[
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/m41-kilmaresh.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/postman.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gerimor.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gnomus.json"),
@@ -555,6 +563,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
+                                | "oteryn:quest.the_postman_missions_quest"
                                 | "oteryn:quest.tower_defence_quest"
                         )
                 });

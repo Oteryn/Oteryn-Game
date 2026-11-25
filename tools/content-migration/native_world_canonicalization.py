@@ -66,6 +66,15 @@ def read_documents(root: Path, *, exact: bool = False) -> dict[str, bytes]:
     return result
 
 
+def install_trade_successors(repo_root: Path, package: Path) -> None:
+    from crystal_npc_trade import install_crystal_npc_trade
+    from import_cyclopedia_global import apply_trade_source, load_capture
+
+    reference = json.loads((package / "definitions/reference.json").read_bytes())
+    apply_trade_source(package, load_capture(repo_root), reference, Counter())
+    install_crystal_npc_trade(repo_root, package)
+
+
 def complete_world_project(
     repo_root: Path,
     input_root: Path,
@@ -117,19 +126,13 @@ def complete_world_project(
             path.write_bytes(data)
         _install_documents(repo_root, staging_root)
         if include_world_successors:
-            from import_cyclopedia_global import apply_trade_source, load_capture
             from questpc7_world_seal import refresh
             from regional_npc_dialogue import install as install_dialogue
             from regional_npc_prices import install as install_prices
 
             install_buddel(repo_root, staging_root)
             project_routes(repo_root, staging_root)
-            reference = json.loads(
-                (staging_root / "definitions/reference.json").read_bytes()
-            )
-            apply_trade_source(
-                staging_root, load_capture(repo_root), reference, Counter()
-            )
+            install_trade_successors(repo_root, staging_root)
             install_prices(repo_root, staging_root)
             install_dialogue(repo_root, staging_root)
             refresh(repo_root, staging_root)

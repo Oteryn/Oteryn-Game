@@ -72,6 +72,7 @@ fn input_at(xp_amount: i64, revision: u64) -> TestResult<CreatureDeathRewardInpu
     Ok(CreatureDeathRewardInput {
         boss_achievement: None,
         tutorial_corruptor: None,
+        atomic_source_loot: false,
         corpse_item: Some(definition("ItemType", "fixture:bestiary.item.rat_corpse")),
         loot_table_ref: Some(definition("LootTable", "fixture:bestiary.loot.rat")),
         loot_table: LootTableDefinition {

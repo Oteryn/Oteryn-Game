@@ -60,9 +60,27 @@ pub(super) fn register(
                 });
         }
     }
-    // Measured on the complete deployed catalogue at 871c1dec7. Each new
-    // branch uses existing tracks, so absent values retain their original defaults.
+    // Absent tracks retain their source defaults. Entries without an explicit
+    // revision were measured on the complete deployed catalogue at 871c1dec7.
     for (quest, hash) in [
+        // Measured through the production loader at 7dc142a65.
+        (
+            "oteryn:quest.the_postman_missions_quest",
+            [
+                0xc6, 0xe3, 0xda, 0x7c, 0x90, 0xc9, 0xbe, 0xaf, 0xdf, 0x23, 0xc4, 0x06, 0x1a, 0x46,
+                0x75, 0x0b, 0xa4, 0x13, 0x93, 0x0a, 0xf6, 0xcd, 0xae, 0xa8, 0x26, 0x19, 0x6c, 0x08,
+                0x48, 0x51, 0x6b, 0xe8,
+            ],
+        ),
+        // Measured through the production loader at 35d65457d.
+        (
+            "oteryn:quest.the_postman_missions_quest",
+            [
+                0x9f, 0x64, 0x52, 0x8b, 0x3c, 0x6c, 0x06, 0xaf, 0xa5, 0xc5, 0x6d, 0x2c, 0x83, 0xf7,
+                0x6c, 0x34, 0xe1, 0x98, 0x45, 0x1f, 0x4f, 0x03, 0x78, 0x69, 0x8c, 0x78, 0x87, 0x02,
+                0xdf, 0x5f, 0x83, 0x68,
+            ],
+        ),
         (
             "oteryn:quest.children_of_the_revolution_quest",
             [

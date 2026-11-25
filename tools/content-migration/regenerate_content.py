@@ -1234,6 +1234,9 @@ def main() -> int:
 
     install_buddel(ROOT, WORLD)
     project_routes(ROOT, WORLD)
+    from native_world_canonicalization import install_trade_successors
+
+    install_trade_successors(ROOT, WORLD)
     from regional_npc_prices import install as install_regional_npc_prices
     install_regional_npc_prices(ROOT, WORLD)
     from regional_npc_dialogue import install as install_regional_npc_dialogue

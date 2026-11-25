@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing. NODEBOOT-SAM: Sam Thais equipment trade at the agreeing Canary/Crystal promotion-candidate cell 32361,32198,z7 for node-boot NPC and player trade. QB-1: Hunter (Legola), Mage and Summoner (Angelina, Lynda, Myra, Zoltan) and Wizard (Lugri, The Queen of the Banshees) outfit hand-ins at their single agreeing promotion-candidate cells. QB-2: Cave Explorer (Gnommander, a source-backed solid contact), Revenant (Flickering Soul), Hand of the Inquisition (Grof, Kulag, Miles, Tim and Walter the Guard) at their single agreeing promotion-candidate cells. QB-3: mainland Citizen (Lubo, Hanna) and Warrior (Trisha, Cornelia) addon hand-ins at their agreeing promotion-candidate cells; Hanna's alternate example-map cell is excluded by explicit selection. QB Barbarian Outfits: Bron and Ajax near Northport at their single agreeing promotion-candidate cells (Bron as a source-backed block_solid_contact: no adjacent clear single-item ground). QCX13: Frodo and Mordecai at their retained promotion-candidate cells for the existing seller offers. QH-TOP-OF-THE-CITY: Iriana at her agreeing Canary/Crystal candidate cell; Jimmy at the TibiaWiki and Polish TibiaWiki cell 32857,31383,6, on the passage stub the qh_jimmy_stub world overlay restores (owner evidence 2026-11-17). C06: Xodet at the retained Thais promotion-candidate cell 32398,32222,z7 for native rune purchases. QC-SINATUKI: Sinatuki (Nibelor, Sinatuki Quest) at the agreeing Canary/Crystal promotion-candidate cell 32425,31085,z7. CNPC1 joins six-region contacts by runtime NPC identity to the Crystal 201189f world-npc.xml and uses retained TibiaWiki BR revision cells where the XML has no placement. The original candidates supply agreeing positions and the override rows retain pinned evidence where they differ. CNPC2: stationary regional contacts from Crystal 201189f8; retained Wiki coordinates where the pinned Crystal XML has no matching occurrence. Regional population for Yalahar, Farmine, Gray Beach, Rathleton, Roshamuul, Issavi and Marapur at the pinned Crystal Global cells or retained TibiaWiki fallback cells. Shattered Isles: admit the retained quest NPC candidate cells for the chosen four passages. CWTRAV2: Crystal travel origins at their pinned Global map cells. Travel lane 3: static transport actors checked against Crystal 201189f8 data-global/world/world-npc.xml, including the outbound Tonar passage. Old Adall and Ziyad retain their source-backed solid-object contacts.",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing. NODEBOOT-SAM: Sam Thais equipment trade at the agreeing Canary/Crystal promotion-candidate cell 32361,32198,z7 for node-boot NPC and player trade. QB-1: Hunter (Legola), Mage and Summoner (Angelina, Lynda, Myra, Zoltan) and Wizard (Lugri, The Queen of the Banshees) outfit hand-ins at their single agreeing promotion-candidate cells. QB-2: Cave Explorer (Gnommander, a source-backed solid contact), Revenant (Flickering Soul), Hand of the Inquisition (Grof, Kulag, Miles, Tim and Walter the Guard) at their single agreeing promotion-candidate cells. QB-3: mainland Citizen (Lubo, Hanna) and Warrior (Trisha, Cornelia) addon hand-ins at their agreeing promotion-candidate cells; Hanna's alternate example-map cell is excluded by explicit selection. QB Barbarian Outfits: Bron and Ajax near Northport at their single agreeing promotion-candidate cells (Bron as a source-backed block_solid_contact: no adjacent clear single-item ground). QCX13: Frodo and Mordecai at their retained promotion-candidate cells for the existing seller offers. QH-TOP-OF-THE-CITY: Iriana at her agreeing Canary/Crystal candidate cell; Jimmy at the TibiaWiki and Polish TibiaWiki cell 32857,31383,6, on the passage stub the qh_jimmy_stub world overlay restores (owner evidence 2026-11-17). C06: Xodet at the retained Thais promotion-candidate cell 32398,32222,z7 for native rune purchases. QC-SINATUKI: Sinatuki (Nibelor, Sinatuki Quest) at the agreeing Canary/Crystal promotion-candidate cell 32425,31085,z7. CNPC1 joins six-region contacts by runtime NPC identity to the Crystal 201189f world-npc.xml and uses retained TibiaWiki BR revision cells where the XML has no placement. The original candidates supply agreeing positions and the override rows retain pinned evidence where they differ. CNPC2: stationary regional contacts from Crystal 201189f8; retained Wiki coordinates where the pinned Crystal XML has no matching occurrence. Regional population for Yalahar, Farmine, Gray Beach, Rathleton, Roshamuul, Issavi and Marapur at the pinned Crystal Global cells or retained TibiaWiki fallback cells. Shattered Isles: admit the retained quest NPC candidate cells for the chosen four passages. CWTRAV2: Crystal travel origins at their pinned Global map cells. Travel lane 3: static transport actors checked against Crystal 201189f8 data-global/world/world-npc.xml, including the outbound Tonar passage. Old Adall and Ziyad retain their source-backed solid-object contacts. Crystal NPC services at their retained source placements, including the post office. Postman mission 1: four tour contacts at their retained candidate cells.",
   "npcs": [
     "oteryn:npc.a_beggar",
     "oteryn:npc.a_confused_frog",
@@ -27,6 +27,7 @@
     "oteryn:npc.a_wrinkled_bonelord",
     "oteryn:npc.abran_ironeye",
     "oteryn:npc.admiral_wyrmslicer",
+    "oteryn:npc.adrian",
     "oteryn:npc.ahmet",
     "oteryn:npc.ajax",
     "oteryn:npc.al_dee",
@@ -147,6 +148,7 @@
     "oteryn:npc.captain_gulliver",
     "oteryn:npc.captain_haba",
     "oteryn:npc.captain_harava",
+    "oteryn:npc.captain_jack",
     "oteryn:npc.captain_max",
     "oteryn:npc.captain_max_calassa",
     "oteryn:npc.captain_pelagia",
@@ -282,10 +284,13 @@
     "oteryn:npc.fergus",
     "oteryn:npc.ferks",
     "oteryn:npc.fernlor",
+    "oteryn:npc.ferryman_kamil",
+    "oteryn:npc.ferryman_kamil_meluna",
     "oteryn:npc.ferus",
     "oteryn:npc.fillias",
     "oteryn:npc.finarfin",
     "oteryn:npc.fiona",
+    "oteryn:npc.flavius",
     "oteryn:npc.flickering_soul",
     "oteryn:npc.flint",
     "oteryn:npc.flora",
@@ -359,9 +364,11 @@
     "oteryn:npc.hanna",
     "oteryn:npc.hardek",
     "oteryn:npc.harkath_bloodblade",
+    "oteryn:npc.harlow_vengoth",
     "oteryn:npc.haroun",
     "oteryn:npc.harsky",
     "oteryn:npc.hawkhurst",
+    "oteryn:npc.hawkhurst_ingol",
     "oteryn:npc.hawkyr",
     "oteryn:npc.hector_the_mentor",
     "oteryn:npc.helor",
@@ -1281,6 +1288,32 @@
         "z": 6
       },
       "reason": "Nearest clear ground at the source contact in the retained Oteryn map."
+    },
+    "oteryn:npc.ferryman_kamil_meluna": {
+      "source": {
+        "x": 32088,
+        "y": 32468,
+        "z": 7
+      },
+      "target": {
+        "x": 32088,
+        "y": 32469,
+        "z": 7
+      },
+      "reason": "Crystal's Meluna mooring has a solid object on Kamil's spawn. The next protected dock tile toward the arrival is clear."
+    },
+    "oteryn:npc.hawkhurst_ingol": {
+      "source": {
+        "x": 33710,
+        "y": 32602,
+        "z": 6
+      },
+      "target": {
+        "x": 33711,
+        "y": 32602,
+        "z": 6
+      },
+      "reason": "Crystal's Ingol contact shares the Cormaya ferry arrival. Use the adjacent protected deck tile so the incoming ferry keeps its source destination."
     }
   },
   "authored_placements": {

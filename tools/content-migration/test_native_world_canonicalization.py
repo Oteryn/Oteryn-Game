@@ -106,7 +106,57 @@ class NativeWorldCompletion(unittest.TestCase):
             ),
         )
         self.write(self.world / "unmanaged/sentinel", b"retain caller sibling\n")
+        authoring = Path(__file__).resolve().parents[2] / (
+            "content/services/trade/crystal-npc-trade.authoring.json"
+        )
+        shops = json.loads(authoring.read_bytes())["shops"]
+        self.write(
+            self.repo / "content/services/trade/crystal-npc-trade.authoring.json",
+            encode({"shops": [shop for shop in shops if shop["npc"] == "gamon"]}),
+        )
+        self.add_gamon()
         self.original = canonical.read_documents(self.world)
+
+    def add_gamon(self):
+        from questpc7_world_seal import refresh
+
+        path = self.world / "definitions/declarations.json"
+        document = json.loads(path.read_bytes())
+        document["records"].append(
+            {
+                "kind": "NPC",
+                "identity": {"key": "oteryn:npc.gamon", "revision": "definition-r1"},
+                "services": [
+                    {
+                        "family": "Service",
+                        "key": "oteryn:service.trade.gamon",
+                        "revision": "definition-r1",
+                    }
+                ],
+            }
+        )
+        document["records"].append(
+            {
+                "kind": "Service",
+                "identity": {
+                    "key": "oteryn:service.trade.gamon",
+                    "revision": "definition-r1",
+                },
+                "offers": [
+                    {
+                        "item": {
+                            "family": "Item",
+                            "key": "oteryn:item.tibia.i2998",
+                            "revision": "definition-r1",
+                        },
+                        "direction": "SellToPlayer",
+                        "unit_price": 25,
+                    }
+                ],
+            }
+        )
+        self.write(path, encode(document))
+        refresh(self.repo, self.world)
 
     @staticmethod
     def write(path, raw):
@@ -208,26 +258,23 @@ class NativeWorldCompletion(unittest.TestCase):
         }
         service = {"key": "oteryn:service.trade.dixi", "revision": "fixture-r1"}
         offer = {"item": item, "direction": "SellToPlayer", "unit_price": 31}
-        self.write(
-            self.world / "definitions/reference.json",
-            encode({"records": [{"kind": "Item", "identity": item}]}),
-        )
-        self.write(
-            self.world / "definitions/declarations.json",
-            encode(
+        reference_path = self.world / "definitions/reference.json"
+        reference = json.loads(reference_path.read_bytes())
+        reference["records"].append({"kind": "Item", "identity": item})
+        self.write(reference_path, encode(reference))
+        declarations_path = self.world / "definitions/declarations.json"
+        initial = json.loads(declarations_path.read_bytes())
+        initial["records"].extend(
+            [
+                {"kind": "Service", "identity": service, "offers": [offer]},
                 {
-                    "records": [
-                        {"kind": "Service", "identity": service, "offers": [offer]},
-                        {
-                            "kind": "NPC",
-                            "identity": {"key": "oteryn:npc.dixi"},
-                            "services": [service],
-                        },
-                    ],
-                    "authoring_profiles": [],
-                }
-            ),
+                    "kind": "NPC",
+                    "identity": {"key": "oteryn:npc.dixi"},
+                    "services": [service],
+                },
+            ]
         )
+        self.write(declarations_path, encode(initial))
 
         def native(command, **kwargs):
             staging = Path(command[command.index("--input-root") + 1])
@@ -238,9 +285,23 @@ class NativeWorldCompletion(unittest.TestCase):
             dialogue.assert_called_once_with(self.repo, staging)
             locator = "definitions/declarations.json"
             declarations = (staging / locator).read_bytes()
+            dixi = next(
+                row for row in json.loads(declarations)["records"]
+                if row["identity"]["key"] == service["key"]
+            )
+            self.assertEqual(dixi["offers"], [dict(offer, unit_price=25)])
+            trade_document = json.loads(
+                (staging / "definitions/declarations.json").read_bytes()
+            )
+            records = {row["identity"]["key"]: row for row in trade_document["records"]}
+            gamon = records["oteryn:npc.gamon"]
+            linked_offers = [records[ref["key"]]["offers"] for ref in gamon["services"]]
             self.assertEqual(
-                json.loads(declarations)["records"][0]["offers"],
-                [dict(offer, unit_price=25)],
+                [
+                    [(offer["item"]["key"], offer["unit_price"]) for offer in offers]
+                    for offers in linked_offers
+                ],
+                [[("oteryn:item.tibia.i2800", 30)], [("oteryn:item.tibia.i2797", 50)]],
             )
             manifest = json.loads((staging / "manifest.json").read_bytes())
             (seal,) = [
@@ -304,6 +365,7 @@ class NativeWorldCompletion(unittest.TestCase):
             output = Path(command[command.index("--output-root") + 1])
             self.assertEqual(source, self.repo / "content/world")
             install_buddel.assert_called_once_with(self.repo, source)
+            capture.assert_called_once_with(self.repo)
             prices.assert_called_once_with(self.repo, source)
             dialogue.assert_called_once_with(self.repo, source)
             self.assertFalse(output.exists())
@@ -328,6 +390,7 @@ class NativeWorldCompletion(unittest.TestCase):
             patch("regional_npc_prices.install") as prices,
             patch("regional_npc_dialogue.install") as dialogue,
             patch("buddel_travel.install_buddel") as install_buddel,
+            patch("import_cyclopedia_global.load_capture", return_value={}) as capture,
             patch.object(
                 regenerate, "refresh_source_cohort_extent", side_effect=measured
             ),

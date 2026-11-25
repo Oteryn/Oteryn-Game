@@ -2,6 +2,15 @@
   "schema": "OTERYN_AUTHORED_NPC_ITEM_CUSTODY/v1",
   "inputs": [
     {
+      "path": "content/dialogues/quest-rules-supplemental/postman.json",
+      "sha256": "7494cdd360f45864d6f0c852b128488b6b0bf150fb57adc1e2e13e5455faef23",
+      "quest": "oteryn:quest.the_postman_missions_quest"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/crystal-npc-shop-item-custody.json",
+      "sha256": "cf0b46544f4c6e2c9fe5892e81aa19ea6bdd422bb2cbd02c701bea900117f3ab"
+    },
+    {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/fathers_burden.json",
       "sha256": "3e61e951d10057e71e8090fcd12865dbbee2718a6c7771d536a5ba258df9214b",
       "quest": "oteryn:quest.a_father_s_burden_quest"
