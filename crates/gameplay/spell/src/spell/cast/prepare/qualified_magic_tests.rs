@@ -436,6 +436,7 @@ fn missing_equipment_reaches_the_ordered_cast_rules_without_payment() -> Result<
         target_tile_solid: Some(false),
         target_tile_creature: Some(true),
     };
+    let draws = std::cell::Cell::new(0);
     let resolve = |spell: &SpellDefinition, caster: &CasterState| {
         crate::spell::resolve_cast_with_operational_facts(
             spell,
@@ -443,7 +444,10 @@ fn missing_equipment_reaches_the_ordered_cast_rules_without_payment() -> Result<
             &empty_cooldowns,
             SemanticTimeMicros::from_micros(NOW),
             &operational,
-            &mut |_, _| panic!("equipment admission must precede the damage draw"),
+            &mut |minimum, _| {
+                draws.set(draws.get() + 1);
+                minimum
+            },
         )
         .err()
     };
@@ -468,6 +472,11 @@ fn missing_equipment_reaches_the_ordered_cast_rules_without_payment() -> Result<
     assert_eq!(
         resolve(&spell, &caster),
         Some(CastRejection::ShieldRequired)
+    );
+    assert_eq!(
+        draws.get(),
+        0,
+        "equipment admission must precede the damage draw"
     );
     Ok(())
 }
