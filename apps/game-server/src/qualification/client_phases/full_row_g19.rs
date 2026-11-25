@@ -13,7 +13,9 @@ use sqlx::Connection;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
@@ -75,10 +77,12 @@ async fn accepted(
 }
 
 async fn finish(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused".into());
+    let (result, reply, attempts, busy_timed_out) = logout_retrying_busy(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!(
+            "step=logout observed={reply} attempts={attempts} busy_timed_out={busy_timed_out}"
+        )
+        .into());
     }
     Ok(())
 }
