@@ -1516,7 +1516,7 @@ async fn observe_container_with_house_capacity_inner(
         return super::browse_field::observe(admission, actor, fence, target).await;
     }
     if matches!(target, ItemKey::MapBase { .. }) {
-        return map_sources::observe(admission, actor, fence, target).await;
+        return map_sources::observe(admission, actor, fence, target, house_capacity_v2).await;
     }
     let ItemKey::Instance(container) = target else {
         return None;
