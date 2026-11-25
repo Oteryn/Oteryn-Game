@@ -35,8 +35,11 @@ fn fixture() -> Fixture {
     fixture_with_damage_healing(0)
 }
 
-pub(crate) fn native_weapon_damage_fixture()
--> (ChannelRuntimeV1, Vec<LiveActorBinding>, MagnitudeOwnedAttributes) {
+pub(crate) fn native_weapon_damage_fixture() -> (
+    ChannelRuntimeV1,
+    Vec<LiveActorBinding>,
+    MagnitudeOwnedAttributes,
+) {
     let fixture = fixture();
     (fixture.runtime, fixture.bindings, fixture.attributes)
 }

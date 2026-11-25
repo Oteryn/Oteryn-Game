@@ -856,8 +856,8 @@ fn expected_creature_damage(
             }
             Case::AlphaPrey => {
                 let landed = settle(critical(raw)?)?;
-                // Crystal combat.cpp:912-915 truncates the 25% contribution.
-                let boost = |damage| damage + damage / 4;
+                // PREY-0 rounds the 25% contribution up before proficiency applies.
+                let boost = |damage| damage + (damage + 3) / 4;
                 let boosted = boost(landed);
                 if landed % 4 == 0 {
                     continue;

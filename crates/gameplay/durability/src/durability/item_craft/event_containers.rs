@@ -183,8 +183,10 @@ impl DropAdmission<'_> {
     }
 }
 
+/// Place an output after admission has acquired the key-33 lock in this transaction.
 pub(super) async fn place_drop(
     tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
+    _permit: &super::super::spell_owner_commit::SpellLanePermit,
     output: &Value,
 ) -> Result<(), DurabilityError> {
     sqlx::query(
