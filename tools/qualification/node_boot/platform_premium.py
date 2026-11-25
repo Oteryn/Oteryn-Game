@@ -40,13 +40,16 @@ def staff_session(public, credentials):
     def login():
         return post("/en/login", get("/en/login"), credentials, (302, 303))[1].get("Location")
 
+    print("PREMIUM_GRANT_PHASE staff_login", flush=True)
     login()
     password = {"password": credentials["password"]}
+    print("PREMIUM_GRANT_PHASE staff_enrollment", flush=True)
     enrollment, _ = post("/en/mfa/enroll", get("/en/mfa"), password)
     secret = re.search(rb'class="op-prose">([A-Z2-7]+)</p>', enrollment)[1]
     codes, _ = post("/en/mfa/confirm", enrollment,
                     {**password, "code": totp(secret, int(time.time()))})
     recovery = re.search(rb'<textarea[^>]*readonly[^>]*>([^<]+)</textarea>', codes)[1]
+    print("PREMIUM_GRANT_PHASE staff_challenge", flush=True)
     if login() != "/en/mfa/challenge":
         raise RuntimeError("Platform staff MFA challenge unavailable")
     post("/en/mfa/challenge", get("/en/mfa/challenge"),
@@ -70,11 +73,13 @@ def run(work, container, accounts):
             input=statement, text=True, capture_output=True, timeout=20, check=True).stdout.strip()
 
     def staff():
-        account = str(uuid.uuid4())
-        credentials = {"email": f"qualification-{account}@example.invalid",
+        credentials = {"email": f"qualification-{uuid.uuid4()}@example.invalid",
                        "password": secrets.token_urlsafe(48)}
-        subprocess.run([binary, "seed", "account", json.dumps({"accountId": account, **credentials})],
-                       env=env, capture_output=True, timeout=20, check=True)
+        print("PREMIUM_GRANT_PHASE staff_seed", flush=True)
+        seeded = subprocess.run([binary, "seed", "account", json.dumps(credentials)],
+                                env=env, capture_output=True, timeout=20, check=True)
+        account = str(uuid.UUID(json.loads(seeded.stdout)["accountId"]))
+        print("PREMIUM_GRANT_PHASE staff_role", flush=True)
         sql("INSERT INTO account_roles(account_id,role_id) "
             f"SELECT '{account}'::uuid,id FROM roles WHERE key='platform_admin';")
         return staff_session(public, credentials)
@@ -82,7 +87,9 @@ def run(work, container, accounts):
     proposer, approver = staff(), staff()
     for account in dict.fromkeys(accounts):
         account = str(uuid.UUID(account))
+        print("PREMIUM_GRANT_PHASE approval", flush=True)
         operation = grant_premium(public, account, proposer, approver)
+        print("PREMIUM_GRANT_PHASE ledger_assertion", flush=True)
         if sql("SELECT event_type || ':' || duration_days || ':' || delta_seconds || ':' || "
                "(effective_until > now())::text FROM premium_ledger "
                f"WHERE request_id='{operation}'::uuid AND account_id='{account}'::uuid;") != "GRANT:1:86400:true":
