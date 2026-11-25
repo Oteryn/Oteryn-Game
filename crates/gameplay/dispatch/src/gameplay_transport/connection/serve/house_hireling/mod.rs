@@ -432,6 +432,16 @@ impl State {
         authority: &A,
         admitted: &mut AdmittedSession,
     ) -> Result<(), ServeEnd> {
+        self.refresh_inventory(stream, authority, admitted).await?;
+        self.refresh_map(stream, authority, admitted).await
+    }
+
+    pub(super) async fn refresh_inventory<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
+        &mut self,
+        stream: &mut S,
+        authority: &A,
+        admitted: &mut AdmittedSession,
+    ) -> Result<(), ServeEnd> {
         if let Some(items) = self.items.as_mut() {
             let mut sequence = admitted.continuity.server_sequence;
             item_use_view_refresh::refresh(
@@ -446,7 +456,7 @@ impl State {
             .await
             .ok_or(ServeEnd::Disconnected)?;
         }
-        self.refresh_map(stream, authority, admitted).await
+        Ok(())
     }
 
     async fn npc<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(

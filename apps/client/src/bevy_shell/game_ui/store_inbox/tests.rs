@@ -166,3 +166,71 @@ fn store_inbox_unavailable_session_and_stale_controls_send_nothing() -> TestResu
     assert!(rx.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn store_inbox_separates_claim_pages_and_places_lamps_with_native_use() -> TestResult {
+    use oteryn_client_runtime::world_interaction::world_object as use_wire;
+    let (mut app, mut rx, outbox) = fixture(true)?;
+    let _ = request(&mut rx)?;
+    outbox.bevy_store_initialize();
+    app.update();
+    click(&mut app, Kind::Refresh)?;
+    assert!(
+        matches!(rx.try_recv(), Ok(PlayCommand::ServerMechanic(command))
+        if command.payload == wire::encode_inbox_query(None))
+    );
+    let cursor = [0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2];
+    let lamp_definition = std::num::NonZeroU32::new(33).ok_or("lamp definition")?;
+    let page = wire::StoreInboxPage {
+        entries: vec![wire::StoreInboxEntry {
+            fulfilment_unit_id: cursor,
+            item_id: 28552,
+        }],
+        next: Some(cursor),
+        lamp_definition: Some(lamp_definition),
+        claims_require_channel: true,
+    };
+    let response = |page: &wire::StoreInboxPage| -> Result<_, Box<dyn std::error::Error>> {
+        Ok(GatedCommandResult {
+            command_id: 2,
+            server_sequence: 2,
+            status: CommandStatus::Accepted,
+            payload: wire::encode_inbox_page(page).map_err(|e| format!("{e:?}"))?,
+        })
+    };
+    outbox.bevy_store_reply(&response(&page)?);
+    app.update();
+    assert!(
+        texts(&mut app)
+            .iter()
+            .any(|text| text.contains("Return to the Channel"))
+    );
+    let claim = button(&mut app, Kind::Claim(0))?;
+    assert!(app.world().get::<InteractionDisabled>(claim).is_some());
+    click(&mut app, Kind::Claim(0))?;
+    assert!(
+        rx.try_recv().is_err(),
+        "ordinary claims require leaving the House"
+    );
+    click(&mut app, Kind::NextClaims)?;
+    assert!(
+        matches!(rx.try_recv(), Ok(PlayCommand::ServerMechanic(command))
+        if command.payload == wire::encode_inbox_query(Some(cursor)))
+    );
+
+    outbox.bevy_store_reply(&response(&wire::StoreInboxPage { next: None, ..page })?);
+    app.update();
+    click(&mut app, Kind::PlaceLamp)?;
+    let PlayCommand::ServerMechanic(command) = rx.try_recv()? else {
+        return Err("missing native USE".into());
+    };
+    assert_eq!(command.capability, use_wire::CAPABILITY_ITEM_USE_V1);
+    assert_eq!(command.command_type, use_wire::COMMAND_TYPE_USE_INTENT);
+    let use_intent = use_wire::decode_use_intent_target(&[4, 15], &command.payload)
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        use_intent.target,
+        use_wire::UseTarget::ItemByDefinition(lamp_definition)
+    );
+    Ok(())
+}

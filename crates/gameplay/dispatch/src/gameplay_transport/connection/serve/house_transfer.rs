@@ -547,12 +547,16 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             if lost_while_logging_out {
                 return Err(ServeEnd::Disconnected);
             }
-            if routing::store::is_committed_claim(command.command_type, status, &payload)
-                || (command.command_type == oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
-                    && matches!(
-                        oteryn_protocol_oteryn::house_wrap::Reply::decode(&payload),
-                        Some(oteryn_protocol_oteryn::house_wrap::Reply::Committed(_))
-                    ))
+            if routing::store::is_committed_claim(command.command_type, status, &payload) {
+                services.invalidate_capacity();
+                services
+                    .refresh_inventory(stream, authority, &mut admitted)
+                    .await?;
+            } else if command.command_type == oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
+                && matches!(
+                    oteryn_protocol_oteryn::house_wrap::Reply::decode(&payload),
+                    Some(oteryn_protocol_oteryn::house_wrap::Reply::Committed(_))
+                )
             {
                 services.invalidate_capacity();
                 services.inventory(stream, authority, &mut admitted).await?;

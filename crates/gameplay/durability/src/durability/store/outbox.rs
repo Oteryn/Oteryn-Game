@@ -163,36 +163,10 @@ impl DurabilityRoot {
     pub async fn read_store_claim_source(
         &self,
         delivery_id: [u8; 16],
-    ) -> Result<Option<(DeliveryReceipt, [u8; 16])>, StoreDurabilityError> {
+    ) -> Result<Option<StoreClaimSource>, StoreDurabilityError> {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let row: Option<(Vec<u8>, sqlx::types::Uuid, i64, String)> = sqlx::query_as(
-                "SELECT d.receipt,d.item_instance_id,floor(extract(epoch FROM proof.decided_at))::bigint,
-                        proof.recovery_generation::text
-                 FROM store_delivery_receipts d
-                 CROSS JOIN LATERAL (
-                     SELECT m.created_at AS decided_at,m.transaction_id,
-                            COALESCE(m.inbox_recovery_generation,d.recovery_generation) AS recovery_generation
-                     FROM game_item_loop_move_lines l
-                     JOIN game_item_loop_move_receipts m USING(transaction_id)
-                     WHERE l.item_instance_id=d.item_instance_id AND l.from_kind=6 AND l.to_kind=1
-                       AND m.character_id=d.character_id AND m.world_id=d.world_id
-                     UNION ALL
-                     SELECT to_timestamp(u.occurred_at::double precision / 1000),u.transaction_id,d.recovery_generation
-                     FROM game_item_use_records u
-                     WHERE u.source_item_instance_id=d.item_instance_id AND u.source_kind=2 AND u.cause_kind=470
-                       AND u.character_id=d.character_id AND u.world_id=d.world_id
-                 ) proof
-                 WHERE d.operation_id=encode($1,'hex')::uuid
-                 ORDER BY proof.decided_at,proof.transaction_id LIMIT 1",
-            ).bind(delivery_id.as_slice()).fetch_optional(&mut *tx).await?;
-            let source = row.map(|(bytes, unit, decided_at, generation)| {
-                let mut receipt: DeliveryReceipt =
-                    serde_json::from_slice(&bytes).map_err(|_| DurabilityError::InvalidStoredState)?;
-                receipt.decided_at = decided_at.to_string();
-                receipt.recovery_generation = generation;
-                Ok::<_, DurabilityError>((receipt, *unit.as_bytes()))
-            }).transpose()?;
+            let source = claim_source_in_transaction(&mut tx, delivery_id).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(source))
         })).await?
@@ -301,3 +275,39 @@ impl DurabilityRoot {
             .await?
     }
 }
+
+
+pub type StoreClaimSource = (DeliveryReceipt, [u8; 16]);
+
+pub(in crate::durability) async fn claim_source_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    delivery_id: [u8; 16],
+) -> Result<Option<StoreClaimSource>, DurabilityError> {
+    let row: Option<(Vec<u8>, sqlx::types::Uuid, i64, String)> = sqlx::query_as(
+        "SELECT d.receipt,d.item_instance_id,floor(extract(epoch FROM proof.decided_at))::bigint,
+                proof.recovery_generation::text
+         FROM store_delivery_receipts d
+         CROSS JOIN LATERAL (
+             SELECT m.created_at AS decided_at,m.transaction_id,
+                    COALESCE(m.inbox_recovery_generation,d.recovery_generation) AS recovery_generation
+             FROM game_item_loop_move_lines l
+             JOIN game_item_loop_move_receipts m USING(transaction_id)
+             WHERE l.item_instance_id=d.item_instance_id AND l.from_kind=6 AND l.to_kind=1
+               AND m.character_id=d.character_id AND m.world_id=d.world_id
+             UNION ALL
+             SELECT to_timestamp(u.occurred_at::double precision / 1000),u.transaction_id,d.recovery_generation
+             FROM game_item_use_records u
+             WHERE u.source_item_instance_id=d.item_instance_id AND u.source_kind=2 AND u.cause_kind=470
+               AND u.character_id=d.character_id AND u.world_id=d.world_id
+         ) proof
+         WHERE d.operation_id=encode($1,'hex')::uuid
+         ORDER BY proof.decided_at,proof.transaction_id LIMIT 1",
+    ).bind(delivery_id.as_slice()).fetch_optional(&mut **tx).await?;
+    row.map(|(bytes, unit, decided_at, generation)| {
+        let mut receipt: DeliveryReceipt =
+            serde_json::from_slice(&bytes).map_err(|_| DurabilityError::InvalidStoredState)?;
+        receipt.decided_at = decided_at.to_string();
+        receipt.recovery_generation = generation;
+        Ok::<_, DurabilityError>((receipt, *unit.as_bytes()))
+    }).transpose()
+ }

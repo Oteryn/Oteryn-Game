@@ -285,8 +285,18 @@ pub(super) async fn house_scenario(
         let revision = index.revision(LAMP).ok_or("lamp revision")?;
         index.definition_ref("Item", LAMP, revision).ok_or("lamp wire definition")?
     };
+    let query = (wire::COMMAND_TYPE_STORE_INBOX_CLAIM, vec![16, 2]);
+    let (status, inbox) = serve(owner, &mut admitted, query.clone()).await?;
+    assert_eq!(status, CommandStatus::Accepted, "opening the House Inbox must disclose its claim restrictions");
+    assert!(inbox.ends_with(&[32, 1]), "ordinary Store claims must tell the player to leave the House");
+    let lamp_ref = inbox.get(inbox.len().saturating_sub(8)..inbox.len().saturating_sub(2))
+        .filter(|field| field.starts_with(&[26, 4]))
+        .ok_or("the purchased lamp must have a native House USE action")?;
+    let projected_index = std::num::NonZeroU32::new(u32::from_be_bytes(lamp_ref[2..].try_into()?))
+        .ok_or("projected lamp definition")?;
+    assert_eq!(projected_index, lamp_index);
     let use_lamp = use_wire::encode_item_use_intent(&use_wire::UseIntent {
-        target: use_wire::UseTarget::ItemByDefinition(lamp_index),
+        target: use_wire::UseTarget::ItemByDefinition(projected_index),
         use_with: None,
         use_with_map_item: None,
         use_with_position: None,

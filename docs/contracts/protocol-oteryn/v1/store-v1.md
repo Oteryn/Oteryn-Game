@@ -67,7 +67,9 @@ Command 186 request: one pending Store fulfilment-unit key. It neither represent
 A request containing only varint field 2 with value 1 queries the admitted buyer's
 Store Inbox. It projects the buyer's retained item deliveries still held in the
 current Character's Inbox. Game resolves the Account, Character and World from
-the session. The query does not submit a claim.
+the session. The query does not submit a claim. The paged query uses value 2 in
+field 2 and optionally sends the 16-byte continuation from the last page in
+length-delimited field 3. Omit the continuation to start at the first page.
 
 ## StoreInboxClaimReceiptV1
 
@@ -75,9 +77,13 @@ Command 186 response: immutable Platform operation UUIDv7, fulfilment-unit key, 
 
 For a query request, the reply is a repeated length-delimited field 1 with up to 20
 entries. Each entry has a 16-byte fulfilment-unit UUIDv7 in field 1 and a nonzero
-item client ID (uint16) in field 2. An empty Inbox returns an empty result payload.
-The client renders each entry as a claim action and formats its UUID as the key for
-a separate claim request. Claims and receipt replies retain their existing wire form.
+item client ID (uint16) in field 2. The legacy query returns an empty result payload for an empty Inbox.
+For the paged query, optional length-delimited field 2 carries the next page's
+16-byte cursor. Optional length-delimited field 3 carries a four-byte big-endian
+item definition reference for the native Hireling lamp USE action. Optional
+varint field 4 with value 1 indicates that ordinary claims require returning to
+the Channel. The client formats an ordinary entry's UUID as the key for a
+separate claim request. Claims and receipt replies retain their existing wire form.
 
 Display names follow Crystal `schema.sql:697–713` and `gamestore/init.lua:1475–1528`: they are validated text, not unique identities. Two purchases, including overlapping uncertain requests, may use the same canonical display name and receive distinct durable Hireling/lamp UUIDs.
 

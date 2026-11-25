@@ -1,5 +1,7 @@
 use super::fixture::{Harness, debug, fence, run};
-use super::store_fixtures::{FakePlatform, Ledger, purchase_request, uuid};
+use super::store_fixtures::{
+    FakePlatform, Ledger, purchase_request, uuid, wait_for_advisory_waiter,
+};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
@@ -23,10 +25,31 @@ const SELECTED: &[u32] = &[4, 6, 12, wire::CAPABILITY_STORE_V1];
 
 #[test]
 fn committed_store_claim_refreshes_live_inventory() -> TestResult {
+    claim_view_case(ClaimViewCase::Regular)
+}
+
+#[test]
+fn store_inbox_can_claim_a_legacy_twenty_first_delivery() -> TestResult {
+    claim_view_case(ClaimViewCase::LegacyPage)
+}
+
+#[test]
+fn committed_store_claim_survives_contention_after_commit() -> TestResult {
+    claim_view_case(ClaimViewCase::Contended)
+}
+
+#[derive(Clone, Copy)]
+enum ClaimViewCase {
+    Regular,
+    LegacyPage,
+    Contended,
+}
+
+fn claim_view_case(case: ClaimViewCase) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e_fixtures::scenario_thread::run("store-claim-live-view", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-claim-live-view", move || {
         run(async |admin| {
             let harness =
                 Harness::create_with_admission_seed(admin, "store_claim_live_view", true, false)
@@ -114,7 +137,8 @@ fn committed_store_claim_refreshes_live_inventory() -> TestResult {
             admitted.continuity.selected_capabilities =
                 SelectedCapabilities::select(owner.offered_capabilities(), SELECTED)
                     .ok_or("Store and inventory selection")?;
-            observe_claim(&owner, admitted).await?;
+            observe_claim(&owner, admitted, &harness, case).await?;
+            eprintln!("STORE_CLAIM_VIEW POSTGRES_CASE_COMPLETED");
             drop(owner);
             drop(authority);
             drop(seal);
@@ -126,6 +150,8 @@ fn committed_store_claim_refreshes_live_inventory() -> TestResult {
 async fn observe_claim(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
+    harness: &Harness,
+    case: ClaimViewCase,
 ) -> TestResult {
     let sword = owner
         .active_generation
@@ -192,11 +218,20 @@ async fn observe_claim(
         })
         .await
         .map_err(|_| "Store purchase reply missing")??;
+        let mut claim_id = purchase_id + 1;
+        if matches!(case, ClaimViewCase::LegacyPage) {
+            claim_id =
+                page_legacy_inbox(&mut client, admitted, harness, delivery, claim_id).await?;
+        }
+        let barrier = if matches!(case, ClaimViewCase::Contended) {
+            Some(block_claim_commit(harness).await?)
+        } else {
+            None
+        };
         let claim = wire::encode_inbox_claim_request(&wire::StoreInboxClaimRequest {
             fulfilment_unit_id: uuid(&delivery),
         })
         .map_err(debug)?;
-        let claim_id = purchase_id + 1;
         send(
             &mut client,
             admitted,
@@ -207,14 +242,23 @@ async fn observe_claim(
         .await?;
         let mut committed = false;
         let mut saw_item = false;
-        let observed = tokio::time::timeout(Duration::from_secs(3), async {
+        let (receipt_seen, release) = tokio::sync::oneshot::channel();
+        let mut receipt_seen = Some(receipt_seen);
+        let receive = async {
             while !saw_item {
                 let frame = read_frame(&mut client).await?;
                 let envelope = decode_wire_envelope(&frame).map_err(debug)?;
                 if envelope.message_type() == MessageType::CommandResult {
                     let result = decode_command_result(envelope.payload()).map_err(debug)?;
                     assert_eq!(result.command_id, claim_id);
-                    assert_eq!(result.status, CommandStatus::Accepted);
+                    if let Some(receipt_seen) = receipt_seen.take() {
+                        let _ = receipt_seen.send(());
+                    }
+                    assert_eq!(
+                        result.status,
+                        CommandStatus::Accepted,
+                        "the committed claim must survive a busy proof holder"
+                    );
                     let receipt = wire::decode_claim_receipt(result.payload).map_err(debug)?;
                     assert_eq!(receipt.result, wire::StoreClaimCode::Committed);
                     committed = true;
@@ -235,6 +279,37 @@ async fn observe_claim(
                 }
             }
             Ok::<_, Box<dyn std::error::Error>>(())
+        };
+        let contender = async {
+            let Some((barrier, pid)) = barrier else {
+                return Ok::<_, Box<dyn std::error::Error>>(());
+            };
+            crate::durability::DurabilityRoot::with_holder_owner(async {
+                wait_for_advisory_waiter(&harness.pool, pid).await?;
+                let ticket = harness.root.holder_waiter().ok_or("proof holder ticket")?;
+                barrier.rollback().await?;
+                let now = tokio::time::Instant::now();
+                assert!(
+                    harness
+                        .root
+                        .wait_holder_turn(now, now + Duration::from_secs(2))
+                        .await
+                );
+                let pass = harness.root.try_issue_semantic_pass()?;
+                drop(ticket);
+                pass.run(move |_, _| {
+                    Box::pin(async move {
+                        let _ = release.await;
+                        Ok(())
+                    })
+                })
+                .await?;
+                Ok(())
+            })
+            .await
+        };
+        let observed = tokio::time::timeout(Duration::from_secs(4), async {
+            tokio::try_join!(receive, contender).map(|_| ())
         })
         .await;
         assert!(committed, "command 186 must commit the real claim");
@@ -243,6 +318,13 @@ async fn observe_claim(
             "committed claim must publish the claimed item to live inventory"
         );
         observed??;
+        if matches!(case, ClaimViewCase::LegacyPage) {
+            let remaining: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_item_character_inbox_locations")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(remaining, 20, "the first page must remain unclaimed");
+        }
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
     };
@@ -271,4 +353,105 @@ async fn send(
     .map_err(debug)?;
     write_frame(client, &frame).await?;
     Ok(())
+}
+
+async fn block_claim_commit(
+    harness: &Harness,
+) -> TestResult<(sqlx::Transaction<'_, sqlx::Postgres>, i32)> {
+    sqlx::raw_sql(
+        "CREATE FUNCTION test_hold_store_claim_commit() RETURNS trigger LANGUAGE plpgsql AS
+         'BEGIN PERFORM pg_advisory_xact_lock(1863291); RETURN NEW; END';
+         CREATE CONSTRAINT TRIGGER test_hold_store_claim_commit
+         AFTER INSERT ON game_depot_search_retrieve_receipts DEFERRABLE INITIALLY DEFERRED
+         FOR EACH ROW EXECUTE FUNCTION test_hold_store_claim_commit()",
+    )
+    .execute(&harness.pool)
+    .await?;
+    let mut barrier = harness.pool.begin().await?;
+    let pid = sqlx::query_scalar("SELECT pg_backend_pid() FROM pg_advisory_xact_lock(1863291)")
+        .fetch_one(&mut *barrier)
+        .await?;
+    Ok((barrier, pid))
+}
+
+async fn page_legacy_inbox(
+    client: &mut DuplexStream,
+    admitted: AdmittedSession,
+    harness: &Harness,
+    delivery: [u8; 16],
+    first_id: u64,
+) -> TestResult<u64> {
+    // The pre-cap Store writer permitted a character to retain more than 20 deliveries.
+    // Seed only the unaffected rows. The delivery we claim has a real purchase and mint proof.
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    for n in 1..=20 {
+        let id = sqlx::types::Uuid::parse_str(&format!("00000000-0000-7000-8000-{n:012x}"))?;
+        sqlx::query(
+            "INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,
+               definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+             SELECT $1, world_id, 'Item', 'oteryn:item.tibia.i28552', 'definition-r1', 1, 1, $1
+             FROM store_delivery_receipts WHERE operation_id=$2",
+        ).bind(id).bind(sqlx::types::Uuid::from_bytes(delivery)).execute(&mut *tx).await?;
+        sqlx::query(
+            "INSERT INTO game_item_character_inbox_locations(item_instance_id,world_id,character_id,ordinal)
+             SELECT $1,world_id,character_id,$3 FROM store_delivery_receipts WHERE operation_id=$2",
+        ).bind(id).bind(sqlx::types::Uuid::from_bytes(delivery)).bind(1000+n).execute(&mut *tx).await?;
+        sqlx::query(
+            "INSERT INTO store_delivery_receipts(operation_id,account_id,character_id,world_id,
+               fulfilment_unit_id,result,recovery_generation,decided_at,item_instance_id,receipt)
+             SELECT $1,account_id,character_id,world_id,$1::uuid::text,result,recovery_generation,
+               decided_at,$1,receipt FROM store_delivery_receipts WHERE operation_id=$2",
+        )
+        .bind(id)
+        .bind(sqlx::types::Uuid::from_bytes(delivery))
+        .execute(&mut *tx)
+        .await?;
+    }
+    tx.commit().await?;
+    let kind = wire::COMMAND_TYPE_STORE_INBOX_CLAIM;
+    send(client, admitted, first_id, kind, wire::STORE_INBOX_QUERY).await?;
+    let (status, first) = inbox_result(client, first_id).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    let first = wire::decode_inbox_entries(&first).map_err(debug)?;
+    assert_eq!(first.len(), 20);
+    assert!(
+        !first
+            .iter()
+            .any(|entry| entry.fulfilment_unit_id == delivery)
+    );
+    let last = first.last().ok_or("first page")?;
+    let mut next = vec![16, 2, 26, 16];
+    next.extend(last.fulfilment_unit_id);
+    send(client, admitted, first_id + 1, kind, &next).await?;
+    let (status, page) = inbox_result(client, first_id + 1).await?;
+    assert_eq!(
+        status,
+        CommandStatus::Accepted,
+        "the 21st delivery needs a selectable Store claim page"
+    );
+    let second = wire::decode_inbox_entries(&page).map_err(debug)?;
+    assert_eq!(second.len(), 1);
+    assert_eq!(second[0].fulfilment_unit_id, delivery);
+    Ok(first_id + 2)
+}
+
+async fn inbox_result(
+    client: &mut DuplexStream,
+    command_id: u64,
+) -> TestResult<(CommandStatus, Vec<u8>)> {
+    tokio::time::timeout(Duration::from_secs(3), async {
+        loop {
+            let frame = read_frame(client).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                assert_eq!(result.command_id, command_id);
+                return Ok((result.status, result.payload.to_vec()));
+            }
+        }
+    })
+    .await?
 }
