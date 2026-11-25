@@ -1,20 +1,17 @@
 //! G22 store browse and offer popularity (capability 154, command 6118).
-//! 1. Admit the node-boot character and browse the featured category (no payment is made).
-//!    The server answers only from the Platform store catalogue and balance projection; the
-//!    pinned node-boot Platform exposes no store catalogue API, so the browse is refused and the
-//!    row fails naming that precondition.
-//! 2. When it answers, every sort order must list the same offers.
-//! 3. Offer popularity is only populated by purchase receipts, which need a Platform payment
-//!    sandbox; the row never makes a real payment and fails naming that precondition.
+//! Browse the live catalogue and verify that sort changes preserve the Platform balance
+//! and offer set. Compare the default order with Game's persisted purchase counts.
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::store::browse as wire;
+use sqlx::Connection;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "store-browse-and-popularity-validated".to_owned()),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
@@ -56,7 +53,6 @@ async fn send(
     Ok((reply.status, reply.payload))
 }
 
-
 async fn finish(client: &mut DevClientSession) -> TestResult {
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -75,12 +71,16 @@ fn same_offers(left: &[String], right: &[String]) -> bool {
     left == right
 }
 
-async fn browse(client: &mut DevClientSession, sort: u8) -> TestResult<wire::Page> {
+async fn browse_page(
+    client: &mut DevClientSession,
+    sort: u8,
+    cursor: String,
+) -> TestResult<wire::Page> {
     let query = wire::Query {
         category: "featured".to_owned(),
         search: String::new(),
         sort,
-        cursor: String::new(),
+        cursor,
     };
     let payload = query
         .encode()
@@ -97,6 +97,35 @@ async fn browse(client: &mut DevClientSession, sort: u8) -> TestResult<wire::Pag
     Ok(page)
 }
 
+async fn browse(client: &mut DevClientSession, sort: u8) -> TestResult<wire::Page> {
+    let mut catalogue = browse_page(client, sort, String::new()).await?;
+    let mut cursors = std::collections::BTreeSet::new();
+    while !catalogue.next.is_empty() {
+        let cursor = std::mem::take(&mut catalogue.next);
+        if !cursors.insert(cursor.clone()) || cursors.len() > 64 {
+            return Err(format!("step=browse observed=invalid-pagination-for-sort-{sort}").into());
+        }
+        let page = browse_page(client, sort, cursor).await?;
+        if (
+            page.total,
+            page.transferable,
+            page.transferable_known,
+            &page.categories,
+        ) != (
+            catalogue.total,
+            catalogue.transferable,
+            catalogue.transferable_known,
+            &catalogue.categories,
+        ) || page.products.is_empty()
+        {
+            return Err(format!("step=browse observed=inconsistent-page-for-sort-{sort}").into());
+        }
+        catalogue.products.extend(page.products);
+        catalogue.next = page.next;
+    }
+    Ok(catalogue)
+}
+
 async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
     let base = browse(client, 0).await?;
     if base.products.is_empty() || base.categories.is_empty() {
@@ -107,22 +136,43 @@ async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestR
         )
         .into());
     }
-    let revisions: Vec<String> = base.products.iter().map(|p| p.revision.clone()).collect();
+    let offers: Vec<String> = base
+        .products
+        .iter()
+        .map(|p| p.offer.offer_key.clone())
+        .collect();
+    if base.transferable_known || base.transferable != 0 {
+        return Err("step=balance observed=invalid-transferable-balance".into());
+    }
     for sort in 1..=4 {
         let page = browse(client, sort).await?;
-        let other: Vec<String> = page.products.iter().map(|p| p.revision.clone()).collect();
-        if !same_offers(&revisions, &other) {
+        let other: Vec<String> = page
+            .products
+            .iter()
+            .map(|p| p.offer.offer_key.clone())
+            .collect();
+        if (page.total, page.transferable, page.transferable_known)
+            != (base.total, base.transferable, base.transferable_known)
+        {
+            return Err(format!("step=balance observed=balance-differs-for-sort-{sort}").into());
+        }
+        if !same_offers(&offers, &other) {
             return Err(format!("step=sort observed=offer-set-differs-for-sort-{sort}").into());
         }
     }
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-    let rows: i64 = sqlx::query_scalar("SELECT count(*)::bigint FROM game_store_offer_popularity")
-        .fetch_one(&mut connection)
-        .await?;
-    Err(format!(
-        "step=popularity observed=rows:{rows} needed=platform-payment-sandbox-purchase-receipts"
+    let expected: Vec<String> = sqlx::query_scalar(
+        "SELECT keys.offer_key FROM unnest($1::text[]) AS keys(offer_key) \
+         LEFT JOIN game_store_offer_popularity p USING (offer_key) \
+         ORDER BY COALESCE(p.purchases, 0) DESC, keys.offer_key COLLATE \"C\"",
     )
-    .into())
+    .bind(&offers)
+    .fetch_all(&mut connection)
+    .await?;
+    if offers != expected {
+        return Err("step=popularity observed=offer-order-differs-from-purchase-counts".into());
+    }
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {

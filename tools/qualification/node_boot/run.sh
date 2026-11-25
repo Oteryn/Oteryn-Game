@@ -135,6 +135,8 @@ if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" 
   NODE_BOOT_TOPOLOGY=portal-rs-game-platform-v1
 fi
 readonly NODE_BOOT_PLATFORM_PIN NODE_BOOT_TOPOLOGY
+# Enable with the pin update that includes Platform package A2 (--game-commerce).
+readonly NODE_BOOT_GAME_COMMERCE=0
 export NODE_BOOT_PROFILE="${NODE_BOOT_PROFILE:-sorcerer}"
 case "$NODE_BOOT_PROFILE" in
   explorer|knight|paladin|sorcerer|druid|monk) ;;
@@ -621,7 +623,7 @@ echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
 
 # Use the merged native producer for every shard; the PHP producer is retired.
-game_platform_start
+game_platform_start "$NODE_BOOT_GAME_COMMERCE"
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
   seed_mp_accounts
 fi
@@ -873,6 +875,40 @@ if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
     "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
     "OTERYN_PLATFORM_STREAMS_URL=https://localhost:$WP5_PORT"
     "OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
+fi
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_GAME_COMMERCE" == 1 ]]; then
+  # Platform's disposable harness generates a distinct leaf for each purpose.
+  commerce_certs="$WORK/portal/certs"
+  commerce_secrets="$BASE/node/secrets"
+  cat "$commerce_certs/clients/loyalty-stream.pem" "$commerce_certs/clients/loyalty-stream.key" \
+    > "$WORK/loyalty-stream.pem"
+  secret_to "$SERVICE_UID" "$WORK/loyalty-stream.pem" "$commerce_secrets/loyalty-stream.pem"
+  openssl x509 -in "$commerce_certs/ca.pem" -outform DER -out "$WORK/coins-ca.der"
+  openssl x509 -in "$commerce_certs/clients/coins.pem" -outform DER -out "$WORK/coins-cert.der"
+  openssl pkcs8 -topk8 -nocrypt -in "$commerce_certs/clients/coins.key" -outform DER -out "$WORK/coins-key.der"
+  for coin_file in coins-ca.der coins-cert.der coins-key.der; do
+    secret_to "$SERVICE_UID" "$WORK/$coin_file" "$commerce_secrets/$coin_file"
+  done
+  python3 - "$commerce_secrets" "$WP5_PORT" "$WP5_SOURCE_AUTHORITY" > "$WORK/coin-source.json" <<'PY_COINS'
+import json
+import sys
+
+directory, port, authority = sys.argv[1:]
+print(json.dumps({
+    "source_authority": authority,
+    "endpoint": f"127.0.0.1:{port}",
+    "peer_name": "localhost",
+    "trust_roots_der": [f"{directory}/coins-ca.der"],
+    "client_certificate_der": f"{directory}/coins-cert.der",
+    "client_key_der": f"{directory}/coins-key.der",
+    "market_enabled": True,
+    "transfers_enabled": True,
+}))
+PY_COINS
+  secret_to "$SERVICE_UID" "$WORK/coin-source.json" "$commerce_secrets/coin-source.json"
+  NODE_GAMEPLAY_ENV+=("OTERYN_COIN_SOURCE_CONFIG=$commerce_secrets/coin-source.json"
+    "OTERYN_PLATFORM_LOYALTY_STREAM_ENABLED=true"
+    "OTERYN_PLATFORM_LOYALTY_STREAM_CLIENT_IDENTITY_PEM=$commerce_secrets/loyalty-stream.pem")
 fi
 fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler
@@ -1565,6 +1601,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       "NODE_BOOT_PLATFORM_GRANT_ACCOUNTS=$C12_MONK_ACCOUNT,$C06_CASTER_ACCOUNT,$C06_PEER_ACCOUNT")
     test_env+=("NODE_BOOT_W18_ACCOUNT=$W18_ACCOUNT")
     test_env+=("NODE_BOOT_C01_ACCOUNT=$C01_ACCOUNT")
+    test_env+=("NODE_BOOT_GAME_COMMERCE=$NODE_BOOT_GAME_COMMERCE")
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID" "NODE_BOOT_LIGHT_ACCOUNT_ID=$LIGHT_ACCOUNT_ID")
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 && ${STATUS[pvp_character_bootstrap]:-} == PASS ]]; then

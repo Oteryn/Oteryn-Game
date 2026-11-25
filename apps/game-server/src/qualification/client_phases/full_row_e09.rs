@@ -10,8 +10,7 @@
 //! 5. Write the recipient on the parcel label, move that label into the parcel with ITEM_MOVE,
 //!    assert the accepted move and inventory delta, then post the parcel and assert `Posted`, its
 //!    removal, and an Inbox parcel delivery.
-//! 6. Logout normally and compare both exact Inbox counts after a Game verifier
-//!    reconnect. A Platform-issued admission remains a separate qualification gap.
+//! 6. Logout normally and compare both exact Inbox counts after a fresh Platform-issued admission.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind};
 use oteryn_protocol_oteryn::{depot_search, item_view, mail, npc_service};
@@ -54,11 +53,12 @@ impl Row {
                 evidence(&format!("E09_CHECK {action} FAIL assertion-not-completed"));
             }
         }
-        if let Err(error) = &result {
+        let detail = result.as_ref().err().map_or_else(String::new, |error| {
             evidence(&format!("E09_GAP step-failed observed={error}"));
-        }
+            format!(" evidence={error}")
+        });
         evidence(&format!(
-            "e2e_all scenario=E09.full status={} seconds={:.3}",
+            "e2e_all scenario=E09.full status={} seconds={:.3}{detail}",
             if result.is_ok() && !self.invalid && ACTIONS.iter().all(|a| self.passed.contains(a)) {
                 "PASS"
             } else {
@@ -71,11 +71,14 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(900), journey(&mut row, clients))
-        .await
-        .unwrap_or_else(|_| {
-            Err("step=journey observed=timeout-900s need=responsive-mail-route".into())
-        });
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(900),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await
+    .unwrap_or_else(|_| {
+        Err("step=journey observed=timeout-900s need=responsive-mail-route".into())
+    });
     row.finish(result);
 }
 
@@ -454,13 +457,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let letter = provisioning::item_reference(&definitions, 3505)?;
     let parcel = provisioning::item_reference(&definitions, 3503)?;
     let label = provisioning::item_reference(&definitions, 3507)?;
-    evidence(&format!(
-        "E09_GAP {}",
-        super::full_e2ef4::platform_admission_gap()
-    ));
-    let mut client = connect_world(clients, 0xe9).await?;
-    let mut recipient =
-        super::full_e2ef4::keep_alive(&mut client, connect_character(clients, 0xeb, 0)).await?;
+    let mut client = connect_character_with_grant(clients, 0xe9, 1, true).await?;
+    let mut recipient = super::full_e2ef4::keep_alive(
+        &mut client,
+        connect_character_with_grant(clients, 0xeb, 0, true),
+    )
+    .await?;
     let recipient_session = recipient.join_snapshot().game_session_id;
     let entities = recipient
         .world_entities()
@@ -601,7 +603,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step=recipient-logout observed=refused need=accepted-logout".into());
     }
     drop(recipient);
-    let mut fresh = connect_character(clients, 0xea, 0).await?;
+    let mut fresh = connect_character_with_grant(clients, 0xea, 0, true).await?;
     if fresh.join_snapshot().game_session_id == recipient_session {
         return Err("step=durable-inbox observed=reused-recipient-session need=new-session".into());
     }
@@ -617,9 +619,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step=final-logout observed=refused need=accepted-logout".into());
     }
     evidence(
-        "E09_OBSERVATION Game verifier probe retained exact letter and parcel Inbox counts after reconnect",
+        "E09_OBSERVATION Platform admission retained exact letter and parcel Inbox counts after reconnect",
     );
-    Err(super::full_e2ef4::platform_admission_gap())
+    Ok(())
 }
 
 #[cfg(test)]

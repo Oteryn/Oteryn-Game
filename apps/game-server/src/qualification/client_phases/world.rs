@@ -3491,7 +3491,17 @@ async fn platform_row_grant(clients: &SeamClients<'_>, index: usize) -> TestResu
     })
     .await??;
     if !output.status.success() {
-        return Err("Platform-issued row grant unavailable".into());
+        // Only the helper's bounded HTTP status is safe to retain in evidence.
+        let status = std::str::from_utf8(&output.stderr)
+            .ok()
+            .and_then(|line| line.trim().strip_prefix("platform_grant_http_status="))
+            .and_then(|status| status.parse::<u16>().ok())
+            .filter(|status| (100..=599).contains(status));
+        return Err(match status {
+            Some(status) => format!("step=platform-admission observed=http-status-{status}"),
+            None => "step=platform-admission observed=platform_grant_issuance_failed".into(),
+        }
+        .into());
     }
     Ok(String::from_utf8(output.stdout)?)
 }
@@ -3501,8 +3511,23 @@ pub(super) async fn connect_character(
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
+    connect_character_with_grant(
+        clients,
+        tag,
+        index,
+        requires_platform_grant(&clients.accounts[index]),
+    )
+    .await
+}
+
+async fn connect_character_with_grant(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+    platform_grant: bool,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
     wait_character_released(clients, index).await?;
-    let token = if requires_platform_grant(&clients.accounts[index]) {
+    let token = if platform_grant {
         platform_row_grant(clients, index).await?
     } else {
         let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;

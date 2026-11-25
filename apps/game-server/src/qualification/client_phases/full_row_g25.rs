@@ -102,6 +102,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &detail(operation()).map_err(|error| format!("step=encode observed={error:?}"))?,
     )
     .await?;
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = route(world, start, |at| near_locker(world, at))
+        .ok_or("step=walk-to-depot observed=no-reachable-locker")?;
+    walk(&mut client, world, &path).await?;
     let review = coin_transfer::encode(&coin_transfer::Request {
         action: 1,
         recipient: peer.clone(),

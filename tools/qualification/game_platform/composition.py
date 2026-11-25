@@ -87,6 +87,14 @@ def bootstrap(work, account, world, operation, revisions, name="Qualification Tw
         raise ValueError("intent_binding_mismatch")
 
 
+def seed_loyalty(work, account, days):
+    env = json.loads((work / "portal/secrets/env.json").read_text())
+    binary = json.loads((work / "identity.json").read_text())["portal_binary"]
+    args = {"accountId": account, "spentPremiumDays": int(days)}
+    subprocess.run([binary, "seed", "loyalty", json.dumps(args)], env=env,
+                   capture_output=True, timeout=20, check=True)
+
+
 if __name__ == "__main__":
     try:
         if sys.argv[1] == "configure":
@@ -94,6 +102,8 @@ if __name__ == "__main__":
                       unprivileged=sys.argv[6:] == ["--unprivileged"])
         elif sys.argv[1] == "bootstrap":
             bootstrap(Path(sys.argv[2]), *sys.argv[3:6], sys.argv[6:10], *sys.argv[10:])
+        elif sys.argv[1] == "loyalty" and len(sys.argv) == 5:
+            seed_loyalty(Path(sys.argv[2]), *sys.argv[3:])
         else:
             raise ValueError("unknown_step")
     except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError):

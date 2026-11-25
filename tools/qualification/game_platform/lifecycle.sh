@@ -82,7 +82,7 @@ PY
   fi
 }
 game_platform_start() {
-  local password port deadline ready=0
+  local password port deadline ready=0 commerce_enabled=${1:-0}
   # A shared producer supplies bytes only; every consumer still starts and seeds
   # its own PostgreSQL, identities, roles, services and ephemeral keys below.
   game_platform_binary
@@ -125,8 +125,12 @@ game_platform_start() {
   export PORTAL_E2E_NATIVE_SCOPES="[\"$WORLD_ID/$CHANNEL_ID\"]"
   # The pinned portal refuses Store delivery and restore notices together.
   # Keep Store delivery available for node-boot journeys.
+  local -a commerce=()
+  if [[ "$commerce_enabled" == 1 && "$NODE_BOOT_WORLD" == 1 ]]; then
+    commerce=(--game-commerce)
+  fi
   PORTAL_GAME_RESTORE_NOTICE_ENABLED=false \
-    setsid bash "$PLATFORM_SOURCE/portal-rs/e2e/start.sh" --seed-plan "$WORK/seed-plan.json" \
+    setsid bash "$PLATFORM_SOURCE/portal-rs/e2e/start.sh" --seed-plan "$WORK/seed-plan.json" "${commerce[@]}" \
     > "$WORK/portal-report.json" 2> "$WORK/portal-harness.log" &
   GP_HARNESS_PID=$!
   deadline=$((SECONDS + 180))

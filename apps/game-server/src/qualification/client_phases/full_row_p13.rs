@@ -7,15 +7,10 @@
 //!    base skills and loyalty-adjusted skills agree.
 //! 2. Send a malformed LOYALTY_SKILLS_QUERY and expect a rejected reply with
 //!    no payload; then send another valid query to prove refusal is inert.
-//! 3. Walk through the compiled world to a rat, select/attack it, and wait for
-//!    the real damage, death, corpse, use and loot state deltas. This is the
-//!    available legitimate player progression action; no fixture or SQL state
-//!    is used to award account loyalty.
-//! 4. Query again and expect newly earned loyalty points plus the corresponding
-//!    skill/magic projection. If the observed points do not advance, report the
-//!    exercised Game seam as MISSING-SERVER: its owner is explicitly read-only
-//!    and the Platform earning writer has no native player command.
-//! 5. Log out normally, make a fresh admission, query again, and require the
+//! 3. Seed consumed Premium time on the disposable Platform and watch the
+//!    real loyalty stream change the admitted client's read. One point per
+//!    consumed day is defined by Platform's docs/contracts/OTERYN_V2_LOYALTY_SNAPSHOT_CONTRACT.md:49.
+//! 4. Log out normally, make a fresh admission, query again, and require the
 //!    post-action points and every projected level to remain identical.
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -23,7 +18,9 @@ use oteryn_protocol_oteryn::loyalty_skills::{
     CAPABILITY_LOYALTY_SKILLS_V1, COMMAND_TYPE_LOYALTY_SKILLS_QUERY, LoyaltySkills,
 };
 
-const OWNER_GAP: &str = "step=loyalty-earning need=platform-loyalty-ingestion source:crates/gameplay/dispatch/src/gameplay_transport/loyalty_skills.rs:57";
+const OWNER_GAP: &str = "step=loyalty-ingestion need=platform-consumed-premium-days source:crates/gameplay/dispatch/src/gameplay_transport/loyalty_skills.rs:57";
+
+const CONSUMED_PREMIUM_DAYS: u32 = 5;
 
 fn loyalty_status(before: u32, after: u32) -> &'static str {
     match after.cmp(&before) {
@@ -124,15 +121,6 @@ async fn accepted_logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<(u32, u32)> {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
-    )?;
     let mut client = connect_world(clients, 0xd3).await?;
     if !client
         .selected_capabilities()
@@ -158,26 +146,62 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<(u32, u32)> {
     }
     evidence("P13_CHECK malformed-refusal PASS rejected-empty-and-state-inert");
 
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat")
-        .await
-        .map_err(|error| {
-            verdict::record_error(verdict::IndexedError::as_error(&error));
-            verdict::context(
-                format!("step=walk-to-training observed={error} need=reachable-rat"),
-                error,
+    let after = if std::env::var("NODE_BOOT_GAME_COMMERCE").as_deref() == Ok("1") {
+        let work = required("NODE_BOOT_PLATFORM_GRANT_DIR")?;
+        let account = clients.accounts[1].clone();
+        let status = tokio::task::spawn_blocking(move || {
+            std::process::Command::new("python3")
+                .arg(
+                    Path::new(env!("CARGO_MANIFEST_DIR"))
+                        .join("../../tools/qualification/game_platform/composition.py"),
+                )
+                .args([
+                    "loyalty",
+                    &work,
+                    &account,
+                    &CONSUMED_PREMIUM_DAYS.to_string(),
+                ])
+                .output()
+        })
+        .await??
+        .status;
+        if !status.success() {
+            return Err(format!(
+                "step=seed-consumed-premium-days observed=platform-seed-exit-{status}"
             )
-        })?;
-    client_hunt::hunt(&mut client).await.map_err(|error| {
-        verdict::record_error(verdict::IndexedError::as_error(&error));
-        verdict::context(
-            format!(
-                "step=combat-training observed={error} need=attack-damage-corpse-and-loot-deltas"
-            ),
-            error,
-        )
-    })?;
-    evidence("P13_CHECK combat-training PASS attack-damage-corpse-use-loot-deltas");
-    let after = snapshot(&mut client, "post-training-query").await?;
+            .into());
+        }
+        let expected = before
+            .points
+            .checked_add(CONSUMED_PREMIUM_DAYS)
+            .ok_or("loyalty points overflow")?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+        verdict::Harness::global().bounded_wait(deadline, "loyalty-stream");
+        loop {
+            let current = snapshot(&mut client, "post-consumption-query").await?;
+            if current.points == expected {
+                break current;
+            }
+            if current.points != before.points || tokio::time::Instant::now() >= deadline {
+                return Err(format!(
+                    "step=loyalty-stream observed=points-{} expected={expected}",
+                    current.points
+                )
+                .into());
+            }
+            client.service_liveness(Duration::from_millis(250)).await?;
+            client.take_events();
+        }
+    } else {
+        let current = snapshot(&mut client, "stream-disabled-query").await?;
+        if current != before {
+            return Err(
+                "step=loyalty-stream observed=unexpected-projection-change-with-commerce-disabled"
+                    .into(),
+            );
+        }
+        current
+    };
 
     accepted_logout(&mut client).await?;
     drop(client);
@@ -235,7 +259,7 @@ mod tests {
     fn missing_server_verdict_identifies_the_platform_ingestion_gap() {
         assert_eq!(
             OWNER_GAP,
-            "step=loyalty-earning need=platform-loyalty-ingestion source:crates/gameplay/dispatch/src/gameplay_transport/loyalty_skills.rs:57"
+            "step=loyalty-ingestion need=platform-consumed-premium-days source:crates/gameplay/dispatch/src/gameplay_transport/loyalty_skills.rs:57"
         );
     }
 

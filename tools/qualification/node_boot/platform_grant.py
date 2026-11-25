@@ -15,6 +15,11 @@ import uuid
 from pathlib import Path
 
 
+class PlatformRefusal(RuntimeError):
+    def __init__(self, status):
+        self.status = status
+
+
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
         return None
@@ -28,7 +33,7 @@ def request(opener, url, *, data=None, headers=None, statuses=(200,)):
         response = error
     with response:
         if response.code not in statuses:
-            raise RuntimeError("Platform response refused")
+            raise PlatformRefusal(response.code)
         body = response.read(65537)
         if len(body) > 65536:
             raise RuntimeError("Platform response exceeds limit")
@@ -59,7 +64,12 @@ def main():
     public = loopback(report["baseUrls"]["public"])
     gateway = loopback(report["baseUrls"]["gateway"])
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
-    credentials = accounts[account]
+    credentials = accounts.get(account)
+    if credentials is None:
+        credentials = next(
+            {name: row[name] for name in ("email", "password")}
+            for row in identity["accounts"] if row["accountId"] == account
+        )
     login, headers = request(opener, public + "/en/login")
     cookie = headers.get("Set-Cookie", "").split(";", 1)[0]
     _, headers = request(
@@ -117,6 +127,8 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (AttributeError, KeyError, IndexError, OSError, RuntimeError, TypeError, ValueError):
+    except PlatformRefusal as error:
+        sys.exit(f"platform_grant_http_status={error.status}")
+    except (AttributeError, KeyError, IndexError, OSError, RuntimeError, StopIteration, TypeError, ValueError):
         # Never print a ticket, credential, grant, or Platform response.
         sys.exit("platform_grant_issuance_failed")

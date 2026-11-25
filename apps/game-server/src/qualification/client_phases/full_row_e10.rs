@@ -11,9 +11,11 @@
 //!    present with the same order, offer, revision, price, and currency.
 //! 5. After ordinary logout and a fresh admission, the player requests history again and
 //!    checks that the same durable purchase remains present, then logs out normally.
+//! 6. Require the committed delivery receipt for that operation and character.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::store as wire;
+use sqlx::Connection;
 
 const CATEGORY: &str = "consumables.exercise-weapons";
 const CURRENCY: &str = "TIBIA_COIN";
@@ -40,7 +42,7 @@ impl Row {
         let (status, detail) = match result {
             Ok(()) => (
                 "PASS",
-                "catalogue-purchase-refusal-history-relog".to_owned(),
+                "catalogue-purchase-refusal-history-relog-delivery".to_owned(),
             ),
             Err(error) => (
                 "FAIL",
@@ -241,7 +243,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.at("final-logout");
     logout(&mut fresh).await?;
     row.at("entitlement-delivery");
-    Err("accepted-order-and-history-do-not-prove-delivered-entitlement; need-authorized-positive-store-delivery; source:apps/game-server/src/qualification/GAME_PLATFORM_E2E_PLAN.md:841".into())
+    let operation = accepted.operation_id.ok_or("accepted-operation-absent")?;
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let delivered: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT FROM store_delivery_receipts \
+         WHERE operation_id = encode($1, 'hex')::uuid \
+           AND character_id = encode($2, 'hex')::uuid AND result = 'COMMITTED')",
+    )
+    .bind(operation.as_slice())
+    .bind(clients.characters[1].as_slice())
+    .fetch_one(&mut connection)
+    .await?;
+    if !delivered {
+        return Err("accepted-operation-missing-committed-delivery-receipt".into());
+    }
+    Ok(())
 }
 
 fn request(
