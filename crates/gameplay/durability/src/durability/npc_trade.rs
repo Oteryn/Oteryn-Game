@@ -366,27 +366,44 @@ fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u3
         request,
         sell_all,
         rules::NPC_TRADE_SELL_GOLD_UNITS_MAX,
-        false,
+        QuantityMode::SingleStack,
     )
 }
 
+#[derive(PartialEq, Eq)]
+enum QuantityMode {
+    SingleStack,
+    MultipleStacks,
+    ShopBuy,
+}
+
 // Preserve the original single-stack validator for legacy recipes and callers.
-fn validate_extended(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u32)>> {
+fn validate_extended(
+    request: &NpcTradeRequest,
+    sell_all: bool,
+    shop_buy: bool,
+) -> Result<Option<(u64, u32)>> {
     if sell_all
         || request.cause.side == NpcTradeSide::Exchange
         || (request.quantity <= rules::NPC_TRADE_QUANTITY_MAX && item_units(request).is_ok())
     {
         return validate(request, sell_all);
     }
-    validate_sell_bound(request, false, rules::NPC_TRADE_SELL_GOLD_UNITS_MAX, true)
+    let mode = if shop_buy {
+        QuantityMode::ShopBuy
+    } else {
+        QuantityMode::MultipleStacks
+    };
+    validate_sell_bound(request, false, rules::NPC_TRADE_SELL_GOLD_UNITS_MAX, mode)
 }
 
 fn validate_sell_bound(
     request: &NpcTradeRequest,
     sell_all: bool,
     sell_max: u64,
-    bulk: bool,
+    mode: QuantityMode,
 ) -> Result<Option<(u64, u32)>> {
+    let bulk = mode != QuantityMode::SingleStack;
     if request.fluid_subtype.is_some()
         && (request.fluid_subtype.is_some_and(|s| s > 20)
             || request.offer_count != 1
@@ -482,12 +499,25 @@ fn validate_sell_bound(
     }
     match priced {
         Some(total) => {
-            let units = if bulk {
-                let (maximum, stackable) =
-                    stack_maximum(request.item.stack).map_err(|_| NpcTradeError::InvalidInput)?;
-                rules::item_units_for(request.quantity, request.offer_count, maximum, stackable)?
-            } else {
-                item_units(request)?
+            let units = match mode {
+                QuantityMode::SingleStack => item_units(request)?,
+                // Crystal game.cpp:2759-2768 creates a separate instance per non-stackable unit.
+                QuantityMode::ShopBuy
+                    if request.item.stack == super::item_transfer::ItemStackClass::NonStackable
+                        && request.offer_count == 1 =>
+                {
+                    request.quantity
+                }
+                _ => {
+                    let (maximum, stackable) = stack_maximum(request.item.stack)
+                        .map_err(|_| NpcTradeError::InvalidInput)?;
+                    rules::item_units_for(
+                        request.quantity,
+                        request.offer_count,
+                        maximum,
+                        stackable,
+                    )?
+                }
             };
             Ok(Some((total, units)))
         }
@@ -1028,7 +1058,7 @@ impl DurabilityRoot {
         let priced = if hireling_sell {
             sell_hireling::validate(&request, sell_all)?
         } else {
-            validate_extended(&request, sell_all)?
+            validate_extended(&request, sell_all, weights.is_some())?
         };
         let mut binding = bind_yasir_position(
             request_binding(&fence, world_id, &request, sell_all),

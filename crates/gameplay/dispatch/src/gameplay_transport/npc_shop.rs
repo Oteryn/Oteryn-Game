@@ -233,7 +233,9 @@ pub(super) fn quote_window(
             name,
             maximum_quantity: ((if stack_maximum == 0 {
                 0
-            } else if stackable {
+            } else if stackable
+                || (offer.side == NpcTradeSide::Buy && !hireling && offer.count == 1)
+            {
                 stack_maximum.saturating_mul(if hireling { 1 } else { 20 })
             } else {
                 1

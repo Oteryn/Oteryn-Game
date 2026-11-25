@@ -54,6 +54,8 @@ const MEAT: &str = "oteryn:item.tibia.i3577";
 
 const FISH: &str = "oteryn:item.tibia.i3578";
 
+const SAM_DAGGER: &str = "oteryn:item.tibia.i3267";
+
 const TRADER: &str = "oteryn:npc.alice";
 
 const RASHID: &str = "oteryn:npc.rashid";
@@ -236,11 +238,14 @@ pub(super) enum ShopScenario {
     WeightLimit,
     MissingProfile,
     PackedBuy,
+    SamBuy,
     EquippedSale,
 }
 
 pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
     let wandering_rashid = matches!(case, ShopScenario::Rashid);
+    let sam = matches!(case, ShopScenario::SamBuy);
+    let trader = if sam { "oteryn:npc.sam" } else { TRADER };
     let packed = matches!(case, ShopScenario::PackedBuy);
     let equipped = matches!(case, ShopScenario::EquippedSale);
     let bulk = matches!(case, ShopScenario::Bulk) || packed;
@@ -369,15 +374,19 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
         } else {
             vec![offer.clone()]
         };
-        let book = NpcTalkBook::from_model(&model)
-            .with(
+        let book = NpcTalkBook::from_model(&model);
+        let book = if sam {
+            book
+        } else {
+            book.with(
                 TRADER,
                 NpcTalkEntry::new("Alice", Some("Alice trades.")).with_offers(offers),
             )
             .with(
                 RASHID,
                 NpcTalkEntry::new("Rashid", Some("Rashid trades.")).with_offers(vec![offer]),
-            );
+            )
+        };
         let revision = book.catalogue_revision();
         owner.states.chat.install_npc_talk(Arc::new(book));
         let session = deps.admitted.game_session_id;
@@ -401,7 +410,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                         let mut table = NpcPlacementTable {
                             npcs: vec![
                                 NpcPlacements {
-                                    key: if wandering_rashid { RASHID } else { TRADER }.into(),
+                                    key: if wandering_rashid { RASHID } else { trader }.into(),
                                     placements: vec![NpcPlacement {
                                         floor: -i8::try_from(spot.floor)?,
                                         x: u16::try_from(spot.x + 1)?,
@@ -433,7 +442,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 .into_iter()
                 .find(|npc| {
                     runtime.npc_key(npc.actor)
-                        == Some(if wandering_rashid { RASHID } else { TRADER })
+                        == Some(if wandering_rashid { RASHID } else { trader })
                 })
                 .ok_or("shop actor absent")?;
             EntityRef {
@@ -467,6 +476,8 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 .execute(&h.pool)
                 .await?;
             super::guild_bank_fixtures::bank_seed::balance(&h, id(40), id(41), 1000, 180).await?;
+        } else if sam {
+            seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 50)]).await?;
         } else if bulk {
             seed_main_backpack(
                 &h,
@@ -512,6 +523,46 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
             ],
         )
         .ok_or("npc shop selection")?;
+        if sam {
+            let sam_item_ref = active
+                .native_gameplay()
+                .and_then(|native| native.item_index())
+                .and_then(|index| index.definition_ref("Item", SAM_DAGGER, "definition-r1"))
+                .ok_or("Sam item definition")?
+                .get();
+            let (window, inventory) = bulk_exchange(
+                &owner,
+                &mut admitted,
+                npc,
+                1,
+                NpcTradeSide::Buy,
+                (2, false, Some(sam_item_ref)),
+                NpcIntentDisposition::Ok,
+            )
+            .await?;
+            assert!(inventory.is_some());
+            let offer_index = window
+                .offers
+                .iter()
+                .position(|offer| {
+                    offer.side == NpcTradeSide::Buy && offer.item_definition_ref == sam_item_ref
+                })
+                .ok_or("Sam dagger quote")?;
+            assert_eq!(window.details[offer_index].maximum_quantity, 20);
+            assert_eq!(
+                carried(&h).await?,
+                [
+                    ("oteryn:item.tibia.i3031".to_owned(), 40),
+                    (SAM_DAGGER.to_owned(), 1),
+                    (SAM_DAGGER.to_owned(), 1),
+                ]
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return Ok(());
+        }
         if weight_limit {
             let before = footprint(&h).await?;
             let inventory = carried(&h).await?;
@@ -521,7 +572,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 npc,
                 1,
                 NpcTradeSide::Buy,
-                (101, false),
+                (101, false, None),
                 NpcIntentDisposition::Rejected,
             )
             .await?;
@@ -540,7 +591,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 npc,
                 4,
                 NpcTradeSide::Buy,
-                (98, false),
+                (98, false, None),
                 NpcIntentDisposition::Ok,
             )
             .await?;
@@ -565,7 +616,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 npc,
                 1,
                 NpcTradeSide::Buy,
-                (150, packed),
+                (150, packed, None),
                 NpcIntentDisposition::Ok,
             )
             .await?;
@@ -619,7 +670,7 @@ pub(super) fn scenario_for(case: ShopScenario) -> TestResult {
                 npc,
                 4,
                 NpcTradeSide::Sell,
-                (125, false),
+                (125, false, None),
                 NpcIntentDisposition::Ok,
             )
             .await?;
@@ -888,7 +939,7 @@ async fn bulk_exchange(
     npc: EntityRef,
     first: u64,
     side: NpcTradeSide,
-    (quantity, packed): (u32, bool),
+    (quantity, packed, sam_offer): (u32, bool, Option<u32>),
     expected: NpcIntentDisposition,
 ) -> TestResult<(
     oteryn_protocol_oteryn::npc_service::NpcTradeWindow,
@@ -959,10 +1010,51 @@ async fn bulk_exchange(
             .offers
             .iter()
             .enumerate()
-            .find(|(_, offer)| offer.side == side)
+            .find(|(_, offer)| {
+                offer.side == side && sam_offer.is_none_or(|item| offer.item_definition_ref == item)
+            })
             .ok_or("side offer")?;
         assert!(!window.details[offer_index].name.is_empty());
         assert!(quantity <= window.details[offer_index].maximum_quantity);
+        let trade_id = if sam_offer.is_some() {
+            assert_eq!(offer.unit_price, 5);
+            let payload = encode_npc_shop_intent(&NpcShopIntent {
+                npc_actor: npc,
+                catalogue_revision: window.open.ok_or("closed Sam window")?.1,
+                offer_index: u32::try_from(offer_index)?,
+                side,
+                action: NpcShopAction::Look,
+                expected_unit_price: offer.unit_price,
+            })
+            .map_err(debug)?;
+            write_frame(
+                &mut client,
+                &encode_client_command(
+                    before.continuity.connection_generation,
+                    &ClientCommandValue {
+                        command_id: first + 2,
+                        command_type: COMMAND_TYPE_NPC_SHOP,
+                        payload: &payload,
+                    },
+                )
+                .map_err(debug)?,
+            )
+            .await?;
+            loop {
+                let frame = read_frame(&mut client).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let reply = decode_command_result(envelope.payload()).map_err(debug)?;
+                    assert_eq!(reply.command_id, first + 2);
+                    let look = decode_npc_shop_result(reply.payload).map_err(debug)?;
+                    assert_eq!(look.disposition, NpcIntentDisposition::Ok);
+                    assert!(!look.look_text.is_empty());
+                    break first + 3;
+                }
+            }
+        } else {
+            first + 2
+        };
         let mut shop = oteryn_dev_client::client_ui::npc_shop::LiveShop {
             selected: true,
             ..Default::default()
@@ -971,8 +1063,12 @@ async fn bulk_exchange(
         let quote = shop
             .quotes()
             .into_iter()
-            .find(|quote| quote.side == side)
+            .find(|quote| {
+                quote.side == side && sam_offer.is_none_or(|item| quote.item == item)
+            })
             .ok_or("decoded UI quote")?;
+        assert_eq!(quote.offer_index, offer_index);
+        assert_eq!(quote.item, offer.item_definition_ref);
         assert!(
             shop.quote_text(quote)
                 .contains(&window.details[offer_index].name)
@@ -985,6 +1081,14 @@ async fn bulk_exchange(
         let intent = shop
             .trade(quote, quantity)
             .ok_or("UI trade within authoritative bound")?;
+        assert_eq!(intent.npc_actor, npc);
+        assert_eq!(
+            intent.catalogue_revision,
+            window.open.ok_or("closed trade window")?.1
+        );
+        assert_eq!(intent.offer_index, u32::try_from(offer_index)?);
+        assert_eq!(intent.side, side);
+        assert_eq!(intent.quantity, quantity);
         assert_eq!(intent.expected_unit_price, offer.unit_price);
         let mut payload = wire::encode_npc_trade_intent(&intent).map_err(debug)?;
         if packed {
@@ -995,7 +1099,7 @@ async fn bulk_exchange(
             &encode_client_command(
                 before.continuity.connection_generation,
                 &ClientCommandValue {
-                    command_id: first + 2,
+                    command_id: trade_id,
                     command_type: wire::COMMAND_TYPE_NPC_TRADE_INTENT,
                     payload: &payload,
                 },
@@ -1010,7 +1114,7 @@ async fn bulk_exchange(
             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
             if envelope.message_type() == MessageType::CommandResult {
                 let reply = decode_command_result(envelope.payload()).map_err(debug)?;
-                assert_eq!(reply.command_id, first + 2);
+                assert_eq!(reply.command_id, trade_id);
                 assert_eq!(
                     wire::decode_npc_intent_result(reply.payload).map_err(debug)?,
                     expected
