@@ -657,6 +657,54 @@ pub(super) async fn equip_axe(
     index: usize,
     axe: std::num::NonZeroU32,
 ) -> TestResult {
+    use oteryn_dev_client::client_runtime::inventory::MoveRequest;
+    use oteryn_dev_client::{ItemMoveDestination, ItemMoveOutcome};
+    use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+
+    // Profile provisioning retains the birth equipment. The novice spellbook's
+    // unknown weapon type stops the left-hand lookup before it reaches the axe.
+    let book = provisioning::item_reference(&provisioning::item_index()?, 21400)?;
+    let birth_book = bots[index].client()?.inventory().and_then(|inventory| {
+        inventory.equipment.iter().find_map(|entry| {
+            (entry.slot == EquipmentSlot::LeftHand && entry.item.item_definition_ref == book)
+                .then_some(entry.item.handle)
+        })
+    });
+    if let Some(source) = birth_book {
+        let moved = with_peer_liveness(bots, index, "stow-birth-spellbook", async |bot| {
+            Ok(bot
+                .client()?
+                .session_mut()
+                .move_item_counted(MoveRequest {
+                    source,
+                    destination: ItemMoveDestination::MainBackpack,
+                    count: None,
+                })
+                .await?)
+        })
+        .await?;
+        if moved.outcome != ItemMoveOutcome::Moved {
+            return Err(format!("could not stow birth spellbook: {moved:?}").into());
+        }
+        wait_observation(
+            bots,
+            tokio::time::Instant::now() + Duration::from_secs(5),
+            "birth spellbook leaves the left hand",
+            |bots, _| {
+                Ok(bots[index]
+                    .session
+                    .as_ref()
+                    .and_then(|client| client.inventory())
+                    .is_some_and(|inventory| {
+                        inventory
+                            .equipment
+                            .iter()
+                            .all(|entry| entry.item.handle != source)
+                    }))
+            },
+        )
+        .await?;
+    }
     let wielded = bots[index].client()?.inventory().is_some_and(|inventory| {
         inventory
             .equipment
