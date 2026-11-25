@@ -103,8 +103,10 @@ existing stages also assert one node registration, one content activation and
 one runtime guard in their database. So the Open PvP World has its own database
 (`oteryn_node_boot_pvp`, in the same PostgreSQL container) and its own `serve`
 process on the next port, with its own operator state, fence, control socket and
-launch/S2 authorizations; Platform, PKI, secrets, binaries, the compiled bundle
-and gameplay inputs are shared. `run.sh` stages `pvp_world_ready` (migrate,
+launch/S2 authorizations. Platform, PKI, secrets, binaries and gameplay inputs
+are shared. The PvP bundle uses the same geometry, with Thais as its default
+residence. Normal first entry assigns that residence, and the death check reads
+the committed town and its bundle temple. `run.sh` stages `pvp_world_ready` (migrate,
 operator setup, grants, the `world_type=2` policy row, content activation,
 assignment, World epoch), `pvp_character_bootstrap` (two Platform intents with
 `--target-world-id` the PvP World, bootstrapped through that node's socket) and
