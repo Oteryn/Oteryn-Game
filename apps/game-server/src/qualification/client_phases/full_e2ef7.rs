@@ -5641,8 +5641,12 @@ async fn pvp_walk(
     world: &BundleWorld,
     path: &[StepDirection],
 ) -> TestResult {
-    for &direction in path {
+    let mut path = VecDeque::from(path.to_vec());
+    let mut blocked = BTreeSet::new();
+    let landing = |at, direction| destination(world, at, direction);
+    while let Some(direction) = path.pop_front() {
         let before = tile(a.position)?;
+        let expected = landing(before, direction);
         let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
         loop {
             let result = a.step(direction).await?;
@@ -5660,7 +5664,6 @@ async fn pvp_walk(
                         return Err("PvP unsolicited result while waiting for STEP position".into());
                     }
                 }
-                let expected = destination(world, before, direction);
                 let actual = tile(a.position)?;
                 if Some(actual) != expected {
                     return Err(format!(
@@ -5670,10 +5673,30 @@ async fn pvp_walk(
                 }
                 break;
             }
+            if result.disposition == StepDisposition::Blocked
+                && tile(a.position)? == before
+                && let Some(occupied) = expected
+                && blocked.len() < 8
+                && blocked.insert(occupied)
+                && let Some(detour) = route_around_occupant(
+                    before,
+                    occupied,
+                    &path,
+                    |at| !blocked.contains(&at),
+                    &landing,
+                )
+            {
+                path = detour.into();
+                break;
+            }
             if result.disposition != StepDisposition::TooEarly
                 || tokio::time::Instant::now() >= deadline
             {
-                return Err(format!("PvP route refused:{:?}", result.disposition).into());
+                return Err(format!(
+                    "PvP route refused:{:?};direction={direction:?};from={before:?};expected={expected:?}",
+                    result.disposition,
+                )
+                .into());
             }
             pvp_poll(a, b).await?;
         }
