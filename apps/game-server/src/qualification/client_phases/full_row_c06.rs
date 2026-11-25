@@ -49,7 +49,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let peer = character_prep::dedicated_character(&scope, "NODE_BOOT_C06_PEER_ACCOUNT").await?;
     let (accounts, characters) = peer.replace_slot(&scope, 0)?;
     let clients = &SeamClients { accounts: &accounts, characters: &characters, ..scope };
-    if clients.accounts.iter().any(|account| !requires_platform_grant(account)) {
+    // The packet scope also carries W20b's Light account. C06 admits only
+    // the dedicated peer and caster in the two slots replaced above.
+    if [&clients.accounts[0], &clients.accounts[1]]
+        .into_iter()
+        .any(|account| !requires_platform_grant(account))
+    {
         return Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into());
     }
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
