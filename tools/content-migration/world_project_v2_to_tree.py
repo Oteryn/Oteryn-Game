@@ -1438,12 +1438,22 @@ def main(*, items_only: bool = False) -> int:
     questpc2_soul_loot_items.refresh_input_pins(ROOT)
     from grizzly_shop_profiles import refresh_canonical_input_pins
 
-    refresh_canonical_input_pins(ROOT, "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb")
+    # The merge regenerator seeds derived profiles from the incoming package.
+    # Prove their selected rows against that exact Git parent before repinning.
+    incoming = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", "MERGE_HEAD^{commit}"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    profile_baseline = incoming or "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+    refresh_canonical_input_pins(ROOT, profile_baseline)
     import condition_potion_profiles
 
     refresh_canonical_input_pins(
         ROOT,
-        "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+        profile_baseline,
         packet_path=condition_potion_profiles.PATH,
         keys={f"oteryn:item.tibia.i{i}" for i in condition_potion_profiles.IDS},
     )
@@ -1456,7 +1466,7 @@ def main(*, items_only: bool = False) -> int:
 
     for name in ("quest-batch3-item-profiles.json", "qnpcfx-item-profiles.json"):
         relative = "tools/content-schema/native-gameplay/" + name
-        (ROOT / relative).write_bytes(refresh(relative, root=ROOT))
+        (ROOT / relative).write_bytes(refresh(relative, root=ROOT, base=incoming or "HEAD"))
     refresh_bestiary_inventory(ROOT)
     # Reference-only source successors (including the approved Cake bridge) must
     # enter the sorted native lookup without implying an inventory Item policy.

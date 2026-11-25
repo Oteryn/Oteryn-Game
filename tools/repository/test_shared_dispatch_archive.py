@@ -380,6 +380,75 @@ class SharedDispatchArchiveTests(unittest.TestCase):
         self.assertEqual(elapsed[0], 61)
         self.assertEqual(api.downloads, 0)
 
+    def dependencies(self, status="completed"):
+        return [{"id": 10 + index, "run_id": 71, "run_attempt": 2, "head_sha": "a" * 40,
+                 "name": name, "status": status, "conclusion": "success" if status == "completed" else None}
+                for index, name in enumerate(("Merge gate / scope", "Merge gate / trusted-base risk lanes",
+                                      "Merge gate / Molehill runner routing"))]
+
+    def test_producer_appearing_after_the_old_grace_is_reused(self):
+        api = self.api()
+        producer, api.jobs = api.jobs[0], self.dependencies("in_progress")
+        elapsed = [0]
+
+        def sleep(seconds):
+            elapsed[0] += seconds
+            if elapsed[0] >= 300:
+                api.jobs = self.dependencies() + [producer]
+
+        output = self.restore(api, sleep=sleep, clock=lambda: elapsed[0])
+        self.assertEqual(elapsed[0], 300)
+        self.assertEqual(api.downloads, 1)
+        self.assertEqual((output / "unit-tests.tar.zst").read_bytes(), b"the nextest archive")
+
+    def test_concluded_dependencies_without_a_producer_bail_at_once(self):
+        api = self.api()
+        api.artifact, api.jobs = None, self.dependencies()
+        elapsed = [0]
+
+        def sleep(seconds):
+            elapsed[0] += seconds
+
+        with self.assertRaises(shared.Unavailable):
+            self.restore(api, sleep=sleep, clock=lambda: elapsed[0])
+        self.assertLessEqual(elapsed[0], 5)
+        api.run.update(status="completed", conclusion="success")
+        with self.assertRaises(shared.Unavailable):
+            self.restore(api, sleep=lambda _: self.fail("completed run cannot be awaited"))
+        self.assertEqual(api.downloads, 0)
+
+    def test_wait_bound_counts_from_producer_start_not_consumer_start(self):
+        api = self.api()
+        producer, artifact = api.jobs[0], api.artifact
+        api.jobs, api.artifact = self.dependencies("in_progress"), None
+        elapsed = [0]
+
+        def sleep(seconds):
+            elapsed[0] += seconds
+            if elapsed[0] == 300:
+                api.jobs = self.dependencies() + [producer]
+            if elapsed[0] >= 300 + 18 * 60:
+                api.artifact = artifact
+
+        output = self.restore(api, sleep=sleep, clock=lambda: elapsed[0])
+        self.assertGreaterEqual(elapsed[0], 300 + 18 * 60)
+        self.assertEqual(api.downloads, 1)
+        self.assertTrue((output / "unit-tests.tar.zst").exists())
+
+    def test_discovery_has_a_hard_upper_bound(self):
+        api = self.api()
+        api.artifact, api.jobs = None, self.dependencies("in_progress")
+        elapsed = [0]
+
+        def sleep(seconds):
+            elapsed[0] += seconds
+
+        with self.assertRaises(shared.Unavailable):
+            self.restore(api, sleep=sleep, clock=lambda: elapsed[0])
+        self.assertEqual(elapsed[0], 900)
+        with self.assertRaises(ValueError):
+            self.restore(api, discovery_grace=901)
+
     def test_queued_run_with_active_producer_waits_for_its_verified_archive(self):
         # GitHub reported run 45004445109 queued while its Dispatch producers
         # were running. The selected job, not the aggregate run state, is active.
@@ -412,7 +481,7 @@ class SharedDispatchArchiveTests(unittest.TestCase):
                     elapsed[0] += seconds
 
                 with self.assertRaises(shared.Unavailable):
-                    self.restore(api, sleep=sleep, clock=lambda: elapsed[0], timeout=61)
+                    self.restore(api, sleep=sleep, clock=lambda: elapsed[0], timeout=61, discovery_grace=60)
                 self.assertEqual(elapsed[0], expected_seconds)
                 self.assertEqual(api.downloads, 0)
 
@@ -699,7 +768,7 @@ class SharedDispatchArchiveTests(unittest.TestCase):
                 elapsed[0] += seconds
 
             with self.subTest(queued=queued), self.assertRaises(shared.Unavailable):
-                self.restore(api, clock=lambda: elapsed[0], sleep=sleep)
+                self.restore(api, clock=lambda: elapsed[0], sleep=sleep, discovery_grace=60)
             self.assertEqual(elapsed[0], 60)
             self.assertEqual(api.downloads, 0)
 
