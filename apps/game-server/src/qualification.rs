@@ -224,6 +224,13 @@ fn e2e_result_line(line: &str) -> String {
     let verdict = match status {
         Some("CAPTURED") => return format!("e2e_capture {rest}"),
         Some(value @ ("PASS" | "FAIL" | "SKIPPED" | "MISSING-SERVER" | "MISSING-CLIENT")) => value,
+        Some("OUT_OF_SCOPE")
+            if matches!(scenario, "S16a.full" | "C11.full" | "S16a.client" | "C11.client")
+                && detail.as_slice() == ["Dawnport_owner-excluded"]
+                && cause.is_none() =>
+        {
+            "OUT_OF_SCOPE"
+        }
         Some(other) => {
             detail.insert(0, other.to_owned());
             "FAIL"

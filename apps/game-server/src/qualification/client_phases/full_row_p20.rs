@@ -483,7 +483,7 @@ fn relocation_position(
 
 const THAIS: u32 = 8;
 
-async fn home_town(clients: &SeamClients<'_>, default: Option<u32>) -> TestResult<Option<u32>> {
+pub(super) async fn home_town(clients: &SeamClients<'_>, default: Option<u32>) -> TestResult<Option<u32>> {
     use sqlx::Connection as _;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let town = sqlx::query_scalar::<_, i32>(

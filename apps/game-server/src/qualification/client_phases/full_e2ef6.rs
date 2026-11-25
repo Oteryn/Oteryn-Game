@@ -82,7 +82,6 @@ pub(super) async fn run(
     npcs: &oteryn_world_bundle::npc::Table,
     route_rows_only: bool,
 ) {
-    use verdict::Need::Row as After;
     // Own a connection per row: an error/timeout cannot prevent the next row's verdict.
     let mut temple = Row::new("C20d", TEMPLE).needs(&[character_release_need(clients, 1)]);
     let watch = temple.0.watch();
@@ -98,20 +97,10 @@ pub(super) async fn run(
     verdict::dawnport_excluded("S16a.full");
 
     if !route_rows_only {
-        // Promotion starts from the knight the first-vocation row produces.
-        let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[character_release_need(clients, 1), After("S16a")]);
-        let watch = loss.0.watch();
-        let result = watch
-            .bound(
-                Duration::from_secs(1100),
-                "experience-loss journey deadline; remaining actions unproven",
-                experience_loss(&mut loss, clients, world, spawns, npcs),
-            )
-            .await;
-        match result {
-            Ok(Some(source)) => finish_missing_receipt(loss, source),
-            other => loss.finish(other.map(|_| ())),
-        }
+        Row::new("C20a", EXPERIENCE_LOSS).finish(Err(verdict::HarnessError::boxed(
+            verdict::Cause::BlockedBy { root: "S16a/first-vocation".into() },
+            "C20a requires a successful S16a first-vocation journey",
+        )));
     }
 
     let mut custody = Row::new("C20b", ITEM_LOSS).needs(&[character_release_need(clients, 1)]);
@@ -866,8 +855,10 @@ async fn temple_respawn(
         {
             return Err("temple journey requires the native bundle map capability".into());
         }
-        // The Thais journey requires the fixture character to come home to Thais.
-        // Resolve the expected temple before observing the death.
+        let town = full_row_p20::home_town(clients, None).await?;
+        if town != Some(8) {
+            return Err(format!("C20d requires durable Thais hometown 8, observed {town:?}").into());
+        }
         let home = world.base().subareas.town(8)
             .and_then(|town| town.temple)
             .ok_or("compiled world has no Thais home temple")?;
