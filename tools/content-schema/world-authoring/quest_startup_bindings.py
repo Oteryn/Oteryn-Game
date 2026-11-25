@@ -24,7 +24,10 @@ SPECS = (
     # Adventurers' Guild exits (adventurers_guild.lua).
     ("teleport.lua", "TeleportAction", 4253, "action"),
     ("door_level.lua", "LevelDoorAction", 1070, "action"),
+    ("lever.lua", "LeverUnique", 30008, "unique"),
     ("lever.lua", "LeverUnique", 30034, "unique"),
+    ("item.lua", "ItemAction", 4503, "action"),
+    ("door_key.lua", "KeyDoorAction", 4502, "action"),
     # World change returns: the Fury Dungeon archway (fury_gates.lua) and the
     # Nightmare Isle exit (nightmare_isles.lua uid 35020).
     ("item.lua", "ItemAction", 9715, "action"),
@@ -44,15 +47,26 @@ def capture(source):
         if source_row not in sources:
             sources.append(source_row)
         fields = lua_tables.assignments(raw.decode(), {table})[table]["fields"]
-        (field,) = [f for f in fields if f["key"] == selector]
+        if table == "KeyDoorAction":
+            (field,) = [
+                f
+                for f in fields
+                if isinstance(f["key"], dict)
+                and f["key"].get("expr") == "Storage.Quest.Key.ID4502"
+            ]
+        else:
+            (field,) = [f for f in fields if f["key"] == selector]
         value = lua_tables.as_python(field["value"])
         for group in value if isinstance(value, list) else [value]:
+            if selector == 4503 and group["itemId"] != 7042:
+                # The Folda chest USE mints this key. The map restores its lock only.
+                continue
             positions = group["itemPos"]
             for position in positions if isinstance(positions, list) else [positions]:
                 # LevelDoorAction's false means the door at this exact position.
                 # Both native placements are 5102, a closed expertise door:
                 # Crystal data/libs/tables/doors.lua:273 (5102 -> 5103).
-                item = group["itemId"] or 5102
+                item = group["itemId"] or (7033 if table == "KeyDoorAction" else 5102)
                 rows.append(
                     {
                         "position": [position[k] for k in "xyz"],
@@ -63,6 +77,14 @@ def capture(source):
                         "line": field["line"],
                     }
                 )
+    path = "data-global/lib/core/storages.lua"
+    raw = (source / path).read_bytes()
+    storage = lua_tables.as_python(
+        lua_tables.assignments(raw.decode(), {"Storage"})["Storage"]
+    )
+    if storage["Quest"]["Key"]["ID4502"] != 4502:
+        raise ValueError("Alawar key storage changed")
+    sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
     path = "data/libs/tables/doors.lua"
     raw = (source / path).read_bytes()
     sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})

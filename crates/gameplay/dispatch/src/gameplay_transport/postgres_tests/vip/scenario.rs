@@ -270,10 +270,18 @@ pub(super) fn run_scenario() -> TestResult {
             let replay_authority = replay_root.open_character_authority(&seal).await.map_err(debug)?;
             let mut replay_owner = deps.owner(&h, &replay_authority);
             replay_owner.root = &replay_root;
-            let replayed = replay_owner
-                .vip_command(admitted, exhausted_id, 48, &named(1, "Unknown Friend"))
-                .await
-                .ok_or("rate replay")?;
+            let held = replay_root.try_issue_semantic_pass()?;
+            let payload = named(1, "Unknown Friend");
+            let replay = crate::durability::DurabilityRoot::with_holder_owner(
+                replay_owner.vip_command(admitted, exhausted_id, 48, &payload),
+            );
+            let mut replay = std::pin::pin!(replay);
+            let first = std::future::poll_fn(|cx| {
+                std::task::Poll::Ready(std::future::Future::poll(replay.as_mut(), cx))
+            }).await;
+            assert!(first.is_pending(), "busy VIP replay should wait for the holder");
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            let replayed = replay.await.ok_or("rate replay")?;
             assert_eq!(replayed, exhausted_bytes);
             // Test-only elapsed bucket DATA; do not wait on the shared machine's clock.
             sqlx::query("UPDATE game_vip_lists SET rate_at=rate_at-60 WHERE account_id=encode($1,'hex')::uuid").bind(id(40).as_slice()).execute(&h.pool).await?;

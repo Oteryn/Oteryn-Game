@@ -9,9 +9,11 @@ use crate::ability::creature_bite::CreatureBiteVitals;
 use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_actor};
 use crate::combat_attack::{SwingPoll, player_fist_formula, player_melee_formula};
 use crate::durability::spell_owner_commit::SpellLanePermit;
+use crate::durability::{DurabilityError, character_progression::CharacterProgressionError};
 use crate::foundation::CharacterId;
 use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
+use crate::gameplay_transport::connection::AdmissionRefusal;
 use crate::gameplay_transport::kill_reward::KillSettlementQueue;
 use crate::gameplay_transport::task_board::bounty_talisman;
 use crate::spell::cast::{CharacterCastFacts, SwingSkills};
@@ -180,15 +182,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .entries
             .iter()
+            .filter(|entry| entry.state.target().is_some())
             .map(|entry| entry.session)
             .collect::<std::collections::BTreeSet<_>>();
+        let retry = crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root);
         let mut talismans = std::collections::BTreeMap::new();
         for session in sessions {
-            let Ok(snapshot) = self.bounty_talisman_for_session(session).await else {
-                return;
-            };
-            talismans.insert(session, snapshot);
+            if let Ok(snapshot) = retry
+                .retry_unavailable(async || {
+                    self.bounty_talisman_for_session(session)
+                        .await
+                        .map_err(|error| match error {
+                            CharacterProgressionError::Unavailable(
+                                DurabilityError::RootUnavailable,
+                            ) => AdmissionRefusal::Unavailable,
+                            _ => AdmissionRefusal::Rejected,
+                        })
+                })
+                .await
+            {
+                talismans.insert(session, snapshot);
+            }
         }
+        drop(retry);
         let now = now.unwrap_or_else(|| self.owner_now());
         let needs_health_names = {
             let runtime = self.runtime.lock().await;
@@ -338,7 +354,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry.clear_target();
                 continue;
             }
-            if unavailable_source_players.contains(&entry.actor.placement_identity()) {
+            // An unavailable bounty read affects this attacker only. Defer
+            // before consuming its swing clock or doing ranged payment.
+            if !talismans.contains_key(&entry.session)
+                || unavailable_source_players.contains(&entry.actor.placement_identity())
+            {
                 continue;
             }
             let Ok(required_health) =
@@ -397,7 +417,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     selected.skills.shielding.saturating_add(bonuses.shielding);
             }
             let pvp_black = if !runtime.contains_live_creature(selected.target) {
-                let Some(black) = self
+                let legality = self
                     .pvp_target_legal(
                         &pvp_permit,
                         &runtime,
@@ -412,12 +432,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             expert: entry.expert_mode,
                         },
                     )
-                    .await
-                else {
-                    entry.clear_target();
-                    continue;
-                };
-                Some(black)
+                    .await;
+                match legality {
+                    Ok(Some(black)) => Some(black),
+                    Err(DurabilityError::RootUnavailable) => {
+                        entry.state = state_before;
+                        entry.next_ordinal = ordinal_before;
+                        continue;
+                    }
+                    _ => {
+                        entry.clear_target();
+                        continue;
+                    }
+                }
             } else {
                 None
             };
@@ -699,6 +726,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             },
                         )
                         .await
+                        .ok()
+                        .flatten()
                     } else {
                         pvp_black
                     };
@@ -1808,7 +1837,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             now_ms: now.get() / 1000,
             effects: vec![crate::spell::combat_batch::OwnerCombatEffect {
                 target: hit.target,
-                sub_ordinal: hit.ordinal,
+                sub_ordinal: 0,
                 change: crate::spell::combat_batch::OwnerCombatChange::Damage {
                     target_atom: atom,
                     magnitude,
@@ -1816,7 +1845,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }],
             deferred: None,
         };
-        if self
+        match self
             .pvp_swing(
                 permit,
                 runtime,
@@ -1831,12 +1860,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
-            if !hit.extension {
-                publish_hit_sound(states, runtime, content, hit.actor, &hit.weapon);
+            Ok(true) => {
+                if !hit.extension {
+                    publish_hit_sound(states, runtime, content, hit.actor, &hit.weapon);
+                }
+                train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
             }
-            train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
-        } else if !hit.extension {
-            attack.clear_target_of(hit.actor, hit.session);
+            Err(DurabilityError::RootUnavailable) => {}
+            _ if !hit.extension => {
+                attack.clear_target_of(hit.actor, hit.session);
+            }
+            _ => {}
         }
     }
 }

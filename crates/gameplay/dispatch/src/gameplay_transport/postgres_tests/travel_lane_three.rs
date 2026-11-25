@@ -168,23 +168,31 @@ async fn check_source_quotes(h: &Harness) -> TestResult {
         }
     }
     let nargor = route("sebastian", "nargor")?;
-    if !nargor.held && oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime().map_err(debug)?
-        .program("oteryn:quest.the_shattered_isles_quest").is_none()
-    {
-        mismatches.push("Sebastian advertises Nargor before its quest program is live".into());
-    }
+    let nargor_access =
+        "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor";
+    assert!(!nargor.held, "the authored Shattered Isles route is live");
+    let quests = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(debug)?;
+    assert!(
+        quests.catalogue()
+            .transition("oteryn:quest-reward/shattered-isles/sabotage-start")
+            .is_some_and(|operation| operation.effects.iter().any(|effect|
+                effect.track == nargor_access
+                    && effect.effect == oteryn_gameplay_quests::quest::QuestEffectKind::Set(1)
+            )),
+        "Raymond's live sabotage mission unlocks Sebastian's route"
+    );
     assert_eq!(
         quote(nargor.clone()).await.map_err(debug)?,
         Err(TravelRefusal::UnavailableRoute)
     );
-    // The release hold applies even to imported characters. Check the exact storage
-    // predicate separately with the hold lifted in the quote fixture.
-    let mut nargor_candidate = nargor.clone();
-    nargor_candidate.held = false;
+    // Check the live route's exact storage predicate and the independent release hold.
+    let mut held_nargor = nargor.clone();
+    held_nargor.held = true;
     for value in [0, 1, 2] {
         seed_track(
             "oteryn:quest.the_shattered_isles_quest",
-            "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor",
+            nargor_access,
             value,
         )
         .await?;
@@ -194,14 +202,14 @@ async fn check_source_quotes(h: &Harness) -> TestResult {
             Err(TravelRefusal::UnavailableRoute)
         };
         let live = quote(nargor.clone()).await.map_err(debug)?;
-        if live != Err(TravelRefusal::UnavailableRoute) {
-            mismatches.push(format!("held Nargor route at storage {value}: {live:?}"));
-        }
-        let actual = quote(nargor_candidate.clone()).await.map_err(debug)?;
-        if actual != expected {
+        if live != expected {
             mismatches.push(format!(
-                "Nargor at storage {value}: {actual:?}, expected {expected:?}"
+                "Nargor at storage {value}: {live:?}, expected {expected:?}"
             ));
+        }
+        let held = quote(held_nargor.clone()).await.map_err(debug)?;
+        if held != Err(TravelRefusal::UnavailableRoute) {
+            mismatches.push(format!("held Nargor route at storage {value}: {held:?}"));
         }
     }
     for (npc, destination, fare) in [
