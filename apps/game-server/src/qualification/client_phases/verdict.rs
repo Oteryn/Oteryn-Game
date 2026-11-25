@@ -16,8 +16,8 @@ use std::sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError};
 
 #[path = "indexed_verdict.rs"]
 mod indexed;
-pub(super) use indexed::indexed;
 pub(crate) use indexed::indexed_evidence;
+pub(super) use indexed::{indexed, report_owner_exclusion};
 #[path = "indexed_result.rs"]
 mod indexed_result;
 pub(crate) use indexed_result::{

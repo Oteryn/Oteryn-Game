@@ -373,7 +373,14 @@ pub(super) async fn run(
     if start >= total {
         return Err(format!("{BATCH} start {start} is beyond {total} entries").into());
     }
-    let selected = len.min(total - start);
+    if len > total - start {
+        return Err(format!(
+            "{BATCH} requests {len} entries at {start}, but only {} remain",
+            total - start
+        )
+        .into());
+    }
+    let selected = len;
     let mut pass = 0;
     let mut fail = 0;
     let mut mounts_seen = std::collections::BTreeSet::new();
@@ -850,11 +857,22 @@ async fn talk_for_reward(
         }
         entity
     };
-    for text in std::iter::once("hi").chain(
-        steps
-            .iter()
-            .filter_map(|step| step.keywords.first().map(String::as_str)),
-    ) {
+    for step in std::iter::once(None).chain(steps.iter().copied().map(Some)) {
+        let (text, take) = match step {
+            None => ("hi", &[][..]),
+            Some(step) => (
+                step.keywords
+                    .first()
+                    .ok_or("authored NPC step has no keyword")?
+                    .as_str(),
+                step.take.as_slice(),
+            ),
+        };
+        let expected = consumption_baseline(
+            client,
+            take.iter()
+                .map(|item| (item.item.as_str(), u64::from(item.count))),
+        )?;
         let result = npc_shop::talk(
             client.session_mut(),
             &ui::npc_service::NpcTalkIntent {
@@ -865,6 +883,16 @@ async fn talk_for_reward(
         .await?;
         if result != ui::NpcIntentDisposition::Ok {
             return Err(format!("server-npc-dialogue: {text} returned {result:?}").into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        while !consumption_visible(client, &expected)? {
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!(
+                    "server-npc-dialogue: {text} lacked exact authored item consumption"
+                )
+                .into());
+            }
+            client.service_liveness(Duration::from_millis(25)).await?;
         }
     }
     wait_target(client, state, target).await
@@ -1129,6 +1157,35 @@ fn carried_quantity(client: &DevClientSession, reference: std::num::NonZeroU32) 
         .sum())
 }
 
+fn consumption_baseline<'a>(
+    client: &DevClientSession,
+    items: impl IntoIterator<Item = (&'a str, u64)>,
+) -> TestResult<std::collections::BTreeMap<std::num::NonZeroU32, u64>> {
+    let mut expected = std::collections::BTreeMap::new();
+    for (key, count) in items {
+        let reference = item_ref(key)?;
+        let remaining = expected
+            .entry(reference)
+            .or_insert(carried_quantity(client, reference)?);
+        *remaining = remaining
+            .checked_sub(count)
+            .ok_or_else(|| format!("missing wire custody for {count} of {key}"))?;
+    }
+    Ok(expected)
+}
+
+fn consumption_visible(
+    client: &DevClientSession,
+    expected: &std::collections::BTreeMap<std::num::NonZeroU32, u64>,
+) -> TestResult<bool> {
+    for (&reference, &quantity) in expected {
+        if carried_quantity(client, reference)? != quantity {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 async fn use_cosmetic_item(client: &mut DevClientSession, key: &str) -> TestResult {
     use oteryn_protocol_oteryn::world_object::{self, UseDisposition, UseIntent};
     let payload = world_object::encode_item_use_intent(&UseIntent {
@@ -1223,6 +1280,13 @@ async fn obtain_taming(
         if before == 0 {
             return Err("taming item missing from wire inventory before roll".into());
         }
+        // Crystal 201189f8 data-global/scripts/actions/mounts/mounts.lua:126-137,190-199.
+        let inputs = if binding.required_items.is_empty() {
+            std::slice::from_ref(&binding.item_key)
+        } else {
+            binding.required_items.as_slice()
+        };
+        let expected = consumption_baseline(client, inputs.iter().map(|item| (item.as_str(), 1)))?;
         client.take_events();
         let payload = world_object::encode_item_use_intent(&UseIntent {
             target: if binding.required_items.len() > 1 {
@@ -1300,7 +1364,11 @@ async fn obtain_taming(
                     break;
                 }
             }
-            if success && removed && state.catalogue.mounts.contains(&binding.mount_key) {
+            if success
+                && removed
+                && state.catalogue.mounts.contains(&binding.mount_key)
+                && consumption_visible(client, &expected)?
+            {
                 return_to(client, world, home).await?;
                 return Ok(());
             }

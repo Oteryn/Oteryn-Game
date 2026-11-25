@@ -61,14 +61,15 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         self.0.chat_delivered(session).await;
     }
 
-
     async fn observe_visible_entities(
         &self,
         actor: ExactActorRef,
     ) -> Option<crate::gameplay_transport::world_spatial::ChannelEntities> {
         let mut observation = self.0.observe_visible_entities(actor).await?;
         if self.1.replace(false) {
-            observation.entities.retain(|entity| entity.identity == observation.observer);
+            observation
+                .entities
+                .retain(|entity| entity.identity == observation.observer);
         }
         Some(observation)
     }
@@ -291,8 +292,17 @@ fn mount_taming_postgres_music_box_guaranteed_pairs() -> TestResult {
 }
 
 fn run_pairs(cases: Cases) -> TestResult {
-    let Some(admin) = configured_admin() else {
-        return Ok(());
+    let admin = match std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
+        Ok(admin) => admin,
+        Err(std::env::VarError::NotPresent) => {
+            eprintln!(
+                "mount taming PostgreSQL case skipped: OTERYN_TEST_POSTGRES_ADMIN_URL is absent"
+            );
+            return Ok(());
+        }
+        Err(std::env::VarError::NotUnicode(_)) => {
+            return Err("OTERYN_TEST_POSTGRES_ADMIN_URL must be valid Unicode".into());
+        }
     };
     let started = std::time::Instant::now();
     let result = std::thread::Builder::new()
