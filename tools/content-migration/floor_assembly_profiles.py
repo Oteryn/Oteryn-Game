@@ -20,6 +20,8 @@ PROJECTION_IDS = {430, 431, 1772, 1791, 1947, 1948, 2772, 2773,
 ELEMENTAL_CORPSES = {8105, 8106, 8107, 8108, 8136, 8137, 8138, 8139, 8140, 8141}
 # M03: retained Temporal Tides landing, including its walkable machine piece.
 PROJECTION_IDS |= {15534, 15620, 25100}
+# The Bear Cave landing contains the nonblocking ramp half next to stair 1950.
+PROJECTION_IDS |= {1951}
 IDS = set(range(3222, 3231)) | set(range(3235, 3242)) | PROJECTION_IDS | ELEMENTAL_CORPSES
 XML_SHA = '8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509'
 CLIENT = 'content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat'
@@ -78,6 +80,10 @@ def capture(xml_path):
                         'stack_class': 'NonStackable', 'legal_destinations': ['Ground']}):
                 raise ValueError('FLOOR_PROJECTION_MUST_REMAIN_STATIONARY')
             row['admission']['materializable'] = False
+            if item == 1948:
+                # The source-gate provider joins the Ladder class to this
+                # stationary projection through questpc2_ladder_composition.
+                row['semantics']['classification']['value']['item_type'] = native.NA
         else:
             accepted = definition.get('semantics')
             if accepted is None:

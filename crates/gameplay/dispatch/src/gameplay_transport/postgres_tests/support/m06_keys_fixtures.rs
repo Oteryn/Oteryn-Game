@@ -24,7 +24,11 @@ pub(super) fn source_key_door(x: u16, y: u16, floor: i8, action: u16) -> TestRes
 
 pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
     run(async |admin| {
-        let level_gate = source.is_some_and(|(_, _, _, action)| action == 1050);
+        let required_level = source
+            .map(|(_, _, _, action)| action)
+            .filter(|action| (1001..2000).contains(action))
+            .map(|action| u32::from(action - 1000));
+        let level_gate = required_level.is_some();
         let harness =
             Harness::create_with_admission_seed(admin, "m06_keys", !level_gate, false).await?;
         let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
@@ -56,7 +60,9 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
         let (door_x, door_y, door_floor, key_action) = source.unwrap_or((6, 0, -7, 4321));
-        let door_appearance = if level_gate {
+        let door_appearance = if key_action == 1060 {
+            5111
+        } else if level_gate {
             1648
         } else if source.is_some() {
             1631
@@ -264,7 +270,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             expected_revision: 0,
         };
 
-        if level_gate {
+        if let Some(required_level) = required_level {
             let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
             harness
                 .root
@@ -294,8 +300,8 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
                 .map_err(debug)?;
             owner.admit_progression_session(&mut admitted).await;
             for (level, expected) in [
-                (49, UseDisposition::Locked),
-                (50, UseDisposition::Committed),
+                (required_level - 1, UseDisposition::Locked),
+                (required_level, UseDisposition::Committed),
             ] {
                 super::questpc6_fibula_route_fixtures::level(&owner, &mut admitted, level).await?;
                 let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&station)
@@ -307,10 +313,10 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
                 let command = admitted.continuity.next_command_id;
                 let (next, result, replay) =
                     super::item_craft_fixtures::exchange(&owner, admitted, command, &payload, None).await?;
-                assert_eq!(result, expected, "source level50 gate at level{level}");
+                assert_eq!(result, expected, "source level{required_level} gate at level{level}");
                 admitted = next;
-                assert_eq!(map.enterable(station_pos), level == 50);
-                if level == 50 {
+                assert_eq!(map.enterable(station_pos), level == required_level);
+                if level == required_level {
                     assert_eq!(map.facts().doors().revision(placement_key), 1);
                     let (next, result, _) =
                         super::item_craft_fixtures::exchange(&owner, admitted, command, &replay, None)
@@ -321,7 +327,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
                 }
             }
             eprintln!(
-                "POSTGRES_CASE_COMPLETED fibula_source_level50_gate duration={:?}",
+                "POSTGRES_CASE_COMPLETED source_level{required_level}_gate duration={:?}",
                 started.elapsed()
             );
             drop(owner);

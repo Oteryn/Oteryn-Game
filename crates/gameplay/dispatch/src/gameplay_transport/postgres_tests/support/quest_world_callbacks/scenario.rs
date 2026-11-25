@@ -24,6 +24,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let explorer = name == super::super::explorer_society_journey_fixtures::NAME;
+    let classic_native = name.strip_prefix("classic-native-");
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let koshei = name == super::super::koshei_the_deathless_journey_fixtures::NAME;
@@ -38,7 +39,11 @@ fn scenario_case(
     let m07_repair = name.starts_with("m07/machinery-repair-");
     let m07_machinery = name.starts_with("m07/machinery-");
     let m07_machinery_level49 = m07_machinery && name.ends_with("-level49");
-    let m07_realm = name.starts_with("m07/realm-");
+    let m07_realm = name == super::super::m07_realm_trials_fixtures::NAME;
+    let source_reward = matches!(
+        name,
+        "m07/realm-draconia-book" | "m07/realm-reward" | "crystal-wand-twinkiller"
+    );
     let lion_trial = matches!(
         name,
         "lions-rock-strength-first" | "lions-rock-beauty" | "lions-rock-tears"
@@ -52,9 +57,17 @@ fn scenario_case(
     let m44_amphora = name == "m44-lions-amphora-1";
     let m44_lions = name.starts_with("m44-lions-strength/");
     let m44_children = name == "qn1-children-lever-1/ordinary";
-    let m44 =
-        name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
-    let qm48 = name == "qm48/mammoth";
+    let curos = name == "uneasy-alliance-crystal/curos";
+    let m44 = name == "uneasy-alliance-crystal"
+        || curos
+        || m44_children
+        || m44_lions
+        || m44_amphora
+        || m44_flower;
+    let mammoth_recovery = name == "qm48/mammoth-recovery";
+    let qm48 = name == "qm48/mammoth" || mammoth_recovery;
+    let barbarian_horn = matches!(name, "barbarian-test/fill-horn" | "barbarian-test/stun-bear");
+    let bear_switch = name == "bear-room-stone-switch";
     let m03_use = name == super::super::qengine_m03_use_fixtures::NAME;
     let qd_world = name.starts_with(super::super::qd_world_fixtures::PREFIX);
     let elemental_pin = name.starts_with("qn1-elemental-");
@@ -63,6 +76,7 @@ fn scenario_case(
     let nomads_window = name.starts_with(super::super::qengine_m02_use_fixtures::NAME);
     let m01b_explore = name.starts_with("m01b/");
     let alawars_vault = name == super::super::alawars_vault_journey_fixtures::NAME;
+    let iglues = name == "captain-iglues-left-chest";
     let qready_craft = name == super::super::qready1_crafting_fixtures::NAME;
     let qready_workbench = super::super::qready1_workbenches_fixtures::matches(name);
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -89,7 +103,8 @@ fn scenario_case(
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let pinned_qc_world = name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
-    let native_crop = explorer
+    let native_crop = classic_native.is_some()
+        || explorer
         || koshei
         || pinned_qc_world
         || frontier
@@ -111,9 +126,13 @@ fn scenario_case(
         || m07_dreamer
         || qready_workbench
         || qready_craft
+        || iglues
+        || source_reward
         || m03_pits
         || nomads_window
         || qm48
+        || barbarian_horn
+        || bear_switch
         || m01b_explore
         || alawars_vault
         || small_ruby
@@ -131,7 +150,14 @@ fn scenario_case(
         || native_story
         || native_upper
         || paradox_journey;
-    let start = if alawars_vault {
+    let start = if classic_native.is_some() {
+        trigger
+    } else if name == "crystal-wand-twinkiller" {
+        Position {
+            y: trigger.y + 1,
+            ..trigger
+        }
+    } else if alawars_vault {
         super::super::alawars_vault_journey_fixtures::START
     } else if explorer {
         super::super::explorer_society_journey_fixtures::START
@@ -236,6 +262,10 @@ fn scenario_case(
             x: trigger.x - 1,
             ..trigger
         }
+    } else if bear_switch {
+        Position {x: 32148, y: 32106, floor: -11}
+    } else if barbarian_horn {
+        super::super::qm48_mammoth_fixtures::horn_start(trigger)
     } else if qm48 || m44 {
         Position {
             x: trigger.x,
@@ -380,7 +410,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if alawars_vault {
+    let mut callback = if classic_native.is_some() {
+        callback("draconia-lever-30006")?
+    } else if alawars_vault {
         callback("alawars-vault-entrance")?
     } else if explorer {
         callback("fish-napping-key")?
@@ -455,6 +487,8 @@ fn scenario_case(
             "dreamers-challenge-death-ring-reset"
         } else if carrot {
             "dreamers-challenge-carrot-entry"
+        } else if curos {
+            "uneasy-alliance-crystal"
         } else if m44_flower {
             "m44-lions-flower-0"
         } else if frontier {
@@ -497,6 +531,8 @@ fn scenario_case(
             || shared_gate
         {
             "fish-napping-key"
+        } else if qm48 {
+            "qm48/mammoth"
         } else if qm47 {
             "barbarian-test-mead"
         } else {
@@ -1073,7 +1109,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if alawars_vault {
+        let world = if let Some(route) = classic_native {
+            super::super::classic_quest_native_fixtures::world(
+                generation.native_gameplay().ok_or("classic quest policies")?,
+                route,
+                start,
+            )?
+        } else if alawars_vault {
             super::super::alawars_vault_journey_fixtures::world(generation.native_gameplay().ok_or("Alawar native content")?)?
         } else if koshei {
             super::super::koshei_the_deathless_journey_fixtures::world(generation.native_gameplay().ok_or("Koshei native content")?)?
@@ -1135,6 +1177,14 @@ fn scenario_case(
                     .ok_or("workbench native policies")?,
                 name,
             )?
+        } else if iglues || source_reward {
+            use crate::map::overlay::TilePos;
+            let tile = TilePos { x: trigger.x, y: trigger.y, floor: trigger.floor };
+            let spawn = TilePos { x: start.x, y: start.y, floor: start.floor };
+            let min = TilePos { x: tile.x.min(spawn.x), y: tile.y.min(spawn.y), ..tile };
+            let max = TilePos { x: tile.x.max(spawn.x), y: tile.y.max(spawn.y), ..tile };
+            let native = generation.native_gameplay().ok_or("native")?;
+            super::super::source_world_crop::world(min, max, spawn, native)?
         } else if qready_craft {
             super::super::qready1_crafting_fixtures::world(
                 generation
@@ -1180,6 +1230,12 @@ fn scenario_case(
         } else if m44 {
             super::super::m44_source_lifecycle_fixtures::world(
                 generation.native_gameplay().ok_or("source policies")?,
+                curos,
+            )?
+        } else if barbarian_horn {
+            super::super::qm48_mammoth_fixtures::horn_world(
+                generation.native_gameplay().ok_or("native horn policies")?,
+                trigger,
             )?
         } else if qm48 {
             super::super::qm48_mammoth_fixtures::world(
@@ -1318,7 +1374,14 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if elvenbane {
+        let world = if bear_switch {
+            super::super::source_world_crop::compiled_region(
+                crate::map::overlay::TilePos { x: 32144, y: 32100, floor: -11 },
+                crate::map::overlay::TilePos { x: 32150, y: 32108, floor: -11 },
+                crate::map::overlay::TilePos { x: start.x, y: start.y, floor: start.floor },
+                generation.native_gameplay().ok_or("native bear room")?,
+            )?
+        } else if elvenbane {
             super::super::source_world_crop::compiled_region(
                 crate::map::overlay::TilePos {
                     x: 32584,
@@ -1614,7 +1677,7 @@ fn scenario_case(
                 9
             } else if name == "authored-trader" {
                 7
-            } else if name == "authored-treasure-island" {
+            } else if name == "authored-treasure-island" || curos {
                 3
             } else if frontier {
                 12
@@ -1829,10 +1892,18 @@ fn scenario_case(
                     name.ends_with("/later"),
                 )?,
             ));
-        } else if m44 {
+        } else if m44 && !curos {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::m44_source_lifecycle_fixtures::catalogue(
                     owner.quest_catalogue.as_ref().ok_or("source catalogue")?,
+                    &callback,
+                )?,
+            ));
+        }
+        if barbarian_horn {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::qm48_mammoth_fixtures::horn_catalogue(
+                    owner.quest_catalogue.as_ref().ok_or("horn catalogue")?,
                     &callback,
                 )?,
             ));
@@ -1982,7 +2053,11 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if koshei {
+        if let Some(route) = classic_native {
+            Box::pin(super::super::classic_quest_native_fixtures::exercise(
+                &mut owner, &mut admitted, &h, route,
+            )).await?;
+        } else if koshei {
             Box::pin(super::super::koshei_the_deathless_journey_fixtures::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if explorer {
             Box::pin(super::super::explorer_society_journey_fixtures::exercise(&mut owner, &mut admitted, &h)).await?;
@@ -2047,6 +2122,14 @@ fn scenario_case(
                 name,
             ))
             .await?;
+        } else if source_reward {
+            Box::pin(super::super::cq07_source_rewards::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                &callback,
+            ))
+            .await?;
         } else if qready_craft {
             Box::pin(super::super::qready1_crafting_fixtures::exercise(
                 &owner,
@@ -2057,7 +2140,7 @@ fn scenario_case(
             .await?;
         } else if matches!(
             name,
-            "qready1-bewitched-contribution" | "qready1-threatened-raven-herb"
+            "qready1-bewitched-contribution" | "qready1-threatened-raven-herb" | "captain-iglues-left-chest"
         ) {
             Box::pin(super::super::qready1_world_clocks_fixtures::exercise(
                 &owner,
@@ -2356,6 +2439,13 @@ fn scenario_case(
                 &h,
             ))
             .await?;
+        } else if curos {
+            Box::pin(super::super::m44_source_lifecycle_fixtures::exercise_curos(
+                &mut owner,
+                &mut admitted,
+                &h,
+            ))
+            .await?;
         } else if m44 {
             Box::pin(super::super::m44_source_lifecycle_fixtures::exercise(
                 &owner,
@@ -2363,11 +2453,17 @@ fn scenario_case(
                 &h,
             ))
             .await?;
+        } else if barbarian_horn {
+            Box::pin(super::super::qm48_mammoth_fixtures::exercise_horn(
+                &owner, &mut admitted, &h, trigger,
+            ))
+            .await?;
         } else if qm48 {
             Box::pin(super::super::qm48_mammoth_fixtures::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
+                mammoth_recovery,
             ))
             .await?;
         } else if name == "l6-stag-item-profile" {
@@ -3456,39 +3552,16 @@ fn scenario_case(
                     .position(),
                 origin
             );
-            let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-            for (n, key) in ["npc_1", "action_2", "action_1", "npc_2"]
-                .into_iter()
-                .enumerate()
-            {
-                use crate::durability::quest_state::{
-                    QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
-                };
-                let request = QuestTransitionRequest {
-                    transition_key: format!(
-                        "oteryn:quest-transition/quest/u9_4/liquid_black_quest/visitor/{key}"
-                    ),
-                    cause: QuestCause::Command(crate::foundation::CommandRef::new(
-                        admitted.game_session_id,
-                        crate::foundation::CommandId::new(100 + u64::try_from(n)?)
-                            .map_err(debug)?,
-                    )),
-                };
-                assert!(matches!(
-                    slot.commit_quest_transition(
-                        owner.root,
-                        owner.character,
-                        owner.holder,
-                        fence,
-                        request,
-                        owner.quest_catalogue.clone().ok_or("catalogue")?
-                    )
-                    .await
-                    .map_err(debug)?,
-                    QuestTransitionOutcome::Committed(_)
-                ));
-            }
-            drop(slot);
+            // Spectulus's machine conversation grants visitor stage 4. Restore
+            // that prior progress so this test exercises only the shortcut.
+            super::super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+                &h,
+                &owner,
+                &admitted,
+                &[(oteryn_gameplay_quests::quest::liquid_black::VISITOR.into(), 4)],
+                119,
+            ).await?;
+            owner.refresh_quest_session(admitted.game_session_id, false).await;
             owner.clock_origin = owner
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
@@ -3525,6 +3598,12 @@ fn scenario_case(
                 for (n, altar) in callback.offerings.iter().take(3).enumerate() {
                     offering(&owner, fence.item_fence(), altar, u64::try_from(n)? + 1).await?;
                 }
+            }
+            if bear_switch {
+                assert_eq!(world.facts().action_at(key), Some(30006));
+                assert!(!world.enterable(crate::map::overlay::TilePos {
+                    x: 32145, y: 32101, floor: -11,
+                }));
             }
             let result = wire(
                 &owner,

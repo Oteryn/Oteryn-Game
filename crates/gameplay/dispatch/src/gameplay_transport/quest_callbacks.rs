@@ -172,6 +172,7 @@ fn callbacks() -> &'static [Callback] {
 fn unique_eligible<'a>(
     candidates: impl IntoIterator<Item = &'a Callback>,
     tracks: &std::collections::BTreeMap<String, i64>,
+    actor_at: Option<MovementLocalPosition>,
 ) -> Option<&'a Callback> {
     let mut eligible = candidates.into_iter().filter(|callback| {
         callback.storage.iter().all(|storage| {
@@ -180,25 +181,37 @@ fn unique_eligible<'a>(
         })
     });
     let selected = eligible.next()?;
-    let Some(other) = eligible.next() else {
+    let Some(alternative) = eligible.next() else {
         return Some(selected);
     };
     if eligible.next().is_some() {
         return None;
     }
-    // These are two source bindings for the same skull sacrifice. The authored
-    // route adds its story proof once eligible. Earlier players keep the old route.
-    match (selected.key.as_str(), other.key.as_str()) {
+    // The fire door and Orchid share a placement. Only the Orchid staging
+    // tile can start that encounter; the chamber side still opens the door.
+    const FIRE_DOOR: &str = "oteryn:quest-callback/engenc/asura/s3/door";
+    const ORCHID: &str = "oteryn:quest-callback/engenc/asura/orchid/entry";
+    let (door, orchid) = match (selected.key.as_str(), alternative.key.as_str()) {
+        (FIRE_DOOR, ORCHID) => (selected, alternative),
+        (ORCHID, FIRE_DOOR) => (alternative, selected),
+        // The authored skull sacrifice adds its story proof once eligible.
         (
             "oteryn:quest-callback/paradox-skulls",
             "oteryn:quest-callback/paradox-tower/native-skulls",
-        ) => Some(other),
+        ) => return Some(alternative),
         (
             "oteryn:quest-callback/paradox-tower/native-skulls",
             "oteryn:quest-callback/paradox-skulls",
-        ) => Some(selected),
-        _ => None,
-    }
+        ) => return Some(selected),
+        _ => return None,
+    };
+    let at_staging = orchid.effects.encounter.as_ref().is_some_and(|encounter| {
+        encounter
+            .players
+            .iter()
+            .any(|member| actor_at == Some(local(member.from)))
+    });
+    Some(if at_staging { orchid } else { door })
 }
 
 fn tile(p: Position) -> TilePos {
@@ -215,7 +228,7 @@ fn local(p: Position) -> MovementLocalPosition {
         floor: -i16::from(p.floor),
     }
 }
-fn native(p: MovementLocalPosition) -> Option<TilePos> {
+pub(super) fn native(p: MovementLocalPosition) -> Option<TilePos> {
     Some(TilePos {
         x: p.x.try_into().ok()?,
         y: p.y.try_into().ok()?,
@@ -310,6 +323,34 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
             || !(32178..=32190).contains(&pos.y))
     {
         return false;
+    }
+    if matches!(
+        callback.key.as_str(),
+        oteryn_gameplay_quests::quest::barbarian_mead::AWAKE_BEAR
+            | "oteryn:quest-callback/barbarian-test/stun-bear"
+            | "oteryn:quest-callback/barbarian-test/hug-bear"
+    ) {
+        // Bear actions are selected by the live form at the same source cell.
+        // The original palette identity stays awake even during a stun.
+        return ordinal == 2
+            && !map.facts.base_hidden(key)
+            && callback
+                .selector
+                .position
+                .is_some_and(|expected| tile(expected) == pos)
+            && map
+                .overlay
+                .base()
+                .tile(pos.x, pos.y, pos.floor)
+                .and_then(|base| {
+                    base.ids()
+                        .iter()
+                        .zip(base.depths())
+                        .filter(|(_, depth)| **depth == 0)
+                        .nth(usize::from(ordinal))
+                })
+                .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
+                .is_some_and(|live| callback.selector.appearance == Some(live.appearance_id));
     }
     // These source-bound World ingresses retain no startup UID/AID in B3.
     // An appearance elsewhere in the stack cannot impersonate their source.
@@ -1074,7 +1115,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             super::world_map::resolve_map_target(&source, target, |_| None::<()>).ok()?
         };
-        let mut selected = self
+        let (mut selected, other_input): (Vec<_>, Vec<_>) = self
             .callback_content()
             .iter()
             .filter(|c| {
@@ -1103,7 +1144,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                     && conditional_cells::matches(map, c)
             })
-            .collect::<Vec<_>>();
+            .partition(|c| {
+                c.item_on_target
+                    .as_ref()
+                    .is_some_and(|tool| tool.selected_instance)
+                    == selected_tool.is_some()
+            });
+        // A bare action at a tool-only source belongs to the quest. If a separate
+        // bare callback exists at the placement, it still owns that action.
+        if selected_tool.is_none() && selected.is_empty() && !other_input.is_empty() {
+            return Some(UseOutcome::rejected());
+        }
         let source_trial = selected
             .iter()
             .any(|c| c.effects.target_transform.is_some());
@@ -1185,6 +1236,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if selected.is_empty() {
                 return None;
             }
+            let Ok(actor_at) = self.runtime.lock().await.read_actor_position(actor) else {
+                return Some(UseOutcome::rejected());
+            };
             let Ok(sessions) = self.states.quest_sessions.lock() else {
                 return Some(UseOutcome::rejected());
             };
@@ -1201,7 +1255,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Some(UseOutcome::rejected());
             };
-            let Some(callback) = unique_eligible(selected.iter().copied(), &tracks) else {
+            let Some(callback) =
+                unique_eligible(selected.iter().copied(), &tracks, Some(actor_at.position()))
+            else {
                 return Some(UseOutcome::rejected());
             };
             callback
@@ -1514,9 +1570,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return entered;
             };
-            let Some(callback) =
-                unique_eligible(selected.iter().map(|(callback, _)| *callback), &tracks)
-            else {
+            let Some(callback) = unique_eligible(
+                selected.iter().map(|(callback, _)| *callback),
+                &tracks,
+                Some(entered.position()),
+            ) else {
                 return entered;
             };
             let Some(pair) = selected

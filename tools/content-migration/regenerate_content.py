@@ -133,7 +133,6 @@ AUTHORING_TOOLS = (
     "tools/content-migration/raid_catalogue.py",
     "tools/content-schema/craft-authoring/craft_authoring.py",
     "tools/content-schema/quest-authoring/questpc3_collectors.py",
-    "tools/content-schema/quest-authoring/questpc3_native_entries.py",
     "tools/content-schema/imbuement-authoring/imbuement_content.py",
     "tools/content-schema/charm-authoring/charm_authoring.py",
     "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
@@ -145,6 +144,13 @@ AUTHORING_TOOLS = (
 
 CHECKS = (
     ["python3", "tools/content-migration/regional_npc_prices.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/fathers_burden_containers.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/classic_quest_placements.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/convert_world_metadata.py", "--classic-quest-overlay", "--check"],
+    ["python3", "tools/content-schema/world-object-authoring/classic_quest_ground.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/questpc3_native_entries.py", "content", "--check"],
+    ["python3", "tools/content-schema/world-authoring/quest_access_bindings.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/quest_startup_bindings.py", "--apply", "--check"],
     [
         "python3",
         "tools/content-schema/world-object-authoring/spawn_ground.py",
@@ -1167,20 +1173,12 @@ def main() -> int:
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
     run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
-    run(
-        [
-            "python3",
-            "tools/content-schema/world-authoring/quest_chest_bindings.py",
-            "--apply",
-        ]
-    )
-    run(
-        [
-            "python3",
-            "tools/content-schema/quest-authoring/quest_batch4.py",
-            "--available",
-        ]
-    )
+    run(["python3", "tools/content-schema/world-authoring/classic_quest_placements.py"])
+    run(["python3", "tools/content-schema/world-authoring/convert_world_metadata.py", "--classic-quest-overlay"])
+    run(["python3", "tools/content-schema/world-object-authoring/classic_quest_ground.py"])
+    run(["python3", "tools/content-schema/world-authoring/quest_access_bindings.py"])
+    run(["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply"])
+    run(["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available"])
     refresh_quest_callback_proof()
     # Source-backed field regeneration uses the same explicit source root as its tests.
     # Without local donor checkouts the committed, pinned source catalogue is retained.
@@ -1235,6 +1233,7 @@ def main() -> int:
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     run(["python3", "tools/content-schema/world-object-authoring/spawn_ground.py"])
     run(["python3", "tools/content-schema/world-authoring/scoped_spawn_ground.py"])
+    run(["python3", "tools/content-schema/world-authoring/fathers_burden_containers.py"])
     run(["python3", "tools/content-schema/world-object-authoring/spawn_map_ground.py"])
     run(["python3", "tools/world-bundle-compiler/convert_spawns.py"])
     refresh_source_cohort_extent()
@@ -1287,9 +1286,11 @@ def main() -> int:
             "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json",
         ]
     )
+    run(["python3", "tools/content-schema/quest-authoring/questpc3_native_entries.py", "content"])
     # Callback witnesses pin the final Quest shards and update authored props.
     # Materialize them before refreshing the room provenance.
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
+    run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_state_lowering.py"])
     run(
         [

@@ -242,6 +242,21 @@ class QuestCallbackProfiles(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'QUEST_CHEST_ITEM_PROFILE_CONFLICT'):
             profiles.admit_map_carriers(ROOT, document)
 
+    def test_barbarian_horn_and_numbered_bear_key_use_the_native_item_owner(self):
+        wanted = {f'oteryn:item.tibia.i{item}' for item in (2970, 7140, 7141)}
+        self.assertTrue(wanted <= profiles.requested_keys(ROOT))
+        callbacks = self.root / 'content/quests/world-callbacks'
+        callbacks.mkdir()
+        (callbacks / 'qm48-mammoth.json').symlink_to(
+            ROOT / 'content/quests/world-callbacks/qm48-mammoth.json')
+        self.admit()
+        rows = {row['production_definition']['production_key']: row
+                for row in json.loads(self.generated[PROFILE])['records']}
+        for key in sorted(wanted):
+            self.assertEqual(rows[key]['production_binding']['target']['key'], key)
+            self.assertEqual(rows[key]['production_binding']['disposition'], 'EXACT')
+            self.assertIn('CharacterInventory', rows[key]['admission']['legal_destinations'])
+
     def test_selected_nightmare_teddy_chest_admits_its_exact_canonical_reward(self):
         key = 'oteryn:item.tibia.i21982'
         document = json.loads(self.generated[PROFILE])
@@ -351,12 +366,15 @@ class QuestCallbackProfiles(unittest.TestCase):
                 for row in json.loads(self.generated[PROFILE])['records']}
         expected = {'oteryn:item.tibia.i9388'}
         fire_axe_placements = []
+        fire_axe_claims = []
         for path in sorted((ROOT / 'content/interactions/reward_claims').glob('reward-claim*.json')):
             for record in json.loads(path.read_bytes())['records']:
                 definition = record['definition']
                 placements = definition.get('native_contents', {}).get('placements', [])
                 if definition['identity']['key'] == 'oteryn:reward-claim.kv.fireaxe1':
                     fire_axe_placements = placements
+                if definition['identity']['key'] == 'oteryn:reward-claim.kv.fireaxe2':
+                    fire_axe_claims.extend(definition['placements'])
                 for placement in placements:
                     expected.add(placement['root']['key'])
                     expected.update(child['item']['key'] for child in placement['contents'])
@@ -367,10 +385,18 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertTrue({'oteryn:item.tibia.i3466','oteryn:item.tibia.i2992'} <= expected)
         # Draconia adds the one-charge ice rapier and serpent sword to full bags.
         self.assertTrue({'oteryn:item.tibia.i3284', 'oteryn:item.tibia.i3297'} <= expected)
+        # The first Fire Axe chest contains the necklace; the second grants the axe directly.
+        self.assertIn('oteryn:item.tibia.i3085', expected)
+        fire_axe = 'oteryn:item.tibia.i3320'
+        self.assertEqual([placement['reward'] for placement in fire_axe_claims], [{
+            'items': [{'count': 1, 'item': {
+                'family': 'Item', 'key': fire_axe, 'revision': 'definition-r1',
+            }}],
+        }])
         # QA-REWARD-CHESTS-1 qualifies the Fire Axe quest's exact three bag children.
-        fire_axe, = fire_axe_placements
-        self.assertEqual(fire_axe['root']['key'], 'oteryn:item.tibia.i2853')
-        self.assertEqual([child['item']['key'] for child in fire_axe['contents']],
+        fire_axe_bag, = fire_axe_placements
+        self.assertEqual(fire_axe_bag['root']['key'], 'oteryn:item.tibia.i2853')
+        self.assertEqual([child['item']['key'] for child in fire_axe_bag['contents']],
                          [f'oteryn:item.tibia.i{item}' for item in (3098, 3085, 3028)])
         # Dreamer adds certificate, bread and the source-selected wine vial to the exact closure.
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (6498, 3602, 2874)} <= expected)
@@ -385,7 +411,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertIn('oteryn:item.tibia.i3083', expected)
         self.assertTrue({'oteryn:item.tibia.i3084', 'oteryn:item.tibia.i3098',
                          'oteryn:item.tibia.i3077'} <= expected)
-        for key in expected:
+        for key in expected | {fire_axe}:
             row = rows[key]
             self.assertTrue(row['admission']['materializable'], key)
             self.assertIn('CharacterInventory', row['admission']['legal_destinations'], key)

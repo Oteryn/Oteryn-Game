@@ -17,10 +17,10 @@ impl CallbackStates {
         owner: u64,
         due: u64,
         entries: &[QuestTimedPassage],
-        source_reset: Option<(u64, EntryFacts)>,
+        source_timer: Option<(u64, Option<EntryFacts>)>,
     ) -> bool {
         let keys: BTreeSet<_> = entries.iter().map(|entry| entry.key).collect();
-        if entries.is_empty()
+        if (entries.is_empty() && source_timer.is_none())
             || entries.len() > 8
             || keys.len() != entries.len()
             || keys.contains(&owner)
@@ -42,7 +42,7 @@ impl CallbackStates {
         {
             return false;
         }
-        if let Some((source_due, restore)) = source_reset {
+        if let Some((source_due, restore)) = source_timer {
             let Some(revision) = self
                 .changed
                 .get(&owner)
@@ -66,7 +66,7 @@ impl CallbackStates {
                 (due, entry.key),
                 MovementDecay {
                     revision,
-                    restore: entry.before,
+                    restore: Some(entry.before),
                     overlay: Some((false, self.passable.get(&entry.key).copied())),
                 },
             );
@@ -83,6 +83,16 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
+    /// A manual return can change the source revision without ending its cooldown.
+    pub fn quest_callback_cooldown_pending(&self, key: u64, now: u64) -> bool {
+        self.callbacks.lock().is_ok_and(|states| {
+            states
+                .movement_decays
+                .range((now, 0)..)
+                .any(|(&(due, entry), decay)| due > now && entry == key && decay.restore.is_none())
+        })
+    }
+
     /// Preflight the same bounded projection before reserving durable quest inputs.
     pub fn quest_timed_passages_ready(
         &self,
@@ -92,7 +102,7 @@ impl BundleFacts {
     ) -> bool {
         let QuestCallbackProjection::TimedPassages {
             entries,
-            source_reset,
+            source_timer,
             ..
         } = projection
         else {
@@ -111,7 +121,7 @@ impl BundleFacts {
                 entries
                     .len()
                     .saturating_mul(3)
-                    .saturating_add(1 + usize::from(source_reset.is_some())),
+                    .saturating_add(1 + usize::from(source_timer.is_some())),
             )
         {
             return false;

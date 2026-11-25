@@ -24,18 +24,18 @@ class M01cKeyDoorsTests(unittest.TestCase):
                 outputs[region["path"]] = (base.ROOT / region["path"]).read_bytes()
         before = json.loads(outputs[doors.SUMMARY])
         previous_count = index["source"].get("m01c_key_doors", {}).get("imported", 0)
-        self.assertEqual(len(doors.overlay_outputs(outputs)), 6)
+        self.assertEqual(len(doors.overlay_outputs(outputs)), 7)
         after = json.loads(outputs[doors.SUMMARY])
         self.assertEqual(
             after["item_attributes"]["action"],
-            before["item_attributes"]["action"] + 6 - previous_count,
+            before["item_attributes"]["action"] + 7 - previous_count,
         )
-        self.assertEqual(after["source"]["m01c_key_doors"]["imported"], 6)
+        self.assertEqual(after["source"]["m01c_key_doors"]["imported"], 7)
         once = dict(outputs)
-        self.assertEqual(len(doors.overlay_outputs(outputs)), 6)
+        self.assertEqual(len(doors.overlay_outputs(outputs)), 7)
         self.assertEqual(outputs, once)
 
-    def test_source_positions_bind_exactly_six_native_locked_doors(self):
+    def test_source_positions_bind_exactly_seven_native_locked_doors(self):
         index = json.loads((base.ROOT / base.INDEX).read_bytes())
         capture = json.loads((base.ROOT / doors.CAPTURE).read_bytes())
         count = 0
@@ -62,9 +62,9 @@ class M01cKeyDoorsTests(unittest.TestCase):
                         self.assertEqual(a[:2], b[:2])
                         attrs = dict(b[2] or {})
                         if a != b:
-                            self.assertIn(attrs.pop("action"), (3012, 3520, 5010))
+                            self.assertIn(attrs.pop("action"), (3012, 3520, 4502, 5010))
                             self.assertEqual(attrs, a[2] or {})
-        self.assertEqual(count, 6)
+        self.assertEqual(count, 7)
 
     def test_missing_or_duplicate_native_target_refuses(self):
         capture = {

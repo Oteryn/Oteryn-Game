@@ -37,6 +37,9 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
         || offers.offers.iter().any(|offer| {
             offer.requires.len() > 8
                 || offer.minimum_level == Some(0)
+                || offer
+                    .maximum_level
+                    .is_some_and(|max| offer.minimum_level.is_none_or(|min| max < min))
                 || offer.failure_reply.len() > 8
                 || offer.failure_reply.iter().any(|line| {
                     line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)

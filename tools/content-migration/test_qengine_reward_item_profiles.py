@@ -10,6 +10,18 @@ import qengine_reward_item_profiles as profiles
 
 
 class SharedPhysicalAdmission(unittest.TestCase):
+    def test_adventurers_map_uses_its_canonical_carried_admission(self):
+        row, = profiles.capture(ids={22107})['records']
+        self.assertEqual(row['production_definition']['production_key'], 'oteryn:item.tibia.i22107')
+        self.assertEqual(row['admission'], {
+            'materializable': True,
+            'stack_class': 'NonStackable',
+            'legal_destinations': ['CharacterInventory', 'Ground'],
+        })
+        self.assertEqual(row['semantics']['physical']['value']['weight'], {
+            'state': 'KNOWN', 'value': 200,
+        })
+
     def test_capture_keeps_the_mining_owned_pick_speed_unknown(self):
         native=json.loads((profiles.ROOT/profiles.PROFILE).read_bytes())
         key='oteryn:item.tibia.i3456'

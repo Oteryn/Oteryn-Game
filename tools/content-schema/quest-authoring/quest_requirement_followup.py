@@ -9,6 +9,7 @@ SPEC_PATH = 'tools/content-schema/quest-authoring/samples/wiki-source-all373/sou
 ALLOWED = {'oteryn:quest.battle_mage_outfits_quest': 250,
            'oteryn:quest.falconer_outfits_quest': 100,
            'oteryn:quest.makeshift_warrior_outfits_quest': 100}
+CLASSIC_PLACEMENTS = 'tools/content-schema/world-authoring/samples/classic-quest-placements.json'
 
 
 def digest(value):
@@ -68,3 +69,18 @@ def apply(root, rows):
         raise ValueError('requirement followup packet differs')
     result = apply_packet(rows, json.loads(raw), (root / SPEC_PATH).read_bytes())
     return result, {'path': PATH, 'sha256': SHA256}
+
+
+def apply_draconia_tower_level(root, rows):
+    """Crystal checks level 25 at the tower door, after access to the island."""
+    capture = json.loads((root / CLASSIC_PLACEMENTS).read_bytes())
+    door = {'position': [32804, 31583, 2], 'appearance': 5102,
+            'attributes': {'action': 1025}, 'source': 'data-global/startup/tables/door_level.lua:16'}
+    if capture['revision'] != '201189f871d23597b82caf88fd611454a2ddefb8' or door not in capture['placements']:
+        raise ValueError('Draconia tower level door evidence differs')
+    selected = [r['definition'] for r in rows if r['definition']['identity']['key'] == 'oteryn:quest.draconia_quest']
+    if len(selected) != 1 or selected[0]['oteryn_recipe']['payload']['recipe']['requirements']['min_level'] != 25:
+        raise ValueError('Draconia chosen level requirement differs')
+    recipe = selected[0]['oteryn_recipe']['payload']['recipe']
+    recipe['requirements']['min_level'] = 0
+    recipe['source_notes'].append('Crystal 201189f8 door_level.lua:16 checks level 25 at the tower door (32804,31583,2).')

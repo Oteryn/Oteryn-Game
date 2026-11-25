@@ -201,7 +201,9 @@ pub fn load_embedded_quest_state(
     let lowered = lower_embedded_quest_state(content_revision)?;
     let bindings = super::authored_bindings::embedded::load().map_err(QuestLoadError::Json)?;
     let mut lowered = admit_native_bindings(lowered, bindings.as_ref())?;
-    super::reward_callbacks::retain_qc_reward_predecessors(&mut lowered.catalogue);
+    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
+    super::reward_callbacks::retain_published_reward_predecessors(&mut lowered.catalogue);
+    super::published_quest_pins::retain_source_route_predecessors(&mut lowered.catalogue);
     Ok(lowered)
 }
 
@@ -260,6 +262,7 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::published_quest_pins::retain_predecessors(&mut lowered.catalogue);
     Ok(lowered)
 }
 
@@ -571,6 +574,150 @@ mod tests {
     }
 
     #[test]
+    fn curos_uses_earned_frontier_and_rebel_progress() -> Result<(), String> {
+        use super::super::reward_callbacks;
+        let state = embedded();
+        let callbacks = reward_callbacks::load()?;
+        let find = |suffix: &str| {
+            let key = format!("oteryn:quest-reward/l2-alliance-{suffix}");
+            callbacks.iter().find(|c| c.key == key).ok_or(key)
+        };
+        let start = find("start")?;
+        assert_eq!(start.npc, "oteryn:npc.curos");
+        assert_eq!(start.keywords, ["mission"]);
+        assert_eq!(
+            start.requires[0].track,
+            "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06"
+        );
+        assert_eq!(start.requires[0].minimum, 5);
+        assert!(
+            !start.requires[0].holds(state.catalogue(), &Default::default()),
+            "PARTIAL: Curos must refuse until New Frontier mission 6 is earned"
+        );
+        assert_eq!(start.storage[0].minimum, 0);
+        assert_eq!(start.storage[0].set, 1);
+        let report = find("report-rebel")?;
+        assert_eq!(
+            report.requires[0].track,
+            "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door"
+        );
+        assert_eq!(report.requires[0].minimum, 1);
+        assert_eq!(report.storage[0].set, 2);
+        let tower = find("tower")?;
+        assert_eq!(tower.storage[0].minimum, 2);
+        assert_eq!(tower.storage[0].set, 3);
+        let finish = find("finish")?;
+        assert_eq!(finish.storage[0].minimum, 4);
+        assert_eq!(
+            finish.give.as_ref().ok_or("Tome reward")?.item,
+            "oteryn:item.tibia.i10217"
+        );
+        assert!(
+            state
+                .catalogue()
+                .transition(&finish.key)
+                .ok_or("finale")?
+                .completes
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn zalamon_accepts_topic_two_and_requires_an_earned_phantom_army_report() -> Result<(), String>
+    {
+        use super::super::reward_callbacks;
+        let state = embedded();
+        let catalogue = state.catalogue();
+        let callbacks = reward_callbacks::offered_for(catalogue)?;
+        let accept = callbacks
+            .iter()
+            .find(|c| c.key.ends_with("/l2-zalamon-accept"))
+            .ok_or("Zalamon confirmation")?;
+        assert_eq!(accept.topic, 2);
+        assert!(accept.requires.is_empty());
+        let transition = catalogue
+            .transition(&accept.key)
+            .ok_or("confirmation transition")?;
+        assert!(
+            catalogue
+                .evaluate(transition, &Default::default(), 0)
+                .is_ok()
+        );
+
+        let finish = catalogue
+            .transition("oteryn:quest-reward/chosen/children/phantom-army-report")
+            .ok_or("Phantom Army report transition")?;
+        let before_arena_clear = BTreeMap::from([
+            (
+                "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline".into(),
+                19,
+            ),
+            (
+                "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05".into(),
+                1,
+            ),
+        ]);
+        assert!(
+            matches!(
+                catalogue.evaluate(finish, &before_arena_clear, 0),
+                Err(QuestRefusal::StageMismatch)
+            ),
+            "PARTIAL: the donor Phantom Army arena clear is required"
+        );
+        let mut returned_from_battle = before_arena_clear;
+        for storage in &finish.effects {
+            let value = if storage.track.ends_with("/questline") {
+                20
+            } else {
+                2
+            };
+            returned_from_battle.insert(storage.track.clone(), value);
+        }
+        let eligible: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback.npc == "oteryn:npc.zalamon"
+                    && callback.topic == 0
+                    && callback.keywords.iter().any(|word| word == "mission")
+                    && catalogue
+                        .transition(&callback.key)
+                        .is_some_and(|transition| {
+                            catalogue
+                                .evaluate(transition, &returned_from_battle, 0)
+                                .is_ok()
+                        })
+            })
+            .map(|callback| callback.key.as_str())
+            .collect();
+        assert_eq!(eligible, [finish.key.as_str()]);
+        Ok(())
+    }
+
+    #[test]
+    fn rotem_valos_assigns_cartography_and_gives_the_adventurers_map() -> Result<(), String> {
+        use super::super::reward_callbacks;
+        let state = embedded();
+        let callbacks = reward_callbacks::load()?;
+        let assignment = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/cartography-101/assign")
+            .ok_or("Cartography assignment")?;
+        assert_eq!(assignment.npc, "oteryn:npc.rotem_valos");
+        assert_eq!(assignment.keywords, ["map"]);
+        assert_eq!(
+            assignment.give.as_ref().ok_or("map reward")?.item,
+            "oteryn:item.tibia.i22107"
+        );
+        let transition = state
+            .catalogue()
+            .transition(&assignment.key)
+            .ok_or("assignment transition")?;
+        assert_eq!(transition.effects.len(), 1);
+        assert!(!transition.completes);
+        Ok(())
+    }
+
+    #[test]
     fn runtime_scope_preserves_only_admitted_predecessors() -> Result<(), String> {
         const MARLIN: &str = "oteryn:quest.marlin_trophy_quest";
         const DAWNPORT: &str = "oteryn:quest.dawnport_quest";
@@ -659,8 +806,10 @@ mod tests {
             crate::quest::world_callbacks::EMBEDDED,
             // QMECH source cohorts retain their separate registration owners.
             include_str!("../../../../../content/quests/world-callbacks/children-grease.json"),
+            include_str!("../../../../../content/quests/world-callbacks/crystal-wand.json"),
             include_str!("../../../../../content/quests/world-callbacks/dream-courts.json"),
             include_str!("../../../../../content/quests/world-callbacks/engenc2-cults.json"),
+            include_str!("../../../../../content/quests/world-callbacks/great-dragon-hunt.json"),
             include_str!("../../../../../content/quests/world-callbacks/ice-islands-seals.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-lion-offerings.json"),

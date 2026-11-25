@@ -1221,6 +1221,9 @@ def build(
 
     npcfix2_shared_sources.overlay_outputs(out)
     if quest_access_bindings.CAPTURE not in blobs:
+        import classic_quest_placements
+
+        classic_quest_placements.overlay_outputs(out)
         import last_creep_arena
 
         last_creep_arena.overlay_outputs(out, ROOT)
@@ -1236,6 +1239,10 @@ def build(
         import scoped_spawn_ground
 
         scoped_spawn_ground.overlay_outputs(out, declared=declared)
+        # Reuse the scoped palette before appending quest container Item slots.
+        import fathers_burden_containers
+
+        fathers_burden_containers.overlay_outputs(out)
     return out
 
 
@@ -1285,6 +1292,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     rework = summary.get("edron", {})
     drafted = summary.get("draft", {})
     authored = summary.get("source", {}).get("last_creep_native", {})
+    from classic_quest_placements import donor_delta as classic_quest_delta
     from engclaim_placements import donor_delta as engclaim_delta
     from npcfix2_shared_sources import donor_delta as shared_source_delta
     from qh_jimmy_stub import donor_delta as jimmy_stub_delta
@@ -1292,6 +1300,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
 
     authored_clock_items = donor_delta(summary)
     jimmy_stub = jimmy_stub_delta(summary)
+    fathers_burden = summary.get("source", {}).get("fathers_burden_containers", {})
 
     def count(row: dict, key: str) -> int:
         return row.get(key, 0)
@@ -1299,6 +1308,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     return {
         "items": totals["items"]
         - authored_clock_items
+        - classic_quest_delta(summary)
         - engclaim_delta(summary)
         - shared_source_delta(summary)
         - count(fill, "items_added")
@@ -1308,6 +1318,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
         - count(drafted, "items_added")
         - count(authored, "items_added")
         - jimmy_stub["items"]
+        - count(fathers_burden, "items_added")
         - count(drafted, "replaced_items_added")
         + count(replace, "items_removed")
         + count(rework, "replaced_items_removed")

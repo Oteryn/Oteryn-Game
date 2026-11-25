@@ -48,7 +48,7 @@ pub(super) async fn after_tool(
             return;
         }
     };
-    let keys = {
+    let mut keys = {
         let Ok(sessions) = owner.states.quest_sessions.lock() else {
             return;
         };
@@ -66,5 +66,16 @@ pub(super) async fn after_tool(
             observation.result,
         )
     };
+    let before = keys.len();
+    keys.retain(|key| {
+        catalogue
+            .transition(key)
+            .is_none_or(|transition| transition.quest != "oteryn:quest.dragon_corpse_quest")
+    });
+    if keys.len() != before {
+        owner
+            .refresh_quest_session(command.game_session_id, false)
+            .await;
+    }
     super::quest_stage_events::commit_keys(owner, actor, command, keys).await;
 }

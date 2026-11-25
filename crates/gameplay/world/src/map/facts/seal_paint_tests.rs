@@ -29,6 +29,44 @@ fn seal() -> TilePos {
 }
 
 #[test]
+fn barbarian_test_replacements_resolve_without_placed_bear_or_mammoth_states() -> Result<(), String>
+{
+    let (bytes, _) = fixture::bundle();
+    let bundle = oteryn_world_bundle::bundle::read(&bytes).map_err(|error| format!("{error:?}"))?;
+    let facts = BundleFacts::palette(&bundle.manifest, |key| {
+        let reference = match key {
+            "oteryn:item.tibia.i7175" => NonZeroU32::new(7175),
+            "oteryn:item.tibia.i7177" => NonZeroU32::new(7177),
+            _ => return fixture::items(key),
+        }?;
+        Some(ItemDefinition {
+            reference,
+            solid: Some(true),
+            blocks_projectile: true,
+            pickupable: false,
+            door: false,
+        })
+    })
+    .map_err(|error| format!("{error:?}"))?;
+    for (x, y, appearance) in [(32253, 31049, 7175), (32154, 31028, 7177)] {
+        let placement =
+            placement_key(TilePos { x, y, floor: -5 }, 1).ok_or("barbarian trial placement")?;
+        let state = facts
+            .quest_callback_replacement(placement, appearance)
+            .ok_or("served barbarian trial replacement")?;
+        assert_eq!(state.appearance_id, appearance);
+        assert_eq!(
+            state.definition,
+            MapDefinition::Item(
+                NonZeroU32::new(u32::from(appearance)).ok_or("definition reference")?
+            )
+        );
+        assert!(!state.pickupable);
+    }
+    Ok(())
+}
+
+#[test]
 fn painted_seal_uses_served_facts_without_a_base_palette_entry() -> Result<(), String> {
     let facts = facts(true)?;
     assert!(

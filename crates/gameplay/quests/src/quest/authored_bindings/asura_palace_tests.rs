@@ -113,7 +113,10 @@ fn engenc_asura_three_chambers_require_both_owned_defenders_before_each_door() -
         for change in changes {
             state.insert(change.track, change.after);
         }
-        assert!(catalogue.evaluate(door, &state, 0).is_err());
+        let reopened = catalogue
+            .evaluate(door, &state, 0)
+            .map_err(|e| format!("{e:?}"))?;
+        assert!(reopened.iter().all(|change| change.before == change.after));
     }
     Ok(())
 }

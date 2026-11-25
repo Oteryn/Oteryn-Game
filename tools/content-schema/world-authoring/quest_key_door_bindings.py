@@ -47,18 +47,19 @@ def document():
                 != row["git_blob_sha1"]
             ):
                 raise ValueError("key door source digest mismatch")
-            sources.append(
-                {
-                    k: row[k]
-                    for k in (
-                        "repository",
-                        "revision",
-                        "path",
-                        "sha256",
-                        "git_blob_sha1",
-                    )
-                }
-            )
+            if not any(ref["path"] == path for ref in sources):
+                sources.append(
+                    {
+                        k: row[k]
+                        for k in (
+                            "repository",
+                            "revision",
+                            "path",
+                            "sha256",
+                            "git_blob_sha1",
+                        )
+                    }
+                )
             return raw.decode()
 
         routes = []
@@ -68,6 +69,24 @@ def document():
                 "TeleportItemAction",
                 15005,
                 {(32171, 32439, 7): 1930, (32172, 32439, 7): 1931},
+            ),
+            (
+                "data-global/startup/tables/door_level.lua",
+                "LevelDoorAction",
+                1032,
+                {(32510, 31956, 13): 1648},
+            ),
+            (
+                "data-global/startup/tables/door_level.lua",
+                "LevelDoorAction",
+                1035,
+                {(32475, 31946, 13): 1648},
+            ),
+            (
+                "data-global/startup/tables/door_level.lua",
+                "LevelDoorAction",
+                1060,
+                {(32483, 31722, 15): 5111},
             ),
             (
                 "data-global/startup/tables/door_level.lua",
@@ -88,6 +107,8 @@ def document():
                 ):
                     xyz = tuple(position[k] for k in "xyz")
                     if xyz in selected:
+                        if value["itemId"] not in (False, selected[xyz]):
+                            raise ValueError("quest route source item differs")
                         routes.append(
                             {
                                 "position": list(xyz),

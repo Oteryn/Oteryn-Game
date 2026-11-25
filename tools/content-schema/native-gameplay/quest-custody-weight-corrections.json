@@ -31,6 +31,16 @@
         "https://tibia.fandom.com/wiki/Holy_Scarab (archive revision 2023-07-11T21:09:08Z, 8.70 oz)",
         "Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml: source weight 869"
       ]
+    },
+    {
+      "item": "oteryn:item.tibia.i6533",
+      "canonical_sha256": "d4df57144c1b68d07c430abbb77a5c671d1c2a919a6fa7374d95838418c90d5f",
+      "source_xml_weight": 750,
+      "weight": 1300,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Book_(Draconia)",
+        "content/items/definitions: retained Global weight; pinned Crystal/canary item XML disagrees."
+      ]
     }
   ]
 }

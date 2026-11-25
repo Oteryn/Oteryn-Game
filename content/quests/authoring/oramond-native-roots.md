@@ -33,3 +33,12 @@ Chavis five-root hand-in. The selected `marked bundle` receipt consumes exactly
 five roots and resets that source count without minting a second reward.
 Daily restart requires that source count to be zero after hand-in; it cannot
 erase an unreported harvest or consume a second bundle.
+
+Chavis is placed at the retained Rathleton contact cell. Ask about **food**
+to accept the task or offer the harvested bundle, then answer **yes** to
+report it. Each report credits one point in the shared Rathleton voting ledger
+and unlocks the root-task door. Starting another **food** task after a report
+immediately opens a fresh personal harvest epoch. The **marked roots** request
+still follows the original daily cadence. The task conversation and vote rules
+follow Crystal's `data-global/npc/chavis.lua:63-98` at revision
+`201189f871d23597b82caf88fd611454a2ddefb8`.

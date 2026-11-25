@@ -153,7 +153,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
-        let mutation = {
+        let mut mutation = {
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             if runtime.binding().world_id() != self.world_id
@@ -343,6 +343,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             placement.extend_from_slice(&key.to_be_bytes());
             (
                 TerrainMutation {
+                    quest_catalogue: None,
                     tool: entry.item.item_instance_id,
                     tool_key: definition.production_key.clone(),
                     tool_revision: definition.revision_ref.clone(),
@@ -359,6 +360,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 plan.binding.yield_item,
             )
+        };
+        if let Some(catalogue) = &self.quest_catalogue {
+            mutation.0.bind_quest_credit(catalogue);
+        }
+        let quest_credit = mutation.0.quest_catalogue.is_some();
+        let mut quest_slot = if quest_credit {
+            Some(self.revision_sequencer.acquire(fence.character_id).await)
+        } else {
+            None
         };
         let soil = mutation
             .0
@@ -391,7 +401,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }),
                 enchanting: None,
             };
-            let result = self
+            let durable = self
                 .root
                 .craft_item(
                     &permit,
@@ -403,12 +413,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &NativeItemWeights(native).with_wheel(self.premium_coordinator),
                     false,
                 )
-                .await
-                .map_err(|_| ())?
-                .ok_or(())?;
+                .await;
+            if let Some(slot) = quest_slot.as_mut() {
+                slot.observe_endgame_progression();
+            }
+            drop(quest_slot);
+            let result = durable.map_err(|_| ())?.ok_or(())?;
             drop(permit);
             if result == UseDisposition::Committed {
                 self.refresh_terrain_tools().await;
+                if quest_credit {
+                    self.refresh_quest_session(command.game_session_id, false)
+                        .await;
+                }
             }
             return Ok(Some(outcome(result)));
         }
@@ -464,7 +481,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             result
         } else {
-            self.root
+            let durable = self
+                .root
                 .apply_terrain_tool(
                     &permit,
                     self.character,
@@ -475,14 +493,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     scope,
                     Some(mutation),
                 )
-                .await
-                .map_err(|_| ())?
-                .ok_or(())?
+                .await;
+            if let Some(slot) = quest_slot.as_mut() {
+                slot.observe_endgame_progression();
+            }
+            durable.map_err(|_| ())?.ok_or(())?
         };
+        drop(quest_slot);
         drop(permit);
         if result == UseDisposition::Committed {
             self.refresh_terrain_tools().await;
-            crate::gameplay_transport::quest_terrain_uses::after_tool(self, actor, command).await;
+            if quest_credit {
+                self.refresh_quest_session(command.game_session_id, false)
+                    .await;
+            } else {
+                crate::gameplay_transport::quest_terrain_uses::after_tool(self, actor, command)
+                    .await;
+            }
         }
         Ok(Some(outcome(result)))
     }

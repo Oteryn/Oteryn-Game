@@ -36,6 +36,15 @@ impl ItemLoopContent for reward_fixture::Weights<'_> {
 
 #[test]
 fn m01c_terrain_use_receipt_freezes_tool_definition_postgres() -> f::TestResult {
+    run_case("questpc3_m01c_terrain", false)
+}
+
+#[test]
+fn dragon_corpse_tools_credit_a_published_predecessor_postgres() -> f::TestResult {
+    run_case("dragon_corpse_predecessor", true)
+}
+
+fn run_case(name: &'static str, saved_dragon_corpse: bool) -> f::TestResult {
     let Some(admin) = f::configured_admin() else {
         return Ok(());
     };
@@ -46,13 +55,13 @@ fn m01c_terrain_use_receipt_freezes_tool_definition_postgres() -> f::TestResult 
                 .map_err(f::debug)?
                 .block_on(async {
                     let started = std::time::Instant::now();
-                    let h = f::Harness::create(admin, "questpc3_m01c_terrain", true).await?;
-                    let result = exercise(&h).await;
+                    let h = f::Harness::create(admin, name, true).await?;
+                    let result = exercise(&h, saved_dragon_corpse).await;
                     h.cleanup().await?;
                     result?;
                     assert!(started.elapsed().as_secs_f64() > 0.01);
                     eprintln!(
-                        "M01C_TERRAIN POSTGRES_CASE_COMPLETED duration_ms={} success=true",
+                        "{name} POSTGRES_CASE_COMPLETED duration_ms={} success=true",
                         started.elapsed().as_millis()
                     );
                     Ok::<(), Box<dyn std::error::Error>>(())
@@ -64,7 +73,7 @@ fn m01c_terrain_use_receipt_freezes_tool_definition_postgres() -> f::TestResult 
         .map_err(Into::into)
 }
 
-async fn exercise(h: &f::Harness) -> f::TestResult {
+async fn exercise(h: &f::Harness, saved_dragon_corpse: bool) -> f::TestResult {
     let version: String = sqlx::query_scalar("SHOW server_version_num")
         .fetch_one(&h.pool)
         .await?;
@@ -101,6 +110,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         reset_epoch: 0,
     };
     let mutation = durability::terrain_tool::TerrainMutation {
+        quest_catalogue: None,
         tool,
         tool_key: "oteryn:item.tibia.i3457".into(),
         tool_revision: "definition-r1".into(),
@@ -206,6 +216,10 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .await
         .map_err(f::debug)?;
     assert!(matches!(committed, QuestTransitionOutcome::Committed(_)));
+    if saved_dragon_corpse {
+        let scythe = mint_to_bag(h, &authority, native, &weights, 3453, 1, 16).await?;
+        return credit_saved_dragon_corpse(h, &authority, &scope, &permit, tool, scythe).await;
+    }
     let replayed = h
         .root
         .commit_character_quest_transition(
@@ -266,6 +280,116 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     production_fanfare_collection(h, &authority, native).await?;
     production_black_knight_collection(h, &authority, native).await?;
     production_grimvale_collection(h, &authority, native, &weights).await?;
+    Ok(())
+}
+
+async fn credit_saved_dragon_corpse(
+    h: &f::Harness,
+    authority: &durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    scope: &durability::terrain_tool::TerrainScope,
+    permit: &durability::spell_owner_commit::SpellLanePermit,
+    shovel: [u8; 16],
+    scythe: [u8; 16],
+) -> f::TestResult {
+    use oteryn_gameplay_quests::quest::{authored_bindings::Trigger, loader, npc_rules};
+
+    let catalogue = Arc::new(
+        loader::load_embedded_quest_state("content-1")
+            .map_err(f::debug)?
+            .catalogue()
+            .clone(),
+    );
+    let quest = catalogue
+        .authored_bindings()
+        .ok_or("bindings")?
+        .quests
+        .iter()
+        .find(|q| q.quest == "oteryn:quest.dragon_corpse_quest")
+        .ok_or("Dragon Corpse binding")?;
+    let predecessor = npc_rules::fixture_dragon_corpse_predecessor();
+    let character = f::id(f::CHARACTER);
+    assert_ne!(catalogue.definition_hash(&quest.quest), Some(predecessor));
+    assert!(npc_rules::legacy_defaults(&catalogue, &quest.quest, &predecessor).is_some());
+    // Restore a snapshot created before this catalogue was deployed. Normal
+    // triggers and receipt guards apply again as soon as this fixture commits.
+    let mut seed = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *seed)
+        .await?;
+    let installed = sqlx::query(
+        "INSERT INTO game_character_quest_states
+         (character_id,quest_key,pinned_content_revision,definition_hash,
+          started_character_revision,committed_character_revision)
+         SELECT character_id,$2,content_revision,$3,character_revision,character_revision
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character.as_slice())
+    .bind(&quest.quest)
+    .bind(predecessor.as_slice())
+    .execute(&mut *seed)
+    .await?;
+    assert_eq!(installed.rows_affected(), 1);
+    seed.commit().await?;
+
+    for (stage, tool, before, command) in [
+        ("s2-shovel", shovel, 593, 9_800_u64),
+        ("s2-scythe-32170", scythe, 3653, 9_801_u64),
+    ] {
+        let stage = quest
+            .stages
+            .iter()
+            .find(|s| s.key == stage)
+            .ok_or("terrain stage")?;
+        let Trigger::TerrainUse { usage } = &stage.trigger else {
+            return Err("expected native terrain binding".into());
+        };
+        let tool_definition = usage.tools.first().ok_or("terrain tool definition")?;
+        let mut placement = vec![0x42; 32];
+        placement.extend(usage.placement_bytes().ok_or("terrain placement")?);
+        let mut mutation = durability::terrain_tool::TerrainMutation {
+            quest_catalogue: None,
+            tool,
+            tool_key: tool_definition.key.clone(),
+            tool_revision: tool_definition.revision.clone(),
+            placement,
+            expected_revision: 0,
+            before,
+            after: usage.result,
+            decay: vec![],
+        };
+        mutation.bind_quest_credit(&catalogue);
+        assert!(mutation.quest_catalogue.is_some());
+        let result = h
+            .root
+            .apply_terrain_tool(
+                permit,
+                authority,
+                &h.node,
+                f::item_fence()?,
+                reward_fixture::command(command)?,
+                command.to_be_bytes().to_vec(),
+                scope.clone(),
+                Some(mutation),
+            )
+            .await
+            .map_err(f::debug)?;
+        assert_eq!(result, Some(UseDisposition::Committed));
+        let hash: Option<Vec<u8>> = sqlx::query_scalar(
+            "SELECT definition_hash FROM game_character_quest_receipts
+             WHERE character_id=encode($1,'hex')::uuid AND transition_key=$2 AND cause_ordinal=$3::text::numeric",
+        )
+        .bind(character.as_slice())
+        .bind(&usage.key)
+        .bind(command.to_string())
+        .fetch_optional(&h.pool)
+        .await?;
+        assert_eq!(
+            hash.as_deref(),
+            Some(predecessor.as_slice()),
+            "missing saved quest credit for {}",
+            stage.key
+        );
+    }
     Ok(())
 }
 
@@ -338,6 +462,7 @@ async fn production_dead_archer_entry(
         placement.extend_from_slice(&key.to_be_bytes());
         let command = reward_fixture::command(ordinal)?;
         let mutation = durability::terrain_tool::TerrainMutation {
+            quest_catalogue: None,
             tool,
             tool_key: "oteryn:item.tibia.i3457".into(),
             tool_revision: "definition-r1".into(),
@@ -493,6 +618,7 @@ async fn terrain_counter_fixture(
         }
         let command = reward_fixture::command(9700 + n)?;
         let mutation = durability::terrain_tool::TerrainMutation {
+            quest_catalogue: None,
             tool,
             tool_key: "oteryn:item.tibia.i3457".into(),
             tool_revision: "definition-r1".into(),

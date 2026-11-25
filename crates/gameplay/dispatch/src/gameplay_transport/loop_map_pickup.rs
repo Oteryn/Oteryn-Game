@@ -139,27 +139,31 @@ pub(super) async fn move_map_item(
         else {
             return stale;
         };
-        let entry = at
-            .map
-            .facts
-            .pickup_entry(pos, ordinal, id)
-            .or_else(|reason| {
-                if matches!(destination, LoopDestination::Ground(_)) {
-                    at.map.facts.empty_amphora_push_entry(
-                        pos,
-                        ordinal,
-                        id,
-                        tile.depths(),
-                        &definition.production_key,
-                    )
-                } else {
-                    Err(reason)
-                }
-            });
-        let Ok(entry) = entry else {
-            return stale;
-        };
-        (reference, entry.quantity, None)
+        if let Some(number) = at.map.facts.loose_source_key(placement_key) {
+            (reference, 1, Some(number))
+        } else {
+            let entry = at
+                .map
+                .facts
+                .pickup_entry(pos, ordinal, id)
+                .or_else(|reason| {
+                    if matches!(destination, LoopDestination::Ground(_)) {
+                        at.map.facts.empty_amphora_push_entry(
+                            pos,
+                            ordinal,
+                            id,
+                            tile.depths(),
+                            &definition.production_key,
+                        )
+                    } else {
+                        Err(reason)
+                    }
+                });
+            let Ok(entry) = entry else {
+                return stale;
+            };
+            (reference, entry.quantity, None)
+        }
     };
     let Some(definition) = crate::gameplay_transport::item_look::typed_definition(index, reference)
     else {

@@ -61,16 +61,17 @@ class CorpseQualification(unittest.TestCase):
             expected = self.plan.records[key]['semantics']['container']['value']['capacity']['value']
             self.assertTrue(facts[key]['materializable'], key)
             self.assertEqual(facts[key]['container_capacity'], expected, key)
-        for number in (5967, 5999, 6031, 25814):
+        for number in (5967, 5999, 6031, 16197, 17425, 25814):
             self.assertTrue(facts[f'oteryn:item.tibia.i{number}']['ordinary_corpse_only'])
 
     def test_exact_source_capacities_and_complete_decay_chains(self):
         self.assertEqual(self.plan.roots, {
-            5960, 5962, 5967, 5968, 5973, 5975, 5995, 5999, 6006, 6017, 6025, 6030, 6031, 6044,
-            6048, 6055, 6072, 6078, 8909, 11675, 17445, 17446,
-            17449, 17454, 18099, 20972, 21910, 22010, 22066, 22067, 25085,
-            25815, 27714, 27718, 30272, 31453, 31599, 31611, 33821, 50029})
-        self.assertEqual(len(self.plan.records), 144)
+            5960, 5962, 5967, 5968, 5973, 5975, 5995, 5999, 6006, 6017, 6018, 6025, 6030, 6031, 6044,
+            6048, 6055, 6072, 6078, 8909, 11675, 16197, 17425, 17445, 17446,
+            17449, 17454, 18099, 18114, 20972, 21910, 21987, 22010, 22066, 22067, 25085,
+            25815, 27714, 27718, 30272, 31419, 31453, 31599, 31611, 31646, 33821, 36982,
+            50029})
+        self.assertEqual(len(self.plan.records), 176)
         for number, duration, target in [(6017, 10000, 4301), (4301, 300000, 4302),
                                          (4302, 300000, 4303), (50029, 60000, 50028),
                                          (50028, 60000, 50027)]:

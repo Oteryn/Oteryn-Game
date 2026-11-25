@@ -129,8 +129,12 @@ pub(super) fn prepare(
     let due = now
         .checked_add(u64::from(delay) * 1_000)
         .ok_or(UseDisposition::Exhausted)?;
-    let source_reset = match projection {
-        Some(QuestCallbackProjection::TimedTransform { due, restore }) => Some((due, restore)),
+    let manual_return = callback.chayenne_timed_lever();
+    let source_timer = match projection {
+        Some(QuestCallbackProjection::TimedTransform { due, restore }) => {
+            // The Realm deadline gates another opening. Only a USE returns its switch.
+            Some((due, (!manual_return).then_some(restore)))
+        }
         None => None,
         _ => return Err(UseDisposition::Rejected),
     };
@@ -167,15 +171,14 @@ pub(super) fn prepare(
             passable,
         });
     }
-    if entries.is_empty() {
+    if entries.is_empty() && !manual_return {
         // Source loops do not create objects whose conditional lookup found nothing.
-        return Ok(source_reset
-            .map(|(due, restore)| QuestCallbackProjection::TimedTransform { due, restore }));
+        return Ok(projection);
     }
     let projection = QuestCallbackProjection::TimedPassages {
         due,
         entries,
-        source_reset,
+        source_timer,
     };
     if !map
         .facts

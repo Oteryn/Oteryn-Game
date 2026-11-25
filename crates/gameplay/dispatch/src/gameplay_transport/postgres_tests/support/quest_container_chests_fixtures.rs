@@ -297,7 +297,13 @@ fn scenario_case(
         let pinned_completion_chest = catalogue.is_some_and(|chest| {
             super::qc_pinned_world::COMPLETION_CHEST_UIDS.contains(&chest.unique)
         });
-        let world = if pinned_completion_chest {
+        let grease_shelf = unique == 6290;
+        let spawn = if grease_shelf { (chest.0, chest.1 + 1) } else { (chest.0 - 1, chest.1) };
+        let world = if grease_shelf {
+            let source = crate::map::overlay::TilePos { x: chest.0, y: chest.1, floor: chest.2 };
+            let south = crate::map::overlay::TilePos { y: spawn.1, ..source };
+            super::source_world_crop::world(source, south, south, native)?
+        } else if pinned_completion_chest {
             match batch.and_then(|batch| batch.pinned_world) {
                 Some(pinned_world) => pinned_world.fresh_channel_for_test()?,
                 None => super::qc_pinned_world::world(native)?,
@@ -437,7 +443,7 @@ fn scenario_case(
                 deps.room.movement_cells()
             })
             .map_err(debug)?;
-        let frame_binding = if pinned_completion_chest {
+        let frame_binding = if pinned_completion_chest || grease_shelf {
             world.frame_binding_digest(deps.admitted.world_id)
         } else {
             activated_pin.frame_binding().digest()
@@ -450,8 +456,8 @@ fn scenario_case(
             frame_binding,
             world.map_revision_digest(),
             (
-                i32::from(chest.0) - 1,
-                i32::from(chest.1),
+                i32::from(spawn.0),
+                i32::from(spawn.1),
                 -i16::from(chest.2),
             ),
         );
@@ -475,8 +481,8 @@ fn scenario_case(
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: i32::from(chest.0) - i32::from(!matches!(case, Case::ChoiceDoor)),
-                    y: i32::from(chest.1),
+                    x: i32::from(spawn.0) + i32::from(matches!(case, Case::ChoiceDoor)),
+                    y: i32::from(spawn.1),
                     floor: -i16::from(chest.2),
                 },
             )
@@ -522,7 +528,7 @@ fn scenario_case(
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
         let target_at = |x| -> TestResult<WorldObjectTarget> {
-            let ordinal = if pinned_completion_chest {
+            let ordinal = if pinned_completion_chest || grease_shelf {
                 let source = catalogue.ok_or("completion chest")?;
                 let tile = world
                     .base()

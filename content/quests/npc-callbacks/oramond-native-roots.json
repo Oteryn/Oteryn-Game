@@ -117,6 +117,17 @@
         "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua",
         "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14-44;explicit-native-daily-adaptation"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+      "quest": "oteryn:quest.oramond_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chavis.lua:63-98:sha256:944e89b3178858c4bb8f8986ea1b6bfd4c79702f818d21aa6e041199edaac5fb"
+      ]
     }
   ],
   "callbacks": [
@@ -125,7 +136,8 @@
       "quest": "oteryn:quest.oramond_quest",
       "npc": "oteryn:npc.chavis",
       "keywords": [
-        "marked roots"
+        "marked roots",
+        "food"
       ],
       "topic": 0,
       "next_topic": 0,
@@ -172,6 +184,18 @@
           "minimum": 0,
           "maximum": 0,
           "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/mission",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/quest_line",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
         }
       ],
       "state_ops": [
@@ -203,12 +227,13 @@
       "outfit": null,
       "achievement": null,
       "reply": [
-        "Harvest the five marked plants north of Rathleton. Each yields one juicy root for this personal daily route. Report your marked bundle here; another route opens one day after this start."
+        "Bring me five juicy roots you harvested. Each bundle earns one Rathleton vote."
       ],
       "sources": [
         "content/quests/authoring/oramond-native-roots.md",
         "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua",
-        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14-44;explicit-native-daily-adaptation"
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14-44;explicit-native-daily-adaptation",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chavis.lua:63-98:sha256:944e89b3178858c4bb8f8986ea1b6bfd4c79702f818d21aa6e041199edaac5fb"
       ]
     },
     {
@@ -263,6 +288,18 @@
           "minimum": 0,
           "maximum": 0,
           "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/mission",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/quest_line",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
         }
       ],
       "state_ops": [
@@ -303,6 +340,109 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/oramond/native-roots-restart-food",
+      "quest": "oteryn:quest.oramond_quest",
+      "npc": "oteryn:npc.chavis",
+      "keywords": [
+        "food"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "requires_premium": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/4",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/5",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/count",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/count",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/mission",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/quest_line",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/epoch",
+          "from": {
+            "kind": "between",
+            "minimum": 1,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/last-start",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Bring me five juicy roots you harvested. Each bundle earns one Rathleton vote."
+      ],
+      "sources": [
+        "content/quests/authoring/oramond-native-roots.md",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua",
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14-44;explicit-native-daily-adaptation",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chavis.lua:63-98:sha256:944e89b3178858c4bb8f8986ea1b6bfd4c79702f818d21aa6e041199edaac5fb"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/oramond/native-roots-report",
       "quest": "oteryn:quest.oramond_quest",
       "npc": "oteryn:npc.chavis",
@@ -322,12 +462,13 @@
       "outfit": null,
       "achievement": null,
       "reply": [
-        "Thank you for the five marked roots. Your personal daily harvest is recorded. The next route opens one day after you started this one."
+        "I have recorded your five roots and credited one Rathleton vote."
       ],
       "sources": [
         "content/quests/authoring/oramond-native-roots.md",
         "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua",
-        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14-44;explicit-native-daily-adaptation"
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14-44;explicit-native-daily-adaptation",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chavis.lua:63-98:sha256:944e89b3178858c4bb8f8986ea1b6bfd4c79702f818d21aa6e041199edaac5fb"
       ],
       "storage": [
         {
@@ -342,6 +483,104 @@
           "maximum": 5,
           "set": 5,
           "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/mission",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/door",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/oramond/native-roots-report-food",
+      "quest": "oteryn:quest.oramond_quest",
+      "npc": "oteryn:npc.chavis",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "requires_premium": true,
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i21291",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I have recorded your five roots and credited one Rathleton vote."
+      ],
+      "sources": [
+        "content/quests/authoring/oramond-native-roots.md",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua",
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14-44;explicit-native-daily-adaptation",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chavis.lua:63-98:sha256:944e89b3178858c4bb8f8986ea1b6bfd4c79702f818d21aa6e041199edaac5fb"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/count",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/count",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/mission",
+          "minimum": -1,
+          "maximum": 1,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/door",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/voting_points",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
         }
       ]
     }

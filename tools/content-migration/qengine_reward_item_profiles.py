@@ -21,6 +21,8 @@ import questl2_ready
 
 IDS = {21897, 21898, 21899, 21901, 21902, 21905, 21906, 30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 16167, 16242, 12517, 12413, 16128, 16129, 20275, 20276, 5903, 5947, 133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
        4867, 5886, 5924, 5937, 5938, 5939, 5940, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793}
+# The Dream Master's Dreamer promotion grants the Nightmare Shield alongside its document.
+IDS |= {6390}
 # Ferumbras chest: the Rift Tapestry and Teddy need portable reward custody.
 IDS |= {22731, 22775}
 # M51 arena trophy custody is qualified from the same pinned physical sources.
@@ -52,6 +54,8 @@ IDS |= {9106}
 # QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.
 IDS |= {27654}
 IDS |= qmech_m39.ITEMS
+# Rotem Valos hands out the carried Adventurer's Map for Cartography 101.
+IDS |= {22107}
 IDS |= {21504, 21505}
 # Lion trials: exact holy-water vessel plus separately qualified one-hour flower duration.
 IDS |= {21466, 21389}
@@ -115,14 +119,16 @@ CLIENT = f'content/assets/files/appearances-{CLIENT_SHA}.dat'
 
 
 def reconcile_canonical_physical(item_id, definition, record):
-    # Purified Soul: retain the canonical0.20oz value; raw Canary XML says2.50oz.
-    # Admit only this exact reviewed pair, never a general weight override.
-    if item_id != 32228:return
+    # Retain the accepted Item identity weights through native custody admission.
+    weights = {32228: (20, 250), 22107: (200, 240)}
+    if item_id not in weights:
+        return
     known=lambda value:{'state':'KNOWN','value':value}
     canonical=definition['semantics']['physical']['value']['weight']
     donor=record['semantics']['physical']['value']['weight']
-    if canonical!=known(20) or donor!=known(250):
-        raise ValueError('QENGINE_PURIFIED_SOUL_WEIGHT_DECISION_DRIFT')
+    expected_canonical, expected_donor = weights[item_id]
+    if canonical != known(expected_canonical) or donor != known(expected_donor):
+        raise ValueError(f'QENGINE_REWARD_WEIGHT_DECISION_DRIFT:{item_id}')
     record['semantics']['physical']['value']['weight']=canonical.copy()
 
 

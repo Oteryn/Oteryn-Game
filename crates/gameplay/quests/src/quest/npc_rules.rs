@@ -510,6 +510,7 @@ impl NpcRuleCatalog {
                 let mut catalogue = Self::load_embedded()?;
                 let supplemental = Self::from_json_documents(&[
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/lost-brother.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/m41-kilmaresh.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gerimor.json"),
@@ -540,6 +541,7 @@ impl NpcRuleCatalog {
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"
                                 | "oteryn:quest.a_pirates_tail"
+                                | "oteryn:quest.adventurers_guild"
                                 | "oteryn:quest.blood_brothers_quest"
                                 | "oteryn:quest.dangerous_depths_quest"
                                 | "oteryn:quest.elemental_spheres_quest"
@@ -872,6 +874,12 @@ pub fn legacy_definition_hash(
     quest: &str,
 ) -> Option<[u8; 32]> {
     catalogue.npc_legacy.get(quest).map(|(hash, _)| *hash)
+}
+
+/// The pre-upgrade Dragon Corpse pin for saved-character integration fixtures.
+#[cfg(feature = "test-support")]
+pub fn fixture_dragon_corpse_predecessor() -> [u8; 32] {
+    super::published_quest_pins::DRAGON_CORPSE_PREDECESSOR.1
 }
 
 /// Only an exact registered predecessor retains its old absent-track values.

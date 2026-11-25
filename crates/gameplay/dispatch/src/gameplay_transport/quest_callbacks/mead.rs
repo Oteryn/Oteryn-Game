@@ -9,6 +9,46 @@ use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 use sha2::{Digest, Sha256};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn bite_awake_bear(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+        actor: ExactActorRef,
+        command: CommandRef,
+    ) -> UseDisposition {
+        let session = command.game_session_id();
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:barbarian-test:awake-bear")
+            .chain_update(session.as_bytes())
+            .chain_update(command.command_id().get().to_be_bytes())
+            .finalize();
+        let mut entropy = [0; 8];
+        entropy.copy_from_slice(&digest[..8]);
+        let damage = crate::spell::uniform_draw(u64::from_be_bytes(entropy), 10, 30);
+        let Ok(damage) = u32::try_from(damage) else {
+            return UseDisposition::Rejected;
+        };
+        let now =
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(self.owner_now().get());
+        if states
+            .apply_creature_damage_native(runtime, actor, session, damage, now)
+            .is_none()
+        {
+            return UseDisposition::Rejected;
+        }
+        // Crystal action_horn.lua:28-31 casts CONST_ME_POFF at the bitten player.
+        if let Ok(position) = runtime.read_actor_position(actor)
+            && let Some(position) = native(position.position())
+        {
+            map.facts.emit_movement_effect(position, 3);
+        }
+        self.states
+            .chat
+            .push_quest_feedback(session, "The bear lashes out.");
+        UseDisposition::Committed
+    }
+
     pub(in crate::gameplay_transport) fn project_mead_blackout(
         &self,
         runtime: &ChannelRuntimeV1,

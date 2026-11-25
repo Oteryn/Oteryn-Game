@@ -59,6 +59,7 @@ pub(super) async fn scenario(
         target.actor,
         target.generation,
         potion,
+        1200,
         ChaseMode::Chase,
     )
     .await?;
@@ -122,6 +123,7 @@ pub(super) async fn fight(
     target: crate::foundation::ExactActorRef,
     generation: u64,
     potion: &str,
+    heal_at_missing: u32,
     chase: ChaseMode,
 ) -> TestResult {
     let player = member.runtime_actor.ok_or("player")?;
@@ -191,7 +193,7 @@ pub(super) async fn fight(
         let state = states
             .get(&runtime, player, member.game_session_id)
             .ok_or("player state")?;
-        let heal = state.character_facts().max_health - state.health >= 1200;
+        let heal = state.character_facts().max_health - state.health >= heal_at_missing;
         drop(states);
         let remaining = runtime
             .companion_snapshot(target)
@@ -349,6 +351,7 @@ async fn upper_defenders(
                 target.actor,
                 target.generation,
                 PALADIN_POTION,
+                1200,
                 chase,
             )
             .await?;

@@ -1,7 +1,7 @@
 """Restore only the pinned startup selectors consumed by shared quest access.
 
 The normalized capture comes from Crystal201189f's LeverUnique, TileUnique,
-TileAction and TeleportAction tables. No placement or item identity is invented.
+TileAction, TeleportAction, TilePickAction and KeyDoorAction tables. No placement or item identity is invented.
 """
 
 import argparse
@@ -23,9 +23,24 @@ def capture_sources(source_root):
     import lua_tables
 
     requested = {
-        "lever.lua": {"LeverUnique": {30004, 30005, 30025, 30030, 30034}},
+        "lever.lua": {
+            "LeverUnique": {30004, 30005, 30008, 30025, 30030, 30034},
+            "LeverAction": {30006, 8013, 55021},
+        },
         "tile.lua": {"TileUnique": {25010}, "TileAction": {50022}},
-        "teleport.lua": {"TeleportAction": {50022}},
+        "teleport.lua": {"TeleportAction": {50022, 55022, 55024}},
+        "chest.lua": {"ChestUnique": {3164}},
+        "item.lua": {
+            "ItemAction": {8009, 8010, 8011, 8012, 55023},
+            "ItemUnique": {3162, 3163},
+        },
+        "tile_pick.lua": {"TilePickAction": {101}},
+        "door_key.lua": {"KeyDoorAction": {4601}},
+    }
+    exact = {
+        ("LeverAction", 30006): {(32148, 32105, 11): 2772},
+        ("TilePickAction", 101): {(32149, 32110, 11): 355, (32302, 32257, 8): 355},
+        ("KeyDoorAction", 4601): {(32145, 32100, 11): 1631},
     }
     sources, bindings = [], []
     for name, groups in requested.items():
@@ -43,28 +58,64 @@ def capture_sources(source_root):
         fields = lua_tables.assignments(raw.decode(), set(groups))
         for group, ids in groups.items():
             for field in fields[group]["fields"]:
-                if not isinstance(field["key"], int) or field["key"] not in ids:
+                key = field["key"]
+                if (
+                    group == "KeyDoorAction"
+                    and isinstance(key, dict)
+                    and key.get("expr") == "Storage.Quest.Key.ID4601"
+                ):
+                    key = 4601
+                if not isinstance(key, int) or key not in ids:
                     continue
                 value = lua_tables.as_python(field["value"])
                 for item in value if isinstance(value, list) else [value]:
+                    selector = (group, key)
                     positions = item["itemPos"]
                     for position in (
                         positions if isinstance(positions, list) else [positions]
                     ):
+                        cell = tuple(position[k] for k in "xyz")
+                        if selector in exact and (
+                            cell not in exact[selector]
+                            or item["itemId"] not in (False, exact[selector][cell])
+                        ):
+                            continue
                         bindings.append(
                             {
-                                "position": [position[k] for k in "xyz"],
-                                "item": item["itemId"],
+                                "position": list(cell),
+                                "item": item["itemId"] or exact[selector][cell],
                                 "attribute": "unique"
                                 if group.endswith("Unique")
                                 else "action",
-                                "value": field["key"],
+                                "value": key,
                                 "source": path,
                                 "line": field["line"],
                             }
                         )
+    expected_exact = {
+        (cell, appearance)
+        for positions in exact.values()
+        for cell, appearance in positions.items()
+    }
+    if not expected_exact <= {
+        (tuple(row["position"]), row["item"]) for row in bindings
+    }:
+        raise ValueError("missing exact source access selector")
     expected = json.loads((ROOT / CAPTURE).read_bytes())
-    if sources != expected["sources"]:
+    pinned = {row["path"]: row for row in expected["sources"]}
+    item_path = "data-global/startup/tables/item.lua"
+    pinned[item_path] = {
+        "path": item_path,
+        "sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad",
+        "git_blob_sha1": "5d5323401d243df8416a38aba33c3d6e738b2d1a",
+    }
+    chest_path = "data-global/startup/tables/chest.lua"
+    pinned[chest_path] = {
+        "path": chest_path,
+        "sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+        "git_blob_sha1": "7b9f823542f9b8d5f99fb6960abe070324c89b8e",
+    }
+    if {row["path"]: row for row in sources} != pinned:
         raise ValueError("source tables differ from pinned Crystal201189f blobs")
     return {
         "schema": 1,

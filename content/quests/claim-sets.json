@@ -114,6 +114,20 @@
       ]
     ]
   },
+  "oteryn:quest.devil_helmet_quest": {
+    "groups": [
+      [
+        "kv/devilhemet1"
+      ],
+      [
+        "kv/devilhemet2"
+      ],
+      [
+        "kv/devilhemet3"
+      ]
+    ],
+    "mint_only": true
+  },
   "oteryn:quest.draconia_quest": {
     "groups": [
       [
@@ -123,6 +137,14 @@
         "kv/draconia2"
       ]
     ]
+  },
+  "oteryn:quest.dragon_corpse_quest": {
+    "groups": [
+      [
+        "kv/dragoncorpse"
+      ]
+    ],
+    "mint_only": true
   },
   "oteryn:quest.dragon_tower_quest": {
     "groups": [

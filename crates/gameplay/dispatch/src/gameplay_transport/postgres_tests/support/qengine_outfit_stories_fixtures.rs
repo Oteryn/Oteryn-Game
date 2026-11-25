@@ -158,7 +158,7 @@ async fn counts(h: &Harness) -> TestResult<Counts> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_reward_sources),(SELECT count(*) FROM game_quest_callback_consumptions),(SELECT count(*) FROM game_reward_claim_mint_receipts),(SELECT count(*) FROM game_account_appearance_unlock_receipts)").fetch_one(&h.pool).await?)
 }
 
-async fn quantity(h: &Harness, item: &str) -> TestResult<i64> {
+pub(super) async fn quantity(h: &Harness, item: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1").bind(item).fetch_one(&h.pool).await?)
 }
 
@@ -353,6 +353,8 @@ pub(super) async fn earn_level(
         .await
         .map_err(debug)?
         .ok_or("progression state")?;
+    let mut occurrence = super::fixture::id(105);
+    occurrence[12..].copy_from_slice(&carrying_level.to_be_bytes());
     let outcome = owner
         .revision_sequencer
         .acquire(fence.character_id)
@@ -363,8 +365,7 @@ pub(super) async fn earn_level(
             owner.holder,
             fence,
             ExperienceAwardRequest {
-                occurrence: ExperienceRewardOccurrence::from_bytes(super::fixture::id(105))
-                    .map_err(debug)?,
+                occurrence: ExperienceRewardOccurrence::from_bytes(occurrence).map_err(debug)?,
                 amount: oteryn_simulation_determinism::ExactI64::new(
                     target
                         .checked_sub(current.total_experience.get())
@@ -1023,9 +1024,15 @@ pub(super) async fn exercise(
         "qengine-rewards-l2-battle-mage-story" => (
             "battle-mage",
             &[
+                ("report-isle", None, None, None),
+                ("report-fishmen", None, None, None),
+                ("report-asuri", None, None, None),
+                ("report-order", None, None, None),
+                ("report-desert", None, None, None),
+                ("report-museum", None, None, None),
                 ("base", None, None, Some(0)),
                 ("book", Some((28792, 5)), None, Some(1)),
-                ("epaulettes", Some((28793, 20)), None, Some(2)),
+                ("epaulettes-exalted", Some((28793, 20)), None, Some(2)),
             ],
             1070,
         ),
@@ -1554,12 +1561,23 @@ pub(super) async fn exercise(
                 Some("oteryn:achievement/battle_mage")
             );
         }
-        let expected = if family == "battle-mage" && *suffix != "base" {
-            vec![Requirement {
-                track: format!("{LIBRARY}library_permission"),
-                minimum: 7,
-                maximum: 7,
-            }]
+        let expected = if family == "battle-mage" && addon.is_some_and(|bit| bit > 0) {
+            let final_addon = suffix.ends_with("-exalted");
+            assert_eq!(callback.completes, final_addon);
+            assert_eq!(callback.achievement.as_deref(),
+                final_addon.then_some("oteryn:achievement/exalted_battle_mage"));
+            vec![
+                Requirement {
+                    track: format!("{LIBRARY}library_permission"),
+                    minimum: 7,
+                    maximum: 7,
+                },
+                Requirement {
+                    track: format!("oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon{}", 3 - addon.unwrap_or_default()),
+                    minimum: if final_addon { 1 } else { -1 },
+                    maximum: i64::from(final_addon),
+                },
+            ]
         } else if family == "knight"
             && matches!(
                 *suffix,
@@ -1753,13 +1771,12 @@ pub(super) async fn exercise(
     }
     let initial: Vec<(String, i64)> = if family == "battle-mage" {
         [
-            ("small_islands/questline", 4),
-            ("liquid_death/questline", 8),
-            ("asuras/questline", 7),
-            ("falcon_bastion/questline", 3),
-            ("darashia/questline", 9),
-            ("mo_ta/questline", 8),
-            ("library_permission", 6),
+            ("small_islands/questline", 3),
+            ("liquid_death/questline", 7),
+            ("asuras/questline", 6),
+            ("falcon_bastion/questline", 2),
+            ("darashia/questline", 8),
+            ("mo_ta/questline", 7),
         ]
         .into_iter()
         .map(|(key, value)| (format!("{LIBRARY}{key}"), value))
@@ -2227,7 +2244,14 @@ pub(super) async fn exercise(
                     assert_eq!(quantity(h, &key).await?, count, "all nine types retained");
                 }
             }
-            if quantity(h, &item.item).await? < i64::from(item.count) {
+            let current = quantity(h, &item.item).await?;
+            if family == "battle-mage" {
+                let mut single = (*item).clone();
+                single.count = 1;
+                for _ in current..i64::from(item.count) {
+                    supply(owner, admitted, h, &single, &mut bags, &mut occurrence).await?;
+                }
+            } else if current < i64::from(item.count) {
                 if let Some(creature) = outfit_loot_creature(family, &item.item) {
                     super::l6_tomb_native_fixtures::hunt_loot(
                         owner, admitted, h, creature, &item.item, item.count, 20_000 + occurrence,
@@ -2325,6 +2349,17 @@ pub(super) async fn exercise(
                     map_revision:crate::map::overlay::map_revision(owner.bundle_map().ok_or("map")?.overlay.base()),
                     content_revision:revision,placement_context:frame.to_vec()})}).await.map_err(debug)?;
             assert!(result.is_ok(), "native drop extra source hat: {result:?}");
+        }
+        if family == "battle-mage" && let [item] = callback.take.as_slice() {
+            let before = counts(h).await?;
+            assert_eq!(quantity(h, &item.item).await?, i64::from(item.count));
+            let (result, _, _) =
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false).await?;
+            assert_eq!(result, NpcIntentDisposition::Rejected, "Crystal requires one item above the debit");
+            assert_eq!(counts(h).await?, before);
+            let mut surplus = item.clone();
+            surplus.count = 1;
+            supply(owner, admitted, h, &surplus, &mut bags, &mut occurrence).await?;
         }
         let required = requirements(callback)?;
         if !checked_stale && !required.is_empty() {
@@ -2608,7 +2643,20 @@ pub(super) async fn exercise(
             let row: (String,i64) = sqlx::query_as("SELECT quest_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(fence.character_id.as_bytes().as_slice()).bind(&state.track).fetch_one(&h.pool).await?;
             assert_eq!(row, (tracks[&state.track].quest.clone(), state.set));
         }
+        if family == "battle-mage" && callback.key.contains("-report-") {
+            let permission: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            ).bind(format!("{LIBRARY}library_permission")).fetch_one(&h.pool).await?;
+            assert_eq!(permission, i64::try_from(step_index)? + 1);
+        }
         for state in &required {
+            if family == "battle-mage" && state.minimum == -1 {
+                let value: Option<i64> = sqlx::query_scalar(
+                    "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+                ).bind(&state.track).fetch_optional(&h.pool).await?;
+                assert_eq!(value, None, "the other addon remains unclaimed");
+                continue;
+            }
             let row: (String,i64) = sqlx::query_as("SELECT quest_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(fence.character_id.as_bytes().as_slice()).bind(&state.track).fetch_one(&h.pool).await?;
             assert_eq!(
                 row,

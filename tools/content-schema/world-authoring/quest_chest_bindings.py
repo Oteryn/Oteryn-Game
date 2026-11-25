@@ -133,8 +133,7 @@ def supported_claim(definition):
     native = definition.get("native_contents", {})
     return (
         definition["readiness"] == "ready"
-        or panpipe_key_claim(definition)
-        or outlaw_key_claim(definition)
+        or supported_source_key_claim(definition)
         or (
             definition.get("definition_profile") == "authored_variant_v1"
             and definition.get("readiness") == "waiting_implementation"
@@ -164,6 +163,14 @@ def outlaw_key_claim(definition):
 
 def panpipe_key_claim(definition):
     return key_claim(definition, 4055, 2969)
+
+
+def supported_source_key_claim(definition):
+    return (
+        panpipe_key_claim(definition)
+        or outlaw_key_claim(definition)
+        or key_claim(definition, 4601, 2970)
+    )
 
 
 def key_claim(definition, number, item):
@@ -281,9 +288,11 @@ def capture(source_root, selected, root=ROOT):
                 or setting.get("container") != container_id
             ):
                 raise ValueError("QUEST_CHEST_SOURCE_SELECTOR_OR_REWARD_DRIFT")
-            if panpipe_key_claim(definition) and (
+            key_number = placement["reward"].get("key_binding", "").rsplit("/", 1)[-1]
+            if supported_source_key_claim(definition) and (
                 setting.get("isKey") is not True
-                or setting.get("storage") != {"expr": "Storage.Quest.Key.ID4055"}
+                or setting.get("storage")
+                != {"expr": f"Storage.Quest.Key.ID{key_number}"}
             ):
                 raise ValueError("QUEST_CHEST_SOURCE_KEY_DRIFT")
             rows.append(

@@ -16,3 +16,14 @@ fn m44_native_source_reset_starts_after_commit_and_fences_newer_revisions() -> T
         super::quest_world_callbacks_fixtures::scenario(NAME, AT, false)
     })
 }
+
+
+#[test]
+fn curos_journey_earns_rebel_door_tower_and_tome() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("curos-alliance", || {
+        super::quest_world_callbacks_fixtures::scenario("uneasy-alliance-crystal/curos", AT, false)
+    })
+}

@@ -56,7 +56,8 @@ pub use arena_pillars::ArenaPillarProjection;
 #[derive(Clone, Debug)]
 struct MovementDecay {
     revision: u64,
-    restore: EntryFacts,
+    // Cooldowns expire without restoring an appearance.
+    restore: Option<EntryFacts>,
     /// Remote resets restore visibility and the previous collision override too.
     overlay: Option<(bool, Option<bool>)>,
 }
@@ -109,7 +110,8 @@ pub enum QuestCallbackProjection {
     TimedPassages {
         due: u64,
         entries: Vec<QuestTimedPassage>,
-        source_reset: Option<(u64, EntryFacts)>,
+        // Without a restore snapshot the timer only gates another opening.
+        source_timer: Option<(u64, Option<EntryFacts>)>,
     },
     /// Each read revision, including cells which do not change, fences the batch.
     ReadsetTransforms {
@@ -173,6 +175,7 @@ pub(super) struct CallbackStates {
     pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    delayed_movement_effects: Vec<(u64, TilePos, u16)>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     merchant_barricades: BTreeMap<u64, (TilePos, EntryId)>,
@@ -261,7 +264,7 @@ impl CallbackStates {
                     (*due, owner),
                     MovementDecay {
                         revision,
-                        restore: *restore,
+                        restore: Some(*restore),
                         overlay: None,
                     },
                 );
@@ -296,7 +299,7 @@ impl CallbackStates {
                     (*due, *key),
                     MovementDecay {
                         revision,
-                        restore: *restore,
+                        restore: Some(*restore),
                         overlay: None,
                     },
                 );
@@ -322,7 +325,7 @@ impl CallbackStates {
                     (*due, *key),
                     MovementDecay {
                         revision,
-                        restore: *restore,
+                        restore: Some(*restore),
                         overlay: None,
                     },
                 );
@@ -330,9 +333,9 @@ impl CallbackStates {
             QuestCallbackProjection::TimedPassages {
                 due,
                 entries,
-                source_reset,
+                source_timer,
             } => {
-                if close || !self.project_timed_passages(owner, *due, entries, *source_reset) {
+                if close || !self.project_timed_passages(owner, *due, entries, *source_timer) {
                     return false;
                 }
             }
@@ -356,7 +359,7 @@ impl CallbackStates {
                         (*due, owner),
                         MovementDecay {
                             revision,
-                            restore: *restore,
+                            restore: Some(*restore),
                             overlay: None,
                         },
                     );
@@ -390,7 +393,7 @@ impl CallbackStates {
                     (*due, owner),
                     MovementDecay {
                         revision,
-                        restore: *restore,
+                        restore: Some(*restore),
                         overlay,
                     },
                 );
@@ -601,6 +604,22 @@ impl CallbackStates {
         self.presences.retain(|_, (p, _)| !cleared(p));
     }
 
+    fn emit_effect(&mut self, scope: Option<EffectScope>, pos: TilePos, effect: u16) -> bool {
+        let Some(sequence) = self.movement_sequence.checked_add(1) else {
+            return false;
+        };
+        if !self.has_capacity(usize::from(self.movement_effects.len() < 512)) {
+            return false;
+        }
+        self.movement_sequence = sequence;
+        if self.movement_effects.len() == 512 {
+            self.movement_effects.pop_front();
+        }
+        self.movement_effects
+            .push_back((sequence, scope, pos, effect));
+        true
+    }
+
     pub(super) fn has_capacity(&self, additional: usize) -> bool {
         let used = self.feroxa_phase.as_ref().map_or(0, |p| p.footprint())
             + self.naginata_picks.len()
@@ -612,6 +631,7 @@ impl CallbackStates {
             + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
+            + self.delayed_movement_effects.len()
             + self.movement_effects.len()
             + self.creature_visuals.len()
             + self.movement_speech.len()
@@ -710,9 +730,15 @@ impl BundleFacts {
         if states.phase_entry(pos, 0).is_some() {
             return Some(0);
         }
+        let dug_bear_cave_hole = pos == super::source_bindings::DRAGON_CORPSE_HOLE
+            && base.tile(pos.x, pos.y, pos.floor)?.appearance(0) == Some(593)
+            && rotations
+                .get(&first)
+                .is_some_and(|(_, entry)| entry.appearance_id == 594);
         if states.changed.range(first..=first + 63).next().is_none()
             && states.hidden.range(first..=first + 63).next().is_none()
             && rotations.range(first..=first + 63).next().is_none()
+            && !dug_bear_cave_hole
         {
             return None;
         }
@@ -939,7 +965,7 @@ impl BundleFacts {
             (due, key),
             MovementDecay {
                 revision,
-                restore,
+                restore: Some(restore),
                 overlay: None,
             },
         );
@@ -955,6 +981,12 @@ impl BundleFacts {
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
+            .chain(
+                states
+                    .delayed_movement_effects
+                    .iter()
+                    .map(|(due, _, _)| *due),
+            )
             .min()
     }
 
@@ -986,6 +1018,9 @@ impl BundleFacts {
             let Some(decay) = states.movement_decays.remove(&at) else {
                 continue;
             };
+            let Some(restore) = decay.restore else {
+                continue;
+            };
             let key = at.1;
             if states
                 .changed
@@ -993,7 +1028,7 @@ impl BundleFacts {
                 .is_some_and(|(revision, _)| *revision == decay.revision)
                 && let Some(revision) = decay.revision.checked_add(1)
             {
-                states.changed.insert(key, (revision, decay.restore));
+                states.changed.insert(key, (revision, restore));
                 if let Some((hidden, passable)) = decay.overlay {
                     if hidden {
                         states.hidden.insert(key);
@@ -1008,6 +1043,13 @@ impl BundleFacts {
                 }
                 changed += 1;
             }
+        }
+        let effects: Vec<_> = states
+            .delayed_movement_effects
+            .extract_if(.., |(due, _, _)| *due <= now)
+            .collect();
+        for (_, position, effect) in effects {
+            changed += usize::from(states.emit_effect(None, position, effect));
         }
         changed
     }
@@ -1281,22 +1323,23 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
-        let Some(sequence) = states.movement_sequence.checked_add(1) else {
+        Arc::make_mut(&mut states).emit_effect(scope, pos, effect)
+    }
+
+    /// Queue a Channel-local magic cue on the map owner's existing timer.
+    pub fn schedule_movement_effect(&self, due: u64, position: TilePos, effect: u16) -> bool {
+        let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
-        if !states.has_capacity(usize::from(states.movement_effects.len() < 512)) {
+        if states.delayed_movement_effects.len() >= 512 || !states.has_capacity(1) {
             return false;
         }
-        let states = Arc::make_mut(&mut states);
-        states.movement_sequence = sequence;
-        if states.movement_effects.len() == 512 {
-            states.movement_effects.pop_front();
-        }
-        states
-            .movement_effects
-            .push_back((sequence, scope, pos, effect));
+        Arc::make_mut(&mut states)
+            .delayed_movement_effects
+            .push((due, position, effect));
         true
     }
+
     /// Crystal trap.lua:39-42. Reserve the map projection before consuming the wolf.
     /// The caller holds the exclusive runtime owner through the physical removal.
     /// Effect zero creates a silent source object, such as the Devil Helmet sewer.
@@ -1810,17 +1853,17 @@ impl BundleFacts {
         let projection_capacity = match projection {
             Some(QuestCallbackProjection::TimedPassages {
                 entries,
-                source_reset,
+                source_timer,
                 ..
             }) => {
-                // Changed entry, hidden entry and timer, plus the source revision/reset.
+                // Changed entry, hidden entry and timer, plus the source revision/timer.
                 if !passages.is_empty() || !replacements.is_empty() {
                     return false;
                 }
                 entries
                     .len()
                     .saturating_mul(3)
-                    .saturating_add(1 + usize::from(source_reset.is_some()))
+                    .saturating_add(1 + usize::from(source_timer.is_some()))
             }
             Some(QuestCallbackProjection::Scene { mutations, .. }) => {
                 mutations.len().saturating_mul(3).saturating_add(1)

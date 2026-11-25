@@ -35,6 +35,12 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             name,
             if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps_fixtures::SOURCE
+            } else if name.starts_with("qengine-rewards-l12-cave-explorer") {
+                Position {
+                    x: 32246,
+                    y: 32600,
+                    floor: -14,
+                }
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
                     x: 32248,
@@ -66,6 +72,12 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 super::m56_cursed_crystal_wax_fixtures::trigger(name)
             } else if name.starts_with("qengine-rewards-questpc4-admission-") {
                 super::l6_world_admission_fixtures::trigger(name)
+            } else if name == "qengine-rewards-l11-newhaven-defence" {
+                Position {
+                    x: 32560,
+                    y: 32488,
+                    floor: -7,
+                }
             } else {
                 Position {
                     x: 33294,
@@ -114,7 +126,7 @@ pub(super) async fn talk(
             },
         )
         .await;
-    assert!(!outcome.unknown, "NPC command must have a known outcome");
+    assert!(!outcome.unknown, "NPC command {id} ({text}) must have a known outcome");
     Ok(outcome.disposition)
 }
 
@@ -195,7 +207,8 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l2-wizard-skull" => &["ring"],
         "l2-wizard-flowers-start" => &["addon", "yes"],
         "l2-wizard-flowers" => &["orchid"],
-        "l2-battle-mage-book" | "l2-battle-mage-epaulettes" => &["addon", "yes", "yes"],
+        "l2-battle-mage-book" | "l2-battle-mage-book-exalted"
+        | "l2-battle-mage-epaulettes" | "l2-battle-mage-epaulettes-exalted" => &["addon", "yes", "yes"],
         "l2-elementalist-start" | "l2-elementalist-base" => &["slime", "yes"],
         "l2-festive-mask-start" | "l2-festive-feather-start" => &["addons"],
         "l3-demon-base" | "l3-demon-shield" | "l3-demon-helmet" => &["outfit", "yes"],
@@ -237,13 +250,13 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l7-assassin-yellow" => &["50 yellow cloth"],
         "l7-assassin-white" => &["50 white cloth"],
         "l7-assassin-yarn" => &["10 spools of yarn"],
-        "l11-makeshift-base" => &["salvage"],
         "l11-dream-warrior-first" | "l11-dream-warrior-second" => &["addon", "yes", "yes"],
         "l10-brotherhood-join" | "l10-nightmare-join" => &["join", "yes"],
         "l10-brotherhood-officer"
         | "l10-nightmare-officer"
         | "l10-brotherhood-leader"
-        | "l10-nightmare-leader" => &["advancement"],
+        | "l10-nightmare-leader"
+        | "l10-nightmare-protector" => &["advancement"],
         "l10-golden-base" => &["outfit", "yes", "armor"],
         "l10-golden-boots" => &["outfit", "yes", "boots"],
         "l10-golden-helmet" => &["outfit", "yes", "helmet"],
@@ -882,6 +895,14 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     // Keep each route's future state out of this shared dispatcher's inline state.
+    if name == "qengine-rewards-cartography-assignment" {
+        return Box::pin(super::qengine_level_stories_fixtures::assign_cartography(
+            owner, admitted, h,
+        )).await;
+    }
+    if name == super::afflicted_loot_fixtures::HUNT {
+        return Box::pin(super::afflicted_loot_fixtures::hunt(owner, admitted, h)).await;
+    }
     if name.starts_with("qengine-rewards-fibula-completion") {
         return Box::pin(super::questpc6_fibula_completion_fixtures::exercise(
             owner, admitted, h, name,

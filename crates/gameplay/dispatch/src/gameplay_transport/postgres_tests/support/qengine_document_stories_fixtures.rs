@@ -152,11 +152,18 @@ pub(super) async fn exercise(
         after, before,
         "absent independent parent cannot create documents"
     );
+    if family == "nightmare" {
+        assert!(!h.root.read_character_quest_state(authority, super::fixture::fence(1)?.character_id)
+            .await.map_err(debug)?.meets_door_storage(41014));
+    }
     super::qengine_outfit_stories_fixtures::commit_fixture(owner, admitted, parent_key, 9700).await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    super::qengine_outfit_stories_fixtures::earn_level(owner, admitted, authority, 50).await?;
+    // The final promotion's 1,500 carried essences exceed the level-50 capacity.
+    let carrying_level = if family == "nightmare" { 150 } else { 50 };
+    super::qengine_outfit_stories_fixtures::earn_level(owner, admitted, authority, carrying_level)
+        .await?;
     let mut bags = vec![];
     let mut ordinal = 700;
     for (stage, item, price) in [
@@ -246,6 +253,12 @@ pub(super) async fn exercise(
             "NPC replay cannot duplicate document"
         );
         if family == "nightmare" {
+            if stage == "join" {
+                let fence = owner.current_quest_fence(admitted.game_session_id).await
+                    .map_err(|()| "quest fence")?.ok_or("quest fence")?;
+                assert!(h.root.read_character_quest_state(authority, fence.character_id)
+                    .await.map_err(debug)?.meets_door_storage(41014));
+            }
             super::qengine_voucher_stories_fixtures::use_native(
                 owner,
                 admitted,
@@ -254,6 +267,56 @@ pub(super) async fn exercise(
             )
             .await?;
         }
+    }
+    if family == "nightmare" {
+        assert_eq!(super::qengine_voucher_stories_fixtures::quantity(h, 6390).await?, 1);
+        let protector = find("protector")?;
+        let (refused, _, _) =
+            super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, protector, false).await?;
+        assert_eq!(refused, NpcIntentDisposition::Rejected);
+        super::qengine_outfit_stories_fixtures::supply(
+            owner,
+            admitted,
+            h,
+            &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                fluid_subtype: None,
+                item: "oteryn:item.tibia.i6499".into(),
+                count: 1500,
+            },
+            &mut bags,
+            &mut ordinal,
+        ).await?;
+        let before = super::qengine_voucher_stories_fixtures::quantity(h, 6499).await?;
+        let (result, _, _) =
+            super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, protector, false).await?;
+        assert_eq!(result, NpcIntentDisposition::Ok);
+        assert_eq!(super::qengine_voucher_stories_fixtures::quantity(h, 6499).await?, before - 1500);
+        assert_eq!(
+            super::classic_quests_fixtures::progress(
+                owner, admitted, authority,
+                "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+            ).await?,
+            4
+        );
+        assert_eq!(
+            super::classic_quests_fixtures::progress(
+                owner, admitted, authority,
+                "oteryn:quest-progress/quest/u7_9/nightmare_outfits/door",
+            ).await?,
+            1
+        );
+        let completed: bool = sqlx::query_scalar(
+            "SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE quest_key='oteryn:quest.nightmare_outfits_quest'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(completed);
+        let awards: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/lord_protector'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(awards, 1);
     }
     let key = format!("oteryn:outfit.{family}");
     if family == "brotherhood" {

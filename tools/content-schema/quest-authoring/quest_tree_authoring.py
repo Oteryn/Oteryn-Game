@@ -694,8 +694,9 @@ def expected_files(root, include_registration=False):
                 f'local evidence: {followup["path"]} SHA256={followup["sha256"]}. '
                 'Original SOURCE holds and Native non-admission are preserved.')
     # Update chosen approximations from cached evidence without changing Source minima.
-    from quest_requirement_followup import apply as apply_requirements
+    from quest_requirement_followup import CLASSIC_PLACEMENTS, apply as apply_requirements, apply_draconia_tower_level
     records, _ = apply_requirements(root, records)
+    apply_draconia_tower_level(root, records)
     from quest_reward_followup import apply as apply_reward_followup
     records, _ = apply_reward_followup(root, records)
     from quest_chosen_journal import apply as apply_chosen_journal
@@ -775,6 +776,7 @@ def expected_files(root, include_registration=False):
             'tools/content-schema/quest-authoring/quest_donor_attachment.py',
             'tools/content-schema/quest-authoring/quest_donor_attachment.schema.json',
             'tools/content-schema/quest-authoring/quest_requirement_followup.py',
+            CLASSIC_PLACEMENTS,
             'tools/content-schema/quest-authoring/samples/recipe-followup/requirements.json',
             'tools/content-schema/quest-authoring/quest_chosen_journal.py',
             'tools/content-schema/quest-authoring/quest_chosen_journal.schema.json',

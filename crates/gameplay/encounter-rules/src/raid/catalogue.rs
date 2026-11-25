@@ -559,7 +559,7 @@ mod tests {
         // plus Crystal a_piece_of_cake_config.lua:394-400's seasonal raid.
         // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
         assert_eq!(catalogue.records().len(), 240);
-        assert_eq!(catalogue.active().count(), 137);
+        assert_eq!(catalogue.active().count(), 138);
         for record in catalogue.records() {
             if record.active {
                 record.select([7; 32], [9; 16])?.definition.validate()?;

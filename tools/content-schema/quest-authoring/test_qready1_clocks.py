@@ -21,12 +21,15 @@ class Qready1ClockBindings(unittest.TestCase):
             self.assertEqual(expected, json.loads((ROOT / path).read_bytes()), path)
         callbacks = clocks.build(ROOT)[clocks.OUTPUT]["callbacks"]
         self.assertEqual(
-            [86400, 60 * 30 * 1000],
+            [86400, 86400, 60 * 30 * 1000],
             [c["state_ops"][0]["from"]["seconds"] for c in callbacks],
         )
-        self.assertEqual([3, 3], [o["count"] for o in callbacks[0]["offerings"]])
+        captain = callbacks[0]["effects"]
+        self.assertEqual(captain["item_reward"]["text"], "Treasure of Captain Iglue")
+        self.assertEqual(captain["item_reward"]["additional"][0]["count"], 12)
+        self.assertEqual([3, 3], [o["count"] for o in callbacks[1]["offerings"]])
         self.assertEqual(
-            "oteryn:item.tibia.i5953", callbacks[1]["effects"]["item_reward"]["item"]
+            "oteryn:item.tibia.i5953", callbacks[2]["effects"]["item_reward"]["item"]
         )
 
     def test_authored_delta_does_not_relax_the_donor_pin(self):

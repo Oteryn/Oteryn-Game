@@ -22,7 +22,7 @@ impl ClearArea {
     pub(super) fn valid(&self, callback: &Callback) -> bool {
         callback.requires_world_admission
             && callback.actor_kind == ActorKind::Player
-            && !callback.reversible
+            && (!callback.reversible || callback.chayenne_timed_lever())
             && !callback.opening_only
             && callback.effects.encounter.is_none()
             && callback.storage.iter().any(|state| !state.preserve)
