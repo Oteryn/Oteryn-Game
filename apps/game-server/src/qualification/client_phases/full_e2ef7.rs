@@ -2303,7 +2303,7 @@ impl LightClient {
         }
         Ok(None)
     }
-    async fn send_command(&mut self, kind: u32, payload: &[u8]) -> TestResult<u64> {
+    async fn command(&mut self, kind: u32, payload: &[u8]) -> TestResult<(CommandStatus, Vec<u8>)> {
         let id = self.command;
         self.command = self
             .command
@@ -2321,9 +2321,6 @@ impl LightClient {
             )?,
         )
         .await?;
-        Ok(id)
-    }
-    async fn command_reply(&mut self, id: u64) -> TestResult<(CommandStatus, Vec<u8>)> {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(25);
         loop {
             if tokio::time::Instant::now() >= deadline {
@@ -2337,23 +2334,18 @@ impl LightClient {
             }
         }
     }
-    async fn command(&mut self, kind: u32, payload: &[u8]) -> TestResult<(CommandStatus, Vec<u8>)> {
-        let id = self.send_command(kind, payload).await?;
-        self.command_reply(id).await
-    }
-    async fn send_cast(&mut self, index: std::num::NonZeroU32) -> TestResult<u64> {
+    async fn cast(
+        &mut self,
+        index: std::num::NonZeroU32,
+    ) -> TestResult<casts::SpellCastDisposition> {
         let payload = casts::encode_spell_cast_intent(&casts::SpellCastIntent {
             spell: index,
             target: casts::SpellTarget::None,
             aim_at_target: false,
         });
-        self.send_command(casts::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT, &payload)
-            .await
-    }
-    fn cast_reply(
-        &mut self,
-        (status, payload): (CommandStatus, Vec<u8>),
-    ) -> TestResult<casts::SpellCastDisposition> {
+        let (status, payload) = self
+            .command(casts::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT, &payload)
+            .await?;
         if status != CommandStatus::Accepted {
             return Err(format!("personal-light spell command refused: {status:?}").into());
         }
@@ -2510,12 +2502,7 @@ async fn light_journey(
         let own_updates = client.own_updates;
         let started = std::time::Instant::now();
         let offset = qualification_offset();
-        // Send the consecutive commands before receiving either result. Waiting for
-        // the first cast's spatial projection can consume the entire cooldown.
-        let paid_id = client.send_cast(index).await?;
-        let retry_id = client.send_cast(index).await?;
-        let paid_reply = client.command_reply(paid_id).await?;
-        let cast = client.cast_reply(paid_reply)?;
+        let cast = client.cast(index).await?;
         if cast != casts::SpellCastDisposition::Cast {
             let spell = book
                 .indexed(index)
@@ -2524,7 +2511,6 @@ async fn light_journey(
         }
         // Cast results precede their vitals and visibility deltas. Wait for both.
         let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
-        let mut buffered_retry = None;
         while client.own_updates == own_updates
             || client.light != Some(spatial::EntityLight { level, color: 215 })
             || before.mana.checked_sub(client.vitals.mana) != Some(mana)
@@ -2532,19 +2518,13 @@ async fn light_journey(
             if tokio::time::Instant::now() >= deadline {
                 return Err(format!("{words}: cast lacked exact mana/light frames; before={before:?} after={:?} light={:?}", client.vitals, client.light).into());
             }
-            if let Some((seen, status, reply)) = client.receive().await?
-                && (seen != retry_id || buffered_retry.replace((status, reply)).is_some())
-            {
-                return Err("personal-light command correlation mismatch during observation".into());
+            if client.receive().await?.is_some() {
+                return Err("personal-light unsolicited command result during observation".into());
             }
         }
         row.pass(paid);
         let after = client.vitals;
-        let retry_reply = match buffered_retry {
-            Some(reply) => reply,
-            None => client.command_reply(retry_id).await?,
-        };
-        let retry = client.cast_reply(retry_reply)?;
+        let retry = client.cast(index).await?;
         // A subsequent ordinary command is a server-sequenced barrier: a
         // refused cast cannot hide a queued vitals charge after its result.
         client.turn().await?;
