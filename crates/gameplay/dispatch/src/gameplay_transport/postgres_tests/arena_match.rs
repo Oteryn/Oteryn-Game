@@ -831,7 +831,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                             assert_eq!((at.x, at.y, at.floor), portal, "the orphan sweep must leave a pending relocation alone");
                             snapshot
                         };
-                        let pending = command(&rebooted, &mut readmitted, A::Status).await?;
+                        let pending = restarted_command(&rebooted, &mut readmitted, A::Status).await?;
                         assert_eq!(pending.disposition, D::Busy);
                         assert_eq!((i32::from(pending.state.phase), i32::from(pending.state.pit)), (phase, destination));
                         rebooted.drain_monster_melee().await;
@@ -855,7 +855,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                             let premium = SpellPremiumCoordinator::new(consumer, Some(clock), Some(activation), Some(harness.root.clone()));
                             rebooted.premium_coordinator = Some(&premium);
                             rebooted.admit_premium(id(40), readmitted.game_session_id);
-                            let trophy = command(&rebooted, &mut readmitted, A::ClaimReward { rank: 1, category: 4, choice: 1 }).await?;
+                            let trophy = restarted_command(&rebooted, &mut readmitted, A::ClaimReward { rank: 1, category: 4, choice: 1 }).await?;
                             assert_eq!(trophy.disposition, D::Applied, "{trophy:?}");
                             assert_eq!(trophy.state.phase, 3);
                             assert_eq!(trophy.state.claimed_masks[0], 8);
@@ -1075,6 +1075,21 @@ async fn restart_scope(harness: &Harness, session: crate::foundation::GameSessio
         .bind(session.as_bytes().as_slice()).bind(generation.to_string()).execute(&harness.pool).await?;
     assert_eq!(updated.rows_affected(), 1);
     Ok(generation)
+}
+
+async fn restarted_command(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    action: A,
+) -> TestResult<wire::ArenaResult> {
+    // The new carrier and durable admission are already in place. Exercise
+    // the active arena owner without resuming the old socket's other domains.
+    let id = admitted.continuity.next_command_id;
+    let payload = wire::encode_match_request(action).map_err(debug)?;
+    let reply = owner.arena_match_command(*admitted, id, &payload).await
+        .ok_or("restarted arena command refused its admission")?;
+    admitted.continuity.next_command_id = id.checked_add(1).ok_or("command ID")?;
+    wire::decode_match_result(&reply).map_err(debug)
 }
 
 // Positive setup uses the same fenced quest writer, never a raw state insert.
