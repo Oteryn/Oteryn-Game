@@ -71,6 +71,7 @@
     {"npc": "basilisk", "cell": [32641, 31942, 15], "xml_line": 3285},
     {"npc": "bigfoot_soldier", "cell": [32802, 31791, 10], "xml_line": 2835},
     {"npc": "bill_the_worker", "cell": [33024, 32111, 7], "xml_line": 1838},
+    {"npc": "bloodshade_rotten", "cell": [34069, 31982, 14], "xml_line": 3183},
     {"npc": "bloodshade_sacrifice", "cell": [32956, 32397, 9], "xml_line": 2732},
     {"npc": "bo_ques", "cell": [33102, 32521, 5], "xml_line": 436},
     {"npc": "bob_the_worker", "cell": [33021, 32109, 6], "xml_line": 802},
