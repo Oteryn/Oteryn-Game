@@ -71,7 +71,10 @@ pub fn direct_rune(spell: &SpellDefinition) -> bool {
                 })
         }
         (
-            Carrier::Rune { item: item @ (3189 | 3200), .. },
+            Carrier::Rune {
+                item: item @ (3189 | 3200),
+                ..
+            },
             Execution::Effects(effects),
         ) => {
             spell.aggressive

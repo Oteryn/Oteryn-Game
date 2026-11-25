@@ -528,8 +528,8 @@ async fn prepare_spatial(
     }
     // A non-chain rune only acts on its authored footprint. An unrelated
     // creature's tile and sight path cannot qualify or veto this cast.
-    let rune_footprint = matches!(spell.carrier, crate::spell::Carrier::Rune { .. })
-        && spell.chain.is_none();
+    let rune_footprint =
+        matches!(spell.carrier, crate::spell::Carrier::Rune { .. }) && spell.chain.is_none();
     // A direct cast with no held target can fall back to an occupant of the
     // caster's front tile, including when its explicit position has no target.
     let fallback_front = (spell.target_or_direction

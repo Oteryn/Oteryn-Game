@@ -290,9 +290,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             position.floor = self.runtime_floor(position.floor);
         }
-        let store = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
-            self.root.clone(),
-        );
+        let store =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone());
         let read_session = async || {
             #[cfg(test)]
             if test_faults::take(test_faults::Point::SessionReadBusy) {
