@@ -94,37 +94,25 @@ pub(super) async fn run(
         .await;
     temple.finish(result);
 
-    let vocation_excluded = verdict::report_owner_exclusion("S16a.full");
-    if !vocation_excluded {
-        let mut vocation = Row::new("S16a", VOCATION).needs(&[character_release_need(clients, 1)]);
-        let watch = vocation.0.watch();
-        let result = watch
-            .bound(
-                Duration::from_secs(420),
-                "Oressa journey deadline; remaining actions unproven",
-                first_vocation(&mut vocation, clients, world, spawns, npcs),
-            )
-            .await;
-        vocation.finish(result);
-    }
+    let mut vocation = Row::new("S16a", VOCATION).needs(&[character_release_need(clients, 1)]);
+    let watch = vocation.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(420),
+            "Oressa journey deadline; remaining actions unproven",
+            first_vocation(&mut vocation, clients, world, spawns, npcs),
+        )
+        .await;
+    vocation.finish(result);
 
     // Promotion starts from the knight the first-vocation row produces.
-    let mut loss = Row::new("C20a", EXPERIENCE_LOSS)
-        .needs(&[character_release_need(clients, 1), After("S16a")]);
+    let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[character_release_need(clients, 1), After("S16a")]);
     let watch = loss.0.watch();
     let result = watch
         .bound(
             Duration::from_secs(1100),
             "experience-loss journey deadline; remaining actions unproven",
-            async {
-                if vocation_excluded {
-                    return Err(
-                        "promotion prerequisite blocked: S16a first-vocation is owner-excluded"
-                            .into(),
-                    );
-                }
-                experience_loss(&mut loss, clients, world, spawns, npcs).await
-            },
+            experience_loss(&mut loss, clients, world, spawns, npcs),
         )
         .await;
     match result {
@@ -145,10 +133,7 @@ pub(super) async fn run(
 
     // Purchase qualification precedes consumption: Character 0 must retain its
     // never-aggressed low-level Adventurer eligibility for both protected deaths.
-    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[
-        character_release_need(clients, 1),
-        character_release_need(clients, 0),
-    ]);
+    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[character_release_need(clients, 1), character_release_need(clients, 0)]);
     let watch = services.0.watch();
     let result = watch
         .bound(
@@ -159,10 +144,7 @@ pub(super) async fn run(
         .await;
     finish_blessing_row(services, result);
 
-    let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[
-        character_release_need(clients, 0),
-        character_release_need(clients, 1),
-    ]);
+    let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[character_release_need(clients, 0), character_release_need(clients, 1)]);
     let watch = consumption.0.watch();
     let result = watch
         .bound(
@@ -887,22 +869,14 @@ async fn temple_respawn(
         {
             return Err("temple journey requires the native bundle map capability".into());
         }
-        use sqlx::Connection as _;
+        // This unprovisioned Character has made no citizenship change. The bundle's
+        // configured hometown fixes the expected temple BEFORE observing the death.
         let towns = &world.base().subareas;
-        let default_id = towns.default_town.ok_or("compiled world has no default home town")?;
-        let mut db = sqlx::PgConnection::connect(clients.url).await?;
-        let stored = sqlx::query_scalar::<_, i32>(
-            "SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid",
-        )
-        .bind(clients.characters[1].as_slice())
-        .fetch_optional(&mut db)
-        .await?;
-        let home_id = stored.map(u32::try_from).transpose()?.unwrap_or(default_id);
-        let home = towns.town(home_id).filter(|town| {
-            home_id == 8 && town.key == "oteryn:content.area.city.thais" && town.name == "Thais"
-        })
+        let home = towns
+            .default_town
+            .and_then(|id| towns.town(id))
             .and_then(|town| town.temple)
-            .ok_or_else(|| format!("C20d requires the Thais home town and temple; found town {home_id}"))?;
+            .ok_or("compiled world has no default home temple")?;
         let basis = spatial_basis::current(&mut client)?;
         let temple = ActorPosition {
             x: i32::from(home.x),

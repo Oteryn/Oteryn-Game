@@ -67,19 +67,6 @@ impl Watch {
     }
 }
 
-pub(in super::super) fn report_owner_exclusion(scenario: &str) -> bool {
-    if !matches!(
-        scenario,
-        "S16a.full" | "S16a.client" | "C11.full" | "C11.client"
-    ) {
-        return false;
-    }
-    evidence(&format!(
-        "e2e_all scenario={scenario} status=OUT_OF_SCOPE seconds=0.000 evidence=owner-excluded-Dawnport"
-    ));
-    true
-}
-
 /// Enroll the dispatch boundary without changing any row's coverage assertions.
 pub(crate) fn indexed(
     scenario: &'static str,
@@ -88,9 +75,6 @@ pub(crate) fn indexed(
     // Each row owns its future on the heap; hundreds of inline row temporaries
     // otherwise accumulate in journeys' debug-build poll frame.
     Box::pin(async move {
-        if report_owner_exclusion(scenario) {
-            return;
-        }
         let mut watch = Watch::new(scenario, Harness::global());
         watch.scenario = Some(scenario);
         let result = watch.run(None, "indexed row", journey).await;
@@ -180,25 +164,6 @@ mod tests {
             .enable_all()
             .start_paused(true)
             .build()?)
-    }
-
-    #[test]
-    fn owner_excluded_dawnport_rows_do_not_run_their_journeys() -> TestResult {
-        runtime()?.block_on(async {
-            let ran = std::cell::Cell::new(false);
-            for scenario in ["S16a.full", "S16a.client", "C11.full", "C11.client"] {
-                assert!(report_owner_exclusion(scenario));
-                indexed(scenario, async {
-                    ran.set(true);
-                    Err("excluded journey was polled".into())
-                })
-                .await;
-            }
-            assert!(!ran.get());
-            assert!(!report_owner_exclusion("C20a.full"));
-            assert!(!report_owner_exclusion("C20d.full"));
-            Ok(())
-        })
     }
 
     fn new_watch(harness: &'static Harness) -> Watch {
