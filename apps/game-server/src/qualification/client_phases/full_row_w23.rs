@@ -477,6 +477,23 @@ async fn travel_to_svargrond(
     Ok(())
 }
 
+async fn grant_w23_premium(session: &str) -> TestResult {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    tokio::time::timeout(Duration::from_secs(20), async {
+        let mut control = tokio::net::UnixStream::connect(socket).await?;
+        control.write_all(format!("qualify {session} w23-premium\n").as_bytes()).await?;
+        control.shutdown().await?;
+        let mut answer = Vec::new();
+        control.take(65).read_to_end(&mut answer).await?;
+        if answer != b"qualified\n" {
+            return Err(format!("W23 Premium fixture reply={:?}", String::from_utf8_lossy(&answer)).into());
+        }
+        Ok(())
+    })
+    .await?
+}
+
 async fn prepare_svargrond_travel(client: &mut DevClientSession, price: u64) -> TestResult {
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let coins = u32::try_from(price.div_ceil(100))?;
@@ -487,7 +504,7 @@ async fn prepare_svargrond_travel(client: &mut DevClientSession, price: u64) -> 
         request_fixture_control(session.clone(), "--profile", format!("item-3035-{coins}"))
             .await
             .map_err(|error| format!("step=boat-fare {error}"))?;
-        request_fixture_control(session, "--profile", "w23-premium".into())
+        grant_w23_premium(&session)
             .await
             .map_err(|error| format!("step=boat-premium {error}"))?;
         Ok(())
