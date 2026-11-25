@@ -1568,10 +1568,11 @@ mod protected_loot_tests {
                 incomplete_tables.push(creature);
             }
         }
-        // Zamulosh's exact stone wall is immovable and requires a settlement
-        // destination the carried-loot loader does not support.
-        assert_eq!(missing, ["oteryn:item.tibia.i22555"]);
-        assert_eq!(incomplete_tables, ["oteryn:creature.zamulosh"]);
+        assert!(missing.is_empty(), "unqualified carried Items: {missing:?}");
+        assert!(
+            incomplete_tables.is_empty(),
+            "incomplete carried tables: {incomplete_tables:?}"
+        );
         for creature in [
             "oteryn:creature.ratmiral_blackwhiskers",
             "oteryn:creature.tentugly_s_head",

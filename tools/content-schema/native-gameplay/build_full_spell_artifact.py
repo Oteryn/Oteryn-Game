@@ -722,6 +722,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         nrwicked_profiles.bind_hard_loot(ROOT, creatures, definitions, tables)
         import cloot3_item_profiles
         cloot3_creatures = cloot3_item_profiles.creatures(ROOT)
+        cloot3_item_profiles.project_zamulosh_carried_loot(tables)
         # The retained WorldObject i51302 has no corresponding drop in these
         # exact Crystal Lua tables or their TibiaWiki loot lists.
         for creature in ('ratmiral_blackwhiskers', 'tentugly_s_head', 'the_dread_maiden'):

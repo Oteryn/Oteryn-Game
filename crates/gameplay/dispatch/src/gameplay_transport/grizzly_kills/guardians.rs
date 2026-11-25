@@ -175,10 +175,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     continue;
                 };
-                if runtime
-                    .install_creature_policy(actor, &objective.creature)
-                    .is_err()
+                // This authored guardian's seal and return passage belong to
+                // the quest death objective. Give it the same death owner as
+                // the generic Ferumbras runtime, even on a mixed Channel.
+                let installed = if objective.key == "oteryn:quest-death/questpc7-ferumbras-zamulosh"
+                    && objective.creature == "oteryn:creature.zamulosh"
                 {
+                    runtime.install_creature_policy_with_classic_death(actor, &objective.creature)
+                } else {
+                    runtime.install_creature_policy(actor, &objective.creature)
+                };
+                if installed.is_err() {
                     let _ = runtime.remove_encounter_actor(actor);
                     continue;
                 }

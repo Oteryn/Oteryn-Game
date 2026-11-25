@@ -18,6 +18,7 @@ commits; review `git status` and commit the merge yourself.
 
 Use `--resolve --no-stage` for a worker that must leave the Git index untouched.
 This requires a conflict-free worktree; it refreshes the bundle pins without staging.
+Set OTERYN_CLOOT3_SOURCE_CACHE to a verified Crystal input cache to refresh the CLOOT3 capture.
 
 With `--resolve` it finally runs `world-bundle-compiler pin-refresh` on the staged merge, so the
 World pins (`content/world/pins/<slug>.json` and `.identity.json`) and the preproduction
@@ -1165,6 +1166,8 @@ def main() -> int:
     if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
+    if args.resolve and (source_cache := os.environ.get("OTERYN_CLOOT3_SOURCE_CACHE")):
+        run(["python3", "tools/content-migration/cloot3_item_profiles.py", "--source-cache", source_cache])
     run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     run(

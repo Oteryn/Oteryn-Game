@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 
 import boss_corpse_profiles as crystal
-from build_full_spell_artifact import native_loot_yield_facts
+from build_full_spell_artifact import native_corpse_capacity, native_loot_yield_facts
 from grizzly_shop_profiles import accepted_first
 from import_cyclopedia_global import load_weights
 
@@ -21,6 +21,7 @@ ITEMS = 'content/items/definitions/spell-native-profiles.json'
 CRYSTAL_BINDINGS = 'imports/crystalserver/bindings/items.json'
 # Fixed donor yields require non-carried settlement. Creature loot custody requires pickup.
 WORLD_YIELDS = {22555}
+ZAMULOSH_CORPSE = 22495
 # The three selected tables' donor Lua and Wiki list no i51302 yield. The client
 # appearance is a fixed unclassified WorldObject (qualified-world-wiki46-fixed3).
 INVALID_WORLD_REF = 51302
@@ -49,6 +50,23 @@ def creatures(root):
     return set((root / COHORT).read_text().splitlines())
 
 
+def project_zamulosh_carried_loot(tables):
+    """Leave the canonical independent stone-wall roll in the source table."""
+    key = 'oteryn:loot.creature.zamulosh'
+    table = tables[key]
+    wall = {'item': item_ref(22555), 'min_count': 1, 'max_count': 1, 'probability_ppm': 5000}
+    if table['algorithm'] != 'IndependentBernoulliPpm' or table['entries'].count(wall) != 1:
+        raise ValueError(f'CLOOT3_ZAMULOSH_WORLD_YIELD:{key}')
+    tables[key] = {**table, 'entries': [entry for entry in table['entries'] if entry != wall]}
+
+
+def has_native_custody(reference, record):
+    if reference == item_ref(ZAMULOSH_CORPSE):
+        return (record['admission'] == crystal.corpse_admission(ZAMULOSH_CORPSE)
+                and native_corpse_capacity(reference, record, reward_boss=True) == 8)
+    return native_loot_yield_facts(reference, record) is not None
+
+
 def capture(root, source_cache):
     def base_document(path):
         return json.loads(subprocess.check_output(['git', 'show', f'{BASE}:{path}'], cwd=root))
@@ -75,6 +93,7 @@ def capture(root, source_cache):
                if native_loot_yield_facts(facts[key]['item'], existing.get(key, {})) is None}
     pending -= WORLD_YIELDS | {INVALID_WORLD_REF, ICE_CUBE_VISUAL}
     pending.update(AMULET_DISCHARGE.values())
+    pending.add(ZAMULOSH_CORPSE)
     source = crystal.source
     blobs = crystal.load_source_blobs(source_cache)
     xml_raw = blobs['data/items/items.xml']
@@ -95,6 +114,7 @@ def capture(root, source_cache):
         bindings[external] = binding
     weights = load_weights(root)
     records = []
+    ground_corpses = []
     for identifier in sorted(pending):
         node = xml.get(identifier)
         if node is None and identifier not in NEW_BINDINGS:
@@ -124,13 +144,21 @@ def capture(root, source_cache):
                 'stop_duration': source.K(True),
                 'decay_target': source.K({key: target[key] for key in ('key', 'revision')}),
             })
-        if native_loot_yield_facts(reference, row) is None:
+        if not has_native_custody(reference, row):
             raise ValueError(f'CLOOT3_DONOR_CUSTODY:{identifier}')
-        records.append(row)
+        if identifier == ZAMULOSH_CORPSE:
+            # Crystal items.xml has no decay/capacity override for 22495.
+            # The appearance marks a corpse container, using the loader's eight slots.
+            if not appearance['flags'].get('flags.corpse'):
+                raise ValueError(f'CLOOT3_DONOR_CORPSE:{identifier}')
+            ground_corpses.append(row)
+        else:
+            records.append(row)
     return {
         COHORT: ''.join(creature + '\n' for creature in cohort).encode(),
         CAPTURE: b'{"source_revision":"' + crystal.PIN.encode() + b'","records":[\n'
-                 + b',\n'.join(crystal.encode(row).rstrip(b'\n') for row in records) + b'\n]}\n',
+                 + b',\n'.join(crystal.encode(row).rstrip(b'\n') for row in records)
+                 + b'\n],"ground_corpses":' + crystal.encode(ground_corpses).rstrip(b'\n') + b'}\n',
         BINDINGS: json.dumps(extra, indent=2).encode() + b'\n',
     }
 
@@ -142,23 +170,28 @@ def complete_records(root, records, order):
     accepted = crystal.binding_index((root / CRYSTAL_BINDINGS).read_bytes())
     accepted.update((row['external_id'], row) for row in json.loads((root / BINDINGS).read_bytes()))
     current = {row['production_definition']['production_key']: row for row in records}
-    for observed in packet['records']:
+    ground_corpses = packet['ground_corpses']
+    if [row['production_binding']['target'] for row in ground_corpses] != [item_ref(ZAMULOSH_CORPSE)]:
+        raise ValueError('CLOOT3_CORPSE_SOURCE_SET')
+    for observed in packet['records'] + ground_corpses:
         binding = observed['production_binding']
         reference = binding['target']
         key = reference['key']
         if accepted.get(binding['external_id']) != binding:
             raise ValueError(f'CLOOT3_EXACT_BINDING:{key}')
+        if not has_native_custody(reference, observed):
+            raise ValueError(f'CLOOT3_CAPTURE_CUSTODY:{key}')
         row = current.get(key)
         if row is None:
             current[key] = observed
-        elif native_loot_yield_facts(reference, row) is None:
+        elif not has_native_custody(reference, row):
             if row['production_definition'] != observed['production_definition'] or row['production_binding'] != binding:
                 raise ValueError(f'CLOOT3_NATIVE_IDENTITY:{key}')
             # Keep known use, text, equipment and custody facts from other owners.
             for group in ('classification', 'physical', 'stack', 'container', 'charges'):
                 row['semantics'][group] = accepted_first(row['semantics'][group], observed['semantics'][group])
             row['admission'] = observed['admission']
-            if native_loot_yield_facts(reference, row) is None:
+            if not has_native_custody(reference, row):
                 raise ValueError(f'CLOOT3_NATIVE_CUSTODY:{key}')
     records[:] = sorted(current.values(), key=order)
 

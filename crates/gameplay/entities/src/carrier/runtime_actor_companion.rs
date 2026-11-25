@@ -857,6 +857,25 @@ impl ChannelRuntimeV1 {
         actor: ExactActorRef,
         definition_key: &str,
     ) -> Result<(), CarrierError> {
+        self.install_creature_policy_for_death_owner(actor, definition_key, false)
+    }
+
+    /// A quest-owned guardian uses its authored death transition with classic
+    /// reward settlement while other creatures retain their source callbacks.
+    pub fn install_creature_policy_with_classic_death(
+        &mut self,
+        actor: ExactActorRef,
+        definition_key: &str,
+    ) -> Result<(), CarrierError> {
+        self.install_creature_policy_for_death_owner(actor, definition_key, true)
+    }
+
+    fn install_creature_policy_for_death_owner(
+        &mut self,
+        actor: ExactActorRef,
+        definition_key: &str,
+        classic_death: bool,
+    ) -> Result<(), CarrierError> {
         self.assert_actor_spell_unreserved(actor)?;
         let policy = self.companion_policy(definition_key)?;
         let PreparedNativeHealthMetadata {
@@ -864,6 +883,7 @@ impl ChannelRuntimeV1 {
             mirror_births,
             death_events,
         } = self.prepare_native_health_metadata(&policy)?;
+        let death_events = death_events.filter(|_| !classic_death);
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied {
             health,
