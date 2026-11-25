@@ -6,7 +6,7 @@ use super::{
 use crate::durability::{
     DurabilityRoot,
     character_authority::ReconciledCharacterAuthority,
-    store::{DeliveryReceipt, PaidStoreCosmeticIntent, PurchaseRequest, StorePurchaseHistoryEntry},
+    store::{DeliveryReceipt, PaidStoreCosmeticIntent, PendingStorePurchase, PurchaseRequest, StorePurchaseHistoryEntry},
 };
 use crate::native_admission_source::store::{
     DeliveryIntent, OperationCursor, OperationKind, ProtocolError, PurchaseResult,
@@ -348,12 +348,31 @@ async fn recover_cosmetic(
         return Some(());
     }
 
-    // A lost purchase reply leaves a reservation but no purchase-history row.
-    // Replay its original confirmation and require Platform to name this order.
-    let pending = root
-        .pending_store_cosmetic_purchase(account, offer.clone())
-        .await
-        .ok()??;
+    // The intent has no Character or request ID. Replay only retained
+    // confirmations, and require the original Platform order and operation.
+    let mut after = [0; 16];
+    loop {
+        let candidates = root.unanswered_store_cosmetic_purchases(account, offer.clone(), after)
+            .await.ok()?;
+        after = candidates.last()?.purchase_id;
+        for pending in candidates {
+            if retain_cosmetic_answer(root, client, &source, pending).await.is_some() {
+                return root.recover_paid_store_cosmetic(authority, intent()).await.ok()?.then_some(());
+            }
+        }
+    }
+}
+
+async fn retain_cosmetic_answer(
+    root: &DurabilityRoot,
+    client: &mut StoreClient,
+    source: &DeliveryIntent,
+    pending: PendingStorePurchase,
+) -> Option<()> {
+    let account = uuid_bytes(&source.account_id)?;
+    let offer = source.offer_key.as_ref()?;
+    let revision = source.catalog_revision.as_ref()?;
+    let order = uuid_bytes(source.order_id.as_deref()?)?;
     let catalogue = COSMETIC_CATALOGUE
         .iter()
         .chain(PREDECESSOR_CATALOGUES.iter().flatten())
@@ -423,8 +442,5 @@ async fn recover_cosmetic(
     )
     .await
     .ok()?;
-    root.recover_paid_store_cosmetic(authority, intent())
-        .await
-        .ok()?;
     Some(())
 }

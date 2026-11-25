@@ -103,7 +103,7 @@ impl RuntimeCatalogue {
             "source": "rulesets/character/blessings/catalogue.json",
             "offers": offers,
         });
-        Self::from_json(&serde_json::to_vec(&document).ok()?)
+        super::load_active_catalogue(&serde_json::to_vec(&document).ok()?)
     }
 
     /// `None` for anything but a closed, non-empty v1 document of positive Tibia Coin prices.

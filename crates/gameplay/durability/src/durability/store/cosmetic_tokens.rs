@@ -99,29 +99,31 @@ async fn already_owned(
 /// journal must keep its reservation until its original Platform id is resolved.
 async fn clear_legacy_refusals(
     tx: &mut Transaction<'_, Postgres>,
-    account: &[u8; 16],
+    request: &PurchaseRequest,
     offer: &str,
 ) -> Result<(), StoreDurabilityError> {
     sqlx::query(
         "DELETE FROM game_character_store_cosmetics c USING store_purchase_requests p
          WHERE c.purchase_id=p.purchase_request_id AND c.offer_key=$2 AND c.operation_id IS NULL
-           AND p.account_id=encode($1,'hex')::uuid AND p.state=2
+           AND p.account_id=encode($1,'hex')::uuid AND c.character_id=encode($3,'hex')::uuid
+           AND p.state=2
            AND (convert_from(p.answer,'UTF8')::jsonb ->> 'result') IN
                ('STALE_QUOTE','OFFER_UNAVAILABLE','PURCHASE_DISABLED','INSUFFICIENT_BALANCE','ACCOUNT_RESTRICTED')",
-    ).bind(account.as_slice()).bind(offer).execute(&mut **tx).await?;
+    ).bind(request.account_id.as_slice()).bind(offer).bind(request.character_id.as_slice()).execute(&mut **tx).await?;
     Ok(())
 }
 
-async fn pending_account_purchase(
+async fn pending_character_purchase(
     tx: &mut Transaction<'_, Postgres>,
-    account: &[u8; 16],
+    request: &PurchaseRequest,
     offer: &str,
 ) -> Result<bool, StoreDurabilityError> {
     Ok(sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_character_store_cosmetics c
          JOIN store_purchase_requests p ON p.purchase_request_id=c.purchase_id
-         WHERE c.offer_key=$2 AND c.operation_id IS NULL AND p.account_id=encode($1,'hex')::uuid)",
-    ).bind(account.as_slice()).bind(offer).fetch_one(&mut **tx).await?)
+         WHERE c.offer_key=$2 AND c.operation_id IS NULL AND p.account_id=encode($1,'hex')::uuid
+           AND c.character_id=encode($3,'hex')::uuid)",
+    ).bind(request.account_id.as_slice()).bind(offer).bind(request.character_id.as_slice()).fetch_one(&mut **tx).await?)
 }
 
 pub struct PendingStorePurchase {
@@ -141,11 +143,11 @@ pub struct PaidStoreCosmeticIntent {
 }
 
 impl DurabilityRoot {
-    /// Find an unfinished coin purchase on this account, including a different
-    /// character's purchase. The caller must recover its exact historical quote.
+    /// Find the buyer's unfinished coin purchase for a foreground confirmation.
     pub async fn pending_store_cosmetic_purchase(
         &self,
         account: [u8; 16],
+        character: [u8; 16],
         offer: String,
     ) -> Result<Option<PendingStorePurchase>, StoreDurabilityError> {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
@@ -155,10 +157,11 @@ impl DurabilityRoot {
                  FROM game_character_store_cosmetics c
                  JOIN store_purchase_requests p ON p.purchase_request_id=c.purchase_id
                  WHERE c.offer_key=$2 AND c.operation_id IS NULL AND p.account_id=encode($1,'hex')::uuid
+                   AND c.character_id=encode($3,'hex')::uuid
                    AND (p.state=1 OR EXISTS(SELECT 1 FROM game_store_purchase_history h
                                           WHERE h.purchase_request_id=c.purchase_id))
                  ORDER BY p.created_at,c.purchase_id LIMIT 1",
-            ).bind(account.as_slice()).bind(offer).fetch_optional(&mut *tx).await?;
+            ).bind(account.as_slice()).bind(offer).bind(character.as_slice()).fetch_optional(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(row.map(|(purchase_id, character_id, world_id, binding_digest)| PendingStorePurchase {
                 purchase_id: *purchase_id.as_bytes(),
@@ -166,6 +169,34 @@ impl DurabilityRoot {
                 world_id: *world_id.as_bytes(),
                 binding_digest,
             })))
+        })).await?
+    }
+
+    /// Page through unanswered confirmations for an order whose Platform intent
+    /// names the account and offer but has no Character or purchase request ID.
+    pub async fn unanswered_store_cosmetic_purchases(
+        &self,
+        account: [u8; 16],
+        offer: String,
+        after: [u8; 16],
+    ) -> Result<Vec<PendingStorePurchase>, StoreDurabilityError> {
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let rows: Vec<(sqlx::types::Uuid, sqlx::types::Uuid, sqlx::types::Uuid, Vec<u8>)> = sqlx::query_as(
+                "SELECT c.purchase_id,c.character_id,c.world_id,p.binding_digest
+                 FROM game_character_store_cosmetics c
+                 JOIN store_purchase_requests p ON p.purchase_request_id=c.purchase_id
+                 WHERE c.offer_key=$2 AND c.operation_id IS NULL AND p.account_id=encode($1,'hex')::uuid
+                   AND p.state=1 AND c.purchase_id>encode($3,'hex')::uuid
+                 ORDER BY c.purchase_id LIMIT 16",
+            ).bind(account.as_slice()).bind(offer).bind(after.as_slice()).fetch_all(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(rows.into_iter().map(|(purchase_id, character_id, world_id, binding_digest)| PendingStorePurchase {
+                purchase_id: *purchase_id.as_bytes(),
+                character_id: *character_id.as_bytes(),
+                world_id: *world_id.as_bytes(),
+                binding_digest,
+            }).collect()))
         })).await?
     }
 
@@ -227,9 +258,9 @@ impl DurabilityRoot {
                     PurchaseRequestState::Sent => {}
                 }
                 lock_account_offer(&mut tx, &request.account_id, &offer_key).await?;
-                clear_legacy_refusals(&mut tx, &request.account_id, &offer_key).await?;
+                clear_legacy_refusals(&mut tx, &request, &offer_key).await?;
                 if already_owned(&mut tx, &fence, &content, offer).await?
-                    || pending_account_purchase(&mut tx, &request.account_id, &offer_key).await?
+                    || pending_character_purchase(&mut tx, &request, &offer_key).await?
                 {
                     return Ok(refused(wire::StorePurchaseCode::OfferUnavailable));
                 }
@@ -282,7 +313,7 @@ impl DurabilityRoot {
                         }
                         super::purchase::record_request(&mut tx, &request).await?;
                         lock_account_offer(&mut tx, &request.account_id, &offer).await?;
-                        clear_legacy_refusals(&mut tx, &request.account_id, &offer).await?;
+                        clear_legacy_refusals(&mut tx, &request, &offer).await?;
                         let own_pending: bool = sqlx::query_scalar(
                             "SELECT EXISTS(SELECT 1 FROM game_character_store_cosmetics
                              WHERE purchase_id=encode($1,'hex')::uuid AND operation_id IS NULL AND offer_key=$2)",
@@ -294,7 +325,7 @@ impl DurabilityRoot {
                         let cosmetic = store_cosmetics::offer(&offer)
                             .ok_or(StoreDurabilityError::AuthorityRejected)?;
                         if already_owned(&mut tx, &fence, &content, cosmetic).await?
-                            || pending_account_purchase(&mut tx, &request.account_id, &offer).await?
+                            || pending_character_purchase(&mut tx, &request, &offer).await?
                         {
                             return Ok(false);
                         }
@@ -409,8 +440,7 @@ async fn apply_paid_cosmetic(
     offer: &str,
 ) -> Result<DeliveryReceipt, StoreDurabilityError> {
     if store_cosmetics::offer(offer).is_none() { return Err(StoreDurabilityError::AuthorityRejected); }
-    // Foreground delivery and receipt insertion both need the buyer root. Take it
-    // before the reservation row, including offline or a retry from another character.
+    // Take the buyer root before the reservation row, including offline recovery.
     sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR KEY SHARE")
         .bind(identity.character_id.as_slice()).fetch_one(&mut **tx).await?;
     let row: Option<(sqlx::types::Uuid,Option<sqlx::types::Uuid>)> = sqlx::query_as(

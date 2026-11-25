@@ -124,15 +124,18 @@ impl DurabilityRoot {
                      SELECT encode($1,'hex')::uuid,p.purchase_request_id,encode($4,'hex')::uuid
                      FROM store_purchase_requests p
                      WHERE p.purchase_request_id=encode($2,'hex')::uuid AND p.account_id=encode($3,'hex')::uuid
+                       AND p.character_id=encode($5,'hex')::uuid
                      ON CONFLICT(retry_id) DO NOTHING",
                 ).bind(retry.purchase_request_id.as_slice()).bind(original.as_slice())
-                    .bind(retry.account_id.as_slice()).bind(world.as_slice()).execute(&mut *tx).await?;
+                    .bind(retry.account_id.as_slice()).bind(world.as_slice())
+                    .bind(retry.character_id.as_slice()).execute(&mut *tx).await?;
                 let matches: bool = sqlx::query_scalar(
-                    "SELECT EXISTS(SELECT 1 FROM game_store_purchase_retries
-                     WHERE retry_id=encode($1,'hex')::uuid AND original_id=encode($2,'hex')::uuid
-                       AND world_id=encode($3,'hex')::uuid)",
+                    "SELECT EXISTS(SELECT 1 FROM game_store_purchase_retries r
+                     JOIN store_purchase_requests p ON p.purchase_request_id=r.original_id
+                     WHERE r.retry_id=encode($1,'hex')::uuid AND r.original_id=encode($2,'hex')::uuid
+                       AND r.world_id=encode($3,'hex')::uuid AND p.character_id=encode($4,'hex')::uuid)",
                 ).bind(retry.purchase_request_id.as_slice()).bind(original.as_slice())
-                    .bind(world.as_slice()).fetch_one(&mut *tx).await?;
+                    .bind(world.as_slice()).bind(retry.character_id.as_slice()).fetch_one(&mut *tx).await?;
                 if matches { Ok(()) } else { Err(StoreDurabilityError::ConflictingBinding) }
             }.await;
             if correct.is_ok() {
