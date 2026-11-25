@@ -301,7 +301,42 @@ def load_module(name, path):
 
 
 def lost_brother_shop():
-    # Crystal 201189f8 tarun.lua:98-104 gates the canonical shop until the report.
+    # Crystal 201189f8 tarun.lua:109-114 gates the exact menu at lines 124-149.
+    source_prices = {
+        "BuyFromPlayer": {
+            11514: 110,
+            283: 5,
+            284: 5,
+            285: 5,
+            21974: 270,
+            10304: 475,
+            10321: 100,
+            7786: 700,
+            21975: 350,
+            10311: 400,
+            5879: 100,
+            3044: 100,
+            2874: 5,
+        },
+        "SellToPlayer": {
+            239: 225,
+            238: 158,
+            7642: 254,
+            266: 50,
+            268: 56,
+            236: 115,
+            237: 108,
+            23375: 650,
+            7643: 379,
+            23373: 488,
+            23374: 488,
+        },
+    }
+    expected = {
+        (f"oteryn:item.tibia.i{item}", direction, price)
+        for direction, items in source_prices.items()
+        for item, price in items.items()
+    }
     service = "oteryn:service.trade.tarun"
     directory = ROOT / "content/services/trade"
     index = json.loads((directory / "index.json").read_bytes())
@@ -311,6 +346,16 @@ def lost_brother_shop():
         for row in json.loads((ROOT / name).read_bytes())["records"]
     ]
     (shop,) = [row for row in declarations if row["identity"]["key"] == service]
+
+    def identity(offer):
+        return (offer["item"]["key"], offer["direction"], offer["unit_price"])
+
+    offers = [offer for offer in shop["offers"] if identity(offer) in expected]
+    if (
+        len(offers) != len(expected)
+        or {identity(offer) for offer in offers} != expected
+    ):
+        raise ValueError("Tarun catalogue differs from Crystal 201189f8 shop")
     requirement = {
         "quest": "oteryn:quest.adventurers_guild",
         "track": "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest",
@@ -322,9 +367,22 @@ def lost_brother_shop():
         "npc": "oteryn:npc.tarun",
         "service": service,
         "sources": [
-            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:98-104"
+            (
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:109-149:sha256:"
+                "8e032f7015dd3ee2135ba9552a588a3f26083327e23fb7a1619423486c482fde"
+            )
         ],
-        "offers": [offer | {"requirements": [requirement]} for offer in shop["offers"]],
+        "offers": [
+            offer
+            | {"requirements": [requirement]}
+            # Crystal's unqualified vial is the empty fluid variant.
+            | (
+                {"sub_type": 0}
+                if offer["item"]["key"] == "oteryn:item.tibia.i2874"
+                else {}
+            )
+            for offer in offers
+        ],
     }
 
 

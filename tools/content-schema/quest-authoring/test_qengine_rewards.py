@@ -19,7 +19,8 @@ class QuestRewards(unittest.TestCase):
         return [
             row["key"]
             for row in generated["callbacks"] + chosen["callbacks"]
-            if row["quest"] == "oteryn:quest.children_of_the_revolution_quest"
+            if row["key"] not in q.qmech_m39.PHANTOM_SOURCE_ONLY
+            and row["quest"] == "oteryn:quest.children_of_the_revolution_quest"
             and row["npc"] == "oteryn:npc.zalamon"
             and row["topic"] == topic
             and keyword in row["keywords"]
@@ -36,6 +37,14 @@ class QuestRewards(unittest.TestCase):
         )
 
     def test_phantom_army_partial_refuses_entry_without_battlefield_settlement(self):
+        generated = json.loads(self.outputs[q.qmech_m39.SHARD])
+        held = [
+            row
+            for row in generated["callbacks"]
+            if row["key"] in q.qmech_m39.PHANTOM_SOURCE_ONLY
+        ]
+        self.assertEqual(len(held), 2)
+        self.assertEqual({row["key"] for row in held}, q.qmech_m39.PHANTOM_SOURCE_ONLY)
         self.assertEqual(self.zalamon_phantom_army_callbacks(18, 0, 13, "yes"), [])
         self.assertEqual(self.zalamon_phantom_army_callbacks(19, 1, 0, "mission"), [])
         offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])

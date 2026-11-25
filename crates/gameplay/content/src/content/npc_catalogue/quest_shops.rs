@@ -177,7 +177,22 @@ pub(super) fn declarations(
             key: shop.service.clone(),
             revision: "definition-r1".into(),
         };
-        if records.iter().any(|(r, _)| **r == service) {
+        let offers = shop.offers.iter().map(Offer::project).collect();
+        if let Some((_, existing)) = records.iter().find(|(r, _)| **r == service) {
+            if !matches!(*declaration, ProjectV2Declaration::Npc { services, .. } if services.contains(&service))
+            {
+                continue;
+            }
+            let mut existing = (**existing).clone();
+            if let ProjectV2Declaration::Service {
+                offers: existing_offers,
+                ..
+            } = &mut existing
+            {
+                // The quest predicate qualifies exactly these source offers.
+                *existing_offers = offers;
+                additions.push((service, existing));
+            }
             continue;
         }
         let mut npc = (**declaration).clone();
@@ -194,7 +209,7 @@ pub(super) fn declarations(
                     revision: "definition-r1".into(),
                 },
                 bank: false,
-                offers: shop.offers.iter().map(Offer::project).collect(),
+                offers,
                 recipes: Vec::new(),
                 routes: Vec::new(),
                 fields: Vec::new(),
@@ -228,6 +243,14 @@ mod tests {
             .flat_map(|service| &model.services()[service].offers)
             .collect();
         assert_eq!(offers.len(), 24);
+        assert_eq!(
+            offers
+                .iter()
+                .find(|offer| offer.item.key == "oteryn:item.tibia.i2874")
+                .and_then(|offer| offer.sub_type),
+            Some(0),
+            "Crystal's vial offer trades only empty vials"
+        );
         for offer in offers {
             let gated = required(
                 shops()?,

@@ -630,8 +630,20 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, 
 /// available to immutable receipt reconciliation and catalogue validation.
 pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
     let mut callbacks = load_for(catalogue)?;
-    callbacks.retain(super::authored_bindings::personal_event_offered);
+    callbacks.retain(|callback| {
+        !phantom_army_source_only(&callback.key)
+            && super::authored_bindings::personal_event_offered(callback)
+    });
     Ok(callbacks)
+}
+
+// Battlefield settlement is still held. The chosen saved-state report is the
+// sole executable reward owner, including for characters already at stage 20.
+pub(super) fn phantom_army_source_only(key: &str) -> bool {
+    matches!(
+        key,
+        "oteryn:quest-reward/l2-zalamon-phantom-accept" | "oteryn:quest-reward/l2-zalamon-finish"
+    )
 }
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
@@ -1462,9 +1474,10 @@ fn extend_document(
 }
 fn extend_callbacks(
     catalogue: QuestStateCatalogue,
-    callbacks: Vec<RewardCallback>,
+    mut callbacks: Vec<RewardCallback>,
     declarations: Vec<TrackDeclaration>,
 ) -> Result<QuestStateCatalogue, String> {
+    callbacks.retain(|callback| !phantom_army_source_only(&callback.key));
     let npc_legacy = catalogue.npc_legacy.clone();
     let published = published_markers::keys()?;
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();

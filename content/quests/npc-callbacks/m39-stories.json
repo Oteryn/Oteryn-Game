@@ -1011,6 +1011,46 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l2-zalamon-finish",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i10199",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this serpent crest for your service to the resistance."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:150-162"
+      ],
+      "experience": 10000,
+      "completes": true
+    },
+    {
       "key": "oteryn:quest-reward/l2-zalamon-map",
       "quest": "oteryn:quest.children_of_the_revolution_quest",
       "npc": "oteryn:npc.zalamon",
@@ -1047,6 +1087,46 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:262-275"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-zalamon-phantom-accept",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 13,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 18,
+          "maximum": 18,
+          "set": 19
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Go through the portal and approach the gate."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:337-345"
       ]
     },
     {

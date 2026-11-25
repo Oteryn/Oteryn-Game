@@ -10,6 +10,12 @@ NPCS = ("cael", "curos", "zalamon", "muriel")
 ITEMS = {131, 4852}
 SHARD = "content/quests/npc-callbacks/m39-stories.json"
 WORLD_SHARD = "content/quests/world-callbacks/m39-stories.json"
+PHANTOM_SOURCE_ONLY = frozenset(
+    {
+        "oteryn:quest-reward/l2-zalamon-phantom-accept",
+        "oteryn:quest-reward/l2-zalamon-finish",
+    }
+)
 
 
 def append(add, callbacks, offers, declarations, inputs, pin):
@@ -410,8 +416,29 @@ def append(add, callbacks, offers, declarations, inputs, pin):
             "Fetch grease from the shelf in the storeroom, then arrange the symbols with the levers."
         ],
     )
-    # Phantom Army is partial until its four-player battlefield settlement is
-    # wired. Keep the chosen report for saved returns from the battlefield.
+    # Retain the source callbacks for catalogue inspection. The runtime keeps
+    # them held until battlefield settlement, with one report for saved returns.
+    progress(
+        "phantom-accept",
+        18,
+        19,
+        "337-345",
+        "Go through the portal and approach the gate.",
+        topic=13,
+        words=("yes",),
+        mission=[("teleport_access", 0, 0, 1), ("mission05", -1, 0, 1)],
+    )
+    progress(
+        "finish",
+        20,
+        21,
+        "150-162",
+        "Take this serpent crest for your service to the resistance.",
+        mission=[("mission05", 2, 2, 3)],
+        give=(10199, 1),
+        experience=10_000,
+        completes=True,
+    )
 
     bone = "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit"
     warning = "Indeed there is something to be done, but I need someone more experienced. Come back later if you want to."

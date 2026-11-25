@@ -597,7 +597,9 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 260, 38, 39)
+        // Amenef's source-qualified corpse and full loot table move one row
+        // from corpse-inadmissible to admitted in the combined cohort.
+        (52, 259, 38, 40)
     );
     assert_eq!(
         admitted,

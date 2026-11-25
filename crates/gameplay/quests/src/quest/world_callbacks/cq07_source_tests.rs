@@ -113,7 +113,9 @@ fn realm_loader_binds_lever_to_independent_wall_and_switch_deadlines()
 fn children_loader_connects_zalamon_to_native_mission_sources()
 -> Result<(), Box<dyn std::error::Error>> {
     let state = load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
-    let npc = crate::quest::reward_callbacks::load_for(state.catalogue())?;
+    use crate::quest::reward_callbacks;
+    let npc = reward_callbacks::load_for(state.catalogue())?;
+    let offered = reward_callbacks::offered_for(state.catalogue())?;
     let quest = "oteryn:quest.children_of_the_revolution_quest";
     for (name, from, to) in [
         ("accept", 0, 1),
@@ -135,6 +137,10 @@ fn children_loader_connects_zalamon_to_native_mission_sources()
             .find(|s| s.track.ends_with("/questline"))
             .ok_or("mission phase")?;
         assert_eq!((route.minimum, route.maximum, route.set), (from, from, to));
+        if matches!(name, "phantom-accept" | "finish") {
+            assert!(!offered.iter().any(|row| row.key == callback.key));
+            assert!(state.catalogue().transition(&callback.key).is_none());
+        }
         if name == "finish" {
             assert_eq!(callback.experience, Some(10_000));
             assert_eq!(
