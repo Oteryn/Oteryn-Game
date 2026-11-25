@@ -166,7 +166,7 @@
     {"npc": "captain_jack_rat", "cell": [33791, 31383, 6], "line": 547, "direction": "north"},
     {"npc": "captain_kurt", "cell": [32097, 31964, 6], "line": 691, "direction": "north"},
     {"npc": "captain_marie_denise_banner", "cell": [33837, 32137, 4], "line": 238, "direction": "north"},
-    {"npc": "captain_max", "cell": [32298, 32895, 6], "line": 1079, "direction": "north", "nearby": {"cell": [32298, 32896, 6], "reason": "Keep the existing travel landing cell clear by using the adjacent NPC contact."}},
+    {"npc": "captain_max", "cell": [32298, 32895, 6], "line": 1079, "direction": "north"},
     {"npc": "captain_max_calassa", "cell": [31915, 32710, 6], "line": 992, "direction": "north"},
     {"npc": "captain_pelagia", "cell": [33491, 31710, 6], "line": 595, "direction": "north"},
     {"npc": "captain_seagull", "cell": [32735, 31670, 6], "line": 580, "direction": "north"},

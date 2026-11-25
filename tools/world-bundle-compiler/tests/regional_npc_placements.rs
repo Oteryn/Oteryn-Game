@@ -396,7 +396,7 @@ const CONTACTS: &[Contact] = &[
     ("oteryn:npc.braden", 32277, 32707, 7, Direction::North),
     ("oteryn:npc.bradford", 32299, 32837, 7, Direction::North),
     ("oteryn:npc.cameron", 32201, 32837, 7, Direction::North),
-    ("oteryn:npc.captain_max", 32298, 32896, 6, Direction::North),
+    ("oteryn:npc.captain_max", 32298, 32895, 6, Direction::North),
     (
         "oteryn:npc.captain_max_calassa",
         31915,
@@ -600,7 +600,7 @@ fn regional_npc_contacts_are_admitted_at_their_qualified_cells() -> Result<(), B
     assert!(project.families.routes.iter().any(|route| {
         route.service == returning_service
             && route.route == "liberty_bay"
-            && route.destination == (32298, 32895, 6)
+            && route.destination == (32298, 32896, 6)
     }));
     assert!(
         !report
