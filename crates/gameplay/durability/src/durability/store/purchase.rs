@@ -36,6 +36,40 @@ impl DurabilityRoot {
         })).await?
     }
 
+    /// Page legacy accepted journals whose offer is identifiable only by the buyer's quote binding.
+    pub async fn pending_legacy_paid_store_items(
+        &self,
+        account: [u8; 16],
+        world: [u8; 16],
+        after: Option<[u8; 16]>,
+    ) -> Result<Vec<super::PendingStorePurchase>, StoreDurabilityError> {
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let rows: Vec<(sqlx::types::Uuid, sqlx::types::Uuid, Vec<u8>)> = sqlx::query_as(
+                "SELECT p.purchase_request_id,p.character_id,p.binding_digest
+                 FROM store_purchase_requests p JOIN game_character_roots c USING(character_id)
+                 WHERE p.account_id=encode($1,'hex')::uuid AND c.world_id=encode($2,'hex')::uuid
+                   AND p.state=2 AND game_store_accepted_operation(p.answer) IS NOT NULL
+                   AND ($3::uuid IS NULL OR p.purchase_request_id>$3)
+                   AND NOT EXISTS(SELECT 1 FROM game_store_purchase_history h
+                                  WHERE h.purchase_request_id=p.purchase_request_id)
+                   AND NOT EXISTS(SELECT 1 FROM store_delivery_receipts r
+                                  WHERE r.operation_id=game_store_accepted_operation(p.answer))
+                   AND NOT EXISTS(SELECT 1 FROM game_store_restore_conflicts conflict
+                                  WHERE conflict.operation_id=game_store_accepted_operation(p.answer))
+                 ORDER BY p.purchase_request_id LIMIT 20",
+            ).bind(account.as_slice()).bind(world.as_slice()).bind(after.map(sqlx::types::Uuid::from_bytes))
+                .fetch_all(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(rows.into_iter().map(|(purchase_id, character_id, binding_digest)| super::PendingStorePurchase {
+                purchase_id: *purchase_id.as_bytes(),
+                character_id: *character_id.as_bytes(),
+                world_id: world,
+                binding_digest,
+            }).collect()))
+        })).await?
+    }
+
     /// Select unfinished purchases, including legacy journals identified by an exact quote.
     /// Paid journals without a receipt require one of the supplied exact quote bindings.
     /// Removed-offer recovery also limits unanswered journals to those bindings.

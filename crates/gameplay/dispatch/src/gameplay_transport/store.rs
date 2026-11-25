@@ -656,6 +656,31 @@ fn matching_quote_binding(
     Some((binding, digest))
 }
 
+/// Legacy accepted journals have no history row to supply the offer. Match the
+/// retained quote against the original buyer before deciding who can deliver it.
+async fn pending_paid_item(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    catalogue: &'static RuntimeCatalogue,
+    confirmed: &rules::PurchaseStoreOffer,
+    world: [u8; 16],
+) -> Result<Option<crate::durability::store::PendingStorePurchase>, crate::durability::store::StoreDurabilityError> {
+    let account = *confirmed.account_id.as_bytes();
+    if let Some(paid) = owner.root.pending_paid_store_item(account, confirmed.offer_key.clone(), world).await? {
+        return Ok(Some(paid));
+    }
+    let mut after = None;
+    loop {
+        let page = owner.root.pending_legacy_paid_store_items(account, world, after).await?;
+        let Some(last) = page.last() else {
+            return Ok(None);
+        };
+        after = Some(last.purchase_id);
+        if let Some(paid) = page.into_iter().find(|pending| retained_binding(catalogue, confirmed, pending).is_some()) {
+            return Ok(Some(paid));
+        }
+    }
+}
+
 async fn purchase_retained_or_new(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -743,7 +768,7 @@ async fn purchase_retained_or_new(
         let pending = if pending.is_none() && !retained_request {
             if ordinary_item {
                 let world = *admitted.world_id.as_bytes();
-                let paid = owner.root.pending_paid_store_item(account, request.offer_key.clone(), world).await.ok()?;
+                let paid = pending_paid_item(owner, catalogue, &confirmed, world).await.ok()?;
                 if paid.is_some() {
                     paid
                 } else {

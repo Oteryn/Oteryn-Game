@@ -21,6 +21,9 @@ GRANT EXECUTE ON FUNCTION game_store_accepted_operation(BYTEA) TO oteryn_game_ru
 
 CREATE INDEX store_purchase_accepted_operation
     ON store_purchase_requests(game_store_accepted_operation(answer)) WHERE state=2;
+CREATE INDEX store_purchase_accepted_account
+    ON store_purchase_requests(account_id,purchase_request_id)
+    WHERE state=2 AND game_store_accepted_operation(answer) IS NOT NULL;
 
 -- Extend the Prey release guard with the same accepted operation and permanent restore fence.
 CREATE OR REPLACE FUNCTION game_prey_purchase_release_guard() RETURNS trigger LANGUAGE plpgsql AS $$
@@ -49,35 +52,63 @@ BEGIN
     RETURN OLD;
 END $$;
 
-CREATE FUNCTION game_store_release_restored_reservations() RETURNS trigger
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+CREATE FUNCTION game_store_release_restored_reservation(operation UUID) RETURNS void
+LANGUAGE plpgsql STRICT AS $$
 DECLARE purchases UUID[];
 BEGIN
-    IF NEW.delivery_operation_id IS NOT NULL
-       OR EXISTS (SELECT 1 FROM store_delivery_receipts WHERE operation_id=NEW.operation_id) THEN
-        RETURN NEW;
+    -- Serialize the two arrival orders. After waiting, the reads below see whichever
+    -- side committed first, even when the outer statement began before that commit.
+    PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:store-restore-operation:'||operation::text,0));
+    IF NOT EXISTS (
+        SELECT 1 FROM game_store_restore_conflicts
+        WHERE operation_id=operation AND delivery_operation_id IS NULL
+    ) OR EXISTS (SELECT 1 FROM store_delivery_receipts WHERE operation_id=operation) THEN
+        RETURN;
     END IF;
     SELECT array_agg(purchase_request_id) INTO purchases FROM (
         SELECT purchase_request_id FROM store_purchase_requests
-        WHERE state=2 AND game_store_accepted_operation(answer)=NEW.operation_id
+        WHERE state=2 AND game_store_accepted_operation(answer)=operation
         LIMIT 2
     ) matches;
     IF cardinality(purchases) IS DISTINCT FROM 1 THEN
-        RETURN NEW;
+        RETURN;
     END IF;
 
     DELETE FROM game_character_store_cosmetics WHERE purchase_id=purchases[1] AND operation_id IS NULL;
     DELETE FROM game_prey_expansion_purchases WHERE purchase_id=purchases[1];
     DELETE FROM game_charm_expansion_purchases WHERE purchase_id=purchases[1];
     UPDATE game_hireling_store_reservations SET state=3 WHERE purchase_request_id=purchases[1] AND state=1;
+END $$;
+
+CREATE FUNCTION game_store_release_restored_reservations() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+    IF TG_RELID='game_store_restore_conflicts'::regclass THEN
+        PERFORM game_store_release_restored_reservation(NEW.operation_id);
+    ELSE
+        PERFORM game_store_release_restored_reservation(game_store_accepted_operation(NEW.answer));
+    END IF;
     RETURN NEW;
 END $$;
 
 DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_prey_purchase_release_guard() SET search_path=pg_catalog,%I,pg_temp',current_schema());
+    EXECUTE format('ALTER FUNCTION game_store_release_restored_reservation(UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
     EXECUTE format('ALTER FUNCTION game_store_release_restored_reservations() SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
+REVOKE ALL ON FUNCTION game_store_release_restored_reservation(UUID) FROM PUBLIC;
 REVOKE ALL ON FUNCTION game_store_release_restored_reservations() FROM PUBLIC;
 CREATE TRIGGER game_store_restore_release_reservations
     AFTER INSERT ON game_store_restore_conflicts
-    FOR EACH ROW EXECUTE FUNCTION game_store_release_restored_reservations();
+    FOR EACH ROW WHEN (NEW.delivery_operation_id IS NULL)
+    EXECUTE FUNCTION game_store_release_restored_reservations();
+CREATE TRIGGER game_store_answer_release_reservations
+    AFTER UPDATE OF state ON store_purchase_requests
+    FOR EACH ROW WHEN (OLD.state=1 AND NEW.state=2)
+    EXECUTE FUNCTION game_store_release_restored_reservations();
+
+DO $$ BEGIN
+    PERFORM game_store_release_restored_reservation(conflict.operation_id)
+    FROM game_store_restore_conflicts conflict
+    WHERE conflict.delivery_operation_id IS NULL;
+END $$;

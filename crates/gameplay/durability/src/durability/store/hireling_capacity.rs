@@ -103,28 +103,36 @@ impl super::super::DurabilityRoot {
                 return Ok(Err(StoreDurabilityError::AuthorityRejected));
             }
             super::hireling_reservation::lock_character(&mut tx, request.character_id).await?;
-            // Older Sent journals may already have debited Platform. Their exact binding
-            // is enough to replay the debit. The delivery transaction still checks Inbox space.
             let state = match super::purchase::read_request(&mut tx, &request).await {
-                Ok(Some(state)) => state,
-                Ok(None) => {
-                    if !can_receive_item(&mut tx, &fence, *weights, &definition).await? {
-                        return Ok(Ok(None));
-                    }
-                    if let Err(error) = super::purchase::insert_request(&mut tx, &request).await {
-                        return Ok(Err(error));
-                    }
-                    sqlx::query(
-                        "INSERT INTO game_store_item_reservations(purchase_request_id,character_id)
-                         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid)"
-                    ).bind(request.purchase_request_id.as_slice()).bind(request.character_id.as_slice())
-                        .execute(&mut *tx).await?;
-                    PurchaseRequestState::Sent
-                }
+                Ok(state) => state,
                 Err(error) => return Ok(Err(error)),
             };
+            if let Some(state @ PurchaseRequestState::Answered(_)) = state {
+                commit_semantic_transaction(tx, deadline).await?;
+                return Ok(Ok(Some(state)));
+            }
+            let reserved: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_store_item_reservations
+                 WHERE purchase_request_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid)",
+            ).bind(request.purchase_request_id.as_slice()).bind(request.character_id.as_slice())
+                .fetch_one(&mut *tx).await?;
+            if !reserved {
+                // A legacy Sent journal can precede the first Platform call. Replaying
+                // it can debit, so require a slot and capacity before making that call.
+                if !can_receive_item(&mut tx, &fence, *weights, &definition).await? {
+                    return Ok(Ok(None));
+                }
+                if state.is_none() && let Err(error) = super::purchase::insert_request(&mut tx, &request).await {
+                    return Ok(Err(error));
+                }
+                sqlx::query(
+                    "INSERT INTO game_store_item_reservations(purchase_request_id,character_id)
+                     VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid)",
+                ).bind(request.purchase_request_id.as_slice()).bind(request.character_id.as_slice())
+                    .execute(&mut *tx).await?;
+            }
             commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(Some(state)))
+            Ok(Ok(Some(PurchaseRequestState::Sent)))
         })).await?
     }
 }

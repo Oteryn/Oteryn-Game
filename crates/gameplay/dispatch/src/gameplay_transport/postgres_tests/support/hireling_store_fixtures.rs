@@ -162,6 +162,7 @@ pub(super) async fn house_scenario(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: AdmittedSession,
     producer: HouseStoreProducer,
+    previous_generation: Option<u64>,
 ) -> TestResult {
     let fence = admitted.item_fence.ok_or("House Store fence")?;
     let actor = admitted.runtime_actor.ok_or("House Store actor")?;
@@ -261,6 +262,24 @@ pub(super) async fn house_scenario(
     assert_eq!(count(harness, "SELECT count(*) FROM store_delivery_receipts").await?, 2);
     assert_eq!(count(harness, "SELECT count(*) FROM game_store_hireling_effects").await?, 2);
     assert_eq!(count(harness, "SELECT count(*) FROM game_hireling_store_reservations WHERE state=1").await?, 0);
+    let placement_generation = owner.root.store_publication_generation()
+        .await.map_err(debug)?.ok_or("reconciled placement generation")?;
+    if let Some(previous) = previous_generation {
+        // Model the retained delivery row from the previous generation while
+        // leaving the actual lamp placement and claim paths fully fenced.
+        assert_ne!(placement_generation, previous.to_string());
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("ALTER TABLE store_delivery_receipts DISABLE TRIGGER store_delivery_receipts_immutable")
+            .execute(&mut *tx).await?;
+        sqlx::query("UPDATE store_delivery_receipts SET recovery_generation=$2::text::numeric,
+                     receipt=convert_to(jsonb_set(convert_from(receipt,'UTF8')::jsonb, '{recovery_generation}',
+                                                  to_jsonb($2::text))::text,'UTF8')
+                     WHERE operation_id=encode($1,'hex')::uuid")
+            .bind(operation.as_slice()).bind(previous.to_string()).execute(&mut *tx).await?;
+        sqlx::query("ALTER TABLE store_delivery_receipts ENABLE TRIGGER store_delivery_receipts_immutable")
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
     let claim_id = uuid(&id(141));
     let ready = {
         let mut held = ledger.lock().expect("ledger");
@@ -305,11 +324,24 @@ pub(super) async fn house_scenario(
         published = tokio::time::timeout(std::time::Duration::from_secs(3), ready.notified()) =>
             published.map_err(|_| "placed Store lamp never published its Platform claim")?,
     }
-    let held = ledger.lock().expect("ledger");
-    let claim = held.claim_receipt.as_ref().ok_or("lamp claim receipt")?;
-    assert_eq!(claim["operation_id"], claim_id);
-    assert_eq!(claim["outcome"], "COMMITTED");
-    assert_eq!(claim["minted_quantity"], 1);
-    assert_eq!(held.debits, 2);
+    {
+        let held = ledger.lock().expect("ledger");
+        let claim = held.claim_receipt.as_ref().ok_or("lamp claim receipt")?;
+        assert_eq!(claim["operation_id"], claim_id);
+        assert_eq!(claim["outcome"], "COMMITTED");
+        assert_eq!(claim["minted_quantity"], 1);
+        assert_eq!(claim["recovery_generation"], placement_generation, "first lamp CLAIM must use the placement generation");
+        assert_eq!(held.debits, 2);
+    }
+    if previous_generation.is_some() {
+        let intent = wire::encode_inbox_claim_request(&wire::StoreInboxClaimRequest {
+            fulfilment_unit_id: uuid(&operation),
+        }).map_err(debug)?;
+        let replay = serve(owner, &mut admitted, (wire::COMMAND_TYPE_STORE_INBOX_CLAIM, intent)).await?;
+        assert_eq!(replay.0, CommandStatus::Accepted);
+        let receipt = wire::decode_claim_receipt(&replay.1).map_err(debug)?;
+        assert_eq!(receipt.result, wire::StoreClaimCode::Committed);
+        assert_eq!(receipt.recovery_generation.to_string(), placement_generation);
+    }
     Ok(())
 }

@@ -27,7 +27,6 @@ async fn current(
     fence: &CurrentCharacterGameplayFence,
     account: Option<[u8; 16]>,
 ) -> Result<(), StoreDurabilityError> {
-    lock_admission_relations(tx).await?;
     if assert_gameplay_fence(tx, fence, node).await?.is_err() {
         return Err(StoreDurabilityError::AuthorityRejected);
     }
@@ -185,6 +184,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let outcome = async {
+                        lock_admission_relations(&mut tx).await?;
                         current(&mut tx, &node, &fence, None).await?;
                         Ok(funds(&mut tx, &fence).await?.0)
                     }
@@ -220,6 +220,8 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             let outcome = async {
+                lock_admission_relations(&mut tx).await?;
+                super::purchase::lock_request(&mut tx, &request).await?;
                 current(&mut tx, &node, &fence, Some(request.account_id)).await?;
                 let offer = store_cosmetics::offer(&offer_key).ok_or(StoreDurabilityError::AuthorityRejected)?;
                 match super::purchase::record_request(&mut tx, &request).await? {
@@ -274,6 +276,8 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let outcome = async {
+                        lock_admission_relations(&mut tx).await?;
+                        super::purchase::lock_request(&mut tx, &request).await?;
                         current(&mut tx, &node, &fence, Some(request.account_id)).await?;
                         if request.character_id != *fence.character_id.as_bytes()
                             || store_cosmetics::offer(&offer).is_none()
@@ -388,6 +392,7 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             let outcome = async {
+                lock_admission_relations(&mut tx).await?;
                 current(&mut tx, &node, &fence, Some(identity.account_id)).await?;
                 apply_paid_cosmetic(
                     &mut tx, recovery.recovery_generation, operation, identity, purchase_request_id, &offer,

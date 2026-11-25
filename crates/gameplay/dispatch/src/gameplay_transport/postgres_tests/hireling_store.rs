@@ -19,7 +19,7 @@ fn exercise_sword(seed:u8)->TestResult<(u32,Vec<u8>)> {
 }
 
 #[derive(Debug,Clone,Copy)]
-enum Case{Hire,Skill,Outfit,Rename,Sex,Uncertain,Refusals,FullInbox,DeliveryRetry,Limit,LocalEncode,Modal}
+enum Case{Hire,Skill,Outfit,Rename,Sex,Uncertain,Refusals,FullInbox,DeliveryRetry,Limit,LocalEncode,Modal,RetryLockOrder}
 #[path="hireling_store/modal.rs"]
 mod modal;
 fn enabled()->bool {std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some()}
@@ -46,6 +46,12 @@ fn hireling_store_uncertain_tenth_hire_reserves_character_limit()->TestResult {i
 
 #[test]
 fn storefix_local_encode_refusal_releases_reservation_without_debit()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e_fixtures::scenario_thread::run("storefix-local-encode",||scenario(Case::LocalEncode))}
+
+#[test]
+fn hireling_retry_leaves_buyer_unlocked_while_answer_writer_holds_purchase()->TestResult {
+    if !enabled(){return Ok(())}
+    super::kill_reward_e2e_fixtures::scenario_thread::run("hireling-store-lock-order",||scenario(Case::RetryLockOrder))
+}
 
 fn scenario(case:Case)->TestResult {
     run(async |admin| {
@@ -91,6 +97,18 @@ fn scenario(case:Case)->TestResult {
         let customize=|name:Option<&str>|wire::StoreHirelingCustomization{hireling_id:Some(hireling),name:name.map(str::to_owned),sex:None};
         match case {
             Case::Modal=>modal::scenario(&harness,&owner,&mut admitted,&ledger).await?,
+            Case::RetryLockOrder => {
+                let command = command(52, 25440, 150, Some(new_hire("Taylor Moon")))?;
+                ledger.lock().expect("ledger").lose_next_answer = true;
+                assert_eq!(serve(&owner, &mut admitted, command.clone()).await?.0, CommandStatus::Rejected);
+                let buyer = *admitted.item_fence.ok_or("item fence")?.character_id.as_bytes();
+                let result = super::store_fixtures::assert_store_retry_lock_order(
+                    &harness.pool, id(52), buyer, purchase(&owner, &mut admitted, command),
+                ).await??;
+                assert_eq!(result.code, wire::StorePurchaseCode::Accepted);
+                assert_eq!(ledger.lock().expect("ledger").debits, 2);
+                assert_eq!(count(&harness, "SELECT count(*) FROM game_house_hirelings").await?, 2);
+            }
             Case::Hire=>{
                 let replay=purchase(&owner,&mut admitted,command(51,25440,150,Some(new_hire("Alex Moon")))?).await?;assert_eq!(replay,hired);
                 assert_eq!(ledger.lock().expect("ledger").debits,1);

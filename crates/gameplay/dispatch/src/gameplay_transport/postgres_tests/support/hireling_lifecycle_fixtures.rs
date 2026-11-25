@@ -104,6 +104,7 @@ pub(super) enum Case {
     Furniture,
     LampPending,
     Store,
+    StoreClaimAfterRecovery,
     PositionCapture,
     PositionRelog,
     PositionProcessLoss,
@@ -164,6 +165,17 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     if matches!(case, Case::EssenceUse | Case::EssenceCue) {
         super::item_look_fixtures::seed_main_backpack(h, &[("oteryn:item.tibia.i43501", 2)]).await?;
     }
+    let previous_generation = if matches!(case, Case::StoreClaimAfterRecovery) {
+        let previous = h.recovery.seal_current().map_err(debug)?;
+        let generation = previous.record().recovery_generation;
+        let issued_at = previous.record().issued_at + 1;
+        drop(previous);
+        let restore = h.recovery.begin_recovery(generation, id(181), issued_at).map_err(debug)?;
+        h.root.reconcile_character_recovery(&restore).await.map_err(debug)?;
+        Some(generation)
+    } else {
+        None
+    };
     let evidence = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -330,7 +342,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(generation);
-    let house_store = matches!(case, Case::Store).then(|| {
+    let house_store = matches!(case, Case::Store | Case::StoreClaimAfterRecovery).then(|| {
         super::hireling_store_fixtures::install_house_store(&mut owner, deps.admitted.world_id.as_bytes())
     });
     // This fixture boots the bounded command set it will carry through the real handoff.
@@ -553,7 +565,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // As in the existing Store PostgreSQL fixture, capability154 is offered
     // only by this test producer. It is selected in the genuine source session
     // against the same boot offer already bound above, before the native handoff.
-    let offers = if matches!(case, Case::Store | Case::BedRest) {
+    let offers = if matches!(case, Case::Store | Case::StoreClaimAfterRecovery | Case::BedRest) {
         boot_offers
     } else {
         owner.offered_capabilities()
@@ -626,12 +638,13 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     if !matches!(case, Case::Wire) {
         wire::enter_interior(&owner, &mut admitted, deps.actor).await?;
     }
-    if matches!(case, Case::Store) {
+    if matches!(case, Case::Store | Case::StoreClaimAfterRecovery) {
         return super::hireling_store_fixtures::house_scenario(
             h,
             &owner,
             admitted,
             house_store.ok_or("House Store producer")?,
+            previous_generation,
         )
         .await;
     }

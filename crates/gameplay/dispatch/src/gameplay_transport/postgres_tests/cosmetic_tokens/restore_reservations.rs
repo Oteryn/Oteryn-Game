@@ -4,15 +4,25 @@ use crate::gameplay_transport::capabilities::OfferedCapability;
 use crate::native_admission_source::store::{PurchaseResult, PurchaseStoreOffer};
 use oteryn_gameplay_economy::store as rules;
 
+#[derive(Clone, Copy)]
+pub(super) enum Snapshot {
+    Answered,
+    Sent,
+    Fenced,
+}
+
+pub(super) type LateAnswer = (crate::durability::store::PurchaseRequest, Vec<u8>);
+
 pub(super) async fn prepare(
     harness: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     ledger: &Arc<SyncMutex<Ledger>>,
     cosmetic: &wire::StorePurchaseRequest,
-) -> TestResult {
+    snapshot: Snapshot,
+) -> TestResult<Option<LateAnswer>> {
     use super::super::hireling_store_fixtures::{command, new_hire};
-    use super::super::store_fixtures::{purchase, purchase_request};
+    use super::super::store_fixtures::purchase;
 
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(
         &[
@@ -40,36 +50,35 @@ pub(super) async fn prepare(
          CREATE TRIGGER interrupt_restored_store_grant BEFORE INSERT ON store_delivery_receipts
          FOR EACH ROW EXECUTE FUNCTION interrupt_restored_store_grant();",
     ).execute(&harness.pool).await?;
-    let commands = [
-        (185, wire::encode_purchase_request(cosmetic).map_err(debug)?),
-        purchase_request(81, "store:charm-expansion", 450)?,
-        command(82, 25440, 150, Some(new_hire("Morgan Moon")))?,
-        command(83, 1001, 250, None)?,
-        command(84, 25438, 250, Some(wire::StoreHirelingCustomization {
-            hireling_id: first.operation_id,
-            name: Some("Jamie Moon".into()),
-            sex: None,
-        }))?,
-        command(85, 25437, 120, Some(wire::StoreHirelingCustomization {
-            hireling_id: second.operation_id,
-            name: None,
-            sex: None,
-        }))?,
-    ];
-    for command in commands {
+    if matches!(snapshot, Snapshot::Sent) {
+        sqlx::raw_sql(
+            "CREATE FUNCTION interrupt_store_answer() RETURNS trigger LANGUAGE plpgsql AS
+             $$ BEGIN RAISE EXCEPTION 'fixture interruption before answer retention'; END; $$;
+             CREATE TRIGGER interrupt_store_answer BEFORE UPDATE ON store_purchase_requests
+             FOR EACH ROW EXECUTE FUNCTION interrupt_store_answer();",
+        ).execute(&harness.pool).await?;
+    }
+    for command in purchase_commands(
+        cosmetic.clone(), 80, first.operation_id, second.operation_id,
+    )? {
         let rejected = serve(owner, admitted, &[command]).await?;
         assert_eq!(rejected, [(CommandStatus::Rejected, Vec::new())]);
     }
-    retain_legacy_prey_debit(owner, *admitted).await?;
+    if matches!(snapshot, Snapshot::Sent) {
+        sqlx::query("DROP TRIGGER interrupt_store_answer ON store_purchase_requests")
+            .execute(&harness.pool).await?;
+    }
+    let late = retain_legacy_prey_debit(owner, *admitted, snapshot).await?;
     assert_eq!(ledger.lock().map_err(|_| "ledger")?.debits.len(), 9);
     assert_eq!(reservations(harness).await?, (1, 1, 1, 4));
-    Ok(())
+    Ok(late)
 }
 
 async fn retain_legacy_prey_debit(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
-) -> TestResult {
+    snapshot: Snapshot,
+) -> TestResult<Option<LateAnswer>> {
     let offer = "store:prey-list-expansion";
     let mut catalogue: serde_json::Value = serde_json::from_slice(include_bytes!(
         "../../../../../../../rulesets/economy/store/catalogue.json"
@@ -122,10 +131,14 @@ async fn retain_legacy_prey_debit(
     let PurchaseResult::Accepted { order_id, operation_ids } = answer else {
         return Err("legacy Prey debit was not accepted".into());
     };
-    owner.root.record_store_answer(journal, serde_json::to_vec(&serde_json::json!({
+    let answer = serde_json::to_vec(&serde_json::json!({
         "result": "ACCEPTED", "order_id": order_id, "operation_ids": operation_ids,
-    }))?).await.map_err(debug)?;
-    Ok(())
+    }))?;
+    if matches!(snapshot, Snapshot::Sent) {
+        return Ok(Some((journal, answer)));
+    }
+    owner.root.record_store_answer(journal, answer).await.map_err(debug)?;
+    Ok(None)
 }
 
 pub(super) async fn reconcile(
@@ -133,7 +146,22 @@ pub(super) async fn reconcile(
     ledger: &Arc<SyncMutex<Ledger>>,
     predecessor: u64,
     issued_at: u64,
+    snapshot: Snapshot,
+    late: Option<LateAnswer>,
 ) -> TestResult {
+    if matches!(snapshot, Snapshot::Fenced) {
+        // Recreate the database just before 3300 and run the real migration
+        // after the restore worker has written the permanent fences.
+        sqlx::raw_sql(
+            "DROP TRIGGER game_store_restore_release_reservations ON game_store_restore_conflicts;
+             DROP TRIGGER IF EXISTS game_store_answer_release_reservations ON store_purchase_requests;
+             DROP FUNCTION game_store_release_restored_reservations();
+             DROP FUNCTION IF EXISTS game_store_release_restored_reservation(uuid);
+             DROP INDEX IF EXISTS store_purchase_accepted_account;
+             DROP INDEX store_purchase_accepted_operation;
+             DROP FUNCTION game_store_accepted_operation(bytea);",
+        ).execute(&harness.pool).await?;
+    }
     let transition = harness.recovery.begin_recovery(predecessor, id(181), issued_at).map_err(debug)?;
     harness.root.reconcile_character_recovery(&transition).await.map_err(debug)?;
     let generation = transition.record().recovery_generation;
@@ -163,11 +191,84 @@ pub(super) async fn reconcile(
     let fences: i64 = sqlx::query_scalar("SELECT count(*) FROM game_store_restore_conflicts")
         .fetch_one(&harness.pool).await?;
     assert_eq!(fences, 7);
+    if matches!(snapshot, Snapshot::Fenced) {
+        assert_eq!(reservations(harness).await?, (1, 1, 1, 4));
+        sqlx::raw_sql(include_str!("../../../../../../../apps/game-server/migrations/3300_store_restore_reservations.sql"))
+            .execute(&harness.pool).await?;
+    }
+    if let Some((request, answer)) = late {
+        let sent: i64 = sqlx::query_scalar("SELECT count(*) FROM store_purchase_requests WHERE state=1")
+            .fetch_one(&harness.pool).await?;
+        assert_eq!(sent, 7);
+        let paid = ledger.lock().map_err(|_| "ledger")?.answers.clone();
+        for seed in 80..=85 {
+            let id = id(seed);
+            let (_, answer) = paid.get(&uuid(&id)).ok_or("Platform answer for original purchase")?;
+            let retained = serde_json::to_vec(&serde_json::json!({
+                "result": "ACCEPTED",
+                "order_id": answer["order_id"],
+                "operation_ids": [answer["units"][0]["delivery_operation_id"].clone()],
+            }))?;
+            sqlx::query("UPDATE store_purchase_requests SET state=2,answer=$2 WHERE purchase_request_id=encode($1,'hex')::uuid AND state=1")
+                .bind(id.as_slice()).bind(retained).execute(&harness.pool).await?;
+        }
+        harness.root.record_store_answer(request, answer).await.map_err(debug)?;
+    }
     assert_eq!(reservations(harness).await?, (0, 0, 0, 0), "a reported restore conflict must release its pending reservation");
     let deliveries: i64 = sqlx::query_scalar("SELECT count(*) FROM store_delivery_receipts")
         .fetch_one(&harness.pool).await?;
     assert_eq!(deliveries, 2, "only the two original Hirelings were delivered");
     Ok(())
+}
+
+pub(super) async fn buy_again(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    cosmetic: wire::StorePurchaseRequest,
+) -> TestResult {
+    use super::super::store_fixtures::purchase;
+    sqlx::query("DROP TRIGGER interrupt_restored_store_grant ON store_delivery_receipts")
+        .execute(&harness.pool).await?;
+    let targets: Vec<sqlx::types::Uuid> = sqlx::query_scalar(
+        "SELECT hireling_id FROM game_house_hirelings ORDER BY name",
+    ).fetch_all(&harness.pool).await?;
+    let [first, second] = targets.as_slice() else { return Err("expected the two retained Hirelings".into()); };
+    for command in purchase_commands(cosmetic, 90, Some(*first.as_bytes()), Some(*second.as_bytes()))? {
+        assert_eq!(purchase(owner, admitted, command).await?.code, wire::StorePurchaseCode::Accepted);
+    }
+    let fenced_grants: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM store_delivery_receipts JOIN game_store_restore_conflicts USING(operation_id)",
+    ).fetch_one(&harness.pool).await?;
+    assert_eq!(fenced_grants, 0);
+    Ok(())
+}
+
+fn purchase_commands(
+    mut cosmetic: wire::StorePurchaseRequest,
+    seed: u8,
+    first: Option<[u8; 16]>,
+    second: Option<[u8; 16]>,
+) -> TestResult<[(u32, Vec<u8>); 6]> {
+    use super::super::hireling_store_fixtures::{command, new_hire};
+    use super::super::store_fixtures::purchase_request;
+    cosmetic.purchase_request_id = id(seed);
+    Ok([
+        (wire::COMMAND_TYPE_STORE_PURCHASE, wire::encode_purchase_request(&cosmetic).map_err(debug)?),
+        purchase_request(seed + 1, "store:charm-expansion", 450)?,
+        command(seed + 2, 25440, 150, Some(new_hire("Morgan Moon")))?,
+        command(seed + 3, 1001, 250, None)?,
+        command(seed + 4, 25438, 250, Some(wire::StoreHirelingCustomization {
+            hireling_id: first,
+            name: Some("Jamie Moon".into()),
+            sex: None,
+        }))?,
+        command(seed + 5, 25437, 120, Some(wire::StoreHirelingCustomization {
+            hireling_id: second,
+            name: None,
+            sex: None,
+        }))?,
+    ])
 }
 
 async fn reservations(harness: &Harness) -> TestResult<(i64, i64, i64, i64)> {
