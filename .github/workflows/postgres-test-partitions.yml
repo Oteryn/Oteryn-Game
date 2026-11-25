@@ -358,7 +358,16 @@ jobs:
           if [[ "$ARCHIVE" =~ ^lib-[123]$ && -f tools/ci/shared_dispatch_archive.py ]]; then
             role="dispatch-${ARCHIVE#lib-}"
             directory="$RUNNER_TEMP/shared-dispatch-local/$role"
-            python3 tools/ci/shared_dispatch_archive.py build "$directory" "$role"
+            # A healthy local build takes 10-17 min (max seen 30 min); one stalled the runner
+            # until it was lost after 55 min. Fail it at 32 min instead.
+            status=0
+            timeout --kill-after=60s 32m \
+              python3 tools/ci/shared_dispatch_archive.py build "$directory" "$role" || status=$?
+            if [[ "$status" == 124 || "$status" == 137 ]]; then
+              echo "::error title=Dispatch archive stalled::$ARCHIVE local build exceeded 32 min (healthy: 10-17 min, max seen 30 min); rerun this job once"
+              free -m || true
+            fi
+            if [[ "$status" != 0 ]]; then exit "$status"; fi
             cp "$directory/unit-tests.tar.zst" "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.tar.zst"
             cp "$directory/inventory.json" "$RUNNER_TEMP/pg-archives/pg-$ARCHIVE.json"
             cp "$directory/shared-dispatch.json" "$RUNNER_TEMP/pg-archives/shared-dispatch-$ARCHIVE.json"

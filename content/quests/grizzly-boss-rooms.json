@@ -698,7 +698,7 @@
     "content/world/objects/objects-12877-12916.json": "2c190feb8bf04817077ffe9126360e1aac81652221ccd232d7436616ad9ddcaa",
     "content/world/objects/objects-12917-12931.json": "f261d0a2cc18309b9fb76b1b5f3970ef800586ae5d3562e885fb1a908b4cfb69",
     "content/world/objects/objects-12932-13108.json": "1e960f7a61eccfddbf2428c40924598e4641bbb9790b0cb35305b65a8c2b4877",
-    "content/world/placements/index.json": "86d294671104ff928bc6070e4fab19b68c2f1598fbddbf9e0496ee37eee33197",
+    "content/world/placements/index.json": "e25bcbee815f3fea4d5579cf9bfe40cb23576d2d941d1edeede70de692f7bac7",
     "content/world/placements/region-z01-x129-y121.b3": "c11e0e3ea456fbee69b320b8f4e8cacf2240e142045dacec81c91c679560d2be",
     "content/world/placements/region-z02-x125-y121.b3": "5d704484eadabaad8beca02502b161149daee492591a3369b30a0866c311a520",
     "content/world/placements/region-z02-x129-y121.b3": "203006f5b15052cb12493a3b1e52047f3859b2e5bb186a58295f4868ea1da1bf",
@@ -708,10 +708,10 @@
     "content/world/placements/region-z08-x125-y121.b3": "4e5b847e8082b346176a7dfb0eaefaa13a4be7b640fd18886945a59abd23b9fe",
     "content/world/placements/region-z08-x127-y127.b3": "ef0c6895af31d8814753d4ed3a1c80aff976ef4f3775a3add46b25e895b27e4f",
     "content/world/placements/region-z08-x128-y121.b3": "7b81fad51529c1aa476a8d4b4a686cdcc9ac116138d1535695178be6b2ed9c9c",
-    "content/world/placements/region-z08-x128-y122.b3": "4becdd2ee1626518d1e449346c20bbe758f2f43a7cb6282e03a3ff96295b1d5c",
+    "content/world/placements/region-z08-x128-y122.b3": "c21a77282314a460c2ded2122daf7f309e4539ac5d67f03bdbdd32493ab9a9b6",
     "content/world/placements/region-z08-x128-y126.b3": "6c2270332869c256c7c6fbc3d3295e43342b2252afdf1af7e1f02b7f44483179",
     "content/world/placements/region-z08-x128-y127.b3": "195ca8316300fd9c390ce15c2d16c1b3faee065b295b26ffa80da3aaa9e46a70",
-    "content/world/placements/region-z08-x128-y128.b3": "bd808a71a6bdd1284444209c02b3991b5e315ff2cccb2cc72f434c1061f3c004",
+    "content/world/placements/region-z08-x128-y128.b3": "87a420f93d73e369d11fb1af422923fabda2339e4b19e8f001abee6f30568100",
     "content/world/placements/region-z08-x129-y121.b3": "824f5682e85b1ac5e4ff9a22836a12b5cee6f3c07d285118f1091d54229348f4",
     "content/world/placements/region-z09-x127-y122.b3": "07f3c79e4a45c7bf38843a082088a53c880488a3ea06309374d41a1fd0ed12f5",
     "content/world/placements/region-z09-x129-y121.b3": "9131b6489ceeaa78b57840e6be0b54e91d67ddc3d7971f8640d935cd1523559f",
@@ -758,6 +758,11 @@
     "content/world/terrain/terrain-08749-08749.json": "32cd0b4c3a4195516fecfe567bbd384352973e24c9fdedb63ecd0211b5c08da3",
     "content/world/terrain/terrain-08750-08750.json": "590d200b3bb126cf08b68b83de6f37f440e904ff8049419c75ce9f48011b2a0c",
     "content/world/terrain/terrain-08751-08757.json": "b7b183cc46f685bb4e7c0a7ae2d6c683c1eba39d00dea18f65bdf9b5d1140664",
+    "content/world/terrain/terrain-08751-08793.json": "64440856cd3fa9b982b654838b492a63841c0b55317c7ac4be3b31a89244f291",
+    "content/world/terrain/terrain-08794-08845.json": "09ecab191e410f8631b9ccbe3ee5e3b6f4aadf2b2f723743659559a7dc0d85e5",
+    "content/world/terrain/terrain-08846-08885.json": "c9efa0d2c1e277891e12b6c85887a58f7300421ca1cd42f7fdb9b8499df43467",
+    "content/world/terrain/terrain-09000-09575.json": "385733ccac5378c72474077e70f4783cd5ad7923fdf9c6265a10ac0c6bd0d85d",
+    "imports/crystalserver/spawn-reconciliation/slice-2.json": "597ec988d0df562aafe26d6d2e1a6e3315ac62f2ef0f993ee17eb9bc794999c3",
     "tools/content-schema/native-gameplay/grizzly-debris-item-profiles.json": "eba5dc88620ca0d911e58dd0ff40c5c90e6cce3078e2211d44ff8a74d86b311d"
   }
 }
