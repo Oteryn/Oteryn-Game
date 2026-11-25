@@ -518,11 +518,21 @@ async fn illusion(
     if client.actor_vitals().copied() != Some(before_negative) {
         return Err("C17c refusal resource change survived fresh admission".into());
     }
-    row.pass("refusal-no-cost", client.last_server_sequence());
-    row.pass("rat-appearance", client.last_server_sequence());
-    row.pass("fresh-admission-condition", client.last_server_sequence());
+    row.0.pass(
+        "refusal-no-cost",
+        format_args!("admission_snapshot={}", uuid_text(client.join_snapshot().game_session_id.as_bytes())),
+    );
+    row.0.pass(
+        "rat-appearance",
+        format_args!("admission_snapshot={}", uuid_text(client.join_snapshot().game_session_id.as_bytes())),
+    );
+    row.0.pass(
+        "fresh-admission-condition",
+        format_args!("admission_snapshot={}", uuid_text(client.join_snapshot().game_session_id.as_bytes())),
+    );
     let expiry_deadline =
         tokio::time::Instant::now() + Duration::from_millis(duration_ms) + Duration::from_secs(10);
+    verdict::Harness::global().bounded_wait(expiry_deadline, "illusion-expiry");
     appearance_sequence = 0;
     while own_look(client)? != baseline || appearance_sequence == 0 {
         if tokio::time::Instant::now() >= expiry_deadline {
@@ -542,7 +552,10 @@ async fn illusion(
         return Err("C17c expired illusion reappeared after fresh admission".into());
     }
     row.pass("expiry-restores-outfit", expiry_sequence);
-    row.pass("fresh-admission-expiry", client.last_server_sequence());
+    row.0.pass(
+        "fresh-admission-expiry",
+        format_args!("admission_snapshot={}", uuid_text(client.join_snapshot().game_session_id.as_bytes())),
+    );
     Ok(())
 }
 
@@ -853,8 +866,10 @@ async fn haste(
     let cells = corridor(world, tile(client.world_spatial().actor_position)?)
         .ok_or("C17a speed corridor unavailable")?;
     let ground = world.ground_speed(cells[0]);
+    let expected_baseline = expected_cadence(None, player_level, ground)?;
+    evidence(&format!("E2EF5_CADENCE C17a baseline level={player_level} ground={ground} expected={expected_baseline:?}"));
     let baseline = cadence(client, &cells).await?;
-    if !same_cadence(baseline, expected_cadence(None, player_level, ground)?) {
+    if !same_cadence(baseline, expected_baseline) {
         return Err(
             "C17a baseline has equipment/other conditions or differs from production speed table"
                 .into(),
@@ -1118,7 +1133,47 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         let watch = row.0.watch();
         let result: TestResult = async {
             let _row = watch.enter();
-            let mut client = admit_row(clients, tag, 1).await?;
+            let slots = if id == "C16a" {
+                Some(spell_row_slots(clients, id, 1).await?)
+            } else {
+                None
+            };
+            let fixture = slots.as_ref().map(|(accounts, characters)| SeamClients {
+                accounts,
+                characters,
+                ..*clients
+            });
+            let clients = fixture.as_ref().unwrap_or(clients);
+            let mut client = if id == "C16a" {
+                let seed = character_prep::Seeded {
+                    profile: "f5-c16a",
+                    reason: "Magic Wall authored spell access",
+                };
+                let mut client = seed.connect(clients, tag, 1).await?;
+                let book = native_spell_book()?;
+                let spell = book.rune(3180).ok_or("C16a Magic Wall rune absent")?;
+                let (health, mana, _) = oteryn_gameplay_characters::vitals::maxima(
+                    "druid",
+                    spell.level,
+                    oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+                    oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+                ).ok_or("C16a authored vitals missing")?;
+                let served_level = level(&mut client).await?;
+                let served_vocation = current_vocation(&mut client).await?;
+                let vitals = client.actor_vitals();
+                if served_level != spell.level
+                    || served_vocation != crate::spell::Vocation::Druid
+                    || vitals.is_none_or(|v| v.max_health != health || v.max_mana != mana)
+                {
+                    return Err(format!(
+                        "C16a expected Druid level={} max_health={health} max_mana={mana}; served {served_vocation:?} level={served_level} vitals={vitals:?}",
+                        spell.level,
+                    ).into());
+                }
+                client
+            } else {
+                admit_row(clients, tag, 1).await?
+            };
             let mut peer_cancelled = false;
             let mut completed = false;
             let deadline = format!("{id} 240s journey deadline; remaining actions unproven");
@@ -1735,9 +1790,11 @@ async fn paralyze(
         with_observer_liveness(&mut peer, walk(client, world, &caster_path)).await?;
         let target_level = level(&mut peer).await?;
         let ground = world.ground_speed(cells[0]);
+        let expected_baseline = expected_cadence(None, target_level, ground)?;
+        evidence(&format!("E2EF5_CADENCE C16b baseline level={target_level} ground={ground} expected={expected_baseline:?}"));
         let baseline = with_observer_liveness(client, cadence_leg(&mut peer, &cells)).await?;
-        if !same_cadence(baseline, expected_cadence(None, target_level, ground)?) {
-            return Err("C16b target baseline does not match production movement speed".into());
+        if !same_cadence(baseline, expected_baseline) {
+            return Err(format!("C16b target baseline observed={baseline:?} expected={expected_baseline:?}").into());
         }
         let back = route(world, tile(peer.world_spatial().actor_position)?, |at| at == cells[0])
             .ok_or("C16b target cannot return to speed trial start")?;
@@ -2175,7 +2232,11 @@ async fn player_spell(
             || Some(delta.value.mana) != before.mana.checked_sub(cost)
             || Some(delta.value.soul) != before.soul.checked_sub(spell.soul)
     }) {
-        return Err(format!("{words}: cast reply lacks exact mana/soul payment frame").into());
+        return Err(format!(
+            "{words}: cast command={} expected mana={:?} soul={:?}; observed payment frame={:?}",
+            result.command_id, before.mana.checked_sub(cost), before.soul.checked_sub(spell.soul),
+            result.actor_vitals_delta,
+        ).into());
     }
     Ok(result)
 }
@@ -3492,8 +3553,14 @@ pub(super) async fn wild_rat(
             let Some(path) = path else { continue };
             reachable += 1;
             if !walk_rat_site(client, world, &path).await? {
-                client.service_liveness(Duration::from_millis(50)).await?;
-                continue;
+                // A live Rat can move onto the approach after route planning.
+                // Check its current visibility before abandoning this site.
+                let here = tile(client.world_spatial().actor_position)?;
+                if world.base().tile(here.x, here.y, here.floor)
+                    .is_none_or(|tile| tile.protection_zone())
+                {
+                    continue;
+                }
             }
             let visit_deadline = deadline.min(tokio::time::Instant::now() + Duration::from_secs(2));
             loop {
