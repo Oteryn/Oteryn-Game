@@ -137,8 +137,8 @@ with CI and never blocks or delays it.
   own code.
 - How: the review owner starts it from its own chat session in Codex Cloud,
   read-only, model gpt-6.2-sol at reasoning effort high (owner decision
-  2026-11-25, calibration), never through the PC; a PR with code in a risk
-  class also gets one gpt-6.2-astra run at effort high on the same head,
+  2026-11-25, calibration), never through the PC; the gpt-6.2-astra runs at effort high that the
+  run-selection table (`references/batch-review.md` §1) names run on the same head,
   whose P0/P1 count only after a traced REAL verdict (§6). Never at effort
   medium. From a session without Codex Cloud, one native `@codex review` PR
   comment naming the exact head. By default the round is one holistic run
