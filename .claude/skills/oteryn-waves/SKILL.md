@@ -83,8 +83,11 @@ mechanics.
 5. Train green: check `main` health (`oteryn-dev` `scripts/main-health.sh`),
    then merge the units one by one, back to back, with no other merge at all
    in between (`oteryn-dev` `references/ci-merge.md`, *Merge conditions*).
-   After the last one, `git rev-parse origin/main^{tree}` must equal the train
-   head's `^{tree}`; then close the train.
+   After the last one, `git rev-parse origin/main^{tree}` (`origin/staging`
+   while the staging flow is in use) must equal the train head's `^{tree}`;
+   then close the train. When the train changed a derived file beyond the
+   units, the train PR itself lands instead (`oteryn-dev`
+   `references/ci-merge.md`, *The content train*).
 
 ## 6. Close the wave
 

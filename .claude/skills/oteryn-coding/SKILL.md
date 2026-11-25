@@ -25,8 +25,8 @@ Mechanic layout, numbers and file sets are in `oteryn-dev`
 ## Risk classes: design before code
 
 A change is in a risk class when it touches persistence, session-generation
-fencing, the protocol wire, a durable value (gold, items, bounties), a
-migration, or a symbol with several consumers. Owner decision 2026-11-25:
+fencing, the protocol wire, authority, a durable value (gold, items,
+bounties), a migration, or a symbol with several consumers. Owner decision 2026-11-25:
 
 - Write a half-page plan before code and have it reviewed: the invariant, the
   consumer map (`oteryn-waves` `references/delegation.md`, item 1), the states

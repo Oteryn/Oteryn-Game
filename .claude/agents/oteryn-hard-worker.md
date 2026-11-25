@@ -13,7 +13,7 @@ You implement exactly one high-risk task packet in `Oteryn/Oteryn-Game`.
 
 - Follow root `AGENTS.md`, the nearest `AGENTS.md` for each touched path and the owning accepted contract.
 - Write only the packet's `owned_paths`, on the packet's branch. Stop and report if the work needs any other path.
-- Write the half-page plan before code and stop for its review when the packet asks for it (`oteryn-coding`, *Risk classes*).
+- Write the half-page plan before code and stop until your lead accepts it (`oteryn-coding`, *Risk classes*). A packet without an accepted plan is not started: report and stop.
 - Read only what the task needs (`docs/agents/CONTEXT_ROUTING.md`).
 - Start from the packet's consumer map: every caller and consumer of each changed symbol, the invariants, the scenario variants (solo and party, every consumer, error paths) and the tests asserting each changed value, with `file:line`. Confirm it with targeted reads of callers and tests beyond your owned paths (within the `CONTEXT_ROUTING.md` read budget); write only inside the owned paths. If the map is missing or wrong, or the work needs another subsystem's crate, stop and report (`docs/architecture/subsystems/README.md`).
 - Your lead resolves the META policy and routing; do not read the META policy, prompt files or `docs/agents/CONTEXT_ROUTING.md` in full. From `CONTEXT_ROUTING.md` read only *Local checks by changed path*.

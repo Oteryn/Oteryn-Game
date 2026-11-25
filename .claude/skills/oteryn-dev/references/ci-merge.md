@@ -431,7 +431,10 @@ Owner decision 2026-11-25; it replaces the older package and batch wording.
 - **Test and review.** Label only the train `heavy-tests`. Its Codex review
   runs at effort high despite the label (`oteryn-review` §5). When it is
   green, merge the units one by one, back to back (*Merge conditions*, 2).
-  Then close the train.
+  Then close the train. When merging the units changed a derived file (pin,
+  registry, golden) beyond what the units carry, the units alone cannot
+  reproduce the tested tree: the train PR itself lands (squash) and the unit
+  PRs are closed with a link to it.
 
 ## Red `main`
 

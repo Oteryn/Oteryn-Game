@@ -28,13 +28,15 @@ review is requested on a head, the head has:
   (a route-less case returns `Ok(())` without running). Where the session
   cannot run it (no PostgreSQL route), say so and leave it to CI;
 - the head that will merge: a train PR is reviewed on its integrated train
-  head, and a unit folded into a train gets no review of its own. A PR that
-  will merge on its own is reviewed after its first push (§5);
+  head, and a unit that lands only through the train PR gets no review of its own. A
+  PR that merges on its own, a train unit merged through its own PR included,
+  is reviewed after its first push (§5);
 - the author's self-review at effort high (owner decision 2026-11-25): the
   whole diff against `docs/agents/review/CODEX-CHECKLIST.md` and, when it
   touches a subsystem, that subsystem's invariant file
   (`docs/architecture/subsystems/<id>.md`, consumers and guard tests
-  included), with the consumer map of the packet checked against the diff;
+  included; until a lane's file exists, the lane's owning contracts in
+  `docs/contracts/` and its guard tests), with the consumer map of the packet checked against the diff;
 - the pre-push list of `oteryn-coding` (*Before you push*): own PostgreSQL
   cases proven to reach assertions, every changed literal grepped and updated,
   full tests of changed crates after any main-merge.

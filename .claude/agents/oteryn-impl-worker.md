@@ -1,6 +1,6 @@
 ---
 name: oteryn-impl-worker
-description: Implements one allocated Oteryn task from a narrow packet (task_id, owned_paths, scope, validation). Use for ordinary implementation, data and docs slices. Use oteryn-hard-worker instead for a risk class: persistence, fencing, protocol, authority, durable value, migrations or several consumers.
+description: Implements one allocated Oteryn task from a narrow packet (task_id, owned_paths, scope, validation). Use for ordinary implementation, data and docs slices. Use oteryn-hard-worker instead for a risk class (persistence, fencing, protocol, authority, durable value, migrations or several consumers).
 model: sonnet
 effort: medium
 skills:
