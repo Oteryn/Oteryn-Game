@@ -95,3 +95,69 @@ fn cleared_terrain_releases_only_its_own_blocker_and_regrowth_restores_it() {
         );
     }
 }
+
+#[test]
+fn crystal_map_item_collision_uses_donor_facts_without_a_native_profile() {
+    use crate::content::native_gameplay::test_support::activated_with_loot_tables;
+    use crate::map::boot::native_item_definition;
+
+    let world =
+        crate::foundation::WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world id");
+    let (content, _) = activated_with_loot_tables(world, None);
+    let native = content.active().and_then(|active| active.native_gameplay());
+    for (id, solid, projectile) in [
+        (7705, false, false),  // Oressa buttress
+        (15487, false, false), // Manop's floor overlay
+        (1632, true, true),    // Authored closed castle door
+        (1633, false, false),  // Open castle door
+    ] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let item = native_item_definition(native, &key).expect("item definition");
+        let entry = PaletteEntry {
+            key,
+            family: Family::Item,
+            id: item.reference.get() - 1,
+            terrain: None,
+        };
+        let facts = palette_facts(&entry, &|key| native_item_definition(native, key))
+            .expect("item palette facts");
+        assert_eq!(
+            (facts.solid, facts.facts.blocks_projectile),
+            (solid, projectile),
+            "item {id}"
+        );
+    }
+}
+
+#[test]
+fn door_poses_preserve_independent_crystal_collision_flags() {
+    let items = |key: &str| {
+        let flags = oteryn_world_bundle::crystal_item_collision::for_key(key)?;
+        Some(ItemDefinition {
+            reference: NonZeroU32::MIN,
+            solid: Some(flags.solid),
+            blocks_projectile: flags.blocks_projectile,
+            pickupable: false,
+            door: flags.door,
+        })
+    };
+    for (id, initially_locked, starts_open, open_solid, open_blocks_projectile) in [
+        (1631, true, false, false, false),
+        (1632, false, false, false, false),
+        (1633, false, true, false, false),
+        (5733, false, false, false, false),
+        (5735, true, false, false, false),
+        (8352, false, false, false, true),
+        (12249, false, false, true, false),
+    ] {
+        let pose = palette_door(&format!("oteryn:item.tibia.i{id}"), &items);
+        assert!(
+            matches!(pose, PaletteDoor::Pair { locked, authored_closed, open, open_solid: solid, key_forms, .. }
+                if locked == initially_locked && authored_closed.is_some() == starts_open
+                    && solid == open_solid && open.blocks_projectile == open_blocks_projectile
+                    && key_forms.is_some() == (id != 12249)),
+            "Crystal door {id} has unexpected pose {pose:?}"
+        );
+    }
+}

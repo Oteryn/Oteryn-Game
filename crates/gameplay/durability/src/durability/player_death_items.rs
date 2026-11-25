@@ -459,8 +459,17 @@ async fn write(
         .bind(cause.death_occurrence.as_slice()).bind(cause.item_instance.as_slice()).bind(if burn {2_i16} else {1_i16}).bind(request.transaction_id.as_slice()).bind(request.event_id.as_slice()).bind(character.as_slice()).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_deref()).bind(i16::from(slot)).bind(parent.map(|v|v.to_vec())).bind(ordinal.map(|v|v.to_string())).bind(source.try_get::<String,_>("placement")?).bind(i64::from(quantity)).bind(revision.to_string()).bind(equipment_revision.as_ref()).bind(binding.as_slice()).bind(request.occurred_at_unix_ms).bind(envelope.as_slice()).bind(fence.scope_ownership_generation.get().to_string()).bind(scope_kind).bind(instance_id.as_deref()).execute(&mut *connection).await?;
     sqlx::query("UPDATE game_item_instances SET quantity=$2,lifecycle=$3,last_transaction_id=encode($4,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(cause.item_instance.as_slice()).bind(i64::from(after)).bind(i16::try_from(lifecycle).map_err(|_| PlayerDeathItemError::InvalidInput)?).bind(request.transaction_id.as_slice()).execute(&mut *connection).await?;
-    sqlx::query(match slot { 0 => "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid", 9 => "DELETE FROM game_item_container_slots WHERE item_instance_id=encode($1,'hex')::uuid", _ => "DELETE FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid" })
-        .bind(cause.item_instance.as_slice()).execute(&mut *connection).await?;
+    if slot == 9 {
+        // The runtime role holds no DELETE on main-backpack slots; the function removes only
+        // the slot named by the death record written above in this transaction.
+        sqlx::query("SELECT game_player_death_container_slot_remove(encode($1,'hex')::uuid)")
+            .bind(request.transaction_id.as_slice())
+            .execute(&mut *connection)
+            .await?;
+    } else {
+        sqlx::query(match slot { 0 => "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid", _ => "DELETE FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid" })
+            .bind(cause.item_instance.as_slice()).execute(&mut *connection).await?;
+    }
     if let Some(revision) = equipment_revision {
         sqlx::query("UPDATE game_character_equipment_state SET revision=$1::text::numeric+1,last_transaction_id=encode($2,'hex')::uuid WHERE character_id=encode($3,'hex')::uuid")
             .bind(revision).bind(request.transaction_id.as_slice()).bind(character.as_slice()).execute(&mut *connection).await?;

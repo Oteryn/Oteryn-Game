@@ -61,6 +61,82 @@ def admit_map_carriers(root, document):
             document['records'].append(row)
 
 
+def admit_route_scenery(root, generated, profile_path, manifest_path, order, canonical):
+    import authored_static_item_constructors
+    import qengine_reward_item_profiles as donor
+
+    # The Folda corridor carries stones, bloodstains, a bone and patches of ice.
+    folda = (1854, 1855, 1856, 1857, 1858, 1865, 1866, 1867,
+             2697, 2698, 3115, 6487, 6715, 6716)
+    # The New Frontier ramp, Outlaw Camp debris and Ape City jar and statue states.
+    movement = {**dict.fromkeys(folda, False), 1953: False, 6484: False,
+                4850: True, 4851: True, 4995: True, 4996: True}
+    # The captured Outlaw and Alawar placements use three locked doors. The
+    # second Alawar door also needs its unlocked and open counterparts.
+    doors = {6251: True, 7033: True, 7034: True, 7035: False, 7042: True}
+    movement.update(doors)
+    document = json.loads(generated[profile_path])
+    existing = {row['production_definition']['production_key']: row
+                for row in document['records']}
+    missing = set()
+    for identifier, solid in movement.items():
+        key = f'oteryn:item.tibia.i{identifier}'
+        prior = existing.get(key)
+        if prior is None:
+            missing.add(identifier)
+            continue
+        portable = identifier == 3115
+        attributes = prior['attributes']
+        physical = prior['semantics']['physical'].get('value', {})
+        motion = attributes.get('blocks_movement')
+        if (prior['production_binding']['disposition'] != 'EXACT'
+                or prior['admission']['materializable'] != portable
+                or physical.get('movable') != writing.known(portable)
+                or physical.get('pickupable') != writing.known(portable)
+                or (motion is not solid and not (portable and motion is None))
+                or (identifier in doors and attributes.get('blocks_projectile') is not solid)):
+            raise ValueError(f'QUEST_ROUTE_SCENERY_PROFILE_CONFLICT:{key}')
+        if portable and motion is None:
+            attributes['blocks_movement'] = False
+    if not missing:
+        write_provider(generated, profile_path, manifest_path, order, canonical, document)
+        return
+    source = donor.source
+    xml = (root / donor.XML).read_bytes()
+    appearances = (root / donor.CLIENT).read_bytes()
+    if (hashlib.sha256(xml).hexdigest() != donor.XML_SHA
+            or hashlib.sha256(appearances).hexdigest() != donor.CLIENT_SHA):
+        raise ValueError('QUEST_ROUTE_SCENERY_SOURCE_PIN')
+    nodes = source.xml_index(xml)
+    objects = source.engine_items.load_appearance_objects(appearances)
+    bindings = source.binding_index((root / 'imports/crystalserver/bindings/items.json').read_bytes())
+    definitions = authored_static_item_constructors.definitions(root)
+    facts = source.policies(appearances, xml, missing)
+    if {row['server_item_id'] for row in facts} != missing:
+        raise ValueError('QUEST_ROUTE_SCENERY_SOURCE_SET')
+    records = []
+    for row in facts:
+        identifier = row['server_item_id']
+        key = f'oteryn:item.tibia.i{identifier}'
+        portable = identifier == 3115
+        if (row['movable'] != portable or row['pickupable'] != portable or row['ground']
+                or row['block_solid'] != movement[identifier]
+                or (identifier in doors and (row['dynamic_kind'] != 'door'
+                                             or row['block_projectile'] != doors[identifier]))
+                or definitions[key]['materializable'] != portable):
+            raise ValueError(f'QUEST_ROUTE_SCENERY_SOURCE_PHYSICS:{identifier}')
+        record = source.profile(identifier, nodes[identifier], objects[identifier], row, bindings, None)
+        record['admission']['materializable'] = portable
+        records.append(record)
+    bound = source.bind_profiles(
+        {'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records},
+        bindings,
+        missing,
+    )
+    document['records'].extend(bound['records'])
+    write_provider(generated, profile_path, manifest_path, order, canonical, document)
+
+
 def complete_native_stack(root, record, definition, binding):
     """Fill only unqualified stack facts; established native facts keep authority."""
     identity = definition['identity']
@@ -191,14 +267,22 @@ def requested_keys(root, extra_keys=()):
 def _requested_inputs(root, extra_keys=()):
     # Retain both the selected startup source cohort and authored callback custody.
     sys.path.insert(0, str(root / 'tools/content-schema/world-authoring'))
-    from quest_chest_bindings import panpipe_key_claim
+    from quest_chest_bindings import outlaw_key_claim, panpipe_key_claim
     sys.path.insert(0, str(root / 'tools/content-schema/reward-claim-authoring'))
     import container_native
 
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
             for offering in callback['offerings']}
-    authored_keys = set()
+    # The Ape City binding issues these portable quest Items from Crystal's
+    # Hairycles exchange and Holy Ape Hair footprint. Use the existing
+    # exact-identity custody qualification, without granting other item behavior.
+    authored_keys = {'oteryn:item.tibia.i4832', 'oteryn:item.tibia.i4835'}
+    # The pinned Shattered Isles and New Frontier bindings use these portable
+    # Items for the ring, poem, pillow and bait exchanges and the rake action.
+    authored_keys.update(f'oteryn:item.tibia.i{number}'
+                         for number in (3452, 6093, 6105, 6119, 9843))
+    keys.update(authored_keys)
     authored_callbacks = []
     # Executable authored callbacks use the same exact canonical/native Item
     # qualification as source chests. Include every output, never a partial bag.
@@ -229,6 +313,14 @@ def _requested_inputs(root, extra_keys=()):
                 if tool.get('replacement'):
                     authored_keys.add(tool['replacement'])
                     keys.add(tool['replacement'])
+    # The Outlaw Camp binding is embedded by the Quest crate. Its terminal
+    # bag and its contents use the existing canonical Item profile admission.
+    outlaw = json.loads((root / 'content/quests/authored-bindings/outlaw_camp_journey.json').read_bytes())
+    (reward,) = [stage['trigger']['callback']['effects']['item_reward']
+                 for quest in outlaw['quests'] for stage in quest['stages']
+                 if stage['completes']]
+    keys.add(reward['item'])
+    keys.update(item['item'] for item in reward['contents'])
     # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
@@ -271,7 +363,8 @@ def _requested_inputs(root, extra_keys=()):
             if definition['identity']['key'] in selected_chests:
                 # Filled-container/text claims already enter through the exact
                 # W15b native projection below; selection adds only map binding.
-                if definition.get('readiness') == 'ready' or panpipe_key_claim(definition):
+                if (definition.get('readiness') == 'ready' or panpipe_key_claim(definition)
+                        or outlaw_key_claim(definition)):
                     keys.update(item['item']['key'] for placement in definition['placements']
                                 for item in placement['reward']['items'])
                 elif (definition.get('readiness') != 'waiting_implementation'
@@ -353,6 +446,23 @@ def canonical_source_inputs(root):
         raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
     source_items = ET.fromstring(raw).findall('item')
     return raw, source_items
+
+
+def complete_numbered_copper_key(record, source_items):
+    # Alawar and Outlaw quest rewards mint an instance with an authored key number.
+    source = [item for item in source_items if item.get('id') == '2970']
+    if (len(source) != 1
+            or [attr.get('value') for attr in source[0].findall("attribute[@key='type']")]
+            != ['key']):
+        raise ValueError('QUEST_CALLBACK_COPPER_KEY_SOURCE')
+    semantics = record['semantics']
+    classification = semantics['classification']
+    if classification == {'state': 'UNKNOWN'}:
+        semantics['classification'] = writing.known({
+            'item_type': writing.known('KEY'), 'capabilities': {'state': 'UNKNOWN'},
+        })
+    elif classification.get('value', {}).get('item_type') != writing.known('KEY'):
+        raise ValueError('QUEST_CALLBACK_COPPER_KEY_CLASSIFICATION')
 
 
 def canonical_native_profile(root, definition, matches, source_items):
@@ -548,10 +658,17 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
             present[key] = copy.deepcopy(candidates[0])
             document['records'].append(present[key])
         if key in present:
-            complete_native_stack(root, present[key], definition, matches[0])
-            continue
-        document['records'].append(canonical_native_profile(
-            root, definition, matches, source_items))
+            record = present[key]
+            complete_native_stack(root, record, definition, matches[0])
+        else:
+            record = canonical_native_profile(root, definition, matches, source_items)
+            document['records'].append(record)
+        if key == 'oteryn:item.tibia.i2970':
+            complete_numbered_copper_key(record, source_items)
+    write_provider(generated, profile_path, manifest_path, order, canonical, document)
+
+
+def write_provider(generated, profile_path, manifest_path, order, canonical, document):
     document['records'].sort(key=order)
     raw = encode_native_profile(document)
     generated[profile_path] = raw

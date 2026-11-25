@@ -1,5 +1,4 @@
-//! The M39 source books retain their existing per-character RewardClaim identities.
-//! This resolves immutable source pairs, never an alias supplied by a caller.
+//! World callbacks that retain an existing per-character RewardClaim identity.
 use super::{ActorKind, Callback, Trigger};
 use crate::quest::reward_callbacks::{ItemReward, NativeClaimBinding};
 use serde_json::{Value, json};
@@ -14,6 +13,16 @@ const CLAIMS: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../../../content/interactions/reward_claims/reward-claims-00200-00230.json"
 ));
+const SERPENTINE_BINDING: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/quests/authored-bindings/serpentine_tower_journey.json"
+));
+const SERPENTINE_CLAIMS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/interactions/reward_claims/reward-claims-00100-00199.json"
+));
+pub const SERPENTINE_PEARL_CLAIM: &str =
+    "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl";
 const PAIRS: &[(&str, &str)] = &[
     (
         "l2-tome-children-1",
@@ -62,8 +71,13 @@ fn only(value: &Value, fields: &[&str]) -> bool {
         .is_some_and(|object| object.keys().all(|key| fields.contains(&key.as_str())))
 }
 
-fn bind(callbacks: &str, claims: &str) -> Result<Vec<Binding>, String> {
-    let callbacks = super::parse(callbacks)?;
+fn bind(
+    callbacks: &[Callback],
+    claims: &str,
+    prefix: &str,
+    pairs: &[(&str, &str)],
+    reward_item: &str,
+) -> Result<Vec<Binding>, String> {
     let claims: Value = serde_json::from_str(claims).map_err(|error| error.to_string())?;
     if claims["schema"] != "OTERYN_REWARD_CLAIM_SHARD/v1" || claims["family"] != "RewardClaim" {
         return Err("legacy World claim shard".into());
@@ -74,16 +88,16 @@ fn bind(callbacks: &str, claims: &str) -> Result<Vec<Binding>, String> {
     let mut bindings = Vec::new();
     let mut positions = BTreeSet::new();
     let reward: ItemReward = serde_json::from_value(json!({
-        "item": "oteryn:item.tibia.i10217", "count": 1, "contents": [],
+        "item": reward_item, "count": 1, "contents": [],
     }))
     .map_err(|error| error.to_string())?;
-    for (callback_suffix, claim_suffix) in PAIRS {
+    for (callback_suffix, claim_suffix) in pairs {
         let key = format!("oteryn:quest-callback/{callback_suffix}");
         let callback = callbacks
             .iter()
             .find(|callback| callback.key == key)
             .ok_or("legacy World callback missing")?;
-        let claim_key = format!("oteryn:reward-claim.quest.u8_54.{claim_suffix}");
+        let claim_key = format!("{prefix}{claim_suffix}");
         let matching: Vec<_> = records
             .iter()
             .map(|row| &row["definition"])
@@ -149,7 +163,7 @@ fn bind(callbacks: &str, claims: &str) -> Result<Vec<Binding>, String> {
             || placement["appearance_tibia_id"] != appearance
             || placement["reward"]
                 != json!({"items": [{"item": {
-                "family": "Item", "key": "oteryn:item.tibia.i10217", "revision": "definition-r1"
+                "family": "Item", "key": reward_item, "revision": "definition-r1"
             }, "count": 1}]})
             || !only(source, &["legacy_unique_ids", "project_position"])
             || source["project_position"]
@@ -196,6 +210,30 @@ fn bind(callbacks: &str, claims: &str) -> Result<Vec<Binding>, String> {
     Ok(bindings)
 }
 
+fn bind_tomes(claims: &str) -> Result<Vec<Binding>, String> {
+    bind(
+        &super::parse(CALLBACKS)?,
+        claims,
+        "oteryn:reward-claim.quest.u8_54.",
+        PAIRS,
+        "oteryn:item.tibia.i10217",
+    )
+}
+
+fn load() -> Result<Vec<Binding>, String> {
+    let mut bindings = bind_tomes(CLAIMS)?;
+    let tower = crate::quest::authored_bindings::Bindings::parse(SERPENTINE_BINDING.as_bytes())?;
+    let tower_callbacks = tower.world_callbacks().cloned().collect::<Vec<_>>();
+    bindings.extend(bind(
+        &tower_callbacks,
+        SERPENTINE_CLAIMS,
+        SERPENTINE_PEARL_CLAIM,
+        &[("authored-serpentine-tower-pearl", "")],
+        "oteryn:item.tibia.i3026",
+    )?);
+    Ok(bindings)
+}
+
 /// Preserve an existing once claim only for its exact compiled source callback.
 /// The World writer still owns physical admission and atomic progress plus MINT.
 pub fn legacy_world_claim(
@@ -212,10 +250,7 @@ pub fn legacy_world_source_unique(callback: &Callback) -> Result<Option<u16>, St
 
 fn legacy_world_binding(callback: &Callback) -> Result<Option<&'static Binding>, String> {
     static BINDINGS: OnceLock<Result<Vec<Binding>, String>> = OnceLock::new();
-    let bindings = BINDINGS
-        .get_or_init(|| bind(CALLBACKS, CLAIMS))
-        .as_ref()
-        .map_err(Clone::clone)?;
+    let bindings = BINDINGS.get_or_init(load).as_ref().map_err(Clone::clone)?;
     let bound =
         bindings.iter().find(|binding| {
             callback.key == binding.callback.key
@@ -293,7 +328,7 @@ mod tests {
 
     #[test]
     fn a_changed_callback_cannot_borrow_or_escape_the_legacy_identity() -> Result<(), String> {
-        let bindings = bind(CALLBACKS, CLAIMS)?;
+        let bindings = bind_tomes(CLAIMS)?;
         for binding in bindings {
             for mutation in 0..9 {
                 let mut changed = binding.callback.clone();
@@ -353,7 +388,7 @@ mod tests {
                 _ => records.push(records[index].clone()),
             }
             assert!(
-                bind(CALLBACKS, &changed.to_string()).is_err(),
+                bind_tomes(&changed.to_string()).is_err(),
                 "mutation {mutation}"
             );
         }
