@@ -19,7 +19,7 @@
     "Behavior": 3157,
     "Charm": 25,
     "Creature": 1865,
-    "Dialogue": 839,
+    "Dialogue": 855,
     "Document": 1609,
     "Effect": 5800,
     "Encounter": 108,
@@ -47,9 +47,9 @@
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "408ef20024a7136cc290abd7d8ca8ce6edfa79c9",
+    "declarations": "8070a18d231cd3766be324495d26c523426ab79e",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "0f220cca3a6420de2813bdb19647618732ae2bdd",
+    "imports": "f123784b4ad3525d8b2c31758bf22eb1d67fa8a4",
     "reference": "879bd7d09e430058e8519b401c904fd3815b38c8",
     "sources": "2cf0e78314dfab9278d37c5bb45e73d155c09eec"
   },
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "c06db063072aabf1fadf788e80e9944d8dfc0d0b7135602e889b75674bf4f44e"
+          "sha256": "94992e1f9e2f66dd2928f71e151fd725b66f05d599d757a11801648d76087722"
         },
         {
           "creates_canonical_identities": false,

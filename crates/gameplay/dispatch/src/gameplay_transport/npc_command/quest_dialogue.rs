@@ -365,7 +365,7 @@ pub(super) async fn apply(
                     &runtime,
                     admission.active_generation,
                 ),
-                None,
+                super::TradeWindowSelection::Ordinary,
             );
         }
         return rendered;

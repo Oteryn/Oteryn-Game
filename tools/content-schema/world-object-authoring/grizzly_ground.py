@@ -22,7 +22,7 @@ MARKER_NOTE = (
 )
 
 
-def appearance_ground(identifier, speed, root=ROOT):
+def appearance_only_ground(identifier, speed, root=ROOT):
     manifest = json.loads(
         (root / "imports/official/client-assets/15.30/manifest.json").read_bytes()
     )
@@ -41,7 +41,7 @@ def appearance_ground(identifier, speed, root=ROOT):
     appearances = read_appearances(raw)
     appearance = appearances[identifier]
     if "bank" not in appearance.flags or appearance.speed != speed:
-        raise ValueError("ground differs from the accepted appearance")
+        raise ValueError("appearance-only ground differs from the accepted appearance")
     bindings = json.loads(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )
@@ -64,9 +64,9 @@ def appearance_ground(identifier, speed, root=ROOT):
     ):
         raise ValueError("official appearance membership digest")
     if not any(row[0] == identifier for row in members["entries"]):
-        raise ValueError("ground has no official appearance membership")
+        raise ValueError("appearance-only ground has no official appearance membership")
     known = lambda value: {"state": "KNOWN", "value": value}
-    return {
+    record = {
         "identity": {
             "family": "Terrain",
             "key": f"oteryn:terrain.tibia.i{identifier}",
@@ -115,10 +115,11 @@ def appearance_ground(identifier, speed, root=ROOT):
             },
         },
     }
+    return record
 
 
 def outputs(root=ROOT):
-    record = appearance_ground(IDENTIFIER, 100, root)
+    record = appearance_only_ground(IDENTIFIER, 100, root)
     index_path = "content/world/placements/index.json"
     index = json.loads((root / index_path).read_bytes())
     selected = [row for row in index["palette"] if row["source_item_id"] == IDENTIFIER]

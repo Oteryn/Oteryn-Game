@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "world-authoring"))
 import scoped_spawn_ground
 import spawn_ground
 from elemental_ground import ROOT, routed_ground
-from grizzly_ground import appearance_ground
+from grizzly_ground import appearance_only_ground
 
 PLACEMENTS = "content/world/placements/index.json"
 
@@ -25,7 +25,7 @@ def check(root=ROOT):
     }:
         raise ValueError("Sleeping Dragon's source ground differs from scoped Terrain")
     # Crystal world.otbm at 32549,32622,11 contains only this top-level ground.
-    ground = appearance_ground(50343, 150, root)
+    ground = appearance_only_ground(50343, 150, root)
     if ground != spawn_ground.records(root)[50343]:
         raise ValueError("Skullfrost's source ground differs from published Terrain")
     index = json.loads((root / PLACEMENTS).read_bytes())

@@ -50,6 +50,45 @@ async fn experience(h: &Harness) -> TestResult<i64> {
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }
 
+async fn stow_completed_exchanges(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult {
+    mint(owner, admitted, 2854, 1, 900_002).await?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    let backpack = owner
+        .root
+        .read_character_backpack(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("main backpack")?;
+    let spare = backpack
+        .entries
+        .iter()
+        .find(|entry| entry.item.definition.production_key == "oteryn:item.tibia.i2854")
+        .ok_or("spare backpack")?
+        .item
+        .item_instance_id;
+    for (index, entry) in backpack.entries.iter().enumerate() {
+        let item = entry.item.item_instance_id;
+        if item != spare {
+            super::qengine_rewards_fixtures::into_bag(
+                owner,
+                admitted,
+                item,
+                spare,
+                925_000 + u64::try_from(index)?,
+            )
+            .await?;
+        }
+    }
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -145,12 +184,15 @@ pub(super) async fn exercise(
             )
             .await;
         if text.contains("silver") {
-            shop_windows.push(outcome.window.and_then(|window| window.open));
+            shop_windows.push(outcome.window);
         }
     }
     for (message, window) in ["trade silver", "silver"].into_iter().zip(shop_windows) {
-        if !window.is_some_and(|(npc, _)| npc == cledwyn) {
+        let open = window.as_ref().and_then(|window| window.open);
+        if !open.is_some_and(|(npc, _)| npc == cledwyn) {
             regressions.push(format!("Cledwyn {message:?} did not open his shop"));
+        } else if window.is_some_and(|window| !window.offers.is_empty()) {
+            regressions.push(format!("Cledwyn {message:?} showed silver offers as gold"));
         }
     }
 
@@ -436,6 +478,8 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 8192).await?, 50);
     assert_eq!(quantity(h, 8191).await?, 1);
     assert_eq!(experience(h).await?, xp);
+    // Keep the verified rewards while making room for the next dialogue cases.
+    stow_completed_exchanges(owner, admitted).await?;
     for (index, (npc, key, words, inputs, output, expected)) in [
         (
             cledwyn,

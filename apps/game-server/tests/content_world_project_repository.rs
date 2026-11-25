@@ -18,12 +18,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         418,
-        "03f61c28ca5b97a8072720d1742947ee6d7a1e1769a6800879643c8e83562c86",
+        "260beeaf31e733334daf1ac540318242c1b0c388c5f9e15a453aa1e437651f39",
     ),
     (
         "definitions/declarations.json",
-        27_920_684,
-        "379a819fc35cae2436a802b48297eedf475ea121651b6d0287ffc3b6472955d8",
+        27_952_939,
+        "b48279bc26cdbce3235b4b2ec73dddff5bb0e7ddde900d485d144877dde4e9ce",
     ),
     (
         "definitions/reference.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1957,
-        "618c12fde260f327612781efe3e988128eb169c02ec1120eba1896b58e9e7105",
+        "c6b5fb2034c412f8d655744139f4afd2d88c5797963ea2538b85265741ae3f2c",
     ),
     (
         "presentations/bindings.json",
@@ -48,12 +48,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         408,
-        "fb6d5d291b4fa55050fde438be0594a186a9dbc881f3932b9a39386d0a05d62c",
+        "f4730fe504e9c42f7fa6cda93f092cc63c316c58753a2cf32b8089964fc374e4",
     ),
     (
         "provenance/imports.json",
         6_774_564,
-        "064eff0ca62c24064f40a3529c14947df9eeeb7cc83152e05094a24e153a8609",
+        "039dac5872f8d6f32a9469cf847cfd75348e1400fa8f6281d9e92dc10e17075a",
     ),
     (
         "provenance/sources.json",
@@ -143,7 +143,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "a461b08e8ec8a7ed3a20db3547870bbff20cce469e6a1ce7ed82f98fca820a9f";
+const TREE_SHA256: &str = "9bef9d3eefb504c98169d49f342861b72a9ac01e40dc449abdb14ecbba387ff4";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -162,8 +162,8 @@ const NPC_RECORDS: usize = 2_584;
 // Includes BANK-3's Henricus blessing Service.
 // S10 adds one bank, three promotion and six blessing Service declarations.
 // N3 adds Buddel’s travel Service.
-const NPC_DECLARATIONS: usize = 2532;
-const NPC_DIALOGUES: usize = 839;
+const NPC_DECLARATIONS: usize = 2548;
+const NPC_DIALOGUES: usize = 855;
 const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
 const ENCOUNTERS: usize = 108;
@@ -763,6 +763,52 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         }
     }
     assert_eq!(expected_provisional_dialogues.len(), 133);
+    let regional: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../content/dialogues/regional.authoring.json"
+    ))
+    .expect("regional Crystal dialogue packet");
+    let repository = regional["repository"].as_str().expect("donor repository");
+    let revision = regional["revision"].as_str().expect("donor revision");
+    let regional_path = "oteryn:source.npc.regional_dialogue";
+    let mut regional_fields = std::collections::BTreeMap::new();
+    for (npc, row) in regional["npcs"].as_object().expect("dialogue overlays") {
+        let key = format!("oteryn:dialogue.npc.{npc}");
+        let source = row["source"].as_str().expect("donor script");
+        let digest = row["sha256"].as_str().expect("donor script digest");
+        let field = serde_json::json!({
+            "field_path": regional_path,
+            "value": {
+                "type": "Text",
+                "value": format!("{repository}@{revision}:data-global/npc/{source} (sha256 {digest})"),
+            },
+        });
+        if let Some(expected) = expected_provisional_dialogues.get_mut(key.as_str()) {
+            for (event, lines) in row["fields"].as_object().expect("focus message overlays") {
+                assert!(
+                    expected
+                        .get(event)
+                        .is_none_or(|prior| prior == &serde_json::json!([]))
+                );
+                expected[event] = lines.clone();
+            }
+            let keywords = row["keywords"].as_array().expect("keyword overlays");
+            if !keywords.is_empty() {
+                expected
+                    .as_object_mut()
+                    .expect("Dialogue declaration")
+                    .entry("keywords")
+                    .or_insert_with(|| serde_json::json!([]))
+                    .as_array_mut()
+                    .expect("Dialogue keywords")
+                    .extend(keywords.iter().cloned());
+            }
+            expected["fields"]
+                .as_array_mut()
+                .expect("Dialogue source fields")
+                .push(field.clone());
+        }
+        regional_fields.insert(key, field);
+    }
     let bank_packet_bytes = include_bytes!(
         "../../../docs/agents/evidence/OTV2-20261015-npc-bank-services/native-bank-admission.json"
     );
@@ -872,9 +918,19 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                     serde_json::to_value(declaration).ok().as_ref()
                         == expected_provisional_dialogues.get(identity.key.as_str())
                 } else {
-                    fields.iter().all(|field| {
-                        field.field_path == "oteryn:source.npc.static_speech_corrections"
-                    })
+                    let mut regional = fields
+                        .iter()
+                        .filter(|field| field.field_path == regional_path);
+                    regional
+                        .next()
+                        .and_then(|field| serde_json::to_value(field).ok())
+                        .as_ref()
+                        == regional_fields.get(&identity.key)
+                        && regional.next().is_none()
+                        && fields.iter().all(|field| {
+                            field.field_path == "oteryn:source.npc.static_speech_corrections"
+                                || field.field_path == regional_path
+                        })
                 }
             }
             ProjectV2Declaration::Service {

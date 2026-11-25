@@ -14,6 +14,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::sync::Mutex;
 
+use oteryn_gameplay_npc::npc_talk::asks_to_trade_for;
 use oteryn_protocol_oteryn::npc_service::{
     NpcConversation, NpcConversationState, NpcIntentDisposition, NpcTalkIntent, NpcTradeIntent,
     NpcTradeWindow, TALK_RANGE_TILES,
@@ -77,13 +78,20 @@ mod wrath_sleeping_dragon;
 mod yeo;
 pub(super) use premium_purchase::resume_npc_talk;
 
+#[derive(Clone, Copy)]
+enum TradeWindowSelection {
+    Ordinary,
+    Mordecai(&'static mordecai_shop::Category),
+    CledwynSilver,
+}
+
 /// What the server holds of one session's NPC state.
 #[derive(Default)]
 struct SessionNpc {
     recent: RecentIntents,
     healing_command: Option<u64>,
-    /// The NPC and optional shop category shown to the session (domain 8).
-    window: Option<(EntityRef, Option<&'static mordecai_shop::Category>)>,
+    /// The NPC and shop selection shown to the session (domain 8).
+    window: Option<(EntityRef, TradeWindowSelection)>,
     /// The exact bounded offer list shown in this window, including its rank filter.
     window_offers: Vec<crate::content::ProjectV2ServiceOffer>,
     /// Display cache only; the NPC trade writer independently checks quest points.
@@ -261,12 +269,20 @@ impl NpcConversations {
     }
 
     pub fn bank_reply(intent: &NpcTalkIntent, line: String) -> NpcTalkOutcome {
+        Self::reply_with_state(intent, line, NpcConversationState::Open)
+    }
+
+    pub(super) fn reply_with_state(
+        intent: &NpcTalkIntent,
+        line: String,
+        state: NpcConversationState,
+    ) -> NpcTalkOutcome {
         NpcTalkOutcome {
             unknown: false,
             inventory_changed: false,
             disposition: NpcIntentDisposition::Ok,
             conversation: Some(NpcConversation {
-                open: Some((intent.npc_actor, NpcConversationState::Open)),
+                open: Some((intent.npc_actor, state)),
                 lines: vec![line],
             }),
             window: None,
@@ -338,6 +354,31 @@ impl NpcConversations {
             })
     }
 
+    fn rate_refusal(
+        &self,
+        chat: &ChatRuntime,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) -> Option<NpcTalkOutcome> {
+        let disposition = match self.sessions.lock() {
+            Ok(mut sessions) => {
+                let recent = &mut sessions.entry(session).or_default().recent;
+                if oteryn_gameplay_npc::npc_command::admit_talk(recent, now) {
+                    return None;
+                }
+                NpcIntentDisposition::RateLimited
+            }
+            Err(_) => NpcIntentDisposition::Rejected,
+        };
+        Some(NpcTalkOutcome {
+            window: self.close_window(
+                session,
+                chat.engaged(session).map(|npc| npc.placement_identity()),
+            ),
+            ..NpcTalkOutcome::only(disposition)
+        })
+    }
+
     /// One talk intent of the admitted `actor`, under the runtime lock the caller holds. `items`
     /// is the pinned Item index of the Channel's generation; without it no window opens.
     #[allow(
@@ -354,8 +395,23 @@ impl NpcConversations {
         now: SemanticTimeMicros,
         items: Option<&ItemDefinitionIndex>,
     ) -> NpcTalkOutcome {
+        if let Some(refusal) = self.rate_refusal(chat, session, now) {
+            return refusal;
+        }
+        self.talk_admitted(chat, runtime, actor, session, intent, items)
+    }
+
+    fn talk_admitted(
+        &self,
+        chat: &ChatRuntime,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        intent: &NpcTalkIntent,
+        items: Option<&ItemDefinitionIndex>,
+    ) -> NpcTalkOutcome {
         let prior_focus = chat.engaged(session);
-        let mut outcome = self.converse(chat, runtime, actor, session, intent, now);
+        let mut outcome = self.converse(chat, runtime, actor, session, intent);
         let talking_to = chat.engaged(session);
         let opened = (outcome.disposition == NpcIntentDisposition::Ok
             && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity))
@@ -366,13 +422,13 @@ impl NpcConversations {
                 .then(|| mordecai_shop::Category::for_message(&npc.key, &intent.text))
                 .flatten();
             let text = ChatText::parse(&intent.text).ok()?;
-            let trade_requested = (focused
-                && reward_callbacks::cledwyn_silver_trade(&npc.key, text.as_str()))
-                || oteryn_gameplay_npc::npc_talk::asks_to_trade_for(&npc.key, text.as_str());
-            if category.is_none() && !trade_requested {
+            let silver_trade =
+                focused && reward_callbacks::cledwyn_silver_trade(&npc.key, text.as_str());
+            if category.is_none() && !silver_trade && !asks_to_trade_for(&npc.key, text.as_str()) {
                 return None;
             }
             if focused
+                && !silver_trade
                 && chat
                     .npc_talk()
                     .and_then(|book| book.get(&npc.key))
@@ -382,13 +438,18 @@ impl NpcConversations {
             {
                 return None;
             }
-            if let Some(category) = category {
+            let selection = if let Some(category) = category {
                 outcome.conversation = Some(NpcConversation {
                     open: Some((intent.npc_actor, NpcConversationState::Open)),
                     lines: vec![category.reply()],
                 });
-            }
-            self.open_window(chat, runtime, session, intent.npc_actor, items, category)
+                TradeWindowSelection::Mordecai(category)
+            } else if silver_trade {
+                TradeWindowSelection::CledwynSilver
+            } else {
+                TradeWindowSelection::Ordinary
+            };
+            self.open_window(chat, runtime, session, intent.npc_actor, items, selection)
         })
         .flatten();
         outcome.window = match opened {
@@ -496,7 +557,7 @@ impl NpcConversations {
                     .map(|state| (state.window, state.window_offers.clone()))
             })
             .unwrap_or_default();
-        let Some((_, category)) = shown.filter(|(npc, _)| *npc == intent.npc_actor) else {
+        let Some((_, selection)) = shown.filter(|(npc, _)| *npc == intent.npc_actor) else {
             // No window is open on this NPC: there is nothing to re-project.
             return Err(Box::new(NpcTradeRefusal::only(Disposition::Rejected)));
         };
@@ -504,7 +565,7 @@ impl NpcConversations {
         // is STALE and re-projects the window.
         let stale = || {
             let window = self
-                .open_window(chat, runtime, session, intent.npc_actor, items, category)
+                .open_window(chat, runtime, session, intent.npc_actor, items, selection)
                 .unwrap_or_default();
             if window.open.is_none()
                 && let Ok(mut sessions) = self.sessions.lock()
@@ -588,16 +649,8 @@ impl NpcConversations {
         actor: ExactActorRef,
         session: GameSessionId,
         intent: &NpcTalkIntent,
-        now: SemanticTimeMicros,
     ) -> NpcTalkOutcome {
         use NpcIntentDisposition as Disposition;
-        let Ok(mut sessions) = self.sessions.lock() else {
-            return NpcTalkOutcome::only(Disposition::Rejected);
-        };
-        let recent = &mut sessions.entry(session).or_default().recent;
-        if !oteryn_gameplay_npc::npc_command::admit_talk(recent, now) {
-            return NpcTalkOutcome::only(Disposition::RateLimited);
-        }
 
         let (Some(book), Ok(text)) = (chat.npc_talk(), ChatText::parse(&intent.text)) else {
             return NpcTalkOutcome::only(Disposition::Rejected);
@@ -652,6 +705,9 @@ impl NpcConversations {
             }
             // Dialogue-backed Oressa does not need a generated-reply book entry.
             // Rate, exact generation, present actor and range were checked by this owner.
+            let Ok(mut sessions) = self.sessions.lock() else {
+                return NpcTalkOutcome::only(Disposition::Rejected);
+            };
             return super::vocation_choice::dawnport_choice_dialogue(
                 &mut sessions.entry(session).or_default().vocation,
                 chat,
@@ -749,6 +805,7 @@ pub(super) async fn npc_bank_talk(
     actor: ExactActorRef,
     command: super::connection::UseCommand,
     intent: NpcTalkIntent,
+    received_at: SemanticTimeMicros,
 ) -> NpcTalkOutcome {
     use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
@@ -769,6 +826,14 @@ pub(super) async fn npc_bank_talk(
         return outcome;
     }
     let session = command.game_session_id;
+    let conversations = &admission.states.npc_conversations;
+    // Reconciliation has precedence. Fresh talk spends its allowance at receipt time,
+    // before any advisory inventory or appearance read.
+    if let Some(refusal) = conversations.rate_refusal(&admission.states.chat, session, received_at)
+    {
+        conversations.cancel_bank(session);
+        return refusal;
+    }
     let yes = intent.text.trim_matches(' ').eq_ignore_ascii_case("yes");
     let unknown = || NpcTalkOutcome {
         unknown: true,
@@ -798,6 +863,8 @@ pub(super) async fn npc_bank_talk(
     };
     let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
     let source_inventory = catalogue::inventory(admission, actor, command, &intent).await;
+    let blank_scroll_available =
+        quest_shop::blank_scroll_available(admission, actor, command, &intent).await;
     let mut runtime = admission.runtime.lock().await;
     let points = admission
         .states
@@ -831,15 +898,14 @@ pub(super) async fn npc_bank_talk(
         .npc_conversations
         .refresh_quest_shop_context(
             session,
-            quest_shop::eligible_items(admission, session, native),
+            quest_shop::eligible_items(admission, session, native, blank_scroll_available),
         );
-    let ordinary = admission.states.npc_conversations.talk_in(
+    let ordinary = conversations.talk_admitted(
         &admission.states.chat,
         &runtime,
         actor,
         session,
         &intent,
-        admission.owner_now(),
         super::item_ref_admission::pinned_index(&runtime, admission.active_generation),
     );
     if ordinary.disposition != NpcIntentDisposition::Ok {
@@ -862,7 +928,7 @@ pub(super) async fn npc_bank_talk(
         .npc_conversations
         .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
         .is_some_and(|context| {
-            admission.has_pending_paid_confirmation(command, &intent, &context)
+            admission.has_pending_paid_confirmation(command, &intent, &context, received_at)
                 || reward_callbacks::cledwyn_silver_trade(&context.2, &intent.text)
         })
     {
@@ -1112,7 +1178,14 @@ pub(super) async fn npc_bank_talk(
         .current_bank(&admission.states.chat, &runtime, actor, session, &intent)
     else {
         admission.states.npc_conversations.cancel_bank(session);
-        if reward_callbacks::unhandled_confirmation(admission, actor, command, &intent, &runtime) {
+        if reward_callbacks::unhandled_confirmation(
+            admission,
+            actor,
+            command,
+            &intent,
+            &runtime,
+            received_at,
+        ) {
             return rejected();
         }
         return ordinary;
