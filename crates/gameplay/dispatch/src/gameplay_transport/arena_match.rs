@@ -69,6 +69,8 @@ struct ArenaCaller {
     channel: crate::foundation::ChannelId,
 }
 
+struct ArenaGroundBusy;
+
 #[derive(Default)]
 pub(in crate::gameplay_transport) struct Matches {
     command: tokio::sync::Mutex<()>,
@@ -409,16 +411,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && (read.state.rank == 0
                 || (read.state.session == *session.as_bytes()
                     && read.state.scope_generation == fence.scope_ownership_generation.get()))
+            && self
+                .project_arena_match(actor, session, &read.state, read.now_ms, permit, fence)
+                .await?
+                .is_err()
         {
-            self.restore_arena_projection(
-                actor,
-                session,
-                &read.state,
-                read.now_ms,
-                permit,
-                fence,
-            )
-            .await?;
+            if matches!(cause, durable::MatchCause::Step { .. }) {
+                return None;
+            }
+            return wire::encode_match_result(&wire::ArenaResult {
+                disposition: D::Busy,
+                state: read.state.wire(read.now_ms, read.masks),
+            })
+            .ok();
         }
         let before = read.state;
         let mut victory = None;
@@ -689,6 +694,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: &SpellLanePermit,
         fence: CurrentCharacterGameplayFence,
     ) -> Option<()> {
+        self.project_arena_match(actor, session, state, now_ms, permit, fence)
+            .await?
+            .ok()
+    }
+
+    async fn project_arena_match(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        state: &MatchState,
+        now_ms: i64,
+        permit: &SpellLanePermit,
+        fence: CurrentCharacterGameplayFence,
+    ) -> Option<Result<(), ArenaGroundBusy>> {
         let existing = self
             .states
             .arena_matches
@@ -719,7 +738,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 PillarProjection::Fighting
             };
             let _ = pillar::project(self, state, projection);
-            return Some(());
+            return Some(Ok(()));
         }
         if let Some(remaining_ms) = state.projection_remaining_ms(now_ms) {
             let destination = center(state.pit)?;
@@ -747,7 +766,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         deadline: Instant::now() + Duration::from_millis(remaining_ms),
                     },
                 );
-                return Some(());
+                return Some(Ok(()));
             }
             let current = runtime.read_actor_position(actor).ok()?;
             let at = current.position();
@@ -755,7 +774,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return None;
             }
             drop(runtime);
-            pit_reset::reset_items(self, actor, session, permit, fence, state).await?;
+            match pit_reset::reset_items(self, actor, session, permit, fence, state).await? {
+                durable::ArenaPitResetOutcome::Applied => {}
+                durable::ArenaPitResetOutcome::Refused => return None,
+                durable::ArenaPitResetOutcome::GroundBusy => return Some(Err(ArenaGroundBusy)),
+            }
             let mut runtime = self.runtime.lock().await;
             if let Some(old) = &existing
                 && (old.state.pit != state.pit || old.state.run != state.run)
@@ -827,7 +850,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime.relocate_arena_player(actor, session, before, destination).ok()?;
             }
         }
-        Some(())
+        Some(Ok(()))
     }
 
     fn arena_pit_ready(

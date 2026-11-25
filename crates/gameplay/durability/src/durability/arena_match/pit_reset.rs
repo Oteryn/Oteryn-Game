@@ -146,6 +146,12 @@ pub(in crate::durability) struct ArenaResetVisit {
     pub(in crate::durability) binding: [u8; 32],
 }
 
+pub enum ArenaPitResetOutcome {
+    Applied,
+    Refused,
+    GroundBusy,
+}
+
 impl DurabilityRoot {
     pub async fn retire_arena_pit_items(
         &self,
@@ -155,17 +161,17 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         state: &MatchState,
         items: Vec<ArenaPitResetItem>,
-    ) -> Result<bool, CharacterProgressionError> {
+    ) -> Result<ArenaPitResetOutcome, CharacterProgressionError> {
         let RuntimeScopeRefV1::Channel {
             world_id,
             channel_id,
         } = fence.runtime_scope
         else {
-            return Ok(false);
+            return Ok(ArenaPitResetOutcome::Refused);
         };
         permit.check_scope(fence.runtime_scope)?;
         let Some(pit) = Pit::new(state.pit) else {
-            return Ok(false);
+            return Ok(ArenaPitResetOutcome::Refused);
         };
         let mut cells = std::collections::BTreeSet::new();
         for item in &items {
@@ -174,7 +180,7 @@ impl DurabilityRoot {
             if !pit.layout().contains_reset([at.x, at.y, -at.z.abs()])
                 || !cells.insert((at.x, at.y))
             {
-                return Ok(false);
+                return Ok(ArenaPitResetOutcome::Refused);
             }
         }
         let recovery = authority
@@ -192,7 +198,7 @@ impl DurabilityRoot {
                     return Ok(Err(error));
                 }
                 if !lock_reset_custody(&mut tx, fence, &state).await? {
-                    return Ok(Ok(false));
+                    return Ok(Ok(ArenaPitResetOutcome::Refused));
                 }
                 let binding: Option<Vec<u8>> = sqlx::query_scalar(
                     "INSERT INTO game_arena_pit_item_resets(world_id,channel_id,run_id,pit,rank,character_id,
@@ -217,14 +223,14 @@ impl DurabilityRoot {
                     )
                     .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
                     .fetch_one(&mut **tx).await? {
-                        return Ok(Ok(false));
+                        return Ok(Ok(ArenaPitResetOutcome::GroundBusy));
                     }
                     for item in items {
                         crate::durability::item_decay_retire::arena_reset::retire_top(&mut tx, permit, &node, &visit, item).await?;
                     }
                 }
                 tx.commit(deadline).await?;
-                Ok(Ok(true))
+                Ok(Ok(ArenaPitResetOutcome::Applied))
             })
         }).await?
     }

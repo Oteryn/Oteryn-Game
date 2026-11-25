@@ -78,6 +78,15 @@ enum ResetCase {
     CorpseLoot,
     NativeFloor,
     ProjectionRetry,
+    FreshStatus,
+}
+
+#[test]
+fn arena_fresh_status_while_reset_refused_returns_busy() -> TestResult {
+    run_reset_case(
+        ResetCase::FreshStatus,
+        "arena_fresh_status_while_reset_refused_returns_busy",
+    )
 }
 
 #[test]
@@ -339,6 +348,10 @@ fn scenario(case: ResetCase, test: &'static str) -> TestResult {
         );
         assert_eq!(ground_roots(&h).await?, 4, "no pit lease yet");
 
+        if case == ResetCase::FreshStatus {
+            return fresh_status_while_reset_refused(&h, &owner, admitted).await;
+        }
+
         let payload = wire::encode_match_request(ArenaAction::Enter).map_err(debug)?;
         let entry = admitted.continuity.next_command_id;
         if case == ResetCase::ProjectionRetry {
@@ -495,6 +508,84 @@ fn scenario(case: ResetCase, test: &'static str) -> TestResult {
         );
         Ok(())
     })
+}
+
+async fn fresh_status_while_reset_refused(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
+    use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
+    use oteryn_protocol_oteryn::{
+        ClientCommandValue, CommandStatus, MessageType, decode_command_result, decode_wire_envelope,
+        encode_client_command,
+    };
+
+    let mut ground_lock = h.pool.begin().await?;
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))",
+    )
+    .bind(admitted.world_id.as_bytes().as_slice())
+    .bind(admitted.channel_id.as_bytes().as_slice())
+    .execute(&mut *ground_lock)
+    .await?;
+
+    let (mut server, mut client) = tokio::io::duplex(1024);
+    let serving = async move { serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await };
+    let driving = async move {
+        loop {
+            let frame = read_frame(&mut client).await?;
+            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
+                == MessageType::SnapshotCommit
+            {
+                break;
+            }
+        }
+        let mut send = async |offset, action, expected| -> TestResult {
+            let command_id = admitted.continuity.next_command_id + offset;
+            let payload = wire::encode_match_request(action).map_err(debug)?;
+            let frame = encode_client_command(
+                admitted.continuity.connection_generation,
+                &ClientCommandValue {
+                    command_id,
+                    command_type: wire::COMMAND_TYPE_ARENA_MATCH,
+                    payload: &payload,
+                },
+            )
+            .map_err(debug)?;
+            write_frame(&mut client, &frame).await?;
+            loop {
+                let frame = read_frame(&mut client).await.map_err(|error| {
+                    format!("expected {expected:?} for arena {action:?} on the same connection: {error}")
+                })?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let reply = decode_command_result(envelope.payload()).map_err(debug)?;
+                    assert_eq!(reply.command_id, command_id);
+                    assert_eq!(reply.status, CommandStatus::Accepted);
+                    let arena = wire::decode_match_result(reply.payload).map_err(debug)?;
+                    assert_eq!(arena.disposition, expected);
+                    assert_eq!(arena.state.pit, 1);
+                    return Ok(());
+                }
+            }
+        };
+        let roots = ground_roots(h).await?;
+        send(0, ArenaAction::Enter, ArenaDisposition::Applied).await?;
+        assert_eq!(ground_roots(h).await?, roots, "Ground is still locked");
+        send(1, ArenaAction::Status, ArenaDisposition::Busy).await?;
+        assert_eq!(ground_roots(h).await?, roots, "Busy leaves the reset pending");
+        ground_lock.rollback().await?;
+        send(2, ArenaAction::Status, ArenaDisposition::Applied).await?;
+        assert_eq!(ground_roots(h).await?, roots - 1, "the pending reset succeeded");
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (_, result) = tokio::time::timeout(std::time::Duration::from_secs(30), async {
+        tokio::join!(serving, driving)
+    })
+    .await?;
+    result
 }
 
 async fn ground_roots(h: &Harness) -> TestResult<i64> {

@@ -31,7 +31,7 @@ pub use native_step::NativeArenaStep;
 pub use native_timeout::NativeArenaTimeout;
 mod pit_lease;
 pub(in crate::durability) mod pit_reset;
-pub use pit_reset::ArenaPitResetItem;
+pub use pit_reset::{ArenaPitResetItem, ArenaPitResetOutcome};
 mod projection;
 pub use projection::ArenaProjection;
 pub(in crate::durability) mod terminal;

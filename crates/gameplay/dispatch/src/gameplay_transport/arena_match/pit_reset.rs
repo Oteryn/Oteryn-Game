@@ -76,9 +76,9 @@ pub(super) async fn reset_items(
     permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     state: &MatchState,
-) -> Option<()> {
+) -> Option<durable::ArenaPitResetOutcome> {
     let Some(map) = owner.bundle_map() else {
-        return Some(());
+        return Some(durable::ArenaPitResetOutcome::Applied);
     };
     let pit = Pit::new(state.pit)?;
     let native = owner.active_generation?.native_gameplay()?;
@@ -173,6 +173,5 @@ pub(super) async fn reset_items(
         .root
         .retire_arena_pit_items(permit, owner.character, owner.holder, fence, state, items)
         .await
-        .ok()?
-        .then_some(())
+        .ok()
 }
