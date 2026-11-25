@@ -695,9 +695,17 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 }
 
 pub fn load() -> Result<Vec<Callback>, String> {
+    Ok(embedded_callbacks()?.to_vec())
+}
+
+pub(super) fn embedded_callbacks() -> Result<&'static [Callback], String> {
     // Durable quest writers also consult the base callbacks for ownership checks.
     static CALLBACKS: OnceLock<Result<Vec<Callback>, String>> = OnceLock::new();
-    CALLBACKS.get_or_init(load_embedded_callbacks).clone()
+    CALLBACKS
+        .get_or_init(load_embedded_callbacks)
+        .as_ref()
+        .map(Vec::as_slice)
+        .map_err(Clone::clone)
 }
 
 fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {

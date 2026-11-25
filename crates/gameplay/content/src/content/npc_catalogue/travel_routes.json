@@ -676,11 +676,12 @@
     "price": 0,
     "premium": false,
     "x": 32298,
-    "y": 32895,
+    "y": 32896,
     "floor": 6,
     "postman": false,
     "held": false,
-    "carpet": false
+    "carpet": false,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.captain_pelagia/darashia",
