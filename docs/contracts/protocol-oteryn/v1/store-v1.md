@@ -64,9 +64,20 @@ Command 185 has exactly six results: `ACCEPTED`, `STALE_QUOTE`, `OFFER_UNAVAILAB
 
 Command 186 request: one pending Store fulfilment-unit key. It neither represents nor reconstructs a purchase.
 
+A request containing only varint field 2 with value 1 queries the admitted buyer's
+Store Inbox. It projects the buyer's retained item deliveries still held in the
+current Character's Inbox. Game resolves the Account, Character and World from
+the session. The query does not submit a claim.
+
 ## StoreInboxClaimReceiptV1
 
 Command 186 response: immutable Platform operation UUIDv7, fulfilment-unit key, closed result (`COMMITTED`, `REVOKED`, `NOT_CLAIMABLE`, or `REJECTED`), positive recovery generation, and decision time. A repeated operation republishes its stored receipt.
+
+For a query request, the reply is a repeated length-delimited field 1 with up to 20
+entries. Each entry has a 16-byte fulfilment-unit UUIDv7 in field 1 and a nonzero
+item client ID (uint16) in field 2. An empty Inbox returns an empty result payload.
+The client renders each entry as a claim action and formats its UUID as the key for
+a separate claim request. Claims and receipt replies retain their existing wire form.
 
 Display names follow Crystal `schema.sql:697–713` and `gamestore/init.lua:1475–1528`: they are validated text, not unique identities. Two purchases, including overlapping uncertain requests, may use the same canonical display name and receive distinct durable Hireling/lamp UUIDs.
 

@@ -46,6 +46,8 @@ pub(super) struct Ledger {
     pub(super) slow_claim_reads: Option<Arc<SlowClaimReads>>,
     pub(super) receipt_ready: Arc<tokio::sync::Notify>,
     pub(super) malformed: bool,
+    pub(super) entitlement_override: Option<String>,
+    pub(super) unit_kind_override: Option<&'static str>,
     pub(super) fail_before_debit: bool,
     pub(super) answers: BTreeMap<String, (String, serde_json::Value)>,
 }
@@ -96,9 +98,17 @@ impl StoreTransport for FakePlatform {
                     let n = u8::try_from(ledger.debits.len()).expect("few orders");
                     let operation = uuid(&id(100 + n));
                     let order = uuid(&id(120 + n));
-                    let intent = platform_intent(&request, &operation, &order);
-                    ledger.intents.insert(operation.clone(), intent);
+                    let mut intent = platform_intent(&request, &operation, &order);
                     let mut answer = platform_answer(&request, Some((&order, &operation)), ledger.balance, body);
+                    if let Some(kind) = ledger.unit_kind_override {
+                        intent["unit_kind"] = kind.into();
+                        answer["units"][0]["unit_kind"] = kind.into();
+                    }
+                    if let Some(key) = &ledger.entitlement_override {
+                        intent["entitlement_id"] = key.as_str().into();
+                        answer["units"][0]["entitlement_id"] = key.as_str().into();
+                    }
+                    ledger.intents.insert(operation.clone(), intent);
                     ledger.answers.insert(request_id, (body.to_owned(), answer.clone()));
                     if ledger.malformed {
                         let unit = answer["units"][0].clone();

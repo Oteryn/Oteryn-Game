@@ -1,5 +1,4 @@
-//! Remote inbox summary for Store deliveries, using the accepted custody projection.
-//! No synthetic container handle: item use/movement requires a Store inbox root contract.
+//! Remote Store Inbox claim actions and the character's custody summary.
 #[cfg(test)]
 mod tests;
 use super::{
@@ -16,7 +15,9 @@ use bevy::{
     ui::InteractionDisabled,
     ui_widgets::{Activate, ScrollArea},
 };
+use oteryn_client_runtime::cui3::store as wire;
 use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, Intent};
+use oteryn_client_ui::store::StorePanel;
 use oteryn_client_ui_bevy as source;
 #[derive(Resource, Default)]
 struct State {
@@ -24,6 +25,7 @@ struct State {
     revision: u64,
     root: Option<Entity>,
     snapshot: Option<CyclopediaCharacterPanel>,
+    store: Option<StorePanel>,
 }
 #[derive(Component, Clone, Copy)]
 struct Control {
@@ -37,6 +39,7 @@ enum Kind {
     Refresh,
     Previous,
     Next,
+    Claim(usize),
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
@@ -62,19 +65,37 @@ fn perform(owner: &HostOwner, state: &State, control: Control) {
         play.link.store_inbox_set_open(false);
         return;
     }
-    if play.view.gameplay_input_blocked(&play.link)
-        || !panel.selected
-        || panel.pending
-        || panel.blessings.pending
-        || panel.target.is_some()
-    {
+    if play.view.gameplay_input_blocked(&play.link) || panel.target.is_some() {
+        return;
+    }
+    let store = play.link.store_panel();
+    if state.store.as_ref() != Some(&store) {
+        return;
+    }
+    if let Kind::Claim(index) = control.kind {
+        if store.selected
+            && !store.pending
+            && let Some(entry) = store.inbox_entries.get(index)
+            && let Ok(payload) = wire::encode_inbox_claim_request(&wire::StoreInboxClaimRequest {
+                fulfilment_unit_id: entry.claim_key(),
+            })
+        {
+            play.link
+                .store_request(wire::COMMAND_TYPE_STORE_INBOX_CLAIM, payload);
+        }
+        return;
+    }
+    if control.kind == Kind::Refresh && store.selected && !store.pending {
+        play.link.store_inbox_refresh();
+    }
+    if !panel.selected || panel.pending || panel.blessings.pending {
         return;
     }
     play.link.cyclopedia_character_request(match control.kind {
         Kind::Refresh => Intent::Items,
         Kind::Previous => Intent::ItemsPrevious,
         Kind::Next => Intent::ItemsNext,
-        Kind::Close => return,
+        Kind::Close | Kind::Claim(_) => return,
     });
 }
 fn activate(
@@ -134,7 +155,12 @@ fn project(
         .filter(|_| owner.phase == Phase::Playing)
         .map(|play| play.link.cyclopedia_character_panel())
         .filter(|p| p.items.open);
-    if panel == state.snapshot && state.generation == owner.generation() {
+    let store = owner
+        .play
+        .as_ref()
+        .filter(|_| panel.is_some())
+        .map(|play| play.link.store_panel());
+    if panel == state.snapshot && store == state.store && state.generation == owner.generation() {
         return;
     }
     if let Some(root) = state.root.take() {
@@ -151,7 +177,8 @@ fn project(
     state.generation = owner.generation();
     state.revision = state.revision.wrapping_add(1);
     state.snapshot = panel;
-    let Some(panel) = &state.snapshot else {
+    state.store = store;
+    let (Some(panel), Some(store)) = (&state.snapshot, &state.store) else {
         return;
     };
     let root = commands
@@ -197,10 +224,14 @@ fn project(
         .id();
     commands.entity(root).add_child(window);
     source::dialog_caption(&mut commands, window, "Store Inbox", skins.font.clone());
-    let mut lines = vec![
-        "Character inbox summary — includes Store and other deliveries.".to_string(),
-        "Store-only contents and item use are unavailable in this server's inbox interface.".into(),
-    ];
+    let mut lines =
+        vec!["Character inbox summary — includes Store and other deliveries.".to_string()];
+    if store.selected
+        && store.pending_action == wire::COMMAND_TYPE_STORE_INBOX_CLAIM
+        && let Some(feedback) = &store.feedback
+    {
+        lines.push(feedback.clone());
+    }
     let busy = panel.pending || panel.blessings.pending;
     let disabled = busy || !panel.selected || panel.target.is_some();
     if !panel.selected {
@@ -245,16 +276,31 @@ fn project(
         .page
         .as_ref()
         .is_some_and(|p| usize::from(p.offset) + p.rows.len() < usize::from(p.total));
-    for (kind, caption, disabled) in [
-        (Kind::Refresh, "Refresh", disabled),
+    let store_disabled = !store.selected || store.pending || panel.target.is_some();
+    let mut buttons = Vec::new();
+    for (index, entry) in store.inbox_entries.iter().enumerate() {
+        let title = store.browser.page.as_ref().and_then(|page| {
+            page.products.iter().find(|product| {
+                product.artwork.kind == 1 && product.artwork.looks[0] == u32::from(entry.item_id)
+            })
+        });
+        let caption = title.map_or_else(
+            || format!("Claim item {}", entry.item_id),
+            |product| format!("Claim {}", product.offer.title),
+        );
+        buttons.push((Kind::Claim(index), caption, store_disabled));
+    }
+    buttons.extend([
+        (Kind::Refresh, "Refresh".into(), disabled && store_disabled),
         (
             Kind::Previous,
-            "Previous summary page",
+            "Previous summary page".into(),
             disabled || !previous,
         ),
-        (Kind::Next, "Next summary page", disabled || !next),
-        (Kind::Close, "Close", false),
-    ] {
+        (Kind::Next, "Next summary page".into(), disabled || !next),
+        (Kind::Close, "Close".into(), false),
+    ]);
+    for (kind, caption, disabled) in buttons {
         let button = commands
             .spawn((
                 source::button(skins.buttons.clone(), 220.),

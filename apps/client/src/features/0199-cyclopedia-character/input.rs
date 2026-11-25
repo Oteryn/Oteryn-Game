@@ -48,7 +48,7 @@ impl PlayLink {
         lock(&self.mailbox).cyclopedia_character.open = true;
         true
     }
-    /// The accepted custody summary is remote, read-only, and combines Store and mail deliveries.
+    /// Open the remote custody summary and request the buyer's Store claim entries.
     pub fn store_inbox_set_open(&self, open: bool) {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.cyclopedia_character;
@@ -67,6 +67,8 @@ impl PlayLink {
             mailbox.store_inbox_refresh_pending = false;
             self.cyclopedia_character_request_locked(&mut mailbox, Intent::Items);
         }
+        drop(mailbox);
+        self.store_inbox_refresh();
     }
 
     pub(in crate::play) fn pump_store_inbox_refresh(&self) {

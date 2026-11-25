@@ -417,3 +417,34 @@ mod browser;
 
 #[path = "cosmetic_tokens.rs"]
 mod cosmetic_tokens;
+
+#[test]
+fn store_review_open_inbox_requests_the_store_entitlement_projection()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::{
+        cui3::store::COMMAND_TYPE_STORE_INBOX_CLAIM,
+        server_mechanic::{CommandStatus, ServerMechanicResponse},
+    };
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.store_initialize(true, false);
+    link.store_inbox_set_open(true);
+    let request = incoming.try_recv().ok();
+    assert!(
+        matches!(request, Some(PlayCommand::ServerMechanic(command))
+        if command.capability == 154 && command.command_type == COMMAND_TYPE_STORE_INBOX_CLAIM
+           && command.payload == [16, 1]),
+        "opening the native Inbox must request the buyer's claimable items"
+    );
+    let mut reply = vec![10, 22, 10, 16];
+    reply.extend([0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2]);
+    reply.extend([16, 0x88, 0xdf, 0x01]);
+    outbox.store_result(&ServerMechanicResponse {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: reply,
+    });
+    assert!(link.store_panel().feedback.is_none());
+    Ok(())
+}

@@ -14,6 +14,9 @@ impl Outbox {
     pub(in crate::play) fn store_initialize(&self, selected: bool, hireling_modal_selected: bool) {
         let mut mailbox = lock(&self.0);
         mailbox.store.selected = selected;
+        mailbox.store.inbox_entries.clear();
+        mailbox.store.inbox_query_pending = false;
+        mailbox.store.claim = None;
         mailbox.store.cosmetic_tokens = None;
         mailbox.store.token_supported = false;
         mailbox.store.token_balance_refresh = false;
@@ -34,6 +37,7 @@ impl Outbox {
     ) {
         let mut mailbox = lock(&self.0);
         let action = mailbox.store.pending_action;
+        let inbox_query = mailbox.store.inbox_query_pending;
         oteryn_client_ui::store::apply_result(&mut mailbox.store, response);
         let text = if let Some(feedback) = &mailbox.store.feedback {
             feedback.clone()
@@ -41,7 +45,7 @@ impl Outbox {
             && let Some(purchase) = &mailbox.store.purchase
         {
             format!("Purchase: {:?}", purchase.code)
-        } else if action == 186
+        } else if action == 186 && !inbox_query
             && let Some(claim) = &mailbox.store.claim
         {
             format!("Inbox claim: {:?}", claim.result)

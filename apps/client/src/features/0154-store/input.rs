@@ -148,6 +148,11 @@ impl PlayLink {
         }
     }
 
+    pub(crate) fn store_inbox_refresh(&self) {
+        use oteryn_client_runtime::cui3::store::{COMMAND_TYPE_STORE_INBOX_CLAIM, STORE_INBOX_QUERY};
+        self.store_request(COMMAND_TYPE_STORE_INBOX_CLAIM, STORE_INBOX_QUERY.to_vec());
+    }
+
     pub fn store_payment(&self, tokens: bool) -> bool {
         oteryn_client_ui::store::choose_payment(&mut lock(&self.mailbox).store, tokens)
     }

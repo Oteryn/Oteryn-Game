@@ -35,6 +35,8 @@ pub(super) mod receipt_outbox;
 pub use receipt_outbox::{run_retained_store_reconciliation, run_store_receipt_outbox};
 #[path = "store/hireling.rs"]
 mod hireling;
+#[path = "store/inbox.rs"]
+mod inbox;
 use catalogue::{RuntimeCatalogue, currency_text};
 
 /// The node's Platform Store client; `None` refuses every purchase as disabled.
@@ -157,14 +159,9 @@ pub(super) fn platform_unit_kind(revision: &str, offer_key: &str) -> Option<&'st
     {
         document
     } else {
-        // The legacy runtime import projects outfits and mounts as COSMETIC.
-        return Some(
-            if crate::content::store_cosmetics::offer(offer_key).is_some() {
-                "COSMETIC"
-            } else {
-                "ITEM"
-            },
-        );
+        // Pre-Platform runtime catalogue revisions used ITEM for all grants,
+        // including native outfit and mount unlocks.
+        return Some("ITEM");
     };
     let offers = document.get("offers")?.as_array()?;
     let offer = offers
@@ -332,6 +329,12 @@ pub(super) async fn execute(
             };
             let valid = crate::domain::character_name::CharacterName::parse(name).is_ok();
             Ok(vec![u8::from(valid)])
+        }
+        wire::COMMAND_TYPE_STORE_INBOX_CLAIM if payload == wire::STORE_INBOX_QUERY => {
+            let Some(entries) = inbox::project(owner, admitted).await else {
+                return REJECTED;
+            };
+            wire::encode_inbox_entries(&entries)
         }
         wire::COMMAND_TYPE_STORE_INBOX_CLAIM => {
             let Ok(request) = wire::decode_inbox_claim_request(payload) else {
