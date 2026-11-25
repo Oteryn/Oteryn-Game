@@ -103,29 +103,30 @@ pub(super) async fn run(
         (travel $to:ident, $id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
             let mut row = Row::new("E2EF4", $id, $actions).evidence(EVIDENCE, EVIDENCE).gap_lines();
             let watch = row.watch();
-            let result = if let Some(active) = client.as_mut() {
-                let mut arrived = false;
-                let walked = watch
-                    .travel(
-                        concat!($id, " walk to ", stringify!($to), " stalled;remaining-assertions-unproven"),
-                        async {
-                            let walked = $to(active, world).await;
-                            arrived = true;
-                            walked
-                        },
-                    )
-                    .await;
-                if !arrived {
-                    // An interrupted command or frame cannot be resumed by another row.
-                    *client = None;
-                    walked
-                } else if walked.is_err() {
-                    walked
-                } else {
-                    row!(@journey client, row, watch, active, $journey $(, $arg)*)
+            let result = match row_session(client, clients, $id).await {
+                Ok(active) => {
+                    let mut arrived = false;
+                    let walked = watch
+                        .travel(
+                            concat!($id, " walk to ", stringify!($to), " stalled;remaining-assertions-unproven"),
+                            async {
+                                let walked = $to(active, world).await;
+                                arrived = true;
+                                walked
+                            },
+                        )
+                        .await;
+                    if !arrived {
+                        // An interrupted command or frame cannot be resumed by another row.
+                        *client = None;
+                        walked
+                    } else if walked.is_err() {
+                        walked
+                    } else {
+                        row!(@journey client, row, watch, active, $journey $(, $arg)*)
+                    }
                 }
-            } else {
-                Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into())
+                Err(error) => Err(error),
             };
             finish_row(client, row, result).await;
         }};
@@ -151,24 +152,9 @@ pub(super) async fn run(
         ($id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
             let mut row = Row::new("E2EF4", $id, $actions).evidence(EVIDENCE, EVIDENCE).gap_lines();
             let watch = row.watch();
-            let result = if let Some(active) = client.as_mut() {
-                let mut completed = false;
-                let result = watch.bound(
-                    Duration::from_secs(240),
-                    "native-journey-deadline;remaining-assertions-unproven",
-                    async {
-                        let result = $journey(&mut row, active $(, $arg)*).await;
-                        completed = true;
-                        result
-                    },
-                ).await;
-                if !completed {
-                    // An interrupted command or frame cannot be resumed by another row.
-                    *client = None;
-                }
-                result
-            } else {
-                Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into())
+            let result = match row_session(client, clients, $id).await {
+                Ok(active) => row!(@journey client, row, watch, active, $journey $(, $arg)*),
+                Err(error) => Err(error),
             };
             finish_row(client, row, result).await;
         }};
@@ -177,15 +163,16 @@ pub(super) async fn run(
         let mut row = Row::new("E2EF4", "E01", E01)
             .evidence(EVIDENCE, EVIDENCE)
             .gap_lines();
-        let result = if let Some(active) = client.as_mut() {
-            let (result, completed) = shop_row(&mut row, active, clients, world, npcs).await;
-            if !completed {
-                // An interrupted command or frame cannot be resumed by another row.
-                *client = None;
+        let result = match row_session(client, clients, "E01").await {
+            Ok(active) => {
+                let (result, completed) = shop_row(&mut row, active, clients, world, npcs).await;
+                if !completed {
+                    // An interrupted command or frame cannot be resumed by another row.
+                    *client = None;
+                }
+                result
             }
-            result
-        } else {
-            Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into())
+            Err(error) => Err(error),
         };
         verify_live_primary(client, &result).await;
         row.finish(&result);
@@ -213,6 +200,23 @@ pub(super) async fn run(
     if let Err(error) = restore {
         evidence(&format!("E2EF4_GAP return {error}"));
     }
+}
+
+async fn row_session<'a>(
+    slot: &'a mut Option<DevClientSession>,
+    clients: &SeamClients<'_>,
+    row: &str,
+) -> TestResult<&'a mut DevClientSession> {
+    if slot.is_none() {
+        evidence(&format!("E2EF4_ADMISSION {row} fresh-session=waiting"));
+        let client = connect_platform_character(clients, 1)
+            .await
+            .map_err(|error| verdict::context(format!("{row} fresh Platform admission"), error))?;
+        evidence(&format!("E2EF4_ADMISSION {row} fresh-session=accepted"));
+        *slot = Some(client);
+    }
+    slot.as_mut()
+        .ok_or_else(|| "F4 session slot is empty after admission".into())
 }
 
 fn own(client: &DevClientSession) -> TestResult<EntityRef> {
@@ -2057,6 +2061,8 @@ mod tests {
         }
         assert!(!row.complete());
         row.pass("sell-all", "observed");
+        assert!(!row.complete(), "shop requires Platform admission evidence");
+        row.pass("platform-admission", "observed");
         assert!(row.complete());
     }
 
