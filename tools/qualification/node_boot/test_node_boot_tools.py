@@ -659,6 +659,27 @@ class PgObserveTests(unittest.TestCase):
 
 
 class CloudRunSummaryTests(unittest.TestCase):
+    def test_loyalty_replay_selection_matches_the_registered_row(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("selected_loyalty_replay()"):cloud.index("replay_loyalty_capture()")]
+        world = (HERE.parents[2] / "apps/game-server/src/qualification/client_phases/world.rs").read_text()
+        index = int(re.search(r'e2e_row_selected\((\d+)\) \{\s*verdict::indexed\("P13\.client"', world)[1])
+        for group, batch, selected in [
+            ("rows", f"{index}:1", True),
+            ("rows", f"0{index - 1}:02", True),
+            ("rows", f"{index - 1}:1", False),
+            ("rows", f"{index}:0", False),
+            ("rows", "invalid", False),
+            ("core", f"{index}:1", False),
+        ]:
+            with self.subTest(group=group, batch=batch):
+                result = subprocess.run(
+                    ["bash", "-c", helper + 'OTERYN_E2E_ROW_BATCH="$2" selected_loyalty_replay "$1"',
+                     "test", group, batch],
+                    capture_output=True,
+                )
+                self.assertEqual(result.returncode, 0 if selected else 1)
+
     def test_cloud_uses_first_eligible_work_parent(self):
         cloud = (HERE / "cloud_run.sh").read_text()
         helper = cloud[cloud.index("select_work_parent()"):cloud.index("summarize()")]
@@ -683,6 +704,44 @@ class CloudRunSummaryTests(unittest.TestCase):
             result = subprocess.run(["bash", "-c", command, "test", temp],
                                     check=True, capture_output=True, text=True)
             self.assertEqual(result.stdout.strip(), str(work.resolve()))
+
+    def test_loyalty_replay_requires_capture_and_an_executed_test(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("replay_loyalty_capture()"):cloud.index('if [[ ${1:-} == --summarize ]]')]
+        capture = 'SEAM_EVIDENCE e2e_capture scenario=P13.client status=CAPTURED evidence=live\n'
+        failure = 'SEAM_EVIDENCE e2e_all scenario=P13.client status=FAIL evidence=row-error\n'
+        command = helper + textwrap.dedent(r'''
+            cargo() {
+              [[ "$E2E_ALL_CAPTURE_DIR" == "$EXPECTED_CAPTURE" ]] || return 1
+              case "$REPLAY_RESULT" in
+                pass) printf 'test %s ... ok\n' "$7" ;;
+                unmatched) printf 'running 0 tests\n' ;;
+                fail) return 1 ;;
+              esac
+            }
+            export EXPECTED_CAPTURE="$2"
+            replay_loyalty_capture "$1" "$2" "$3"
+            ''')
+        for node_log, replay_result, passed in [
+            (capture, "pass", True),
+            (capture, "unmatched", False),
+            (capture, "fail", False),
+            ("", "pass", False),
+            (failure, "pass", False),
+            (capture + failure, "pass", False),
+        ]:
+            with self.subTest(node_log=node_log, replay_result=replay_result), tempfile.TemporaryDirectory() as temp:
+                log = Path(temp, "node.log")
+                log.write_text(node_log)
+                result = subprocess.run(
+                    ["bash", "-c", command, "test", str(log), temp, str(Path(temp, "client.log"))],
+                    env={**os.environ, "REPLAY_RESULT": replay_result},
+                    capture_output=True,
+                )
+                self.assertEqual(result.returncode, 0 if passed else 1)
+                verdicts = [line for line in log.read_text().splitlines() if 'e2e_all scenario=P13.client' in line]
+                self.assertEqual(len(verdicts), 1)
+                self.assertIn('status=PASS' if passed else 'status=FAIL', verdicts[0])
 
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(

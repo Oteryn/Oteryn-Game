@@ -41,7 +41,7 @@ summarize() {
 
   rows=$(awk '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -66,6 +66,33 @@ summarize() {
     grep -aFw -- "$row" "$log" | grep -Ei 'GAP|Error|refus|DIAG' \
       | grep -vEi 'password|postgres://|postgresql://|secret|token|key=' | head -n 6
   done < <(awk -F '|' '$2 == "FAIL" && !seen[$1]++ { print $1 }' <<< "$rows")
+}
+
+selected_loyalty_replay() {
+  [[ "$1" == rows ]] || return 1
+  local batch=${OTERYN_E2E_ROW_BATCH:-} first length
+  [[ "$batch" =~ ^([0-9]{1,7}):([0-9]{1,7})$ ]] || return 1
+  first=$((10#${BASH_REMATCH[1]}))
+  length=$((10#${BASH_REMATCH[2]}))
+  local loyalty_row=169 # client_phases/world.rs, P13.client
+  (( first <= loyalty_row && loyalty_row < first + length ))
+}
+
+replay_loyalty_capture() {
+  local log=$1 capture_dir=$2 replay_log=$3
+  local test=loyalty_skills::e2e_p13::e2e_p13_replays_snapshot_and_malformed_query_rejection
+  local started=$SECONDS
+  if grep -q '^SEAM_EVIDENCE e2e_all scenario=P13\.client status=FAIL ' "$log"; then
+    return 1
+  fi
+  if grep -q '^SEAM_EVIDENCE e2e_capture scenario=P13\.client status=CAPTURED ' "$log" &&
+    E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact >"$replay_log" 2>&1 &&
+    grep -Fqx "test $test ... ok" "$replay_log"; then
+    printf 'SEAM_EVIDENCE e2e_all scenario=P13.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
+    return 0
+  fi
+  printf 'SEAM_EVIDENCE e2e_all scenario=P13.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
+  return 1
 }
 
 if [[ ${1:-} == --summarize ]]; then
@@ -117,11 +144,21 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
-    bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
+  capture_dir=
+  if selected_loyalty_replay "$group"; then
+    capture_dir=$(mktemp -d "$work_dir/$index-loyalty.XXXXXX") || blocked work_dir_unavailable
+  fi
+  (
+    [[ -z "$capture_dir" ]] || export E2E_ALL_CAPTURE_DIR="$capture_dir"
+    export NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group"
+    exec bash tools/qualification/node_boot/run.sh
+  ) > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
+  if [[ -n "$capture_dir" ]] && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
+    status=1
+  fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done
