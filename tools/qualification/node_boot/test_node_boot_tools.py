@@ -303,6 +303,36 @@ WORK=.
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
 
+class PvpReadinessTests(unittest.TestCase):
+    def test_readiness_after_compiled_world_realization(self):
+        wait = section('  pvp_await_log "event=content_activated', '  local bound_address')
+        setup = r'''set -Eeuo pipefail
+WORK=.
+source "$ACTIVATION_WAIT"
+NODE_ACTIVATION_WAIT_SECONDS=$(node_activation_wait_seconds "$WORLD" "$SPELLS")
+printf 'event=content_activated activation_sequence=1 accepted\n' > pvp-node.log
+pvp_fail() { echo "$*"; return 1; }
+elapsed=0
+sleep() {
+    elapsed=$((elapsed + 1))
+    if (( elapsed == READY_AT )); then
+        printf 'event=readiness ready=true\n' >> pvp-node.log
+    fi
+}
+'''
+        for world, spells, ready_at, expected in [('1', '0', '81', 0), ('0', '1', '81', 0),
+                                                   ('0', '0', '2', 0), ('0', '0', '81', 1),
+                                                   ('1', '0', '0', 1)]:
+            with self.subTest(world=world, spells=spells, ready_at=ready_at), tempfile.TemporaryDirectory() as work:
+                result = bash(setup + function('pvp_await_log') + '\n' + wait, {
+                    'ACTIVATION_WAIT': str(HERE / 'activation_wait.sh'),
+                    'WORLD': world, 'SPELLS': spells, 'READY_AT': ready_at,
+                }, cwd=work)
+                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+                if expected:
+                    self.assertIn('missing PvP node event: event=readiness .*ready=true', result.stdout)
+
+
 class ReuseTests(unittest.TestCase):
     GUARD = re.search(r'(?ms)^if \[\[ "\$NODE_BOOT_REUSE_STACK" != 0 \]\]; then.*?^fi\n', RUN_TEXT)
 

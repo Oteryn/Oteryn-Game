@@ -140,10 +140,11 @@ world/spell full-manifest passes allow 180 seconds. On manifest `35de21c6`, the
 real operator qualification took 31.917 seconds and node qualification/staging/
 activation took 48.227 seconds idle. With six CPU load workers on a four-CPU
 quota, node activation completed successfully in 122.451 seconds, beyond the
-old 60-second wait. The bound covers that measured path; assignment's 120-second
-wait, readiness's 60-second wait, and all grant/replay/stale-predecessor assertions
-are unchanged. `content_full_manifest_boot` exercises those real content APIs,
-checks the exact issued pins and sequence, and uses the runner's same wait profile.
+old 60-second wait. PvP node readiness uses the same profile: a compiled World
+took another 81 seconds after activation to realize spawns and open its listener.
+Assignment uses a separate 120-second wait. `content_full_manifest_boot` exercises
+those real content APIs, checks the exact issued pins and sequence, and uses the
+runner's same wait profile.
 
 ## Running in Codex Cloud
 
