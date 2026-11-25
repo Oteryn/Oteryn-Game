@@ -182,12 +182,10 @@ fn target(
                 generation: c.generation,
             })
             .or_else(|| {
-                (matches!(
-                    spell.carrier,
-                    crate::spell::Carrier::Rune { item: 3165, .. }
-                ) || (intense_healing && a == actor))
-                    .then(|| entities.players.iter().find(|p| p.actor == a))
-                    .flatten()
+                entities
+                    .players
+                    .iter()
+                    .find(|p| p.actor == a)
                     .map(|p| EntityRef {
                         identity: a.placement_identity(),
                         generation: p.generation,

@@ -1,4 +1,5 @@
 //! Pure ordinary and native cast geometry; tile permission comes from the dispatch owners.
+use oteryn_gameplay_combat_rules::chain::{CHAIN_PATH_SEARCH_TILES, ChainShape, ChainSpec};
 use oteryn_gameplay_content::content::spell_data::executable_catalog::AbilityProfile;
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
@@ -46,6 +47,48 @@ pub fn aimed_cardinal(from: TilePosition, to: TilePosition) -> Option<Direction>
         (_, y) => Some((0, if y > 0 { 1 } else { -1 })),
     }
 }
+/// Source players start facing south before a recorded turn or step.
+pub const DEFAULT_PLAYER_SPELL_DIRECTION: Direction = (0, 1);
+
+/// An explicit aim takes precedence over the recorded and initial headings.
+pub fn player_spell_direction(aim: Option<Direction>, facing: Option<Direction>) -> Direction {
+    aim.or(facing).unwrap_or(DEFAULT_PLAYER_SPELL_DIRECTION)
+}
+
+/// The adjacent tile used when a target-or-direction spell falls back to heading.
+pub fn player_spell_front(
+    caster: TilePosition,
+    facing: Option<Direction>,
+) -> Result<TilePosition, PlanRejected> {
+    let (dx, dy) = player_spell_direction(None, facing);
+    offset(caster, dx, dy)
+}
+
+#[cfg(test)]
+mod player_facing_tests {
+    use super::*;
+
+    #[test]
+    fn directional_cast_uses_initial_south_heading_until_the_first_turn() {
+        assert_eq!(player_spell_direction(None, None), (0, 1));
+        assert_eq!(player_spell_direction(None, Some((-1, 0))), (-1, 0));
+        assert_eq!(player_spell_direction(Some((1, 0)), Some((-1, 0))), (1, 0));
+    }
+
+    #[test]
+    fn target_or_direction_fallback_reads_the_tile_in_front_of_the_player() {
+        assert_eq!(player_spell_front((10, 10, 7), None), Ok((10, 11, 7)));
+        assert_eq!(
+            player_spell_front((10, 10, 7), Some((-1, 0))),
+            Ok((9, 10, 7))
+        );
+        assert_eq!(
+            player_spell_front((10, i32::MAX, 7), None),
+            Err(PlanRejected)
+        );
+    }
+}
+
 /// SPELL-TARGET-1: the geometry origin and facing of a held-target cast. A directional or aimed
 /// spell keeps the caster as origin (the tile in front of it) and takes only its facing from the
 /// target; a single-target spell is centred on the target tile.
@@ -62,6 +105,197 @@ pub fn attack_target_origin(
         Ok((target, None))
     }
 }
+fn add_chain_path_tiles(
+    tiles: &mut BTreeSet<TilePosition>,
+    from: TilePosition,
+) -> Result<(), PlanRejected> {
+    let radius = i32::try_from(CHAIN_PATH_SEARCH_TILES).map_err(|_| PlanRejected)?;
+    for dx in -radius..=radius {
+        for dy in -radius..=radius {
+            tiles.insert(offset(from, dx, dy)?);
+        }
+    }
+    Ok(())
+}
+
+#[derive(Debug, Default)]
+pub struct ChainSearch {
+    pub tiles: BTreeSet<TilePosition>,
+    pub sight: BTreeSet<(TilePosition, TilePosition)>,
+    pub visual_tiles: BTreeSet<TilePosition>,
+}
+
+/// Crystal 201189f8 combat.cpp:1881 searches around the current bounce, and
+/// :1329–1344 searches for the visual path only from the origin of a jump.
+pub fn ordinary_chain_search(
+    spec: Option<&ChainSpec>,
+    caster: TilePosition,
+    explicit: Option<(TilePosition, u32)>,
+    targets: BTreeSet<TilePosition>,
+) -> Result<ChainSearch, PlanRejected> {
+    let Some(spec) = spec else {
+        return Ok(ChainSearch::default());
+    };
+    let within = |a: TilePosition, b: TilePosition, radius| {
+        a.2 == b.2 && a.0.abs_diff(b.0) <= radius && a.1.abs_diff(b.1) <= radius
+    };
+    let mut frontier = targets
+        .iter()
+        .copied()
+        .filter(|&p| match explicit {
+            Some((target, range)) => p == target && within(caster, p, range),
+            None => within(caster, p, spec.initial_range_tiles),
+        })
+        .collect::<BTreeSet<_>>();
+    let mut result = ChainSearch {
+        tiles: frontier.clone(),
+        sight: frontier.iter().map(|&to| (caster, to)).collect(),
+        visual_tiles: BTreeSet::new(),
+    };
+    let depth = match spec.shape {
+        ChainShape::Sequential => spec.max_targets,
+        ChainShape::Fork => spec.max_targets.min(1),
+    };
+    let mut expanded = BTreeSet::new();
+    for _ in 0..depth {
+        if frontier.is_empty() {
+            break;
+        }
+        let mut next = BTreeSet::new();
+        for from in frontier {
+            if !expanded.insert(from) {
+                continue;
+            }
+            for &to in &targets {
+                if from != to && within(from, to, spec.range_tiles) {
+                    result.sight.insert((from, to));
+                    result.tiles.insert(to);
+                    if !expanded.contains(&to) {
+                        next.insert(to);
+                    }
+                }
+            }
+        }
+        frontier = next;
+    }
+    if spec.asset_binding.is_some() {
+        let origins = result
+            .sight
+            .iter()
+            .map(|&(from, _)| from)
+            .collect::<BTreeSet<_>>();
+        for from in origins {
+            add_chain_path_tiles(&mut result.visual_tiles, from)?;
+        }
+    }
+    Ok(result)
+}
+
+#[cfg(test)]
+mod chain_search_tests {
+    use super::*;
+
+    #[test]
+    fn a_non_chain_cast_does_not_require_spectator_tiles() -> Result<(), PlanRejected> {
+        let caster = (32357, 32196, 7);
+        let target = (32357, 32197, 7);
+        let unrelated = (32356, 32196, 7);
+        let mut cast_tiles = BTreeSet::from([caster, target]);
+        let search = ordinary_chain_search(None, caster, None, BTreeSet::from([unrelated]))?;
+
+        cast_tiles.extend(search.tiles);
+        assert_eq!(cast_tiles, BTreeSet::from([caster, target]));
+        assert!(search.sight.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn optional_chain_visual_tiles_are_not_required_hit_geometry() -> Result<(), PlanRejected> {
+        let caster = (32369, 32230, 7);
+        let first = (32369, 32229, 7);
+        let missing_visual = (32360, 32235, 7);
+        let spec = ChainSpec {
+            max_targets: 4,
+            range_tiles: 7,
+            initial_range_tiles: 7,
+            shape: oteryn_gameplay_combat_rules::chain::ChainShape::Sequential,
+            damage_step_percent: -5,
+            asset_binding: Some("chain".into()),
+        };
+        let search = ordinary_chain_search(Some(&spec), caster, None, BTreeSet::from([first]))?;
+        assert_eq!(search.sight, BTreeSet::from([(caster, first)]));
+        assert_eq!(search.tiles, BTreeSet::from([first]));
+        assert!(!search.tiles.contains(&missing_visual));
+        assert!(search.visual_tiles.contains(&missing_visual));
+        Ok(())
+    }
+
+    #[test]
+    fn ordinary_chain_search_keeps_only_the_authored_bounces_and_visual_paths()
+    -> Result<(), PlanRejected> {
+        let spec = ChainSpec {
+            max_targets: 3,
+            range_tiles: 7,
+            initial_range_tiles: 7,
+            shape: oteryn_gameplay_combat_rules::chain::ChainShape::Fork,
+            damage_step_percent: 0,
+            asset_binding: Some(String::from("chain")),
+        };
+        let caster = (100, 100, 7);
+        let first = (107, 100, 7);
+        let bounce = (114, 100, 7);
+        let beyond_fork = (121, 100, 7);
+        let spectator = (135, 140, 7);
+        let search = ordinary_chain_search(
+            Some(&spec),
+            caster,
+            Some((first, 7)),
+            BTreeSet::from([first, bounce, beyond_fork, spectator]),
+        )?;
+        assert_eq!(
+            search.sight,
+            BTreeSet::from([(caster, first), (first, bounce)])
+        );
+        assert!(search.visual_tiles.contains(&(91, 100, 7)));
+        assert!(search.visual_tiles.contains(&(116, 100, 7)));
+        assert!(!search.tiles.contains(&beyond_fork));
+        assert!(!search.tiles.contains(&spectator));
+        assert!(!search.visual_tiles.contains(&beyond_fork));
+        assert!(!search.visual_tiles.contains(&spectator));
+        Ok(())
+    }
+}
+
+/// Add native target positions that can be reached outside the authored area.
+pub fn extend_native_target_tiles<T: Ord>(
+    tiles: &mut BTreeSet<T>,
+    target_positions: impl IntoIterator<Item = T>,
+    has_chain: bool,
+) {
+    if has_chain {
+        tiles.extend(target_positions);
+    }
+}
+
+#[cfg(test)]
+mod native_target_tile_tests {
+    use super::*;
+
+    #[test]
+    fn native_area_casts_do_not_read_unrelated_occupied_tiles() {
+        let caster = (32369, 32230, 7);
+        let area_tile = (32368, 32230, 7);
+        let spectator = (32356, 32196, 7);
+        let mut tiles = BTreeSet::from([caster, area_tile]);
+
+        extend_native_target_tiles(&mut tiles, [spectator], false);
+        assert_eq!(tiles, BTreeSet::from([caster, area_tile]));
+
+        extend_native_target_tiles(&mut tiles, [spectator], true);
+        assert!(tiles.contains(&spectator));
+    }
+}
+
 pub fn geometry(
     a: &AbilityProfile,
     origin: TilePosition,

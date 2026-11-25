@@ -6,7 +6,7 @@ use super::{CasterState, SpellDefinition};
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{ReferenceItemField, ReferenceWeaponType};
 use crate::durability::character_build::DurableBuildState;
-use crate::durability::character_equipment::EquipmentSnapshot;
+use crate::durability::character_equipment::{CombatMode, EquipmentSnapshot};
 use crate::foundation::{ExactActorRef, GameSessionId};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -73,7 +73,6 @@ pub enum OwnedFactsError {
     UnavailableWheel,
     UnavailableEquipment,
     UnknownItemPolicy,
-    UnknownCombatMode,
 }
 impl OwnedCastFacts {
     pub fn current_black_skull(&self, now: u64) -> Option<&CurrentProjection<bool>> {
@@ -195,6 +194,17 @@ impl OwnedCastFacts {
             .filter(|p| p.current(&self.binding, now))
             .map(|p| p.value)
     }
+    pub fn elemental_stance_for_cast(
+        &self,
+        now: u64,
+    ) -> Result<super::native_combat::ElementalStance, OwnedFactsError> {
+        match &self.access.elemental_stance {
+            Some(projection) if projection.current(&self.binding, now) => Ok(projection.value),
+            Some(_) => Err(OwnedFactsError::StaleBinding),
+            // Crystal 201189f8 energy_beam.lua:46–53 uses the base element until a stance is set.
+            None => Ok(super::native_combat::ElementalStance::None),
+        }
+    }
     pub fn has_current_wheel(&self, now: u64) -> bool {
         self.access
             .wheel
@@ -313,8 +323,10 @@ impl OwnedCastFacts {
         let mut shield = None;
         // Source-defined first shield is left hand then right. The snapshot is the actual owner.
         for slot in [6_u8, 5] {
-            if !needs_attack && !spell.needs_shield {
-                break;
+            let reads_weapon = needs_attack && slot == 5;
+            let reads_shield = spell.needs_shield && shield.is_none();
+            if !reads_weapon && !reads_shield {
+                continue;
             }
             if let Some(item) = self.equipment.items.iter().find(|i| i.slot == slot) {
                 let policy = content
@@ -323,14 +335,16 @@ impl OwnedCastFacts {
                         &item.definition.revision_ref,
                     )
                     .ok_or(OwnedFactsError::UnknownItemPolicy)?;
-                let ReferenceItemField::Known(weapon) = &policy.record().semantics.weapon else {
-                    return Err(OwnedFactsError::UnavailableEquipment);
+                let weapon = match &policy.record().semantics.weapon {
+                    ReferenceItemField::Known(weapon) => weapon,
+                    ReferenceItemField::NotApplicable => continue,
+                    _ => return Err(OwnedFactsError::UnavailableEquipment),
                 };
                 let ReferenceItemField::Known(kind) = weapon.weapon_type else {
                     return Err(OwnedFactsError::UnavailableEquipment);
                 };
                 if kind == ReferenceWeaponType::Shield {
-                    if shield.is_none() {
+                    if reads_shield {
                         let ReferenceItemField::Known(defense) = weapon.defense else {
                             return Err(OwnedFactsError::UnavailableEquipment);
                         };
@@ -339,7 +353,7 @@ impl OwnedCastFacts {
                                 .map_err(|_| OwnedFactsError::UnavailableEquipment)?,
                         );
                     }
-                } else if slot == 5 {
+                } else if reads_weapon {
                     let skill = match kind {
                         ReferenceWeaponType::Fist => Some(0),
                         ReferenceWeaponType::Club => Some(1),
@@ -370,21 +384,27 @@ impl OwnedCastFacts {
                 }
             }
         }
-        if needs_attack && attack.is_none() {
+        // Initial casts admit equipment in source order with the other cast rules.
+        // An already accepted callback has no admission phase to check required inputs.
+        if !require_cast_access
+            && ((spell.needs_weapon && attack.is_none())
+                || (spell.needs_shield && shield.is_none()))
+        {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
-        let attack_factor = if needs_attack {
+        // Crystal 201189f8 player.hpp:2009 starts players in attack mode.
+        let attack_factor = if needs_attack && attack.is_some() {
             self.equipment
                 .combat_mode
-                .ok_or(OwnedFactsError::UnknownCombatMode)?
+                .unwrap_or(CombatMode::Attack)
                 .attack_factor()
         } else {
             0.0
         };
-        if spell.needs_shield && shield.is_none() {
-            return Err(OwnedFactsError::UnavailableEquipment);
-        }
-        let (attack_skill, attack_value, melee_weapon) = attack.unwrap_or((0, 0, false));
+        // Crystal 201189f8 combat.cpp:2051,2065-2077 supplies skill 0, attack 7
+        // and factor 0 when a skill callback runs without a weapon.
+        let (attack_skill, attack_value, melee_weapon) =
+            attack.unwrap_or((0, if needs_attack { 7 } else { 0 }, false));
         let harmony = if spell.harmony_role == Some(super::HarmonyRole::Spender) {
             if let Some(monk) = &state.monk {
                 let stage = if self.has_current_wheel(now) {
