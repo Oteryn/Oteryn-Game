@@ -63,7 +63,7 @@ fn store_catalogue_revision_is_canonical_sha256_and_changes_with_an_offer() {
 #[test]
 fn hireling_store_catalogue_has_every_pinned_crystal_offer_and_keeps_item_revision() {
     let catalogue=HIRELING_CATALOGUE.as_ref().expect("hireling catalogue");
-    assert_eq!(catalogue.rules.revision(),"e7e06a2b1ce23df40cc05be37882eb4b2d4139a5bbc112abd893e8eb526d890d");
+    assert_eq!(catalogue.rules.revision(),active_catalogue_revision());
     // Crystal201189f gamestore.lua:6303-6472, generated together from the donor.
     for (id,price) in [(25440,150),(25438,250),(25437,120),(1001,250),(1002,900),(1003,250),(1004,250),(2001,500),(2002,500),(2003,500),(2004,500),(2005,300),(2006,900),(2007,900),(2008,900),(2009,900)] {
         let key=format!("store:hireling:{id}");
@@ -73,13 +73,13 @@ fn hireling_store_catalogue_has_every_pinned_crystal_offer_and_keeps_item_revisi
     assert_eq!(catalogue.rules.offers_in_category("houses.hirelings",None,32).expect("page").len(),7);
     assert_eq!(catalogue.rules.offers_in_category("houses.hireling-dresses",None,32).expect("page").len(),9);
     assert_eq!(catalogue.item_revision("store:hireling:25440"),Some("definition-r1"));
-    assert_eq!(CATALOGUE.as_ref().expect("existing catalogue").rules.revision(),"451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c");
+    assert_eq!(CATALOGUE.as_ref().expect("existing catalogue").rules.revision(),active_catalogue_revision());
 }
 
 #[test]
 fn store_catalogue_admits_the_exercise_weapon_offers() {
     let catalogue = CATALOGUE.as_ref().expect("embedded catalogue");
-    assert_eq!(catalogue.rules.revision(), "451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c");
+    assert_eq!(catalogue.rules.revision(), active_catalogue_revision());
     let offer = catalogue.rules.offer("store:exercise-sword").expect("offer");
     // Canary 52550d5e consumables_exercise_weapons.lua:118-121: 25 coins, item 28552.
     assert_eq!(offer.price_coins, 25);
@@ -96,7 +96,7 @@ fn store_catalogue_admits_the_exercise_weapon_offers() {
         .rules
         .offers_in_category("consumables.exercise-weapons", None, 100)
         .expect("page");
-    assert_eq!(page.len(), 23);
+    assert_eq!(page.len(), 24);
 }
 
 #[test]
@@ -264,5 +264,47 @@ fn store_extensions_fit_full_bundle_admission_selection() -> Result<(), Box<dyn 
     ] {
         assert!(selected.contains(id), "capability {id} was dropped");
     }
+    Ok(())
+}
+
+#[test]
+fn store_catalogue_loads_every_crystal_default_charge_offer() -> Result<(), &'static str> {
+    let catalogue = CATALOGUE.as_ref().ok_or("embedded catalogue")?;
+    let crystal: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../../../../tools/content-schema/store-authoring/crystal-charged-offers.json"
+    ))
+    .map_err(|_| "Crystal charged offers")?;
+    let crystal_kegs = crystal["offers"]
+        .as_array()
+        .ok_or("Crystal offer list")?
+        .iter()
+        .filter(|offer| offer["category"] == "consumables.kegs" && offer["charges"].is_u64())
+        .count();
+    for (category, count) in [
+        ("consumables.exercise-weapons", 24),
+        ("consumables.kegs", crystal_kegs),
+        ("useful-things", 2),
+    ] {
+        let offers = catalogue
+            .rules
+            .offers_in_category(category, None, 32)
+            .map_err(|_| "page")?;
+        assert_eq!(offers.len(), count, "{category}");
+    }
+    assert!(catalogue.rules.offer("store:ultimate-health-keg").is_none());
+    let offer = catalogue
+        .rules
+        .offer("store:exercise-wraps")
+        .ok_or("Exercise Wraps")?;
+    assert_eq!(catalogue.title(&offer.key), "Exercise Wraps");
+    assert_eq!(offer.price_coins, 25);
+    assert_eq!(
+        offer.delivery,
+        rules::DeliveryKind::Item {
+            item_key: "oteryn:item.tibia.i50293".into(),
+            count: 1,
+        }
+    );
+    assert_eq!(catalogue.item_revision(&offer.key), Some("definition-r1"));
     Ok(())
 }

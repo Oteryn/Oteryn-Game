@@ -1296,6 +1296,16 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
+    import pegasus_feather_item_profile
+
+    pegasus_feather_item_profile.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
 
     import questpc5_parchment_profile
 
@@ -1704,6 +1714,16 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
+    import outfit_reward_item_profiles
+
+    outfit_reward_item_profiles.admit_native(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     # T174: qualify boot slots only after every shop/loot Item cohort is present.
     imbuement_item_profiles.complete_boots(
         root,
@@ -1776,16 +1796,19 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     protected_loot_yields.admit(root, items, provider_order)
     # These late Item admissions belong to the base provider. Apply their
     # verified top-order facts before deriving the separate SRX-1 supplement.
-    hard_items = [
+    late_item_keys = protected_loot_yields.ARBAZILOTH_HARD_ITEMS | {
+        f"oteryn:item.tibia.i{item_id}"
+        for item_id in outfit_reward_item_profiles.SOURCE_ROWS
+    }
+    late_items = [
         row
         for row in items["records"]
-        if row["production_definition"]["production_key"]
-        in protected_loot_yields.ARBAZILOTH_HARD_ITEMS
+        if row["production_definition"]["production_key"] in late_item_keys
     ]
     house_top_order = json.loads(
         (root / house_decoration_actions.PROFILES).read_bytes()
     )
-    house_decoration_actions.apply_top_order(hard_items, house_top_order)
+    house_decoration_actions.apply_top_order(late_items, house_top_order)
     import cloot2_item_admissions
     cloot2_item_admissions.admit(root, items, provider_order)
     import cloot3_item_profiles

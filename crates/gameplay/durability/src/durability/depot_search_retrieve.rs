@@ -39,6 +39,11 @@ struct Candidate {
     path: Vec<[u8; 16]>,
 }
 
+enum Retrieval {
+    Definition { client_id: u32, all: bool },
+    StoreItem([u8; 16]),
+}
+
 impl DurabilityRoot {
     /// Command 182 retrieval from depot and Inbox custody. Replay returns the stored outcome.
     #[allow(clippy::too_many_arguments)]
@@ -56,17 +61,59 @@ impl DurabilityRoot {
         std::result::Result<DepotSearchRetrieval, LoopMoveRefusal>,
         DurabilityError,
     > {
+        self.commit_custody_retrieval(permit, recovery, node, fence, command, content,
+            Retrieval::Definition { client_id, all }).await
+    }
+
+    /// Claim one exact Store Inbox instance through the native retrieval transaction.
+    #[allow(clippy::too_many_arguments, reason = "same authorities and native content as depot search")]
+    pub async fn commit_store_inbox_retrieval<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        item: [u8; 16],
+    ) -> std::result::Result<
+        std::result::Result<DepotSearchRetrieval, LoopMoveRefusal>,
+        DurabilityError,
+    > {
+        self.commit_custody_retrieval(permit, recovery, node, fence, command, content,
+            Retrieval::StoreItem(item)).await
+    }
+
+    #[allow(clippy::too_many_arguments, reason = "retrieval uses the existing fenced item owners")]
+    async fn commit_custody_retrieval<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        retrieval: Retrieval,
+    ) -> std::result::Result<
+        std::result::Result<DepotSearchRetrieval, LoopMoveRefusal>,
+        DurabilityError,
+    > {
         permit.check_scope(fence.runtime_scope)?;
-        if client_id == 0 {
-            return Ok(Err(LoopMoveRefusal::Rejected));
-        }
+        let (request, key, all, exact_item) = match retrieval {
+            Retrieval::Definition { client_id: 0, .. } => return Ok(Err(LoopMoveRefusal::Rejected)),
+            Retrieval::Definition { client_id, all } => {
+                let mut request = client_id.to_be_bytes().to_vec();
+                request.push(u8::from(all));
+                (request, Some(format!("oteryn:item.tibia.i{client_id}")), all, None)
+            }
+            Retrieval::StoreItem(item) => (
+                item.to_vec(), None, false, Some(item),
+            ),
+        };
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        let mut request = client_id.to_be_bytes().to_vec();
-        request.push(u8::from(all));
-        let key = format!("oteryn:item.tibia.i{client_id}");
         let mut context = (permit, content);
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
             let (permit, content) = *context;
@@ -89,7 +136,27 @@ impl DurabilityRoot {
                 let (world, _) = scope_of(&fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
                 // Roots in fixed order, then their nested entries; each row carries its ancestry,
                 // so an entry inside an already moved match travels with it, never twice.
-                let rows = sqlx::query(r#"
+                let rows = if let Some(item) = exact_item {
+                    sqlx::query("SELECT x.item_instance_id::text,0::int depth,NULL::int town_id,
+                        NULL::smallint box_number,ARRAY[x.item_instance_id::text] path,i.quantity
+                        FROM game_item_character_inbox_locations x
+                        JOIN game_item_instances i USING(item_instance_id)
+                        JOIN store_delivery_receipts r ON r.item_instance_id=x.item_instance_id
+                        WHERE x.item_instance_id=encode($1,'hex')::uuid
+                          AND x.character_id=encode($2,'hex')::uuid AND x.world_id=encode($3,'hex')::uuid
+                          AND r.character_id=x.character_id AND r.world_id=x.world_id AND i.lifecycle=1
+                          AND NOT EXISTS (
+                              SELECT 1 FROM store_delivery_receipts r
+                              LEFT JOIN game_store_claim_operations c ON c.delivery_operation_id=r.operation_id
+                              WHERE r.item_instance_id=x.item_instance_id AND (
+                                  EXISTS(SELECT 1 FROM game_store_restore_conflicts f WHERE f.delivery_operation_id=r.operation_id)
+                                  OR EXISTS(SELECT 1 FROM game_store_restore_conflicts f WHERE f.operation_id=c.claim_operation_id)
+                              )
+                          )")
+                        .bind(item.as_slice()).bind(fence.character_id.as_bytes().as_slice())
+                        .bind(world.as_bytes().as_slice()).fetch_all(&mut *tx).await?
+                } else {
+                    sqlx::query(r#"
                     WITH RECURSIVE roots AS (
                         SELECT d.item_instance_id, 4::smallint kind, d.town_id, d.box_number
                           FROM game_item_character_depot_locations d
@@ -99,6 +166,14 @@ impl DurabilityRoot {
                           FROM game_item_character_inbox_locations x JOIN game_item_instances p USING(item_instance_id)
                          WHERE x.character_id=encode($1,'hex')::uuid AND x.world_id=encode($2,'hex')::uuid
                            AND p.definition_production_key<>'oteryn:item.tibia.i23721'
+                           AND NOT EXISTS (
+                               SELECT 1 FROM store_delivery_receipts r
+                               LEFT JOIN game_store_claim_operations c ON c.delivery_operation_id=r.operation_id
+                               WHERE r.item_instance_id=x.item_instance_id AND (
+                                   EXISTS(SELECT 1 FROM game_store_restore_conflicts f WHERE f.delivery_operation_id=r.operation_id)
+                                   OR EXISTS(SELECT 1 FROM game_store_restore_conflicts f WHERE f.operation_id=c.claim_operation_id)
+                               )
+                           )
                     ), tree AS (
                         SELECT item_instance_id, kind, town_id, box_number, 0 depth, ARRAY[item_instance_id::text] path FROM roots
                         UNION ALL
@@ -113,7 +188,8 @@ impl DurabilityRoot {
                      ORDER BY t.kind, t.town_id, t.box_number, t.path
                      LIMIT $4"#)
                     .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&key).bind(RETRIEVE_ITEMS_MAX)
-                    .fetch_all(&mut *tx).await?;
+                    .fetch_all(&mut *tx).await?
+                };
                 let mut candidates = Vec::with_capacity(rows.len());
                 for row in rows {
                     let town: Option<i32> = row.try_get("town_id")?;

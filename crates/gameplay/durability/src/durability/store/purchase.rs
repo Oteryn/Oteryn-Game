@@ -6,6 +6,171 @@ use super::storage::{PurchaseRequestState, StoreDurabilityError};
 use sqlx::Row;
 
 impl DurabilityRoot {
+    /// Find an accepted ordinary purchase that has no Game delivery receipt.
+    pub async fn pending_paid_store_item(
+        &self,
+        account: [u8; 16],
+        offer: String,
+        world: [u8; 16],
+    ) -> Result<Option<super::PendingStorePurchase>, StoreDurabilityError> {
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let row: Option<(sqlx::types::Uuid, sqlx::types::Uuid, Vec<u8>)> = sqlx::query_as(
+                "SELECT p.purchase_request_id,p.character_id,p.binding_digest
+                 FROM game_store_purchase_history h JOIN store_purchase_requests p USING(purchase_request_id)
+                 JOIN game_character_roots c ON c.character_id=p.character_id
+                 WHERE c.world_id=encode($3,'hex')::uuid AND h.account_id=encode($1,'hex')::uuid AND h.offer_key=$2 AND h.currency='TIBIA_COIN' AND p.state=2
+                   AND NOT EXISTS(SELECT 1 FROM store_delivery_receipts r
+                       WHERE r.operation_id=(convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids' ->> 0)::uuid)
+                   AND NOT EXISTS(SELECT 1 FROM game_store_restore_conflicts conflict
+                       WHERE conflict.operation_id=(convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids' ->> 0)::uuid)
+                 ORDER BY h.purchased_at_ms,h.purchase_request_id LIMIT 1",
+            ).bind(account.as_slice()).bind(offer).bind(world.as_slice()).fetch_optional(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(row.map(|(purchase_id, character_id, binding_digest)| super::PendingStorePurchase {
+                purchase_id: *purchase_id.as_bytes(),
+                character_id: *character_id.as_bytes(),
+                world_id: world,
+                binding_digest,
+            })))
+        })).await?
+    }
+
+    /// Select unfinished purchases, including legacy journals identified by an exact quote.
+    /// Removed-offer recovery only considers the supplied bindings and includes paid deliveries
+    /// that stopped before committing the native receipt.
+    pub async fn pending_store_item_purchases(
+        &self,
+        account: [u8; 16],
+        character: [u8; 16],
+        world: [u8; 16],
+        legacy_bindings: Vec<Vec<u8>>,
+        removed_only: bool,
+    ) -> Result<Vec<super::PendingStorePurchase>, StoreDurabilityError> {
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let rows: Vec<(sqlx::types::Uuid, Vec<u8>)> = sqlx::query_as(
+                "SELECT p.purchase_request_id,p.binding_digest
+                 FROM store_purchase_requests p JOIN game_character_roots c USING(character_id)
+                 WHERE p.account_id=encode($1,'hex')::uuid AND p.character_id=encode($2,'hex')::uuid
+                   AND c.world_id=encode($3,'hex')::uuid
+                   AND (
+                     (p.state=1 AND (p.binding_digest=ANY($4::bytea[]) OR (NOT $5 AND EXISTS (
+                         SELECT 1 FROM game_store_item_reservations r
+                         WHERE r.purchase_request_id=p.purchase_request_id AND r.character_id=p.character_id
+                     ))))
+                     OR ($5 AND p.state=2 AND p.binding_digest=ANY($4::bytea[])
+                         AND convert_from(p.answer,'UTF8')::jsonb ->> 'result' = 'ACCEPTED'
+                         AND NOT EXISTS (SELECT 1 FROM store_delivery_receipts r
+                             WHERE r.operation_id=(convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids' ->> 0)::uuid)
+                         AND NOT EXISTS(SELECT 1 FROM game_store_restore_conflicts conflict
+                       WHERE conflict.operation_id=(convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids' ->> 0)::uuid))
+                   )
+                   AND NOT EXISTS(SELECT 1 FROM game_store_purchase_retries r WHERE r.retry_id=p.purchase_request_id)
+                 ORDER BY (p.binding_digest=ANY($4::bytea[])) DESC,p.created_at,p.purchase_request_id LIMIT 20",
+            ).bind(account.as_slice()).bind(character.as_slice()).bind(world.as_slice()).bind(legacy_bindings).bind(removed_only)
+                .fetch_all(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(rows.into_iter().map(|(purchase_id, binding_digest)| super::PendingStorePurchase {
+                purchase_id: *purchase_id.as_bytes(),
+                character_id: character,
+                world_id: world,
+                binding_digest,
+            }).collect()))
+        })).await?
+    }
+
+    pub async fn read_store_purchase_retry(
+        &self,
+        retry: PurchaseRequest,
+    ) -> Result<Option<super::PendingStorePurchase>, StoreDurabilityError> {
+        retry.validate()?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let row: Option<(sqlx::types::Uuid, sqlx::types::Uuid, sqlx::types::Uuid, Vec<u8>)> = sqlx::query_as(
+                "SELECT original.purchase_request_id,original.character_id,retry.world_id,original.binding_digest
+                 FROM game_store_purchase_retries retry
+                 JOIN store_purchase_requests request ON request.purchase_request_id=retry.retry_id
+                 JOIN store_purchase_requests original ON original.purchase_request_id=retry.original_id
+                 WHERE retry.retry_id=encode($1,'hex')::uuid
+                   AND request.account_id=encode($2,'hex')::uuid AND original.account_id=request.account_id
+                   AND request.character_id=encode($3,'hex')::uuid AND request.binding_digest=$4",
+            ).bind(retry.purchase_request_id.as_slice()).bind(retry.account_id.as_slice())
+                .bind(retry.character_id.as_slice()).bind(retry.binding_digest().as_slice())
+                .fetch_optional(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(row.map(|(purchase_id, character_id, world_id, binding_digest)| super::PendingStorePurchase {
+                purchase_id: *purchase_id.as_bytes(), character_id: *character_id.as_bytes(),
+                world_id: *world_id.as_bytes(), binding_digest,
+            })))
+        })).await?
+    }
+
+    pub async fn record_store_purchase_retry(
+        &self,
+        retry: PurchaseRequest,
+        original: [u8; 16],
+        world: [u8; 16],
+    ) -> Result<(), StoreDurabilityError> {
+        retry.validate()?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let correct = async {
+                if record_request(&mut tx, &retry).await? != PurchaseRequestState::Sent {
+                    return Err(StoreDurabilityError::ConflictingBinding);
+                }
+                sqlx::query(
+                    "INSERT INTO game_store_purchase_retries(retry_id,original_id,world_id)
+                     SELECT encode($1,'hex')::uuid,p.purchase_request_id,encode($4,'hex')::uuid
+                     FROM store_purchase_requests p
+                     WHERE p.purchase_request_id=encode($2,'hex')::uuid AND p.account_id=encode($3,'hex')::uuid
+                     ON CONFLICT(retry_id) DO NOTHING",
+                ).bind(retry.purchase_request_id.as_slice()).bind(original.as_slice())
+                    .bind(retry.account_id.as_slice()).bind(world.as_slice()).execute(&mut *tx).await?;
+                let matches: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_store_purchase_retries
+                     WHERE retry_id=encode($1,'hex')::uuid AND original_id=encode($2,'hex')::uuid
+                       AND world_id=encode($3,'hex')::uuid)",
+                ).bind(retry.purchase_request_id.as_slice()).bind(original.as_slice())
+                    .bind(world.as_slice()).fetch_one(&mut *tx).await?;
+                if matches { Ok(()) } else { Err(StoreDurabilityError::ConflictingBinding) }
+            }.await;
+            if correct.is_ok() {
+                commit_semantic_transaction(tx, deadline).await?;
+            }
+            Ok(correct)
+        })).await?
+    }
+
+    /// Read a terminal reply for the same immutable binding without creating a journal row.
+    pub async fn read_store_purchase_answer(
+        &self,
+        request: PurchaseRequest,
+    ) -> Result<Option<Vec<u8>>, StoreDurabilityError> {
+        request.validate()?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let answer = sqlx::query_scalar(
+                        "SELECT answer FROM store_purchase_requests WHERE state=2 \
+                         AND purchase_request_id=encode($1,'hex')::uuid \
+                         AND account_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid \
+                         AND binding_digest=$4",
+                    )
+                    .bind(request.purchase_request_id.as_slice())
+                    .bind(request.account_id.as_slice())
+                    .bind(request.character_id.as_slice())
+                    .bind(request.binding_digest().as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(answer))
+                })
+            })
+            .await?
+    }
+
     /// Read-only restore gate. Existence permits only the normal retry path, which still
     /// checks the immutable binding before reconciliation; this never creates a request.
     pub async fn has_store_purchase_request(
@@ -127,6 +292,14 @@ impl DurabilityRoot {
                         Err(error) => return Ok(Err(error)),
                     }
                     if let Err(error) = super::hireling_reservation::release_refused(&mut tx, &request, &answer).await { return Ok(Err(error)); }
+                    if refused(&answer) {
+                        for sql in [
+                            "DELETE FROM game_store_item_reservations WHERE purchase_request_id=encode($1,'hex')::uuid",
+                            "DELETE FROM game_character_store_cosmetics WHERE purchase_id=encode($1,'hex')::uuid AND operation_id IS NULL",
+                        ] {
+                            sqlx::query(sql).bind(request.purchase_request_id.as_slice()).execute(&mut *tx).await?;
+                        }
+                    }
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(answer))
                 })
@@ -179,4 +352,13 @@ pub(super) async fn record_request(
     .execute(&mut **tx)
     .await?;
     Ok(PurchaseRequestState::Sent)
+}
+
+pub(super) fn refused(answer: &[u8]) -> bool {
+    serde_json::from_slice::<serde_json::Value>(answer).is_ok_and(|value| {
+        matches!(value["result"].as_str(), Some(
+            "STALE_QUOTE" | "OFFER_UNAVAILABLE" | "PURCHASE_DISABLED" |
+            "INSUFFICIENT_BALANCE" | "ACCOUNT_RESTRICTED"
+        ))
+    })
 }

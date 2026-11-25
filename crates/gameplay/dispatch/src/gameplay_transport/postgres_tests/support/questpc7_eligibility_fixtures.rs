@@ -134,6 +134,65 @@ pub(super) async fn exercise(
             "missing level or parent prerequisite must refuse"
         );
         if name.ends_with("high") {
+            // Level and Premium are already satisfied. Try the exchange before the fixture
+            // records Make Believe completion and verify that dispatch grants nothing.
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica")
+                .execute(&mut *tx).await?;
+            sqlx::query(
+                "WITH backpack AS (
+                    SELECT * FROM game_item_container_slots
+                    WHERE character_id=encode($1,'hex')::uuid
+                 ), bags AS (
+                    INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
+                        definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+                    SELECT uuidv7(),world_id,'Item','oteryn:item.tibia.i2854','definition-r1',1,1,uuidv7()
+                    FROM backpack CROSS JOIN generate_series(1,2)
+                    RETURNING item_instance_id,world_id
+                 ), placed AS (
+                    INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,
+                        item_instance_id,placement_ordinal,placed_transaction_id)
+                    SELECT b.character_id,b.world_id,b.item_instance_id,g.item_instance_id,
+                        (SELECT COALESCE(max(e.placement_ordinal),0) FROM game_item_container_entries e
+                         WHERE e.parent_item_instance_id=b.item_instance_id) + row_number() OVER (),uuidv7()
+                    FROM bags g CROSS JOIN backpack b RETURNING item_instance_id
+                 ), inputs AS MATERIALIZED (
+                    SELECT p.item_instance_id AS bag, b.world_id, b.character_id,
+                           uuidv7() AS item, n
+                    FROM (SELECT item_instance_id, row_number() OVER () AS index FROM placed) p
+                    CROSS JOIN backpack b CROSS JOIN LATERAL generate_series(1, 12 + (p.index % 2)) n
+                 ), minted AS (
+                    INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
+                        definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+                    SELECT item,world_id,'Item','oteryn:item.tibia.i54640','definition-r1',100,1,uuidv7()
+                    FROM inputs RETURNING item_instance_id
+                 )
+                 INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,
+                    item_instance_id,placement_ordinal,placed_transaction_id)
+                 SELECT character_id,world_id,bag,item,n,uuidv7() FROM inputs
+                 JOIN minted ON minted.item_instance_id=inputs.item",
+            ).bind(id(41).as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+            for (command, words) in [(1313, "basic"), (1314, "yes")] {
+                super::qengine_rewards_fixtures::talk(owner, admitted, wayland, command, words)
+                    .await?;
+            }
+            let started: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_character_quest_states
+                 WHERE character_id=encode($1,'hex')::uuid
+                 AND quest_key='oteryn:quest.authored.illuminated_warrior_outfits_quest')",
+            ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+            assert!(!started, "Wayland cannot start or advance the commission before Make Believe");
+            let granted: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_account_appearance_unlocks
+                 WHERE unlock_key LIKE '%illuminated%')",
+            ).fetch_one(&h.pool).await?;
+            assert!(!granted, "Wayland must refuse the outfit grant before Make Believe");
+            let scraps: i64 = sqlx::query_scalar(
+                "SELECT COALESCE(sum(quantity),0)::bigint FROM game_item_instances
+                 WHERE definition_production_key='oteryn:item.tibia.i54640' AND lifecycle=1",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(scraps, 2500, "refusing the exchange must preserve all scraps");
             complete_parent(owner, admitted).await?;
             let parent_before:String=sqlx::query_scalar("SELECT completed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.authored.make_believe_quest'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(
@@ -141,7 +200,7 @@ pub(super) async fn exercise(
                     owner,
                     admitted,
                     wayland,
-                    1312,
+                    1315,
                     "illuminated commission"
                 )
                 .await?,

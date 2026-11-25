@@ -29,3 +29,85 @@ class RuntimeCatalogueTests(unittest.TestCase):
                 path.write_text(json.dumps(catalogue), encoding="utf-8")
                 with patch.object(runtime, "OUT", path):
                     self.assertIn(f"store:charm-expansion: {message}", runtime.check())
+
+    def test_platform_activation_keeps_premium_web_offers(self):
+        # Platform's catalog_tests derives a valid Premium Time import this way.
+        fixture = (
+            runtime.ROOT
+            / "docs/contracts/fixtures/store-price-list-v1/price-list.valid.json"
+        )
+        active = json.loads(
+            fixture.read_text(encoding="utf-8").replace("ITEM", "PREMIUM_TIME")
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "active.json"
+            base.write_text(json.dumps(active))
+            with patch.object(
+                runtime, "PLATFORM_OUT", Path(directory) / "combined.json"
+            ):
+                with patch(
+                    "sys.argv",
+                    ["build_runtime_catalogue.py", "--platform-base", str(base)],
+                ):
+                    self.assertEqual(runtime.main(), 0)
+                imported = json.loads(runtime.PLATFORM_OUT.read_bytes())
+        web_offers = [
+            offer
+            for offer in imported["offers"]
+            if offer["purchasable"]
+            and all(unit["unit_kind"] == "PREMIUM_TIME" for unit in offer["units"])
+        ]
+        self.assertEqual(web_offers, active["offers"])
+
+    def test_price_refresh_retains_the_previous_combined_import(self):
+        fixture = (
+            runtime.ROOT
+            / "docs/contracts/fixtures/store-price-list-v1/price-list.valid.json"
+        )
+        active = json.loads(
+            fixture.read_text(encoding="utf-8").replace("ITEM", "PREMIUM_TIME")
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "active.json"
+            combined = Path(directory) / "combined.json"
+            retained = Path(directory) / "platform-predecessors.json"
+            base.write_text(json.dumps(active))
+            with (
+                patch.object(runtime, "PLATFORM_OUT", combined),
+                patch(
+                    "sys.argv",
+                    ["build_runtime_catalogue.py", "--platform-base", str(base)],
+                ),
+            ):
+                self.assertEqual(runtime.main(), 0)
+                original = combined.read_text()
+                offer = active["offers"][0]
+                offer["unit_price"] = str(int(offer["unit_price"]) + 1)
+                base.write_text(json.dumps(active))
+                self.assertEqual(runtime.main(), 0)
+                self.assertNotEqual(combined.read_text(), original)
+                self.assertIn(original, json.loads(retained.read_bytes()))
+
+    def test_platform_only_creates_claims_for_physical_inbox_deliveries(self):
+        catalogue = json.loads(runtime.OUT.read_bytes())
+        prey = next(
+            row
+            for row in catalogue["offers"]
+            if row["key"] == "store:prey-list-expansion"
+        )
+        charm = next(
+            row for row in catalogue["offers"] if row["key"] == "store:charm-expansion"
+        )
+        prey.update(enabled=True, price=charm["price"])
+        imported = {
+            row["offer_key"]: row["units"][0]["unit_kind"]
+            for row in json.loads(runtime.platform_catalogue(catalogue))["offers"]
+        }
+        for document in (
+            catalogue,
+            json.loads(runtime.OUT.with_name("hirelings.json").read_bytes()),
+        ):
+            for row in document["offers"]:
+                with self.subTest(key=row["key"]):
+                    # Platform creates CLAIM for each committed ITEM delivery.
+                    self.assertEqual(imported[row["key"]] == "ITEM", "item" in row)

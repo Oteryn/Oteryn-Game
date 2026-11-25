@@ -1302,6 +1302,23 @@ async fn apply_loop_move<C: ItemLoopContent>(
         return refuse(LoopMoveRefusal::NotSupported);
     }
     let (height, size) = loop_subtree(tx, request.item).await?;
+    if matches!(request.destination, LoopDestination::Ground(_)) {
+        let store_bound: bool = sqlx::query_scalar(
+            "WITH RECURSIVE tree(item,depth) AS (
+                 SELECT encode($1,'hex')::uuid,0
+                 UNION ALL
+                 SELECT n.item_instance_id,t.depth+1 FROM tree t
+                 JOIN game_item_nested_entries n ON n.parent_item_instance_id=t.item
+                 WHERE t.depth<8
+             )
+             SELECT EXISTS(SELECT 1 FROM tree t JOIN game_item_bindings b
+                           ON b.item_instance_id=t.item WHERE b.cause='STORE_PURCHASE')",
+        ).bind(request.item.as_slice()).fetch_one(&mut **tx).await?;
+        if store_bound {
+            return refuse(LoopMoveRefusal::Rejected);
+        }
+    }
+
     let PlannedDestination {
         target,
         receiver,
@@ -1496,11 +1513,11 @@ async fn apply_loop_move<C: ItemLoopContent>(
         "INSERT INTO game_item_loop_move_receipts (transaction_id, event_id, character_id, \
                 game_session_id, command_id, connection_generation, lease_generation, world_id, \
                 channel_id, scope_generation, content_digest, operation, line_count, intent, \
-                intent_sha256, depot_town, depot_box, quick_loot_ordinal, scope_kind, instance_id) \
+                intent_sha256, depot_town, depot_box, quick_loot_ordinal, scope_kind, instance_id, inbox_recovery_generation) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
                  encode($4,'hex')::uuid, $5::text::numeric(20,0), $6::text::numeric(20,0), \
                  $7::text::numeric(20,0), encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
-                 $10::text::numeric(20,0), $11, $12, $13, $14, sha256($14), $15, $16, $17, $18, encode($19,'hex')::uuid)",
+                 $10::text::numeric(20,0), $11, $12, $13, $14, sha256($14), $15, $16, $17, $18, encode($19,'hex')::uuid, $20::text::numeric)",
     )
     .bind(transaction_id.as_slice())
     .bind(event_id.as_slice())
@@ -1524,6 +1541,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
         None => search.unwrap_or(0),
     })
     .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
+    .bind((source == SourceKind::Inbox).then(|| record.recovery_generation.to_string()))
     .execute(&mut **tx)
     .await?;
     if let Some(context) = house {
