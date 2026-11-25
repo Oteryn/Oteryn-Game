@@ -148,6 +148,12 @@ pub(super) fn prepare(
                         && c.npc == context.2
                         && c.topic == topic
                         && c.keywords.contains(&text)
+                        // Hairycles continues a saved source journey before
+                        // offering the start of the separate authored route.
+                        && !(c.key == "oteryn:quest-reward/ape-city/start"
+                            && tracks
+                                .get("oteryn:quest-progress/quest/u7_6/the_ape_city/questline")
+                                .is_some_and(|stage| *stage > 0))
                         && eligible(&c.storage)
                         && c.state_ops
                             .iter()

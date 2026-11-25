@@ -595,6 +595,15 @@ pub(super) async fn seed_character_backpack(
     backpack: u8,
     entries: &[(&str, i64)],
 ) -> TestResult {
+    seed_character_backpack_id(harness, id(character), backpack, entries).await
+}
+
+pub(super) async fn seed_character_backpack_id(
+    harness: &Harness,
+    character: [u8; 16],
+    backpack: u8,
+    entries: &[(&str, i64)],
+) -> TestResult {
     // Seed the migration-owned fixture as the existing item PostgreSQL harnesses do.
     // All observations below use the real durable owner under its recovery fence.
     let mut tx = harness.pool.begin().await?;
@@ -612,7 +621,7 @@ pub(super) async fn seed_character_backpack(
         placed_transaction_id) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, \
         encode($3,'hex')::uuid, encode($4,'hex')::uuid)",
     )
-    .bind(id(character).as_slice())
+    .bind(character.as_slice())
     .bind(id(backpack).as_slice())
     .bind(id(42).as_slice())
     .bind(id(backpack + 2).as_slice())
@@ -626,7 +635,7 @@ pub(super) async fn seed_character_backpack(
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',$4,1,encode($5,'hex')::uuid)")
             .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(key).bind(quantity).bind(id(backpack+2).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)")
-            .bind(id(character).as_slice()).bind(id(42).as_slice()).bind(id(backpack).as_slice()).bind(id(seed).as_slice()).bind(ordinal).bind(id(backpack+2).as_slice()).execute(&mut *tx).await?;
+            .bind(character.as_slice()).bind(id(42).as_slice()).bind(id(backpack).as_slice()).bind(id(seed).as_slice()).bind(ordinal).bind(id(backpack+2).as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
     Ok(())

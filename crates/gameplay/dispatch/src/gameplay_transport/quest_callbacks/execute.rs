@@ -69,6 +69,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
     ) -> UseDisposition {
+        if pays_for_callback(callback)
+            && !self.paid_callback_can_start(session, session, |pending| {
+                pending.cause == cause && pending.callback == callback.key
+            })
+        {
+            return UseDisposition::Rejected;
+        }
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
             && let Some(bindings) = catalogue.authored_bindings()

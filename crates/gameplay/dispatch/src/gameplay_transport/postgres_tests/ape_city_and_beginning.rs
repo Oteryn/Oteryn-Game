@@ -12,6 +12,24 @@ const APE_TRACK: &str = "oteryn:quest-progress/quest/u7_6/the_ape_city/";
 const ROOK_TRACK: &str = "oteryn:quest-progress/quest/u8_2/the_beginning_quest/";
 
 #[test]
+fn carlos_food_sales_advance_the_saved_tutorial_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("carlos-food-sales", || {
+        run(async |admin| {
+            for (item, sell_all) in [("oteryn:item.tibia.i3577", false), ("oteryn:item.tibia.i3582", true)] {
+                let h = Harness::create_with_admission_seed(admin.clone(), "carlos_food_sale", true, false).await?;
+                let result = exercise(&h, Some((item, sell_all))).await;
+                h.cleanup().await?;
+                result?;
+            }
+            Ok(())
+        })
+    })
+}
+
+#[test]
 fn ape_city_and_beginning_production_npc_progress_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -19,14 +37,14 @@ fn ape_city_and_beginning_production_npc_progress_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("ape-city-and-beginning", || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "ape_city_beginning", true, false).await?;
-            let result = exercise(&h).await;
+            let result = exercise(&h, None).await;
             h.cleanup().await?;
             result
         })
     })
 }
 
-async fn exercise(h: &Harness) -> TestResult {
+async fn exercise(h: &Harness, sale: Option<(&str, bool)>) -> TestResult {
     super::prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
@@ -46,6 +64,20 @@ async fn exercise(h: &Harness) -> TestResult {
         load_embedded_quest_state("content-1").map_err(debug)?.catalogue().clone(),
     ));
     let mut admitted = deps.admitted;
+    if sale.is_some() {
+        admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
+        let fence = owner.current_quest_fence(admitted.game_session_id)
+            .await.map_err(|()| "sale item fence lookup")?.ok_or("sale item fence")?;
+        admitted.item_fence = Some(fence.item_fence());
+        owner.runtime.lock().await.bind_attacker_lease(
+            deps.actor, admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                fence.character_lease_generation,
+            ).map_err(debug)?,
+        ).map_err(debug)?;
+        deps.initialize(&owner).await;
+    }
     owner.refresh_quest_session(admitted.game_session_id, true).await;
     let [santiago, zirella, carlos, hairycles] = super::classic_quests_fixtures::install_with_offsets(
         &owner,
@@ -56,6 +88,15 @@ async fn exercise(h: &Harness) -> TestResult {
         ],
         Some([(0, 1), (1, 1), (0, 2), (1, 2)]),
     ).await?;
+    if let Some((item, sell_all)) = sale {
+        use crate::gameplay_transport::capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities};
+        use oteryn_protocol_oteryn::{npc_service::CAPABILITY_NPC_SERVICE_V1, npc_shop::CAPABILITY_NPC_SHOP_V1};
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            &[CAPABILITY_NPC_SERVICE_V1, CAPABILITY_NPC_SHOP_V1],
+        ).ok_or("food shop capabilities")?;
+        return carlos_sale(h, &mut owner, &mut admitted, carlos, item, sell_all).await;
+    }
     super::qd_world_fixtures::select_talk_capabilities(&owner, &mut admitted, &[3, 6, 25])?;
     let mut command = 1000;
     for (npc, phrases, track, value) in [
@@ -85,6 +126,80 @@ async fn exercise(h: &Harness) -> TestResult {
     assert_eq!(awarded, 1);
     conversation(&mut owner, &mut admitted, hairycles, &mut command, &["mission"]).await?;
     assert_eq!(progress(h, &format!("{APE_TRACK}questline")).await?, 18);
+    Ok(())
+}
+
+async fn carlos_sale(
+    h: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    item: &str,
+    sell_all: bool,
+) -> TestResult {
+    use oteryn_protocol_oteryn::npc_service as npc_wire;
+    use oteryn_protocol_oteryn::npc_shop as shop_wire;
+
+    super::item_look_fixtures::seed_main_backpack(h, &[(item, 1)]).await?;
+    let mut dialogue_command = 1000;
+    conversation(owner, admitted, npc, &mut dialogue_command,
+        &["hi", "yes", "hi", "help", "yes", "yes", "bye"]).await?;
+    let greet = format!("{ROOK_TRACK}carlos_npc_greet_storage");
+    let log = format!("{ROOK_TRACK}carlos_quest_log");
+    conversation(owner, admitted, npc, &mut dialogue_command, &["hi", "yes"]).await?;
+    assert_eq!(progress(h, &greet).await?, 6, "the tutorial unlocks the food shop");
+    let book = owner.states.chat.npc_talk().ok_or("NPC book")?;
+    let carlos = book.get("oteryn:npc.carlos").ok_or("Carlos")?;
+    let (index, price) = {
+        let runtime = owner.runtime.lock().await;
+        let items = crate::gameplay_transport::item_ref_admission::pinned_index(&runtime, owner.active_generation)
+            .ok_or("item index")?;
+        let (index, (shown, _)) = oteryn_gameplay_npc::npc_command::projected(carlos.offers(), items)
+            .enumerate().find(|(_, (_, source))| source.item.key == item).ok_or("food offer")?;
+        (u32::try_from(index)?, shown.unit_price)
+    };
+    let talk = |text: &str| npc_wire::encode_npc_talk_intent(&npc_wire::NpcTalkIntent {
+        npc_actor: npc, text: text.to_owned(),
+    }).map_err(debug);
+    let (kind, payload) = if sell_all {
+        (shop_wire::COMMAND_TYPE_NPC_SHOP, shop_wire::encode_npc_shop_intent(&shop_wire::NpcShopIntent {
+            npc_actor: npc, catalogue_revision: book.catalogue_revision(), offer_index: index,
+            side: npc_wire::NpcTradeSide::Sell, action: shop_wire::NpcShopAction::SellAll,
+            expected_unit_price: price,
+        }).map_err(debug)?)
+    } else {
+        (npc_wire::COMMAND_TYPE_NPC_TRADE_INTENT, npc_wire::encode_npc_trade_intent(&npc_wire::NpcTradeIntent {
+            npc_actor: npc, catalogue_revision: book.catalogue_revision(), offer_index: index,
+            side: npc_wire::NpcTradeSide::Sell, quantity: 1, expected_unit_price: price,
+        }).map_err(debug)?)
+    };
+    owner.clock_origin -= std::time::Duration::from_secs(3);
+    let replies = super::questl2_fixture::wire_sequence(
+        owner, admitted, vec![(1, 7, talk("hi")?), (2, 7, talk("trade")?), (3, kind, payload)],
+    ).await?;
+    for (reply, text) in replies.iter().zip(["hi", "trade"]) {
+        assert_eq!(npc_wire::decode_npc_intent_result(reply)
+            .map_err(|error| format!("Carlos {text} result {reply:?}: {error:?}"))?, NpcIntentDisposition::Ok);
+    }
+    let sale = replies.get(2).ok_or("sale response")?;
+    let disposal = if sell_all {
+        shop_wire::decode_npc_shop_result(sale)
+            .map_err(|error| format!("Carlos sell-all result {sale:?}: {error:?}"))?.disposition
+    } else {
+        npc_wire::decode_npc_intent_result(sale)
+            .map_err(|error| format!("Carlos sale result {sale:?}: {error:?}"))?
+    };
+    assert_eq!(disposal, NpcIntentDisposition::Ok, "{item}");
+    assert_eq!(progress(h, &greet).await?, 7, "first successful sale of {item}");
+    if sell_all {
+        owner.states.npc_conversations.forget(admitted.game_session_id);
+        owner.refresh_quest_session(admitted.game_session_id, false).await;
+        conversation(owner, admitted, npc, &mut dialogue_command, &["hi"]).await?;
+    } else {
+        conversation(owner, admitted, npc, &mut dialogue_command, &["ready"]).await?;
+    }
+    assert_eq!(progress(h, &greet).await?, 8, "returning to Carlos completes the tutorial");
+    assert_eq!(progress(h, &log).await?, 7);
     Ok(())
 }
 

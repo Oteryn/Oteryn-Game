@@ -734,6 +734,7 @@ pub mod grizzly_boss;
 mod hero_of_bounac;
 pub mod native_doors;
 pub mod kill_objectives;
+pub mod carlos_trade;
 mod persist;
 mod planegazer_finale;
 pub mod native_kills;

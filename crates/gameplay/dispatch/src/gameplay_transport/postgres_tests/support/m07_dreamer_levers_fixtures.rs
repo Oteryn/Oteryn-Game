@@ -119,7 +119,7 @@ pub(super) async fn exercise_dread_lord(
 ) -> TestResult {
     let [offering] = callback.offerings.as_slice() else { return Err("diamond offering".into()) };
     let [rank, _claim] = callback.storage.as_slice() else { return Err("rank and claim guards".into()) };
-    let [resting_lever, _active_lever] = callback.lever.ok_or("source lever")?;
+    let [resting_lever, active_lever] = callback.lever.ok_or("source lever")?;
     let ground_outputs = |owner: &ComposedFreshAdmission<'_, '_, '_>| -> TestResult<usize> {
         let map = owner.bundle_map().ok_or("map")?;
         Ok(map.facts.movement_item_entries().iter().filter(|(position, entry)| {
@@ -194,11 +194,12 @@ pub(super) async fn exercise_dread_lord(
             GraceExpiryResult::Released
         );
         assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
+        assert_eq!(ground_outputs(owner)?, 1, "the paid effect survives retirement");
         assert_eq!(
-            pull(owner, &mut peer, resting_lever).await?,
-            UseDisposition::Committed
+            pull(owner, &mut peer, active_lever).await?,
+            UseDisposition::NothingToUse
         );
-        assert_eq!(counts(harness).await?.1, before.1 + 2);
+        assert_eq!(counts(harness).await?.1, before.1 + 1);
         assert_eq!(ground_outputs(owner)?, 1);
         return Ok(());
     }

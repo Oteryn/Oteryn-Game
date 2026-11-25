@@ -21,6 +21,13 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                         | "oteryn:quest-callback/an-interest-in-botany/s2"
                         | "oteryn:quest-callback/an-interest-in-botany/s3"
                         | "oteryn:quest-callback/an-interest-in-botany/s3-web"
+                        | "oteryn:quest-callback/ape-city-cask-32495"
+                        | "oteryn:quest-callback/ape-city-cask-32497"
+                        | "oteryn:quest-callback/ape-city-cask-32499"
+                        | "oteryn:quest-callback/ape-city-cask-32501"
+                        | "oteryn:quest-callback/ape-city-cask-32503"
+                        | "oteryn:quest-callback/ape-city-cask-32505"
+                        | "oteryn:quest-callback/ape-city-cask-32507"
                         | "oteryn:quest-callback/authored-ape-city-amphora-1"
                         | "oteryn:quest-callback/authored-ape-city-amphora-2"
                         | "oteryn:quest-callback/authored-ape-city-amphora-3"
@@ -47,9 +54,13 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
             ))
 }
 
-/// The fenced inventory entry is the required tool only by its exact production key.
+/// The fenced entry must match a production key explicitly authored for this tool.
 pub(crate) fn is_required_tool(required: &ItemOnTarget, production_key: &str) -> bool {
     production_key == required.item
+        || required
+            .alternatives
+            .iter()
+            .any(|item| item == production_key)
 }
 
 /// Select only the wire subject observed in the fenced inventory snapshot.
@@ -74,6 +85,37 @@ pub(crate) fn matches_source(
 mod tests {
     use super::*;
     use oteryn_gameplay_quests::quest::{native_rules::NativeRule, world_callbacks};
+
+    #[test]
+    fn ape_city_casks_reach_the_carried_tool_owner_for_both_crowbars() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let casks: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback
+                    .key
+                    .starts_with("oteryn:quest-callback/ape-city-cask-")
+            })
+            .collect();
+        assert_eq!(casks.len(), 7);
+        for cask in casks {
+            assert!(
+                accepts(cask),
+                "{} must reach the carried-tool owner",
+                cask.key
+            );
+            let tool = cask.item_on_target.as_ref().ok_or("cask tool")?;
+            for key in ["oteryn:item.tibia.i3304", "oteryn:item.tibia.i9598"] {
+                assert!(
+                    is_required_tool(tool, key),
+                    "{} must accept {key}",
+                    cask.key
+                );
+            }
+            assert!(!is_required_tool(tool, "oteryn:item.tibia.i3457"));
+        }
+        Ok(())
+    }
 
     #[test]
     fn authored_journey_map_tools_reach_the_carried_tool_owner() -> Result<(), String> {

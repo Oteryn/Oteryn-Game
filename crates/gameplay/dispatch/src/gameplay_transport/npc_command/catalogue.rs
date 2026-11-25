@@ -275,6 +275,10 @@ pub(super) fn prepare(
         message: intent.text.clone(),
         topic: if greeting {
             0
+        } else if context.2 == crate::durability::quest_state::carlos_trade::NPC
+            && tracks.get(crate::durability::quest_state::carlos_trade::GREETING) == Some(&7)
+        {
+            7
         } else {
             previous.as_ref().map_or(0, |p| p.topic)
         },

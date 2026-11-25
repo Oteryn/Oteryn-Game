@@ -5,6 +5,7 @@
       "key": "oteryn:quest-callback/ape-city-cask-32495",
       "quest": "oteryn:quest.the_ape_city_quest",
       "trigger": "use",
+      "use_range": 2,
       "selector": {
         "position": {
           "x": 32862,
@@ -84,6 +85,7 @@
       "key": "oteryn:quest-callback/ape-city-cask-32497",
       "quest": "oteryn:quest.the_ape_city_quest",
       "trigger": "use",
+      "use_range": 2,
       "selector": {
         "position": {
           "x": 32862,
@@ -163,6 +165,7 @@
       "key": "oteryn:quest-callback/ape-city-cask-32499",
       "quest": "oteryn:quest.the_ape_city_quest",
       "trigger": "use",
+      "use_range": 2,
       "selector": {
         "position": {
           "x": 32862,
@@ -242,6 +245,7 @@
       "key": "oteryn:quest-callback/ape-city-cask-32501",
       "quest": "oteryn:quest.the_ape_city_quest",
       "trigger": "use",
+      "use_range": 2,
       "selector": {
         "position": {
           "x": 32862,
@@ -321,6 +325,7 @@
       "key": "oteryn:quest-callback/ape-city-cask-32503",
       "quest": "oteryn:quest.the_ape_city_quest",
       "trigger": "use",
+      "use_range": 2,
       "selector": {
         "position": {
           "x": 32862,
@@ -400,6 +405,7 @@
       "key": "oteryn:quest-callback/ape-city-cask-32505",
       "quest": "oteryn:quest.the_ape_city_quest",
       "trigger": "use",
+      "use_range": 2,
       "selector": {
         "position": {
           "x": 32862,
@@ -479,6 +485,7 @@
       "key": "oteryn:quest-callback/ape-city-cask-32507",
       "quest": "oteryn:quest.the_ape_city_quest",
       "trigger": "use",
+      "use_range": 2,
       "selector": {
         "position": {
           "x": 32862,
