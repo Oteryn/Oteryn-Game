@@ -1067,7 +1067,7 @@ async fn restart_scope(harness: &Harness, session: crate::foundation::GameSessio
     let AssignmentOutcome::Committed(replaced) = replaced else { return Err("scope replacement was refused".into()); };
     let generation = replaced.assignment.ownership_generation;
     assert_ne!(generation, 1);
-    crate::bestiary_postgres_harness::publish_readiness_for_scope(&harness.pool, &harness.root, &harness.node, generation, scope).await?;
+    fixture::publish_restarted_scope_readiness(harness, &replaced).await?;
     // The carrier fixture supplies the current admission, as on the original
     // boot. The new assignment and readiness above are both durable writes.
     let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET scope_ownership_generation=$2::text::numeric

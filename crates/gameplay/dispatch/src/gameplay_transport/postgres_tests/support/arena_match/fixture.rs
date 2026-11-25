@@ -10,6 +10,52 @@ use crate::durability::arena_match::donor;
 
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1};
 
+pub(in super::super) async fn publish_restarted_scope_readiness(
+    harness: &super::Harness,
+    replaced: &crate::durability::runtime_scope_assignment::AssignmentReceipt,
+) -> TestResult {
+    use crate::durability::admission_authority_guards::{
+        AdmissionGuardStore, GuardPublicationDisposition,
+    };
+    use crate::foundation::admission_authority_publication::{
+        AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
+        AdmissionAuthorityPublicationV1, AdmissionPublicationPreconditionV1,
+    };
+    let generation = replaced.assignment.ownership_generation;
+    let key = AdmissionAuthorityGuardKeyV1::Runtime(replaced.assignment.scope);
+    let previous = AdmissionGuardStore::from_root(harness.root.clone())
+        .load(std::slice::from_ref(&key))
+        .await
+        .map_err(debug)?
+        .pop()
+        .flatten()
+        .ok_or("restart readiness predecessor")?;
+    assert_eq!(replaced.fenced_publication_revision, Some(previous.publication_revision));
+    let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
+        .fetch_one(&harness.pool)
+        .await?;
+    let mut publisher = super::super::fresh_fixture::fresh::Source::new(now)?;
+    publisher.rows.retain(|row| row.key == key);
+    let [change] = publisher.rows.as_mut_slice() else { return Err("runtime publisher".into()); };
+    let AdmissionAuthorityGuardStateV1::Runtime { ownership_generation, .. } = &mut change.state else {
+        return Err("runtime readiness state".into());
+    };
+    *ownership_generation = generation;
+    change.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+        expected_publication_revision: previous.publication_revision,
+    };
+    change.publication_revision = previous.publication_revision.checked_add(1)
+        .ok_or("readiness publication revision")?;
+    change.source.source_revision = previous.source.source_revision.checked_add(1)
+        .ok_or("readiness source revision")?;
+    change.source.decision_identity = format!("arena-runtime-ready-{generation}");
+    let publication = AdmissionAuthorityPublicationV1::prepare(&publisher, now).map_err(debug)?;
+    let disposition = harness.root.publish_runtime_readiness(&harness.node, &publication)
+        .await.map_err(debug)?;
+    assert_eq!(disposition, GuardPublicationDisposition::Applied);
+    Ok(())
+}
+
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
