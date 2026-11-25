@@ -96,7 +96,7 @@ fn scenario_case(
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
     let tibia_tales_hallowed = name == "qengine-rewards-tibia-tales-hallowed";
     let cursed_crystal_stairs = name.starts_with("crystal-stairs-");
-    let eroth_mirror = name == "qengine-rewards-eroth-start";
+    let eroth_mirror = matches!(name, "qengine-rewards-eroth-start" | "qengine-rewards-eroth-legacy");
     let native_crop = eroth_mirror
         || sarina_vine
         || cursed_crystal_stairs
@@ -1901,7 +1901,7 @@ fn scenario_case(
                 crate::gameplay_transport::SeamRooms::new(native_crop.then_some(room), Some(room));
         }
         use oteryn_gameplay_quests::quest::{authored_bindings::Bindings, loader};
-        let lowered = if eroth_mirror {
+        let lowered = if name == "qengine-rewards-eroth-start" {
             // This crop exercises the legacy mirror route without the authored
             // journey's offer and mountain approach.
             loader::load_embedded_quest_state_with_bindings(

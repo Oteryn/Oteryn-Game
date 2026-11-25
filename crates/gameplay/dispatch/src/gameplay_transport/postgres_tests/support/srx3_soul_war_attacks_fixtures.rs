@@ -192,16 +192,17 @@ pub(super) async fn actual_source_suffix(
     let due = retry_now
         .checked_add(7_000_000)
         .ok_or("source seven-second delay")?;
+    let expected_schedule = vec![(
+        boss,
+        selected.source_occurrence.clone(),
+        selected.observed_at_us,
+        due,
+    )];
     {
         let states = owner.states.spell_states.lock().await;
         assert_eq!(
             states.soul_war_callbacks.source_attack_schedule_for_test(),
-            vec![(
-                boss,
-                selected.source_occurrence.clone(),
-                selected.observed_at_us,
-                due
-            )],
+            expected_schedule,
             "one retained occurrence: original ordering time, actual execution +7s"
         );
         assert!(
@@ -220,9 +221,26 @@ pub(super) async fn actual_source_suffix(
     );
     let health_before = health(owner, player, session).await?;
     let cues_before = effects(owner)?;
+    let heal_before_due = owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .source_heal_receipt_for_test(player, session);
     drain_attacks_at(owner, due - 1).await?;
     assert_eq!(health(owner, player, session).await?, health_before);
     assert_eq!(effects(owner)?, cues_before, "no early source area");
+    {
+        let states = owner.states.spell_states.lock().await;
+        assert_eq!(
+            states.soul_war_callbacks.source_attack_schedule_for_test(),
+            expected_schedule
+        );
+        assert_eq!(
+            states.source_heal_receipt_for_test(player, session),
+            heal_before_due
+        );
+    }
     owner
         .states
         .spell_states
@@ -239,12 +257,7 @@ pub(super) async fn actual_source_suffix(
         let states = owner.states.spell_states.lock().await;
         assert_eq!(
             states.soul_war_callbacks.source_attack_schedule_for_test(),
-            vec![(
-                boss,
-                selected.source_occurrence.clone(),
-                selected.observed_at_us,
-                due
-            )],
+            expected_schedule,
             "post-HP refusal retains the original source and its partial area"
         );
         states

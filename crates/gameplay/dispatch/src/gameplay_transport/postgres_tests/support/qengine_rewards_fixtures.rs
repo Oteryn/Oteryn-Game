@@ -44,12 +44,8 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 cq29_quest_contacts::VASE
             } else if name == super::newhaven_gustavo_fixtures::NAME {
                 super::newhaven_gustavo_fixtures::START
-            } else if name == "qengine-rewards-eroth-start" {
-                Position {
-                    x: 32592,
-                    y: 31645,
-                    floor: -2,
-                }
+            } else if matches!(name, "qengine-rewards-eroth-start" | "qengine-rewards-eroth-legacy") {
+                EROTH_CRYSTAL
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
                     x: 32248,
@@ -1211,6 +1207,9 @@ pub(super) async fn exercise(
         ))
         .await;
     }
+    if name == "qengine-rewards-eroth-legacy" {
+        return Box::pin(eroth_legacy_save(owner, admitted, h, authority)).await;
+    }
     if name == "qengine-rewards-eroth-start" || name == "qengine-rewards-joe-start" {
         let (npc, words, track, value) = if name.ends_with("eroth-start") {
             (
@@ -1241,39 +1240,7 @@ pub(super) async fn exercise(
             value,
         );
         if name.ends_with("eroth-start") {
-            use crate::map::view::MapFacts as _;
-
-            assert_eq!(questl2_journeys::quantity(h, 3463).await?, 1);
-            admitted.continuity.selected_capabilities =
-                crate::gameplay_transport::capabilities::SelectedCapabilities::select(
-                    owner.offered_capabilities(),
-                    &[3, 4, 6, 11, 15, 18],
-                )
-                .ok_or("mirror USE capabilities")?;
-            let crystal = Position {
-                x: 32592,
-                y: 31645,
-                floor: -2,
-            };
-            assert_eq!(
-                super::tibia_tales_fixtures::use_tool_at(owner, admitted, crystal, 2, 3463).await?,
-                oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
-            );
-            assert_eq!(questl2_journeys::quantity(h, 3463).await?, 0);
-            assert_eq!(
-                super::classic_quests_fixtures::progress(owner, admitted, authority, track).await?,
-                2,
-            );
-            let map = owner.bundle_map().ok_or("Elvenbane map")?;
-            let key = oteryn_world_bundle::bundle::placement_key(
-                crystal.floor, crystal.x, crystal.y, 2,
-            )
-            .ok_or("crystal placement")?;
-            assert!(map.facts.base_hidden(key));
-            let reset = map.facts.next_movement_decay_time().ok_or("crystal reset")?;
-            assert_eq!(map.facts.expire_movement_items(reset - 1), 0);
-            assert_eq!(map.facts.expire_movement_items(reset), 1);
-            assert!(!map.facts.base_hidden(key));
+            eroth_crystal(owner, admitted, h, authority, track).await?;
         }
         return Ok(());
     }
@@ -1782,6 +1749,99 @@ pub(super) async fn exercise(
             );
         }
     }
+    Ok(())
+}
+
+const EROTH_CRYSTAL: Position = Position {
+    x: 32592,
+    y: 31645,
+    floor: -2,
+};
+
+async fn eroth_legacy_save(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    let track = "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline";
+    for key in [
+        "oteryn:quest-callback/elvenbane-mirror-crystal",
+        "oteryn:quest-callback/to-blind-the-enemy/mirror",
+    ] {
+        assert!(owner.callback_content().iter().any(|callback| callback.key == key));
+    }
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, admitted, &[(track.into(), 1)], 0xa5,
+    )
+    .await?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("Eroth item fence")?;
+    super::quest_world_callbacks_fixtures::input_item(
+        owner,
+        fence.item_fence(),
+        &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+            position: EROTH_CRYSTAL,
+            item: "oteryn:item.tibia.i3463".into(),
+            count: 1,
+        },
+        7040,
+        true,
+    )
+    .await?;
+    eroth_crystal(owner, admitted, h, authority, track).await?;
+    assert_eq!(
+        super::classic_quests_fixtures::progress(
+            owner,
+            admitted,
+            authority,
+            "oteryn:quest-progress/to-blind-the-enemy/mission",
+        )
+        .await?,
+        0,
+        "the legacy crystal does not advance the authored mission"
+    );
+    Ok(())
+}
+
+async fn eroth_crystal(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    track: &str,
+) -> TestResult {
+    use crate::map::view::MapFacts as _;
+
+    assert_eq!(questl2_journeys::quantity(h, 3463).await?, 1);
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[3, 4, 6, 11, 15, 18],
+        )
+        .ok_or("mirror USE capabilities")?;
+    assert_eq!(
+        super::tibia_tales_fixtures::use_tool_at(owner, admitted, EROTH_CRYSTAL, 2, 3463).await?,
+        oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
+    );
+    assert_eq!(questl2_journeys::quantity(h, 3463).await?, 0);
+    assert_eq!(
+        super::classic_quests_fixtures::progress(owner, admitted, authority, track).await?,
+        2,
+    );
+    let map = owner.bundle_map().ok_or("Elvenbane map")?;
+    let key = oteryn_world_bundle::bundle::placement_key(
+        EROTH_CRYSTAL.floor, EROTH_CRYSTAL.x, EROTH_CRYSTAL.y, 2,
+    )
+    .ok_or("crystal placement")?;
+    assert!(map.facts.base_hidden(key));
+    let reset = map.facts.next_movement_decay_time().ok_or("crystal reset")?;
+    assert_eq!(map.facts.expire_movement_items(reset - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(reset), 1);
+    assert!(!map.facts.base_hidden(key));
     Ok(())
 }
 
