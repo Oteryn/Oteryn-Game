@@ -123,20 +123,39 @@ pub(super) async fn assert_receipts(h: &Harness, case: Case) -> TestResult {
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(count, 1, "concurrent replay retains one kill receipt");
-    let slivers: Vec<(i64, i64)> = sqlx::query_as(
-        "SELECT i.quantity,e.placement_ordinal::bigint FROM game_item_instances i JOIN game_item_corpse_container_entries e ON e.item_instance_id=i.item_instance_id WHERE i.definition_production_key='oteryn:item.tibia.i37109' LIMIT 2"
-    ).fetch_all(&h.pool).await?;
-    assert_eq!(
-        slivers.len(),
-        1,
-        "one ordinary sliver mint in the existing corpse"
-    );
-    assert!((3..=7).contains(&slivers[0].0), "pinned fiendish range");
-    assert!(slivers[0].1 > 0);
+    assert_committed_sliver_in_corpse(h).await?;
     eprintln!(
         "FORGECREATURE POSTGRES_ASSERTIONS_COMPLETED recipients={}",
         entries.len()
     );
+    Ok(())
+}
+
+pub(super) async fn assert_committed_sliver_in_corpse(h: &Harness) -> TestResult {
+    // materialized_at belongs to the corpse's Ground receipt. A child MINT
+    // commits its own receipt and corpse entry in the same transaction.
+    let slivers: Vec<(i64, i64)> = sqlx::query_as(
+        "SELECT i.quantity,e.placement_ordinal::bigint
+           FROM game_item_mint_receipts r
+           JOIN game_item_instances i
+             ON i.item_instance_id=r.item_instance_id AND i.minted_transaction_id=r.transaction_id
+           JOIN game_item_corpse_container_entries e
+             ON e.item_instance_id=i.item_instance_id
+            AND e.parent_item_instance_id=r.destination_parent_item_instance_id
+            AND e.placement_ordinal=r.destination_ordinal
+            AND e.placed_transaction_id=r.transaction_id
+           JOIN game_item_mint_receipts corpse ON corpse.item_instance_id=e.parent_item_instance_id
+          WHERE r.loot_purpose_key='oteryn:item.tibia.i37109'
+            AND i.definition_production_key=r.loot_purpose_key AND i.lifecycle=1
+            AND corpse.loot_purpose_key='CORPSE_MATERIALIZATION'
+            AND corpse.materialized_at IS NOT NULL
+          LIMIT 2",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(slivers.len(), 1, "one committed sliver MINT in the corpse");
+    assert!((3..=7).contains(&slivers[0].0), "pinned fiendish range");
+    assert!(slivers[0].1 > 0);
     Ok(())
 }
 
@@ -205,10 +224,7 @@ pub(super) async fn assert_duplex_expiry_retry(
     let sliver_cause = "SELECT draw_ordinal FROM game_item_mint_reservations WHERE loot_purpose_key='oteryn:item.tibia.i37109' ORDER BY draw_ordinal LIMIT 2";
     let first: Vec<i64> = sqlx::query_scalar(sliver_cause).fetch_all(&h.pool).await?;
     assert_eq!(first.len(), 1);
-    let committed: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key='oteryn:item.tibia.i37109' AND materialized_at IS NOT NULL",
-    ).fetch_one(&h.pool).await?;
-    assert_eq!(committed, 1, "sliver committed before Task Board deferred");
+    assert_committed_sliver_in_corpse(h).await?;
 
     sqlx::raw_sql(
         "UPDATE fiendish_clock SET at=at+interval '2 hours';
@@ -218,6 +234,7 @@ pub(super) async fn assert_duplex_expiry_retry(
     assert_eq!(owner.drain_kill_rewards(principal.session).await, DrainOutcome::Drained);
     let retried: Vec<i64> = sqlx::query_scalar(sliver_cause).fetch_all(&h.pool).await?;
     assert_eq!(retried, first, "retry reuses the committed sliver MINT cause");
+    assert_committed_sliver_in_corpse(h).await?;
     let credits: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_task_board_receipts WHERE cause_kind='creature_death'",
     ).fetch_one(&h.pool).await?;

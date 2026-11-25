@@ -3986,6 +3986,59 @@ mod tests {
     }
 
     #[test]
+    fn production_crazed_beggar_reward_has_a_materializable_corpse() -> Result<(), String> {
+        let key = "oteryn:creature.crazed_beggar";
+        let world = test_source(1)
+            .map_err(|error| format!("{error:?}"))?
+            .world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("missing active native gameplay")?;
+        let profile = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find(|record| record.profile.target.key == key)
+            .ok_or("missing Crazed Beggar profile")?;
+        let ProjectV2AuthoringProfileData::Creature(profile) = &profile.profile.data else {
+            return Err("expected a Creature profile".into());
+        };
+        let expected = profile
+            .details
+            .as_ref()
+            .and_then(|details| details.corpse_item.as_ref())
+            .ok_or("missing declared corpse")?;
+        let reward = native
+            .reward_table()
+            .row(key)
+            .map_err(|reason| format!("{key}: {}", reason.as_str()))?;
+        let corpse = reward.corpse_item.as_ref().ok_or("missing reward corpse")?;
+        assert_eq!(
+            (&corpse.production_key, &corpse.revision_ref),
+            (&expected.key, &expected.revision)
+        );
+        assert_eq!(
+            serde_json::to_value(expected.family).ok(),
+            Some(Value::from(corpse.family.as_str()))
+        );
+        assert_eq!(
+            u64::try_from(reward.xp_amount.get()).ok(),
+            profile.experience
+        );
+        let policy = native
+            .item_policy(&corpse.production_key, &corpse.revision_ref)
+            .ok_or("missing native corpse Item policy")?;
+        assert!(policy.record().admission.materializable);
+        assert_eq!(
+            policy.record().admission.legal_destinations,
+            [NativeItemDestination::Ground]
+        );
+        Ok(())
+    }
+
+    #[test]
     fn production_manifest_activates_with_the_rat_reward_row() {
         let world = test_source(1).unwrap().world_id;
         let (controller, _) = activated_with_loot_tables(world, None);

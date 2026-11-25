@@ -92,6 +92,7 @@ EXTRA_DERIVED = (
     "tools/world-bundle-compiler/scoped-spawn-ground.json",
     "tools/content-schema/world-authoring/samples/world-base-capture-v1.json",
     "tools/content-schema/native-gameplay/prey-model-results.json",
+    "tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json",
     "tools/content-schema/quest-authoring/samples/binding_packets/index.json",
     "tools/content-schema/quest-authoring/samples/binding_packets/npc/authored68-npc-links.json",
     "tools/content-schema/quest-authoring/samples/binding_packets/npc/quest-npc-dialogue-links.json",
@@ -231,6 +232,11 @@ CHECKS = (
 def run(command: list[str]) -> None:
     print("+", " ".join(command), flush=True)
     subprocess.run(command, cwd=ROOT, check=True)
+
+
+def refresh_starter_attack_profiles() -> None:
+    run(["python3", "tools/content-schema/native-gameplay/build_newhaven_starter_profiles.py"])
+    run(["python3", "tools/content-migration/ranged_item_profiles.py"])
 
 
 def refresh_world_metadata() -> None:
@@ -1101,6 +1107,7 @@ def main() -> int:
             parser.error(
                 "--native-only cannot be combined with --resolve, --no-stage or --check"
             )
+        refresh_starter_attack_profiles()
         run(
             [
                 "python3",
@@ -1165,6 +1172,7 @@ def main() -> int:
     if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
+    refresh_starter_attack_profiles()
     run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     run(
@@ -1195,13 +1203,6 @@ def main() -> int:
         )
     run(["python3", "tools/content-schema/quest-authoring/last_creep_native.py"])
     run(["python3", "tools/content-schema/npc-authoring/convert_placements.py"])
-    run(
-        [
-            "python3",
-            "tools/content-schema/store-authoring/build_runtime_catalogue.py",
-            "--refresh-owner-offers",
-        ]
-    )
     run(
         [
             "python3",
@@ -1307,6 +1308,14 @@ def main() -> int:
     # Claims above may add complete native container recipes. Rebuild their
     # Item closure only after those final claims exist, before census and pins.
     run(["python3", "tools/content-migration/register_spell_families.py"])
+    # Store admission checks the regenerated native Item profiles.
+    run(
+        [
+            "python3",
+            "tools/content-schema/store-authoring/build_runtime_catalogue.py",
+            "--refresh-owner-offers",
+        ]
+    )
     # W01 binds the same final native root as the complete callback witness.
     # Requalify both source bodies before their downstream consumers.
     run(["python3", native + "build_native_callback_witness.py"])

@@ -23,7 +23,7 @@ fn coutfit_wayland_loads_verified_scrap_exchanges() -> TestResult {
         let requirements = exchange.requirements.as_ref().ok_or("Wayland requirements")?;
         assert_eq!(requirements.min_level, 1000);
         assert!(requirements.premium);
-        assert_eq!(requirements.completed_quests, ["oteryn:quest.authored.make_believe_quest"]);
+        assert!(requirements.completed_quests.is_empty());
         if addon > 0 {
             assert_eq!(exchange.requires_outfits, [outfit]);
             assert_eq!(exchange.forbids_addons.as_slice(), std::slice::from_ref(reward));

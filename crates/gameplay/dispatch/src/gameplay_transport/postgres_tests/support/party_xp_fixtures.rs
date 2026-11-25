@@ -1206,9 +1206,10 @@ async fn scenario(
             assert_eq!(owner.drain_kill_rewards(*session).await, DrainOutcome::Drained);
         }
         let mints: Vec<String> = sqlx::query_scalar(
-            "SELECT loot_purpose_key FROM game_item_mint_receipts WHERE materialized_at IS NOT NULL ORDER BY loot_purpose_key LIMIT 3",
+            "SELECT loot_purpose_key FROM game_item_mint_receipts ORDER BY loot_purpose_key LIMIT 3",
         ).fetch_all(&h.pool).await?;
         assert_eq!(mints, ["CORPSE_MATERIALIZATION", "oteryn:item.tibia.i37109"]);
+        super::forge_creature_fixtures::assert_committed_sliver_in_corpse(h).await?;
         return Ok(());
     }
     if cake_kill_before_activation || cake_kill_before_expiry {

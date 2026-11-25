@@ -383,12 +383,15 @@ def append_eligibility_starts(root, callbacks, offers, inputs, pin):
             if npc == "wayland_smythers"
             else f"crystal:{pin}"
         )
+        # Crystal 201189f8, wayland_smythers.lua:112-115 offers the outfit
+        # independently of Wayland's Make Believe dialogue.
+        keywords = [words, "outfit"] if slug == "illuminated" else [words]
         callbacks.append(
             {
                 "key": f"oteryn:quest-reward/questpc7-{slug}-intro",
                 "quest": quest,
                 "npc": "oteryn:npc." + npc,
-                "keywords": [words],
+                "keywords": keywords,
                 "topic": 0,
                 "next_topic": 0,
                 "storage": [
@@ -402,9 +405,7 @@ def append_eligibility_starts(root, callbacks, offers, inputs, pin):
                 "requirements": {
                     "min_level": requirements["min_level"],
                     "premium": requirements["premium"],
-                    "completed_quests": ["oteryn:quest.authored.make_believe_quest"]
-                    if slug == "illuminated"
-                    else [],
+                    "completed_quests": [],
                 },
                 "take": [],
                 "give": None,

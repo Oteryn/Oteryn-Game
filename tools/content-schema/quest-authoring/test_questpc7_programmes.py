@@ -522,7 +522,7 @@ class QuestPc7QuestRewards(unittest.TestCase):
             {
                 "min_level": 1000,
                 "premium": True,
-                "completed_quests": ["oteryn:quest.authored.make_believe_quest"],
+                "completed_quests": [],
             },
         )
         for mutation in ("level", "duplicate", "foreign"):
@@ -535,7 +535,9 @@ class QuestPc7QuestRewards(unittest.TestCase):
             if mutation == "level":
                 callback["requirements"]["min_level"] = 1000001
             elif mutation == "duplicate":
-                callback["requirements"]["completed_quests"] *= 2
+                callback["requirements"]["completed_quests"] = [
+                    "oteryn:quest.authored.make_believe_quest"
+                ] * 2
             else:
                 callback["requirements"]["completed_quests"] = ["unscoped:parent"]
             with self.assertRaises((ValueError, ValidationError)):
