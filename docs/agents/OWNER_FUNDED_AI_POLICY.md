@@ -78,7 +78,9 @@ implementation, repair or any other Codex use.
 Owner decision 2026-11-11 (fix of confirmed findings): the review run itself stays
 read-only and never edits code. Findings the coordinator has verified against the
 code may then be handed, as one list, to a single code-writing Codex run at
-reasoning effort `high`, model `gpt-6.2-sol` (owner rule 2026-11-18; on the PC: `codex-review.sh <worktree> <tag>
+reasoning effort `high` for a P0/P1 in a risk class (persistence, session fencing,
+protocol, durable value, migrations, several consumers) and `medium` for any other
+fix, model `gpt-6.2-sol` (owner rules 2026-11-18 and 2026-11-25; on the PC: `codex-review.sh <worktree> <tag>
 --fix-confirmed <file>`). That run writes a red test per finding before any fix,
 reports a finding it cannot reproduce without changing code, changes no existing
 assertion, timeout or budget and nothing outside the list, and commits nothing;

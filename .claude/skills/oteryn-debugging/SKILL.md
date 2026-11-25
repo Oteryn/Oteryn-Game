@@ -124,11 +124,10 @@ loop; the CI history named the culprit commit in minutes.
    fails for this defect merges `origin/main` once, on its otherwise-ready
    head, and names the fix SHA (`oteryn-dev` `references/ci-merge.md`,
    *Reading a red check*, step 3).
-6. **Revert is the fallback, not the default.** Offer the owner a revert of
-   the culprit when step 3 cannot reproduce the failure within about an
-   hour, or when the culprit is too large to fix in place. Name its cost:
-   later commits may conflict, and the feature leaves `main` until it comes
-   back with the fix.
+6. **Revert first on a red `main`** (owner decision 2026-11-25; `oteryn-dev`
+   `references/ci-merge.md`, *Red `main`*). Revert the culprit at once; a
+   forward fix only under the two exceptions named there. The feature comes
+   back with its fix in a new PR.
 
 ## 7. Node boot and server diagnostics
 
