@@ -67,8 +67,9 @@ class CorpseQualification(unittest.TestCase):
             self.assertTrue(facts[key]['ordinary_corpse_only'], key)
 
     def test_exact_source_capacities_and_complete_decay_chains(self):
+        # Letter 3505 finding: the Dwarfs share the 6007 root and three later stages.
         baseline_roots = {
-            5960, 5962, 5967, 5968, 5973, 5975, 5995, 5999, 6006, 6017, 6025, 6030, 6031, 6044,
+            5960, 5962, 5967, 5968, 5973, 5975, 5995, 5999, 6006, 6007, 6017, 6025, 6030, 6031, 6044,
             6048, 6055, 6072, 6078, 8909, 11675, 17445, 17446,
             17449, 17454, 18099, 20972, 21910, 22010, 22066, 22067, 25085,
             25815, 27714, 27718, 30272, 31453, 31599, 31611, 33821, 50029}
@@ -82,7 +83,7 @@ class CorpseQualification(unittest.TestCase):
                 number = int(corpse.grizzly.source.attrs(self.xml[number])['decayto'])
         new_keys = {f'oteryn:item.tibia.i{number}' for number in new_stages}
         self.assertTrue(new_keys <= self.plan.records.keys())
-        self.assertEqual(len(self.plan.records.keys() - new_keys), 144)
+        self.assertEqual(len(self.plan.records.keys() - new_keys), 148)
         for number, duration, target in [(6017, 10000, 4301), (4301, 300000, 4302),
                                          (4302, 300000, 4303), (50029, 60000, 50028),
                                          (50028, 60000, 50027)]:
@@ -112,6 +113,27 @@ class CorpseQualification(unittest.TestCase):
                              corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(8)}))
         self.assertEqual(self.plan.records['oteryn:item.tibia.i50027']['semantics']['container'],
                          corpse.grizzly.source.NA)
+
+    def test_dwarf_corpse_keeps_the_complete_source_decay_chain(self):
+        source = corpse.grizzly.source
+        for number, duration, target in (
+            (6007, 10_000, 4141), (4141, 300_000, 4142),
+            (4142, 300_000, 4143), (4143, 60_000, None),
+        ):
+            with self.subTest(item=number):
+                row = self.plan.records[f'oteryn:item.tibia.i{number}']
+                self.assertTrue(row['admission']['materializable'])
+                self.assertEqual(
+                    row['semantics']['container'],
+                    source.K({'capacity': source.K(10)}) if target else source.NA,
+                )
+                temporal = row['semantics']['temporal']['value']
+                self.assertEqual(temporal['duration'], source.K(duration))
+                self.assertEqual(
+                    temporal['decay_target'],
+                    source.K({'key': f'oteryn:item.tibia.i{target}', 'revision': 'definition-r1'})
+                    if target else source.NA,
+                )
 
     def test_queen_corpse_keeps_source40_within_the_corpse48_bound(self):
         # CORPSE48 (owner 2026-11-17): corpses up to 48 keep their source capacity.

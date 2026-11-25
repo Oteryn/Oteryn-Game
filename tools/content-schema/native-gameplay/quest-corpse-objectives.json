@@ -10,6 +10,8 @@
     "imports/canary/items-xml/items.xml#17449-17450",
     "content/creatures/definitions/spell-native-profiles.json#exact-ordinary-creature-corpse-bindings",
     "imports/canary/items-xml/items.xml#corpse-capacity-and-decay",
+    "imports/canary/items-xml/items.xml#16388-16393",
+    "imports/canary/items-xml/items.xml#12686-12703",
     "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L36910"
   ],
   "capacity_projections": [
@@ -238,9 +240,11 @@
     "oteryn:creature.bonebeast": 6030,
     "oteryn:creature.bride_of_night": 18210,
     "oteryn:creature.crazed_beggar": 18070,
+    "oteryn:creature.crazed_dwarf": 6007,
     "oteryn:creature.crystal_spider": 7344,
     "oteryn:creature.dark_monk": 18281,
     "oteryn:creature.dipthrah": 6031,
+    "oteryn:creature.dwarf": 6007,
     "oteryn:creature.dworc_voodoomaster": 6055,
     "oteryn:creature.enlightened_of_the_cult": 18110,
     "oteryn:creature.execowtioner": 21004,

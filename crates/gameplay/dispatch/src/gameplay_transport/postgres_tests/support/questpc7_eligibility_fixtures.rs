@@ -118,6 +118,45 @@ pub(super) async fn exercise(
             assert!(level < 1000);
         }
         super::classic_quests_fixtures::talk(owner, admitted, wayland, 1310, "hi").await?;
+        if name == "questpc7-eligibility-outfit-high" {
+            let parent_exists: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_character_quest_states
+                 WHERE character_id=encode($1,'hex')::uuid
+                 AND quest_key='oteryn:quest.authored.make_believe_quest')",
+            )
+            .bind(id(41).as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(!parent_exists, "fresh character has no Make Believe state");
+            for command in [1311, 1312] {
+                let menu = super::classic_quests_fixtures::talk(
+                    owner, admitted, wayland, command, "outfit",
+                )
+                .await?
+                .join(" ")
+                .to_ascii_lowercase();
+                for option in ["basic", "insignia", "halo"] {
+                    assert!(
+                        menu.contains(option),
+                        "outfit request {command} missing {option}: {menu}"
+                    );
+                }
+            }
+            let receipts: Vec<String> = sqlx::query_scalar(
+                "SELECT transition_key FROM game_character_quest_receipts
+                 WHERE character_id=encode($1,'hex')::uuid
+                 AND quest_key='oteryn:quest.authored.illuminated_warrior_outfits_quest'",
+            )
+            .bind(id(41).as_slice())
+            .fetch_all(&h.pool)
+            .await?;
+            assert_eq!(
+                receipts,
+                ["oteryn:quest-reward/questpc7-illuminated-intro"],
+                "the second outfit request is read-only"
+            );
+            return Ok(());
+        }
         let intro =
             super::qengine_rewards_fixtures::talk(owner, admitted, wayland, 1311, "outfit").await?;
         if name.ends_with("high") {
