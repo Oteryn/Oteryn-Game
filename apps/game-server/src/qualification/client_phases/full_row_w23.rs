@@ -487,7 +487,7 @@ async fn prepare_svargrond_travel(client: &mut DevClientSession, price: u64) -> 
         request_fixture_control(session.clone(), "--profile", format!("item-3035-{coins}"))
             .await
             .map_err(|error| format!("step=boat-fare {error}"))?;
-        request_fixture_control(session, "--profile", "premium".into())
+        request_fixture_control(session, "--profile", "w23-premium".into())
             .await
             .map_err(|error| format!("step=boat-premium {error}"))?;
         Ok(())

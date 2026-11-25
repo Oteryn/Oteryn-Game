@@ -51,6 +51,9 @@ const PARTY_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000017";
 const C06_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000001c";
 
 #[cfg(feature = "qualification-spawn")]
+const W23_CITIZEN_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000022";
+
+#[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "s08-knight" => Some(("knight", 8)),
@@ -83,7 +86,8 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let allowed = allowed
         || spell_build(profile).is_some()
         || named_item(profile).is_some()
-        || profile == "premium";
+        || profile == "premium"
+        || profile == "w23-premium";
     allowed.then_some((session, profile))
 }
 
@@ -764,6 +768,7 @@ async fn prepare_build(
     if matches!(
         profile,
         "premium"
+            | "w23-premium"
             | "c11-unassigned"
             | "c11-knight"
             | "c12-monk"
@@ -792,7 +797,8 @@ async fn prepare_build(
                 "premium",
                 KNIGHT_ACCOUNT | MONK_ACCOUNT | HASTE_ACCOUNT | CHALLENGE_ACCOUNT | LIGHT_ACCOUNT
                 | PARTY_CASTER_ACCOUNT,
-            ) => {
+            )
+            | ("w23-premium", W23_CITIZEN_ACCOUNT) => {
                 if !config
                     .premium_activation
                     .as_ref()
