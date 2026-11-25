@@ -33,7 +33,8 @@ from referencing import Registry, Resource
 
 ROOT = Path(__file__).resolve().parent
 ITEM_AUTHORING = ROOT.parent / "item-authoring"
-sys.path.insert(0, str(ITEM_AUTHORING))
+WORLD_AUTHORING = ROOT.parent / "world-authoring"
+sys.path[:0] = [str(ITEM_AUTHORING), str(WORLD_AUTHORING)]
 
 import engine_items
 
@@ -526,6 +527,23 @@ def validate_record(record):
             else ["static activity geometry differs from its qualified source"]
         )
     if "item_pointer" not in record["provenance"]:
+        if family == "Terrain":
+            import scoped_spawn_ground
+            import spawn_ground
+            import spawn_map_ground
+
+            identifier = record["provenance"]["source_item_id"]
+            for identifiers, records in (
+                (spawn_ground.ground_ids(), spawn_ground.records),
+                (scoped_spawn_ground.ground_ids(), scoped_spawn_ground.records),
+                (spawn_map_ground.GROUND_IDS, spawn_map_ground.records),
+            ):
+                if identifier in identifiers:
+                    return (
+                        []
+                        if record == records()[identifier]
+                        else ["spawn ground differs from its qualified source"]
+                    )
         import alawar_static
         import feroxa_static
 

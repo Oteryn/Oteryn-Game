@@ -1,33 +1,12 @@
 //! Stage mapping, stationary VIS-2 updates and retirements before consuming cursors.
 use super::*;
+use crate::gameplay_transport::appearance_change::observation::Observation;
 use crate::gameplay_transport::appearance_change::observation::ObservationError::{
-    self, Unavailable,
+    self, HolderBusy, Unavailable,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntitiesDelta;
 
 impl SessionAppearance {
-    #[allow(clippy::too_many_arguments)]
-    pub(in crate::gameplay_transport::connection) async fn refresh<
-        S: AsyncWrite + Unpin,
-        A: FreshAdmissionAuthority,
-    >(
-        &mut self,
-        stream: &mut S,
-        authority: &A,
-        actor: ExactActorRef,
-        admitted: &mut AdmittedSession,
-        view: &mut SessionVisibility,
-        channel: &ChannelEntities,
-        items: Option<&mut SessionItemView>,
-        sequence: u64,
-        revision: u64,
-    ) -> Option<(u64, u64)> {
-        self.refresh_result(
-            stream, authority, actor, admitted, view, channel, items, sequence, revision,
-        )
-        .await
-        .ok()
-    }
     #[allow(clippy::too_many_arguments)]
     pub(in crate::gameplay_transport::connection) async fn refresh_result<
         S: AsyncWrite + Unpin,
@@ -41,8 +20,8 @@ impl SessionAppearance {
         view: &mut SessionVisibility,
         channel: &ChannelEntities,
         items: Option<&mut SessionItemView>,
-        sequence: u64,
-        revision: u64,
+        (sequence, revision): (u64, u64),
+        moved: bool,
     ) -> Result<(u64, u64), ObservationError> {
         let mut staged_view = view.clone();
         let mut staged_items = items.as_deref().cloned();
@@ -85,7 +64,28 @@ impl SessionAppearance {
                 candidate.empty_outfit,
                 player_refs.clone(),
             )
-            .await?;
+            .await;
+        let observation = match observation {
+            Err(HolderBusy) if moved => {
+                // The movement already committed. Publish the new position using the
+                // exact incarnations the client knows. A later refresh will bind entrants.
+                let mut bindings = Vec::new();
+                let mut skipped = Vec::new();
+                for entity in &player_refs {
+                    if let Some(binding) = self.bindings.get(entity) {
+                        bindings.push(binding.clone());
+                    } else {
+                        skipped.push(*entity);
+                    }
+                }
+                Observation {
+                    catalogue: self.catalogue.clone().ok_or(Unavailable)?,
+                    bindings,
+                    skipped,
+                }
+            }
+            other => other?,
+        };
         player_refs.retain(|entity| !observation.skipped.contains(entity));
         if !observation.skipped.is_empty() {
             let mut channel = channel.clone();

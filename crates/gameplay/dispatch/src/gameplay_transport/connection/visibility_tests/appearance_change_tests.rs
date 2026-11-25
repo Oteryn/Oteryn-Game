@@ -1,6 +1,7 @@
 //! Scripted owner outcomes through the real connection dispatch and VIS-2 interest query.
 use super::*;
-use crate::gameplay_transport::appearance_change::observation::Observation;
+use crate::gameplay_transport::appearance_change::observation::{Observation, ObservationError};
+use crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
 use crate::gameplay_transport::item_view::InventoryItems;
 use oteryn_protocol_oteryn::appearance;
 use oteryn_protocol_oteryn::guild_emblem::{CAPABILITY_GUILD_EMBLEM_V1, Emblem, GuildEmblem};
@@ -15,6 +16,8 @@ struct AppearanceChannel {
     revision: Cell<u64>,
     calls: Cell<usize>,
     defer_input: bool,
+    appearance_busy: Cell<bool>,
+    names_busy: Cell<bool>,
 }
 impl FreshAdmissionAuthority for AppearanceChannel {
     async fn admit(
@@ -36,6 +39,9 @@ impl FreshAdmissionAuthority for AppearanceChannel {
     async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
         self.channel.observe(actor).await
     }
+    async fn step(&self, actor: ExactActorRef, direction: StepDirection) -> StepOutcome {
+        self.channel.step(actor, direction).await
+    }
     async fn observe_visible_entities(&self, actor: ExactActorRef) -> Option<ChannelEntities> {
         let mut entities = self.channel.observe_visible_entities(actor).await?;
         for entity in &mut entities.entities {
@@ -44,6 +50,32 @@ impl FreshAdmissionAuthority for AppearanceChannel {
             }
         }
         Some(entities)
+    }
+    async fn observe_named_visible_entities_result(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<ChannelEntities, AdmissionRefusal> {
+        if self.names_busy.get() {
+            return Err(AdmissionRefusal::Unavailable);
+        }
+        let mut channel = self
+            .observe_visible_entities(actor)
+            .await
+            .ok_or(AdmissionRefusal::Rejected)?;
+        for entity in &mut channel.entities {
+            if entity.kind == VisibleKind::Player {
+                let name = if entity.identity == channel.observer {
+                    "Observer"
+                } else {
+                    "Entrant"
+                };
+                entity.display_name = Some(
+                    oteryn_protocol_oteryn::entity_names::EntityDisplayName::new(name)
+                        .map_err(|_| AdmissionRefusal::Rejected)?,
+                );
+            }
+        }
+        Ok(channel)
     }
     async fn observe_character_inventory(
         &self,
@@ -126,6 +158,21 @@ impl FreshAdmissionAuthority for AppearanceChannel {
                 .collect(),
         })
     }
+
+    async fn appearance_observation_projected_result(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        _: bool,
+        entities: Vec<EntityRef>,
+    ) -> Result<Observation, ObservationError> {
+        if self.appearance_busy.get() {
+            return Err(ObservationError::HolderBusy);
+        }
+        self.appearance_observation(actor, session, entities)
+            .await
+            .ok_or(ObservationError::Unavailable)
+    }
 }
 
 #[test]
@@ -144,6 +191,139 @@ fn appearance_change_rejected_unresolved_and_downgraded_clients_publish_nothing(
         scenario(&[6], Some(appearance::ChangeResult::Committed(2))).await
     })
 }
+
+#[test]
+fn busy_appearance_keeps_committed_step_and_defers_new_player() -> TestResult {
+    committed_step_during_busy_projection(false, true)
+}
+
+#[test]
+fn busy_names_keep_committed_step_and_published_identity() -> TestResult {
+    committed_step_during_busy_projection(true, true)
+}
+
+#[test]
+fn busy_names_alone_keep_committed_step_and_defer_new_player() -> TestResult {
+    committed_step_during_busy_projection(true, false)
+}
+
+fn committed_step_during_busy_projection(named: bool, appearance_busy: bool) -> TestResult {
+    use oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2;
+    use oteryn_protocol_oteryn::world_spatial_entities::{
+        EntityFields, decode_world_spatial_entities_delta_with_fields,
+    };
+    run(async {
+        let authority = AppearanceChannel {
+            channel: Channel::new(Vec::new()),
+            outcome: None,
+            revision: Cell::new(1),
+            calls: Cell::new(0),
+            defer_input: false,
+            appearance_busy: Cell::new(false),
+            names_busy: Cell::new(false),
+        };
+        let mut admitted = session(&[6], SessionContinuity::FRESH);
+        let offered = crate::gameplay_transport::appearance_change::offer::offered(
+            if named {
+                BUNDLE_WORLD_OFFERED_CAPABILITIES
+            } else {
+                PRODUCTION_OFFERED_CAPABILITIES
+            },
+            true,
+        );
+        let mut selected = vec![6, 25];
+        if named {
+            selected.push(CAPABILITY_WORLD_SPATIAL_ENTITIES_V2);
+        }
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(&offered, &selected).ok_or("capabilities")?;
+        if named {
+            assert!(
+                admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(CAPABILITY_WORLD_SPATIAL_ENTITIES_V2)
+            );
+        }
+        let (mut client, mut server) = tokio::io::duplex(1 << 16);
+        let serving = async {
+            serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+            drop(server);
+            TestResult::Ok(())
+        };
+        let observing = async {
+            for _ in 0..3 {
+                read_one(&mut client).await?;
+            }
+            let mut entrant = creature([9; 16], at(102, 100), 1);
+            entrant.kind = VisibleKind::Player;
+            authority.channel.others.borrow_mut().push(entrant);
+            authority.appearance_busy.set(appearance_busy);
+            authority.names_busy.set(named);
+            let step = encode_client_command(
+                1,
+                &ClientCommandValue {
+                    command_id: 1,
+                    command_type: COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                    payload: &encode_step_intent(StepDirection::East),
+                },
+            )?;
+            write_frame(&mut client, &step).await?;
+            let result = read_one(&mut client).await?;
+            assert_eq!(
+                decode_command_result(decode_wire_envelope(&result)?.payload())?.payload,
+                &encode_step_result(StepDisposition::Moved)
+            );
+            let moved = read_one(&mut client).await?;
+            let delta = decode_state_delta(decode_wire_envelope(&moved)?.payload())?;
+            assert_eq!(delta.domain_id, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY);
+            let (spatial, _) = decode_world_spatial_entities_delta_with_fields(
+                delta.payload,
+                EntityFields::selected(&selected),
+            )
+            .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(spatial.actor_position, at(101, 100));
+            assert!(spatial.enter.is_empty());
+            if named {
+                assert!(spatial.update.iter().any(|entity| {
+                    entity
+                        .display_name
+                        .is_some_and(|name| matches!(name.as_str(), Ok("Observer")))
+                }));
+            }
+
+            authority.appearance_busy.set(false);
+            authority.names_busy.set(false);
+            let mapping = read_one(&mut client).await?;
+            let delta = decode_state_delta(decode_wire_envelope(&mapping)?.payload())?;
+            assert_eq!(delta.domain_id, appearance::STATE_DOMAIN_APPEARANCE);
+            let entered = read_one(&mut client).await?;
+            let delta = decode_state_delta(decode_wire_envelope(&entered)?.payload())?;
+            assert_eq!(delta.domain_id, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY);
+            let (spatial, _) = decode_world_spatial_entities_delta_with_fields(
+                delta.payload,
+                EntityFields::selected(&selected),
+            )
+            .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(spatial.actor_position, at(101, 100));
+            assert!(spatial.enter.iter().any(|entity| {
+                entity.entity.identity == [9; 16]
+                    && (!named
+                        || entity
+                            .display_name
+                            .is_some_and(|name| matches!(name.as_str(), Ok("Entrant"))))
+            }));
+            client.shutdown().await?;
+            TestResult::Ok(())
+        };
+        tokio::time::timeout(std::time::Duration::from_secs(3), async {
+            tokio::try_join!(serving, observing)
+        })
+        .await??;
+        Ok(())
+    })
+}
+
 async fn scenario(selected: &[u32], outcome: Option<appearance::ChangeResult>) -> TestResult {
     scenario_actor(selected, outcome, selected.contains(&104)).await
 }
@@ -165,6 +345,8 @@ async fn scenario_actor(
         revision: Cell::new(1),
         calls: Cell::new(0),
         defer_input: false,
+        appearance_busy: Cell::new(false),
+        names_busy: Cell::new(false),
     };
     let mut admitted = session(&[6], SessionContinuity::FRESH);
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
@@ -403,6 +585,8 @@ fn qualification_session_decodes_served_visibility_and_guarded_step() -> TestRes
                     revision: Cell::new(1),
                     calls: Cell::new(0),
                     defer_input: true,
+                    appearance_busy: Cell::new(false),
+                    names_busy: Cell::new(false),
                 };
                 let bundle_appearance =
                     crate::gameplay_transport::appearance_change::offer::offered(

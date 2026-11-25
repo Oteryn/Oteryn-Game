@@ -121,12 +121,11 @@ pub struct MonsterStep {
 pub struct ItemDefinition {
     /// The §1.6 index entry of the key: 1 + its Item compact id in the active generation.
     pub reference: NonZeroU32,
-    /// `block_solid`; `None` when the definition does not say, which blocks.
+    /// `block_solid`, when the native profile or the source supplies it.
     pub solid: Option<bool>,
     pub blocks_projectile: bool,
     pub pickupable: bool,
-    /// The content profile's `item_type` is `Door` (MAP-DOOR-1): the only thing that makes an
-    /// Item a door, whatever its appearance id.
+    /// The native profile or Crystal item loader classifies this Item as a Door.
     pub door: bool,
 }
 
@@ -1257,8 +1256,8 @@ fn palette_facts(
 }
 
 /// Whether the Item palette key `key` is a qualified closed/locked door, and the facts of its
-/// open counterpart, which `item` must serve. The content profile decides doorhood
-/// (`item_type` Door); the Game-owned registry only pairs a door with its open item.
+/// open counterpart, which `item` must serve. The Item definition decides doorhood;
+/// the registry pairs the door with its other poses.
 fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> PaletteDoor {
     if !item(key).is_some_and(|definition| definition.door) {
         return PaletteDoor::No;
@@ -1283,20 +1282,27 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
     let Some(open_key) = door::open_key(key, closed, open) else {
         return PaletteDoor::Sealed;
     };
-    // Crystal 201189f8 CustomDoorTable includes the barred gates 2177 and 2179.
-    // Their profiles block movement when closed and let projectiles through in both poses.
-    match item(key) {
-        Some(closed_def)
-            if (closed_def.solid != Some(false) && closed_def.blocks_projectile)
-                || (matches!(closed, 2177 | 2179) && closed_def.solid == Some(true)) => {}
-        _ => return PaletteDoor::Sealed,
+    let source_collision_matches = |key: &str, definition: ItemDefinition| {
+        oteryn_world_bundle::crystal_item_collision::for_key(key).is_some_and(|source| {
+            source.door
+                && definition.solid == Some(source.solid)
+                && definition.blocks_projectile == source.blocks_projectile
+        })
+    };
+    let can_close = |key: &str, definition: ItemDefinition| {
+        definition.solid != Some(false)
+            && (definition.blocks_projectile || source_collision_matches(key, definition))
+    };
+    if !item(key).is_some_and(|definition| can_close(key, definition)) {
+        return PaletteDoor::Sealed;
     }
     let Some(definition) = item(&open_key) else {
         return PaletteDoor::Sealed;
     };
-    // Qualified facts only: an item the profile does not describe reads `solid: None` and
-    // blocks projectiles, and must not pass as a walkable open doorway.
-    if definition.solid != Some(false) || definition.blocks_projectile {
+    // Crystal can give an open pose independent projectile collision, or keep it solid.
+    if (definition.solid != Some(false) || definition.blocks_projectile)
+        && !source_collision_matches(&open_key, definition)
+    {
         return PaletteDoor::Sealed;
     }
     let key_forms =
@@ -1304,13 +1310,13 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
             let face = |appearance| {
                 let key = door::open_key(key, closed, appearance)?;
                 let definition = item(&key)?;
-                if definition.solid != Some(true) || !definition.blocks_projectile {
+                if definition.solid != Some(true) || !can_close(&key, definition) {
                     return None;
                 }
                 Some(EntryFacts {
                     definition: MapDefinition::Item(definition.reference),
                     appearance_id: u16::try_from(appearance).ok()?,
-                    blocks_projectile: true,
+                    blocks_projectile: definition.blocks_projectile,
                     terrain_kind: None,
                     pickupable: false,
                     bound: false,
@@ -1351,7 +1357,7 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
             count: 1,
             sub_type: 0,
         },
-        open_solid: false,
+        open_solid: definition.solid == Some(true),
     }
 }
 
