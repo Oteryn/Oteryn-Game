@@ -5647,8 +5647,26 @@ async fn pvp_walk(
         loop {
             let result = a.step(direction).await?;
             if result.disposition == StepDisposition::Moved {
-                if Some(tile(a.position)?) != destination(world, before, direction) {
-                    return Err("PvP real STEP endpoint mismatch".into());
+                // A spatial delta can already be buffered by TLS after the result.
+                // Read the TLS stream directly so TCP readiness cannot hide that frame.
+                while tile(a.position)? == before {
+                    let reply = tokio::time::timeout_at(deadline, a.receive())
+                        .await
+                        .map_err(|elapsed| ObserverIoDeadline {
+                            operation: "PvP STEP spatial delta deadline",
+                            elapsed,
+                        })??;
+                    if reply.is_some() {
+                        return Err("PvP unsolicited result while waiting for STEP position".into());
+                    }
+                }
+                let expected = destination(world, before, direction);
+                let actual = tile(a.position)?;
+                if Some(actual) != expected {
+                    return Err(format!(
+                        "PvP real STEP endpoint mismatch: direction={direction:?}; from={before:?}; expected={expected:?}; actual={actual:?}"
+                    )
+                    .into());
                 }
                 break;
             }
