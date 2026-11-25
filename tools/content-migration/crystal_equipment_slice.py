@@ -12,6 +12,8 @@ FACTS = "imports/crystalserver/facts/equipment-slice-two.json"
 # Missing combat owners: level-gated quiver ammo, area projectiles, innate
 # melee elemental damage, and deadline-bearing stacks.
 HELD = {22047, 22048, 22049, 22119, 22759, 22760, 25757, 25758}
+# These quest rewards can already have a native Item row when the quest units land first.
+QUEST_REWARDS = {19356, 19362, 19363, 19366, 19373, 19391}
 # Crystal's simple-arrow range has no ammo type. The exact-ID TibiaWiki
 # observations identify Arrow (Weak), Bolt (Weak) and Simple Arrow (Weak).
 WEAK_AMMO = {22043: "ARROW", 22046: "BOLT", 22050: "ARROW"}
@@ -375,9 +377,7 @@ def admit(root, items, order):
         if "transformequipto" in row["xml"]:
             complete_paired_base(record, item_id, rows, lowering)
         if (prior := existing.get(item_key(item_id))) is not None:
-            # Both audit slices include the spike shield. Keep the first slice's
-            # shield exclusion group and complete the other facts from slice two.
-            if item_id != 17810 or any(
+            if item_id not in QUEST_REWARDS | {17810} or any(
                 prior[field] != record[field]
                 for field in (
                     "production_binding",
@@ -386,6 +386,22 @@ def admit(root, items, order):
                 )
             ):
                 raise ValueError(f"equipment source identity collision {item_id}")
+            if item_id in QUEST_REWARDS:
+                # The quest row owns custody, authoring identity and already
+                # qualified values. Complete its equipment facts from Crystal.
+                if prior.get("production_binding_qualification") != record.get(
+                    "production_binding_qualification"
+                ):
+                    raise ValueError(f"equipment source qualification collision {item_id}")
+                for field in ("equipment", "weapon", "protection", "skill_modifiers", "imbuement"):
+                    prior["semantics"][field] = accepted_first(
+                        prior["semantics"].get(field, UNKNOWN), record["semantics"][field]
+                    )
+                if "ranged" in record["authoring"]:
+                    prior["authoring"].setdefault("ranged", record["authoring"]["ranged"])
+                continue
+            # Both audit slices include the spike shield. Keep the first slice's
+            # shield exclusion group and complete the other facts from slice two.
             pattern = prior["semantics"]["equipment"]["value"]["patterns"]["value"][0]
             selected = record["semantics"]["equipment"]["value"]["patterns"]["value"][0]
             selected["mutually_exclusive_groups"] = pattern["mutually_exclusive_groups"]

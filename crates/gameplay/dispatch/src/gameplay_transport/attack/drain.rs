@@ -2276,7 +2276,12 @@ fn draw_swing_damage(
         shielding_skill: skills.shielding,
         shield_defense: None,
     };
-    let (mut minimum, mut maximum) = formula.bounds(&inputs).ok()?;
+    let creature = runtime.contains_live_creature(target);
+    let (mut minimum, mut maximum) = if let Some(ranged) = &selected.weapon.ranged {
+        ranged.roll_bounds(&formula, &inputs, creature)?
+    } else {
+        formula.bounds(&inputs).ok()?
+    };
     if pure_elemental_with_attack_points {
         minimum = i64::from(character_facts.level / 5);
         maximum = maximum.max(minimum);
@@ -2291,7 +2296,6 @@ fn draw_swing_damage(
         minimum,
         maximum,
     )?;
-    let creature = runtime.contains_live_creature(target);
     if creature {
         entry
             .state

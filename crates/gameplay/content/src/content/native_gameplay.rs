@@ -783,7 +783,25 @@ fn pin_composed_item_profiles(
                     }
                 }
             }
-            serde_json::to_vec(&compact).map_err(|_| encoding())?
+            let optionals_compacted = serde_json::to_vec(&compact).map_err(|_| encoding())?;
+            if optionals_compacted.len() <= MAX_ITEM_PROFILES {
+                optionals_compacted
+            } else {
+                let records = compact["records"].as_array_mut().ok_or_else(encoding)?;
+                let unknown = serde_json::json!({"state": "UNKNOWN"});
+                for record in records {
+                    // First-party constructor receipts bind the explicit raw semantics.
+                    if record["production_binding"]["source_key"] == authored_items::SOURCE {
+                        continue;
+                    }
+                    // ReferenceItemSemantics defaults missing top-level facts to Unknown.
+                    record["semantics"]
+                        .as_object_mut()
+                        .ok_or_else(encoding)?
+                        .retain(|_, fact| *fact != unknown);
+                }
+                serde_json::to_vec(&compact).map_err(|_| encoding())?
+            }
         }
     };
     bounded(&bytes, MAX_ITEM_PROFILES)?;
@@ -3301,6 +3319,37 @@ mod tests {
             assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
         }
     }
+    #[test]
+    fn equipment_review_oversized_composed_provider_keeps_all_item_facts()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut source: ItemProfilesDocument = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        // Model a larger cohort with real profiles. This tests the encoding
+        // alone, before the independent identity and record-count checks.
+        let copies = MAX_ITEM_RECORDS.saturating_sub(source.records.len());
+        source.records.extend_from_within(..copies);
+        assert!(serde_json::to_vec(&source)?.len() > MAX_ITEM_PROFILES);
+        let pin = pin_composed_item_profiles(&source)?;
+        qualify(&pin, MAX_ITEM_PROFILES)?;
+        let authored = source
+            .records
+            .iter()
+            .position(|record| record.production_binding.source_key == authored_items::SOURCE)
+            .ok_or("first-party constructor fixture")?;
+        let encoded: Value = serde_json::from_slice(&pin.bytes)?;
+        assert_eq!(
+            encoded["records"][authored]["semantics"],
+            serde_json::to_value(&source.records[authored].semantics)?,
+            "compaction must preserve the raw semantics sealed by constructor receipts"
+        );
+        assert!(
+            serde_json::from_slice::<ItemProfilesDocument>(&pin.bytes)? == source,
+            "compaction must round-trip every known and unknown fact"
+        );
+        Ok(())
+    }
+
     #[test]
     fn equipment_review_rebuild_preserves_issued_item_provider_encoding()
     -> Result<(), Box<dyn std::error::Error>> {

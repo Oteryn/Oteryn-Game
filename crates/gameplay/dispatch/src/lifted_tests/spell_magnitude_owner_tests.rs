@@ -35,12 +35,12 @@ fn fixture() -> Fixture {
     fixture_with_damage_healing(0)
 }
 
-pub(crate) fn native_weapon_damage_fixture() -> (
+pub(crate) fn native_weapon_damage_fixture(immune: Option<&str>) -> (
     ChannelRuntimeV1,
     Vec<LiveActorBinding>,
     MagnitudeOwnedAttributes,
 ) {
-    let fixture = fixture();
+    let fixture = fixture_with_immunity(0, false, false, None, immune);
     (fixture.runtime, fixture.bindings, fixture.attributes)
 }
 
@@ -58,6 +58,16 @@ fn fixture_with_source_kind(
     extra_slots: bool,
     soul_war: bool,
     native_source: Option<&str>,
+) -> Fixture {
+    fixture_with_immunity(source_percent, extra_slots, soul_war, native_source, None)
+}
+
+fn fixture_with_immunity(
+    source_percent: i64,
+    extra_slots: bool,
+    soul_war: bool,
+    native_source: Option<&str>,
+    immune: Option<&str>,
 ) -> Fixture {
     let uuid = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
     let world = crate::foundation::WorldId::decode(&uuid(0x60)).expect("world");
@@ -141,7 +151,7 @@ fn fixture_with_source_kind(
         damage_immunities: if source_percent > 0 {
             vec!["energy".into()]
         } else {
-            vec![]
+            immune.into_iter().map(str::to_owned).collect()
         },
         healing_from_damage: if source_percent > 0 {
             vec![CreatureResistance {

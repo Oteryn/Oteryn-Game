@@ -411,6 +411,20 @@ fn element_key(element: Element) -> &'static str {
         Element::Healing => "healing",
     }
 }
+
+fn weapon_damage_element(
+    element: oteryn_gameplay_content::content::ProjectV2RangedElement,
+) -> Element {
+    use oteryn_gameplay_content::content::ProjectV2RangedElement as Ranged;
+    match element {
+        Ranged::Physical => Element::Physical,
+        Ranged::Energy => Element::Energy,
+        Ranged::Fire => Element::Fire,
+        Ranged::Death => Element::Death,
+        Ranged::Ice => Element::Ice,
+        Ranged::Earth => Element::Earth,
+    }
+}
 fn condition_attributes(
     state: &PlayerSpellState,
     now_ms: u64,
@@ -1495,21 +1509,12 @@ impl PreparedMagnitudeOwner {
         let raw = signed_truncate(hit.magnitude as f64)?;
         // Crystal splits the callback roll by attack points and rounds each component.
         let (raw, secondary) = if let Some(damage) = self.intrinsic_weapon {
-            use oteryn_gameplay_content::content::ProjectV2RangedElement as Ranged;
-            let secondary = match damage.element {
-                Ranged::Physical => Element::Physical,
-                Ranged::Energy => Element::Energy,
-                Ranged::Fire => Element::Fire,
-                Ranged::Death => Element::Death,
-                Ranged::Ice => Element::Ice,
-                Ranged::Earth => Element::Earth,
-            };
             let factor = f64::from(damage.elemental_attack)
                 / (f64::from(damage.physical_attack) + f64::from(damage.elemental_attack));
             let secondary_value = signed_round(raw as f64 * factor)?;
             (
                 signed_round(raw as f64 * (1.0 - factor))?,
-                Some((secondary, secondary_value)),
+                Some((weapon_damage_element(damage.element), secondary_value)),
             )
         } else {
             (raw, None)
@@ -1595,13 +1600,28 @@ impl PreparedMagnitudeOwner {
             }
             return Ok((value.max(0), 0, None));
         }
+        let mut secondary = secondary
+            .map(|(element, raw)| apply_raw_bonuses(raw, element).map(|value| (element, value)))
+            .transpose()?;
+        if let Some((damage, (_, raw))) = self.intrinsic_weapon.zip(secondary) {
+            let offence = self.caster.equipped_offence();
+            if offence.elemental_conversion.is_some() {
+                // Conversion replaces the intrinsic secondary after critical
+                // and fatal, so only the new element reaches target blocking.
+                let (physical, converted, element) = offence
+                    .convert_physical(value, raw, damage.element)
+                    .ok_or(Error::InvalidMagnitude)?;
+                value = physical;
+                secondary = Some((weapon_damage_element(element), converted));
+            }
+        }
         value = percent(value, 100 + party.spell_damage)?;
         if let Some(side) = hit.side_percent {
             value = signed_round(value as f64 * f64::from(side) / 100.0)?;
         }
         let secondary = secondary
             .map(|(element, raw)| -> Result<_, Error> {
-                let value = percent(apply_raw_bonuses(raw, element)?, 100 + party.spell_damage)?;
+                let value = percent(raw, 100 + party.spell_damage)?;
                 let value = if let Some(side) = hit.side_percent {
                     signed_round(value as f64 * f64::from(side) / 100.0)?
                 } else {

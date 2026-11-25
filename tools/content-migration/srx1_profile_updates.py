@@ -5,6 +5,26 @@ import hashlib
 import json
 
 PATH = "content/items/definitions/srx1-item-updates.json"
+MAX_ITEM_PROFILES = 16 * 1024 * 1024  # native_gameplay::MAX_ITEM_PROFILES
+
+
+def compact_item_provider(document, canonical):
+    """Omit only facts that the native decoder defaults to the same value."""
+    for row in document["records"]:
+        attributes = row["attributes"]
+        for field in ("field_condition", "field_replaceable", "rune_consumption"):
+            if attributes.get(field) is None:
+                attributes.pop(field, None)
+        if row.get("production_binding_qualification") is None:
+            row.pop("production_binding_qualification", None)
+        # First-party constructor receipts bind the explicit raw semantics.
+        if row["production_binding"]["source_key"] != "oteryn:source.oteryn_authored":
+            row["semantics"] = {
+                field: fact
+                for field, fact in row["semantics"].items()
+                if fact != {"state": "UNKNOWN"}
+            }
+    return canonical(document)
 
 
 def coalesce_dispenser_top_order(document, source_records, house_overlay):
@@ -80,7 +100,7 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
         ):
             row["attributes"].pop("field_condition", None)
     base = canonical(original_document)
-    if len(base) > 16 * 1024 * 1024:  # native_gameplay::MAX_ITEM_PROFILES
+    if len(base) > MAX_ITEM_PROFILES:
         # Preserve the exact profiles while omitting absent optional fields on
         # the same Ground decoration cohort.
         for row in original_document["records"]:
@@ -94,6 +114,10 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
                 if row.get("production_binding_qualification") is None:
                     row.pop("production_binding_qualification", None)
         base = canonical(original_document)
+    if len(base) > MAX_ITEM_PROFILES:
+        base = compact_item_provider(original_document, canonical)
+    if len(base) > MAX_ITEM_PROFILES:
+        raise ValueError("SRX1_ITEM_PROVIDER_SIZE")
     generated[profile_path] = base
     data = (
         '{\n  "schema": "OTERYN_NATIVE_ITEM_UPDATES/v1",\n'

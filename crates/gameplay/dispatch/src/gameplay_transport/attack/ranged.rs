@@ -245,6 +245,12 @@ fn throwing_consumption(key: &str) -> Option<Consumption> {
 }
 
 impl RangedLoadout {
+    fn uses_launcher_ammunition(&self) -> bool {
+        self.projectile
+            .as_ref()
+            .is_some_and(|projectile| projectile.item_instance_id != self.weapon.item_instance_id)
+    }
+
     fn mana(&self) -> u32 {
         match self.damage {
             RangedDamage::Magic { mana, .. } => u32::from(mana),
@@ -271,9 +277,7 @@ impl RangedLoadout {
             } => {
                 // Launcher ammo contributes its elemental attack to the roll.
                 // A throwing weapon uses those points only to split that roll.
-                let ammunition = self.projectile.as_ref().is_some_and(|projectile| {
-                    projectile.item_instance_id != self.weapon.item_instance_id
-                });
+                let ammunition = self.uses_launcher_ammunition();
                 Some((
                     player_distance_formula(),
                     attack
@@ -289,6 +293,32 @@ impl RangedLoadout {
             )),
         }
     }
+    pub(super) fn roll_bounds(
+        &self,
+        formula: &Formula,
+        inputs: &crate::spell::formula::FormulaInputs,
+        creature: bool,
+    ) -> Option<(i64, i64)> {
+        let (minimum, maximum) = formula.bounds(inputs).ok()?;
+        // Crystal weapons.cpp:1015–1025 scales elemental launcher ammo
+        // before drawing. The player path still halves damage after the roll.
+        if matches!(
+            self.damage,
+            RangedDamage::Distance {
+                elemental_attack: 1..,
+                ..
+            }
+        ) && self.uses_launcher_ammunition()
+        {
+            return Some(if creature {
+                (minimum / 2, maximum / 2)
+            } else {
+                (minimum / 4, maximum)
+            });
+        }
+        Some((minimum, maximum))
+    }
+
     pub(super) fn hit(&self, distance: u32, skill: u32, draw: u64) -> Option<bool> {
         match self.damage {
             RangedDamage::Distance {
@@ -1119,6 +1149,27 @@ mod tests {
         *attack += 2;
         assert_eq!(shot.formula().map(|(_, attack, _)| attack), Some(38));
         assert_eq!(shot.split(100), Some((53, 46, Element::Fire)));
+        let (formula, attack_value, _) = shot.formula().ok_or("distance formula")?;
+        let inputs = crate::spell::formula::FormulaInputs {
+            level: 200,
+            magic_level: 0,
+            base_power: None,
+            attack_skill: 100,
+            attack_value,
+            attack_factor: 1.0,
+            shielding_skill: 0,
+            shield_defense: None,
+        };
+        let (minimum, maximum) = formula.bounds(&inputs).map_err(|err| format!("{err:?}"))?;
+        assert_eq!(
+            shot.roll_bounds(&formula, &inputs, true),
+            Some((minimum / 2, maximum / 2))
+        );
+        assert_eq!(
+            shot.roll_bounds(&formula, &inputs, false),
+            Some((minimum / 4, maximum))
+        );
+
         equipment.items = vec![item(5, "oteryn:item.tibia.i25735")];
         let throwing = loadout(&native, &equipment, &[])
             .flatten()

@@ -29,9 +29,11 @@ fn content() -> &'static NativeGameplayState {
     })
 }
 
-fn check_weapon_skill_damage(name: &str, aimed: bool) {
+fn check_weapon_skill_damage(name: &str, aimed: bool, converted: bool) {
     let (runtime, bindings, mut attributes) =
-        crate::spell_magnitude_owner_tests::native_weapon_damage_fixture();
+        crate::spell_magnitude_owner_tests::native_weapon_damage_fixture(
+            converted.then_some("fire"),
+        );
     let content = content();
     let spell = content
         .spell_book()
@@ -39,7 +41,7 @@ fn check_weapon_skill_damage(name: &str, aimed: bool) {
         .iter()
         .find(|spell| spell.name == name)
         .expect("committed native spell");
-    let before = PlayerSpellState::new(
+    let mut before = PlayerSpellState::new(
         CharacterCastFacts {
             vocation: Vocation::Knight,
             level: 330,
@@ -52,6 +54,14 @@ fn check_weapon_skill_damage(name: &str, aimed: bool) {
         0,
     )
     .expect("Knight player state");
+    if converted {
+        before.install_equipped_offence(
+            oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence {
+                elemental_conversion: Some((crate::content::ProjectV2RangedElement::Ice, 50)),
+                ..Default::default()
+            },
+        );
+    }
     attributes.binding.player_revision = before.revision();
     attributes.base_critical_chance_permyriad = Some(0);
     attributes.equipment_critical_chance_permyriad = Some(0);
@@ -104,7 +114,12 @@ fn check_weapon_skill_damage(name: &str, aimed: bool) {
     // isolation from charge, missile and world-presentation admission.
     let mut resolved_damage = Vec::new();
     let mut expected_damage = Vec::new();
-    for (item, attack, elemental_attack) in [(49523, 52, 44), (3318, 33, 0)] {
+    let weapons: &[_] = if converted {
+        &[(53213, 60, 54)]
+    } else {
+        &[(49523, 52, 44), (3318, 33, 0)]
+    };
+    for &(item, attack, elemental_attack) in weapons {
         let definition = &content
             .item_policy_for_source_id(item)
             .expect("qualified axe")
@@ -197,19 +212,65 @@ fn check_weapon_skill_damage(name: &str, aimed: bool) {
             ("paid", |_, high| high),
         ] {
             let mut draw = draw;
-            let (paid, _) = delayed_strikes::paid(
-                &before,
-                spell,
-                &operational,
-                &facts,
-                None,
-                now,
-                &mut draw,
-                &caster,
-            )
-            .expect("qualified native combat plan");
-            let Plan::Combat(plan) = paid.plan else {
-                panic!("expected a combat plan");
+            let plan = if super::super::ordinary_combat::applicable(spell) {
+                let paid = crate::spell::cast::prepare_ordinary_owner_cast_with_caster(
+                    content.spell_book(),
+                    &before,
+                    spell,
+                    &operational,
+                    now,
+                    &caster,
+                    None,
+                    None,
+                    &mut draw,
+                )
+                .expect("qualified ordinary cast");
+                let [
+                    crate::spell::ResolvedEffect::Damage {
+                        damage_type,
+                        magnitude,
+                    },
+                ] = paid.resolution.effects.as_slice()
+                else {
+                    panic!("expected one Berserk damage effect");
+                };
+                assert_eq!(damage_type, "physical");
+                Box::new(NativeCombatPlan::Combat(crate::spell::native_combat::CombatPlan {
+                    element: crate::spell::native_combat::Element::Physical,
+                    area: None,
+                    hits: vec![crate::spell::native_combat::MagnitudePlan {
+                        target: target.source_id,
+                        magnitude: *magnitude,
+                        bonus_percent: 0,
+                        side_percent: None,
+                        delay_ms: 0,
+                    }],
+                    cooldown_ms: None,
+                    shared_cooldown: None,
+                    reduce_all_spell_cooldowns_ms: 0,
+                    block_armor: oteryn_gameplay_spell_rules::dispatch_plans::ordinary_combat::block_armor(spell)
+                        .expect("Berserk armor binding"),
+                    use_weapon_charges: false,
+                    weapon_missile: false,
+                    dispel_paralysis_targets: Vec::new(),
+                    resolve_critical_and_fatal_once: true,
+                }))
+            } else {
+                let (paid, _) = delayed_strikes::paid(
+                    &before,
+                    spell,
+                    &operational,
+                    &facts,
+                    None,
+                    now,
+                    &mut draw,
+                    &caster,
+                )
+                .expect("qualified native combat plan");
+                let Plan::Combat(plan) = paid.plan else {
+                    panic!("expected a combat plan");
+                };
+                plan
             };
             let NativeCombatPlan::Combat(combat) = plan.as_ref() else {
                 panic!("expected a weapon-skill hit");
@@ -249,12 +310,26 @@ fn check_weapon_skill_damage(name: &str, aimed: bool) {
             let fire_ratio = f64::from(elemental_attack) / f64::from(attack);
             let raw_physical = (hit.magnitude as f64 * (1.0 - fire_ratio)).round() as i64;
             let raw_fire = (hit.magnitude as f64 * fire_ratio).round() as i64;
+            let armor = if combat.block_armor { draw(5, 9) } else { 0 };
+            if converted {
+                let converted_raw = raw_physical / 2;
+                expected_damage.push((
+                    item,
+                    phase,
+                    Some(DamageElement::Ice),
+                    [
+                        (converted_raw - armor).max(0) * 95 / 100,
+                        converted_raw * 95 / 100,
+                    ],
+                ));
+                continue;
+            }
             expected_damage.push((
                 item,
                 phase,
                 (elemental_attack > 0).then_some(DamageElement::Fire),
                 [
-                    (raw_physical - draw(5, 9)).max(0) * 95 / 100,
+                    (raw_physical - armor).max(0) * 95 / 100,
                     raw_fire * 95 / 100,
                 ],
             ));
@@ -265,10 +340,20 @@ fn check_weapon_skill_damage(name: &str, aimed: bool) {
 
 #[test]
 fn native_weapon_skill_front_sweep_splits_preview_and_paid_damage() {
-    check_weapon_skill_damage("Front Sweep", false);
+    check_weapon_skill_damage("Front Sweep", false, false);
 }
 
 #[test]
 fn native_weapon_skill_executioners_throw_splits_preview_and_paid_damage() {
-    check_weapon_skill_damage("Executioner's Throw", true);
+    check_weapon_skill_damage("Executioner's Throw", true, false);
+}
+
+#[test]
+fn native_weapon_skill_executioners_throw_replaces_immune_secondary_with_imbuement() {
+    check_weapon_skill_damage("Executioner's Throw", true, true);
+}
+
+#[test]
+fn native_weapon_skill_berserk_replaces_immune_secondary_with_imbuement() {
+    check_weapon_skill_damage("Berserk", false, true);
 }
