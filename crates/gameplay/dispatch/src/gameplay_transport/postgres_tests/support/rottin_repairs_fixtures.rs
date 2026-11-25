@@ -110,6 +110,10 @@ pub(super) async fn exercise(
         6474
     );
     assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(crate::gameplay_transport::map_door::WORLD_USE_WITH_COOLDOWN)
+        .ok_or("wall use cooldown")?;
     assert_eq!(
         use_quest_tool(owner, admitted, wall, 2, 1603, 71).await?,
         UseDisposition::NothingToUse,

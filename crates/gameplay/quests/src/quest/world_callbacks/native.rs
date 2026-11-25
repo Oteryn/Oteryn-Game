@@ -119,6 +119,18 @@ impl Callback {
     /// Presentation follows a newly committed receipt. Replayed receipts do not
     /// repeat success text; the dispatch owner supplies that distinction.
     pub fn committed_message<'a>(&'a self, changes: &[QuestTrackChange]) -> Option<&'a str> {
+        if self
+            .key
+            .starts_with("oteryn:quest-callback/qc-twenty-miles-statue-")
+            && changes.iter().any(|change| {
+                change
+                    .track
+                    .starts_with("oteryn:quest-progress/qc/twenty_miles/song")
+                    && change.after == 0
+            })
+        {
+            return Some("Return later. The statue has nothing to say yet.");
+        }
         match self.native_rule {
             Some(NativeRule::BarbarianMead) => crate::quest::barbarian_mead::message(changes),
             // Crystal actions_cult_symbol.lua:43-47. Mission-only repair is silent.

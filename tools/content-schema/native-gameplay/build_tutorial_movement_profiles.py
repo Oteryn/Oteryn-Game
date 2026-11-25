@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""TUTORIAL-1: derive exactly the 17 path Item profiles using the existing pinned importer.
+"""Derive the tutorial and Top of the City movement profiles from pinned Item sources.
 
 Only --capture reads references. No original source/appearance files are redistributed.
 """
@@ -9,12 +9,19 @@ import json
 from pathlib import Path
 
 import build_source_item_profiles as source
-from build_spell_item_identities import BINDINGS, CANARY_PIN, binding_index, bind_profiles
+from build_spell_item_identities import (
+    BINDINGS,
+    CANARY_PIN,
+    bind_profiles,
+    binding_index,
+)
 from lower_item_consumption_packet import fetch
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = Path(__file__).with_name('movement-item-profiles.json')
-IDS = {3892, 3893, 6216, 6217, *range(6373, 6383), 6385, 19394, 37001}
+# Crystal data/items/items.xml:3403-3405 and 18471-18473 name the
+# three archways used between Iriana's house and Jimmy's passage.
+IDS = {1403, 1404, 3892, 3893, 6216, 6217, *range(6373, 6383), 6385, 6884, 19394, 37001}
 
 
 def capture():
@@ -35,7 +42,10 @@ def capture():
     bindings = binding_index(BINDINGS.read_bytes())
     records = [source.profile(i, xml[i], objects[i], physical[i], bindings, None) for i in sorted(IDS)]
     for row in records:
-        if row['attributes']['blocks_movement'] is not False:
+        attributes = row['attributes']
+        if attributes.get('spell_augments') == []:
+            del attributes['spell_augments']
+        if attributes['blocks_movement'] is not False:
             raise ValueError('MOVEMENT_ITEM_PROFILES_NOT_WALKABLE')
     bound = bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records}, bindings, IDS)
     return {'schema': 'OTERYN_NATIVE_MOVEMENT_ITEM_PROFILES/v1',

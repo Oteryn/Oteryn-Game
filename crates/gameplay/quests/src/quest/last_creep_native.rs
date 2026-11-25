@@ -132,6 +132,7 @@ fn callback(
         trigger,
         actor_kind: Default::default(),
         selector: Selector {
+            target_definition: None,
             position_aliases: Vec::new(),
             ordinal: None,
             native: Some(NativeSelector {

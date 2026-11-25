@@ -917,6 +917,8 @@ pub enum Slot {
     NpcOccupied {
         generation: u64,
         key: Arc<str>,
+        /// Authored placement, retained when cadence moves the live NPC.
+        placement: LocalPosition,
         position: VersionedPosition,
         /// E12: House custody is attached to the existing NPC slot, never a parallel actor map.
         hireling: Option<Box<npc_actor::HouseHirelingBinding>>,

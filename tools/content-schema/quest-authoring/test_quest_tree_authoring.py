@@ -198,6 +198,11 @@ class QuestTreeTests(unittest.TestCase):
             self.assertFalse(Path(path).is_absolute())
             self.assertEqual(path, Path(path).as_posix())
 
+    def test_committed_quest_index_pins_the_current_reward_shards(self):
+        root = Path(__file__).resolve().parents[3]
+        path = tool.DIRECTORY + 'index.json'
+        self.assertEqual(tool.read(root, path), json.loads(tool.expected_files(root)[path]))
+
     def test_source_packet_false_cardinality_and_kind_counts_are_rejected(self):
         root, packet = self.packet_fixture()
         wrong = copy.deepcopy(packet); wrong['record_count'] += 1

@@ -135,20 +135,22 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             return Some(Dispatch::Use(outcome));
         }
     }
-    // A map handle reaches only its explicit world owner. It never widens the
-    // carried-item or container admissions below; stale handles keep their refusal.
+    // Direct corpse USE reaches the encounter before any container view opens.
+    // Other map items retain their existing item-use capability gate.
     if let Ok(UseIntent {
         target: UseTarget::Item(handle),
         use_with: None,
         use_with_map_item: None,
         use_with_position: None,
     }) = &decoded
-        && admitted
-            .continuity
-            .selected_capabilities
-            .contains(CAPABILITY_ITEM_USE_V1)
-        && let Some(key @ (ItemKey::MapBase { .. } | ItemKey::MapAdded(_))) =
-            item_view.as_ref().and_then(|view| view.resolve(*handle))
+        && let Some(key) = item_view.as_ref().and_then(|view| {
+            match view.resolve(*handle)? {
+                key @ ItemKey::Entity(_) => Some(key),
+                _ => view.table().resolve_on_map(*handle),
+            }
+        })
+        && (matches!(key, ItemKey::Entity(_) | ItemKey::Instance(_))
+            || admitted.continuity.selected_capabilities.contains(CAPABILITY_ITEM_USE_V1))
         && let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_map_item(
@@ -187,9 +189,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             .continuity
             .selected_capabilities
             .contains(CAPABILITY_ITEM_USE_V1)
-        && let UseTarget::Item(handle) = intent.target
+        && (matches!(intent.target, UseTarget::Item(_))
+            || (matches!(intent.target, UseTarget::ItemByDefinition(_))
+                && intent.use_with.is_none()
+                && intent.use_with_map_item.is_none()))
     {
-        let source = item_view.as_ref().and_then(|view| view.resolve(handle));
+        let source = match intent.target {
+            UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
+            _ => None,
+        };
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_event_item(
@@ -282,7 +290,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             .ok()?
             .ok()?
         {
-            return Some(Dispatch::Use(outcome));
+            return Some(if outcome.disposition == oteryn_protocol_oteryn::world_object::UseDisposition::TooFar {
+                Dispatch::UseWithoutWalk(outcome)
+            } else {
+                Dispatch::Use(outcome)
+            });
         }
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),

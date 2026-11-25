@@ -4,11 +4,14 @@ use super::connection::{UseCommand, UseOutcome};
 use super::item_ref_admission::NativeItemWeights;
 use super::item_view::ItemKey;
 use crate::durability::consume_transform::{ConsumeTransformRequest, ConsumeTransformResult};
+use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
-use crate::foundation::{CommandId, CommandRef, ExactActorRef};
+use crate::foundation::{CommandId, CommandRef, ExactActorRef, MovementLocalPosition};
 use crate::gameplay_transport::actor_spell::NoveltyEffectRequest;
-use oteryn_gameplay_items::novelty_items::{self, NoveltyEffects};
-use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent};
+use oteryn_gameplay_items::novelty_items::{
+    self, GHOSTSILVER_LANTERN_UNLIT, NoveltyEffects, NoveltyKind,
+};
+use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 #[path = "novelty_ground_use.rs"]
 mod ground;
 #[path = "novelty_item_pending.rs"]
@@ -24,6 +27,10 @@ pub(super) struct PendingItemEffect {
     pub before_revision: u64,
     pub after: Option<crate::spell::cast::PlayerSpellState>,
     pub death: Option<super::actor_spell::PlayerDeath>,
+}
+
+fn is_watch(key: &str) -> bool {
+    matches!(key, "oteryn:item.tibia.i2906" | "oteryn:item.tibia.i6091")
 }
 
 fn outcome(disposition: UseDisposition) -> UseOutcome {
@@ -67,6 +74,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(fence) = command.item_fence else {
             return Ok(None);
         };
+        let definition = if let UseTarget::ItemByDefinition(wanted) = intent.target {
+            if intent.use_with.is_some()
+                || intent.use_with_map_item.is_some()
+                || intent.use_with_position.is_some()
+            {
+                return Ok(None);
+            }
+            let runtime = self.runtime.lock().await;
+            let Some((key, revision)) =
+                super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+                    .and_then(|index| index.definition_at(wanted))
+            else {
+                return Ok(None);
+            };
+            if !is_watch(key)
+                && novelty_items::rule_for_key(key)
+                    .is_none_or(|rule| rule.kind != NoveltyKind::CarriedTransform)
+            {
+                return Ok(None);
+            }
+            Some(TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: key.into(),
+                revision_ref: revision.into(),
+            })
+        } else {
+            None
+        };
         let command_ref = CommandRef::new(
             command.game_session_id,
             CommandId::new(command.command_id).map_err(|_| ())?,
@@ -91,7 +126,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 _ => None,
             })
             .unwrap_or([0; 16]);
-        let request = ConsumeTransformRequest {
+        let mut request = ConsumeTransformRequest {
             command: command_ref,
             source: id,
             target: None,
@@ -132,9 +167,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return Ok(None);
         }
-        if let Some(outcome) = self
-            .use_ground_event_item(actor, command, &intent, &request, &permit)
-            .await?
+        if definition.is_none()
+            && let Some(outcome) = self
+                .use_ground_event_item(actor, command, &intent, &request, &permit)
+                .await?
         {
             return Ok(Some(outcome));
         }
@@ -143,6 +179,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
             .map_err(|_| ())?;
+        if let Some(definition) = definition {
+            let states = self.states.spell_states.lock().await;
+            let reserved = states
+                .item_uses
+                .reserved_sources(actor, command.game_session_id);
+            request.source = match inventory.first_unreserved(&definition, reserved) {
+                Ok(id) => id,
+                Err(oteryn_gameplay_items::hotkey_search::HotkeyRefusal::BoundExceeded) => {
+                    return Ok(Some(outcome(UseDisposition::Rejected)));
+                }
+                Err(_) => return Ok(Some(outcome(UseDisposition::NothingToUse))),
+            };
+        }
+        let id = request.source;
         let carried = inventory
             .backpack
             .iter()
@@ -156,10 +206,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Crystal 201189f8 data/scripts/actions/tools/watch.lua:3-8 and
         // data/libs/functions/functions.lua:42-50. Watches read the same World
         // clock as the connection's CLOCK-1 projection; they never consume an item.
-        if matches!(
-            item.definition.production_key.as_str(),
-            "oteryn:item.tibia.i2906" | "oteryn:item.tibia.i6091"
-        ) {
+        if is_watch(&item.definition.production_key) {
             if intent.use_with.is_some()
                 || intent.use_with_map_item.is_some()
                 || intent.use_with_position.is_some()
@@ -209,6 +256,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome(UseDisposition::NotPossible)));
         };
         let effects: NoveltyEffects = serde_json::from_value(plan.effects).map_err(|_| ())?;
+        if effects.kind == NoveltyKind::CarriedTransform
+            && (intent.use_with.is_some()
+                || intent.use_with_map_item.is_some()
+                || intent.use_with_position.is_some())
+        {
+            return Ok(None);
+        }
         if !self
             .states
             .player_trades
@@ -293,6 +347,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         request: &ConsumeTransformRequest,
         receipt: ConsumeTransformResult,
     ) -> Result<UseOutcome, ()> {
+        let lantern = if receipt.disposition == UseDisposition::Committed
+            && receipt.effects["source_item_id"] == GHOSTSILVER_LANTERN_UNLIT
+        {
+            let states = self.states.spell_states.lock().await;
+            states.pending_item_effects.iter().find_map(|memo| {
+                (memo.actor == actor && memo.request.command == request.command)
+                    .then_some((memo.fence, memo.cue_position))
+            })
+        } else {
+            None
+        };
+        let clue = if let Some((fence, position)) = lantern {
+            self.lantern_feedback(fence, position, false).await
+        } else {
+            None
+        };
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if let Some((effects, position)) =
@@ -305,7 +375,55 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 request.command.game_session_id(),
                 &effects,
             );
+            if let Some(clue) = clue {
+                self.states
+                    .chat
+                    .push_quest_feedback(request.command.game_session_id(), clue);
+            }
         }
         Ok(outcome(receipt.disposition))
+    }
+    /// Crystal 201189f8 data-global/scripts/quests/forgotten_knowledge/actions_lantern.lua:16-28.
+    pub(super) async fn lantern_feedback(
+        &self,
+        fence: CurrentCharacterItemFence,
+        at: MovementLocalPosition,
+        in_house: bool,
+    ) -> Option<&'static str> {
+        if at.floor != 10 || at.x.abs_diff(32891) >= 2 || at.y.abs_diff(31619) >= 2 {
+            return Some("The lantern begins to glow as you polish it.");
+        }
+        let inventory = if in_house {
+            self.root
+                .read_house_carried_inventory(
+                    self.character,
+                    self.holder,
+                    fence,
+                    *self.channel_id.as_bytes(),
+                )
+                .await
+                .ok()?
+        } else {
+            self.root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+                .ok()?
+        };
+        let has_key = inventory
+            .equipment
+            .iter()
+            .chain(
+                inventory
+                    .backpack
+                    .iter()
+                    .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item)),
+            )
+            .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+            .any(|item| item.definition.production_key == "oteryn:item.tibia.i23733");
+        Some(if has_key {
+            "The lantern reveals a hidden door. You have the key to open it."
+        } else {
+            "The lantern reveals a hidden door. You need its key to open it."
+        })
     }
 }

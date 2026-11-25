@@ -4,6 +4,7 @@ import json
 import unittest
 
 import jsonschema
+from book_text_expectations import GLOBAL_BOOK_REFS
 import reward_claim_authoring as plain
 import reward_claim_variant_authoring as variants
 import reward_claim_variant_migration as migration
@@ -112,8 +113,17 @@ class CanonicalVariantTests(unittest.TestCase):
                 for field in ('key_binding', 'written_text'):
                     if field in old['reward']:
                         seen.add(field)
-                        if field == 'key_binding': self.assertEqual(p['reward'][field], old['reward'][field])
-                        else: self.assertEqual(p['reward'][field]['text_ref'], old['reward'][field]['text_ref'])
+                        expected = old['reward'][field]
+                        if field == 'written_text':
+                            corrections = [GLOBAL_BOOK_REFS[u['unique_id']]
+                                           for u in p['source_binding']['legacy_unique_ids']
+                                           if u['server'] == 'crystalserver' and u['unique_id'] in GLOBAL_BOOK_REFS]
+                            if corrections:
+                                text_ref, = corrections
+                                expected = {**expected, 'text_ref': text_ref}
+                            self.assertEqual(p['reward'][field]['text_ref'], expected['text_ref'])
+                        else:
+                            self.assertEqual(p['reward'][field], expected)
                 seen.update(p['reward'].keys())
         self.assertTrue({'key_binding', 'written_text', 'random_one_of', 'container'} <= seen)
         self.assertTrue(any(r['definition']['claim']['repeat']['kind'] == 'cooldown' for r in self.records))

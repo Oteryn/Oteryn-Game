@@ -189,6 +189,17 @@ pub(super) enum CooldownClass {
     Other,
 }
 impl ItemUseGates {
+    pub(super) fn reserved_sources(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> &[[u8; 16]] {
+        self.0
+            .iter()
+            .find(|(present, held, _)| *present == actor && *held == session)
+            .map_or(&[], |(_, _, gate)| gate.unspendable.as_slice())
+    }
+
     pub(super) fn cooldown_remaining(
         &self,
         runtime: &ChannelRuntimeV1,

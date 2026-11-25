@@ -1,3 +1,4 @@
+import hashlib
 import json
 import unittest
 
@@ -8,6 +9,9 @@ class GrizzlyRoomTests(unittest.TestCase):
     def test_generated_rooms_match_map_and_preserve_both_source_positions(self):
         actual = grizzly_rooms.generate()
         self.assertEqual(actual, json.loads(grizzly_rooms.OUTPUT.read_text()))
+        profile = 'content/items/definitions/spell-native-profiles.json'
+        self.assertEqual(actual['inputs_sha256'][profile],
+                         hashlib.sha256((grizzly_rooms.ROOT / profile).read_bytes()).hexdigest())
         source = json.loads(
             (
                 grizzly_rooms.ROOT / "content/quests/killing-in-the-name-of.json"

@@ -615,9 +615,8 @@ mod main_native_contract {
         assert_eq!(baseline.counts(), explicit.counts());
         let before = baseline.catalogue();
         let after = explicit.catalogue();
-        // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
-        // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
-        assert_eq!(before.tracks.len(), 2137 + 7);
+        // Exact inventory for the merged journey and published quest tracks.
+        assert_eq!(before.tracks.len(), 2_175);
         for pharaoh in ["omruc", "vashresamun"] {
             let key = format!(
                 "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/{pharaoh}_sarcophagus_claim"

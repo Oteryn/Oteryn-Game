@@ -13,10 +13,14 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
         include_str!("../../../../../../../content/quests/npc-offers/l6-stories.json"),
         include_str!("../../../../../../../content/quests/npc-offers/m09-rookie.json"),
         include_str!("../../../../../../../content/quests/npc-offers/m16-targuna-marker.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/qc-programmes.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/qc-twenty-miles.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qd-steal-from-thieves.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-m10.json"),
         include_str!("../../../../../../../content/quests/npc-offers/threatened-dreams.json"),
+        // Top of the City Quest/Spoiler (curid 31073, oldid 1050120), Mission Two.
+        include_str!("../../../../../../../content/quests/npc-offers/top-of-the-city.json"),
     ] {
         let document: Offers = serde_json::from_str(source).ok()?;
         if document.schema != 1 {

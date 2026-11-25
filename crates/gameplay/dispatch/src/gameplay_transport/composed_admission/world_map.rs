@@ -242,7 +242,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
                 &none
             } else if let Some(map) = self.bundle_map() {
-                doors = crate::map::floor::BundleDoors(&map.facts);
+                doors = super::super::paced_movement::PlayerBundleDoors {
+                    states: &self.states,
+                    facts: &map.facts,
+                    session: own_session,
+                };
                 &doors
             } else {
                 &legacy

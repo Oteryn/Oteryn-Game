@@ -123,6 +123,7 @@ pub(super) struct Step {
     transition: Option<String>,
     reply: Vec<String>,
     failure_reply: Vec<String>,
+    failure_topic: Option<u16>,
     refused: bool,
 }
 
@@ -131,6 +132,11 @@ impl Step {
         self.failure_reply = lines;
         self
     }
+    pub(super) fn with_failure_topic(mut self, topic: Option<u16>) -> Self {
+        self.failure_topic = topic;
+        self
+    }
+
     pub(super) fn with_refusal(mut self, refused: bool) -> Self {
         self.refused = refused;
         self
@@ -145,6 +151,7 @@ struct Pending {
     intent: NpcTalkIntent,
     context: Context,
     next_topic: Option<Topic>,
+    failure_topic: Option<u16>,
     reply: Vec<String>,
 }
 
@@ -187,6 +194,7 @@ pub(super) fn prepare(
         transition: choice.transition,
         reply: choice.reply,
         failure_reply: Vec::new(),
+        failure_topic: None,
         refused: false,
     })
 }
@@ -257,11 +265,17 @@ fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId
     if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
         && let Some(state) = sessions.get_mut(&session)
         && let Some(pending) = state.quest_dialogue.pending.take()
-        && committed
     {
-        state
-            .quest_dialogue
-            .apply_topic(pending.context, pending.next_topic);
+        if committed {
+            state
+                .quest_dialogue
+                .apply_topic(pending.context, pending.next_topic);
+        } else if let Some(topic) = pending.failure_topic {
+            state.quest_dialogue.reward_request = None;
+            state
+                .quest_dialogue
+                .apply_topic(pending.context, Some(topic.into()));
+        }
     }
 }
 
@@ -297,8 +311,11 @@ pub(super) async fn apply(
         return rendered;
     }
     let Some(transition) = step.transition else {
-        let runtime = admission.runtime.lock().await;
-        let states = admission.states.spell_states.lock().await;
+        let (runtime, states) = crate::gameplay_transport::lock_runtime_and_spell_states(
+            &admission.runtime,
+            &admission.states.spell_states,
+        )
+        .await;
         if states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, command.game_session_id)
             || admission.states.npc_conversations.current_npc(
@@ -321,6 +338,9 @@ pub(super) async fn apply(
         if state.pending.is_some() || state.topic(&step.context) != step.topic {
             return rejected();
         }
+        if step.refused && step.failure_topic.is_some() {
+            state.reward_request = None;
+        }
         state.apply_topic(step.context, step.next_topic);
         if step.refused {
             rendered.disposition = NpcIntentDisposition::Rejected;
@@ -334,6 +354,21 @@ pub(super) async fn apply(
     ) else {
         return rejected();
     };
+    let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
+        .ok()
+        .and_then(|callbacks| callbacks.into_iter().find(|c| c.key == transition));
+    let changes_inventory = reward_callback.as_ref().is_some_and(|callback| {
+        !callback.take.is_empty() || callback.give.is_some() || callback.fee.is_some()
+    });
+    let trade_permit = if changes_inventory {
+        // The offer owner and this writer share the lane, including the commit.
+        let Some(permit) = admission.spell_lane_permit().await else {
+            return rejected();
+        };
+        Some(permit)
+    } else {
+        None
+    };
     let mut slot = admission
         .revision_sequencer
         .acquire(item_fence.character_id)
@@ -345,8 +380,11 @@ pub(super) async fn apply(
         return rejected();
     }
     let actor_conditions = {
-        let runtime = admission.runtime.lock().await;
-        let states = admission.states.spell_states.lock().await;
+        let (runtime, states) = crate::gameplay_transport::lock_runtime_and_spell_states(
+            &admission.runtime,
+            &admission.states.spell_states,
+        )
+        .await;
         if states.is_dead(actor)
             || !states.spell_idle(&runtime, actor, command.game_session_id)
             || (transition.starts_with("oteryn:quest-reward/")
@@ -387,6 +425,14 @@ pub(super) async fn apply(
                 )
             })
     };
+    if trade_permit.is_some()
+        && !admission
+            .states
+            .player_trades
+            .physical_service(command.game_session_id)
+    {
+        return rejected();
+    }
     let request = QuestTransitionRequest {
         transition_key: transition,
         cause: QuestCause::Command(CommandRef::new(command.game_session_id, id)),
@@ -412,16 +458,10 @@ pub(super) async fn apply(
             intent: intent.clone(),
             context: step.context.clone(),
             next_topic: step.next_topic,
+            failure_topic: step.failure_topic,
             reply: step.reply.clone(),
         });
     }
-    let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
-        .ok()
-        .and_then(|callbacks| {
-            callbacks
-                .into_iter()
-                .find(|c| c.key == request.transition_key)
-        });
     let value_callback = reward_callback.is_some();
     let fee_payment = if reward_callback.as_ref().is_some_and(|c| c.fee.is_some()) {
         match super::endgame::prepare_reward_fee(admission, command, fence).await {
@@ -475,6 +515,7 @@ pub(super) async fn apply(
         .await
     };
     drop(slot);
+    drop(trade_permit);
     #[cfg(test)]
     if value_callback
         && !matches!(
@@ -558,6 +599,65 @@ pub(super) async fn apply(
             outcome.disposition = NpcIntentDisposition::Rejected;
             outcome
         }
+    }
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Recover the exact disconnected talk command before its stream reopens.
+    pub(in crate::gameplay_transport) async fn prepare_quest_dialogue_resume(
+        &self,
+        session: GameSessionId,
+    ) -> bool {
+        let pending = match self.states.npc_conversations.sessions.lock() {
+            Ok(sessions) => sessions
+                .get(&session)
+                .and_then(|state| state.quest_dialogue.pending.clone()),
+            Err(_) => return false,
+        };
+        let Some(pending) = pending else {
+            return true;
+        };
+        let QuestCause::Command(original) = pending.request.cause else {
+            return false;
+        };
+        if original.game_session_id() != session
+            || !self.states.command_ingress.reconcilable(original)
+        {
+            return false;
+        }
+        let Some(_input) = self.states.input_gate.enter().await else {
+            return false;
+        };
+        let Ok(receipt) = self
+            .root
+            .reconcile_character_quest_transition(
+                self.character,
+                pending.character,
+                pending.request,
+            )
+            .await
+        else {
+            return false;
+        };
+        let disposition = if receipt.is_some() {
+            self.refresh_quest_session(session, false).await;
+            self.refresh_level_up_vitals(pending.actor, session).await;
+            NpcIntentDisposition::Ok
+        } else {
+            NpcIntentDisposition::Rejected
+        };
+        if self
+            .states
+            .command_ingress
+            .complete_npc(original, disposition)
+            .is_none()
+        {
+            return false;
+        }
+        // Clearing the NPC request and retaining its command result have no
+        // suspension point between them.
+        finish(self, session, receipt.is_some());
+        true
     }
 }
 

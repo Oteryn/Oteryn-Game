@@ -286,8 +286,10 @@ Quest-door startup bindings are restored by `quest_door_bindings.py` from the pi
 Crystal 201189f and Canary 47dfd51f tables and storage definitions. The six accepted
 Kilmaresh decisions in `quest-authoring/conflict_decisions.json` select Global's
 per-mask gates. The capture records each value's file/line witness; numeric actions
-resolve to the same named tracks used by quest content. No id is invented for an
-unbound placement. `convert_world_base.py` applies this overlay in fresh builds.
+resolve to the same named tracks used by quest content. Jimmy's passage has an
+authored action tied to stage 1 of Top of the City, with TibiaWiki evidence in
+the capture.
+`convert_world_base.py` applies this overlay in fresh builds.
 
 ```sh
 python quest_door_bindings.py --crystal-root PATH --canary-root PATH

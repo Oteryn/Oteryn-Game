@@ -165,3 +165,22 @@ fn native_legacy_summon_completion_retains_accepted_boolean_codec() -> TestResul
     }
     Ok(())
 }
+
+#[test]
+fn recovered_quest_use_retains_rejected_status() -> TestResult {
+    let mut f = Fixture::new()?;
+    drop(f.stream.take());
+    f.owner
+        .complete_quest_callback(f.command, UseDisposition::Rejected)
+        .ok_or("reconcile rolled-back USE")?;
+    let state = f.state.lock().map_err(|_| "state lock")?;
+    let frame = state.retained.as_ref().ok_or("retained USE result")?;
+    let envelope = decode_wire_envelope(frame).map_err(|error| format!("{error:?}"))?;
+    let result = decode_command_result(envelope.payload()).map_err(|error| format!("{error:?}"))?;
+    assert_eq!(result.status, CommandStatus::Rejected);
+    assert_eq!(
+        result.payload,
+        encode_use_result(UseDisposition::Rejected).map_err(|error| format!("{error:?}"))?
+    );
+    Ok(())
+}

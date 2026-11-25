@@ -214,8 +214,8 @@ pub fn validate_for_catalogue(
 }
 
 fn shares_published_world_track(transition: &str, track: &str) -> bool {
-    // These two authored routes reach the same physical puzzles as their
-    // published counterparts. Both still require the exact callback and World fence.
+    // These authored routes share source-defined progress with published
+    // callbacks. Each still requires its exact operation and owning admission.
     match transition {
         "oteryn:quest-callback/alawars-vault-cross-open-magic-wall" => {
             track == "oteryn:quest-progress/alawars-vault/lever"
@@ -226,6 +226,7 @@ fn shares_published_world_track(transition: &str, track: &str) -> bool {
                 | "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo"
                 | "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics"
         ),
+        super::koshei_amulet::TOMB_SEAL => track == super::koshei_amulet::TRACK,
         _ => false,
     }
 }
@@ -233,6 +234,29 @@ fn shares_published_world_track(transition: &str, track: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn koshei_tomb_seal_shares_the_active_reward_door_track_with_its_exact_owner()
+    -> Result<(), String> {
+        let source = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = source.catalogue();
+        let seal = catalogue
+            .transition(super::super::koshei_amulet::TOMB_SEAL)
+            .ok_or("authored Koshei tomb seal")?;
+        validate_for_catalogue(catalogue, seal, false)?;
+        assert!(validate_for_catalogue(catalogue, seal, true).is_err());
+
+        let mut alias = seal.clone();
+        alias.key.push_str("-alias");
+        assert!(validate_for_catalogue(catalogue, &alias, false).is_err());
+        let mut changed = seal.clone();
+        changed
+            .effects
+            .retain(|effect| effect.track == super::super::koshei_amulet::TRACK);
+        assert!(validate_for_catalogue(catalogue, &changed, false).is_err());
+        Ok(())
+    }
 
     #[test]
     fn death_objectives_keep_their_exact_registered_operations() -> Result<(), String> {

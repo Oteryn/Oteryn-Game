@@ -202,6 +202,7 @@ pub fn load_embedded_quest_state(
     let bindings = super::authored_bindings::embedded::load().map_err(QuestLoadError::Json)?;
     let mut lowered = admit_native_bindings(lowered, bindings.as_ref())?;
     super::reward_callbacks::retain_qc_reward_predecessors(&mut lowered.catalogue);
+    super::top_of_the_city::retain_predecessor(&mut lowered.catalogue);
     Ok(lowered)
 }
 
@@ -679,6 +680,7 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/oramond-native-roots.json"),
             include_str!("../../../../../content/quests/world-callbacks/qc-chests.json"),
             include_str!("../../../../../content/quests/world-callbacks/qc-lizard-sanctuary.json"),
+            include_str!("../../../../../content/quests/world-callbacks/qc-twenty-miles.json"),
             include_str!("../../../../../content/quests/world-callbacks/qm48-mammoth.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-clocks.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-crafts.json"),
@@ -786,6 +788,13 @@ mod tests {
             "engitem-ice-seal-2-2",
             "goblin-merchant-elevator-lower",
             "goblin-merchant-elevator-upper",
+            "koshei-amulet",
+            "koshei-statue-33276-32444",
+            "koshei-statue-33278-32450",
+            "koshei-statue-33281-32442",
+            "koshei-statue-33284-32450",
+            "koshei-statue-33286-32444",
+            "koshei-sundial",
             "last-creep-native-blightwalker",
             "last-creep-native-carniphila",
             "last-creep-native-exit",
@@ -852,7 +861,7 @@ mod tests {
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
-        assert_eq!(expected.len() - before_qmech_native, 79);
+        assert_eq!(expected.len() - before_qmech_native, 86);
         assert_eq!(
             callbacks
                 .into_iter()

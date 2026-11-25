@@ -125,7 +125,9 @@ impl Integrity {
             {
                 (&mut self.counts.exhaust, 1)
             }
-            Dispatch::Use(outcome) if outcome.disposition == UseDisposition::TooFar => {
+            Dispatch::Use(outcome) | Dispatch::UseWithoutWalk(outcome)
+                if outcome.disposition == UseDisposition::TooFar =>
+            {
                 (&mut self.counts.reach, 2)
             }
             Dispatch::Spell(outcome)

@@ -5,7 +5,7 @@ use crate::durability::consume_transform::{ConsumeTransformRequest, ConsumeTrans
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::novelty_item_use::PendingItemEffect;
-use oteryn_gameplay_items::novelty_items::NoveltyEffects;
+use oteryn_gameplay_items::novelty_items::{GHOSTSILVER_LANTERN_UNLIT, NoveltyEffects};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 /// Inputs of one retained effect successor, bound to its original item command.
@@ -149,7 +149,9 @@ impl ChannelSpellStates {
             .map_err(|_| UseDisposition::NotPossible)?;
         // Capture the donor source/target position before the durable await. A reconnect
         // or a moved target cannot relocate a committed visual to a different tile.
-        let cue_position = if let Some(ground) = &effects.ground {
+        let cue_position = if let Some(ground) = &effects.ground
+            && effects.source_item_id != GHOSTSILVER_LANTERN_UNLIT
+        {
             MovementLocalPosition {
                 x: ground.x,
                 y: ground.y,

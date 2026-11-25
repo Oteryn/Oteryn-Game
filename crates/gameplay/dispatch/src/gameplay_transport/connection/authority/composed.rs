@@ -1200,6 +1200,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         item: item_view::ItemKey,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_koshei_corpse(actor, command, item).await {
+            return Some(outcome);
+        }
         self.use_ladder_handle(actor, command, item).await
     }
 
@@ -1352,11 +1355,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => None,
         };
-        if let Some(outcome) = self
-            .use_carried_quest_item(actor, command, &intent, source, corpse)
-            .await?
-        {
-            return Ok(Some(outcome));
+        if corpse.is_some() || matches!(source, Some(item_view::ItemKey::Instance(_))) {
+            return self
+                .use_carried_quest_item(actor, command, &intent, source, corpse)
+                .await;
         }
         self.use_carried_quest_item_with_target(actor, command, &intent, source, target)
             .await
@@ -1388,6 +1390,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             }
             return self
                 .use_house_event_item(actor, command, &intent, source)
+                .await;
+        }
+        if matches!(
+            intent.target,
+            oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_)
+        ) {
+            return self
+                .use_event_item_impl(actor, command, intent, source, visible_target)
                 .await;
         }
         if let Some(outcome) = self
@@ -1579,9 +1589,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return false;
         }
         record_entry_decision("playable", 1, started.elapsed(), "callback_dawnport");
-        let mut phase = "grizzly_resume";
+        let mut phase = "quest_dialogue_resume";
         let mut started = tokio::time::Instant::now();
         if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            if !Box::pin(self.prepare_quest_dialogue_resume(admitted.game_session_id)).await {
+                return false;
+            }
+            record_entry_decision("playable", 1, started.elapsed(), phase);
+            phase = "grizzly_resume";
+            started = tokio::time::Instant::now();
             if !self.prepare_grizzly_npc_resume(admitted).await {
                 return false;
             }

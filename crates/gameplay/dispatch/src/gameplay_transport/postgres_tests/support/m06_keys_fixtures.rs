@@ -91,6 +91,14 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             ),
         );
         let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+        if source.is_none() {
+            let sector = data.sectors.first_mut().ok_or("fixture sector")?;
+            let mut approach = sector.tiles.iter().find(|tile| tile.x == 7)
+                .ok_or("approach tile")?.clone();
+            approach.x += 1;
+            approach.items.truncate(1);
+            sector.tiles.push(approach);
+        }
         let entry = data
             .sectors
             .iter_mut()
@@ -174,15 +182,16 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             );
         }
         let cells = map
-            .movement_cells(deps.room.movement_cells())
+            .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
+        let frame_binding = map.frame_binding_digest(deps.admitted.world_id);
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
             pin.identity().client_artifact_digest(),
-            pin.frame_binding().digest(),
-            pin.qualified_room().map_revision_digest(),
+            frame_binding,
+            map.map_revision_digest(),
             (
                 i32::from(door_x + 1),
                 i32::from(door_y),
@@ -209,7 +218,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: i32::from(door_x + 1),
+                    x: i32::from(door_x + if source.is_none() { 2 } else { 1 }),
                     y: i32::from(door_y),
                     floor: -i16::from(door_floor),
                 },
@@ -231,7 +240,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         }
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
-        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(frame_binding.as_slice()).execute(&harness.pool).await?;
         if !level_gate {
             super::item_look_fixtures::seed_main_backpack(&harness, &[(key_item, 1), (wrong_key, 1)])
                 .await?;
@@ -347,9 +356,10 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
         let (next, result, _) =
             super::item_craft_fixtures::exchange(&owner, admitted, 1, &payload, reference(wrong_key))
                 .await?;
+        // From two tiles away the wire owner walks one tile before trying the key.
         assert_eq!(result, UseDisposition::KeyMismatch);
         assert_eq!(map.facts().doors().revision(placement_key), 0);
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        owner.clock_origin -= crate::gameplay_transport::map_door::WORLD_USE_WITH_COOLDOWN;
         let (next, result, replay) =
             super::item_craft_fixtures::exchange(&owner, next, 2, &payload, reference(key_item)).await?;
         assert_eq!(result, UseDisposition::Committed);
@@ -389,7 +399,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
         assert_eq!(inventory.key_action(id(72)), Some(key_action + 1));
         station.expected_revision = 1;
         let payload = encode_item_use_intent(&intent(station.clone())).map_err(debug)?;
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        owner.clock_origin -= crate::gameplay_transport::map_door::WORLD_USE_WITH_COOLDOWN;
         let (next, result, _) =
             super::item_craft_fixtures::exchange(&owner, next, 3, &payload, reference(key_item)).await?;
         assert_eq!(result, UseDisposition::Committed);
@@ -400,12 +410,12 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
         station.expected_revision = 2;
         let payload =
             oteryn_protocol_oteryn::world_object::encode_use_intent(&station).map_err(debug)?;
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        owner.clock_origin -= crate::gameplay_transport::map_door::WORLD_ACTION_COOLDOWN;
         let (next, result, _) =
             super::item_craft_fixtures::exchange(&owner, next, 4, &payload, None).await?;
         assert_eq!(result, UseDisposition::Locked);
         let payload = encode_item_use_intent(&intent(station)).map_err(debug)?;
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        owner.clock_origin -= crate::gameplay_transport::map_door::WORLD_USE_WITH_COOLDOWN;
         let (_, result, _) =
             super::item_craft_fixtures::exchange(&owner, next, 5, &payload, reference(key_item)).await?;
         assert_eq!(result, UseDisposition::Committed);

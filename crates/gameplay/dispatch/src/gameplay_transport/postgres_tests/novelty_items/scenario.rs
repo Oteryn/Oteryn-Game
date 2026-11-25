@@ -3,6 +3,7 @@ use super::*;
 pub(super) fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         let key = case.key();
+        let by_definition = matches!(case, Case::DefinitionLanternOff | Case::DefinitionLanternOn);
         let origin = case.origin();
         let ground_origin = MovementLocalPosition { x: origin.x - i32::from(case.feroxa()), ..origin };
         let harness =
@@ -37,7 +38,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             (bag, reference(bag).ok_or("bag")?.get() - 1),
             (oven, reference(oven).ok_or("oven")?.get() - 1),
         );
-        if case.feroxa() {
+        if case.feroxa() || matches!(case, Case::CarriedLanternClue { .. }) {
             let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
             let dx = u16::try_from(origin.x - 6)?;
             let dy = u16::try_from(origin.y)?;
@@ -158,6 +159,12 @@ pub(super) fn scenario(case: Case) -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
         if case.nested() {
             super::super::item_look_fixtures::seed_main_backpack(&harness, &[(key, 1), (bag, 1)]).await?;
+        } else if matches!(case, Case::CarriedLanternClue { has_key: true }) {
+            super::super::item_look_fixtures::seed_main_backpack(
+                &harness,
+                &[(key, 1), ("oteryn:item.tibia.i23733", 1)],
+            )
+            .await?;
         } else {
             super::super::item_look_fixtures::seed_main_backpack(&harness, &[(key, 1)]).await?;
         }
@@ -166,6 +173,109 @@ pub(super) fn scenario(case: Case) -> TestResult {
             reference(key).ok_or("source ref")?,
         )
         .ok_or("source definition")?;
+        if matches!(
+            case,
+            Case::DefinitionWatch(_) | Case::CarriedLanternClue { .. }
+        ) {
+            let watch = matches!(case, Case::DefinitionWatch(_));
+            let before = owner.world_clock_utc_ms();
+            owner
+                .states
+                .chat
+                .admit(fence.game_session_id, "Item user", owner.owner_now());
+            let result = owner
+                .use_event_item(
+                    deps.actor,
+                    UseCommand {
+                        game_session_id: fence.game_session_id,
+                        command_id: 1,
+                        item_fence: Some(fence),
+                    },
+                    UseIntent {
+                        target: if watch {
+                            UseTarget::ItemByDefinition(reference(key).ok_or("watch definition")?)
+                        } else {
+                            UseTarget::Item(std::num::NonZeroU64::MIN)
+                        },
+                        use_with: None,
+                        use_with_map_item: None,
+                        use_with_position: None,
+                    },
+                    (!watch).then_some(ItemKey::Instance(id(71))),
+                    false,
+                )
+                .await
+                .map_err(|()| "item USE")?;
+            let lines = owner.states.chat.drain(fence.game_session_id);
+            let expects_commit = match case {
+                Case::CarriedLanternClue { has_key: true } => {
+                    // PARTIAL: the old silver key is still a reference-only Item.
+                    assert!(
+                        native
+                            .item_policy_for_source_id(23733)
+                            .is_none_or(|policy| !policy.record().admission.materializable)
+                    );
+                    assert!(lines.is_empty());
+                    let clue = owner
+                        .lantern_feedback(fence, origin, false)
+                        .await
+                        .ok_or("key-present clue from the fenced carried snapshot")?;
+                    assert!(clue.contains("hidden door") && clue.contains("have the key"));
+                    eprintln!("PARTIAL: Ghostsilver Lantern with unadmitted old silver key");
+                    false
+                }
+                Case::CarriedLanternClue { has_key: false } => {
+                    assert!(
+                        lines.iter().any(|line| matches!(
+                            line,
+                            oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. }
+                            if text.contains("hidden door") && text.contains("need its key")
+                        )),
+                        "{lines:?}"
+                    );
+                    true
+                }
+                _ => {
+                    let clock = crate::world_clock::WorldClockSource::new(
+                        crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
+                    );
+                    let mut times = [before, owner.world_clock_utc_ms()]
+                        .into_iter()
+                        .flatten()
+                        .filter_map(|now| clock.tibian_minute(now));
+                    assert!(
+                        times.any(|minute| lines.iter().any(|line| matches!(
+                            line,
+                            oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. }
+                            if text.ends_with(&format!("{}:{:02}.", minute / 60, minute % 60))
+                        ))),
+                        "{lines:?}"
+                    );
+                    true
+                }
+            };
+            assert_eq!(
+                result.map(|result| result.disposition),
+                Some(if expects_commit {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::NotPossible
+                }),
+            );
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>(
+                    "SELECT count(*) FROM game_item_consume_transform_records"
+                )
+                .fetch_one(&harness.pool)
+                .await?,
+                i64::from(expects_commit && !watch)
+            );
+            eprintln!("W19 POSTGRES_CASE_COMPLETED novelty_items case={case:?}");
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let seeded = id(71);
         let command_id = if case.nested() { 2 } else { 1 };
         let wanted_voodoo = match case {
@@ -273,6 +383,16 @@ pub(super) fn scenario(case: Case) -> TestResult {
                     "achievement_progress":[],
                 }),
             }
+        } else if matches!(case, Case::GroundLanternOff | Case::GroundLanternOn) {
+            let mut plan = novelty_items::plan(
+                native, &used, *fence.game_session_id.as_bytes(), command_id, source,
+            ).ok_or("lantern source admitted")?;
+            plan.recipe = plan.recipe.replacen("oteryn:novelty-item.", "oteryn:novelty-ground.", 1);
+            plan.effects["kind"] = "transform".into();
+            plan.effects["ground"] = serde_json::json!({
+                "x": ground_origin.x, "y": ground_origin.y, "floor": ground_origin.floor,
+            });
+            plan
         } else if case.ground() {
             novelty_items::plan_ground(
                 native,
@@ -359,7 +479,11 @@ pub(super) fn scenario(case: Case) -> TestResult {
         assert!(admitted.continuity.selected_capabilities.contains(350));
         assert!(!admitted.continuity.selected_capabilities.contains(23));
         let intent = UseIntent {
-            target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("handle")?),
+            target: if by_definition {
+                UseTarget::ItemByDefinition(reference(key).ok_or("definition reference")?)
+            } else {
+                UseTarget::Item(std::num::NonZeroU64::MIN)
+            },
             use_with: target,
             use_with_map_item: None,
             use_with_position: None,
@@ -379,7 +503,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 admitted,
                 command_id,
                 &payload,
-                reference(key),
+                if by_definition { None } else { reference(key) },
             )
             .await?;
         let current: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(source.as_slice()).fetch_one(&harness.pool).await?;
@@ -413,6 +537,18 @@ pub(super) fn scenario(case: Case) -> TestResult {
             let (recipe, retained, hash_matches): (String, serde_json::Value, bool) = sqlx::query_as("SELECT r.recipe,r.effects,a.envelope_sha256=sha256(a.envelope) AND a.envelope_sha256=r.envelope_sha256 FROM game_item_consume_transform_records r JOIN game_item_audit_outbox a USING(event_id)").fetch_one(&harness.pool).await?;
             assert_eq!(recipe, expected.recipe);
             assert_eq!(retained, expected.effects);
+            if matches!(case, Case::GroundLanternOn | Case::DefinitionLanternOn) {
+                let cues: serde_json::Value = serde_json::from_str(include_str!(
+                    "../../../../../../../tools/content-schema/native-gameplay/spell-cues.json"
+                ))?;
+                let energy = cues["records"]
+                    .as_array()
+                    .ok_or("source cue bindings")?
+                    .iter()
+                    .find(|cue| cue["alias"] == "canary.appearance:effect/energyarea")
+                    .ok_or("energy area cue")?;
+                assert_eq!(retained["cues"][0]["effect_id"], energy["value"]);
+            }
             assert!(hash_matches);
             let durable = harness
                 .root

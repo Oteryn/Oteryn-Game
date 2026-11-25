@@ -48,6 +48,7 @@ import global_corrections
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
+WORLD_BINDER_REL = "crates/gameplay/content/src/content/world_reward_claims.rs"
 PILOT_DIR = "tools/content-schema/quest-authoring/samples/chests/"
 CLAIMS_REL = PILOT_DIR + "claims.json"
 MANIFEST_REL = PILOT_DIR + "manifest.json"
@@ -622,9 +623,26 @@ def generate() -> dict[str, str]:
     return outputs
 
 
+def written_text_binder() -> str:
+    """Repin the corrected UIDs while preserving the binder's carrier checks."""
+    binder = (ROOT / WORLD_BINDER_REL).read_text(encoding="utf-8")
+    for uid, (_, donor_digest, body) in global_corrections.TEXTS.items():
+        digest = global_corrections.text_ref(body)["sha256"]
+        arm = (
+            rf'(        Some\({uid}\) => \(\n'
+            r'            "oteryn:item\.tibia\.i[0-9]+",\n'
+            rf'            ")(?:{donor_digest}|{digest})(",\n        \),)'
+        )
+        binder, matches = re.subn(arm, rf"\g<1>{digest}\g<2>", binder)
+        if matches != 1:
+            raise ValueError(f"GLOBAL_TEXT_BINDER_PIN_DRIFT {uid}")
+    return binder
+
+
 def content_command(check: bool) -> int:
     try:
         outputs = generate()
+        outputs[WORLD_BINDER_REL] = written_text_binder()
     except ValueError as error:
         print(error, file=sys.stderr)
         return 1

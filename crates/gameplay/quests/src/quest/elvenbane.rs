@@ -61,7 +61,7 @@ pub(crate) fn callbacks() -> Vec<Callback> {
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         facing: None, world_requirements: Vec::new(),
         key:key.into(), quest:rules::QUEST.into(), trigger:Trigger::StepIn,
-        selector:Selector { native: None, position_aliases:Vec::new(),position:Some(position),unique:None,action:None,appearance:None,
+        selector:Selector { target_definition: None, native: None, position_aliases:Vec::new(),position:Some(position),unique:None,action:None,appearance:None,
 ordinal: None,
 },
         lever:None,reversible:false,passages:Vec::new(),teleport:None,storage,

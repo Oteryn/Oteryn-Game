@@ -8,6 +8,39 @@ pub(super) mod monster_trap;
 pub(super) mod special_movement;
 pub(super) mod underwater_drown;
 
+/// The shared overlay controls the door's appearance. The entering session
+/// still needs Jimmy's own quest authority, even while another player holds it open.
+pub(super) struct PlayerBundleDoors<'a> {
+    pub(super) states: &'a channel_states::ChannelSessionStates,
+    pub(super) facts: &'a crate::map::facts::BundleFacts,
+    pub(super) session: GameSessionId,
+}
+
+impl crate::map::floor::CellBlocker for PlayerBundleDoors<'_> {
+    fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
+        use oteryn_gameplay_quests::quest::top_of_the_city::{JIMMY_DOOR, JIMMY_DOOR_ACTION};
+        crate::map::floor::CellBlocker::blocks(self.facts, cell)
+            || (cell.x == i32::from(JIMMY_DOOR.x)
+                && cell.y == i32::from(JIMMY_DOOR.y)
+                && cell.z == -i32::from(JIMMY_DOOR.floor)
+                && crate::map::view::placement_key(
+                    crate::map::overlay::TilePos {
+                        x: JIMMY_DOOR.x,
+                        y: JIMMY_DOOR.y,
+                        floor: JIMMY_DOOR.floor,
+                    },
+                    1,
+                )
+                .is_some_and(|key| {
+                    self.facts.doors().contains(key)
+                        && self.facts.action_at(key) == Some(JIMMY_DOOR_ACTION)
+                        && !self
+                            .states
+                            .meets_quest_door_storage(self.session, JIMMY_DOOR_ACTION)
+                }))
+    }
+}
+
 fn snowbunny_progress_operation(
     snow_origin: bool,
     actor: [u8; 16],
@@ -220,7 +253,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
             &none
         } else if let Some(map) = self.bundle_map() {
-            bundle_doors = crate::map::floor::BundleDoors(&map.facts);
+            bundle_doors = PlayerBundleDoors {
+                states: &self.states,
+                facts: &map.facts,
+                session,
+            };
             &bundle_doors
         } else {
             legacy = self.door.lock().await.blocking_cells().clone();
