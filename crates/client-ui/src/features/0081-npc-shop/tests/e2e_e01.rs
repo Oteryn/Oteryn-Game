@@ -9,7 +9,7 @@ use crate::npc_dialogue::DialoguePanel;
 
 #[test]
 fn e01_real_server_payloads_replay_into_native_panels() -> Result<(), Box<dyn std::error::Error>> {
-    let (conversation, window, look, expected) = if let Some(root) =
+    let (conversation, window, look, expected, details) = if let Some(root) =
         std::env::var_os("E2E_ALL_CAPTURE_DIR")
     {
         let root = std::path::Path::new(&root);
@@ -18,6 +18,7 @@ fn e01_real_server_payloads_replay_into_native_panels() -> Result<(), Box<dyn st
             std::fs::read(root.join("e01-window.bin"))?,
             std::fs::read(root.join("e01-look.bin"))?,
             std::fs::read_to_string(root.join("e01-expected.txt"))?,
+            std::fs::read_to_string(root.join("e01-window-details.txt"))?.parse()?,
         )
     } else {
         let npc = EntityRef {
@@ -52,12 +53,23 @@ fn e01_real_server_payloads_replay_into_native_panels() -> Result<(), Box<dyn st
                 npc_shop::encode_npc_shop_result(&result)
                     .map_err(|error| format!("{error:?}"))?,
                 "conversation_open=true\nconversation_lines=Welcome. {trade}, {deposit}, {withdraw}, or {transfer}?\noffers=1\nlook=A sturdy backpack.\n".into(),
+                false,
             )
     };
 
     let mut service = NpcServicePanel::default();
     assert!(apply_conversation(&mut service, &conversation));
-    assert!(apply_window(&mut service, &window));
+    let decoded_window = npc_service::decode_npc_trade_window_for(&window, details)
+        .map_err(|error| format!("trade window: {error:?}"))?;
+    let mut live = LiveShop::default();
+    live.apply_window(decoded_window);
+    assert_eq!(
+        live.window.open.map(|(actor, _)| actor),
+        service
+            .conversation
+            .as_ref()
+            .and_then(|greeting| greeting.open.map(|(actor, _)| actor))
+    );
     let decoded = npc_shop::decode_npc_shop_result(&look).map_err(|error| format!("{error:?}"))?;
     let mut shop = NpcShopPanel {
         selected: true,
@@ -71,12 +83,11 @@ fn e01_real_server_payloads_replay_into_native_panels() -> Result<(), Box<dyn st
         },
     );
     let conversation = service.conversation.as_ref().ok_or("conversation absent")?;
-    let window = service.window.as_ref().ok_or("window absent")?;
     let visible = format!(
         "conversation_open={}\nconversation_lines={}\noffers={}\nlook={}\n",
         conversation.open.is_some(),
         conversation.lines.join("|"),
-        window.offers.len(),
+        live.quotes().len(),
         panel_text(&shop)
     );
     assert_eq!(visible, expected);

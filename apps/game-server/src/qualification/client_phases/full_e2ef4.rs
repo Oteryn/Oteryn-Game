@@ -176,7 +176,7 @@ pub(super) async fn run(
             .evidence(EVIDENCE, EVIDENCE)
             .gap_lines();
         let result = if let Some(active) = client.as_mut() {
-            let (result, completed) = shop_row(&mut row, active, world, npcs).await;
+            let (result, completed) = shop_row(&mut row, active, clients, world, npcs).await;
             if !completed {
                 // An interrupted command or frame cannot be resumed by another row.
                 *client = None;
@@ -307,6 +307,7 @@ const SAM_WANDER_RADIUS: u32 = 2;
 async fn shop_row(
     row: &mut Row,
     client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> (TestResult, bool) {
@@ -352,6 +353,50 @@ async fn shop_row(
     if !completed {
         return (result, false);
     }
+    let result = if result.is_ok() {
+        let mut arrived = false;
+        let banker = watch
+            .travel("E01 walk to Naji stalled", async {
+                let result = async {
+                    let naji = npcs
+                        .npcs
+                        .iter()
+                        .find(|npc| npc.key == "oteryn:npc.naji")
+                        .ok_or("Thais banker Naji absent from world bundle")?;
+                    super::client_row_e02::approach(client, world, naji).await
+                }
+                .await;
+                arrived = true;
+                result
+            })
+            .await;
+        if !arrived {
+            return (banker.map(|_| ()), false);
+        }
+        match banker {
+            Ok(banker) => {
+                completed = false;
+                let result = watch
+                    .bound(
+                        Duration::from_secs(90),
+                        "E01 bank interaction deadline",
+                        async {
+                            let result = bank(row, client, clients, banker).await;
+                            completed = true;
+                            result
+                        },
+                    )
+                    .await;
+                if !completed {
+                    return (result, false);
+                }
+                result
+            }
+            Err(error) => Err(error),
+        }
+    } else {
+        result
+    };
     // The rows after E01 start on the entry tile, as they did before Sam was reachable.
     let back = watch
         .travel("E01 return walk stalled", async {
@@ -373,7 +418,7 @@ async fn shop_row(
     (result.and(back), reusable)
 }
 
-async fn approach_sam(
+pub(super) async fn approach_sam(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
@@ -433,22 +478,7 @@ async fn shop(row: &mut Row, client: &mut DevClientSession, actor: EntityRef) ->
         return Err("greet: Sam did not open the native conversation".into());
     }
     row.pass("greet", "native-conversation-open-for-Sam");
-    let conversation = super::client_row_e01::talk(client, actor, "trade", None).await?;
-    if conversation.open.map(|(npc, _)| npc) != Some(actor) {
-        return Err("trade: Sam's conversation did not remain open".into());
-    }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
-        .await?;
-    let details = client
-        .selected_capabilities()
-        .contains(&oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
-    let window = wire::decode_npc_trade_window_for(&delta.payload, details)
-        .map_err(|e| format!("shop window: {e:?}"))?;
-    if window.open.map(|(npc, _)| npc) != Some(actor) {
-        return Err("trade window did not open for Sam".into());
-    }
+    let window = super::client_row_e01::open_trade_window(client, actor, None).await?;
     let (index, offer) = window
         .offers
         .iter()
@@ -571,7 +601,111 @@ async fn shop(row: &mut Row, client: &mut DevClientSession, actor: EntityRef) ->
     )
     .await?;
     row.pass("sell-all", "all-carried-units-sold-and-exact-gold-credit");
-    Err("deposit/withdraw/transfer/relog-inventory-bank: need a reachable Bank service; authored banker Paulie (32115,32188,8) is outside the reference starter regions; source:content/world/npc-placements/placements-00000-00055.json:1".into())
+    Ok(())
+}
+
+async fn bank(
+    row: &mut Row,
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    banker: EntityRef,
+) -> TestResult {
+    use super::{client_row_e01::talk, client_row_e02::coin_refs, full_row_e06::bank_balance};
+
+    let greeting = talk(client, banker, "hi", None).await?;
+    if greeting.open.map(|(actor, _)| actor) != Some(banker) {
+        return Err("bank greeting did not open the conversation for Naji".into());
+    }
+
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let recipient: String = sqlx::query_scalar(
+        "SELECT name FROM game_character_roots WHERE character_id = encode($1, 'hex')::uuid",
+    )
+    .bind(clients.characters[0].as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    database.close().await?;
+    let before = bank_balance(clients, 1).await?;
+    let recipient_before = bank_balance(clients, 0).await?;
+    let gold = coin_refs()?[0].get();
+    let mut carried = inventory_units(client)?;
+
+    for (step, command, quote, receipt, coins, expected_balance) in [
+        (
+            "deposit",
+            "deposit 2 gold".into(),
+            "Do you want to deposit 2 gold?".into(),
+            "You have deposited 2 gold.".into(),
+            -2,
+            before.checked_add(2).ok_or("deposit balance overflow")?,
+        ),
+        (
+            "withdraw",
+            "withdraw 1 gold".into(),
+            "Do you want to withdraw 1 gold?".into(),
+            "You have withdrawn 1 gold.".into(),
+            1,
+            before.checked_add(1).ok_or("withdraw balance overflow")?,
+        ),
+        (
+            "transfer",
+            format!("transfer 1 gold to {recipient}"),
+            format!("Do you want to transfer 1 gold to {recipient}?"),
+            format!("Very well. You have transferred 1 gold to {recipient}."),
+            0,
+            before,
+        ),
+    ] {
+        for (words, expected) in [(command.as_str(), quote), ("yes", receipt)] {
+            let dialogue = talk(client, banker, words, None).await?;
+            if dialogue.open.map(|(actor, _)| actor) != Some(banker)
+                || !dialogue.lines.contains(&expected)
+            {
+                return Err(format!(
+                    "{step}: expected {expected:?}, observed {:?}",
+                    dialogue.lines
+                )
+                .into());
+            }
+        }
+        let mut expected = carried.clone();
+        let previous_gold = carried.get(&gold).copied().unwrap_or_default();
+        let expected_gold = previous_gold
+            .checked_add_signed(coins)
+            .ok_or("bank operation requires carried gold coins")?;
+        if expected_gold == 0 {
+            expected.remove(&gold);
+        } else {
+            expected.insert(gold, expected_gold);
+        }
+        wait_inventory(client, &expected).await?;
+        carried = expected;
+        let balance = bank_balance(clients, 1).await?;
+        let received = bank_balance(clients, 0).await?;
+        let expected_recipient = recipient_before
+            .checked_add(u64::from(step == "transfer"))
+            .ok_or("recipient balance overflow")?;
+        if (balance, received) != (expected_balance, expected_recipient) {
+            return Err(format!("{step}: bank balances observed={balance}/{received} expected={expected_balance}/{expected_recipient}").into());
+        }
+        row.pass(
+            step,
+            "native-confirmation-and-exact-inventory-and-account-deltas",
+        );
+    }
+
+    relog(client, clients).await?;
+    wait_inventory(client, &carried).await?;
+    if bank_balance(clients, 1).await? != before
+        || Some(bank_balance(clients, 0).await?) != recipient_before.checked_add(1)
+    {
+        return Err("relog: source or recipient bank balance changed".into());
+    }
+    row.pass(
+        "relog-inventory-bank",
+        "fresh-session-exact-inventory-and-account-balances",
+    );
+    Ok(())
 }
 
 fn quantity_delta(before: u64, after: u64, expected: i64) -> bool {
