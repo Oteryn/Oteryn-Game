@@ -143,6 +143,7 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-migration/regional_npc_prices.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/fathers_burden_containers.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/classic_quest_placements.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/convert_world_metadata.py", "--classic-quest-overlay", "--check"],
@@ -190,6 +191,7 @@ CHECKS = (
         "--check",
     ],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
+    ["python3", "tools/content-schema/npc-authoring/convert_placements.py", "--check"],
     [
         "python3",
         "tools/content-schema/quest-authoring/quest_batch4.py",
@@ -1223,6 +1225,10 @@ def main() -> int:
 
     install_buddel(ROOT, WORLD)
     project_routes(ROOT, WORLD)
+    from regional_npc_prices import install as install_regional_npc_prices
+    install_regional_npc_prices(ROOT, WORLD)
+    from regional_npc_dialogue import install as install_regional_npc_dialogue
+    install_regional_npc_dialogue(ROOT, WORLD)
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     run(["python3", "tools/content-schema/world-object-authoring/spawn_ground.py"])
