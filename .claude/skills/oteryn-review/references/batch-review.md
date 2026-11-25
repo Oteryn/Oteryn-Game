@@ -32,19 +32,30 @@ self-refute rules of §2 target it, and a run that sees the whole diff and its
 callers can apply them. One whole-diff round on the integrated head also
 found the cross-cutting P0 that per-area loops missed (retro 2026-11-18).
 
-Split only when the diff is too large for one run (above about 1500 changed
-lines): chunks of about 400-500 lines by file group, each chunk run with the
-whole diff as read-only context, plus the one holistic whole-diff run in the
-same round. Chunk runs alone are not a covered review. The second review
-(delta only) is one holistic run over the fix commits and the code they
-touch, plus the astra run when the repair is in a risk class.
+Split only when the diff is too large for one run (above about 1500
+hand-written changed lines; generated data, pins and regenerated registries
+do not count). Split by area (persistence and migrations, dispatch and
+gameplay crates, content data, tools and shared files), not by a fixed line
+count. Each chunk prompt names its own files as the focus, carries the whole
+diff as read-only context, tells the reviewer to open callers outside the
+chunk and includes the severity rubric. The same round also has one
+whole-diff integration run by `gpt-6.2-astra` at `high` that skips generated
+data and checks the seams: writer keys against migration guards, dispatch
+filters, registrations, files shared by the units, migration order
+(calibration 2026-11-25: sol alone missed exactly such a seam on a large
+diff, astra caught it). Every run of the round starts on ONE frozen head in
+one burst (at most 10 tasks); a writer loop on the branch pauses until the
+merged packet is ready. Chunk runs alone are not a covered review. The
+second review (delta only) is one holistic run over the fix commits and the
+code they touch, plus the astra run when the repair is in a risk class.
 
 Model and effort (owner decision 2026-11-25, calibration): every review run
 is a Codex Cloud task, read-only, model `gpt-6.2-sol` at reasoning effort
 `high`. A PR with code in a risk class (persistence, session fencing,
 protocol, authority, durable value, migrations, several consumers) also gets
 one `gpt-6.2-astra` run at effort `high` on the same head, with the same
-prompt; the two runs together are the one covered review of that head. An
+prompt, and so does a content train or a content diff above about 1500
+changed lines (calibration 2026-11-25: sol alone lost recall there); the two runs together are the one covered review of that head. An
 astra P0/P1 counts only after the review owner traced it (input, caller,
 wrong result) to a REAL verdict (§3); one disproved is recorded FALSE and
 closed, one that cannot be traced either way goes to the P2 backlog.
@@ -65,6 +76,10 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
 - For each finding, also list every other place in the diff with the same
   defect class (the pattern sweep).
 - Format: `P0|P1|P2|P3 path:line - problem - concrete failure path`.
+- Grade with the severity rubric at the top of
+  `docs/agents/review/CODEX-CHECKLIST.md`: P1 is a player flow that breaks,
+  P2 is content fidelity or a contained defect. A real but non-breaking
+  content gap is P2.
 - A P0 or P1 states its evidence: `path:line` of the input or state, of the
   caller that reaches the changed code, and of the line that gives the wrong
   result. Without a caller you opened and quoted, it is at most P2.

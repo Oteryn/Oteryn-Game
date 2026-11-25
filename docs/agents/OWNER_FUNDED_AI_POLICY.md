@@ -54,7 +54,7 @@ turned into a new owner prompt.
 
 The owner authorizes one manual Codex review (Codex Cloud, read-only, one
 holistic whole-diff run, model `gpt-6.2-sol`, reasoning effort `high`, plus,
-for a PR with code in a risk class, one `gpt-6.2-astra` run at effort `high`
+for a PR with code in a risk class or a large content train, one `gpt-6.2-astra` run at effort `high`
 on the same head, never at effort `medium` and never `codex exec` on the PC,
 per owner rule 2026-11-17 and the calibration decision of 2026-11-25; or, from
 a session without Codex Cloud, one native `@codex review` PR comment naming
@@ -98,7 +98,7 @@ Codex use under the 2026-11-11 effort decision, not a further review.
 Owner decision 2026-11-18, revised 2026-11-25 (one round per head): one review
 of one exact head is one holistic whole-diff run under
 `.claude/skills/oteryn-review/references/batch-review.md`, with its chunk runs
-for a diff above about 1500 changed lines and, for a risk-class PR, the
+for a diff above about 1500 changed lines and, for a risk-class PR or a large content train, the
 `gpt-6.2-astra` run of the same head (one dispatch by the single
 review-dispatch owner). Those tasks together are the one covered invocation
 for that head; they never add a review to the per-PR count.
