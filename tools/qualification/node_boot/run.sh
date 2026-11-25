@@ -1462,7 +1462,8 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     # MP01's PvP rows run against the Open PvP World's own node and database.
     test_env+=("NODE_BOOT_PVP_ADDRESS=127.0.0.1:$PVP_GAME_PORT" "NODE_BOOT_PVP_CONTROL_SOCKET=$PVP_BASE/run/control.sock"
       "NODE_BOOT_PVP_DATABASE_URL=${ADMIN_URL%/*}/$PVP_DATABASE" "NODE_BOOT_PVP_WORLD_ID=$PVP_WORLD_ID"
-      "NODE_BOOT_PVP_CHANNEL_ID=$PVP_CHANNEL_ID" "NODE_BOOT_PVP_ACCOUNT_ID=${PVP_ACCOUNT_IDS[0]}"
+      "NODE_BOOT_PVP_CHANNEL_ID=$PVP_CHANNEL_ID" "NODE_BOOT_PVP_MAP_REVISION=$PVP_WORLD_DIGEST"
+      "NODE_BOOT_PVP_ACCOUNT_ID=${PVP_ACCOUNT_IDS[0]}"
       "NODE_BOOT_PVP_SECOND_ACCOUNT_ID=${PVP_ACCOUNT_IDS[1]}")
   fi
   # Row selection, fail-fast and the no-progress watchdog belong to the seam harness.
@@ -1571,7 +1572,7 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
 # One `serve` process serves one World/Channel scope (node/config.rs ScopeConfig), and one
 # database holds one live node's S2 custody (native_admission_source.rs, custody claim),
 # so this World gets its own database in the same PostgreSQL container and its own node.
-# Platform, PKI, secrets, binaries, bundle and gameplay inputs are shared; the steps mirror
+# Platform, PKI, secrets, binaries and gameplay inputs are shared; the steps mirror
 # operator_setup, node_deployment_grants, node_complete_assignment and character_bootstrap.
 pvp_ops() { "${as_operator[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$PVP_BASE/ops/ops.toml" "$@"; }
 pvp_fail() { echo "--- PvP node log"; tail -n 120 "$WORK/pvp-node.log" 2>/dev/null || true; fail "$@"; }
@@ -1594,6 +1595,14 @@ pvp_world_ready() {
     "$WORK/ops.toml" > "$WORK/pvp-ops.toml"
   install_owned root -m 0600 "$WORK/pvp-ops.toml" "$PVP_BASE/ops/ops.toml"
   pvp_ops authorization issue --file launch-pvp.json --binding node-boot-pvp
+  # Admission assigns the PvP characters a residence in the same town as the combat
+  # fixture. Keep the no-PvP bundle and its default residence for the other journeys.
+  local pvp_digest
+  "${WORLD_COMPILER[@]}" qualification-residence "$BASE/world/world.otbundle" \
+    "$WORK/pvp-world.otwb" oteryn:content.area.city.thais > "$WORK/pvp-world-compile.json"
+  pvp_digest="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["digest"])' "$WORK/pvp-world-compile.json")"
+  install_owned root:root -m 0644 "$WORK/pvp-world.otwb" "$PVP_BASE/world.otbundle"
+  remember PVP_WORLD_DIGEST "$pvp_digest"
   # The existing World's launch-a configuration with this World's scope, port, store and paths.
   sed -e "s|^address = .*|address = \"127.0.0.1:$PVP_GAME_PORT\"|" \
     -e "s|^world_id = .*|world_id = \"$PVP_WORLD_ID\"|" \
@@ -1604,6 +1613,9 @@ pvp_world_ready() {
     -e "s|^authorization_file = .*|authorization_file = \"$PVP_BASE/state/launch-pvp.json\"|" \
     -e "s|^s2_authorization_file = .*|s2_authorization_file = \"$PVP_BASE/state/s2-fresh-store.json\"|" \
     -e "s|^epoch_fence_file = \"$BASE/run/lcfa-epoch-fence\"$|epoch_fence_file = \"$PVP_BASE/run/lcfa-epoch-fence\"|" \
+    -e "s|^path = \"$BASE/world/world.otbundle\"$|path = \"$PVP_BASE/world.otbundle\"|" \
+    -e "s|^digest = \"$WORLD_DIGEST\"$|digest = \"$pvp_digest\"|" \
+    -e "s|^map_revision = .*|map_revision = \"$pvp_digest\"|" \
     -e '/^\[platform\.runtime_status\]$/,/^$/{ /^$/!d; }' \
     "$WORK/node.toml" > "$WORK/pvp-node.toml"
   # Platform's testing assignment reporter is authorized only for the baseline
@@ -1649,7 +1661,7 @@ SQL
   epoch_result="$({
     echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT, TEXT) AS'
     cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
-    printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s', '%s');\n" "$PVP_WORLD_ID" "$PVP_CHANNEL_ID" "$WORLD_DIGEST" "$WORLD_DIGEST"
+    printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s', '%s');\n" "$PVP_WORLD_ID" "$PVP_CHANNEL_ID" "$pvp_digest" "$pvp_digest"
   } | psql_admin "$PVP_DATABASE")"
   [[ "$epoch_result" == t ]] || fail "PvP World epoch initialization"
   if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then

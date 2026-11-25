@@ -848,10 +848,9 @@ async fn pvp_journey(
     .fetch_optional(&mut database)
     .await?;
     database.close().await?;
-    let town = match home {
-        Some(id) => u32::try_from(id)?,
-        None => towns.default_town.ok_or("world default town absent")?,
-    };
+    // First entry assigns the PvP bundle's default residence. Use the committed town
+    // to look up its temple in the shared geometry.
+    let town = u32::try_from(home.ok_or("PvP victim has no durable residence town")?)?;
     let temple = towns
         .town(town)
         .and_then(|t| t.temple)

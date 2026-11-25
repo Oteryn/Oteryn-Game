@@ -567,6 +567,14 @@ fn uuid_text(bytes: &[u8; 16]) -> String {
 }
 
 fn sign_grant(grant: &Grant<'_>, issued_at: i64) -> String {
+    let map_revision = if std::env::var("NODE_BOOT_PVP_WORLD_ID").as_deref()
+        == Ok(uuid_text(&grant.world_id).as_str())
+    {
+        std::env::var("NODE_BOOT_PVP_MAP_REVISION")
+    } else {
+        std::env::var("NODE_BOOT_MAP_REVISION")
+    }
+    .unwrap_or_else(|_| "map-s3b-1".into());
     let header = format!(
         r#"{{"alg":"Ed25519","kid":"{}","typ":"oteryn-admission+jwt"}}"#,
         grant.key_id
@@ -593,7 +601,7 @@ fn sign_grant(grant: &Grant<'_>, issued_at: i64) -> String {
         "transport_profile": 1,
         "ruleset_revision": "rules-s3b-1",
         "content_revision": SERVED_CONTENT_REVISION,
-        "map_revision": std::env::var("NODE_BOOT_MAP_REVISION").unwrap_or_else(|_| "map-s3b-1".into()),
+        "map_revision": map_revision,
         "world_policy_revision": "policy-s3b-1",
         "offer_revision": "offer-s3b-1",
     });

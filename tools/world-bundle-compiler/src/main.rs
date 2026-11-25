@@ -514,6 +514,41 @@ fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
     Ok(json!({"inputs_digest": tree, "pins": reports}))
 }
 
+/// Select the default residence of a disposable qualification bundle. Tile data,
+/// towns, and temple coordinates come from the compiled bundle.
+fn qualification_residence(input: &Path, output: &Path, town_key: &str) -> Result<Value, Error> {
+    let mut world = bundle::read(&read(input)?)?;
+    if world.manifest.build_class != BuildClass::NonProduction {
+        return Err(Error::Format(
+            "qualification residence requires a non-production bundle".into(),
+        ));
+    }
+    let towns = &mut world.manifest.subareas;
+    let town_id = towns
+        .areas
+        .iter()
+        .find(|area| area.key == town_key && area.hometown && area.temple.is_some())
+        .and_then(|area| area.town_id)
+        .ok_or_else(|| {
+            Error::Format(format!(
+                "qualification hometown with temple missing: {town_key}"
+            ))
+        })?;
+    towns.default_town = Some(town_id);
+    let bytes = oteryn_world_bundle::writer::write_with_layers(
+        &world.manifest,
+        &world.sectors,
+        &world.spawns,
+        &world.npcs,
+        &world.layers,
+    )?;
+    let digest = bundle::digest_of(&bytes[..bytes.len() - bundle::DIGEST]);
+    fs::write(output, bytes)
+        .map_err(|error| Error::Format(format!("{}: {error}", output.display())))?;
+    let digest: String = digest.iter().map(|byte| format!("{byte:02x}")).collect();
+    Ok(json!({ "digest": digest }))
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     let result = match args.as_slice() {
@@ -557,6 +592,9 @@ fn main() -> ExitCode {
                 )
             })
         }
+        [_, command, input, output, town_key] if command == "qualification-residence" => {
+            qualification_residence(Path::new(input), Path::new(output), town_key)
+        }
         [_, command, root, slug] if command == "derive-identity" => {
             return match run_derive_identity(Path::new(root), slug) {
                 Ok(identity) => {
@@ -578,6 +616,7 @@ fn main() -> ExitCode {
                 "usage: oteryn-world-bundle-compiler parity <repository root>\n       \
                  oteryn-world-bundle-compiler compile <repository root> <identity.json> <out> \
                  <production|non-production>\n       \
+                 oteryn-world-bundle-compiler qualification-residence <bundle> <out> <town key>\n\
                  oteryn-world-bundle-compiler compile-town-qualification <repository root> \
                  <identity.json> <out> <regions>\n       \
                  oteryn-world-bundle-compiler derive-identity <repository root> <world slug>\n       \
