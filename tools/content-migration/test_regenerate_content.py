@@ -103,11 +103,13 @@ def stopped_merge(
 
 
 def resolve_in(root: Path) -> tuple[int, list[str]]:
-    rc.ROOT, rc.PIN_TEST, rc.WORLD = root, root / rc.PIN_PATH, root / "content/world"
-    try:
-        return 0, rc.resolve_conflicts()
-    except SystemExit as stop:
-        return int(stop.code), []
+    with patch.multiple(
+        rc, ROOT=root, PIN_TEST=root / rc.PIN_PATH, WORLD=root / "content/world"
+    ):
+        try:
+            return 0, rc.resolve_conflicts()
+        except SystemExit as stop:
+            return int(stop.code), []
 
 
 def unmerged(root: Path) -> list[str]:
@@ -238,27 +240,24 @@ def test_git_failure_while_enumerating_conflicts_fails_closed() -> None:
         corrupt = root / "corrupt-index"
         corrupt.write_bytes(b"not an index")
         commands: list[list[str]] = []
-        saved = rc.run, sys.argv, os.environ.get("GIT_INDEX_FILE")
-        rc.run, sys.argv = commands.append, ["regenerate_content.py", "--resolve"]
-        os.environ["GIT_INDEX_FILE"] = str(corrupt)
-        rc.ROOT, rc.PIN_TEST, rc.WORLD = (
-            root,
-            root / rc.PIN_PATH,
-            root / "content/world",
-        )
-        try:
-            rc.main()
-            raise AssertionError(
-                "--resolve must stop when git cannot list the conflicts"
-            )
-        except SystemExit as stop:
-            assert stop.code not in (0, None), stop.code
-        finally:
-            rc.run, sys.argv = saved[0], saved[1]
-            if saved[2] is None:
-                os.environ.pop("GIT_INDEX_FILE", None)
-            else:
-                os.environ["GIT_INDEX_FILE"] = saved[2]
+        with (
+            patch.multiple(
+                rc,
+                ROOT=root,
+                PIN_TEST=root / rc.PIN_PATH,
+                WORLD=root / "content/world",
+                run=commands.append,
+            ),
+            patch.object(sys, "argv", ["regenerate_content.py", "--resolve"]),
+            patch.dict(os.environ, {"GIT_INDEX_FILE": str(corrupt)}),
+        ):
+            try:
+                rc.main()
+                raise AssertionError(
+                    "--resolve must stop when git cannot list the conflicts"
+                )
+            except SystemExit as stop:
+                assert stop.code not in (0, None), stop.code
         # Nothing ran and nothing was written: the merge is exactly as git left it.
         assert commands == [], commands
         assert {path: (root / path).read_bytes() for path in before} == before
