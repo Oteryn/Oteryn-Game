@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 
 import boss_corpse_profiles as crystal
-from build_full_spell_artifact import native_loot_yield_facts
+from build_full_spell_artifact import native_corpse_capacity, native_loot_yield_facts
 from grizzly_shop_profiles import accepted_first
 from import_cyclopedia_global import load_weights
 
@@ -19,8 +19,8 @@ COHORT = PREFIX + 'cloot3-creatures.txt'
 LOOT = PREFIX + 'loot-tables.json'
 ITEMS = 'content/items/definitions/spell-native-profiles.json'
 CRYSTAL_BINDINGS = 'imports/crystalserver/bindings/items.json'
-# Fixed donor yields require non-carried settlement. Creature loot custody requires pickup.
-WORLD_YIELDS = {22555}
+ZAMULOSH_WALL = 22555
+ZAMULOSH_CORPSE = 22495
 # The three selected tables' donor Lua and Wiki list no i51302 yield. The client
 # appearance is a fixed unclassified WorldObject (qualified-world-wiki46-fixed3).
 INVALID_WORLD_REF = 51302
@@ -49,6 +49,13 @@ def creatures(root):
     return set((root / COHORT).read_text().splitlines())
 
 
+def has_native_custody(reference, row):
+    if reference == item_ref(ZAMULOSH_CORPSE):
+        return (row['admission'] == crystal.corpse_admission(ZAMULOSH_CORPSE)
+                and native_corpse_capacity(reference, row, reward_boss=True) is not None)
+    return native_loot_yield_facts(reference, row) is not None
+
+
 def capture(root, source_cache):
     def base_document(path):
         return json.loads(subprocess.check_output(['git', 'show', f'{BASE}:{path}'], cwd=root))
@@ -73,8 +80,9 @@ def capture(root, source_cache):
     keys = set().union(*(gaps[creature] for creature in cohort))
     pending = {int(key.rsplit('.i', 1)[1]) for key in keys
                if native_loot_yield_facts(facts[key]['item'], existing.get(key, {})) is None}
-    pending -= WORLD_YIELDS | {INVALID_WORLD_REF, ICE_CUBE_VISUAL}
+    pending -= {ZAMULOSH_WALL, INVALID_WORLD_REF, ICE_CUBE_VISUAL}
     pending.update(AMULET_DISCHARGE.values())
+    pending.add(ZAMULOSH_CORPSE)
     source = crystal.source
     blobs = crystal.load_source_blobs(source_cache)
     xml_raw = blobs['data/items/items.xml']
@@ -124,7 +132,7 @@ def capture(root, source_cache):
                 'stop_duration': source.K(True),
                 'decay_target': source.K({key: target[key] for key in ('key', 'revision')}),
             })
-        if native_loot_yield_facts(reference, row) is None:
+        if not has_native_custody(reference, row):
             raise ValueError(f'CLOOT3_DONOR_CUSTODY:{identifier}')
         records.append(row)
     return {
@@ -151,14 +159,14 @@ def complete_records(root, records, order):
         row = current.get(key)
         if row is None:
             current[key] = observed
-        elif native_loot_yield_facts(reference, row) is None:
+        elif not has_native_custody(reference, row):
             if row['production_definition'] != observed['production_definition'] or row['production_binding'] != binding:
                 raise ValueError(f'CLOOT3_NATIVE_IDENTITY:{key}')
             # Keep known use, text, equipment and custody facts from other owners.
             for group in ('classification', 'physical', 'stack', 'container', 'charges'):
                 row['semantics'][group] = accepted_first(row['semantics'][group], observed['semantics'][group])
             row['admission'] = observed['admission']
-            if native_loot_yield_facts(reference, row) is None:
+            if not has_native_custody(reference, row):
                 raise ValueError(f'CLOOT3_NATIVE_CUSTODY:{key}')
     records[:] = sorted(current.values(), key=order)
 

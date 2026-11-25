@@ -1017,8 +1017,29 @@ fn row(
                 && algorithm == LootSelectionAlgorithm::IndependentBernoulliPpm
                 && !is_boss(profile);
             let admits_tusk_shield = source_tusk_shield_pair(creature, reference);
+            // Keep the exact source roll in the Loot section, but exclude this
+            // fixed scenery from Zamulosh's private Item settlement.
+            let carried_entries;
+            let entries = if private_reward
+                && creature == "oteryn:creature.zamulosh"
+                && reference.key == "oteryn:loot.creature.zamulosh"
+                && reference.revision == "definition-r1"
+            {
+                carried_entries = table
+                    .entries
+                    .iter()
+                    .filter(|entry| {
+                        entry.item.key != "oteryn:item.tibia.i22555"
+                            || entry.item.revision != "definition-r1"
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>();
+                carried_entries.as_slice()
+            } else {
+                table.entries.as_slice()
+            };
             let entries = lower_loot_entries(
-                &table.entries,
+                entries,
                 items,
                 0,
                 admits_tusk_shield,
