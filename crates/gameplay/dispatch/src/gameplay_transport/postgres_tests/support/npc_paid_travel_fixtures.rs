@@ -76,7 +76,7 @@ async fn dispatch_talk(
         .await)
 }
 
-fn line(outcome: &crate::gameplay_transport::npc_command::NpcTalkOutcome) -> String {
+pub(super) fn line(outcome: &crate::gameplay_transport::npc_command::NpcTalkOutcome) -> String {
     outcome
         .conversation
         .as_ref()

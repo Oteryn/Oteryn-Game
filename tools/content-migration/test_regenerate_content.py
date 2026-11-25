@@ -584,7 +584,7 @@ def test_source_cohort_includes_installed_successors() -> None:
         pass
 
     def measure():
-        assert installed == [rc.ROOT, rc.WORLD, (rc.ROOT, rc.WORLD)], (
+        assert installed == [rc.ROOT, rc.WORLD, rc.WORLD, (rc.ROOT, rc.WORLD), rc.WORLD, rc.WORLD], (
             "measure only the complete installed World"
         )
         raise Measured
@@ -599,10 +599,21 @@ def test_source_cohort_includes_installed_successors() -> None:
             "buddel_travel.install_buddel",
             side_effect=lambda _, world: installed.append(world),
         ),
-        patch("travel_route_corrections.project_routes"),
+        patch(
+            "travel_route_corrections.project_routes",
+            side_effect=lambda _, world: installed.append(world),
+        ),
         patch(
             "native_world_canonicalization.install_trade_successors",
             side_effect=lambda *args: installed.append(args),
+        ),
+        patch(
+            "regional_npc_prices.install",
+            side_effect=lambda _, world: installed.append(world),
+        ),
+        patch(
+            "regional_npc_dialogue.install",
+            side_effect=lambda _, world: installed.append(world),
         ),
         patch.object(rc, "canonicalize_world"),
         patch.object(rc, "refresh_source_cohort_extent", side_effect=measure),
@@ -723,6 +734,14 @@ def full_generation_trace(
                 "native_world_canonicalization.install_trade_successors",
                 side_effect=lambda *_: record(("install-trade-successors",)),
             ),
+            patch(
+                "regional_npc_prices.install",
+                side_effect=lambda *_: record(("install-regional-npc-prices",)),
+            ),
+            patch(
+                "regional_npc_dialogue.install",
+                side_effect=lambda *_: record(("install-regional-npc-dialogue",)),
+            ),
             patch.object(
                 rc,
                 "canonicalize_world",
@@ -769,6 +788,8 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
         ("install-buddel",),
         ("project-travel-routes",),
         ("install-trade-successors",),
+        ("install-regional-npc-prices",),
+        ("install-regional-npc-dialogue",),
         ("canonicalize-world",),
         ("source-cohort",),
         ("repin-world",),
