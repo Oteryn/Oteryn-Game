@@ -33,6 +33,8 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                         | "oteryn:quest-callback/authored-shattered-isles-s4"
                         | "oteryn:quest-callback/explorer-society/collect-bells"
                         | "oteryn:quest-callback/explorer-society/cut-ice"
+                        | "oteryn:quest-callback/postman-folda-mailbox"
+                        | "oteryn:quest-callback/postman-letterbag-delivery"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
                         | "oteryn:quest-callback/authored-threatened-dreams/book-table-1"
@@ -47,9 +49,13 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
             ))
 }
 
-/// The fenced inventory entry is the required tool only by its exact production key.
+/// Match the exact production key of the required tool or an authored alternative.
 pub(crate) fn is_required_tool(required: &ItemOnTarget, production_key: &str) -> bool {
     production_key == required.item
+        || required
+            .alternatives
+            .iter()
+            .any(|item| item == production_key)
 }
 
 /// Select only the wire subject observed in the fenced inventory snapshot.

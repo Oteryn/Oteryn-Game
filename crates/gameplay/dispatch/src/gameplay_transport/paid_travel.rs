@@ -197,7 +197,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> npc_command::NpcTalkOutcome {
         let session = command.game_session_id;
         let text = intent.text.trim().to_ascii_lowercase();
-        let (context, routes, fence, previous) = {
+        let (context, routes, fence, previous, source_confirmation) = {
             let runtime = self.runtime.lock().await;
             let previous = match self.states.newhaven_travel.paid_prompts.lock() {
                 Ok(mut prompts) => prompts.remove(&session),
@@ -240,7 +240,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(fence) = command.item_fence else {
                 return ordinary;
             };
+            let source_confirmation = previous
+                .as_ref()
+                .is_some_and(|prompt| prompt.matches_source_confirmation(&text));
             if let Some(prompt) = previous.as_ref()
+                && !source_confirmation
                 && prompt.matches_confirmation(intent.npc_actor, &context, fence, received_at.get())
                 && let Some(decline) = entry.travel_decline(&prompt.route.route.key, &text)
             {
@@ -284,7 +288,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Ok)
                 };
             }
-            (context, entry.travel_routes.clone(), fence, previous)
+            (
+                context,
+                entry.travel_routes.clone(),
+                fence,
+                previous,
+                source_confirmation,
+            )
         };
         if previous.as_ref().is_some_and(|prompt| {
             prompt.route.crystal_callback
@@ -306,7 +316,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 route.matches_keyword(&text)
             }
         });
-        let prompt = if text == "yes" || (route.is_none() && callback_confirmation) {
+        let prompt = if text == "yes"
+            || source_confirmation
+            || (route.is_none() && callback_confirmation)
+        {
             let Some(mut prompt) = previous else {
                 return ordinary;
             };

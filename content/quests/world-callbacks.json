@@ -7326,7 +7326,8 @@
         "item": "oteryn:item.tibia.i3217",
         "count": 1,
         "replacement": "oteryn:item.tibia.i2859",
-        "target_replacement": null
+        "target_replacement": null,
+        "selected_instance": true
       },
       "return_on_failure": false,
       "failure_message": null,

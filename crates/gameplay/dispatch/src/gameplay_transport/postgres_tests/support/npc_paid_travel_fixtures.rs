@@ -1099,6 +1099,13 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
             // Retain the exact production request across an injected transaction rollback,
             // then reconcile it and replay its durable receipt as in the original passage case.
             sqlx::raw_sql("CREATE FUNCTION s10t_travel_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'S10T injected arrival failure'; END; $$; CREATE TRIGGER s10t_travel_fail BEFORE INSERT ON game_character_pending_arrivals FOR EACH ROW EXECUTE FUNCTION s10t_travel_fail()").execute(&h.pool).await?;
+            let tour_stage = POSTMAN_TOUR.iter().position(|(npc, dest, ..)| npc == captain && dest == destination)
+                .map(|stage| i64::try_from(stage).map(|stage| stage + 1)).transpose()?;
+            let confirmation = if !reward_fixture && (*captain == "eremo" || tour_stage.is_some()) {
+                "yes please"
+            } else {
+                "yes"
+            };
             let failed = owner
                 .npc_talk(
                     dependencies.actor,
@@ -1109,15 +1116,13 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                     },
                     NpcTalkIntent {
                         npc_actor: npc,
-                        text: "yes".into(),
+                        text: confirmation.into(),
                     },
                 )
                 .await;
-            assert!(failed.unknown);
+            assert!(failed.unknown, "{captain}/{destination}: {confirmation:?} did not reach the arrival transaction");
             assert_eq!(failed.disposition, NpcIntentDisposition::Rejected);
             assert_eq!(gold(&h).await?, before);
-            let tour_stage = POSTMAN_TOUR.iter().position(|(npc, dest, ..)| npc == captain && dest == destination)
-                .map(|stage| i64::try_from(stage).map(|stage| stage + 1)).transpose()?;
             if let Some(stage) = tour_stage {
                 assert_eq!(mission().await?, stage, "rolled-back {captain} trip");
             }
@@ -1174,6 +1179,9 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                     .fetch_one(&h.pool)
                     .await?;
             assert_eq!(after, receipts + 1);
+            if !reward_fixture && *captain == "eremo" {
+                assert_eq!(mission().await?, 1, "Eremo is outside the Postman tour");
+            }
             if let Some(stage) = tour_stage {
                 assert_eq!(mission().await?, stage + 1, "confirmed and replayed {captain} trip");
                 let receipts: i64 = sqlx::query_scalar(
