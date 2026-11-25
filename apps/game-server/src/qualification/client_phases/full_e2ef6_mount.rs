@@ -14,10 +14,14 @@
     }
     if groups.explicit("thaisroutes") {
         verdict::dawnport_excluded("C11.full");
+    }
+    if groups.explicit("thaisroutes") || groups.explicit("p20") {
         verdict::indexed("P20.full", async {
             full_row_p20::run_thais_packet(core_clients).await;
             release_row_characters(core_clients).await
         }).await;
+    }
+    if groups.explicit("thaisroutes") {
         let [monk, _, _] = extra_world_fixtures(core_clients, clients).await?;
         let monk_clients = monk.clients(core_clients);
         verdict::indexed("C12.full", async {

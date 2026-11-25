@@ -1461,7 +1461,7 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
       "$C12_MONK_ACCOUNT") requested_vocation=Monk ;;
       "$C06_CASTER_ACCOUNT") requested_vocation=Sorcerer ;;
     esac
-    if [[ "${NODE_BOOT_E2E_ONLY:-}" == thaisroutes ]]; then
+    if [[ "${NODE_BOOT_E2E_ONLY:-}" == thaisroutes || "${NODE_BOOT_E2E_ONLY:-}" == p20 ]]; then
       if [[ "$account" == "$SECOND_ACCOUNT_ID" ]]; then
         requested_vocation=Knight
       elif [[ "$account" == "${EXTRA_WORLD_ACCOUNTS[1]}" ]]; then

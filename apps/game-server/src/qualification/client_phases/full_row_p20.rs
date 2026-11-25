@@ -549,6 +549,10 @@ async fn run(clients: &SeamClients<'_>, thais_only: bool) {
             } else {
                 oressa(&mut row, &mut client, clients, world, &metadata).await?;
             }
+            super::full_e2ef7::require_current_premium(&mut client)
+                .await
+                .map_err(|error| format!("step=promotion-premium {error}"))?;
+            evidence("P20_PREMIUM state=Active remaining_validity=nonzero");
             let initial = progress(&mut client).await?;
             let mut current = initial;
             let mut earned_prerequisites = false;
