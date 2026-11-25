@@ -182,15 +182,16 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             );
         }
         let cells = map
-            .movement_cells(deps.room.movement_cells())
+            .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
+        let frame_binding = map.frame_binding_digest(deps.admitted.world_id);
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
             pin.identity().client_artifact_digest(),
-            pin.frame_binding().digest(),
-            pin.qualified_room().map_revision_digest(),
+            frame_binding,
+            map.map_revision_digest(),
             (
                 i32::from(door_x + 1),
                 i32::from(door_y),
@@ -239,7 +240,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         }
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
-        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(frame_binding.as_slice()).execute(&harness.pool).await?;
         if !level_gate {
             super::item_look_fixtures::seed_main_backpack(&harness, &[(key_item, 1), (wrong_key, 1)])
                 .await?;
