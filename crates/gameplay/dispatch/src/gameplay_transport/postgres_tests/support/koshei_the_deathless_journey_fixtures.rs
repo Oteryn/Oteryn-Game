@@ -568,7 +568,9 @@ pub(super) async fn exercise(
                 floor: SWITCH.floor,
             },
             item: super::annihilator_combat::PALADIN_POTION.into(),
-            count: 50,
+            // A full stack covers the native fight's healing demand when
+            // unrelated content changes the combat rolls.
+            count: 100,
         },
         175,
         true,
