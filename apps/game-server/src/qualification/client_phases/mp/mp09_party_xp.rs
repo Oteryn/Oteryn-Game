@@ -19,7 +19,7 @@ use oteryn_protocol_oteryn::{
 /// Hunt target (key, shown name, base XP), spawned next to the leader through provision.py --spawn. Experience is the
 /// authored `experience` of the Cyclops record.
 const HUNT_TARGET: (&str, &str, u64) = ("oteryn:creature.cyclops", "cyclops", 150);
-const HUNT_LEADER_AXE: u32 = 7420;
+const HUNT_LEADER_AXE: u32 = 7434;
 
 // A low-armour hostile creature lets the level-one fixture register real party activity.
 const ELIGIBILITY_TARGET: (&str, u64) = ("oteryn:creature.cave_rat", 10);
@@ -320,7 +320,7 @@ pub(super) async fn run(
 async fn seed_hunt_leader(bots: &mut [Bot<'_, '_>]) -> TestResult {
     super::super::character_prep::declare_seeded(
         "MP09.full",
-        "level-100 knight with a Reaper's Axe (item 7420)",
+        &format!("level-100 knight with a royal axe (item {HUNT_LEADER_AXE})"),
         "the knight must finish the Cyclops within the shared-XP activity window",
     );
     bots::with_peer_liveness(bots, 0, "seed-hunt-leader", async |leader| {
@@ -1194,11 +1194,30 @@ mod qualification_review_tests {
             native_input()?,
         )
         .map_err(|error| format!("{error:?}"))?;
-        let rewards = controller
+        let native = controller
             .active()
             .and_then(|active| active.native_gameplay())
-            .ok_or("missing active native gameplay")?
-            .reward_table();
+            .ok_or("missing active native gameplay")?;
+        let key = format!("oteryn:item.tibia.i{HUNT_LEADER_AXE}");
+        let definition = crate::durability::item_mint::TypedDefinitionRef {
+            family: "Item".into(),
+            revision_ref: native
+                .item_index()
+                .and_then(|index| index.revision(&key))
+                .ok_or("missing hunt axe definition")?
+                .into(),
+            production_key: key,
+        };
+        let axe = oteryn_gameplay_items::item_ref_admission::generation_item_facts(
+            native,
+            &definition,
+        )
+        .map_err(|error| format!("MP09 hunt axe is absent from active profiles: {error:?}"))?;
+        assert_eq!(
+            axe.stack,
+            crate::domain::item_definition::ItemStackClass::NonStackable
+        );
+        let rewards = native.reward_table();
         for (creature, xp) in [
             ("oteryn:creature.crazed_beggar", 35),
             ("oteryn:creature.bonelord", 170),
