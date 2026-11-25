@@ -811,6 +811,12 @@ impl BundleWorld {
             && !self.map.facts.doors().blocks(pos)
     }
 
+    /// Whether this cell would be enterable with one specific door open.
+    pub fn enterable_with_open_door(&self, pos: TilePos, key: u64) -> bool {
+        !self.map.facts.quest_callback_blocked(&self.base, pos, self.blocked.contains(&pos))
+            && !self.map.facts.doors().blocks_except(pos, Some(key))
+    }
+
     /// The ground speed a step onto `pos` uses. This is the one switch point: Engineering 150
     /// until the map's own ground speed is served (MAP-CLIENT-1).
     pub fn ground_speed(&self, pos: TilePos) -> u16 {

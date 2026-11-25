@@ -493,6 +493,53 @@ async fn samples(hunt: &Hunt<'_>, client: &mut DevClientSession, spell: NonZeroU
 async fn restore_cast_mana(client: &mut DevClientSession) -> TestResult {
     use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+const BLUE_VALLEY_ENTRY: TilePos = TilePos { x: 32456, y: 32290, floor: -7 };
+const BLUE_VALLEY_ARRIVAL: TilePos = TilePos { x: 33614, y: 31494, floor: -7 };
+const BLUE_VALLEY_EXIT: TilePos = TilePos { x: 33605, y: 31468, floor: -7 };
+const THAIS_ARRIVAL: TilePos = TilePos { x: 32456, y: 32291, floor: -7 };
+
+async fn cross_portal(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    entrance: TilePos,
+    arrival: TilePos,
+) -> TestResult {
+    use oteryn_protocol_oteryn::{world_map::MapOrigin, world_object::UseDisposition};
+
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = route(world, start, |at| {
+        at.floor == entrance.floor && at.x.abs_diff(entrance.x).max(at.y.abs_diff(entrance.y)) == 1
+    }).ok_or_else(|| format!("C12 bell approach unavailable from {start:?} to {entrance:?}"))?;
+    walk(client, world, &path).await?;
+
+    // Crystal 201189f8 actions_blue_valley_teleports.lua:2,4,9.
+    const BELL: u16 = 49948;
+    let map = client.session_mut().world_map_snapshot().ok_or("C12 bell map view unavailable")?;
+    let (ordinal, revision) = map.tiles.iter()
+        .find(|entry| tile(entry.position).ok() == Some(entrance))
+        .and_then(|entry| entry.items.iter().find_map(|item| match item.origin {
+            MapOrigin::BaseOrdinal { ordinal, object_revision } if item.appearance_id == BELL => {
+                Some((ordinal, object_revision))
+            }
+            _ => None,
+        })).ok_or_else(|| format!("C12 donor bell absent at {entrance:?}"))?;
+    let key = crate::map::view::placement_key(entrance, ordinal).ok_or("C12 bell placement key")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let reply = client.use_object(&placement, revision).await?;
+    if reply.disposition != UseDisposition::Committed {
+        return Err(format!("C12 donor bell USE at {entrance:?}: {:?}", reply.disposition).into());
+    }
+    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
+    while tile(client.world_spatial().actor_position)? != arrival {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("C12 donor bell USE did not land at {arrival:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+    }
+    Ok(())
+}
+
     if client.actor_vitals().is_some_and(|vitals| vitals.mana >= CAST_MANA) {
         return Ok(());
     }
@@ -675,7 +722,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if carried_count(&client, definition) != 0 || equipped_right(&client, definition) {
         return Err("item 50271 must first enter the dedicated Monk's backpack through the purchase".into());
     }
+    cross_portal(&mut client, world, BLUE_VALLEY_ENTRY, BLUE_VALLEY_ARRIVAL).await?;
     acquire_pema(&mut client, world, &metadata.npcs, definition).await?;
+    cross_portal(&mut client, world, BLUE_VALLEY_EXIT, THAIS_ARRIVAL).await?;
     let spell_index = spell(&mut client)?;
     let augment = EXPECTED_AUGMENT_BPS;
     let from = tile(client.world_spatial().actor_position)?;

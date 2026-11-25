@@ -46,7 +46,7 @@ impl Watch {
             let failed_pass = state.stall.is_some() && line.contains(" status=PASS ");
             drop(state);
             if failed_exit || failed_pass {
-                for status in ["PASS", "SKIPPED", "MISSING-SERVER", "MISSING-CLIENT"] {
+                for status in ["PASS", "SKIPPED", "MISSING-SERVER", "MISSING-CLIENT", "OUT_OF_SCOPE"] {
                     line = line.replacen(&format!(" status={status} "), " status=FAIL ", 1);
                 }
             }

@@ -1461,6 +1461,13 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
       "$C12_MONK_ACCOUNT") requested_vocation=Monk ;;
       "$C06_CASTER_ACCOUNT") requested_vocation=Sorcerer ;;
     esac
+    if [[ "${NODE_BOOT_E2E_ONLY:-}" == thaisroutes ]]; then
+      if [[ "$account" == "$SECOND_ACCOUNT_ID" ]]; then
+        requested_vocation=Knight
+      elif [[ "$account" == "${EXTRA_WORLD_ACCOUNTS[1]}" ]]; then
+        requested_vocation=Monk
+      fi
+    fi
     if ! python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
       "$WORK" "$account" "$WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name" "$requested_vocation"; then
       echo "platform intent issue failed for operation $operation"

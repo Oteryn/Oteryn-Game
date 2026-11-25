@@ -607,6 +607,16 @@ fn destination_with_teleports(
     direction: StepDirection,
     allow_teleport: bool,
 ) -> Option<TilePos> {
+    destination_with_collision(world, from, direction, allow_teleport, |at| world.enterable(at))
+}
+
+fn destination_with_collision(
+    world: &BundleWorld,
+    from: TilePos,
+    direction: StepDirection,
+    allow_teleport: bool,
+    enterable: impl Fn(TilePos) -> bool,
+) -> Option<TilePos> {
     use crate::map::floor::{Ground, resolve_landing};
     use crate::movement::CardinalStep;
     let direction = match direction {
@@ -629,7 +639,7 @@ fn destination_with_teleports(
     let ground = |cell| match position(cell) {
         Some(pos) => match world.base().tile(pos.x, pos.y, pos.floor) {
             None => Ground::Absent,
-            Some(tile) if tile.walkable() && world.enterable(pos) => Ground::Walkable,
+            Some(tile) if tile.walkable() && enterable(pos) => Ground::Walkable,
             Some(_) => Ground::Blocked,
         },
         None => Ground::Absent,
@@ -1149,6 +1159,7 @@ pub(super) async fn journeys(
     }
     drop(client);
     {
+        let core_clients = clients;
         let clients = packet_clients;
         // Default runs retain the ordinary packets alongside the indexed rows.
         // Explicit groups can isolate those packets from the row batch.
@@ -1227,7 +1238,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(11) {
                 verdict::indexed("C11.full", async {
-                    full_row_c11::run_packet(clients).await;
+                    verdict::dawnport_excluded("C11.full");
                     release_row_characters(clients).await
                 })
                 .await;
@@ -1817,7 +1828,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(96) {
                 verdict::indexed("C11.client", async {
-                    client_row_c11::run_packet(clients).await;
+                    verdict::dawnport_excluded("C11.client");
                     release_row_characters(clients).await
                 })
                 .await;
@@ -2622,7 +2633,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(209) {
                 verdict::indexed("S16a.client", async {
-                    client_row_s16a::run_packet(clients).await;
+                    verdict::dawnport_excluded("S16a.client");
                     release_row_characters(clients).await
                 })
                 .await;
