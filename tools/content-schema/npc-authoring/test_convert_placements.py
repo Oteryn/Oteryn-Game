@@ -29,25 +29,33 @@ class ConvertPlacementsTest(unittest.TestCase):
 
     def test_shadows_errand_contacts_use_pinned_crystal_cells(self):
         expected = {
-            ("boveas", 32431, 32090, 15),
-            ("cerdras", 32301, 31815, 6),
-            ("dreadeye", 32800, 31572, 14),
-            ("milos", 33258, 31823, 3),
-            ("scutty", 32574, 31915, 12),
-            ("telas", 33273, 31788, 11),
-            ("telas", 33276, 31800, 6),
+            ("boveas", 32431, 32090, 15): (3300, 2),
+            ("cerdras", 32301, 31815, 6): (634, 1),
+            ("dreadeye", 32800, 31572, 14): (3174, 2),
+            ("milos", 33258, 31823, 3): (118, 1),
+            ("scutty", 32574, 31915, 12): (3012, 1),
+            ("telas", 33273, 31788, 11): (2913, 2),
+            ("telas", 33276, 31800, 6): (619, 2),
         }
         contacts = {name for name, *_ in expected}
         placements = [r["declaration"] for r in self.records
                       if cp.local_name(r["declaration"]["npc"]) in contacts]
-        self.assertEqual({
-            (cp.local_name(row["npc"]), row["cell"]["x"], row["cell"]["y"], row["cell"]["floor"])
-            for row in placements
-        }, expected)
+        def anchor(row):
+            cell = row["cell"]
+            return cp.local_name(row["npc"]), cell["x"], cell["y"], cell["floor"]
+
+        self.assertCountEqual(map(anchor, placements), expected.keys())
+        xml = "data-global/world/world-npc.xml"
         for row in placements:
-            source, = row["provenance"]
-            self.assertEqual(source["revision"], "201189f871d23597b82caf88fd611454a2ddefb8")
-            self.assertEqual(source["source_row"], "data-global/world/world-npc.xml")
+            line, regional_citations = expected[anchor(row)]
+            # The merged placement retains the quest proof and the regional line citations.
+            self.assertCountEqual(
+                [source["source_row"] for source in row["provenance"]],
+                [xml] + [f"{xml}:{line}"] * regional_citations,
+            )
+            for source in row["provenance"]:
+                self.assertEqual(source["origin"], "crystal")
+                self.assertEqual(source["revision"], "201189f871d23597b82caf88fd611454a2ddefb8")
 
     def test_l1_reward_npcs_use_only_the_global_source_cells(self):
         expected = {
@@ -159,6 +167,10 @@ class ConvertPlacementsTest(unittest.TestCase):
 
     def test_only_scoped_admitted_npcs(self):
         scope = set(json.loads(cp.SCOPE.read_text())["npcs"])
+        contacts = json.loads(cp.CONTACTS.read_text())
+        scope.update(f'oteryn:npc.{row["npc"]}' for group in contacts.values() for row in group)
+        regional = json.loads(cp.regional_placements.SELECTION.read_text())["placements"]
+        scope.update(f"oteryn:npc.{row['npc']}" for row in regional)
         self.assertEqual({r["declaration"]["npc"] for r in self.records}, scope - {h["npc"] for h in self.held})
         self.assertLessEqual(scope, cp.admitted_keys())
 
@@ -183,7 +195,12 @@ class ConvertPlacementsTest(unittest.TestCase):
 
     def test_records_sorted_unique_and_keyed_by_cell(self):
         keys = [r["declaration"]["identity"]["key"] for r in self.records]
-        self.assertEqual(keys, sorted(set(keys)))
+        self.assertEqual(len(keys), len(set(keys)))
+        shards = [json.loads(self.files[Path(name).name])["records"] for name in self.index["shards"]]
+        original, *mainland = shards
+        for group in (original, [row for shard in mainland for row in shard]):
+            group_keys = [row["declaration"]["identity"]["key"] for row in group]
+            self.assertEqual(group_keys, sorted(group_keys))
         for r in self.records:
             d = r["declaration"]
             c = d["cell"]
