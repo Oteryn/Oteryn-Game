@@ -34,6 +34,7 @@ mod rotten_flame;
 mod scene;
 mod scene_actors;
 mod scene_items;
+mod serpentine_lever;
 mod shared_gate;
 mod soul_war_reward;
 mod source_transforms;
@@ -1291,7 +1292,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             selection_deadline = Some(deadline);
         }
         let callback = if let [callback] = selected.as_slice() {
-            *callback
+            self.serpentine_journey_opening(callback, map, &resolved, command.game_session_id)
+                .await
+                .unwrap_or(callback)
         } else {
             if selected.is_empty() {
                 return None;

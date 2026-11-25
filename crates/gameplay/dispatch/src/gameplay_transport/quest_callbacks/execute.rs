@@ -201,6 +201,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
+        let opening;
+        let callback = if callback.key == super::serpentine_lever::JOURNEY
+            && map.facts.quest_callback_source_bound(key)
+        {
+            let Some(source) =
+                self.serpentine_opening_source(callback, map, key, after.appearance_id)
+            else {
+                return UseDisposition::Rejected;
+            };
+            // Retain the authored transition key for durable admission and receipt replay.
+            // Project the same forcefield removal as the native AID route.
+            opening = {
+                let mut opening = callback.clone();
+                opening.passages.clone_from(&source.passages);
+                opening.effects.scene.clone_from(&source.effects.scene);
+                opening
+            };
+            &opening
+        } else {
+            callback
+        };
         if goblin_elevator::owns(&callback.key) {
             if callback.selector.appearance != Some(after.appearance_id) {
                 return UseDisposition::NothingToUse;
@@ -574,11 +595,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .item_on_target
             .as_ref()
             .is_some_and(|tool| tool.selected_instance);
-        let projection_target =
+        let projection_target = if matches!(
+            callback.key.as_str(),
+            super::serpentine_lever::JOURNEY | super::serpentine_lever::SOURCE
+        ) {
+            // Both routes share the lever while an authored opening receipt is pending.
+            Some(key)
+        } else {
             match shared_projection_target(projection.as_ref(), key, selected_tool_instance) {
                 Ok(target) => target,
                 Err(refusal) => return refusal,
-            };
+            }
+        };
         if let Some(target) = projection_target
             && !self
                 .states
