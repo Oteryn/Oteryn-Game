@@ -3,7 +3,9 @@ use super::arena_match_fixtures::{fixture};
 
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
+use crate::durability::arena_match::donor;
 use crate::gameplay_transport::ComposedFreshAdmission;
+use crate::gameplay_transport::arena_match::{ARENA_POLL_READ_BARRIER, ARENA_PORTAL_COMMIT_BARRIER};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
     AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
@@ -18,12 +20,13 @@ fn arena_match_real_connection_status_and_full_match() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| {
-            scenario(false, false).map_err(|e| e.to_string())?;
-            scenario(true, false).map_err(|e| e.to_string())
+            scenario(false, false, "arena_match_real_connection_status_and_full_match").map_err(|e| e.to_string())?;
+            scenario(true, false, "arena_match_real_connection_status_and_full_match").map_err(|e| e.to_string())
         })?
         .join()
         .map_err(|_| "arena match scenario panicked")??;
-    eprintln!("M51 POSTGRES_CASE_COMPLETED: 30 real opponents, fee, reward, replay, exit, reload");
+    let opponents = donor::OPPONENTS.len() * donor::CENTERS.len();
+    eprintln!("M51 POSTGRES_CASE_COMPLETED: {opponents} real opponents, fee, reward, replay, exit, reload");
     Ok(())
 }
 #[test]
@@ -34,7 +37,7 @@ fn arena_match_credited_portal_timeout_restores_pillar() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true, true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(true, true, "arena_match_credited_portal_timeout_restores_pillar").map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "arena timeout scenario panicked")??;
     eprintln!("M51 POSTGRES_CASE_COMPLETED credited_portal_timeout duration={:?}", started.elapsed());
@@ -66,7 +69,7 @@ fn m51_postgres_native_portals_complete_all_ten_pits_and_reward() -> TestResult 
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario_path(true, true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario_route(true, Some(NativeScenario::Portals), "m51_postgres_native_portals_complete_all_ten_pits_and_reward").map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "M51 native portal run panicked")??;
     eprintln!(
@@ -86,7 +89,7 @@ fn m51_postgres_native_recreated_pillars_complete_all_ten_pits_and_reward() -> T
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| {
-            scenario_route(true, Some(NativeScenario::RecreatedPillars)).map_err(|e| e.to_string())
+            scenario_route(true, Some(NativeScenario::RecreatedPillars), "m51_postgres_native_recreated_pillars_complete_all_ten_pits_and_reward").map_err(|e| e.to_string())
         })?
         .join()
         .map_err(|_| "M51 recreated pillar worker panicked")??;
@@ -98,8 +101,8 @@ fn m51_postgres_native_recreated_pillars_complete_all_ten_pits_and_reward() -> T
     Ok(())
 }
 
-fn scenario(funded: bool, expire: bool) -> TestResult {
-    scenario_route_with_expiry(funded, None, expire)
+fn scenario(funded: bool, expire: bool, test: &str) -> TestResult {
+    scenario_route_with_expiry(funded, None, expire, test)
 }
 
 #[test]
@@ -110,7 +113,7 @@ fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario_route(true, Some(NativeScenario::Departure)).map_err(|e| e.to_string()))?
+        .spawn(|| scenario_route(true, Some(NativeScenario::Departure), "m51_postgres_native_departure_cancels_without_a_leave_command").map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M51 native departure worker panicked")??;
     eprintln!(
@@ -128,6 +131,58 @@ enum NativeScenario {
     Departure,
     Timeout,
     ResetMonsters,
+    InterruptedPortal { pit: u8, recovery: PortalRecovery },
+}
+
+#[derive(Clone, Copy)]
+enum PortalRecovery {
+    Poll,
+    Restart,
+    Replay,
+    ReadInFlight,
+}
+
+#[test]
+fn arena_victory_committed_before_relocation_is_relocated_by_recovery() -> TestResult {
+    portal_case(10, PortalRecovery::Poll, "arena_victory_committed_before_relocation_is_relocated_by_recovery")
+}
+
+#[test]
+fn arena_victory_committed_before_relocation_is_relocated_after_restart() -> TestResult {
+    portal_case(10, PortalRecovery::Restart, "arena_victory_committed_before_relocation_is_relocated_after_restart")
+}
+
+#[test]
+fn arena_advance_committed_before_relocation_is_relocated_by_recovery() -> TestResult {
+    portal_case(5, PortalRecovery::Poll, "arena_advance_committed_before_relocation_is_relocated_by_recovery")
+}
+
+#[test]
+fn arena_advance_committed_before_relocation_is_relocated_after_restart() -> TestResult {
+    portal_case(5, PortalRecovery::Restart, "arena_advance_committed_before_relocation_is_relocated_after_restart")
+}
+
+#[test]
+fn arena_portal_recovery_replay_records_exactly_one_relocation_receipt() -> TestResult {
+    portal_case(10, PortalRecovery::Replay, "arena_portal_recovery_replay_records_exactly_one_relocation_receipt")
+}
+
+#[test]
+fn arena_portal_step_during_a_death_poll_read_is_not_dropped() -> TestResult {
+    portal_case(10, PortalRecovery::ReadInFlight, "arena_portal_step_during_a_death_poll_read_is_not_dropped")
+}
+
+fn portal_case(pit: u8, recovery: PortalRecovery, test: &'static str) -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .name(test.into())
+        .stack_size(256 << 20)
+        .spawn(move || scenario_route(true, Some(NativeScenario::InterruptedPortal { pit, recovery }), test)
+            .map_err(|error| error.to_string()))?
+        .join().map_err(|_| "interrupted portal scenario panicked")??;
+    Ok(())
 }
 
 #[test]
@@ -138,7 +193,7 @@ fn m51_postgres_native_timeout_kicks_and_persists_without_a_status_command() -> 
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario_route(true, Some(NativeScenario::Timeout)).map_err(|e| e.to_string()))?
+        .spawn(|| scenario_route(true, Some(NativeScenario::Timeout), "m51_postgres_native_timeout_kicks_and_persists_without_a_status_command").map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M51 native timeout worker panicked")??;
     eprintln!(
@@ -157,7 +212,7 @@ fn m51_postgres_native_entry_resets_only_monsters_inside_source_box() -> TestRes
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| {
-            scenario_route(true, Some(NativeScenario::ResetMonsters)).map_err(|e| e.to_string())
+            scenario_route(true, Some(NativeScenario::ResetMonsters), "m51_postgres_native_entry_resets_only_monsters_inside_source_box").map_err(|e| e.to_string())
         })?
         .join()
         .map_err(|_| "M51 native reset worker panicked")??;
@@ -169,13 +224,11 @@ fn m51_postgres_native_entry_resets_only_monsters_inside_source_box() -> TestRes
     Ok(())
 }
 
-fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
-    scenario_route(funded, native_portals.then_some(NativeScenario::Portals))
+fn scenario_route(funded: bool, route: Option<NativeScenario>, test: &str) -> TestResult {
+    scenario_route_with_expiry(funded, route, false, test)
 }
-fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
-    scenario_route_with_expiry(funded, route, false)
-}
-fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expire: bool) -> TestResult {
+
+fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expire: bool, test: &str) -> TestResult {
     let native_portals = route.is_some();
     let leave_early = matches!(route, Some(NativeScenario::Departure));
     let timeout_early = matches!(route, Some(NativeScenario::Timeout));
@@ -183,6 +236,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "arena_match", false, false).await?;
+        eprintln!("arenapkg-marker: {test} db ready");
         super::reset();
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -205,32 +259,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         } else {
             fixture::bundle(native)?
         };
-        let base = crate::map::load(&bytes, &pins).map_err(debug)?;
-        let world = crate::map::boot::boot(
-            &bytes,
-            &crate::map::boot::BootPins {
-                bundle: pins,
-                map_revision: crate::map::overlay::map_revision(&base),
-                start: crate::map::overlay::TilePos {
-                    x: 32251,
-                    y: 31098,
-                    floor: -6,
-                },
-            },
-            deps.admitted.world_id,
-            deps.admitted.channel_id,
-            |key| {
-                let index = native.item_index()?;
-                Some(crate::map::facts::ItemDefinition {
-                    reference: index.definition_ref("Item", key, "definition-r1")?,
-                    solid: Some(key.ends_with(".i1841")),
-                    blocks_projectile: false,
-                    pickupable: false,
-                    door: false,
-                })
-            },
-        )
-        .map_err(debug)?;
+        let world = fixture::boot_world(&deps, native, &bytes, &pins)?;
         for number in 1..=10 {
             let [x, y, floor] = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(number)
                 .ok_or("source pit")?
@@ -590,14 +619,17 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             );
             return Ok(());
         }
-        for rank in 1..=3 {
+        let ranks = 1..=u8::try_from(donor::OPPONENTS.len())?;
+        let pits = 1..=u8::try_from(donor::CENTERS.len())?;
+        let expected_steps = i64::try_from(ranks.len() * pits.len())?;
+        for rank in ranks {
             if rank > 1 {
                 assert_eq!(command(&owner, &mut admitted, A::Leave).await?.disposition, D::Applied);
                 let next = command(&owner, &mut admitted, A::Enter).await?;
                 assert_eq!(next.disposition, D::Applied);
                 assert_eq!(next.state.active_rank, rank);
             }
-        for pit in 1..=10 {
+        for pit in pits.clone() {
             assert_eq!(
                 command(&owner, &mut admitted, A::Advance)
                     .await?
@@ -715,36 +747,98 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                         )
                         .map_err(debug)?;
                 }
-                let moved = crate::gameplay_transport::connection::regression_routed_step(
-                    &owner,
-                    admitted,
-                    deps.actor,
+                let expected = if pit == *pits.end() {
+                    donor::REWARD_ROOM
+                } else {
+                    let (x, y) = donor::CENTERS[usize::from(pit)];
+                    (x, y, 7)
+                };
+                let step = || crate::gameplay_transport::connection::regression_routed_step(
+                    &owner, admitted, deps.actor,
                     oteryn_protocol_oteryn::world_spatial::StepDirection::West,
-                )
-                .await?;
+                );
+                if let Some(NativeScenario::InterruptedPortal { pit: interrupted, recovery }) = route
+                    && pit == interrupted
+                {
+                    let current = || async {
+                        let at = deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position();
+                        Ok::<_, Box<dyn std::error::Error>>((at.x, at.y, at.floor))
+                    };
+                    if matches!(recovery, PortalRecovery::ReadInFlight) {
+                        let barriers = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+                        let poll = ARENA_POLL_READ_BARRIER.scope(
+                            std::sync::Arc::clone(&barriers),
+                            owner.drain_arena_matches(owner.owner_now().get() + 3_000_000),
+                        );
+                        tokio::pin!(poll);
+                        tokio::select! {
+                            () = &mut poll => return Err("death poll did not reach the read barrier".into()),
+                            ready = tokio::time::timeout(std::time::Duration::from_secs(5), barriers.0.notified()) => ready?,
+                        }
+                        step().await?;
+                        assert_eq!(current().await?, expected, "the read must not suppress STEP");
+                        barriers.1.notify_one();
+                        poll.await;
+                        return Ok(());
+                    }
+                    {
+                        let ready = std::sync::Arc::new(tokio::sync::Notify::new());
+                        let interrupted = ARENA_PORTAL_COMMIT_BARRIER.scope(std::sync::Arc::clone(&ready), step());
+                        tokio::pin!(interrupted);
+                        tokio::select! {
+                            result = &mut interrupted => return Err(format!("STEP returned before cancellation: {result:?}").into()),
+                            ready = tokio::time::timeout(std::time::Duration::from_secs(5), ready.notified()) => ready?,
+                        }
+                    }
+                    let portal = (x, y, -floor as i16);
+                    assert_eq!(current().await?, portal, "STEP committed before relocating");
+                    let (phase, destination): (i32, i32) = sqlx::query_as(
+                        "SELECT (body->>'phase')::int,(body->>'pit')::int FROM game_character_arena_matches"
+                    ).fetch_one(&harness.pool).await?;
+                    assert_eq!((phase, destination), if pit == *pits.end() { (3, 0) } else { (1, i32::from(pit) + 1) });
+                    let count = || sqlx::query_scalar::<_, i64>(
+                            "SELECT count(*) FROM game_arena_relocations p
+                             JOIN game_arena_match_receipts r USING(character_id,game_session_id,command_id)
+                             WHERE (r.before_state->>'pit')::int=$1 AND p.relocated_at IS NOT NULL"
+                        ).bind(i32::from(pit)).fetch_one(&harness.pool);
+                    assert_eq!(count().await?, 0, "relocation receipt is still missing");
+                    if matches!(recovery, PortalRecovery::Restart) {
+                        let mut restarted = Dependencies::new()?;
+                        let booted_map = fixture::boot_world(&restarted, native, &bytes, &pins)?;
+                        fixture::runtime_at(&mut restarted, active, &pin, &booted_map,
+                            crate::foundation::MovementLocalPosition { x, y, floor: -floor as i16 }
+                        )?;
+                        let restarted_cells = booted_map.movement_cells(restarted.room.movement_cells()).map_err(debug)?;
+                        let mut rebooted = restarted.owner(&harness, &authority);
+                        rebooted.active_generation = Some(active);
+                        rebooted.movement_cells = (&restarted_cells).into();
+                        restarted.initialize(&rebooted).await;
+                        rebooted.drain_monster_melee().await;
+                        let at = restarted.runtime.lock().await.read_actor_position(restarted.actor).map_err(debug)?.position();
+                        assert_eq!((at.x, at.y, at.floor), expected, "the fresh runtime recovers the committed portal");
+                    } else {
+                        let now = owner.owner_now().get() + 3_000_000;
+                        owner.drain_arena_matches(now).await;
+                        assert_eq!(current().await?, expected, "the poll recovers the committed portal");
+                        if matches!(recovery, PortalRecovery::Replay) {
+                            let position = deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?;
+                            assert_eq!(count().await?, 1);
+                            owner.drain_arena_matches(now + 3_000_000).await;
+                            assert_eq!(deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?, position);
+                            assert_eq!(count().await?, 1);
+                        }
+                    }
+                    assert_eq!(count().await?, 1, "recovery acknowledges the originating transition");
+                    return Ok(());
+                }
+                let moved = step().await?;
                 assert_eq!(
                     moved.disposition,
                     oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved,
                     "native portal STEP in pit {pit}"
                 );
-                let at = deps
-                    .runtime
-                    .lock()
-                    .await
-                    .read_actor_position(deps.actor)
-                    .map_err(debug)?
-                    .position();
-                let expected = if pit == 10 {
-                    crate::durability::arena_match::donor::REWARD_ROOM
-                } else {
-                    let (x, y) = crate::durability::arena_match::donor::CENTERS[usize::from(pit)];
-                    (x, y, 7)
-                };
-                assert_eq!(
-                    (at.x, at.y, at.floor),
-                    expected,
-                    "portal must use its native progression owner"
-                );
+                let at = deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position();
+                assert_eq!((at.x, at.y, at.floor), expected, "portal must use its native progression owner");
                 command(&owner, &mut admitted, A::Status).await?
             } else {
                 let start = {
@@ -770,8 +864,8 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         let victories: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_victories")
             .fetch_one(&harness.pool)
             .await?;
-        assert_eq!(victories, 30);
-        // Every pit exit of the 3 ranks x 10 pits above is a native portal STEP
+        assert_eq!(victories, expected_steps);
+        // Every pit exit across the ranks above is a native portal STEP
         // (portal_step.rs), bound by its own native origin, not a command id.
         let steps: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_arena_match_receipts WHERE substring(native_origin_binding FROM 1 FOR $1)=$2",
@@ -780,7 +874,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         .bind(b"oteryn:svargrond-native-step:v1".as_slice())
         .fetch_one(&harness.pool)
         .await?;
-        assert_eq!(steps, 30, "native steps have their own durable receipt namespace");
+        assert_eq!(steps, expected_steps, "native steps have their own durable receipt namespace");
         if native_portals {
             for (prefix, callback) in [
                 (b"oteryn:svargrond-native-step:v1".as_slice(), "STEP"),
@@ -789,7 +883,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 let native_receipts: i64 = sqlx::query_scalar(
                     "SELECT count(*) FROM game_arena_match_receipts WHERE substring(native_origin_binding FROM 1 FOR $1)=$2",
                 ).bind(i32::try_from(prefix.len())?).bind(prefix).fetch_one(&harness.pool).await?;
-                assert_eq!(native_receipts, 30, "one native {callback} receipt per pit and rank");
+                assert_eq!(native_receipts, expected_steps, "one native {callback} receipt per pit and rank");
             }
         }
         let achievements:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/greenhorn'").fetch_one(&harness.pool).await?;
@@ -864,7 +958,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
         let replay_count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key='oteryn:quest.barbarian_arena_quest' AND completes")
             .fetch_one(&harness.pool).await?;
         assert_eq!(replay_count, 1, "canonical completion is idempotent");
-        eprintln!("M51 CANONICAL_POSTGRES_PROOF: rank=3 victories=30 trophies=3 completions={completed} receipts={receipts}");
+        eprintln!("M51 CANONICAL_POSTGRES_PROOF: rank=3 victories={victories} trophies=3 completions={completed} receipts={receipts}");
 
         assert_eq!(
             command(&owner, &mut admitted, A::Leave).await?.state.phase,

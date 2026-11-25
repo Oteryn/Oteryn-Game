@@ -31,6 +31,9 @@ pub use native_step::NativeArenaStep;
 pub use native_timeout::NativeArenaTimeout;
 mod pit_lease;
 pub(in crate::durability) mod pit_reset;
+pub use pit_reset::ArenaPitResetItem;
+mod projection;
+pub use projection::ArenaProjection;
 pub(in crate::durability) mod terminal;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -505,12 +508,16 @@ pub(super) async fn save_origin(
     let cause = cause.into();
     let command = cause.command();
     let payload = cause.bind(payload);
+    let relocation = projection::RelocationKind::committed(before, after);
     let before = serde_json::to_value(before).map_err(|_| DurabilityError::InvalidStoredState)?;
     let after = serde_json::to_value(after).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("INSERT INTO game_arena_match_receipts(character_id,game_session_id,command_id,payload,before_state,after_state,reply,native_origin_binding) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8)")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal()).bind(&payload).bind(before).bind(&after).bind(reply).bind(origin).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_character_arena_matches(character_id,body,game_session_id,command_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::text::numeric) ON CONFLICT(character_id) DO UPDATE SET body=EXCLUDED.body,game_session_id=EXCLUDED.game_session_id,command_id=EXCLUDED.command_id")
         .bind(fence.character_id.as_bytes().as_slice()).bind(after).bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal()).execute(&mut **tx).await?;
+    if let Some(kind) = relocation {
+        projection::record_relocation(tx, fence, cause, kind).await?;
+    }
     Ok(())
 }
 

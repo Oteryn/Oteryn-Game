@@ -159,6 +159,39 @@ fn bundle_layout(
     Ok((bytes, pins))
 }
 
+pub(in super::super) fn boot_world(
+    deps: &Dependencies,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    bytes: &[u8],
+    pins: &crate::map::BundlePins,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let base = crate::map::load(bytes, pins).map_err(debug)?;
+    let (x, y, floor) = donor::KICK;
+    crate::map::boot::boot(
+        bytes,
+        &crate::map::boot::BootPins {
+            bundle: pins.clone(),
+            map_revision: crate::map::overlay::map_revision(&base),
+            start: crate::map::overlay::TilePos {
+                x: x.try_into()?,
+                y: y.try_into()?,
+                floor: (-floor).try_into()?,
+            },
+        },
+        deps.admitted.world_id,
+        deps.admitted.channel_id,
+        |key| {
+            Some(crate::map::facts::ItemDefinition {
+                reference: native.item_index()?.definition_ref("Item", key, "definition-r1")?,
+                solid: Some(key.ends_with(".i1841")),
+                blocks_projectile: false,
+                pickupable: false,
+                door: false,
+            })
+        },
+    ).map_err(debug)
+}
+
 pub(in super::super) fn runtime(
     deps: &mut Dependencies,
     active: &crate::content::ActiveGeneration,
