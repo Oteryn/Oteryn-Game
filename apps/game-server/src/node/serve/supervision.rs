@@ -71,6 +71,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
             .and_then(|bundle| bundle.digest_bytes()),
     };
     let loops_stop = CancellationToken::new();
+    let control_stop = CancellationToken::new();
     let reset_watch = world_reset::ResetWatch::default();
     // Box each long-lived family before the supervisor retains it. Inline loop
     // futures also inflate the enclosing boot/run construction and poll frames,
@@ -96,7 +97,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
             runtime,
             room: spawn_room,
         }),
-        shutdown,
+        &control_stop,
     ));
     let mut expiry = Box::pin(both(
         both(
@@ -269,9 +270,11 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
     if let Some(reporter) = &reporter {
         reporter.stop_heartbeats();
     }
-    // D3 step 10: withdraw readiness first, within the shutdown budget. The
-    // loops keep being driven meanwhile, so work already inside a durability
-    // pass finishes and releases the holder the withdrawal needs.
+    // Stop scheduling node jobs and accepting control requests. Keep polling
+    // the loops so any in-flight operation can finish and return its holder.
+    control_stop.cancel();
+    loops_stop.cancel();
+    // D3 step 10: withdraw readiness before stopping the gameplay listener.
     let budget = tokio::time::Instant::now() + SHUTDOWN_BUDGET;
     // CHAR-POSITION-0 §3.2: the tracked last positions are written while the sessions are still
     // fenced in, so before the withdrawal, within its own share of the budget.
@@ -333,13 +336,12 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
     if let Some(reporter) = &reporter {
         reporter.withdrawn(withdrawn.as_ref().ok());
     }
-    if let Err(error) = withdrawn {
+    if let Err(error) = &withdrawn {
         event(&format!(
-            "event=readiness ready=false result=failed reason=\"{error}\""
+            "event=readiness_withdrawal_failed reason=\"{error}\""
         ));
     }
     shutdown.cancel();
-    loops_stop.cancel();
     // In-flight admissions and an in-flight bootstrap are never cancelled
     // midway: each runs to its own outcome under the bounds of its durability
     // passes and Platform exchanges. The supervisor's stop timeout is the
@@ -365,8 +367,10 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
             .await;
     }
     let _ = std::fs::remove_file(&config.control.socket_path);
-    event("event=shutdown state=complete");
-    world_reset::classify_exit(&reset_watch, serve_error)
+    if withdrawn.is_ok() {
+        event("event=shutdown state=complete");
+    }
+    world_reset::classify_exit(&reset_watch, serve_error).and(withdrawn.map(drop))
 }
 
 async fn timed_npc_loop(

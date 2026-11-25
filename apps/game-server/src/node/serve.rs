@@ -2563,11 +2563,38 @@ impl Readiness<'_> {
         &self,
         budget: Option<tokio::time::Instant>,
     ) -> Result<(), DurabilityError> {
-        let deadline = budget
-            .unwrap_or_else(|| tokio::time::Instant::now() + self.config.boot_pass_deadline());
+        let now = tokio::time::Instant::now();
+        if let Some(deadline) = budget
+            && self
+                .root
+                .wait_holder_turn(now, deadline.min(now + HOLDER_RETRY_FLOOR))
+                .await
+        {
+            // The checkout below refreshes the queue place if the holder is still busy.
+            return Ok(());
+        }
+        let deadline = budget.unwrap_or_else(|| now + self.config.boot_pass_deadline());
         tokio::time::timeout_at(deadline, self.root.await_ready())
             .await
             .map_err(|_| DurabilityError::RootUnavailable)?
+    }
+
+    async fn retry_pause(
+        attempt: &mut u32,
+        budget: Option<tokio::time::Instant>,
+        holder_busy: bool,
+    ) {
+        if let Some(deadline) = budget
+            && holder_busy
+        {
+            // Keep retrying before the holder queue expires a waiting owner's ticket.
+            tokio::time::sleep_until(
+                deadline.min(tokio::time::Instant::now() + HOLDER_RETRY_FLOOR),
+            )
+            .await;
+        } else {
+            backoff_within(attempt, budget).await;
+        }
     }
 
     /// Prepare the exact successor of the current Runtime guard chain.
@@ -2599,7 +2626,12 @@ impl Readiness<'_> {
                         return Err(BootError::Readiness("guard chain"));
                     }
                     self.root.request_ready();
-                    backoff_within(&mut attempt, budget).await;
+                    Self::retry_pause(
+                        &mut attempt,
+                        budget,
+                        matches!(error, DurabilityError::RootUnavailable),
+                    )
+                    .await;
                 }
             }
         };
@@ -2692,7 +2724,11 @@ impl Readiness<'_> {
     ) -> Result<AdmissionAuthorityPublicationV1, BootError> {
         match budget {
             Some(deadline) => {
-                tokio::time::timeout_at(deadline, self.publish_with_budget(ready, budget))
+                let withdrawal = DurabilityRoot::with_holder_owner(async {
+                    let _waiter = self.root.holder_waiter();
+                    self.publish_with_budget(ready, budget).await
+                });
+                tokio::time::timeout_at(deadline, withdrawal)
                     .await
                     .map_err(|_| BootError::Readiness("publication budget"))?
             }
@@ -2754,7 +2790,15 @@ impl Readiness<'_> {
                     }
                     Err(error) if readiness_publication_retryable(&error) => {
                         self.root.request_ready();
-                        backoff_within(&mut attempt, budget).await;
+                        Self::retry_pause(
+                            &mut attempt,
+                            budget,
+                            matches!(
+                                error,
+                                AssignmentError::Unavailable(DurabilityError::RootUnavailable)
+                            ),
+                        )
+                        .await;
                     }
                     Err(_) => return Err(BootError::Readiness("publication")),
                 }
@@ -3002,6 +3046,9 @@ async fn control_loop(
     let capacity = TransientCapacity::new();
     let operator_uid = super::qualification_operator_uid().unwrap_or(0);
     while let Some(accepted) = first(listener.accept(), stop.cancelled()).await {
+        if stop.is_cancelled() {
+            break;
+        }
         let Ok((mut stream, _)) = accepted else {
             tokio::time::sleep(Duration::from_millis(100)).await;
             continue;
@@ -4263,6 +4310,10 @@ source_authority = "OTERYN_GAME_JOURNAL"
                                 config: &config,
                             };
                             harness.root.await_ready().await?;
+                            readiness
+                                .publish(true, None)
+                                .await
+                                .map_err(fixture::debug)?;
                             let occupied = harness.root.try_issue_semantic_pass()?;
                             let deadline = tokio::time::Instant::now() + SHUTDOWN_BUDGET;
                             let mut withdrawal =
@@ -4279,6 +4330,14 @@ source_authority = "OTERYN_GAME_JOURNAL"
                             })
                             .await;
                             assert!(matches!(background, Err(DurabilityError::RootUnavailable)));
+                            let foreground = DurabilityRoot::with_holder_owner(async {
+                                harness.root.try_issue_semantic_pass().map(drop)
+                            })
+                            .await;
+                            assert!(
+                                matches!(foreground, Err(DurabilityError::RootUnavailable)),
+                                "another foreground owner took the holder before withdrawal"
+                            );
                             withdrawal.await.map_err(fixture::debug)?;
                             let ready: bool = sqlx::query_scalar(
                                 "SELECT ready FROM game_durability_admission_runtime_guards",
