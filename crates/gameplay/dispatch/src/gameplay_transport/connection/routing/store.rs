@@ -3,6 +3,17 @@ use super::super::{AdmittedSession, FreshAdmissionAuthority};
 use super::Dispatch;
 use oteryn_protocol_oteryn::{ClientCommandView, CommandStatus, store as wire};
 
+pub(in super::super) fn handles_command(command_type: u32) -> bool {
+    matches!(
+        command_type,
+        wire::COMMAND_TYPE_STORE_CATALOGUE_PAGE
+            | wire::COMMAND_TYPE_STORE_HISTORY_PAGE
+            | wire::COMMAND_TYPE_STORE_PURCHASE_HISTORY_PAGE
+            | wire::COMMAND_TYPE_STORE_PURCHASE
+            | wire::COMMAND_TYPE_STORE_INBOX_CLAIM
+    )
+}
+
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
     admitted: &AdmittedSession,

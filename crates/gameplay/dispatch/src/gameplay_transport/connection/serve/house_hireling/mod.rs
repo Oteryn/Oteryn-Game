@@ -39,7 +39,7 @@ impl State {
         admitted: &mut AdmittedSession,
         command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     ) -> Option<Dispatch> {
-        use oteryn_protocol_oteryn::{hireling, stash, store, world_object};
+        use oteryn_protocol_oteryn::{hireling, stash, world_object};
         if !admitted
             .continuity
             .selected_capabilities
@@ -54,14 +54,7 @@ impl State {
         ) {
             return Some(routing::server_modal::route(authority, admitted, command).await);
         }
-        if matches!(
-            command.command_type,
-            store::COMMAND_TYPE_STORE_CATALOGUE_PAGE
-                | store::COMMAND_TYPE_STORE_HISTORY_PAGE
-                | store::COMMAND_TYPE_STORE_PURCHASE_HISTORY_PAGE
-                | store::COMMAND_TYPE_STORE_PURCHASE
-                | store::COMMAND_TYPE_STORE_INBOX_CLAIM
-        ) {
+        if routing::store::handles_command(command.command_type) {
             self.stash_rows = None;
             return Some(routing::store::route(authority, admitted, command).await);
         }

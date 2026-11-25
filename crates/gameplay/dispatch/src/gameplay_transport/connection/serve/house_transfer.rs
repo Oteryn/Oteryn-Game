@@ -566,7 +566,10 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             {
                 services.inventory(stream, authority, &mut admitted).await?;
             }
-            if let Some(effects) = effects {
+            // House Store replies use the claim-specific inventory refresh above.
+            if let Some(effects) =
+                effects.filter(|_| !routing::store::handles_command(command.command_type))
+            {
                 services
                     .effects(stream, authority, &mut admitted, effects)
                     .await?;
