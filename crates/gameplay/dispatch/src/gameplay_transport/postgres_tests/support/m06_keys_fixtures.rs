@@ -91,6 +91,18 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             ),
         );
         let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+        if level_gate {
+            let tiles = &mut data.sectors.first_mut().ok_or("door sector")?.tiles;
+            let mut next_door = tiles.iter().find(|tile| tile.x == 6)
+                .and_then(|tile| tile.items.last()).ok_or("origin door")?.clone();
+            next_door.attrs.action = Some(key_action);
+            let next_tile = tiles.iter_mut().find(|tile| tile.x == 5).ok_or("adjacent door tile")?;
+            next_tile.items.truncate(1);
+            next_tile.items.push(next_door);
+            let coin = tiles.iter().find(|tile| tile.x == 7)
+                .and_then(|tile| tile.items.last()).ok_or("coin")?.clone();
+            tiles.iter_mut().find(|tile| tile.x == 6).ok_or("origin tile")?.items.push(coin);
+        }
         let entry = data
             .sectors
             .iter_mut()
@@ -98,7 +110,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             .find(|tile| tile.x == 6)
             .ok_or("door tile")?
             .items
-            .last_mut()
+            .get_mut(1)
             .ok_or("door entry")?;
         entry.attrs.action = source.is_none().then_some(4321);
         if source.is_some() {
@@ -329,6 +341,30 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
                     assert_eq!(result, UseDisposition::Committed);
                     assert_eq!(map.facts().doors().revision(placement_key), 1);
                 }
+            }
+            let adjacent = crate::map::overlay::TilePos { x: door_x - 1, ..station_pos };
+            let adjacent_key = crate::map::view::placement_key(adjacent, 1).ok_or("adjacent door")?;
+            let mut placement = map.base().digest().to_vec();
+            placement.extend_from_slice(&adjacent_key.to_be_bytes());
+            let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(
+                &WorldObjectTarget { placement, expected_revision: 0 },
+            ).map_err(debug)?;
+            owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+            let command = admitted.continuity.next_command_id;
+            for _ in 0..2 {
+                let (next, result, _) =
+                    super::item_craft_fixtures::exchange(&owner, admitted, command, &payload, None).await?;
+                admitted = next;
+                assert_eq!(result, UseDisposition::Committed);
+                assert_eq!(map.facts().doors().revision(placement_key), 2, "the vacated door closes");
+                assert!(!map.enterable(station_pos));
+                assert!(map.enterable(adjacent));
+                let moved: Vec<Vec<u8>> = sqlx::query_scalar(
+                    "SELECT g.spatial_position FROM game_map_item_mint_receipts m JOIN game_item_ground_locations g USING (item_instance_id) WHERE m.definition_production_key='oteryn:item.tibia.i3031'",
+                ).fetch_all(&harness.pool).await?;
+                assert_eq!(moved.len(), 1, "move the doorway coin exactly once");
+                let cell = crate::durability::spell_items_abi::decode_ground_cell(&moved[0]).map_err(debug)?;
+                assert_eq!((cell.x, cell.y, cell.z), (i32::from(door_x + 1), i32::from(door_y), i32::from(door_floor)));
             }
             eprintln!(
                 "POSTGRES_CASE_COMPLETED fibula_source_level50_gate duration={:?}",

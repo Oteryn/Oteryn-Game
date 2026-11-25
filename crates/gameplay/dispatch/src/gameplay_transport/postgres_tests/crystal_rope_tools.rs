@@ -33,9 +33,12 @@ fn crystal_rope_tools_resolve_a_durable_ground_item_to_its_tile() -> TestResult 
             super::fixture::run(async |admin| {
                 for (id, spot) in [(3003, 386), (646, 386), (9594, 386), (9596, 21967), (9598, 386)] {
                     let key = format!("oteryn:item.tibia.i{id}");
-                    super::vertical_move_fixtures::agent_rope(
-                        admin.clone(), &key, spot, super::vertical_move_fixtures::RopeUse::GroundHandle,
-                    ).await?;
+                    for source in [
+                        super::vertical_move_fixtures::RopeUse::GroundHandle,
+                        super::vertical_move_fixtures::RopeUse::GroundHandleExplicit,
+                    ] {
+                        super::vertical_move_fixtures::agent_rope(admin.clone(), &key, spot, source).await?;
+                    }
                 }
                 Ok(())
             })

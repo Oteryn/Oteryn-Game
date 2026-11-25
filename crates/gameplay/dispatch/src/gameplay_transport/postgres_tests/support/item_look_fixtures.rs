@@ -589,6 +589,32 @@ pub(super) async fn seed_main_backpack(harness: &Harness, entries: &[(&str, i64)
     seed_character_backpack(harness, 41, 70, entries).await
 }
 
+pub(super) async fn force_seeded_tool_jam(
+    harness: &Harness,
+    session: crate::foundation::GameSessionId,
+    command: u64,
+    seed: u8,
+) -> TestResult {
+    let old = id(seed);
+    let item = (0..=u16::MAX).find_map(|suffix| {
+        let mut candidate = old;
+        candidate[14..].copy_from_slice(&suffix.to_be_bytes());
+        oteryn_gameplay_items::secret_agent::jams(*session.as_bytes(), command, candidate)
+            .then_some(candidate)
+    }).ok_or("deterministic tool jam seed")?;
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    for statement in [
+        "UPDATE game_item_instances SET item_instance_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid",
+        "UPDATE game_item_container_entries SET item_instance_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid",
+    ] {
+        let changed = sqlx::query(statement).bind(old.as_slice()).bind(item.as_slice()).execute(&mut *tx).await?;
+        assert_eq!(changed.rows_affected(), 1);
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
 pub(super) async fn seed_character_backpack(
     harness: &Harness,
     character: u8,

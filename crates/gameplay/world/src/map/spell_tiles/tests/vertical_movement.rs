@@ -2,7 +2,7 @@
 use super::*;
 
 pub fn world(world: WorldId, channel: ChannelId) -> BundleWorld {
-    world_with_rope_spot(world, channel, 386, false, false)
+    world_with_rope_spot(world, channel, 386, false, false, false)
 }
 
 pub fn world_with_rope_spot(
@@ -11,6 +11,7 @@ pub fn world_with_rope_spot(
     appearance: u32,
     distant_target: bool,
     covered_spot: bool,
+    gate: bool,
 ) -> BundleWorld {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{Extent, Sector};
@@ -35,6 +36,17 @@ pub fn world_with_rope_spot(
             .collect(),
     };
     let mut lower = sector(-8, &[(10, 10, 4)]);
+    if gate {
+        lower.tiles[0].items.push(Item {
+            palette: 8,
+            depth: 0,
+            attrs: Attrs {
+                action: Some(1001),
+                ..Attrs::default()
+            },
+        });
+        lower.tiles.append(&mut sector(-8, &[(11, 10, 0)]).tiles);
+    }
     if covered_spot {
         lower.tiles[0].items.push(Item {
             palette: 5,
@@ -52,7 +64,7 @@ pub fn world_with_rope_spot(
         lower.tiles.append(&mut distant.tiles);
     }
     let spot = format!("oteryn:item.tibia.i{appearance}");
-    let (bytes, bundle) = super::bundle_with_projectiles(
+    let (mut bytes, mut bundle) = super::bundle_with_projectiles(
         Some(vec![
             lower,
             sector(-7, &[(10, 9, 0), (10, 11, 0)]),
@@ -70,6 +82,15 @@ pub fn world_with_rope_spot(
         &spot,
         None,
     );
+    if gate {
+        let mut data = oteryn_world_bundle::bundle::read(&bytes).expect("fixture bundle");
+        data.manifest.palette[8].key = "oteryn:item.tibia.i1648".into();
+        bytes = oteryn_world_bundle::writer::write(&data.manifest, &data.sectors, &data.spawns)
+            .expect("gated fixture bundle");
+        bundle.digest = oteryn_world_bundle::bundle::read(&bytes)
+            .expect("gated bundle")
+            .digest;
+    }
     let revision = format!(
         "sha256:{}",
         bundle
@@ -92,6 +113,16 @@ pub fn world_with_rope_spot(
         world,
         channel,
         |key| {
+            if gate && matches!(key, "oteryn:item.tibia.i1648" | "oteryn:item.tibia.i1649") {
+                let closed = key.ends_with("1648");
+                return Some(crate::map::facts::ItemDefinition {
+                    reference: std::num::NonZeroU32::new(if closed { 9 } else { 1649 })?,
+                    solid: Some(closed),
+                    blocks_projectile: closed,
+                    pickupable: false,
+                    door: true,
+                });
+            }
             super::items(match key {
                 "oteryn:item.tibia.i103" => super::KEYS[0],
                 key if key == spot => super::KEYS[4],

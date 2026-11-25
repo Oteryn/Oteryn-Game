@@ -257,7 +257,7 @@ impl Owner {
             .position()
     }
     fn apply(&self, intent: &UseIntent, target: Option<ItemKey>) -> UseDisposition {
-        rope_in_channel(
+        match rope_in_channel(
             &mut self.runtime.borrow_mut(),
             &mut self.states.borrow_mut(),
             &self.cells,
@@ -272,7 +272,12 @@ impl Owner {
             0,
             SemanticTimeMicros::from_micros(100),
             None,
-        )
+            || false,
+        ) {
+            RopeTurn::Refused(disposition) => disposition,
+            RopeTurn::Moved { .. } => UseDisposition::Committed,
+            RopeTurn::Jam => panic!("test rope should not jam"),
+        }
     }
 }
 impl FreshAdmissionAuthority for Owner {
@@ -692,9 +697,10 @@ fn tools_rope_spot_hidden_target_epoch_and_pz_landing() {
             None,
             0,
             now,
-            Some(&overlay)
+            Some(&overlay),
+            || false,
         ),
-        UseDisposition::StaleState
+        RopeTurn::Refused(UseDisposition::StaleState)
     );
     let mut handled = intent;
     handled.use_with_map_item = Some(MapUseTarget::Item(NonZeroU64::new(9).unwrap()));
@@ -714,9 +720,10 @@ fn tools_rope_spot_hidden_target_epoch_and_pz_landing() {
             Some(key),
             0,
             now,
-            None
+            None,
+            || false,
         ),
-        UseDisposition::StaleState
+        RopeTurn::Refused(UseDisposition::StaleState)
     );
     assert_eq!(runtime.read_actor_position(owner.actor).unwrap(), before);
     assert!(

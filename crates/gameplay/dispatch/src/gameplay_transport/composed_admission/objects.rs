@@ -145,12 +145,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|bytes| bytes.try_into().ok())
             .map(u64::from_be_bytes);
         let doors = map.facts.doors();
-        let optional_pvp = if key.and_then(|key| doors.opening_requirement(key)).is_some() {
-            if let Some(permit) = self.spell_lane_permit().await {
-                self.special_movement_policy(&permit, actor, session).await
-            } else {
-                None
-            }
+        let permit = if key.and_then(|key| doors.opening_requirement(key)).is_some() {
+            let Some(permit) = self.spell_lane_permit().await else {
+                return UseOutcome::rejected();
+            };
+            Some(permit)
+        } else {
+            None
+        };
+        let optional_pvp = if let Some(permit) = &permit {
+            self.special_movement_policy(permit, actor, session).await
         } else {
             None
         };
@@ -245,6 +249,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition,
                 ..UseOutcome::rejected()
             };
+            let Some(permit) = permit.as_ref() else {
+                return outcome(UseDisposition::StaleState);
+            };
             if !self
                 .states
                 .admits_door_requirement(session, actor_level, requirement)
@@ -299,6 +306,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
             self.states.chat.close_out_of_range(&runtime, session);
+            drop((spell_states, runtime));
+            self.close_departed_door(
+                permit,
+                actor,
+                session,
+                expected.position(),
+                snapshot.revision(),
+            )
+            .await;
             return outcome(UseDisposition::Committed);
         }
         map_door::use_door(

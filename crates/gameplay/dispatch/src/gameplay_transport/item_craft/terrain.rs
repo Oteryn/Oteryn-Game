@@ -13,6 +13,55 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// The consume/transform owner binds the jam to the original command and
+    /// writes the replacement, recovery timer, and achievement together.
+    pub(in crate::gameplay_transport) async fn commit_agent_jam(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        command: UseCommand,
+        tool: [u8; 16],
+        intent: Vec<u8>,
+    ) -> Result<UseOutcome, ()> {
+        let fence = command.item_fence.ok_or(())?;
+        let native = self
+            .active_generation
+            .and_then(crate::content::ActiveGeneration::native_gameplay)
+            .ok_or(())?;
+        let request = crate::durability::consume_transform::ConsumeTransformRequest {
+            command: CommandRef::new(
+                command.game_session_id,
+                CommandId::new(command.command_id).map_err(|_| ())?,
+            ),
+            source: tool,
+            target: None,
+            intent,
+        };
+        let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
+        let receipt = self
+            .root
+            .jam_secret_agent_tool(
+                permit,
+                self.character,
+                self.holder,
+                fence,
+                request,
+                native,
+                &content,
+            )
+            .await
+            .map_err(|_| ())?;
+        let Some(receipt) = receipt else {
+            return Ok(outcome(UseDisposition::Rejected));
+        };
+        if receipt.fresh && receipt.disposition == UseDisposition::Committed {
+            self.states.chat.push_quest_feedback(
+                command.game_session_id,
+                "Oh no! Your tool is jammed and can't be used for a minute.",
+            );
+        }
+        Ok(outcome(receipt.disposition))
+    }
+
     fn terrain_scope(&self) -> Option<TerrainScope> {
         let map = self.bundle_map()?;
         let native = self.active_generation?.native_gameplay()?;
@@ -205,55 +254,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Ok(Some(outcome(UseDisposition::TooFar)));
             }
-            // Crystal rolls after action reach admission and before the tool effect.
-            if agent_tool
-                && oteryn_gameplay_items::secret_agent::jams(
-                    *command.game_session_id.as_bytes(),
-                    command.command_id,
-                    entry.item.item_instance_id,
-                )
-            {
-                drop(states);
-                drop(runtime);
-                let request = crate::durability::consume_transform::ConsumeTransformRequest {
-                    command: command_ref,
-                    source: entry.item.item_instance_id,
-                    target: None,
-                    intent: encoded,
-                };
-                let content = super::super::item_ref_admission::NativeItemWeights(native)
-                    .with_wheel(self.premium_coordinator);
-                let receipt = self
-                    .root
-                    .jam_secret_agent_tool(
-                        &permit,
-                        self.character,
-                        self.holder,
-                        fence,
-                        request,
-                        native,
-                        &content,
-                    )
+            if super::rope::agent_tool_jams(
+                command,
+                &definition.production_key,
+                entry.item.item_instance_id,
+            ) {
+                drop((states, runtime));
+                return self
+                    .commit_agent_jam(&permit, command, entry.item.item_instance_id, encoded)
                     .await
-                    .map_err(|_| ())?;
-                let Some(receipt) = receipt else {
-                    return Ok(Some(outcome(UseDisposition::Rejected)));
-                };
-                if receipt.fresh && receipt.disposition == UseDisposition::Committed {
-                    self.states.chat.push_quest_feedback(
-                        command.game_session_id,
-                        "Oh no! Your tool is jammed and can't be used for a minute.",
-                    );
-                }
-                return Ok(Some(outcome(receipt.disposition)));
+                    .map(Some);
             }
             let tile = view::compose_tile(&at.map.overlay, &facts, pos)
                 .map_err(|_| ())?
                 .ok_or(())?;
-            // Crystal checks for a rope spot on the resolved tile before using the selected item.
-            if agent_tool && crate::map::floor::is_bundle_rope_spot(&tile) {
-                return Ok(None);
-            }
             let Some(key) = key else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };

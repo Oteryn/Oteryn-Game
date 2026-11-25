@@ -21,7 +21,7 @@ pub(in crate::gameplay_transport) use dispenser::DISPENSER_ACK_BARRIER;
 pub(super) mod enchanting;
 mod harvest;
 mod planting;
-mod rope;
+pub(super) mod rope;
 mod skinning;
 mod terrain;
 
@@ -128,7 +128,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(()) => return None,
         }
         match self
-            .use_terrain_tool(actor, command, &intent, source, target)
+            .use_rope_tool(actor, command, &intent, source, target)
             .await
         {
             Ok(Some(outcome)) => return Some(outcome),
@@ -136,7 +136,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(()) => return None,
         }
         match self
-            .use_rope_tool(actor, command, &intent, source, target)
+            .use_terrain_tool(actor, command, &intent, source, target)
             .await
         {
             Ok(Some(outcome)) => return Some(outcome),

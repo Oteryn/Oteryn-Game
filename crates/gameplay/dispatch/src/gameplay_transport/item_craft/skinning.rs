@@ -194,18 +194,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .position();
             request.actor_position = [position.x, position.y, i32::from(position.floor)];
         }
+        let cell = ground.position();
+        let reached = request.actor_position[0].abs_diff(cell.x) <= 1
+            && request.actor_position[1].abs_diff(cell.y) <= 1
+            && request.actor_position[2] == i32::from(cell.floor);
         if fresh_rabbit {
-            let cell = ground.position();
-            if request.actor_position[0].abs_diff(cell.x) <= 1
-                && request.actor_position[1].abs_diff(cell.y) <= 1
-                && request.actor_position[2] == i32::from(cell.floor)
-            {
+            if reached {
                 self.states.chat.push_quest_feedback(
                     command.game_session_id,
                     "You have to wait a bit before you can skin this animal.",
                 );
             }
             return Ok(outcome(UseDisposition::NothingToUse));
+        }
+        if reached
+            && super::rope::agent_tool_jams(command, &entry.item.definition.production_key, tool)
+        {
+            return self
+                .commit_agent_jam(&permit, command, tool, request.craft.intent)
+                .await
+                .map(Some);
         }
         request.craft.source = tool;
         request.corpse = corpse;
