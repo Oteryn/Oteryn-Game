@@ -146,9 +146,10 @@ def admit_native(root, generated, profile_path, starter_path, order, canonical):
     if str(soil) in identities:
         raise ValueError("Spirited Soil binding already exists")
     identities[str(soil)] = soil_binding
-    # SRX-1 owns the source-qualified writing attributes. Final loot projection
-    # reads those admissions from the composed provider, as for CLOOT2.
-    selected = set(xml) - set(writing_ids(root))
+    # SRX-1 owns the source-qualified writing attributes. Letter 3505 already
+    # has its writing profile in the base provider, but needs the donor's loot
+    # facts there too. The merge below keeps its accepted writing semantics.
+    selected = set(xml) - (set(writing_ids(root)) - {3505})
     appearances = source.engine_items.load_appearance_objects(client)
     physics = {
         row["server_item_id"]: row for row in source.policies(client, raw_xml, selected)

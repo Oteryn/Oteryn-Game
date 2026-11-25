@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "c312837910785386a4621f62b19fc613c2eb2751abb76792b0ea2938199ea98c",
+  "input_sha256": "1283a00cfe1c7aebf242ccca9d455770d2d560da3d94e9dc0f06ad4548729d35",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [

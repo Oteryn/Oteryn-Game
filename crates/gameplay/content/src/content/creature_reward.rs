@@ -1642,6 +1642,21 @@ mod protected_loot_tests {
             ) {
                 Ok(lowered) => {
                     assert_eq!(lowered.len(), entries.len(), "{creature}");
+                    if matches!(
+                        creature,
+                        "oteryn:creature.crazed_dwarf" | "oteryn:creature.dwarf"
+                    ) {
+                        assert_eq!(
+                            lowered
+                                .iter()
+                                .filter(
+                                    |entry| entry.item.production_key == "oteryn:item.tibia.i3505"
+                                )
+                                .count(),
+                            1,
+                            "{creature}: expected one materializable Letter roll"
+                        );
+                    }
                     match rewards.row(creature) {
                         Ok(row) => {
                             assert_eq!(row.loot_table.entries, lowered, "{creature}");
