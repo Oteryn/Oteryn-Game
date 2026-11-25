@@ -201,9 +201,8 @@ fn combat_rune_use_fireball_refuses_insufficient_magic_level() -> TestResult {
 fn field_runes_postgres_thais_ignores_unrelated_unknown_sight_tiles() -> TestResult {
     large_stack(|| {
         run(async |admin| {
-            if std::env::var_os("OTERYN_TEST_THAIS_BUNDLE").is_none() {
-                return Ok(());
-            }
+            // Crystal 201189f8 data/scripts/runes/fire_field.lua:5,9-10,18 creates a fire field with rune 3188.
+            // src/creatures/combat/combat.cpp:1199-1201 substitutes the safe field in Optional PvP.
             field_scenario(admin, 3188, 1, 21465, true, false, false, Scenario::Thais).await
         })
     })

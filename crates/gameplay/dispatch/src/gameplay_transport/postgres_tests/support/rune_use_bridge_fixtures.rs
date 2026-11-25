@@ -257,10 +257,24 @@ async fn client_cast(
             } else {
                 UseDisposition::Committed
             };
+            if case == Case::FireballIneligible {
+                owner.states.chat.admit(session, "Rune caster", owner.owner_now());
+            }
             if case == Case::Fireball {
                 test_faults::arm(Point::SessionReadBusy);
             }
             send_use(client, first_id, &intent, Expected::Result(expected)).await?;
+            if case == Case::FireballIneligible {
+                // Crystal 201189f8: data/scripts/runes/fireball.lua:28 requires ML 4.
+                // src/creatures/combat/spells.cpp:460-463 sends the refusal from src/utils/tools.cpp:1494-1495.
+                assert_eq!(
+                    owner.states.chat.next_line(session, true),
+                    Some(oteryn_protocol_oteryn::chat::ChatLine::System {
+                        text: "You do not have enough magic level.".into(),
+                    }),
+                );
+                owner.states.chat.delivered(session);
+            }
             if case == Case::Fireball {
                 send_use(client, first_id, &intent, Expected::Replay).await?;
             }
@@ -643,6 +657,10 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             .as_ref()
             .clone();
         policy.forge_difficulty = None;
+        if matches!(case, Case::Explosion | Case::Fireball) {
+            // Keep the exact target alive so its health can witness the hit.
+            policy.maximum_health = 1_000;
+        }
         let policies =
             crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
                 native.source_digest(),
@@ -1037,6 +1055,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE game_session_id=encode($1,'hex')::uuid")
         .bind(id(50).as_slice()).fetch_one(&harness.pool).await?;
     assert_eq!(receipts, i64::from(committed));
+    // Crystal 201189f8 src/creatures/combat/spells.cpp:1526-1535 debits one rune after a successful cast.
     assert_eq!(quantity, if committed { 2 } else { 3 });
     assert_eq!(
         revision,
@@ -1046,12 +1065,14 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             "1"
         }
     );
-    let health = owner
-        .runtime
-        .lock()
-        .await
-        .live_creature_health(victim_actor)
-        .unwrap_or(0);
+    let health = owner.runtime.lock().await.live_creature_health(victim_actor);
+    let health = if matches!(case, Case::Explosion | Case::Fireball) {
+        // Crystal 201189f8 data/scripts/runes/explosion.lua:1-11 and
+        // data/scripts/runes/fireball.lua:1-11 apply damage to the selected creature.
+        health.ok_or("the exact rune target must survive to witness damage")?
+    } else {
+        health.unwrap_or(0)
+    };
     if committed {
         assert!(health < initial_health);
     } else {
