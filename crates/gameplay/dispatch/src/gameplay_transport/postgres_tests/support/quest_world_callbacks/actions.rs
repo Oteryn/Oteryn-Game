@@ -49,43 +49,59 @@ pub(in super::super) async fn exercise(
     assert_eq!(counts, (0, 0));
     let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
     let track = &callback.storage[0];
-    let steps: &[&str] = if callback.item_on_target.is_some() {
-        &["npc_3"]
+    if callback.key == "oteryn:quest-callback/fish-napping-key" {
+        // Mission 6 is now owned by NPC and World callbacks. Load the
+        // predecessor as saved progress for this isolated USE test.
+        super::super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+            h,
+            owner,
+            admitted,
+            &[(track.track.clone(), track.minimum)],
+            168,
+        )
+        .await?;
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
     } else {
-        &["npc_1", "npc_6", "npc_6"]
-    };
-    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-    for (n, step) in steps.iter().enumerate() {
-        let transition_key = format!(
-            "oteryn:quest-transition/{}/{step}",
-            track
-                .track
-                .strip_prefix("oteryn:quest-progress/")
-                .ok_or("track prefix")?
-        );
-        let seeded = slot
-            .commit_quest_transition(
-                owner.root,
-                owner.character,
-                owner.holder,
-                fence,
-                QuestTransitionRequest {
-                    transition_key: transition_key.clone(),
-                    cause: QuestCause::Command(crate::foundation::CommandRef::new(
-                        admitted.game_session_id,
-                        crate::foundation::CommandId::new(90 + u64::try_from(n)?).map_err(debug)?,
-                    )),
-                },
-                catalogue.clone(),
-            )
-            .await
-            .map_err(debug)?;
-        assert!(
-            matches!(seeded, QuestTransitionOutcome::Committed(_)),
-            "{transition_key:?}: {seeded:?}"
-        );
+        let steps: &[&str] = if callback.item_on_target.is_some() {
+            &["npc_3"]
+        } else {
+            &["npc_1", "npc_6", "npc_6"]
+        };
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        for (n, step) in steps.iter().enumerate() {
+            let transition_key = format!(
+                "oteryn:quest-transition/{}/{step}",
+                track
+                    .track
+                    .strip_prefix("oteryn:quest-progress/")
+                    .ok_or("track prefix")?
+            );
+            let seeded = slot
+                .commit_quest_transition(
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: transition_key.clone(),
+                        cause: QuestCause::Command(crate::foundation::CommandRef::new(
+                            admitted.game_session_id,
+                            crate::foundation::CommandId::new(90 + u64::try_from(n)?).map_err(debug)?,
+                        )),
+                    },
+                    catalogue.clone(),
+                )
+                .await
+                .map_err(|error| format!("seed {transition_key}: {error:?}"))?;
+            assert!(
+                matches!(seeded, QuestTransitionOutcome::Committed(_)),
+                "{transition_key:?}: {seeded:?}"
+            );
+        }
+        drop(slot);
     }
-    drop(slot);
     if callback.item_on_target.is_some() {
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         assert!(matches!(

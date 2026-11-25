@@ -31,32 +31,39 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/classic-missions.json"),
+    include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../content/quests/npc-callbacks/l13-outfits.json"),
+    include_str!("../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
+    include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m09-rookie.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
+    include_str!("../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
     include_str!("../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
-    include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
-    include_str!("../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/quest-contacts.json"),
     include_str!("../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
-    include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
-    include_str!("../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
-    include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
-    include_str!("../../../../content/quests/npc-callbacks/l13-outfits.json"),
-    include_str!("../../../../content/quests/npc-callbacks/m09-rookie.json"),
-    include_str!("../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
-    include_str!("../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
+    include_str!("../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/tibia-tales.json"),
 ];
 #[cfg(test)]
 mod m09_rookie_tests;
 const REWARD_GREETINGS: &[&str] = &[
     include_str!("../../../../content/dialogues/quests/chosen-reward-greetings.json"),
-    include_str!("../../../../content/dialogues/quests/qd-greetings.json"),
-    include_str!("../../../../content/dialogues/quests/qnpcfx-m10-greetings.json"),
-    include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/classic-mission-greetings.json"),
     include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
     include_str!("../../../../content/dialogues/quests/m09-rookie-greetings.json"),
-    include_str!("../../../../content/dialogues/quests/questpc5-targuna-map-greetings.json"),
     include_str!("../../../../content/dialogues/quests/m13-goblin-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/qd-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/qnpcfx-m10-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/quest-contact-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/questpc5-targuna-map-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/tibia-tales-greetings.json"),
 ];
 
 mod quest_merchant;
@@ -67,6 +74,8 @@ struct RewardMessages {
     greet: String,
     farewell: String,
     walkaway: String,
+    #[serde(default)]
+    greeting_words: Vec<String>,
 }
 
 fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
@@ -939,15 +948,32 @@ impl NpcTalkBook {
                         .iter()
                         .filter_map(|reference| model.services().get(reference))
                         .any(|service| service.bank),
-                    greetings: GREETINGS
-                        .iter()
-                        .map(|word| (*word).to_owned())
-                        .chain(
-                            regional
-                                .into_iter()
-                                .flat_map(|contact| contact.greet_aliases.iter().cloned()),
-                        )
-                        .collect(),
+                    greetings: match reference.key.as_str() {
+                        "oteryn:npc.baa_leal"
+                        | "oteryn:npc.gabel"
+                        | "oteryn:npc.malor"
+                        | "oteryn:npc.ubaid" => vec!["djanni'hah".into()],
+                        "oteryn:npc.alesar" => GREETINGS
+                            .iter()
+                            .copied()
+                            .chain(["djanni'hah"])
+                            .map(str::to_owned)
+                            .collect(),
+                        _ => reward_messages
+                            .filter(|messages| !messages.greeting_words.is_empty())
+                            .map_or_else(
+                                || {
+                                    GREETINGS
+                                        .iter()
+                                        .map(|word| (*word).to_owned())
+                                        .chain(regional.into_iter().flat_map(|contact| {
+                                            contact.greet_aliases.iter().cloned()
+                                        }))
+                                        .collect()
+                                },
+                                |messages| messages.greeting_words.clone(),
+                            ),
+                    },
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank
