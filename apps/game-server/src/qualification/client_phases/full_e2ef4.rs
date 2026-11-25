@@ -2,6 +2,7 @@
 //! No fixture provisioning, SQL mutations, clock overrides or invented wire handles.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityRef};
+use std::future::Future;
 
 use verdict::Row;
 
@@ -19,6 +20,7 @@ const E01: &[&str] = &[
     "withdraw",
     "transfer",
     "relog-inventory-bank",
+    "platform-admission",
 ];
 const E03: &[&str] = &[
     "gold-up",
@@ -185,7 +187,8 @@ pub(super) async fn run(
         } else {
             Err("recovery admission unavailable: prior session closed; Platform-issued grant input is absent; source:apps/game-server/src/qualification.rs:2720".into())
         };
-        finish_row(client, row, result).await;
+        verify_live_primary(client, &result).await;
+        row.finish(&result);
     }
     row!("E03", E03, coins, world, spawns);
     row!("E04", E04, trade, clients, world, spawns);
@@ -267,12 +270,19 @@ async fn wait_inventory(
 }
 
 async fn relog(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+    relog_using(client, connect_character(clients, 0x85, 1)).await
+}
+
+async fn relog_using(
+    client: &mut DevClientSession,
+    reconnect: impl Future<Output = TestResult<DevClientSession>>,
+) -> TestResult {
     let old = client.join_snapshot().game_session_id;
     let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("durability-check logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
-    *client = connect_character(clients, 0x85, 1).await?;
+    *client = reconnect.await?;
     if client.join_snapshot().game_session_id == old {
         return Err("fresh-login reused old session".into());
     }
@@ -617,6 +627,12 @@ async fn bank(
         return Err("bank greeting did not open the conversation for Naji".into());
     }
 
+    let mut peer = connect_platform_character(clients, 0).await?;
+    let (logout, reply, attempts, busy_timed_out) = logout_retrying_busy(&mut peer).await?;
+    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("bank recipient logout refused: {reply}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    }
+
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let recipient: String = sqlx::query_scalar(
         "SELECT name FROM game_character_roots WHERE character_id = encode($1, 'hex')::uuid",
@@ -694,7 +710,7 @@ async fn bank(
         );
     }
 
-    relog(client, clients).await?;
+    relog_using(client, connect_platform_character(clients, 1)).await?;
     wait_inventory(client, &carried).await?;
     if bank_balance(clients, 1).await? != before
         || Some(bank_balance(clients, 0).await?) != recipient_before.checked_add(1)
@@ -704,6 +720,10 @@ async fn bank(
     row.pass(
         "relog-inventory-bank",
         "fresh-session-exact-inventory-and-account-balances",
+    );
+    row.pass(
+        "platform-admission",
+        "platform-issued-session-recipient-and-fresh-login",
     );
     Ok(())
 }
@@ -2188,7 +2208,12 @@ fn exact_party_share(raw: &[i64], expected: i64) -> bool {
 }
 
 async fn finish_row(client: &mut Option<DevClientSession>, row: Row, result: TestResult) {
-    verify_primary(client, &result, async |primary| {
+    verify_live_primary(client, &result).await;
+    row.finish(&require_platform_admission(result));
+}
+
+async fn verify_live_primary(client: &mut Option<DevClientSession>, result: &TestResult) {
+    verify_primary(client, result, async |primary| {
         if let Err(error) = primary.service_liveness(Duration::from_millis(25)).await {
             evidence(&format!("E2EF4_GAP primary-session {error}"));
             return Err(error.into());
@@ -2196,7 +2221,6 @@ async fn finish_row(client: &mut Option<DevClientSession>, row: Row, result: Tes
         Ok(())
     })
     .await;
-    row.finish(&require_platform_admission(result));
 }
 
 async fn verify_primary<T>(

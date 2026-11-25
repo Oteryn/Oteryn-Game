@@ -137,7 +137,7 @@ pub(super) async fn run_packet(
         return;
     }
     let result = verdict::observe(async {
-        let mut client = connect_character(clients, 0xe1, 1).await?;
+        let mut client = connect_platform_character(clients, 1).await?;
         // The enclosing indexed row guards travel by observed movement progress.
         let actor = super::full_e2ef4::approach_sam(&mut client, world, npcs).await?;
         verdict::indexed_timeout(Duration::from_secs(90), interaction(&mut client, actor)).await?

@@ -3597,6 +3597,23 @@ pub(super) async fn connect_character(
         };
         sign_grant(&grant, now_seconds()?)
     };
+    connect_character_with_grant(clients, index, &token).await
+}
+
+pub(super) async fn connect_platform_character(
+    clients: &SeamClients<'_>,
+    index: usize,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    wait_character_released(clients, index).await?;
+    let token = platform_row_grant(clients, index).await?;
+    connect_character_with_grant(clients, index, &token).await
+}
+
+async fn connect_character_with_grant(
+    clients: &SeamClients<'_>,
+    index: usize,
+    token: &str,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
     let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
         address: clients.address,
         server_name: "localhost",

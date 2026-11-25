@@ -59,7 +59,16 @@ def main():
     public = loopback(report["baseUrls"]["public"])
     gateway = loopback(report["baseUrls"]["gateway"])
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
-    credentials = accounts[account]
+    # Core and packet identities are already created by the Platform bootstrap.
+    candidates = [
+        {"email": entry["email"], "password": entry["password"]}
+        for entry in identity["accounts"]
+        if entry["accountId"] == account
+    ]
+    candidates.extend(value for key, value in accounts.items() if key == account)
+    if len(candidates) != 1:
+        raise RuntimeError("Platform account credentials are missing or ambiguous")
+    credentials, = candidates
     login, headers = request(opener, public + "/en/login")
     cookie = headers.get("Set-Cookie", "").split(";", 1)[0]
     _, headers = request(
