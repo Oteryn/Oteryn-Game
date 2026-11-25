@@ -1,8 +1,8 @@
 //! C09 full-row player scenario, derived from the matrix, Crystal re-audit, and the native
 //! food item-use and periodic-vitals owners:
 //! 1. Open the tavern door, buy meat from Frodo, and verify the exact stack increase.
-//! 2. Walk to a compiled poison-spider spawn and use ordinary ATTACK/combat until health is
-//!    below maximum; cast an available mana-cost spell and require its Cast reply and mana debit.
+//! 2. Cast an available mana-cost spell and require its Cast reply and mana debit. Observe
+//!    native melee from a seeded rat before stepping to adjacent protection.
 //! 3. Send USE for the bought meat handle; require `Committed`, an inventory delta, and an exact
 //!    one-unit stack decrease.
 //! 4. Immediately send USE for the remaining meat as the refusal path; require `Exhausted` and
@@ -530,11 +530,11 @@ async fn damage_and_spend_mana(
     let before = *client.actor_vitals().ok_or("pre-combat vitals absent")?;
     client.take_events();
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let spawn = request_spawn(session, "oteryn:creature.poison_spider".into());
+    let spawn = request_spawn(session, "oteryn:creature.rat".into());
     tokio::pin!(spawn);
     let answer = loop {
         tokio::select! {
-            answer = &mut spawn => break answer.map_err(|error| format!("C09 poison spider fixture: {error}"))?,
+            answer = &mut spawn => break answer.map_err(|error| format!("C09 melee rat fixture: {error}"))?,
             result = client.service_liveness(Duration::from_millis(100)) => { result?; }
         }
     };
@@ -565,7 +565,7 @@ async fn damage_and_spend_mana(
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
-                "C09 poison spider visible={observed} damage={damage:?} from {}",
+                "C09 melee rat visible={observed} damage={damage:?} from {}",
                 before.health
             )
             .into());
@@ -751,8 +751,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let meat = provisioning::item_reference(&provisioning::item_index()?, 3577)?;
     character_prep::declare_seeded(
         "C09",
-        "character,poison-spider",
-        "dedicated Platform bootstrap and nearby native damage encounter",
+        "character,melee-rat",
+        "dedicated Platform bootstrap and nearby native melee without a condition effect",
     );
     let identity =
         character_prep::lookup_row_character(clients, "01934f10-7c00-7000-8000-000000000020")
