@@ -132,6 +132,53 @@ mod tests {
     }
 
     #[test]
+    fn all_store_prices_and_looks_match_the_pinned_sources()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use sha2::{Digest, Sha256};
+
+        // Sorted offer key, price, unlock key, kind, male/mount look and female look.
+        // Pin derived from Crystal 201189f8 data/modules/scripts/gamestore/gamestore.lua
+        // and data/XML/mounts.xml; TibiaWiki revisions 394898, 394899, 394900, 427794
+        // supply the four offers absent from Lua. Field Surgeon uses the PROVEN
+        // admission evidence checked in admitted_store_price_and_looks_match_proven_reference.
+        const SOURCE_ROWS_SHA256: &str =
+            "ba3146e44d937da517d4f877790eec2729559f9fa488e05a8e831265e8347b3b";
+        let document = super::CATALOGUE.as_ref().ok_or("catalogue")?;
+        let mut offers: Vec<_> = document.offers.iter().collect();
+        offers.sort_by(|left, right| left.key.cmp(&right.key));
+        let mut digest = Sha256::new();
+        for offer in offers {
+            let [first, second] = match offer.preview.kind {
+                2 => *document
+                    .source
+                    .outfit_looks
+                    .get(&offer.unlock_key)
+                    .ok_or("outfit look")?,
+                3 => [
+                    *document
+                        .source
+                        .mount_looks
+                        .get(&offer.unlock_key)
+                        .ok_or("mount look")?,
+                    0,
+                ],
+                _ => return Err("unknown cosmetic kind".into()),
+            };
+            digest.update(format!(
+                "{}\t{}\t{}\t{}\t{first}\t{second}\n",
+                offer.key, offer.price, offer.unlock_key, offer.preview.kind,
+            ));
+        }
+        let actual = digest
+            .finalize()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        assert_eq!(actual, SOURCE_ROWS_SHA256);
+        Ok(())
+    }
+
+    #[test]
     fn every_store_offer_points_to_an_admitted_cosmetic() -> Result<(), Box<dyn std::error::Error>>
     {
         use std::collections::BTreeSet;

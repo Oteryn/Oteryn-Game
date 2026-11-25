@@ -2,11 +2,9 @@
 //! APP-3 catalogue: crates/gameplay/dispatch/src/gameplay_transport/appearance_change/catalogue.rs:10
 //! Riding: crates/gameplay/dispatch/src/gameplay_transport/appearance_change.rs:97
 //! Speed forecast: crates/gameplay/dispatch/src/gameplay_transport/actor_movement.rs:186,221
-//! Seed receipts: apps/game-server/migrations/0093_character_appearance.sql:69
 use super::*;
 use full_row_s06::{apply_appearance, change, own_binding, snapshot, wait_for_selection};
 use oteryn_dev_client::{DevClientSession, SessionEvent};
-use oteryn_gameplay_characters::speed::{StepSpeedTable, player_effective_speed};
 use oteryn_gameplay_quests::quest::{
     loader::{LoweredQuestState, load_embedded_quest_state},
     reward_callbacks,
@@ -99,7 +97,7 @@ struct Grant {
     mount_aliases: Vec<String>,
 }
 
-#[derive(Deserialize, PartialEq, Eq)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 #[serde(tag = "kind")]
 enum Target {
     Outfit { outfit_key: String },
@@ -114,6 +112,7 @@ struct Taming {
     target_item_key: Option<String>,
     success_text: String,
     failures: Vec<TamingFailure>,
+    break_item: bool,
     #[serde(default)]
     required_items: Vec<String>,
     required_equipment: Option<String>,
@@ -123,6 +122,7 @@ struct Taming {
 
 #[derive(Deserialize)]
 struct TamingFailure {
+    action: u8,
     text: String,
 }
 
@@ -257,31 +257,6 @@ fn grant<'a>(
             })
             .flatten()
     })
-}
-
-// The same receipt/fact pair consumed by character_appearance/earned_unlocks.rs:31.
-// Write before admission on the dedicated sweep fixture, in one statement.
-async fn seed(clients: &SeamClients<'_>, key: &str, provenance: &str) -> TestResult {
-    let mut db = sqlx::PgConnection::connect(clients.url).await?;
-    sqlx::query(
-        "WITH candidate AS (
-           SELECT game_character_uuid_v7() AS id, account_id, character_id
-           FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
-         ), receipt AS (
-           INSERT INTO game_account_appearance_unlock_receipts
-             (grant_occurrence_id,account_id,unlock_key,content_revision,granting_character_id,source_kind,source_event_id)
-           SELECT id,account_id,$2,$3,character_id,'quest',uuid_send(id) FROM candidate
-           WHERE NOT EXISTS (
-             SELECT 1 FROM game_account_appearance_unlocks u
-             WHERE u.account_id=candidate.account_id AND u.unlock_key=$2
-           )
-           RETURNING grant_occurrence_id,account_id,unlock_key
-         )
-         INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id)
-         SELECT account_id,unlock_key,grant_occurrence_id FROM receipt",
-    ).bind(clients.characters[0].as_slice()).bind(key).bind(provenance)
-        .execute(&mut db).await?;
-    Ok(())
 }
 
 struct Rows<'a> {
@@ -490,6 +465,7 @@ struct ObtainContent {
     callbacks: Vec<NpcReward>,
     quest_state: LoweredQuestState,
     item_rules: serde_json::Value,
+    npc_names: std::collections::BTreeMap<String, String>,
 }
 
 impl ObtainContent {
@@ -538,13 +514,46 @@ impl ObtainContent {
         }
         offer_paths.sort();
         for path in offer_paths {
-            let document: serde_json::Value = serde_json::from_slice(&std::fs::read(path)?)?;
-            for value in document["offers"].as_array().into_iter().flatten() {
-                if let Ok(mut offer) = serde_json::from_value::<NpcReward>(value.clone())
-                    && !offer.keywords.is_empty()
-                {
+            let document: serde_json::Value = serde_json::from_slice(&std::fs::read(&path)?)?;
+            let offers = document["offers"]
+                .as_array()
+                .ok_or_else(|| format!("missing offers array in {}", path.display()))?;
+            for (index, value) in offers.iter().enumerate() {
+                let mut offer: NpcReward = serde_json::from_value(value.clone())
+                    .map_err(|error| format!("{} offer {index}: {error}", path.display()))?;
+                if !offer.keywords.is_empty() {
                     offer.offer = true;
                     callbacks.push(offer);
+                }
+            }
+        }
+        let index: serde_json::Value = serde_json::from_slice(&std::fs::read(
+            root.join("content/npcs/definitions/index.json"),
+        )?)?;
+        let mut npc_names = std::collections::BTreeMap::new();
+        for shard in index["shards"].as_array().ok_or("missing NPC shards")? {
+            let file = root.join(shard.as_str().ok_or("invalid NPC shard path")?);
+            let document: serde_json::Value = serde_json::from_slice(&std::fs::read(file)?)?;
+            for row in document["records"]
+                .as_array()
+                .ok_or("missing NPC records")?
+            {
+                let declaration = &row["declaration"];
+                let key = declaration["identity"]["key"]
+                    .as_str()
+                    .ok_or("missing NPC key")?;
+                let name = declaration["fields"]
+                    .as_array()
+                    .and_then(|fields| {
+                        fields
+                            .iter()
+                            .find(|field| field["field_path"] == "oteryn:source.npc.display_name")
+                    })
+                    .and_then(|field| field["value"]["value"].as_str());
+                let slug = key.rsplit('.').next().ok_or("invalid NPC key")?;
+                let name = name.map_or_else(|| slug.replace('_', " "), str::to_owned);
+                if npc_names.insert(key.to_owned(), name).is_some() {
+                    return Err(format!("duplicate NPC definition {key}").into());
                 }
             }
         }
@@ -555,6 +564,7 @@ impl ObtainContent {
             callbacks,
             quest_state,
             item_rules,
+            npc_names,
         })
     }
 
@@ -751,36 +761,11 @@ async fn return_to(
     walk(client, world, &path).await
 }
 
-// Position is a disposable fixture prerequisite. Keep the server-owned world,
-// frame, and map binding and let admission validate the seeded cell.
-// apps/game-server/migrations/0080_character_last_position.sql:23,52
-async fn seed_npc_position(clients: &SeamClients<'_>, at: TilePos) -> TestResult {
-    wait_character_released(clients, 0).await?;
-    let mut db = sqlx::PgConnection::connect(clients.url).await?;
-    let changed = sqlx::query(
-        "UPDATE game_character_last_positions
-         SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
-         WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid",
-    )
-    .bind(clients.characters[0].as_slice())
-    .bind(clients.world.as_slice())
-    .bind(i32::from(at.x))
-    .bind(i32::from(at.y))
-    .bind(-i16::from(at.floor))
-    .execute(&mut db)
-    .await?
-    .rows_affected();
-    if changed != 1 {
-        return Err("harness-obtain-path: disposable actor has no saved position".into());
-    }
-    Ok(())
-}
-
 async fn obtain_npc(
     client: &mut DevClientSession,
-    clients: &SeamClients<'_>,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
+    names: &std::collections::BTreeMap<String, String>,
     steps: &[&NpcReward],
     target: &Target,
     state: &mut appearance::Snapshot,
@@ -794,90 +779,62 @@ async fn obtain_npc(
         .find(|npc| npc.key == first.npc)
         .ok_or_else(|| format!("harness-obtain-path: NPC {} absent from fixture", first.npc))?;
     let home = tile(client.world_spatial().actor_position)?;
-    if let Some(path) = route(world, home, |at| {
+    let path = route(world, home, |at| {
         npc.placements.iter().any(|placement| {
             placement.floor == at.floor
                 && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 2
         })
-    }) {
-        walk(client, world, &path).await?;
-        talk_for_reward(client, npc, steps, target, state).await?;
-        return return_to(client, world, home).await;
-    }
-    let landing = npc
-        .placements
-        .iter()
-        .find_map(|npc| {
-            [(0, -1), (1, 0), (0, 1), (-1, 0)]
-                .into_iter()
-                .find_map(|(dx, dy)| {
-                    let at = TilePos {
-                        x: npc.x.checked_add_signed(dx)?,
-                        y: npc.y.checked_add_signed(dy)?,
-                        floor: npc.floor,
-                    };
-                    (world.base().tile(at.x, at.y, at.floor).is_some() && world.enterable(at))
-                        .then_some(at)
-                })
-        })
-        .ok_or_else(|| {
-            format!(
-                "harness-obtain-path: NPC {} has no adjacent fixture tile",
-                first.npc
-            )
-        })?;
-    logout(client).await?;
-    evidence(&format!(
-        "cosmetic_sweep prerequisite mode=seeded source=saved-position npc={}",
-        first.npc
-    ));
-    let result = async {
-        seed_npc_position(clients, landing).await?;
-        let mut nearby = connect_character(clients, 0xc9, 0).await?;
-        let dialogue = async {
-            if tile(nearby.world_spatial().actor_position)? != landing {
-                return Err("harness-obtain-path: admission refused seeded NPC position".into());
-            }
-            let mut nearby_state = snapshot(&mut nearby)?;
-            talk_for_reward(&mut nearby, npc, steps, target, &mut nearby_state).await
-        }
-        .await;
-        dialogue.and(logout(&mut nearby).await)
-    }
-    .await;
-    let restored = async {
-        seed_npc_position(clients, home).await?;
-        *client = connect_character(clients, 0xc9, 0).await?;
-        *state = snapshot(client)?;
-        Ok(())
-    }
-    .await;
-    result.and(restored)
+    })
+    .ok_or_else(|| format!("harness-obtain-path: no walkable route to {}", first.npc))?;
+    let name = names
+        .get(&npc.key)
+        .ok_or("harness-obtain-path: NPC has no authored display name")?;
+    walk(client, world, &path).await?;
+    talk_for_reward(client, npc, name, steps, target, state).await?;
+    return_to(client, world, home).await
 }
 
 async fn talk_for_reward(
     client: &mut DevClientSession,
     npc: &oteryn_world_bundle::npc::Npc,
+    name: &str,
     steps: &[&NpcReward],
     target: &Target,
     state: &mut appearance::Snapshot,
 ) -> TestResult {
     use oteryn_dev_client::{client_runtime::npc_shop, client_ui::npc_shop as ui};
     let basis = spatial_basis::current(client)?;
-    let entity = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Npc
-                    && npc.placements.iter().any(|placement| {
-                        entity.position.x == i32::from(placement.x)
-                            && entity.position.y == i32::from(placement.y)
-                            && entity.position.floor == basis.floor(placement.floor)
-                    })
-            })
-        })
-        .map(|entry| entry.entity)
-        .ok_or("harness-obtain-path: NPC actor not visible at authored placement")?;
+    let entity = {
+        let entities = client
+            .world_entities()
+            .ok_or("missing wire spatial entities")?;
+        let mut matches = entities.iter().filter(|entity| {
+            entity.kind == oteryn_dev_client::EntityKind::Npc
+                && entity.display_name.is_some_and(|label| {
+                    label
+                        .as_str()
+                        .is_ok_and(|shown| shown.eq_ignore_ascii_case(name))
+                })
+                && npc.placements.iter().any(|placement| {
+                    entity.position.x == i32::from(placement.x)
+                        && entity.position.y == i32::from(placement.y)
+                        && entity.position.floor == basis.floor(placement.floor)
+                })
+        });
+        let entity = matches
+            .next()
+            .ok_or(
+                "harness-obtain-path: NPC wire name and placement did not match the authored NPC",
+            )?
+            .entity;
+        if matches.next().is_some() {
+            return Err(
+                "harness-obtain-path: more than one NPC matched the authored name and placement"
+                    .into(),
+            );
+        }
+        entity
+    };
     for text in std::iter::once("hi").chain(
         steps
             .iter()
@@ -922,7 +879,6 @@ async fn prepare<'a>(
             mount_key: mount.key.clone(),
         });
     }
-    let mut seeded = Vec::new();
     let mut actions = Vec::new();
     for target in targets {
         if let Some(steps) = obtain.npc_route(&target, npcs) {
@@ -944,26 +900,15 @@ async fn prepare<'a>(
             actions.push(ObtainAction::Item(target, item));
             continue;
         }
-        let (key, provenance) = grant(content, &target, None)
-            .ok_or("content cosmetic has no authored grant mapping")?;
-        let reason = if key.contains("/quest-grant")
-            || key.contains("/npc-grant")
-            || key.contains("/quest/")
-        {
-            "quest-journey-unavailable-in-fixture"
-        } else {
-            "no-supported-direct-obtain-path"
-        };
-        seed(clients, key, provenance).await?;
-        seeded.push(format!("{key}[{reason}]"));
+        return Err(
+            format!("harness-obtain-path: no supported wire acquisition for {target:?}").into(),
+        );
     }
     if let Some((_, Some(binding))) = mount {
         seed_taming_prerequisites(clients, binding, items).await?;
         actions.push(ObtainAction::Tame(binding));
     }
-    let mode = if !seeded.is_empty() {
-        format!("mode=seeded grants:{}", seeded.join(","))
-    } else if actions.is_empty() {
+    let mode = if actions.is_empty() {
         "mode=starter".into()
     } else {
         "mode=wire prerequisites=seeded-items-and-optional-spawn".into()
@@ -1159,6 +1104,16 @@ fn carried_handle(
         .ok_or_else(|| "harness-item-custody: seeded item absent from wire inventory".into())
 }
 
+fn carried_quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
+    let inventory = client.inventory().ok_or("missing wire inventory")?;
+    Ok(inventory
+        .entries
+        .iter()
+        .filter(|item| item.item_definition_ref == reference)
+        .map(|item| u64::from(item.count.get()))
+        .sum())
+}
+
 async fn use_cosmetic_item(client: &mut DevClientSession, key: &str) -> TestResult {
     use oteryn_protocol_oteryn::world_object::{self, UseDisposition, UseIntent};
     let payload = world_object::encode_item_use_intent(&UseIntent {
@@ -1249,6 +1204,10 @@ async fn obtain_taming(
             Some(entity)
         };
         previous = target;
+        let before = carried_quantity(client, reference)?;
+        if before == 0 {
+            return Err("taming item missing from wire inventory before roll".into());
+        }
         client.take_events();
         let payload = world_object::encode_item_use_intent(&UseIntent {
             target: if binding.required_items.len() > 1 {
@@ -1269,7 +1228,7 @@ async fn obtain_taming(
         }
         let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
         let mut success = false;
-        let mut feedback = false;
+        let mut failure = None;
         loop {
             for event in client.take_events() {
                 match event {
@@ -1279,7 +1238,11 @@ async fn obtain_taming(
                             delta.value
                             && speaker_name == "Game"
                         {
-                            feedback |= binding.failures.iter().any(|failure| failure.text == text);
+                            if let Some(authored) =
+                                binding.failures.iter().find(|roll| roll.text == text)
+                            {
+                                failure = Some(authored.text.as_str());
+                            }
                             success |= text == binding.success_text;
                         }
                     }
@@ -1291,16 +1254,44 @@ async fn obtain_taming(
                     .world_entities()
                     .is_some_and(|view| view.get(&entity).is_none())
             });
+            if let Some(failed) = failure {
+                if success || state.catalogue.mounts.contains(&binding.mount_key) {
+                    return Err("failed taming roll published success or an entitlement".into());
+                }
+                if target.is_none() {
+                    return Err("failed taming roll has no creature target".into());
+                }
+                let remaining = carried_quantity(client, reference)?;
+                let mut matched = false;
+                let mut removal_possible = false;
+                for roll in binding.failures.iter().filter(|roll| roll.text == failed) {
+                    // Crystal 201189f8 data-global/scripts/actions/mounts/mounts.lua:1,76-91.
+                    let (remove, consume) = match roll.action {
+                        1 => (true, false),
+                        2 => (false, binding.break_item),
+                        3 => (false, false),
+                        4 => (true, binding.break_item),
+                        _ => return Err("unknown authored taming failure action".into()),
+                    };
+                    removal_possible |= remove;
+                    matched |= removed == remove
+                        && before.checked_sub(u64::from(consume)) == Some(remaining);
+                }
+                // Several mounts reuse the same text for both break and remove.
+                // Give a possible removal its full wire observation window.
+                if matched
+                    && (removed || !removal_possible || tokio::time::Instant::now() >= deadline)
+                {
+                    break;
+                }
+            }
             if success && removed && state.catalogue.mounts.contains(&binding.mount_key) {
                 return_to(client, world, home).await?;
                 return Ok(());
             }
-            if feedback && !success {
-                break;
-            }
             if tokio::time::Instant::now() >= deadline {
                 return Err(
-                    "server-taming-outcome: committed use lacked expected feedback or unlock delta"
+                    "server-taming-outcome: committed use lacked expected feedback, unlock, or roll effects"
                         .into(),
                 );
             }
@@ -1353,24 +1344,28 @@ async fn journey(
         for action in actions {
             match action {
                 ObtainAction::Npc(target, steps) => {
-                    if !target.owned(&state.catalogue) {
-                        obtain_npc(
-                            &mut client,
-                            clients,
-                            world,
-                            npcs,
-                            &steps,
-                            &target,
-                            &mut state,
-                        )
-                        .await?;
+                    if target.owned(&state.catalogue) {
+                        return Err(
+                            "wire NPC acquisition target already owned before dialogue".into()
+                        );
                     }
+                    obtain_npc(
+                        &mut client,
+                        world,
+                        npcs,
+                        &obtain.npc_names,
+                        &steps,
+                        &target,
+                        &mut state,
+                    )
+                    .await?;
                 }
                 ObtainAction::Item(target, key) => {
-                    if !target.owned(&state.catalogue) {
-                        use_cosmetic_item(&mut client, &key).await?;
-                        wait_target(&mut client, &mut state, &target).await?;
+                    if target.owned(&state.catalogue) {
+                        return Err("wire item acquisition target already owned before use".into());
                     }
+                    use_cosmetic_item(&mut client, &key).await?;
+                    wait_target(&mut client, &mut state, &target).await?;
                 }
                 ObtainAction::Tame(binding) => {
                     obtain_taming(&mut client, world, binding, &mut state).await?
@@ -1552,18 +1547,27 @@ async fn exercise(
     rows.pass("second client received changed look for same entity");
     if let Some((mount, _)) = mount {
         let (_, level, _) = creature_sweep::read_stats(client).await?;
+        let mounted_look = mount.look.id;
+        require_motion_look(client, entity, 0)?;
+        require_motion_look(observer, entity, 0)?;
+        client.take_events();
+        observer.take_events();
         ride(client, true).await?;
         let (motion, position) = wait_motion(client, entity, mount.look.id).await?;
         wait_motion(observer, entity, mount.look.id).await?;
         rows.pass("both clients received the authored mounted look");
-        match check_speed(world, position, &motion, level, mount.speed_bonus) {
+        match check_speed(client, world, position, &motion, level, mount.speed_bonus) {
             Ok(()) => rows.pass("wire prewalk forecasts match content speed bonus"),
             Err(error) => rows.fail(error.as_ref()),
         }
+        require_motion_look(client, entity, mounted_look)?;
+        require_motion_look(observer, entity, mounted_look)?;
+        client.take_events();
+        observer.take_events();
         ride(client, false).await?;
         let (motion, position) = wait_motion(client, entity, 0).await?;
         wait_motion(observer, entity, 0).await?;
-        check_speed(world, position, &motion, level, 0)?;
+        check_speed(client, world, position, &motion, level, 0)?;
         rows.pass("both clients cleared mount look and base forecast returned");
     }
     let previous = client.join_snapshot().game_session_id;
@@ -1606,6 +1610,22 @@ async fn ride(client: &mut DevClientSession, riding: bool) -> TestResult {
     Ok(())
 }
 
+fn require_motion_look(
+    client: &DevClientSession,
+    entity: appearance::EntityRef,
+    look: u32,
+) -> TestResult {
+    let actual = client
+        .world_entities()
+        .and_then(|view| view.get(&entity))
+        .and_then(|entry| entry.motion)
+        .map(|motion| motion.mount_look_type);
+    if actual != Some(look) {
+        return Err(format!("pre-command mount look {actual:?}, expected {look}").into());
+    }
+    Ok(())
+}
+
 async fn wait_motion(
     client: &mut DevClientSession,
     entity: appearance::EntityRef,
@@ -1613,64 +1633,125 @@ async fn wait_motion(
 ) -> TestResult<(actor_motion::ActorMotion, TilePos)> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        if let Some(entry) = client
-            .world_entities()
-            .and_then(|entities| entities.get(&entity))
-            && let Some(motion) = entry.motion
-            && motion.mount_look_type == look
-        {
-            return Ok((motion, tile(entry.position)?));
+        for event in client.take_events() {
+            if let SessionEvent::WorldSpatialEntities(delta) = event
+                && delta.new_revision > delta.base_revision
+            {
+                for entry in delta.value.update {
+                    if entry.entity == entity
+                        && let Some(motion) = entry.motion
+                        && motion.mount_look_type == look
+                    {
+                        return Ok((motion, tile(entry.position)?));
+                    }
+                }
+            }
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("wire motion did not show mount look {look}").into());
+            return Err(format!("no post-command motion delta with mount look {look}").into());
         }
         client.service_liveness(Duration::from_millis(25)).await?;
-        client.take_events();
     }
 }
 
 fn forecast(level: u32, bonus: u16, ground: u16) -> Option<u32> {
-    let speed = player_effective_speed(level, 0, i64::from(bonus));
-    let duration = StepSpeedTable::embedded()?.step_duration(speed, ground)?;
-    u32::try_from(duration.as_millis()).ok()
+    if ground == 0 {
+        return None;
+    }
+    // Independent evaluation of the SPEED-1 reference formula recorded in
+    // content/movement/step_speed_v1.json (Canary 04b83b51 creature.hpp:76-78,1061-1067).
+    let speed = (109 + u64::from(level) + u64::from(bonus)).clamp(10, 65_535);
+    let step_speed = (857.36 * (speed as f64 + 261.29).ln() - 4795.01).round() as u32;
+    Some((1000 * u32::from(ground) / step_speed).div_ceil(50) * 50)
 }
 
 fn check_speed(
+    client: &mut DevClientSession,
     world: &BundleWorld,
     position: TilePos,
     motion: &actor_motion::ActorMotion,
     level: u32,
     bonus: u16,
 ) -> TestResult {
-    let mut checked = false;
-    for (&ms, (dx, dy)) in motion.prewalk_ms[..4]
-        .iter()
-        .zip([(0, -1), (1, 0), (0, 1), (-1, 0)])
+    use oteryn_gameplay_world::map::floor::{Ground, resolve_landing};
+    use oteryn_gameplay_world::movement::CardinalStep::*;
+    let basis = spatial_basis::current(client)?;
+    let entities = client
+        .world_entities()
+        .ok_or("missing wire spatial entities")?;
+    let origin = (
+        i32::from(position.x),
+        i32::from(position.y),
+        -i32::from(position.floor),
+    );
+    let at_tile = |(x, y, z): (i32, i32, i32)| {
+        Some(TilePos {
+            x: x.try_into().ok()?,
+            y: y.try_into().ok()?,
+            floor: i8::try_from(z).ok()?.checked_neg()?,
+        })
+    };
+    let ground = |cell| {
+        let Some(at) = at_tile(cell) else {
+            return Ground::Absent;
+        };
+        match world.base().tile(at.x, at.y, at.floor) {
+            None => Ground::Absent,
+            Some(tile) if tile.walkable() && world.enterable(at) => Ground::Walkable,
+            Some(_) => Ground::Blocked,
+        }
+    };
+    let mut checked_walkable = false;
+    let cardinal = forecast(level, bonus, 150).ok_or("missing reference step duration")?;
+    for (index, (ms, direction)) in motion
+        .prewalk_ms
+        .into_iter()
+        .zip([
+            North, East, South, West, NorthEast, SouthEast, SouthWest, NorthWest,
+        ])
+        .enumerate()
     {
-        if ms == 0 {
-            continue;
+        let (dx, dy) = direction.delta();
+        let next = (origin.0 + dx, origin.1 + dy, origin.2);
+        let same_floor_step = resolve_landing(
+            world.floors(),
+            ground,
+            |cell| ground(cell) == Ground::Walkable,
+            origin,
+            direction,
+        ) == Ok(next);
+        let walkable = same_floor_step
+            && at_tile(next).is_some_and(|at| {
+                let protection = world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|tile| tile.protection_zone());
+                world.floors().teleport(at).is_none()
+                    && !entities.iter().any(|entry| {
+                        use oteryn_dev_client::EntityKind::{Creature, Npc, Player};
+                        let blocks = matches!(entry.kind, Creature | Npc)
+                            || (entry.kind == Player && !protection);
+                        blocks
+                            && entry.position.x == next.0
+                            && entry.position.y == next.1
+                            && entry.position.floor == basis.floor(at.floor)
+                    })
+            });
+        // Crystal 201189f8 src/creatures/creature.cpp:1492-1511.
+        let expected = if !walkable {
+            0
+        } else if index < 4 {
+            cardinal
+        } else {
+            3 * cardinal
+        };
+        if ms != expected {
+            return Err(format!("forecast direction {index}: observed {ms}ms, expected {expected}ms at level {level}, bonus {bonus}").into());
         }
-        let x = position
-            .x
-            .checked_add_signed(dx)
-            .ok_or("forecast x outside map")?;
-        let y = position
-            .y
-            .checked_add_signed(dy)
-            .ok_or("forecast y outside map")?;
-        let ground = world.ground_speed(TilePos {
-            x,
-            y,
-            floor: position.floor,
-        });
-        let expected = forecast(level, bonus, ground);
-        if expected != Some(ms) {
-            return Err(format!("forecast mismatch observed {ms}ms, expected {expected:?}ms at ground {ground}, level {level}, bonus {bonus}").into());
-        }
-        checked = true;
+        checked_walkable |= walkable;
     }
-    if !checked {
-        return Err("no nonzero cardinal speed forecast on the wire".into());
+    if !checked_walkable {
+        return Err("no walkable forecast direction at the fixture position".into());
     }
     Ok(())
 }
@@ -1864,7 +1945,9 @@ mod tests {
     }
 
     #[test]
-    fn forecast_applies_content_bonus_before_table_lookup() {
+    fn forecast_applies_content_bonus_to_reference_speed() {
+        assert_eq!(forecast(1, 0, 150), Some(550));
+        assert_eq!(forecast(1, 10, 150), Some(500));
         assert_eq!(forecast(100, 10, 150), forecast(110, 0, 150));
         assert!(
             forecast(100, 10, 150)
