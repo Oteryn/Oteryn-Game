@@ -201,7 +201,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(permit) = self.task_board_lane_after_kills().await else {
             return TaskBoardReply::Rejected;
         };
-        let Ok(Some(fence)) = self.current_quest_fence(admitted.game_session_id).await else {
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        let Ok(Some(fence)) = budget.retry_holder(
+            async || self.current_quest_fence_durable(admitted.game_session_id).await,
+            super::root_holder_busy,
+        ).await else {
             return TaskBoardReply::Rejected;
         };
         if fence.character_id.as_bytes() != item_fence.character_id.as_bytes()
@@ -249,7 +253,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             action,
             payload_binding: payload.to_vec(),
         };
-        let result = match self.commit_task_board(fence, request, Some(&permit)).await {
+        let result = match budget.retry_holder(
+            async || self.commit_task_board(fence, request.clone(), Some(&permit)).await,
+            super::progression_holder_busy,
+        ).await {
             Ok(result) => result,
             Err(
                 crate::durability::character_progression::CharacterProgressionError::Unavailable(

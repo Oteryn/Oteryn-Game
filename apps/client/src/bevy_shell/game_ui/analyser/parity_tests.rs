@@ -176,12 +176,21 @@ fn hunting_exports_measured_text_and_json_to_chosen_files() -> TestResult {
             .ok_or("destination")?;
         *field = bevy::text::EditableText::new(path.to_str().ok_or("path")?);
         click_caption(&mut app, caption)?;
+        // The file is persisted before the export task reports ready. Waiting only for the
+        // file let the next click land while the task was still held, and that click was
+        // refused as "A hunt report is being saved".
+        let feedback = |app: &App| {
+            app.world().non_send::<HostOwner>().play.as_ref()
+                .and_then(|play| play.link.analyser_panel().feedback)
+        };
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
-        while !path.exists() {
-            assert!(std::time::Instant::now() < deadline);
+        while !path.exists() || feedback(&app) != Some("Hunt report saved") {
+            if std::time::Instant::now() >= deadline {
+                return Err(format!("export did not finish: {:?}", feedback(&app)).into());
+            }
             app.update();
+            std::thread::yield_now();
         }
-        app.update();
         let saved = std::fs::read_to_string(path)?;
         if file.ends_with(".json") {
             let json: serde_json::Value = serde_json::from_str(&saved)?;

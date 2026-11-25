@@ -48,7 +48,17 @@ fn alawars_vault_teleport_pair_preserves_source_selectors_and_destinations() -> 
         assert!(callback.selector.unique.is_none());
         assert!(callback.selector.action.is_none());
         assert_eq!(callback.teleport, Some(destination));
-        assert!(callback.storage.is_empty());
+        if key.ends_with("-exit") {
+            let [observation] = callback.storage.as_slice() else {
+                return Err("return portal must record one observation".into());
+            };
+            assert_eq!(
+                (observation.minimum, observation.maximum, observation.set),
+                (0, 1, 1)
+            );
+        } else {
+            assert!(callback.storage.is_empty());
+        }
         assert!(callback.minimum_level.is_none());
         assert!(callback.offerings.is_empty());
         assert!(callback.item_on_target.is_none());
@@ -60,6 +70,26 @@ fn alawars_vault_teleport_pair_preserves_source_selectors_and_destinations() -> 
         assert!(!callback.return_on_failure);
         assert!(callback.failure_message.is_none());
         assert!(callback.sources.iter().any(|entry| entry == source));
+    }
+    Ok(())
+}
+
+#[test]
+fn alawar_shared_tracks_admit_first_lever_and_return_uses() -> Result<(), String> {
+    use oteryn_gameplay_quests::quest::loader::load_embedded_quest_state;
+    use std::collections::BTreeMap;
+
+    let loaded = load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    for key in [
+        "oteryn:quest-callback/alawars-vault-lever",
+        "oteryn:quest-callback/alawars-vault-exit",
+    ] {
+        let transition = catalogue.transition(key).ok_or("Alawar transition")?;
+        let changes = catalogue
+            .evaluate(transition, &BTreeMap::new(), 0)
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!((changes[0].before, changes[0].after), (0, 1), "{key}");
     }
     Ok(())
 }
