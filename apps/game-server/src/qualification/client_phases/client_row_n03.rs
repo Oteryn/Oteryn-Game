@@ -6,13 +6,12 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::item_view::ItemHandle;
 use oteryn_protocol_oteryn::{CommandStatus, depot, depot_search as wire};
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("N03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        std::fs::write(Path::new(&root).join(name), bytes)
+            .map_err(|error| format!("N03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"))?;
     }
+    Ok(())
 }
 
 async fn search_command(
@@ -177,11 +176,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         retrieved.outcome,
         retrieved.retrieved
     );
-    for (index, bytes) in pages.iter().enumerate() {
-        capture(&format!("n03-list-{index}.bin"), bytes);
-    }
-    capture("n03-retrieve.bin", &retrieved_bytes);
-    capture("n03-expected.txt", expected.as_bytes());
     // Return whatever stays in the depot so later rows find the carried item again.
     match search_command(
         &mut client,
@@ -197,6 +191,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         other => evidence(&format!("N03_CLEANUP_UNCONFIRMED {other:?}").replace(' ', "_")),
     }
     let _ = client.session_mut().logout().await;
+    for (index, bytes) in pages.iter().enumerate() {
+        capture(&format!("n03-list-{index}.bin"), bytes)?;
+    }
+    capture("n03-retrieve.bin", &retrieved_bytes)?;
+    capture("n03-expected.txt", expected.as_bytes())?;
     Ok(format!(
         "item={client_id} pages={} depot={} retrieved={}",
         pages.len(),
@@ -206,9 +205,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await {
+    let started = std::time::Instant::now();
+    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=N03.client status=CAPTURED evidence={observed}"
+            "e2e_all scenario=N03.client status=PASS seconds={:.3} evidence={observed}",
+            started.elapsed().as_secs_f64()
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=N03.client status=FAIL evidence={}",
