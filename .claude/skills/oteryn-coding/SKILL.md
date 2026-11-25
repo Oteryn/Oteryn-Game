@@ -22,6 +22,20 @@ Mechanic layout, numbers and file sets are in `oteryn-dev`
   The owner prefers a stated assumption to a question; stop only for a choice
   that cannot be undone.
 
+## Risk classes: design before code
+
+A change is in a risk class when it touches persistence, session-generation
+fencing, the protocol wire, a durable value (gold, items, bounties), a
+migration, or a symbol with several consumers. Owner decision 2026-11-25:
+
+- Write a half-page plan before code and have it reviewed: the invariant, the
+  consumer map (`oteryn-waves` `references/delegation.md`, item 1), the states
+  and error paths, and the tests. Code starts after the plan is accepted.
+- Code in a risk class runs at effort high; data, content, tests and simple
+  slices run at medium (`oteryn-waves` `references/delegation.md`).
+- A change that touches another subsystem's crate needs that owner's review
+  of the consumer map first (`docs/architecture/subsystems/README.md`).
+
 ## Every task has a check that goes red, then green
 
 Before production code, write or name the check that proves the task:
@@ -103,6 +117,34 @@ Beyond it:
   barrier fixes were a fixed sleep or a missing readiness wait).
 - Assertions stay as strict as before; a changed golden count is recorded in
   the PR, never loosened to fit.
+- Expected values come from the data or a regenerated golden, not from a
+  literal in the test: no hand-typed spawn counts, coordinates, floors,
+  versions or item counts that a content or schema change moves. A test that
+  must pin a number reads it from its one central source.
+- A defect class that Codex or CI found twice becomes a guard test (a source
+  scan, a table test over every variant or an invariant over the data) in the
+  fix PR, not a note in a skill (`oteryn-review` §7).
+
+## Before you push
+
+Owner decision 2026-11-25; each item comes from a class that reached review
+or `main` (retro 2026-11-25).
+
+1. Run the touched module's own PostgreSQL cases and prove they reached
+   their assertions (the test's duration, or a marker or a deliberately red
+   run). A case that returned `Ok(())` without a database proves nothing.
+   Run the scenario variants too: solo and party, every consumer, the error
+   paths.
+2. Grep every literal, version and count you changed across tests, fixtures,
+   contracts, docs and other languages. Update all hits in the same commit.
+3. After any merge of `origin/main`, rebuild, then run the full non-PostgreSQL
+   tests of the changed crates and your own PostgreSQL cases before the push.
+   A clean merge does not mean the merged code still compiles or agrees.
+4. Take numbers (migration, capability, command, offer order, counts) only
+   from the central claim (`oteryn-dev` `scripts/next-free-numbers.py`,
+   the packet), never from a stale branch.
+5. Review your own diff against `docs/agents/review/CODEX-CHECKLIST.md` at
+   effort high (`oteryn-review` §0).
 
 ## Sources
 

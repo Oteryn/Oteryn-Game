@@ -8,7 +8,8 @@ Why rounds shrink: one reviewer with one prompt stops after its first strong
 findings, and a line cap cuts the rest. Each fix also adds new code that the
 next round reviews. The rules below remove those causes. They do not change
 the limits in §5: at most 2 reviews per PR, the review never edits code, and
-the fix runs at effort `high`.
+the fix runs at effort `high` for a P0/P1 in a risk class and `medium` for any
+other fix (owner decision 2026-11-25).
 
 ## 1. One round = several lens runs over the same head
 
@@ -27,7 +28,7 @@ context and does not see the other runs' output.
 The lens list of a PR is fixed when its first round starts; the second
 review (delta only) runs the subset of those lenses that had confirmed
 findings. One whole-diff round on the integrated head replaces per-area review loops; per-area
-loops on a package ran 8-9 rounds and did not converge, while the one
+loops on a package-sized diff ran 8-9 rounds and did not converge, while the one
 whole-diff round found the cross-cutting P0 the area loops missed (retro
 2026-11-18).
 
@@ -40,20 +41,20 @@ Choose lenses by diff size and by what the diff touches:
   400-500 lines by file group (one crate or module per chunk). Each chunk
   gets the lenses that fit it. Every chunk still gets the whole diff as
   read-only context, so cross-file defects are not lost.
-- Every package PR, and every diff split into chunks, also gets two
+- Every train PR, and every diff split into chunks, also gets two
   holistic runs in the same round. Each reviews the whole diff as one unit,
   not a chunk, and reports findings anywhere in it:
   - `whole-integration`: how the parts interact on the integrated head:
     shared state, duplicate or conflicting registrations, ordering of
-    handlers and migrations, a migration against another member's code,
+    handlers and migrations, a migration against another unit's code,
     contracts and fixtures against the code, generated files (quest tree,
     pins, registries) against their sources.
   - `whole-flows`: each player flow the diff changes, end to end (client
     command, dispatch, rules, durability, PostgreSQL and back), with the
     cheating-player cases: two clients at once, disconnect midway, a
     replayed frame, a restart during a write, values at their limits.
-  Chunk runs alone are not a covered review of a package: per-chunk runs miss
-  defects between members. The delta review (second round) reruns
+  Chunk runs alone are not a covered review of a train: per-chunk runs miss
+  defects between units. The delta review (second round) reruns
   `whole-integration` over the fix commits together with the code they touch.
 
 Each lens is one Codex Cloud task (read-only, model `gpt-6.2-astra`, reasoning
@@ -103,7 +104,8 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
 ## 4. One batch fix, one delta review, one CI cycle
 
 1. Write all confirmed P0/P1 findings, sweep instances included, to one file
-   and run one fix: on the PC `bash ~/oteryn-cache/codex-review.sh <worktree>
+   and run one fix, at effort `high` for a P0/P1 in a risk class and `medium`
+   otherwise: on the PC `bash ~/oteryn-cache/codex-review.sh <worktree>
    <tag> --fix-confirmed <file>` (not in this repository), elsewhere one Codex
    Cloud fix packet with the same list (`SKILL.md` §5).
    Never one fix run per finding. The packet follows `SKILL.md` §7 (numbered
