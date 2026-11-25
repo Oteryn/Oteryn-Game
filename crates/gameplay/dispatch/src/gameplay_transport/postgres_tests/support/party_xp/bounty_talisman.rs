@@ -51,7 +51,7 @@ pub(in super::super) async fn qualify_talisman(
     let active = owner
         .bounty_talisman_for_session(session)
         .await
-        .map_err(|()| "active talisman read")?;
+        .map_err(|error| format!("active talisman read: {error:?}"))?;
     assert_eq!(
         active.bonuses("oteryn:creature.rat"),
         [5000, 5000, 5000, 10000]

@@ -126,19 +126,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
         .ok()?;
         let (claim, bound) = resolved.canonical?;
-        // Only a bound reward claim needs a durable item fence. Unbound targets
-        // keep their own USE admission even while item durability is busy.
-        if let Some(expected) = command.item_fence
-            && !matches!(
+        // Only bound reward claims take the durable fence. A busy holder
+        // queues the claim within the command budget without intercepting doors.
+        if let Some(expected) = command.item_fence {
+            let retry = super::AdmissionRetryBudget::for_command(self.root);
+            if !matches!(
                 tokio::time::timeout(
                     std::time::Duration::from_secs(10),
-                    self.current_quest_fence(command.game_session_id),
+                    retry.retry_command_guard(async || {
+                        self.current_quest_fence_durable(command.game_session_id).await
+                    }),
                 )
                 .await,
                 Ok(Ok(Some(current))) if current.item_fence() == expected
-            )
-        {
-            return Some(outcome(UseDisposition::Rejected));
+            ) {
+                return Some(outcome(UseDisposition::Rejected));
+            }
         }
         // The tower's authored final USE owns this same once claim and its progress.
         if claim.key.as_str()

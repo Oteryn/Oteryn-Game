@@ -95,7 +95,8 @@ def ground_record(root, artifact, appearance, identifier):
     }
 
 
-def outputs(root=ROOT):
+def ground_records(identifiers, root=ROOT):
+    """Build walkable ground records against the admitted client appearance bank."""
     manifest = json.loads(
         (root / "imports/official/client-assets/15.30/manifest.json").read_bytes()
     )
@@ -112,15 +113,24 @@ def outputs(root=ROOT):
     ):
         raise ValueError("official appearances digest")
     appearances = read_appearances(raw)
-    appearance = appearances[IDENTIFIER]
-    if "bank" not in appearance.flags or appearance.speed != 150:
+    records = []
+    for identifier in sorted(identifiers):
+        appearance = appearances[identifier]
+        if "bank" not in appearance.flags or not appearance.speed or "unpass" in appearance.flags:
+            raise ValueError(f"appearance {identifier} is not walkable ground")
+        records.append(ground_record(root, artifact, appearance, identifier))
+    return records
+
+
+def outputs(root=ROOT):
+    [record] = ground_records([IDENTIFIER], root)
+    if record["ground_speed"]["value"] != 150:
         raise ValueError("Summer ground differs from the accepted appearance")
     bindings = json.loads(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )
     if any(row["external_id"] == str(IDENTIFIER) for row in bindings["bindings"]):
         raise ValueError("appearance-only ground unexpectedly has an Item binding")
-    record = ground_record(root, artifact, appearance, IDENTIFIER)
     index_path = "content/world/placements/index.json"
     index = json.loads((root / index_path).read_bytes())
     selected = [row for row in index["palette"] if row["source_item_id"] == IDENTIFIER]

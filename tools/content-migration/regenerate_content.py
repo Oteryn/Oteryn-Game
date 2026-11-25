@@ -52,8 +52,8 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 import tarfile
+import tempfile
 from pathlib import Path
 
 from item_tree_index import item_index_fields
@@ -62,6 +62,15 @@ ROOT = Path(__file__).resolve().parents[2]
 WORLD = ROOT / "content/world"
 PIN_PATH = "apps/game-server/tests/content_world_project_repository.rs"
 PIN_TEST = ROOT / PIN_PATH
+CLIENT_WORLD = "crates/client-assets/src/world.rs"
+NOMADS_WINDOW = "docs/reference/content-prep/qmech/nomads-land-window.json"
+NOMADS_WINDOW_REPORTS = (
+    ("docs/reference/content-prep/SRVWLD-M02.md", "Region SHA256"),
+    (
+        "docs/reference/content-prep/engnpc2-m02/nomads-window.md",
+        "Current region SHA-256",
+    ),
+)
 
 REGISTRY = (
     "content/project.json",
@@ -70,9 +79,17 @@ REGISTRY = (
 )
 # Written by the authoring tools but not listed in the content manifest.
 EXTRA_DERIVED = (
+    "content/world/placements/index.json",
+    "content/world/spawns/held-bosses.json",
+    "content/world/spawns/index.json",
+    "content/world/terrain/index.json",
+    "content/world/terrain/terrain-08751-08793.json",
+    "content/world/terrain/terrain-08794-08845.json",
+    "content/world/terrain/terrain-08846-08885.json",
     "content/interactions/index.json",
     "content/quests/grizzly-boss-rooms.json",
     "content/quests/last-creep-native.json",
+    "tools/world-bundle-compiler/scoped-spawn-ground.json",
     "tools/content-schema/world-authoring/samples/world-base-capture-v1.json",
     "tools/content-schema/native-gameplay/prey-model-results.json",
     "tools/content-schema/quest-authoring/samples/binding_packets/index.json",
@@ -90,11 +107,19 @@ EXTRA_DERIVED = (
     "tools/content-schema/quest-authoring/samples/server-completion/reward-only-completion/candidates.json",
     "tools/content-schema/quest-authoring/samples/server-completion/use-trigger-candidates.json",
 )
+WORLD_LAYER_OUTPUTS = (
+    ":(glob)content/world/placements/region-*.b3",
+    ":(glob)content/world/spawns/spawns-*.json",
+)
 # Rewritten by the steps below but holding hand-maintained rows: the TibiaWiki import-only
 # sources and batches (read back by world_project_v2_to_tree), hand-captured import records, and
 # the hand-written fields of the interactions index. A conflict here needs a person.
 HAND_MAINTAINED_PREFIXES = ("imports/",)
-HAND_MAINTAINED = ("content/interactions/index.json",)
+HAND_MAINTAINED = (
+    "content/interactions/index.json",
+    "content/world/terrain/index.json",
+    CLIENT_WORLD,
+)
 # World pins and their identity files (`<slug>.ruleset.json` is hand-written), rewritten by
 # `world-bundle-compiler pin-refresh` from the staged inputs; the manifest follows the pin.
 WORLD_PINS = "content/world/pins/"
@@ -119,6 +144,22 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    [
+        "python3",
+        "tools/content-schema/world-object-authoring/spawn_ground.py",
+        "--check",
+    ],
+    [
+        "python3",
+        "tools/content-schema/world-authoring/scoped_spawn_ground.py",
+        "--check",
+    ],
+    [
+        "python3",
+        "tools/content-schema/world-object-authoring/spawn_map_ground.py",
+        "--check",
+    ],
+    ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
@@ -254,7 +295,7 @@ def quest_donor_feedback_inputs() -> dict[str, str]:
     index = json.loads((ROOT / "content/quests/definitions/index.json").read_bytes())
     sources = index.get("authoring_sources")
     if not isinstance(sources, list):
-        raise ValueError("Quest donor feedback source inventory is missing")
+        raise TypeError("Quest donor feedback source inventory is missing")
     prefix = "tools/content-schema/quest-authoring/samples/donor-source/"
     inputs = {}
     for descriptor in sources:
@@ -303,7 +344,9 @@ def refresh_quest_donor_capture() -> None:
 
 def git(*args: str) -> str:
     """Run git and fail closed: any error stops the script instead of reading as "nothing"."""
-    result = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True)
+    result = subprocess.run(
+        ["git", *args], cwd=ROOT, capture_output=True, text=True, check=False
+    )
     if result.returncode != 0:
         raise SystemExit(f"git {' '.join(args)} failed: {result.stderr.strip()}")
     return result.stdout
@@ -361,7 +404,25 @@ def derived_paths() -> set[str]:
         f"content/world/{locator}"
         for locator in document_locators(git("show", f"HEAD:{PIN_PATH}"))
     }
-    return managed | world | set(REGISTRY) | set(EXTRA_DERIVED) | prey_report_paths()
+    # Include new and removed shards as well as paths still present in the tree.
+    world.update(
+        git(
+            "ls-files",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "--",
+            *WORLD_LAYER_OUTPUTS,
+        ).splitlines()
+    )
+    return (
+        managed
+        | world
+        | set(REGISTRY)
+        | set(EXTRA_DERIVED)
+        | prey_report_paths()
+        | {CLIENT_WORLD}
+    )
 
 
 def is_world_pin(path: str) -> bool:
@@ -465,6 +526,9 @@ def merge_spells_manifest(keys: dict) -> None:
 def needs_person(path: str, derived: set[str]) -> bool:
     if path.startswith(HAND_MAINTAINED_PREFIXES) or path in HAND_MAINTAINED:
         return True
+    # The placement overlays only patch selected cells and palette entries.
+    if path.startswith("content/world/placements/"):
+        return True
     if is_world_pin(path):
         return not entry_start_agrees(path)
     return path not in derived and path != PIN_PATH
@@ -540,7 +604,10 @@ def merge_pin_test(*, write: bool) -> bool:
             path.write_text(masked(stage), encoding="utf-8")
             paths.append(str(path))
         merged = subprocess.run(
-            ["git", "merge-file", "-p", *paths], capture_output=True, text=True
+            ["git", "merge-file", "-p", *paths],
+            capture_output=True,
+            text=True,
+            check=False,
         )
     if merged.returncode != 0:
         return False
@@ -552,7 +619,9 @@ def merge_pin_test(*, write: bool) -> bool:
 def document_locators(text: str | None = None) -> list[str]:
     text = PIN_TEST.read_text(encoding="utf-8") if text is None else text
     block = re.search(
-        r"const DOCUMENTS: \[\(&str, usize, &str\); \d+\] = \[(.*?)\n\];", text, re.S
+        r"const DOCUMENTS: \[\(&str, usize, &str\); \d+\] = \[(.*?)\n\];",
+        text,
+        re.DOTALL,
     )
     if not block:
         raise SystemExit(f"DOCUMENTS table not found in {PIN_TEST}")
@@ -584,6 +653,7 @@ def export_predecessor(destination: Path) -> None:
         ["git", "cat-file", "-e", f"{PREDECESSOR_PIN}^{{commit}}"],
         cwd=ROOT,
         capture_output=True,
+        check=False,
     ).returncode:
         run(["git", "fetch", "--no-tags", "--depth=1", "origin", PREDECESSOR_PIN])
     for locator in PREDECESSOR_DOCUMENTS:
@@ -692,6 +762,32 @@ def canonicalize_world() -> None:
             shutil.copyfile(output / locator, WORLD / locator)
 
 
+def refresh_nomads_window(*, check: bool) -> None:
+    profile_path = ROOT / NOMADS_WINDOW
+    profile = json.loads(profile_path.read_bytes())
+    placement = profile["map"]
+    digest = hashlib.sha256((ROOT / placement["path"]).read_bytes()).hexdigest()
+    placement["sha256"] = digest
+    outputs = {profile_path: json.dumps(profile, ensure_ascii=False, indent=2) + "\n"}
+    for path, label in NOMADS_WINDOW_REPORTS:
+        target = ROOT / path
+        text, count = re.subn(
+            rf"({re.escape(label)}: `)[0-9a-f]{{64}}(?=`)",
+            lambda match: match[1] + digest,
+            target.read_text(encoding="utf-8"),
+        )
+        if count != 1:
+            raise SystemExit(f"{path}: expected one {label} field")
+        outputs[target] = text
+    for target, text in outputs.items():
+        if target.read_text(encoding="utf-8") != text:
+            if check:
+                raise SystemExit(
+                    f"stale Nomads window evidence: {target.relative_to(ROOT)}"
+                )
+            target.write_text(text, encoding="utf-8")
+
+
 def repin_rust_inventory() -> None:
     """Rewrite byte lengths and SHA-256 pins so the test pins exactly the regenerated package."""
     text = PIN_TEST.read_text(encoding="utf-8")
@@ -708,7 +804,7 @@ def repin_rust_inventory() -> None:
             r'(\(\s*"' + re.escape(locator) + r'",\s*)([\d_]+)(,\s*")[0-9a-f]{64}(")'
         )
         text, count = entry.subn(
-            lambda m: (
+            lambda m, data=data: (
                 f"{m.group(1)}{literal(len(data), m.group(2))}{m.group(3)}"
                 f"{hashlib.sha256(data).hexdigest()}{m.group(4)}"
             ),
@@ -760,7 +856,7 @@ def repin_rust_inventory() -> None:
             raise SystemExit(f"{raw_test.name}: expected one generated source extent")
         raw_test.write_text(raw_text, encoding="utf-8", newline="\n")
     # Client map loading pins the same index that the canonical World tooling writes.
-    client = ROOT / "crates/client-assets/src/world.rs"
+    client = ROOT / CLIENT_WORLD
     placement_digest = hashlib.sha256(
         (WORLD / "placements/index.json").read_bytes()
     ).hexdigest()
@@ -852,7 +948,7 @@ def refresh_source_cohort_extent() -> None:
         + f"{measured['sources']:_},",
         catalogue_text,
         count=1,
-        flags=re.S,
+        flags=re.DOTALL,
     )
     catalogue.write_text(catalogue_text, encoding="utf-8", newline="\n")
     rewrite(
@@ -911,7 +1007,7 @@ def unresolved_worktree_paths() -> list[str]:
         or re.search(
             rb"^(?:<<<<<<<|\|\|\|\|\|\|\||=======|>>>>>>>)",
             (ROOT / path).read_bytes(),
-            re.M,
+            re.MULTILINE,
         )
     ]
 
@@ -1058,6 +1154,7 @@ def main() -> int:
     if args.check:
         if args.resolve or args.skip_checks or args.no_stage:
             parser.error("--check cannot be combined with mutation options")
+        refresh_nomads_window(check=True)
         project_routes(ROOT, WORLD, check=True)
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
@@ -1130,6 +1227,10 @@ def main() -> int:
     project_routes(ROOT, WORLD)
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
+    run(["python3", "tools/content-schema/world-object-authoring/spawn_ground.py"])
+    run(["python3", "tools/content-schema/world-authoring/scoped_spawn_ground.py"])
+    run(["python3", "tools/content-schema/world-object-authoring/spawn_map_ground.py"])
+    run(["python3", "tools/world-bundle-compiler/convert_spawns.py"])
     refresh_source_cohort_extent()
     repin_rust_inventory()
     run(["python3", "tools/content-migration/import_cyclopedia_global.py"])
@@ -1255,6 +1356,7 @@ def main() -> int:
         run(["python3", f"tools/content-schema/quest-authoring/{script}.py"])
     refresh_quest_donor_capture()
     run(["python3", "tools/contracts/refresh_npc_service_counts.py"])
+    refresh_nomads_window(check=False)
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
@@ -1262,6 +1364,8 @@ def main() -> int:
     if args.resolve:
         derived = derived_paths() | {
             PIN_PATH,
+            NOMADS_WINDOW,
+            *(path for path, _ in NOMADS_WINDOW_REPORTS),
             "apps/game-server/tests/content_npc_catalogue.rs",
             "apps/game-server/tests/content_npc_service_model.rs",
         }
@@ -1272,8 +1376,9 @@ def main() -> int:
             ).splitlines()
             if path in derived
         ]
-        if not args.no_stage:
-            run(["git", "add", "-A", "--", *sorted(set(conflicted) | set(changed))])
+        stage_paths = sorted(set(conflicted) | set(changed))
+        if not args.no_stage and stage_paths:
+            run(["git", "add", "-A", "--", *stage_paths])
         # Refresh the bundle pin last; the input digest is a staged-tree diagnostic only.
         run(
             [
@@ -1290,7 +1395,7 @@ def main() -> int:
             ]
         )
         if not args.no_stage:
-            run(["git", "add", "--", WORLD_PINS, PREPROD_MANIFEST])
+            run(["git", "add", "--", WORLD_PINS, PREPROD_MANIFEST, CLIENT_WORLD])
     print("Derived content regenerated. Review `git status` and commit.")
     return 0
 
