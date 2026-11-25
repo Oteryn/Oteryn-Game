@@ -331,16 +331,15 @@ async fn fresh(
     own_binding(client)
 }
 
-fn own_reference(client: &DevClientSession) -> TestResult<u32> {
-    let entities = client.world_entities().ok_or("C17c entities absent")?;
-    let own = entities
-        .iter()
-        .find(|entity| &entity.entity.identity == entities.own_identity())
-        .ok_or("C17c own entity absent")?;
-    match own.detail {
-        oteryn_dev_client::EntityDetail::Actor { appearance_ref, .. } => Ok(appearance_ref),
-        _ => Err("C17c own actor appearance reference absent".into()),
-    }
+fn own_look(client: &mut DevClientSession) -> TestResult<Look> {
+    let own = own_entity(client)?;
+    client
+        .session_mut()
+        .visible_appearances()
+        .into_iter()
+        .find(|entry| entry.entity.entity == own)
+        .and_then(|entry| entry.look)
+        .ok_or_else(|| "own visible appearance is absent".into())
 }
 
 // Consume validated pushed frames, retaining only this connection's exact own actor.
@@ -450,7 +449,7 @@ async fn illusion(
         observe(client, &mut appearance_sequence, &mut messages)?;
         if client.actor_vitals().is_some_and(|after| {
             before.mana.checked_sub(mana) == Some(after.mana) && after.soul == before.soul
-        }) && own_reference(client)? != binding.appearance_ref
+        }) && own_look(client)? == expected
             && appearance_sequence > cast.result_server_sequence
         {
             break;
@@ -461,7 +460,7 @@ async fn illusion(
         pump(client, &mut appearance_sequence, &mut messages).await?;
     }
     row.pass("cast-rat", cast.result_server_sequence);
-    let active_reference = own_reference(client)?;
+    let active_look = own_look(client)?;
 
     // Wait for the authored own/group cooldowns, servicing real liveness throughout.
     let cooldown = spell
@@ -487,7 +486,7 @@ async fn illusion(
         book,
         "E2EF5 nonexistent creature",
         "A creature with this name does not exist.",
-        active_reference,
+        &active_look,
     )
     .await?;
     row.pass("unknown-creature-refusal", sequence);
@@ -508,7 +507,7 @@ async fn illusion(
         book,
         denied_name,
         "Sorry, not possible.",
-        active_reference,
+        &active_look,
     )
     .await?;
     row.pass("nonillusionable-creature-refusal", sequence);
@@ -524,9 +523,8 @@ async fn illusion(
     row.pass("fresh-admission-condition", client.last_server_sequence());
     let expiry_deadline =
         tokio::time::Instant::now() + Duration::from_millis(duration_ms) + Duration::from_secs(10);
-    let active_reference = own_reference(client)?;
     appearance_sequence = 0;
-    while own_reference(client)? == active_reference || appearance_sequence == 0 {
+    while own_look(client)? != baseline || appearance_sequence == 0 {
         if tokio::time::Instant::now() >= expiry_deadline {
             return Err("C17c illusion never expired on real server clock".into());
         }
@@ -537,7 +535,7 @@ async fn illusion(
     {
         return Err("C17c expiry was early or did not restore original outfit".into());
     }
-    // The next snapshot verifies that the changed reference resolves to the original outfit.
+    // The next snapshot verifies that the restored outfit survives readmission.
     let expiry_sequence = appearance_sequence;
     binding = fresh(client, clients, 0xa3).await?;
     if binding.look != baseline {
@@ -553,7 +551,7 @@ async fn refuse_illusion(
     book: &crate::spell::SpellBook,
     name: &str,
     expected_feedback: &str,
-    active_reference: u32,
+    active_look: &Look,
 ) -> TestResult<u64> {
     if name.contains('"') {
         return Err("C17c creature name cannot be encoded as player speech".into());
@@ -586,7 +584,7 @@ async fn refuse_illusion(
         }
         pump(client, &mut appearance_sequence, &mut messages).await?;
     }
-    if client.actor_vitals().copied() != Some(before) || own_reference(client)? != active_reference
+    if client.actor_vitals().copied() != Some(before) || &own_look(client)? != active_look
     {
         return Err("C17c refused creature changed vitals or active illusion".into());
     }
@@ -677,7 +675,7 @@ async fn cadence_leg(client: &mut DevClientSession, cells: &[TilePos]) -> TestRe
         if tokio::time::Instant::now() >= deadline {
             return Err("C17a missing automatic walk position frames".into());
         }
-        client.service_liveness(Duration::from_millis(5)).await?;
+        client.service_liveness(Duration::from_millis(1)).await?;
     }
     // Ignore command-to-first-step latency. Reject batched/jittery observations
     // instead of interpreting socket scheduling as an increase in player speed.
@@ -689,7 +687,7 @@ async fn cadence_leg(client: &mut DevClientSession, cells: &[TilePos]) -> TestRe
     let first = *intervals.first().ok_or("C17a too few movement frames")?;
     let last = *intervals.last().ok_or("C17a too few movement frames")?;
     if first < Duration::from_millis(50) || last.saturating_sub(first) > Duration::from_millis(25) {
-        return Err("C17a network jitter/batched frames prevent a speed assertion".into());
+        return Err(format!("automatic walk jitter/batched frames: intervals={intervals:?}").into());
     }
     Ok(intervals[intervals.len() / 2])
 }
@@ -1254,24 +1252,32 @@ pub(super) async fn acquire_rune(
     acquire_rune_from(client, world, id, &rune_sellers(id)?).await
 }
 
-async fn seed_item_pair(
+async fn seed_item(
+    row: &mut Row,
+    action: &'static str,
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     id: u32,
-) -> TestResult<(std::num::NonZeroU32, u64)> {
+) -> TestResult<std::num::NonZeroU32> {
     let reference = provisioning::item_reference(&provisioning::item_index()?, id)?;
-    let expected = rune_quantity(client, reference)?.checked_add(2).ok_or("seeded item quantity overflow")?;
+    let expected = rune_quantity(client, reference)?
+        .checked_add(2)
+        .ok_or("seeded item quantity overflow")?;
     character_prep::grant_item(client, id, 2).await?;
     character_prep::reload(client, clients).await?;
-    // Admission returns a complete authoritative inventory snapshot. A seed
-    // written before logout creates no inventory delta in the new session.
+    // The admission snapshot can legitimately start at sequence zero.
     let observed = rune_quantity(client, reference)?;
     if observed != expected {
         return Err(format!("seeded item inventory snapshot mismatch: definition={reference} expected={expected} observed={observed}").into());
     }
-    let sequence = client.last_server_sequence();
-    evidence(&format!("E2EF5 item={id} source=seeded count=2"));
-    Ok((reference, sequence))
+    row.0.pass(
+        action,
+        format_args!(
+            "admission_snapshot={} definition={reference} quantity={observed}",
+            uuid_text(client.join_snapshot().game_session_id.as_bytes())
+        ),
+    );
+    Ok(reference)
 }
 
 fn rune_sellers(id: u32) -> TestResult<BTreeSet<String>> {
@@ -1707,8 +1713,7 @@ async fn paralyze(
     let spell = book
         .rune(3165)
         .ok_or("C16b Paralyze rune not in pinned spell book")?;
-    let (reference, sequence) = seed_item_pair(client, clients, 3165).await?;
-    row.pass("seed-paralyze", sequence);
+    let reference = seed_item(row, "seed-paralyze", client, clients, 3165).await?;
     row.pass(
         "illegal-floor-no-cost",
         illegal_floor(client, reference).await?,
@@ -1888,8 +1893,7 @@ async fn barriers(
             provisioning::item_reference(&index, ids[0])?,
             provisioning::item_reference(&index, ids[1])?,
         ];
-        let (reference, sequence) = seed_item_pair(client, clients, id).await?;
-        row.pass(acquire, sequence);
+        let reference = seed_item(row, acquire, client, clients, id).await?;
         row.pass(refusal, illegal_floor(client, reference).await?);
         let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
             rune_corridor(world, at).is_some()
@@ -2515,6 +2519,38 @@ async fn directional_aim(
     );
     // No equipped weapon: a held attack target must not introduce automatic
     // ranged/melee damage into the spell-only observation interval.
+    use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
+    use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+    for slot in [EquipmentSlot::RightHand, EquipmentSlot::LeftHand] {
+        let equipped = client
+            .inventory()
+            .ok_or("C18a inventory absent before unequip")?
+            .equipment
+            .iter()
+            .find(|entry| entry.slot == slot)
+            .map(|entry| entry.item.handle);
+        let Some(handle) = equipped else {
+            continue;
+        };
+        let moved = client
+            .move_item(&ItemMoveIntent {
+                source: handle,
+                destination: ItemMoveDestination::MainBackpack,
+            })
+            .await?;
+        if moved.status != CommandStatus::Accepted || moved.outcome != ItemMoveOutcome::Moved {
+            return Err(format!("C18a {slot:?} unequip refused: {moved:?}").into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        while !client.inventory().is_some_and(|inventory| {
+            !inventory.equipment.iter().any(|entry| entry.slot == slot)
+        }) {
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("C18a {slot:?} unequip inventory update missing").into());
+            }
+            client.service_liveness(Duration::from_millis(5)).await?;
+        }
+    }
     if client.inventory().is_none_or(|inventory| {
         inventory.equipment.iter().any(|entry| {
             matches!(
@@ -2698,7 +2734,6 @@ async fn challenge(
     world: &BundleWorld,
     peer_cancelled: &mut bool,
 ) -> TestResult {
-    let basis = spatial_basis::current(client)?;
     use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
     let book = native_spell_book()?;
     let words = "exeta res";
@@ -2714,6 +2749,15 @@ async fn challenge(
         ).into());
     }
     character_prep::grant_premium(client).await?;
+    let previous = client.join_snapshot().game_session_id;
+    player_logout(client).await?;
+    *client = admit_row(clients, 0xc4, 0).await?;
+    if client.join_snapshot().game_session_id == previous
+        || current_vocation(client).await? != vocation
+    {
+        return Err("C17d Premium refresh did not re-admit the dedicated Knight".into());
+    }
+    let basis = spatial_basis::current(client)?;
     row.pass(
         "player-challenge-access",
         combat_access(client, world, book, words).await?,
@@ -4106,10 +4150,8 @@ async fn acquired_companions(
     let convince = book.rune(3177).ok_or("Convince Creature rune absent")?;
     let animate = book.rune(3203).ok_or("Animate Dead rune absent")?;
     let mana = companion_mana(input, "Rat")?;
-    let (convince_ref, sequence) = seed_item_pair(client, clients, 3177).await?;
-    row.pass("seed-convince", sequence);
-    let (animate_ref, sequence) = seed_item_pair(client, clients, 3203).await?;
-    row.pass("seed-animate", sequence);
+    let convince_ref = seed_item(row, "seed-convince", client, clients, 3177).await?;
+    let animate_ref = seed_item(row, "seed-animate", client, clients, 3203).await?;
     non_pz(client, world).await?;
     row.pass(
         "convince-floor-refusal",
@@ -4497,7 +4539,7 @@ async fn tile_item_refusal(
 ) -> TestResult<u64> {
     let inventory = client.inventory().cloned().ok_or("C16d inventory absent")?;
     let vitals = client.actor_vitals().copied().ok_or("C16d vitals absent")?;
-    let appearance = own_reference(client)?;
+    let appearance = own_look(client)?;
     let (reply, sequence) = rune_use(client, reference, Some(own_entity(client)?), None).await?;
     if reply != oteryn_protocol_oteryn::world_object::UseDisposition::TargetIllegal {
         return Err(
@@ -4507,7 +4549,7 @@ async fn tile_item_refusal(
     level(client).await?;
     if client.inventory() != Some(&inventory)
         || client.actor_vitals().copied() != Some(vitals)
-        || own_reference(client)? != appearance
+        || own_look(client)? != appearance
     {
         return Err("C16d creature-target refusal changed inventory/vitals/appearance".into());
     }
@@ -4525,13 +4567,10 @@ async fn tile_items(
     let disintegrate = book.rune(3197).ok_or("C16d Disintegrate rune absent")?;
     let duration = tile_item_duration(chameleon)?;
     let baseline = own_binding(client)?.look;
-    let (chameleon_ref, sequence) = seed_item_pair(client, clients, 3178).await?;
-    row.pass("seed-chameleon", sequence);
-    let (disintegrate_ref, sequence) = seed_item_pair(client, clients, 3197).await?;
-    row.pass("seed-disintegrate", sequence);
+    let chameleon_ref = seed_item(row, "seed-chameleon", client, clients, 3178).await?;
+    let disintegrate_ref = seed_item(row, "seed-disintegrate", client, clients, 3197).await?;
     // Use a carried, player-dropped target so natural map-item decay cannot explain removal.
-    let (target_ref, sequence) = seed_item_pair(client, clients, 2854).await?;
-    row.pass("seed-movable-target", sequence);
+    let target_ref = seed_item(row, "seed-movable-target", client, clients, 2854).await?;
     let prepared = [
         (chameleon_ref, rune_quantity(client, chameleon_ref)?),
         (disintegrate_ref, rune_quantity(client, disintegrate_ref)?),
@@ -4612,14 +4651,14 @@ async fn tile_items(
         .actor_vitals()
         .copied()
         .ok_or("C16d Chameleon vitals absent")?;
-    let original_reference = own_reference(client)?;
+    let original_look = own_look(client)?;
     let started = tokio::time::Instant::now();
     let (cast_sequence, chameleon_left) =
         cast_rune(client, chameleon, chameleon_ref, None, Some(at)).await?;
     let mut appearance_sequence = 0;
     let mut messages = Vec::new();
     let until = tokio::time::Instant::now() + Duration::from_secs(5);
-    while appearance_sequence <= cast_sequence || own_reference(client)? == original_reference {
+    while appearance_sequence <= cast_sequence || own_look(client)? == original_look {
         pump(client, &mut appearance_sequence, &mut messages).await?;
         if tokio::time::Instant::now() >= until {
             return Err("C16d Chameleon cast lacks changed own-actor appearance frame".into());
@@ -4683,9 +4722,8 @@ async fn tile_items(
     }
     row.pass("empty-tile-success", empty_sequence);
     row.pass("removal-fresh-admission", client.last_server_sequence());
-    let active_reference = own_reference(client)?;
     appearance_sequence = 0;
-    while own_reference(client)? == active_reference || appearance_sequence == 0 {
+    while own_look(client)? != baseline || appearance_sequence == 0 {
         if tokio::time::Instant::now() >= started + duration + Duration::from_secs(10) {
             return Err("C16d Chameleon did not expire on real server clock".into());
         }
