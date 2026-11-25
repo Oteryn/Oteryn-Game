@@ -17,8 +17,8 @@ use oteryn_protocol_oteryn::{
 };
 
 /// Hunt target (key, shown name, base XP), spawned next to the leader through provision.py --spawn. Experience is the
-/// authored `experience` of the bonelord record (`oteryn:creature.bonelord`, creatures-*-00000-00499.json).
-const HUNT_TARGET: (&str, &str, u64) = ("oteryn:creature.bonelord", "bonelord", 170);
+/// authored `experience` of the Cyclops record.
+const HUNT_TARGET: (&str, &str, u64) = ("oteryn:creature.cyclops", "cyclops", 150);
 
 // A low-armour hostile creature lets the level-one fixture register real party activity.
 const ELIGIBILITY_TARGET: (&str, u64) = ("oteryn:creature.cave_rat", 10);
@@ -95,7 +95,7 @@ pub(super) async fn run(
             for index in 0..bots.len() {
                 bots::equip_axe(&mut bots, index, axe).await?;
             }
-            check_level_probe(rewards, LEVEL_PROBE)?;
+            check_hunt_reward(rewards, LEVEL_PROBE.0, LEVEL_PROBE.1)?;
             underlevel_party(&mut bots, world).await?;
             bots::approach(&mut bots, 1, 0, world, false).await?;
             bots::approach(&mut bots, 2, 0, world, false).await?;
@@ -128,8 +128,11 @@ pub(super) async fn run(
     let mut earned = None;
     let mut activity_started = None;
     if enabled {
-        let encounter =
-            tokio::time::timeout(Duration::from_secs(240), encounter(&mut bots, world)).await;
+        let encounter = tokio::time::timeout(
+            Duration::from_secs(240),
+            encounter(&mut bots, world, rewards),
+        )
+        .await;
         let result = match encounter { Ok(result) => result, Err(_) => Err("encounter deadline;source:crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:1905".into()) };
         match result {
             Ok(HuntResult {
@@ -571,9 +574,14 @@ struct HuntResult {
     started: tokio::time::Instant,
 }
 
-async fn encounter(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResult<HuntResult> {
-    let leader = prepare_hunt_ground(bots, world).await?;
+async fn encounter(
+    bots: &mut [Bot<'_, '_>],
+    world: &BundleWorld,
+    rewards: &crate::content::creature_reward::CreatureRewardTable,
+) -> TestResult<HuntResult> {
     let (key, name, pool) = HUNT_TARGET;
+    check_hunt_reward(rewards, key, pool)?;
+    let leader = prepare_hunt_ground(bots, world).await?;
     let selection = client_daily_boost::reward_selection(bots[0].client()?).await?;
     let pool = client_daily_boost::boosted_xp(pool, key, &selection)?;
     let mut start = [0; 3];
@@ -872,9 +880,10 @@ async fn solo_hunt_award(
     ))
 }
 
-fn check_level_probe(
+fn check_hunt_reward(
     rewards: &crate::content::creature_reward::CreatureRewardTable,
-    (creature, xp, _): (&str, u64, u64),
+    creature: &str,
+    xp: u64,
 ) -> TestResult {
     let reward = rewards
         .row(creature)
@@ -967,19 +976,42 @@ async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> T
     }
     // Finish the probe creature before returning the other party members to their normal journey.
     set_hunt_modes(&mut bots[0]).await?;
+    let after = bots[0].client()?.last_server_sequence();
     attack_target(&mut bots[0], Some(&target)).await?;
-    bots::wait_observation(bots, deadline, "underlevel activity corpse", |bots, _| {
-        Ok(bots[0]
-            .session
-            .as_ref()
-            .and_then(|client| client.world_entities())
-            .is_some_and(|view| {
+    let mut observed_health = None;
+    let mut minimum_health = None;
+    let mut finishing_swings = 0;
+    let observation = bots::wait_observation(
+        bots,
+        deadline,
+        "underlevel activity corpse",
+        |bots, events| {
+            finishing_swings += events[0]
+                .iter()
+                .filter(|event| committed_swing(event, after))
+                .count();
+            let view = bots[0]
+                .session
+                .as_ref()
+                .and_then(|client| client.world_entities());
+            observed_health = view
+                .and_then(|view| view.get(&target))
+                .and_then(|entity| hunt_health(entity.detail));
+            if let Some(health) = observed_health {
+                minimum_health =
+                    Some(minimum_health.map_or(health, |previous: u8| previous.min(health)));
+            }
+            Ok(view.is_some_and(|view| {
                 view.iter().any(|entity| {
                     entity.kind == EntityKind::Corpse && entity.entity.identity == corpse
                 })
             }))
-    })
-    .await?;
+        },
+    )
+    .await;
+    observation.map_err(|error| format!(
+        "{error};target={target:?};underlevel_damage={damage};leader_initial_damage={leader_damage_before_finish};finishing_swings={finishing_swings};minimum_target_health={minimum_health:?};last_target_health={observed_health:?}"
+    ))?;
     attack_target(&mut bots[0], None).await?;
     let death = observed_hunt_death(bots, None, LEVEL_PROBE.0, target).await?;
     // The spawned Minotaur has 100 HP and only its melee ability. The ledger credits
@@ -1051,7 +1083,7 @@ mod qualification_review_tests {
     use super::*;
 
     #[test]
-    fn underlevel_probe_can_settle_on_the_live_content_pin() -> TestResult {
+    fn hunt_targets_can_settle_on_the_live_content_pin() -> TestResult {
         let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])?;
         let (controller, _) = crate::content::native_gameplay::test_support::try_activate_input(
             world,
@@ -1063,10 +1095,16 @@ mod qualification_review_tests {
             .and_then(|active| active.native_gameplay())
             .ok_or("missing active native gameplay")?
             .reward_table();
-        let refusal = check_level_probe(rewards, ("oteryn:creature.crazed_beggar", 35, 100))
-            .expect_err("the former probe must fail closed");
-        assert!(refusal.to_string().contains("corpse_item_inadmissible"));
-        check_level_probe(rewards, LEVEL_PROBE)
+        for (creature, xp) in [
+            ("oteryn:creature.crazed_beggar", 35),
+            ("oteryn:creature.bonelord", 170),
+        ] {
+            let refusal = check_hunt_reward(rewards, creature, xp)
+                .expect_err("the former hunt target must fail closed");
+            assert!(refusal.to_string().contains("corpse_item_inadmissible"));
+        }
+        check_hunt_reward(rewards, LEVEL_PROBE.0, LEVEL_PROBE.1)?;
+        check_hunt_reward(rewards, HUNT_TARGET.0, HUNT_TARGET.2)
     }
 
     #[test]
