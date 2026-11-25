@@ -330,20 +330,30 @@ pub(super) async fn execute(
             let valid = crate::domain::character_name::CharacterName::parse(name).is_ok();
             Ok(vec![u8::from(valid)])
         }
-        wire::COMMAND_TYPE_STORE_INBOX_CLAIM if payload == wire::STORE_INBOX_QUERY => {
-            let Some(entries) = inbox::project(owner, admitted).await else {
-                return REJECTED;
-            };
-            wire::encode_inbox_entries(&entries)
-        }
         wire::COMMAND_TYPE_STORE_INBOX_CLAIM => {
-            let Ok(request) = wire::decode_inbox_claim_request(payload) else {
-                return REJECTED;
+            let query = if payload == wire::STORE_INBOX_QUERY {
+                Some((None, false))
+            } else {
+                wire::decode_inbox_query(payload).map(|after| (after, true))
             };
-            let Some(receipt) = claim::execute(owner, admitted, command_id, request).await else {
-                return REJECTED;
-            };
-            wire::encode_claim_receipt(&receipt)
+            if let Some((after, paged)) = query {
+                let Some(page) = Box::pin(inbox::project(owner, admitted, after)).await else {
+                    return REJECTED;
+                };
+                if paged {
+                    wire::encode_inbox_page(&page)
+                } else {
+                    wire::encode_inbox_entries(&page.entries)
+                }
+            } else {
+                let Ok(request) = wire::decode_inbox_claim_request(payload) else {
+                    return REJECTED;
+                };
+                let Some(receipt) = claim::execute(owner, admitted, command_id, request).await else {
+                    return REJECTED;
+                };
+                wire::encode_claim_receipt(&receipt)
+            }
         }
         wire::COMMAND_TYPE_STORE_CATALOGUE_PAGE => {
             let Ok(request) = wire::decode_catalogue_request(payload) else {

@@ -56,6 +56,7 @@ impl PlayLink {
         if !open {
             // Keep rejecting the superseded holdings reply until it has arrived.
             mailbox.store_inbox_refresh_pending &= panel.items.pending_offset.is_some();
+            mailbox.store_inbox_query_queued = false;
             return;
         }
         panel.items.page = None;
@@ -73,6 +74,12 @@ impl PlayLink {
 
     pub(in crate::play) fn pump_store_inbox_refresh(&self) {
         let mut mailbox = lock(&self.mailbox);
+        if mailbox.store_inbox_query_queued && !mailbox.store.pending {
+            mailbox.store_inbox_query_queued = false;
+            if mailbox.cyclopedia_character.items.open {
+                self.store_inbox_refresh_locked(&mut mailbox);
+            }
+        }
         let panel = &mailbox.cyclopedia_character;
         if mailbox.store_inbox_refresh_pending && !panel.pending && !panel.blessings.pending {
             let open = panel.items.open;

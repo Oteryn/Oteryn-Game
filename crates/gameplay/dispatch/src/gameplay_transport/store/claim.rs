@@ -1,6 +1,5 @@
 //! Claim an exact native Inbox item using the Platform-issued CLAIM identity.
 use super::{ComposedFreshAdmission, gameplay_fence, receipt_outbox, uuid_text, wire};
-use crate::durability::item_loop_move::DepotSearchRetrieval;
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::AdmittedSession;
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
@@ -85,7 +84,7 @@ pub(super) async fn execute(
         let command = CommandRef::new(admitted.game_session_id, CommandId::new(command_id).ok()?);
         let native = owner.active_generation?.native_gameplay()?;
         let permit = owner.spell_lane_permit().await?;
-        let retrieval = owner
+        owner
             .root
             .commit_store_inbox_retrieval(
                 &permit,
@@ -95,17 +94,11 @@ pub(super) async fn execute(
                 command,
                 &NativeItemWeights(native).with_wheel(owner.premium_coordinator),
                 item,
+                delivery,
             )
             .await
             .ok()?
-            .ok()?;
-        if retrieval == DepotSearchRetrieval::Retrieved(0) {
-            // A later command for this same Platform operation can retry once space is available.
-            return None;
-        }
-        // A competing retrieval may already have moved the item. Return only
-        // the immutable decision evidenced by the committed native move.
-        owner.root.read_store_claim_source(delivery).await.ok()??
+            .ok()??
     };
 
     // The worker republishes from the durable move when this attempt runs out

@@ -10,6 +10,8 @@ mod hireling_delivery;
 mod hireling_model;
 mod hireling_reservation;
 mod outbox;
+pub use outbox::StoreClaimSource;
+pub(in crate::durability) use outbox::claim_source_in_transaction;
 mod prey_expansion;
 mod prey_purchase;
 mod purchase;

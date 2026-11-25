@@ -181,7 +181,8 @@ pub fn request(
     panel.pending = true;
     panel.pending_action = command.command_type;
     panel.inbox_query_pending = command.command_type == COMMAND_TYPE_STORE_INBOX_CLAIM
-        && command.payload == STORE_INBOX_QUERY;
+        && (command.payload == STORE_INBOX_QUERY
+            || store::decode_inbox_query(&command.payload).is_some());
     panel.feedback = None;
     Some(command)
 }
@@ -232,8 +233,7 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
             store::decode_history_page(&result.payload).map(|v| panel.history = Some(v))
         }
         COMMAND_TYPE_STORE_INBOX_CLAIM if inbox_query => {
-            store::decode_inbox_entries(&result.payload)
-                .map(|entries| panel.inbox_entries = entries)
+            store::decode_inbox_page(&result.payload).map(|page| panel.inbox = page)
         }
         COMMAND_TYPE_STORE_INBOX_CLAIM => {
             store::decode_claim_receipt(&result.payload).map(|receipt| {
@@ -242,7 +242,8 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
                     StoreClaimCode::Committed | StoreClaimCode::Revoked
                 ) {
                     panel
-                        .inbox_entries
+                        .inbox
+                        .entries
                         .retain(|entry| entry.claim_key() != receipt.fulfilment_unit_id);
                 }
                 panel.claim = Some(receipt);

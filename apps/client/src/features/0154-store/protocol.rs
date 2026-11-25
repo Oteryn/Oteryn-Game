@@ -14,7 +14,8 @@ impl Outbox {
     pub(in crate::play) fn store_initialize(&self, selected: bool, hireling_modal_selected: bool) {
         let mut mailbox = lock(&self.0);
         mailbox.store.selected = selected;
-        mailbox.store.inbox_entries.clear();
+        mailbox.store_inbox_query_queued = false;
+        mailbox.store.inbox = Default::default();
         mailbox.store.inbox_query_pending = false;
         mailbox.store.claim = None;
         mailbox.store.cosmetic_tokens = None;
@@ -31,6 +32,24 @@ impl Outbox {
         mailbox.store.token_supported = selected && mailbox.store.selected;
         mailbox.store.token_balance_refresh = mailbox.store.token_supported;
     }
+    pub(in crate::play) fn store_lamp_result(
+        &self,
+        response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
+    ) {
+        use oteryn_client_runtime::world_interaction::world_object as wire;
+        let mut mailbox = lock(&self.0);
+        mailbox.store.pending = false;
+        use oteryn_client_runtime::server_mechanic::CommandStatus;
+        if matches!(response.status, CommandStatus::Accepted | CommandStatus::DuplicateReplay)
+            && matches!(wire::decode_use_result(&response.payload), Ok(wire::UseDisposition::Committed))
+        {
+            mailbox.store.inbox.lamp_definition = None;
+            mailbox.store_inbox_query_queued = mailbox.cyclopedia_character.items.open;
+        } else {
+            mailbox.store.feedback = Some("The Hireling could not be placed here. Stand on an interior tile in your House.".into());
+        }
+    }
+
     pub(in crate::play) fn store_result(
         &self,
         response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,

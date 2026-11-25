@@ -40,6 +40,8 @@ enum Kind {
     Previous,
     Next,
     Claim(usize),
+    NextClaims,
+    PlaceLamp,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
@@ -72,10 +74,19 @@ fn perform(owner: &HostOwner, state: &State, control: Control) {
     if state.store.as_ref() != Some(&store) {
         return;
     }
+    if control.kind == Kind::NextClaims {
+        play.link.store_inbox_next_claim_page();
+        return;
+    }
+    if control.kind == Kind::PlaceLamp {
+        play.link.store_inbox_place_lamp();
+        return;
+    }
     if let Kind::Claim(index) = control.kind {
         if store.selected
             && !store.pending
-            && let Some(entry) = store.inbox_entries.get(index)
+            && !store.inbox.claims_require_channel
+            && let Some(entry) = store.inbox.entries.get(index)
             && let Ok(payload) = wire::encode_inbox_claim_request(&wire::StoreInboxClaimRequest {
                 fulfilment_unit_id: entry.claim_key(),
             })
@@ -95,7 +106,7 @@ fn perform(owner: &HostOwner, state: &State, control: Control) {
         Kind::Refresh => Intent::Items,
         Kind::Previous => Intent::ItemsPrevious,
         Kind::Next => Intent::ItemsNext,
-        Kind::Close | Kind::Claim(_) => return,
+        Kind::Close | Kind::Claim(_) | Kind::NextClaims | Kind::PlaceLamp => return,
     });
 }
 fn activate(
@@ -227,10 +238,17 @@ fn project(
     let mut lines =
         vec!["Character inbox summary — includes Store and other deliveries.".to_string()];
     if store.selected
-        && store.pending_action == wire::COMMAND_TYPE_STORE_INBOX_CLAIM
+        && matches!(
+            store.pending_action,
+            wire::COMMAND_TYPE_STORE_INBOX_CLAIM
+                | oteryn_client_runtime::world_interaction::world_object::COMMAND_TYPE_USE_INTENT
+        )
         && let Some(feedback) = &store.feedback
     {
         lines.push(feedback.clone());
+    }
+    if store.inbox.claims_require_channel && !store.inbox.entries.is_empty() {
+        lines.push("Return to the Channel to claim Store items into your backpack.".into());
     }
     let busy = panel.pending || panel.blessings.pending;
     let disabled = busy || !panel.selected || panel.target.is_some();
@@ -278,7 +296,7 @@ fn project(
         .is_some_and(|p| usize::from(p.offset) + p.rows.len() < usize::from(p.total));
     let store_disabled = !store.selected || store.pending || panel.target.is_some();
     let mut buttons = Vec::new();
-    for (index, entry) in store.inbox_entries.iter().enumerate() {
+    for (index, entry) in store.inbox.entries.iter().enumerate() {
         let title = store.browser.page.as_ref().and_then(|page| {
             page.products.iter().find(|product| {
                 product.artwork.kind == 1 && product.artwork.looks[0] == u32::from(entry.item_id)
@@ -288,7 +306,17 @@ fn project(
             || format!("Claim item {}", entry.item_id),
             |product| format!("Claim {}", product.offer.title),
         );
-        buttons.push((Kind::Claim(index), caption, store_disabled));
+        buttons.push((
+            Kind::Claim(index),
+            caption,
+            store_disabled || store.inbox.claims_require_channel,
+        ));
+    }
+    if store.inbox.lamp_definition.is_some() {
+        buttons.push((Kind::PlaceLamp, "Place Hireling".into(), store_disabled));
+    }
+    if store.inbox.next.is_some() {
+        buttons.push((Kind::NextClaims, "Next claim page".into(), store_disabled));
     }
     buttons.extend([
         (Kind::Refresh, "Refresh".into(), disabled && store_disabled),

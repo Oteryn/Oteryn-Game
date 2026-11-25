@@ -4,6 +4,7 @@
 //! the items found by `requestDepotSearchItem` (:10763, ContainerIterator, nested included)
 //! move until the inventory has no room, and what does not fit stays.
 use super::*;
+use crate::durability::store::{StoreClaimSource, claim_source_in_transaction};
 use crate::domain::premium::PremiumGate;
 
 /// The CHECK bound of a child loop receipt's batch ordinal (migration 0227).
@@ -41,7 +42,7 @@ struct Candidate {
 
 enum Retrieval {
     Definition { client_id: u32, all: bool },
-    StoreItem([u8; 16]),
+    StoreItem { item: [u8; 16], delivery: [u8; 16] },
 }
 
 impl DurabilityRoot {
@@ -62,7 +63,7 @@ impl DurabilityRoot {
         DurabilityError,
     > {
         self.commit_custody_retrieval(permit, recovery, node, fence, command, content,
-            Retrieval::Definition { client_id, all }).await
+            Retrieval::Definition { client_id, all }).await.map(|result| result.map(|(retrieval, _)| retrieval))
     }
 
     /// Claim one exact Store Inbox instance through the native retrieval transaction.
@@ -76,12 +77,10 @@ impl DurabilityRoot {
         command: CommandRef,
         content: &C,
         item: [u8; 16],
-    ) -> std::result::Result<
-        std::result::Result<DepotSearchRetrieval, LoopMoveRefusal>,
-        DurabilityError,
-    > {
+        delivery: [u8; 16],
+    ) -> std::result::Result<std::result::Result<Option<StoreClaimSource>, LoopMoveRefusal>, DurabilityError> {
         self.commit_custody_retrieval(permit, recovery, node, fence, command, content,
-            Retrieval::StoreItem(item)).await
+            Retrieval::StoreItem { item, delivery }).await.map(|result| result.map(|(_, source)| source))
     }
 
     #[allow(clippy::too_many_arguments, reason = "retrieval uses the existing fenced item owners")]
@@ -94,21 +93,16 @@ impl DurabilityRoot {
         command: CommandRef,
         content: &C,
         retrieval: Retrieval,
-    ) -> std::result::Result<
-        std::result::Result<DepotSearchRetrieval, LoopMoveRefusal>,
-        DurabilityError,
-    > {
+    ) -> std::result::Result<CustodyRetrievalResult, DurabilityError> {
         permit.check_scope(fence.runtime_scope)?;
-        let (request, key, all, exact_item) = match retrieval {
+        let (request, key, all, exact_item, delivery) = match retrieval {
             Retrieval::Definition { client_id: 0, .. } => return Ok(Err(LoopMoveRefusal::Rejected)),
             Retrieval::Definition { client_id, all } => {
                 let mut request = client_id.to_be_bytes().to_vec();
                 request.push(u8::from(all));
-                (request, Some(format!("oteryn:item.tibia.i{client_id}")), all, None)
+                (request, Some(format!("oteryn:item.tibia.i{client_id}")), all, None, None)
             }
-            Retrieval::StoreItem(item) => (
-                item.to_vec(), None, false, Some(item),
-            ),
+            Retrieval::StoreItem { item, delivery } => (item.to_vec(), None, false, Some(item), Some(delivery)),
         };
         let record = recovery
             .record_for(self)
@@ -128,8 +122,7 @@ impl DurabilityRoot {
                 }
                 let retrieved = u32::try_from(row.try_get::<i64,_>("retrieved")?).map_err(|_| DurabilityError::InvalidStoredState)?;
                 let found: bool = row.try_get("found")?;
-                super::super::db::commit_semantic_transaction(tx, deadline).await?;
-                return Ok(Ok(if found { DepotSearchRetrieval::Retrieved(retrieved) } else { DepotSearchRetrieval::NotFound }));
+                return finish_retrieval(tx, deadline, found, retrieved, delivery).await.map(Ok);
             }
             let attempt: LoopResult<(bool, u32)> = async {
                 assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await?;
@@ -235,13 +228,45 @@ impl DurabilityRoot {
                     sqlx::query("INSERT INTO game_depot_search_retrieve_receipts(game_session_id,command_id,character_id,request,found,retrieved) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,$5,$6)")
                         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice())
                         .bind(&request).bind(found).bind(i64::from(retrieved)).execute(&mut *tx).await?;
-                    super::super::db::commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(if found { DepotSearchRetrieval::Retrieved(retrieved) } else { DepotSearchRetrieval::NotFound }))
+                    finish_retrieval(tx, deadline, found, retrieved, delivery).await.map(Ok)
                 }
                 Err(error) => { tx.rollback().await?; loop_error(error).map(Err) }
             }
         })).await
     }
+}
+
+type CustodyRetrieval = (DepotSearchRetrieval, Option<StoreClaimSource>);
+type CustodyRetrievalResult = std::result::Result<CustodyRetrieval, LoopMoveRefusal>;
+
+async fn finish_retrieval(
+    mut tx: Transaction<'_, Postgres>,
+    deadline: std::time::Instant,
+    found: bool,
+    retrieved: u32,
+    delivery: Option<[u8; 16]>,
+) -> std::result::Result<CustodyRetrieval, DurabilityError> {
+    let retrieval = if found {
+        DepotSearchRetrieval::Retrieved(retrieved)
+    } else {
+        DepotSearchRetrieval::NotFound
+    };
+    // NotFound can mean a racing claim already moved this item. A full
+    // backpack instead records a refusal and leaves the item for a new command.
+    let source = if let Some(delivery) = delivery
+        && retrieval != DepotSearchRetrieval::Retrieved(0)
+    {
+        let source = claim_source_in_transaction(&mut tx, delivery).await?;
+        if retrieved > 0 && source.is_none() {
+            tx.rollback().await?;
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        source
+    } else {
+        None
+    };
+    super::super::db::commit_semantic_transaction(tx, deadline).await?;
+    Ok((retrieval, source))
 }
 
 /// One child move under a savepoint: a refusal (no room, overweight) rolls back only itself.
