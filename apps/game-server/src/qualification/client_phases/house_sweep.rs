@@ -382,6 +382,12 @@ async fn doors(
             world.facts().house_door(at, house_id).map(|_| at)
         })
         .ok_or("authored entrance has no adjoining numbered door")?;
+    if !house.doors.iter().any(|&at| position(at) == expected_door) {
+        return Err(format!(
+            "numbered entrance door {expected_door:?} is absent from authored doors"
+        )
+        .into());
+    }
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     for (index, expected_grants) in [(0, (1, 1)), (1, (0, 0))] {
         let grants: (i64, i64) = sqlx::query_as(
@@ -499,7 +505,22 @@ async fn approach(
     let from = tile(client.world_spatial().actor_position)?;
     let path =
         route(world, from, |at| at == entrance).ok_or("no walk route to authored entrance")?;
-    walk(client, world, &path).await
+    for direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected = destination(world, before, direction);
+        let outcome = client.step_retrying(direction).await?;
+        let after = tile(client.world_spatial().actor_position)?;
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || Some(after) != expected
+        {
+            return Err(format!(
+                "house approach step {direction:?} from {before:?}: disposition {:?}, expected {expected:?}, got {after:?}",
+                outcome.disposition
+            ).into());
+        }
+    }
+    Ok(())
 }
 
 fn first_rent(before: u64, after: u64, price: u64, rent: u64) -> TestResult {
@@ -600,10 +621,10 @@ async fn sweep_house(
         if u64::try_from(escrow)? != reserve {
             return Err(format!("durable bid escrow {escrow}, expected {reserve}").into());
         }
-        Ok::<_, Box<dyn std::error::Error>>((balance, ends))
+        Ok::<_, Box<dyn std::error::Error>>((balance, ends, finish))
     }
     .await;
-    let (before, ends) = match bid_result {
+    let (before, ends, bid_finished) = match bid_result {
         Ok(result) => {
             rows.emit(Ok("first-bid-deadline-and-reserved-escrow".into()), "");
             result
@@ -613,7 +634,15 @@ async fn sweep_house(
             return;
         }
     };
-    let transfer = tokio::time::timeout(Duration::from_secs(15), async {
+    const SETTLEMENT_BUDGET: Duration = Duration::from_secs(15);
+    if ends.saturating_sub(bid_finished) > SETTLEMENT_BUDGET.as_millis() as u64 {
+        rows.emit(
+            Err("natural auction deadline falls outside the 15s live observation budget".into()),
+            "settlement",
+        );
+        return;
+    }
+    let transfer = tokio::time::timeout(SETTLEMENT_BUDGET, async {
         let mut db = sqlx::PgConnection::connect(clients.url).await?;
         loop {
             let current = query(client, clients.world, house).await?;

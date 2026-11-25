@@ -8,7 +8,7 @@ blocked() {
 }
 
 summarize() {
-  local log=$1 group=$2 seconds=${3:-0} status=${4:-0} result rows row missing_house_rows=0
+  local log=$1 group=$2 seconds=${3:-0} status=${4:-0} result rows row house_failure=0
   result=$(awk '/^NODE_BOOT_RESULT=(NODE_BOOT_[A-Z0-9_]+|BLOCKED)([[:space:]]|$)/ {
     sub(/^NODE_BOOT_RESULT=/, "", $1)
     result = $1
@@ -37,10 +37,41 @@ summarize() {
       printf "%s|%s|%s\n", row, verdict, reason
     }' < "$log") || return 1
 
-  if [[ "$group" == house_sweep && "$result" == NODE_BOOT_PASS ]] &&
-    ! grep -Eq '^HS\.' <<< "$rows"; then
-    result=NODE_BOOT_FAIL
-    missing_house_rows=1
+  if [[ "$group" == house_sweep ]]; then
+    if ! awk -F '|' '
+      FNR == NR {
+        if ($0 ~ /^SEAM_EVIDENCE house_sweep batch /) {
+          batches++
+          n = split($0, field, " ")
+          if (n != 8 || field[4] !~ /^start=[0-9]+$/ ||
+              field[5] !~ /^len=[0-9]+$/ || field[6] !~ /^selected=[0-9]+$/ ||
+              field[7] !~ /^total=[0-9]+$/ || field[8] != "mode=seeded") exit 1
+          start = substr(field[4], 7) + 0
+          len = substr(field[5], 5) + 0
+          selected = substr(field[6], 10) + 0
+          total = substr(field[7], 7) + 0
+          if (len < 1 || len != selected || start + len > total) exit 1
+        }
+        next
+      }
+      /^HS\./ {
+        if ($1 !~ /^HS\.[[:alnum:]_.-]+\.(world|auction|bid|transfer|doors|rent)$/ ||
+            seen[$1]++ || $2 != "PASS") exit 1
+        house = $1
+        sub(/\.[^.]+$/, "", house)
+        checks[house]++
+      }
+      END {
+        for (house in checks) {
+          if (checks[house] != 6) exit 1
+          houses++
+        }
+        if (batches != 1 || houses != selected) exit 1
+      }' "$log" - <<< "$rows"; then
+      [[ "$result" != NODE_BOOT_PASS ]] || result=NODE_BOOT_FAIL
+      house_failure=1
+    fi
+    [[ "$result" == NODE_BOOT_PASS ]] || house_failure=1
   fi
 
   printf 'CLOUD_RUN group=%s result=%s seconds=%s\nROWS-BEGIN\n' "$group" "$result" "$seconds"
@@ -51,7 +82,7 @@ summarize() {
     grep -aFw -- "$row" "$log" | grep -Ei 'GAP|Error|refus|DIAG' \
       | grep -vEi 'password|postgres://|postgresql://|secret|token|key=' | head -n 6
   done < <(awk -F '|' '$2 == "FAIL" && !seen[$1]++ { print $1 }' <<< "$rows")
-  return "$missing_house_rows"
+  return "$house_failure"
 }
 
 if [[ ${1:-} == --summarize ]]; then

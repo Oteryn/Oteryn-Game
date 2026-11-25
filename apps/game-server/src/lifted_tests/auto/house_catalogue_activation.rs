@@ -13,8 +13,13 @@ use std::sync::Arc;
 #[test]
 fn house_catalogue_activation_registers_vacant_property_and_opens_on_first_bid()
 -> fixture::TestResult {
-    let Some(admin) = fixture::configured_admin() else {
-        return Ok(());
+    let admin = match std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
+        Ok(admin) => admin,
+        Err(std::env::VarError::NotPresent) => {
+            eprintln!("Skipping house catalogue PostgreSQL case: OTERYN_TEST_POSTGRES_ADMIN_URL is absent");
+            return Ok(());
+        }
+        Err(error) => return Err(error.into()),
     };
     std::thread::Builder::new()
         .stack_size(64 << 20)
