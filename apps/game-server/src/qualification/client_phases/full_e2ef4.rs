@@ -433,18 +433,9 @@ async fn shop(row: &mut Row, client: &mut DevClientSession, actor: EntityRef) ->
         return Err("greet: Sam did not open the native conversation".into());
     }
     row.pass("greet", "native-conversation-open-for-Sam");
-    // Trade can open a window without emitting a second conversation delta.
-    tokio::time::sleep(Duration::from_millis(260)).await;
-    let trade = runtime::talk(
-        client.session_mut(),
-        &wire::NpcTalkIntent {
-            npc_actor: actor,
-            text: "trade".into(),
-        },
-    )
-    .await?;
-    if trade != wire::NpcIntentDisposition::Ok {
-        return Err(format!("Sam refused trade: {trade:?}").into());
+    let conversation = super::client_row_e01::talk(client, actor, "trade", None).await?;
+    if conversation.open.map(|(npc, _)| npc) != Some(actor) {
+        return Err("trade: Sam's conversation did not remain open".into());
     }
     let delta = client
         .session_mut()

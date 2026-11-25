@@ -78,8 +78,12 @@ fn npc_shop_postgres_sell_all_can_include_equipped_items() -> TestResult {
 #[test]
 fn npc_shop_postgres_sam_look_then_buy() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!(
+            "NOT_RUN npc_shop_postgres_sam_look_then_buy: OTERYN_TEST_POSTGRES_ADMIN_URL is absent"
+        );
         return Ok(());
     }
+    std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
     super::kill_reward_e2e_fixtures::scenario_thread::run("sam-look-buy", || {
         scenario_for(ShopScenario::SamBuy)
     })

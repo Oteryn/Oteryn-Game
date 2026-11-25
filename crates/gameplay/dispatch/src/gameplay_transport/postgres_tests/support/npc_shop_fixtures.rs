@@ -1015,9 +1015,7 @@ async fn bulk_exchange(
             })
             .ok_or("side offer")?;
         assert!(!window.details[offer_index].name.is_empty());
-        if sam_offer.is_none() {
-            assert!(quantity <= window.details[offer_index].maximum_quantity);
-        }
+        assert!(quantity <= window.details[offer_index].maximum_quantity);
         let trade_id = if sam_offer.is_some() {
             assert_eq!(offer.unit_price, 5);
             let payload = encode_npc_shop_intent(&NpcShopIntent {
@@ -1057,38 +1055,40 @@ async fn bulk_exchange(
         } else {
             first + 2
         };
-        let intent = if sam_offer.is_some() {
-            wire::NpcTradeIntent {
-                npc_actor: npc,
-                catalogue_revision: window.open.ok_or("closed Sam window")?.1,
-                offer_index: u32::try_from(offer_index)?,
-                side,
-                quantity,
-                expected_unit_price: offer.unit_price,
-            }
-        } else {
-            let mut shop = oteryn_dev_client::client_ui::npc_shop::LiveShop {
-                selected: true,
-                ..Default::default()
-            };
-            oteryn_dev_client::client_ui::trade_details::apply_window(&mut shop, window.clone());
-            let quote = shop
-                .quotes()
-                .into_iter()
-                .find(|quote| quote.side == side)
-                .ok_or("decoded UI quote")?;
-            assert!(
-                shop.quote_text(quote)
-                    .contains(&window.details[offer_index].name)
-            );
-            assert_eq!(
-                shop.maximum_amount(quote),
-                window.details[offer_index].maximum_quantity
-            );
-            assert!(!shop.valid_amount(quote, shop.maximum_amount(quote) + 1));
-            shop.trade(quote, quantity)
-                .ok_or("UI trade within authoritative bound")?
+        let mut shop = oteryn_dev_client::client_ui::npc_shop::LiveShop {
+            selected: true,
+            ..Default::default()
         };
+        oteryn_dev_client::client_ui::trade_details::apply_window(&mut shop, window.clone());
+        let quote = shop
+            .quotes()
+            .into_iter()
+            .find(|quote| {
+                quote.side == side
+                    && quote.offer_index == offer_index
+                    && quote.item == offer.item_definition_ref
+            })
+            .ok_or("decoded UI quote")?;
+        assert!(
+            shop.quote_text(quote)
+                .contains(&window.details[offer_index].name)
+        );
+        assert_eq!(
+            shop.maximum_amount(quote),
+            window.details[offer_index].maximum_quantity
+        );
+        assert!(!shop.valid_amount(quote, shop.maximum_amount(quote) + 1));
+        let intent = shop
+            .trade(quote, quantity)
+            .ok_or("UI trade within authoritative bound")?;
+        assert_eq!(intent.npc_actor, npc);
+        assert_eq!(
+            intent.catalogue_revision,
+            window.open.ok_or("closed trade window")?.1
+        );
+        assert_eq!(intent.offer_index, u32::try_from(offer_index)?);
+        assert_eq!(intent.side, side);
+        assert_eq!(intent.quantity, quantity);
         assert_eq!(intent.expected_unit_price, offer.unit_price);
         let mut payload = wire::encode_npc_trade_intent(&intent).map_err(debug)?;
         if packed {
