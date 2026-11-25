@@ -226,6 +226,7 @@ pub(super) async fn check_situation_replacement(
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42, 134])
             .ok_or("legacy PvP selection")?;
+    check_status_holder(owner, *admitted, h).await?;
     let legacy = observe_pvp(owner, admitted, &[], &h.pool).await?;
     assert_eq!(legacy.len(), 1);
     assert!(legacy[0].incoming);
@@ -253,6 +254,58 @@ pub(super) async fn check_situation_replacement(
         ..extended[0]
     });
     admitted.continuity.selected_capabilities = original;
+    Ok(())
+}
+
+async fn check_status_holder(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    assert!(owner.observe_pvp_status(admitted).await.is_some());
+    eprintln!("PVP-STATUS POSTGRES_ASSERTIONS_REACHED case=idle");
+
+    let mut holder = h.root.try_acquire_ready()?;
+    let query = owner.observe_pvp_status(admitted);
+    let mut query = std::pin::pin!(query);
+    std::future::poll_fn(|context| {
+        assert!(
+            std::future::Future::poll(query.as_mut(), context).is_pending(),
+            "PvP status must wait for a busy holder before SQL"
+        );
+        std::task::Poll::Ready(())
+    })
+    .await;
+    assert_eq!(
+        holder.return_to_pool_observed().await,
+        sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle
+    );
+    assert!(query.await.is_some());
+    eprintln!("PVP-STATUS POSTGRES_ASSERTIONS_REACHED case=busy_then_free");
+
+    let mut holder = h.root.try_acquire_ready()?;
+    let started = tokio::time::Instant::now();
+    let result = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        owner.observe_pvp_status(admitted),
+    )
+    .await?;
+    assert!(result.is_none());
+    assert!(started.elapsed() >= std::time::Duration::from_millis(500));
+    eprintln!("PVP-STATUS POSTGRES_ASSERTIONS_REACHED case=deadline_expiry");
+
+    let mut missing_capability = admitted;
+    missing_capability.continuity.selected_capabilities = SelectedCapabilities::NONE;
+    let mut missing_fence = admitted;
+    missing_fence.item_fence = None;
+    for refused in [missing_capability, missing_fence] {
+        assert!(owner.observe_pvp_status(refused).await.is_none());
+    }
+    assert_eq!(
+        holder.return_to_pool_observed().await,
+        sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle
+    );
+    eprintln!("PVP-STATUS POSTGRES_ASSERTIONS_REACHED case=capability_and_fence_refusal");
     Ok(())
 }
 
