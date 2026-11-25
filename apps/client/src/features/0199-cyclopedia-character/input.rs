@@ -68,8 +68,9 @@ impl PlayLink {
             mailbox.store_inbox_refresh_pending = false;
             self.cyclopedia_character_request_locked(&mut mailbox, Intent::Items);
         }
-        drop(mailbox);
-        self.store_inbox_refresh();
+        mailbox.store.inbox = Default::default();
+        mailbox.store.inbox_page_cursor = None;
+        self.store_inbox_refresh_locked(&mut mailbox);
     }
 
     pub(in crate::play) fn pump_store_inbox_refresh(&self) {

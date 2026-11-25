@@ -40,6 +40,7 @@ enum Kind {
     Previous,
     Next,
     Claim(usize),
+    FirstClaimPage,
     NextClaims,
     PlaceLamp,
 }
@@ -74,6 +75,12 @@ fn perform(owner: &HostOwner, state: &State, control: Control) {
     if state.store.as_ref() != Some(&store) {
         return;
     }
+    if control.kind == Kind::FirstClaimPage {
+        if store.inbox_page_cursor.is_some() && !store.pending {
+            play.link.store_inbox_refresh();
+        }
+        return;
+    }
     if control.kind == Kind::NextClaims {
         play.link.store_inbox_next_claim_page();
         return;
@@ -106,7 +113,7 @@ fn perform(owner: &HostOwner, state: &State, control: Control) {
         Kind::Refresh => Intent::Items,
         Kind::Previous => Intent::ItemsPrevious,
         Kind::Next => Intent::ItemsNext,
-        Kind::Close | Kind::Claim(_) | Kind::NextClaims | Kind::PlaceLamp => return,
+        Kind::Close | Kind::Claim(_) | Kind::FirstClaimPage | Kind::NextClaims | Kind::PlaceLamp => return,
     });
 }
 fn activate(
@@ -314,6 +321,9 @@ fn project(
     }
     if store.inbox.lamp_definition.is_some() {
         buttons.push((Kind::PlaceLamp, "Place Hireling".into(), store_disabled));
+    }
+    if store.inbox_page_cursor.is_some() {
+        buttons.push((Kind::FirstClaimPage, "First claim page".into(), store_disabled));
     }
     if store.inbox.next.is_some() {
         buttons.push((Kind::NextClaims, "Next claim page".into(), store_disabled));

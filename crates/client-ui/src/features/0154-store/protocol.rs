@@ -180,9 +180,13 @@ pub fn request(
     }
     panel.pending = true;
     panel.pending_action = command.command_type;
-    panel.inbox_query_pending = command.command_type == COMMAND_TYPE_STORE_INBOX_CLAIM
-        && (command.payload == STORE_INBOX_QUERY
-            || store::decode_inbox_query(&command.payload).is_some());
+    panel.inbox_query_pending = if command.command_type != COMMAND_TYPE_STORE_INBOX_CLAIM {
+        None
+    } else if command.payload == STORE_INBOX_QUERY {
+        Some(None)
+    } else {
+        store::decode_inbox_query(&command.payload)
+    };
     panel.feedback = None;
     Some(command)
 }
@@ -232,8 +236,11 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
         COMMAND_TYPE_STORE_HISTORY_PAGE => {
             store::decode_history_page(&result.payload).map(|v| panel.history = Some(v))
         }
-        COMMAND_TYPE_STORE_INBOX_CLAIM if inbox_query => {
-            store::decode_inbox_page(&result.payload).map(|page| panel.inbox = page)
+        COMMAND_TYPE_STORE_INBOX_CLAIM if inbox_query.is_some() => {
+            store::decode_inbox_page(&result.payload).map(|page| {
+                panel.inbox = page;
+                panel.inbox_page_cursor = inbox_query.flatten();
+            })
         }
         COMMAND_TYPE_STORE_INBOX_CLAIM => {
             store::decode_claim_receipt(&result.payload).map(|receipt| {

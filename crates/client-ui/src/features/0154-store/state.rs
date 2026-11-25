@@ -47,7 +47,8 @@ pub struct StorePanel {
     pub purchase: Option<StorePurchaseResult>,
     pub claim: Option<StoreClaimReceipt>,
     pub inbox: StoreInboxPage,
-    pub inbox_query_pending: bool,
+    pub inbox_page_cursor: Option<[u8; 16]>,
+    pub inbox_query_pending: Option<Option<[u8; 16]>>,
     pub feedback: Option<String>,
 }
 

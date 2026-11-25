@@ -16,7 +16,8 @@ impl Outbox {
         mailbox.store.selected = selected;
         mailbox.store_inbox_query_queued = false;
         mailbox.store.inbox = Default::default();
-        mailbox.store.inbox_query_pending = false;
+        mailbox.store.inbox_page_cursor = None;
+        mailbox.store.inbox_query_pending = None;
         mailbox.store.claim = None;
         mailbox.store.cosmetic_tokens = None;
         mailbox.store.token_supported = false;
@@ -56,7 +57,7 @@ impl Outbox {
     ) {
         let mut mailbox = lock(&self.0);
         let action = mailbox.store.pending_action;
-        let inbox_query = mailbox.store.inbox_query_pending;
+        let inbox_query = mailbox.store.inbox_query_pending.is_some();
         oteryn_client_ui::store::apply_result(&mut mailbox.store, response);
         let text = if let Some(feedback) = &mailbox.store.feedback {
             feedback.clone()
