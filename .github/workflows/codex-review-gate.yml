@@ -18,7 +18,8 @@ name: codex-review-gate
 # thread fires no workflow event, so a schedule re-evaluates every open PR.
 # Owner decision 2026-11-18, narrowed 2026-11-25: a PR carrying the `heavy-tests`
 # label skips this gate (success without a receipt) only when it is data-only (every
-# changed file under `content/`) or the staging -> main promotion PR (head branch
+# changed file under `content/` with an allowlisted data extension) or the staging -> main
+# promotion PR (head branch
 # `staging`). A content train (head branch `*-ctrain-*`) and every PR with code
 # needs a receipt even with the label (AGENTS.md "Request review once per head").
 # Pull requests into the `staging` integration branch are gated too, under the context
@@ -136,10 +137,13 @@ jobs:
                       reason = None
                   else:
                       files = pages(f'pulls/{number}/files')
-                      code_suffixes = ('.py', '.rs', '.sh', '.js', '.mjs', '.ts', '.lua', '.ps1', '.cmd')
+                      # Allowlist: only these exact (lower-case) data extensions count as
+                      # data; anything else, an extensionless file included, needs a receipt.
+                      data_suffixes = ('.json', '.jsonl', '.lzma', '.b3', '.md', '.txt', '.toml',
+                                       '.yml', '.yaml', '.csv', '.dat', '.png', '.jpg')
 
                       def is_data(path):
-                          return path.startswith('content/') and not path.endswith(code_suffixes)
+                          return path.startswith('content/') and path.endswith(data_suffixes)
 
                       data_only = len(files) == pr['changed_files'] and all(
                           is_data(f['filename'])
@@ -150,8 +154,16 @@ jobs:
                   if reason:
                       # The head may move while the files are listed; publish only for
                       # the head that was classified (a synchronize event re-evaluates).
-                      if call(f'https://api.github.com/repos/{repo}/pulls/{number}')['head']['sha'] != head:
+                      fresh = call(f'https://api.github.com/repos/{repo}/pulls/{number}')
+                      if fresh['head']['sha'] != head:
                           print(f'PR #{number}: head moved during evaluation; nothing published')
+                          return
+                      # The label, base or state may change while the files are listed;
+                      # the unlabeled/edited/closed event re-evaluates, so publish nothing.
+                      if fresh['state'] != 'open' or fresh['base']['ref'] != 'main' or not any(
+                          label['name'] == 'heavy-tests' for label in fresh.get('labels') or []
+                      ):
+                          print(f'PR #{number}: label, base or state changed during evaluation; nothing published')
                           return
                       print(f'PR #{number} head={head} state=success (heavy-tests label, {reason}: gate skipped)')
                       call(f'https://api.github.com/repos/{repo}/statuses/{head}', {
