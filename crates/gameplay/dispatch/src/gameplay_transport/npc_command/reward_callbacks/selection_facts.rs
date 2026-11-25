@@ -34,10 +34,10 @@ pub(in crate::gameplay_transport::npc_command) fn needs_facts(
             && callback.keywords.contains(&text)
             && (!callback.inventory.is_empty() || callback.minimum_level.is_some())
     }) || offers::load(admission).is_some_and(|document| {
-        document.offers.iter().any(|offer| {
+        document.iter().any(|offer| {
             offer.npc == context.2
                 && offer.keywords.contains(&text)
-                && offer.minimum_level.is_some()
+                && (offer.minimum_level.is_some() || !offer.inventory.is_empty())
         })
     })
 }

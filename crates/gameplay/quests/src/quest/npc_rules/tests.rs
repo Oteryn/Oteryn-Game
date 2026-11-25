@@ -79,6 +79,37 @@ fn hero_greeting_plans_the_source_access_write() -> Result<(), NpcRuleError> {
     Ok(())
 }
 
+#[test]
+fn lai_gives_read_only_hints_for_each_fragment_and_the_finished_statue() -> Result<(), NpcRuleError>
+{
+    let catalogue = NpcRuleCatalog::runtime()?;
+    let mut facts = Facts::empty();
+    let track = "oteryn:quest-progress/chosen/mystery-of-the-valley/stage";
+    for (stage, hint) in [
+        (1, "ice and snow"),
+        (2, "Bamboo"),
+        (3, "large river"),
+        (4, "Kha'zeel"),
+        (5, "Kha'zeel"),
+        (6, "reconstructed"),
+    ] {
+        facts.tracks.insert(track.into(), stage);
+        let mut input = facts.input("oteryn:npc.lai", "fragment of a statue", 0);
+        input.premium_current = true;
+        let plan = catalogue
+            .plan_storage(&input)?
+            .ok_or_else(|| NpcRuleError::Invalid(format!("missing Lai hint at stage {stage}")))?;
+        assert!(
+            plan.reply.iter().any(|line| line.contains(hint)),
+            "{stage}: {:?}",
+            plan.reply
+        );
+        assert!(plan.track_changes.is_empty());
+        assert!(plan.effects.is_empty());
+    }
+    Ok(())
+}
+
 struct Facts {
     tracks: BTreeMap<String, i64>,
     inventory: NpcInventorySnapshot,

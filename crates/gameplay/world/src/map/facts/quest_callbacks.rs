@@ -175,6 +175,7 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
+    scene_items: BTreeMap<(TilePos, u64, u16), (EntryId, bool)>,
     merchant_barricades: BTreeMap<u64, (TilePos, EntryId)>,
     batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
@@ -578,8 +579,15 @@ impl CallbackStates {
             })
         })
     }
+    fn scene_blocks(&self, pos: TilePos) -> bool {
+        self.scene_items
+            .range((pos, 0, 0)..=(pos, u64::MAX, u16::MAX))
+            .any(|(_, (_, passable))| !passable)
+    }
+
     pub(super) fn phase_has_dynamic_blocker(&self, pos: TilePos) -> bool {
         self.solid_items.contains(&pos)
+            || self.scene_blocks(pos)
             || self.batch_blockers.contains(&pos)
             || self.merchant_barricades.values().any(|(at, _)| *at == pos)
     }
@@ -595,6 +603,7 @@ impl CallbackStates {
         };
         self.movement_items.retain(|p, _| !cleared(p));
         self.solid_items.retain(|p| !cleared(p));
+        self.scene_items.retain(|(p, _, _), _| !cleared(p));
         self.merchant_barricades.retain(|_, (pos, _)| !cleared(pos));
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
@@ -617,6 +626,7 @@ impl CallbackStates {
             + self.movement_speech.len()
             + self.portals.len()
             + self.solid_items.len()
+            + self.scene_items.len()
             + self.merchant_barricades.len()
             + self.batch_blockers.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
@@ -1872,7 +1882,8 @@ impl BundleFacts {
                         QuestSceneMutation::Restore { key, .. }
                         | QuestSceneMutation::Remove { key, .. }
                         | QuestSceneMutation::Replace { key, .. } => states.key_reserved(*key),
-                        QuestSceneMutation::Create { position, .. } => {
+                        QuestSceneMutation::Create { position, .. }
+                        | QuestSceneMutation::RemoveCreated { position, .. } => {
                             states.position_reserved(*position)
                         }
                     })
@@ -2014,6 +2025,7 @@ impl BundleFacts {
         };
         if !tile.walkable()
             || states.solid_items.contains(&pos)
+            || states.scene_blocks(pos)
             || states
                 .merchant_barricades
                 .values()
@@ -2177,6 +2189,11 @@ impl BundleFacts {
 /// A fully resolved edit; only the projection owner can publish these together.
 #[derive(Clone, Debug)]
 pub enum QuestSceneMutation {
+    RemoveCreated {
+        position: TilePos,
+        appearance: u16,
+        allow_missing: bool,
+    },
     Restore {
         key: u64,
         revision: u64,
@@ -2259,11 +2276,42 @@ fn project_scene(
                 states.changed.insert(*key, (revision + 1, *facts));
                 states.passable.insert(*key, *passable);
             }
+            QuestSceneMutation::RemoveCreated {
+                position,
+                appearance,
+                allow_missing,
+            } => {
+                let Some((id, _)) = states.scene_items.remove(&(*position, owner, *appearance))
+                else {
+                    if *allow_missing {
+                        continue;
+                    }
+                    return false;
+                };
+                let Some(entries) = states.movement_items.get_mut(position) else {
+                    return false;
+                };
+                let Some(index) = entries.iter().position(|entry| {
+                    entry.source == view::EntrySource::Added(id)
+                        && entry.facts.appearance_id == *appearance
+                }) else {
+                    return false;
+                };
+                entries.remove(index);
+                if entries.is_empty() {
+                    states.movement_items.remove(position);
+                }
+                states.changed.remove(&id.get());
+            }
             QuestSceneMutation::Create {
                 position,
                 facts,
                 passable,
             } => {
+                let identity = (*position, owner, facts.appearance_id);
+                if states.scene_items.contains_key(&identity) {
+                    return false;
+                }
                 let Some(sequence) = states.movement_sequence.checked_add(1) else {
                     return false;
                 };
@@ -2279,9 +2327,7 @@ fn project_scene(
                         source: view::EntrySource::Added(entry),
                         facts: *facts,
                     });
-                if !passable {
-                    states.solid_items.insert(*position);
-                }
+                states.scene_items.insert(identity, (entry, *passable));
             }
         }
     }

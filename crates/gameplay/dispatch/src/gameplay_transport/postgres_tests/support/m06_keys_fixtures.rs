@@ -58,6 +58,10 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
         let (door_x, door_y, door_floor, key_action) = source.unwrap_or((6, 0, -7, 4321));
         let door_appearance = if level_gate {
             1648
+        } else if key_action == 3304 {
+            6251
+        } else if (door_x, door_y, door_floor, key_action) == (32602, 31975, -14, 3802) {
+            7714
         } else if source.is_some() {
             1631
         } else {
@@ -74,7 +78,8 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             crate::map::view::placement_key(station_pos, 1).ok_or("door placement")?;
         let key_item = match key_action {
             3940 => "oteryn:item.tibia.i2968",
-            3980 => "oteryn:item.tibia.i2972",
+            3303 | 3802 => "oteryn:item.tibia.i2970",
+            3304 | 3980 => "oteryn:item.tibia.i2972",
             _ => "oteryn:item.tibia.i2967",
         };
         let wrong_key = if key_action == 3940 {

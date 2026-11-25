@@ -16,6 +16,10 @@ mod offers;
 mod selection_facts;
 pub(super) use selection_facts::needs_facts;
 
+pub fn validate_quest_reward_offers() -> bool {
+    offers::embedded().is_some()
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Offers {
@@ -37,6 +41,10 @@ pub(super) struct Offer {
     reply: Vec<String>,
     #[serde(default)]
     minimum_level: Option<u32>,
+    #[serde(default, alias = "premium")]
+    requires_premium: Option<bool>,
+    #[serde(default)]
+    inventory: Vec<reward_callbacks::InventoryRequirement>,
     #[serde(default)]
     failure_reply: Vec<String>,
 }
@@ -90,7 +98,6 @@ pub(super) fn prepare(
         || (phase == Phase::Offers
             && !matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
             && offers
-                .offers
                 .iter()
                 .any(|offer| offer.npc == context.2 && offer.keywords.contains(&text)))
     {
@@ -194,12 +201,24 @@ pub(super) fn prepare(
             if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
                 return rottin_dialogue(topic, &text, tracks, refusal);
             }
-            if let Some(offer) = offers
-                .offers
-                .iter()
-                .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
-            {
-                if !meets_level(offer.minimum_level) {
+            if let Some(offer) = offers.iter().find(|offer| {
+                offer.admits(&context.2, topic.number, &text, catalogue, tracks)
+                    && offer.requires_premium.is_none_or(|required| {
+                        let premium = admission
+                            .session_account(command.game_session_id)
+                            .zip(admission.premium_coordinator)
+                            .is_some_and(|(account, owner)| {
+                                owner.view(account).premium_gate().premium_current()
+                            });
+                        premium == required
+                    })
+            }) {
+                if !meets_level(offer.minimum_level)
+                    || !offer
+                        .inventory
+                        .iter()
+                        .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
+                {
                     return refusal(&offer.failure_reply);
                 }
                 return Some(Choice {
@@ -226,7 +245,7 @@ pub(super) fn prepare(
             }
             // A source-owned offer may explain why a mission prerequisite is
             // missing. Select an unambiguous stage before falling back to lore.
-            let mut blocked = offers.offers.iter().filter(|offer| {
+            let mut blocked = offers.iter().filter(|offer| {
                 offer.npc == context.2
                     && offer.matches_topic(topic.number)
                     && offer.keywords.contains(&text)

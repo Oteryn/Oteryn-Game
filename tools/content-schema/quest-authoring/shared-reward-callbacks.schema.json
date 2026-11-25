@@ -434,6 +434,7 @@
             "maxLength": 1024
           }
         },
+        "achievement_requires_full_outfit": {"type": "boolean"},
         "achievement": {
           "oneOf": [
             {
@@ -529,6 +530,9 @@
           "items": {
             "$ref": "#/$defs/stateOperation"
           }
+        },
+        "addon_only": {
+          "type": "boolean"
         },
         "requires_premium": {
           "type": "boolean"

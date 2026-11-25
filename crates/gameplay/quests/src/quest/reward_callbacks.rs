@@ -108,7 +108,7 @@ mod reward_contents_text_tests;
 #[serde(deny_unknown_fields)]
 pub struct OutfitReward {
     pub outfit: String,
-    /// Base entitlement is always included. Bits 1 and 2 earn the respective addons.
+    /// Bits 1 and 2 earn the respective addons.
     pub addons: u8,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sex: Option<CreationSex>,
@@ -312,6 +312,9 @@ pub struct RewardCallback {
     pub creation_sex: Option<CreationSex>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub requires_premium: bool,
+    /// This hand-in earns only the listed addon bits.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub addon_only: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -354,6 +357,9 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub exact_take: bool,
     pub achievement: Option<String>,
+    /// Award the achievement when this hand-in completes the account-owned pair.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub achievement_requires_full_outfit: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub achievement_progress: Vec<AchievementProgress>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -576,6 +582,7 @@ struct Document {
 
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/classic-quests.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../../content/quests/npc-callbacks/battle-mage-completions.json"),
     include_str!("../../../../../content/quests/npc-callbacks/forbidden-fruit.json"),
@@ -592,6 +599,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/m20-cursed-crystal-recipes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m39-stories.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/nomads-land.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
@@ -604,6 +612,8 @@ const DOCUMENTS: &[&str] = &[
     WARRIOR_COMPLETIONS,
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
+    // Append Explorer Society so its corpse targets follow the retained live creature callbacks.
+    include_str!("../../../../../content/quests/npc-callbacks/explorer-society.json"),
 ];
 
 const WARRIOR_COMPLETIONS: &str =
@@ -657,8 +667,52 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, 
 /// available to immutable receipt reconciliation and catalogue validation.
 pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
     let mut callbacks = load_for(catalogue)?;
-    callbacks.retain(super::authored_bindings::personal_event_offered);
+    retain_offered_callbacks(&mut callbacks);
     Ok(callbacks)
+}
+
+fn retain_offered_callbacks(callbacks: &mut Vec<RewardCallback>) {
+    // Elane's common sale handles free accounts and completed outfits. Keep the
+    // earlier free-only transition available to replay its durable receipts.
+    let elane_sale = callbacks.iter().any(|callback| {
+        callback.key == "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves-sale"
+    });
+    callbacks.retain(|callback| {
+        super::authored_bindings::personal_event_offered(callback)
+            && (!elane_sale
+                || callback.key != "oteryn:quest-reward/l8-hunter-elane-gloves-sale-free")
+    });
+}
+
+#[cfg(test)]
+#[test]
+fn the_common_elane_sale_is_the_only_fresh_sale_when_both_are_registered() -> Result<(), String> {
+    let callbacks = load()?;
+    let common = callbacks
+        .iter()
+        .find(|callback| {
+            callback.key == "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves-sale"
+        })
+        .ok_or("common Elane sale")?;
+    let mut free_sale = common.clone();
+    free_sale.key = "oteryn:quest-reward/l8-hunter-elane-gloves-sale-free".into();
+    let mut legola = free_sale.clone();
+    legola.npc = "oteryn:npc.legola".into();
+    legola.key = "oteryn:quest-reward/l8-hunter-gloves-sale-free".into();
+    let mut composed = vec![free_sale, common.clone(), legola.clone()];
+    retain_offered_callbacks(&mut composed);
+    assert_eq!(composed, [common.clone(), legola]);
+    let payment = common.give.as_ref().ok_or("Elane sale payment")?;
+    assert_eq!(
+        (payment.item.as_str(), payment.count),
+        ("oteryn:item.tibia.i3035", 20)
+    );
+    assert_eq!(common.take.len(), 1);
+    assert_eq!(
+        (common.take[0].item.as_str(), common.take[0].count),
+        ("oteryn:item.tibia.i5875", 1)
+    );
+    Ok(())
 }
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
@@ -1118,6 +1172,15 @@ fn validate_document_with_capacity(
             || c.requires_completed_quests
                 .iter()
                 .any(|key| key == &c.quest || !slug(key, "oteryn:quest.", b"._", 128))
+            || (c.achievement_requires_full_outfit
+                && (c.achievement.is_none()
+                    || !c.addon_only
+                    || c.outfit.as_ref().is_none_or(|reward| {
+                        !matches!(reward.addons, 1 | 2)
+                            || reward.sex.is_some()
+                            || !c.forbids_addons.contains(reward)
+                    })
+                    || !c.outfits.is_empty()))
             || c.requires_addons.len() > 8
             || c.requires_addons
                 .iter()
@@ -1198,6 +1261,9 @@ fn validate_document_with_capacity(
                 .is_some_and(|reward| !valid_item_reward(reward))
             || (!c.outfits.is_empty() && c.outfit.is_some())
             || c.outfits.len() > 4
+            || (c.addon_only
+                && (c.cosmetic_targets().next().is_none()
+                    || c.cosmetic_targets().any(|reward| reward.addons == 0)))
             || c.cosmetic_targets()
                 .map(|r| (&r.outfit, r.addons, r.sex))
                 .collect::<BTreeSet<_>>()
@@ -1380,6 +1446,18 @@ fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
             &callback.weighted_rewards,
         ))
         .map_err(|error| error.to_string())?
+    };
+    let current = if callback.addon_only {
+        serde_json::to_vec(&("oteryn:quest-reward-addon-only-v1", current))
+            .map_err(|error| error.to_string())?
+    } else {
+        current
+    };
+    let current = if callback.achievement_requires_full_outfit {
+        serde_json::to_vec(&("oteryn:quest-reward-full-outfit-v1", current))
+            .map_err(|error| error.to_string())?
+    } else {
+        current
     };
     if callback.per_occurrence_mint {
         serde_json::to_vec(&("oteryn:quest-reward-occurrence-mint-v1", current))
@@ -1749,6 +1827,25 @@ fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
 pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
     type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
     const PREVIOUS: &[DefinitionPin] = &[
+        // Main at 3e09916423, before the Marid source dialogue and purchase.
+        (
+            "oteryn:quest.factions",
+            [
+                0x2b, 0xcb, 0x10, 0x95, 0x3a, 0xe9, 0x88, 0x92, 0x73, 0x76, 0x28, 0x89, 0xd2, 0x24,
+                0xe7, 0xf8, 0xf6, 0xd2, 0xd9, 0x1f, 0xcb, 0x10, 0x0c, 0x6a, 0x74, 0xa0, 0x33, 0x22,
+                0x71, 0x34, 0xc2, 0x10,
+            ],
+            &[],
+        ),
+        (
+            "oteryn:quest.the_djinn_war_marid_faction",
+            [
+                0x78, 0xef, 0x32, 0xdc, 0xb4, 0x25, 0xf4, 0x8e, 0x5d, 0x29, 0xa4, 0x57, 0x3d, 0x01,
+                0xc5, 0xc1, 0xb5, 0xae, 0x7a, 0x1b, 0x82, 0xec, 0x04, 0xf2, 0x9c, 0x0b, 0x7c, 0xf7,
+                0x35, 0x39, 0xdb, 0x3c,
+            ],
+            &[("oteryn:quest-progress/storage/30022", 0)],
+        ),
         // Main at 492ca0e6ba, before Package C.
         (
             "oteryn:quest.treasure_hunt_quest",
@@ -2060,6 +2157,49 @@ mod tests {
                 assert!(gate.holds(catalogue.catalogue(), &tracks), "{stage}");
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn warmaster_crest_callbacks_refuse_an_owned_target_addon() -> Result<(), String> {
+        let rows = super::load()?;
+        for (name, addon) in [("crest", 1), ("tribal", 2)] {
+            for suffix in ["", "-complete"] {
+                let key = format!("oteryn:quest-reward/l1-warmaster-{name}{suffix}");
+                let callback = rows.iter().find(|row| row.key == key).ok_or(&key)?;
+                assert_eq!(
+                    callback.forbids_addons.as_slice(),
+                    &[super::OutfitReward {
+                        outfit: "oteryn:outfit.warmaster".into(),
+                        addons: addon,
+                        sex: None,
+                    }],
+                    "{key}"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn elane_glove_sale_has_repeatable_native_payment() -> Result<(), String> {
+        let rows = super::load()?;
+        let sale = rows
+            .iter()
+            .find(|row| row.key == "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves-sale")
+            .ok_or("missing Elane glove sale")?;
+        assert!(sale.repeatable && sale.is_paid_exchange());
+        assert!(sale.cosmetic_targets().next().is_none());
+        assert_eq!(sale.take.len(), 1);
+        assert_eq!(
+            (sale.take[0].item.as_str(), sale.take[0].count),
+            ("oteryn:item.tibia.i5875", 1)
+        );
+        let payment = sale.give.as_ref().ok_or("missing sale payment")?;
+        assert_eq!(
+            (payment.item.as_str(), payment.count),
+            ("oteryn:item.tibia.i3035", 20)
+        );
         Ok(())
     }
 
@@ -2790,14 +2930,14 @@ mod tests {
         for (key, expected) in [
             (
                 "oteryn:quest.outfit_and_addon_quests",
-                "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8",
+                "97baa2233c218843fe0f6064ba4c8d4d79e079ffe1e229a7ffc59afe23042d2f",
             ),
             // Includes the source seal callbacks, packed counter and Siflind vial grant.
             (
                 "oteryn:quest.the_ice_islands_quest",
                 // M47 counters retain -1; distinct native seals also bind their
-                // separately owned painted-target counter and source callbacks.
-                "299b92c459921a7f30b4128518dc869fc7e7f6de3d50dbcf3be09ee05dcb44c0",
+                // separately owned painted-target counter and Inukaya sled rides.
+                "fdaedce30df4cf940d0022e341e5c0e9be4025a17564ae8f0fed960e350cfe4e",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",
@@ -2836,8 +2976,12 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared reward routes include the Forbidden Fruit and Battle Mage completions.
-        assert_eq!(load()?.len(), 242 + 95 + 126 + 1 + 1 + 13 + 12 + 2 + 2);
+        // Outfit completions add four to the shared shard. Package 4 also adds the
+        // chosen routes (19), Prisoner (2), classic contacts (5), Nomads (4) and Explorer Society (89).
+        assert_eq!(
+            load()?.len(),
+            (238 + 4) + 59 + 125 + 1 + 1 + 13 + 12 + 19 + 2 + 5 + 4 + 89
+        );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2868,6 +3012,10 @@ mod tests {
         let (qb, legacy): (Vec<_>, Vec<_>) = shared.into_iter().partition(is_qb_outfit_extension);
         assert_eq!(qb.len(), 31);
         let added_keys = [
+            "oteryn:quest-reward/l1-warmaster-crest-complete",
+            "oteryn:quest-reward/l1-warmaster-tribal-complete",
+            "oteryn:quest-reward/l1-wayfarer-cape-complete",
+            "oteryn:quest-reward/l1-wayfarer-hat-complete",
             "oteryn:quest-reward/l10-golden-base-owned",
             "oteryn:quest-reward/l10-golden-boots-owned",
             "oteryn:quest-reward/l10-golden-helmet-owned",
@@ -2890,7 +3038,7 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 211);
+        assert_eq!(legacy.len(), 207 + 4);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
@@ -3620,7 +3768,7 @@ mod lane_counter_tests {
     fn occurrence_mint_is_explicit_portable_and_part_of_the_value_hash() -> Result<(), String> {
         let mut callback = load()?
             .into_iter()
-            .find(|c| c.key.ends_with("/venore-daily/accept"))
+            .find(|c| c.key.ends_with("/venore-daily/maintenance/accept"))
             .ok_or("accept")?;
         let legacy = value_plan(&callback)?;
         let encoded = serde_json::to_value(&callback).map_err(|e| e.to_string())?;
@@ -3752,8 +3900,8 @@ mod outfit_reward_predecessor_tests {
                 .iter()
                 .filter(|callback| callback.quest == QUEST)
                 .count(),
-            // 112 retained rows, 31 QB rows and 14 full-outfit branches.
-            157
+            // 114 retained rows, 31 QB rows and 14 full-outfit branches.
+            159
         );
         document.callbacks.retain(|callback| {
             !is_qb_outfit_extension(callback) && !callback.key.ends_with("-full-outfit")
@@ -3763,7 +3911,7 @@ mod outfit_reward_predecessor_tests {
             .iter()
             .filter(|callback| callback.quest == QUEST)
             .count();
-        assert_eq!(owned, 112);
+        assert_eq!(owned, 114);
         let participants = document
             .callbacks
             .iter()
@@ -3832,7 +3980,7 @@ mod outfit_reward_predecessor_tests {
         );
         assert_eq!(
             hex(&full_hash),
-            "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8"
+            "97baa2233c218843fe0f6064ba4c8d4d79e079ffe1e229a7ffc59afe23042d2f"
         );
         assert_eq!((declared.1.len(), full_defaults.len()), (51, 52));
         assert!(

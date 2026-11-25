@@ -667,6 +667,10 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
+    import spirit_scenery_profiles
+    spirit_scenery_profiles.admit(
+        root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+        NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import authored_static_item_constructors
 
     authored_static_item_constructors.admit(

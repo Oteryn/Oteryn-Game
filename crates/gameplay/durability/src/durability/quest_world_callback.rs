@@ -154,6 +154,18 @@ impl super::DurabilityRoot {
                         &catalogue, &callback.quest, &pin.definition_hash,
                     );
                 }
+                use oteryn_gameplay_quests::quest::venore_predecessor;
+                let mut legacy = std::collections::BTreeMap::new();
+                if callback.quest == venore_predecessor::QUEST {
+                    let stage: Option<i64> = sqlx::query_scalar(
+                        "SELECT value FROM game_character_quest_tracks
+                         WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3",
+                    ).bind(fence.character_id.as_bytes().as_slice()).bind(venore_predecessor::STAGE)
+                        .bind(&callback.quest).fetch_optional(&mut *tx).await?;
+                    if let Some(stage) = stage {
+                        legacy.insert(venore_predecessor::STAGE.to_owned(), stage);
+                    }
+                }
                 for storage in &callback.storage {
                     let Some(track) = catalogue.track(&storage.track).filter(|track| track.quest == callback.quest) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
@@ -164,6 +176,7 @@ impl super::DurabilityRoot {
                     ).bind(fence.character_id.as_bytes().as_slice()).bind(&storage.track)
                         .bind(&callback.quest).fetch_optional(&mut *tx).await?;
                     let value = value.or_else(|| historical_defaults?.get(&storage.track).copied())
+                        .or_else(|| venore_predecessor::inherited_value(&storage.track, &legacy))
                         .unwrap_or(track.initial);
                     if !(storage.minimum..=storage.maximum).contains(&value) {
                         return Ok(Ok(false));
@@ -327,7 +340,13 @@ pub(super) async fn consume_reward_inputs(
     keys.extend(callback.inventory.iter().map(|rule| rule.item.as_str()));
     keys.sort_unstable();
     keys.dedup();
-    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[])
+        AND (i.definition_production_key<>'oteryn:item.tibia.i4837'
+             OR EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules p
+                WHERE p.item_instance_id=i.item_instance_id
+                  AND p.definition_production_key=i.definition_production_key
+                  AND p.expires_at_unix_ms>floor(extract(epoch FROM statement_timestamp())*1000)::bigint))
+        ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
     if let Some(use_) = carried_use {
         let selected = sqlx::types::Uuid::from_bytes(use_.source).to_string();

@@ -15,11 +15,19 @@ pub(crate) fn outfit_compatible(
     native: &NativeGameplayState,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
 ) -> bool {
+    outfit_targets_compatible(native, reward, true)
+}
+
+pub(crate) fn outfit_targets_compatible(
+    native: &NativeGameplayState,
+    reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
+    include_base: bool,
+) -> bool {
     let Some(cosmetics) = native.cosmetics() else {
         return false;
     };
     reward.addons <= 3
-        && (0..=2).all(|addon| {
+        && (u8::from(!include_base)..=2).all(|addon| {
             if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 {
                 return true;
             }
@@ -57,7 +65,22 @@ pub(crate) async fn grant_content_outfit(
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
     native: &NativeGameplayState,
 ) -> Result<Vec<String>, DurabilityError> {
-    if occurrence.is_empty() || occurrence.len() > 4096 || !outfit_compatible(native, reward) {
+    grant_content_outfit_targets(tx, character, occurrence, reward, native, true).await
+}
+
+/// Keep the selected targets in the same transaction and quest receipt.
+pub(crate) async fn grant_content_outfit_targets(
+    tx: &mut Transaction<'_, Postgres>,
+    character: CharacterId,
+    occurrence: &[u8],
+    reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
+    native: &NativeGameplayState,
+    include_base: bool,
+) -> Result<Vec<String>, DurabilityError> {
+    if occurrence.is_empty()
+        || occurrence.len() > 4096
+        || !outfit_targets_compatible(native, reward, include_base)
+    {
         return Err(DurabilityError::InvalidStoredState);
     }
     let account: sqlx::types::Uuid = sqlx::query_scalar(
@@ -68,7 +91,7 @@ pub(crate) async fn grant_content_outfit(
     .await?;
     super::lock_account_grants(tx, account).await?;
     let mut granted = Vec::new();
-    for addon in 0..=2 {
+    for addon in u8::from(!include_base)..=2 {
         if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 {
             continue;
         }

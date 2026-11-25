@@ -17,7 +17,8 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
-pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024;
+// Leave space for the registered package 2–4 cohorts before authored bindings.
+pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1280;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -713,6 +714,9 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(
         &serde_json::json!({"schema":1,"callbacks":[court_warlock::callback()?]}).to_string(),
     )?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/nomads-land.json"
+    ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
     ))?);
@@ -1734,6 +1738,227 @@ mod scene_tests;
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn classic_quest_readables_bind_world_use_at_the_written_items() -> Result<(), String> {
+        use super::{Position, Trigger, load};
+
+        let callbacks = load()?;
+        for (key, position, appearance, phrase) in [
+            (
+                "oteryn:quest-callback/iron-helmet-porgol-account",
+                Position {
+                    x: 32769,
+                    y: 32224,
+                    floor: -7,
+                },
+                3506,
+                "Porgol stole your books on necromancy",
+            ),
+            (
+                "oteryn:quest-callback/isle-of-the-mists-book",
+                Position {
+                    x: 32855,
+                    y: 32331,
+                    floor: -7,
+                },
+                2838,
+                "leaving the Isle of the Mists",
+            ),
+        ] {
+            let row = callbacks.iter().find(|row| row.key == key).ok_or(key)?;
+            assert_eq!(row.trigger, Trigger::Use);
+            assert_eq!(row.selector.position, Some(position));
+            assert_eq!(row.selector.appearance, Some(appearance));
+            assert!(!row.requires_durable_commit());
+            assert!(
+                row.success_message
+                    .as_deref()
+                    .is_some_and(|text| text.contains(phrase))
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn mastermind_source_caches_load_with_exact_container_allocations() -> Result<(), String> {
+        let callbacks = super::load()?;
+        for (suffix, position, appearance, ordinal, contents) in [
+            (
+                "first",
+                (32216, 31168, -11),
+                2473,
+                1,
+                vec![(7440, 1), (3031, 78)],
+            ),
+            (
+                "second",
+                (32084, 31062, -10),
+                2472,
+                2,
+                vec![(7440, 1), (3031, 100), (3031, 23), (7159, 1), (7158, 2)],
+            ),
+        ] {
+            let key = format!("oteryn:quest-callback/authored-mastermind-{suffix}");
+            let callback = callbacks.iter().find(|c| c.key == key).ok_or(key)?;
+            let (x, y, floor) = position;
+            assert_eq!(
+                callback.selector.position,
+                Some(super::Position { x, y, floor })
+            );
+            assert_eq!(callback.selector.appearance, Some(appearance));
+            assert_eq!(callback.selector.ordinal, Some(ordinal));
+            let reward = callback.effects.item_reward.as_ref().ok_or("source bag")?;
+            assert_eq!(reward.item, "oteryn:item.tibia.i2853");
+            assert_eq!(reward.count, 1);
+            assert!(reward.backpack_outputs.is_empty());
+            assert_eq!(reward.contents.len(), contents.len());
+            for (actual, (item, count)) in reward.contents.iter().zip(contents) {
+                assert_eq!(actual.item, format!("oteryn:item.tibia.i{item}"));
+                assert_eq!(actual.count, count);
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn kormarak_binds_the_native_body_and_coffin_room() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let body = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/authored-kormarak-reward")
+            .ok_or("Kormarak body")?;
+        assert_eq!(
+            body.selector.position,
+            Some(super::Position {
+                x: 32552,
+                y: 32200,
+                floor: -11
+            })
+        );
+        assert_eq!(body.selector.appearance, Some(4240));
+        assert_eq!(body.selector.ordinal, Some(1));
+        let objectives = super::super::death_objectives::load()?;
+        let objective = objectives
+            .iter()
+            .find(|objective| objective.quest == body.quest)
+            .ok_or("Kormarak death objective")?;
+        assert!(objective.matches("oteryn:creature.demon_skeleton", 32552, 32198, 11));
+        assert!(
+            objective.guardian.is_none(),
+            "the source map already spawns the creature"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn temple_poison_route_gates_the_forcefield_room() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let route = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/authored-kormarak-poison-route")
+            .ok_or("poison route callback")?;
+        assert_eq!(route.trigger, super::Trigger::StepIn);
+        assert_eq!(
+            route.selector.position,
+            Some(super::Position {
+                x: 32497,
+                y: 32216,
+                floor: -12
+            })
+        );
+        assert_eq!(route.selector.ordinal, Some(0));
+        let room = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/authored-kormarak-inner")
+            .ok_or("forcefield room callback")?;
+        assert!(room.storage.iter().any(|s| s.track
+            == "oteryn:quest-progress/chosen/kormarak/gas-route"
+            && s.minimum == 1
+            && s.preserve));
+        Ok(())
+    }
+
+    #[test]
+    fn inukaya_sled_requires_the_native_cure_checkpoint_and_a_ham_each_way() -> Result<(), String> {
+        let callbacks = super::load()?;
+        for (direction, source, destination) in [
+            ("east", (32367, 31058), (32407, 31067)),
+            ("west", (32409, 31066), (32365, 31059)),
+        ] {
+            let key = format!("oteryn:quest-callback/ice-islands/inukaya-sled-{direction}");
+            let callback = callbacks.iter().find(|c| c.key == key).ok_or(key)?;
+            let selector = callback.selector.native.as_ref().ok_or("native sled")?;
+            assert_eq!(
+                selector.position,
+                super::Position {
+                    x: source.0,
+                    y: source.1,
+                    floor: -7
+                }
+            );
+            assert_eq!(selector.ordinal, 1);
+            assert_eq!(selector.appearance, 7266);
+            assert_eq!(
+                callback.teleport,
+                Some(super::Position {
+                    x: destination.0,
+                    y: destination.1,
+                    floor: -7
+                })
+            );
+            assert!(callback.return_on_failure);
+            assert!(callback.requires_world_admission);
+            assert!(
+                callback
+                    .storage
+                    .iter()
+                    .any(|s| s.track.ends_with("/mission06")
+                        && s.minimum == 8
+                        && s.maximum == 8
+                        && s.preserve)
+            );
+            let input = callback.item_on_target.as_ref().ok_or("Ham input")?;
+            assert!(input.on_step);
+            assert_eq!(input.item, "oteryn:item.tibia.i3582");
+            assert_eq!(input.count, 1);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn valley_uses_the_three_placed_shrines() -> Result<(), String> {
+        let callbacks = super::load()?;
+        for (suffix, x, y, floor, item, progress) in [
+            ("inukaya", 32463, 31092, -5, 50336, (-1, 1, 2)),
+            ("muggy-plains", 33187, 31191, -6, 50337, (2, 2, 3)),
+            ("kilmaresh", 33836, 31677, -4, 50338, (3, 3, 4)),
+        ] {
+            let key = format!("oteryn:quest-callback/authored-mystery-{suffix}");
+            let callback = callbacks.iter().find(|c| c.key == key).ok_or(key)?;
+            assert_eq!(
+                callback.selector.position,
+                Some(super::Position { x, y, floor })
+            );
+            assert_eq!(callback.selector.appearance, Some(10225));
+            assert_eq!(callback.selector.ordinal, Some(1));
+            let [storage] = callback.storage.as_slice() else {
+                return Err("expected the Valley fragment stage".into());
+            };
+            assert_eq!((storage.minimum, storage.maximum, storage.set), progress);
+            assert_eq!(
+                callback
+                    .effects
+                    .item_reward
+                    .as_ref()
+                    .ok_or("shrine reward")?
+                    .item,
+                format!("oteryn:item.tibia.i{item}")
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn completion_is_bounded_terminal_and_requires_unique_claim_identities() -> Result<(), String> {
         let document: serde_json::Value = serde_json::from_str(include_str!(
@@ -2949,6 +3174,9 @@ mod disguise_tests {
             .into_iter()
             .find(|c| c.key == "oteryn:quest-callback/authored-venore-machine-9")
             .ok_or("fixture callback")?;
+        // Maintenance now records each machine independently. Exercise the
+        // disguise validator with an earning transition into the test range.
+        callback.storage[0].set = 10;
         let rule = Disguise {
             track: callback.storage[0].track.clone(),
             minimum: 10,

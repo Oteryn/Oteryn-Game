@@ -39,6 +39,27 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual({r['npc']:r['cell'] for r in actual},expected)
         self.assertTrue(all(r['provenance'] for r in actual))
 
+    def test_marid_journey_npcs_use_crystal_global_anchors(self):
+        expected = {
+            "bo_ques": (33102, 32521, 5),
+            "fa_hradin": (33102, 32540, 5),
+            "gabel": (33101, 32520, 1),
+            "haroun": (33109, 32525, 4),
+            "maryza": (32634, 31889, 9),
+            "melchior": (33142, 32817, 7),
+            "nah_bob": (33103, 32520, 2),
+            "rata_mari": (33037, 32626, 7),
+            "the_orc_king": (32983, 31732, 9),
+            "umar": (33102, 32532, 6),
+        }
+        actual = []
+        for record in self.records:
+            row = record["declaration"]
+            key = row["npc"].removeprefix("oteryn:npc.")
+            if key in expected:
+                actual.append((key, tuple(row["cell"][axis] for axis in ("x", "y", "floor"))))
+        self.assertEqual(sorted(actual), sorted(expected.items()))
+
     def test_jack_springer_uses_the_pinned_isle_of_the_kings_cell(self):
         rows = [r['declaration'] for r in self.records
                 if r['declaration']['npc'] == 'oteryn:npc.jack_springer']

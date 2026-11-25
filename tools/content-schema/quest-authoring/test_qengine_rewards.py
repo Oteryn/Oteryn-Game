@@ -938,9 +938,19 @@ class QuestRewards(unittest.TestCase):
                 "sam-backpack",
             },
         )
-        self.assertEqual(sum(c["outfit"] is not None for c in callbacks), 96 + 2)
-        # Three Golden ownership branches advance the programme without a grant.
-        self.assertEqual(sum(c["outfit"] is None for c in callbacks), 153)
+        completion_variants = {
+            "l1-warmaster-crest-complete",
+            "l1-warmaster-tribal-complete",
+            "l1-wayfarer-cape-complete",
+            "l1-wayfarer-hat-complete",
+        }
+        outfit_keys = {c["key"].rsplit("/", 1)[-1] for c in callbacks if c["outfit"] is not None}
+        self.assertLessEqual(completion_variants, outfit_keys)
+        self.assertEqual(
+            sum(c["outfit"] is not None for c in callbacks),
+            97 + len(completion_variants),
+        )
+        self.assertEqual(sum(c["outfit"] is None for c in callbacks), 148)
         self.assertTrue(
             any(len(c["take"]) > 1 and any(i["count"] == 100 for i in c["take"]) for c in callbacks)
         )

@@ -7,7 +7,9 @@ import encounter_loot_item_admissions as source
 
 # Crystal 201189f8 enraged_arbaziloth.lua hard-mode equipment.
 ARBAZILOTH_HARD_ITEMS = {f'oteryn:item.tibia.i{i}' for i in (49531, 49532, 49533, 49534, 50189)}
-ITEMS = ARBAZILOTH_HARD_ITEMS | {f'oteryn:item.tibia.i{i}' for i in (
+# Crystal 201189f8 cultist loot includes the quest doll and all four hymn sheets.
+CULT_LOOT_ITEMS = {f'oteryn:item.tibia.i{i}' for i in (5810, 6087, 6088, 6089, 6090)}
+ITEMS = ARBAZILOTH_HARD_ITEMS | CULT_LOOT_ITEMS | {f'oteryn:item.tibia.i{i}' for i in (
     2863, 2950, 3019, 3022, 3023, 3024, 3304, 3331, 3334, 3335, 3339, 3432,
     3573, 5883, 5930, 7396, 8897, 8898, 9615, 10244, 10290, 12482, 12483, 12509,
 )}
@@ -27,12 +29,19 @@ def admit(root, items, order):
         raise ValueError('protected loot is missing a canonical Item definition')
 
     existing = {r['production_definition']['production_key']: r for r in items['records']}
-    new = [definition for key, definition in sorted(definitions.items()) if key not in existing]
-    ids = {int(definition['identity']['key'].rsplit('.i', 1)[1]) for definition in new}
+    needs_proof = [
+        definition for key, definition in sorted(definitions.items())
+        if key not in existing or (
+            key in CULT_LOOT_ITEMS
+            and native_loot_yield_facts(definition['identity'], existing[key]) is None
+        )
+    ]
+    ids = {int(definition['identity']['key'].rsplit('.i', 1)[1]) for definition in needs_proof}
     observed = source.facts(root, ids, allow_containers=True) if ids else {}
     xml = (root / 'imports/canary/items-xml/items.xml').read_bytes()
-    for profile in custody.qualify_many(root, new, xml, terminal_expiry=True):
-        key = profile['production_definition']['production_key']
+    for qualified in custody.qualify_many(root, needs_proof, xml, terminal_expiry=True):
+        key = qualified['production_definition']['production_key']
+        profile = existing.get(key, qualified)
         # The quest importer preserves canonical Unknowns outside its physical
         # scope. Loot also needs the pinned classification and fresh-instance
         # charge/expiry facts, without overwriting known Quest or combat facts.
@@ -44,8 +53,9 @@ def admit(root, items, order):
             if source.accepted.known_conflict(canonical, proven):
                 raise ValueError(f'protected loot canonical {group} differs: {key}')
             profile['semantics'][group] = source.accepted.accepted_first(canonical, proven)
-        existing[key] = profile
-        items['records'].append(profile)
+        if key not in existing:
+            existing[key] = profile
+            items['records'].append(profile)
     for key, definition in definitions.items():
         if native_loot_yield_facts(definition['identity'], existing[key]) is None:
             raise ValueError(f'protected loot lacks native custody: {key}')

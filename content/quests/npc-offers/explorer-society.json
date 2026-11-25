@@ -1,0 +1,2145 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "bonelord secrets"
+      ],
+      "topic": 0,
+      "next_topic": 17,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_lizard_urn",
+          "minimum": 29,
+          "maximum": 29,
+          "set": 29,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 29,
+          "maximum": 29,
+          "set": 30
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_bonelord_secret",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 30
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/bonelords_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you take on bonelord secrets?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "bonelord secrets"
+      ],
+      "topic": 0,
+      "next_topic": 18,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_bonelord_secret",
+          "minimum": 31,
+          "maximum": 31,
+          "set": 32
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 30,
+          "maximum": 30,
+          "set": 32
+        }
+      ],
+      "reply": [
+        "Do you have the item for bonelord secrets?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "butterfly hunt"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 9
+        }
+      ],
+      "reply": [
+        "Will you take on butterfly hunt?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "butterfly hunt"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        }
+      ],
+      "reply": [
+        "Do you have the item for butterfly hunt?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "butterfly hunt"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14
+        }
+      ],
+      "reply": [
+        "Do you have the item for butterfly hunt?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "butterfly hunt"
+      ],
+      "topic": 0,
+      "next_topic": 10,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 17
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 17
+        }
+      ],
+      "reply": [
+        "Do you have the item for butterfly hunt?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "elven book"
+      ],
+      "topic": 0,
+      "next_topic": 22,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_elven_poetry",
+          "minimum": 37,
+          "maximum": 37,
+          "set": 38
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 36,
+          "maximum": 36,
+          "set": 38
+        }
+      ],
+      "reply": [
+        "Do you have the item for elven book?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "elven poetry"
+      ],
+      "topic": 0,
+      "next_topic": 21,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 35,
+          "set": 35,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 35,
+          "maximum": 35,
+          "set": 36
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_elven_poetry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 36
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/elven_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you take on elven poetry?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "giant smith hammer"
+      ],
+      "topic": 0,
+      "next_topic": 34,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/giant_smith_hammer/hammer",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Did you recover the giant smith hammer?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "ice delivery"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Will you take on ice delivery?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "ice delivery"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "reply": [
+        "Do you have the item for ice delivery?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "join"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Would you like to join the Explorer Society?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "lizard urn"
+      ],
+      "topic": 0,
+      "next_topic": 15,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 26,
+          "maximum": 26,
+          "set": 26,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 26,
+          "maximum": 26,
+          "set": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_lizard_urn",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/chorurn_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you take on lizard urn?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "lizard urn"
+      ],
+      "topic": 0,
+      "next_topic": 16,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_lizard_urn",
+          "minimum": 28,
+          "maximum": 28,
+          "set": 29
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 29
+        }
+      ],
+      "reply": [
+        "Do you have the item for lizard urn?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "memory stone"
+      ],
+      "topic": 0,
+      "next_topic": 23,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_elven_poetry",
+          "minimum": 38,
+          "maximum": 38,
+          "set": 38,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 38,
+          "maximum": 38,
+          "set": 39
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_memory_stone",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 39
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/memory_stone_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you take on memory stone?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "memory stone"
+      ],
+      "topic": 0,
+      "next_topic": 24,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_memory_stone",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 39,
+          "maximum": 39,
+          "set": 41
+        }
+      ],
+      "reply": [
+        "Do you have the item for memory stone?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 27,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 44,
+          "maximum": 44,
+          "set": 44,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 45
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 44,
+          "maximum": 44,
+          "set": 45
+        }
+      ],
+      "reply": [
+        "Will you aid our research into astral travel?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 29,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 46,
+          "maximum": 46,
+          "set": 47
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 46,
+          "maximum": 46,
+          "set": 47
+        }
+      ],
+      "reply": [
+        "Do you have the item for mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 30,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 47,
+          "maximum": 47,
+          "set": 47,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 47,
+          "maximum": 47,
+          "set": 48
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_dress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 48
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/banshee_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you take on mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 31,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_dress",
+          "minimum": 49,
+          "maximum": 49,
+          "set": 50
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 48,
+          "maximum": 48,
+          "set": 50
+        }
+      ],
+      "reply": [
+        "Do you have the item for mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 32,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_stone",
+          "minimum": 52,
+          "maximum": 52,
+          "set": 53
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 52,
+          "maximum": 52,
+          "set": 53
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/spectral_stone",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/spectral_stone_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help establish astral travel between our bases?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "no"
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Did the sample melt?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "orc powder"
+      ],
+      "topic": 0,
+      "next_topic": 19,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_bonelord_secret",
+          "minimum": 32,
+          "maximum": 32,
+          "set": 32,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 32,
+          "maximum": 32,
+          "set": 33
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 33
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/orc_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you take on orc powder?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "orc powder"
+      ],
+      "topic": 0,
+      "next_topic": 20,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 34,
+          "maximum": 34,
+          "set": 35
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 33,
+          "maximum": 33,
+          "set": 35
+        }
+      ],
+      "reply": [
+        "Do you have the item for orc powder?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "pickaxe"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 1,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 1,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Do you have the item for pickaxe?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "plant collection"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 17,
+          "maximum": 17,
+          "set": 17,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 17,
+          "maximum": 17,
+          "set": 18
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 18
+        }
+      ],
+      "reply": [
+        "Will you take on plant collection?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "plant collection"
+      ],
+      "topic": 0,
+      "next_topic": 12,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 19,
+          "maximum": 19,
+          "set": 20
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 19,
+          "maximum": 19,
+          "set": 20
+        }
+      ],
+      "reply": [
+        "Do you have the item for plant collection?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "plant collection"
+      ],
+      "topic": 0,
+      "next_topic": 13,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 22,
+          "maximum": 22,
+          "set": 23
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 22,
+          "maximum": 22,
+          "set": 23
+        }
+      ],
+      "reply": [
+        "Do you have the item for plant collection?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "plant collection"
+      ],
+      "topic": 0,
+      "next_topic": 14,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 25,
+          "maximum": 25,
+          "set": 26
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 25,
+          "maximum": 25,
+          "set": 26
+        }
+      ],
+      "reply": [
+        "Do you have the item for plant collection?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "rune writings"
+      ],
+      "topic": 0,
+      "next_topic": 25,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_memory_stone",
+          "minimum": 41,
+          "maximum": 41,
+          "set": 41,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 41,
+          "maximum": 41,
+          "set": 42
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 42
+        }
+      ],
+      "reply": [
+        "Will you take on rune writings?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "rune writings"
+      ],
+      "topic": 0,
+      "next_topic": 26,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 43,
+          "maximum": 43,
+          "set": 44
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 43,
+          "maximum": 43,
+          "set": 44
+        }
+      ],
+      "reply": [
+        "Do you have the item for rune writings?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "skull of ratha"
+      ],
+      "topic": 0,
+      "next_topic": 33,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/skull_of_ratha/bag1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Did you recover the skull of ratha?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Our initiation requires a pickaxe from Uzgod in Kazordoon. Will you fetch it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.angus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 27,
+      "next_topic": 28,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 44,
+          "maximum": 44,
+          "set": 44,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 45
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 44,
+          "maximum": 44,
+          "set": 45
+        }
+      ],
+      "reply": [
+        "We need fresh ectoplasm from a ghost. Will you collect it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lurik",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_astral_portals",
+          "minimum": 56,
+          "maximum": 56,
+          "set": 56,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_islandof_dragons",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 57
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 56,
+          "maximum": 56,
+          "set": 57
+        }
+      ],
+      "reply": [
+        "Can you investigate the history of the frost dragons of Okolnir?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 44,
+          "maximum": 44
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "bonelord secrets"
+      ],
+      "topic": 0,
+      "next_topic": 17,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_lizard_urn",
+          "minimum": 29,
+          "maximum": 29,
+          "set": 29,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 29,
+          "maximum": 29,
+          "set": 30
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_bonelord_secret",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 30
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/bonelords_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you take on bonelord secrets?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "bonelord secrets"
+      ],
+      "topic": 0,
+      "next_topic": 18,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_bonelord_secret",
+          "minimum": 31,
+          "maximum": 31,
+          "set": 32
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 30,
+          "maximum": 30,
+          "set": 32
+        }
+      ],
+      "reply": [
+        "Do you have the item for bonelord secrets?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "butterfly hunt"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 9
+        }
+      ],
+      "reply": [
+        "Will you take on butterfly hunt?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "butterfly hunt"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        }
+      ],
+      "reply": [
+        "Do you have the item for butterfly hunt?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "butterfly hunt"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14
+        }
+      ],
+      "reply": [
+        "Do you have the item for butterfly hunt?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "butterfly hunt"
+      ],
+      "topic": 0,
+      "next_topic": 10,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 17
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 17
+        }
+      ],
+      "reply": [
+        "Do you have the item for butterfly hunt?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "elven book"
+      ],
+      "topic": 0,
+      "next_topic": 22,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_elven_poetry",
+          "minimum": 37,
+          "maximum": 37,
+          "set": 38
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 36,
+          "maximum": 36,
+          "set": 38
+        }
+      ],
+      "reply": [
+        "Do you have the item for elven book?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "elven poetry"
+      ],
+      "topic": 0,
+      "next_topic": 21,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 35,
+          "set": 35,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 35,
+          "maximum": 35,
+          "set": 36
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_elven_poetry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 36
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/elven_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you take on elven poetry?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "giant smith hammer"
+      ],
+      "topic": 0,
+      "next_topic": 34,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/giant_smith_hammer/hammer",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Did you recover the giant smith hammer?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "ice delivery"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Will you take on ice delivery?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "ice delivery"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "reply": [
+        "Do you have the item for ice delivery?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "join"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Would you like to join the Explorer Society?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "lizard urn"
+      ],
+      "topic": 0,
+      "next_topic": 15,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 26,
+          "maximum": 26,
+          "set": 26,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 26,
+          "maximum": 26,
+          "set": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_lizard_urn",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/chorurn_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you take on lizard urn?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "lizard urn"
+      ],
+      "topic": 0,
+      "next_topic": 16,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_lizard_urn",
+          "minimum": 28,
+          "maximum": 28,
+          "set": 29
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 29
+        }
+      ],
+      "reply": [
+        "Do you have the item for lizard urn?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "memory stone"
+      ],
+      "topic": 0,
+      "next_topic": 23,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_elven_poetry",
+          "minimum": 38,
+          "maximum": 38,
+          "set": 38,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 38,
+          "maximum": 38,
+          "set": 39
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_memory_stone",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 39
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/memory_stone_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you take on memory stone?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "memory stone"
+      ],
+      "topic": 0,
+      "next_topic": 24,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_memory_stone",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 39,
+          "maximum": 39,
+          "set": 41
+        }
+      ],
+      "reply": [
+        "Do you have the item for memory stone?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 27,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 44,
+          "maximum": 44,
+          "set": 44,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 45
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 44,
+          "maximum": 44,
+          "set": 45
+        }
+      ],
+      "reply": [
+        "Will you aid our research into astral travel?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 29,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 46,
+          "maximum": 46,
+          "set": 47
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 46,
+          "maximum": 46,
+          "set": 47
+        }
+      ],
+      "reply": [
+        "Do you have the item for mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 30,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 47,
+          "maximum": 47,
+          "set": 47,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 47,
+          "maximum": 47,
+          "set": 48
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_dress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 48
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/banshee_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you take on mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 31,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_dress",
+          "minimum": 49,
+          "maximum": 49,
+          "set": 50
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 48,
+          "maximum": 48,
+          "set": 50
+        }
+      ],
+      "reply": [
+        "Do you have the item for mission?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 32,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_spectral_stone",
+          "minimum": 52,
+          "maximum": 52,
+          "set": 53
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 52,
+          "maximum": 52,
+          "set": 53
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/spectral_stone",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/spectral_stone_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help establish astral travel between our bases?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "no"
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ice_delivery",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Did the sample melt?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/field_course",
+          "minimum": 0,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "orc powder"
+      ],
+      "topic": 0,
+      "next_topic": 19,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_bonelord_secret",
+          "minimum": 32,
+          "maximum": 32,
+          "set": 32,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 32,
+          "maximum": 32,
+          "set": 33
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 33
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/orc_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you take on orc powder?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "orc powder"
+      ],
+      "topic": 0,
+      "next_topic": 20,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 34,
+          "maximum": 34,
+          "set": 35
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 33,
+          "maximum": 33,
+          "set": 35
+        }
+      ],
+      "reply": [
+        "Do you have the item for orc powder?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "pickaxe"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 1,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 1,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Do you have the item for pickaxe?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "plant collection"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_butterfly_hunt",
+          "minimum": 17,
+          "maximum": 17,
+          "set": 17,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 17,
+          "maximum": 17,
+          "set": 18
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 18
+        }
+      ],
+      "reply": [
+        "Will you take on plant collection?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "plant collection"
+      ],
+      "topic": 0,
+      "next_topic": 12,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 19,
+          "maximum": 19,
+          "set": 20
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 19,
+          "maximum": 19,
+          "set": 20
+        }
+      ],
+      "reply": [
+        "Do you have the item for plant collection?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "plant collection"
+      ],
+      "topic": 0,
+      "next_topic": 13,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 22,
+          "maximum": 22,
+          "set": 23
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 22,
+          "maximum": 22,
+          "set": 23
+        }
+      ],
+      "reply": [
+        "Do you have the item for plant collection?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "plant collection"
+      ],
+      "topic": 0,
+      "next_topic": 14,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_plant_collection",
+          "minimum": 25,
+          "maximum": 25,
+          "set": 26
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 25,
+          "maximum": 25,
+          "set": 26
+        }
+      ],
+      "reply": [
+        "Do you have the item for plant collection?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "rune writings"
+      ],
+      "topic": 0,
+      "next_topic": 25,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_memory_stone",
+          "minimum": 41,
+          "maximum": 41,
+          "set": 41,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 41,
+          "maximum": 41,
+          "set": 42
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 42
+        }
+      ],
+      "reply": [
+        "Will you take on rune writings?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "rune writings"
+      ],
+      "topic": 0,
+      "next_topic": 26,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 43,
+          "maximum": 43,
+          "set": 44
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 43,
+          "maximum": 43,
+          "set": 44
+        }
+      ],
+      "reply": [
+        "Do you have the item for rune writings?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "skull of ratha"
+      ],
+      "topic": 0,
+      "next_topic": 33,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/skull_of_ratha/bag1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Did you recover the skull of ratha?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Our initiation requires a pickaxe from Uzgod in Kazordoon. Will you fetch it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.mortimer",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 27,
+      "next_topic": 28,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_rune_writings",
+          "minimum": 44,
+          "maximum": 44,
+          "set": 44,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_ectoplasm",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 45
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 44,
+          "maximum": 44,
+          "set": 45
+        }
+      ],
+      "reply": [
+        "We need fresh ectoplasm from a ghost. Will you collect it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uzgod",
+      "keywords": [
+        "brooch"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/uzgod_brooch_received",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you find my family brooch?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uzgod",
+      "keywords": [
+        "pickaxe"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Are you here for the society’s pickaxe?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uzgod",
+      "keywords": [
+        "pickaxe"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/uzgod_brooch_received",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Your pickaxe is ready. Would you like it now?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uzgod",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/joining_the_explorers",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "I can put your order first if you recover something for me. Interested?"
+      ]
+    }
+  ]
+}

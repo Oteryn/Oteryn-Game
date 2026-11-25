@@ -276,6 +276,80 @@
         "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_prisoner.lua:125",
         "content/quests/authoring/paradox-tower.md"
       ]
+    },
+    {
+      "quest": "oteryn:quest.mad_mage_room_quest",
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "yes"
+      ],
+      "outfit": null,
+      "achievement": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_prisoner.lua:59-104:sha256:a3b582c47aabc693835fe18959ba03e58100602779df215315627e613502e9e4"
+      ],
+      "key": "oteryn:quest-reward/l6-mad-mage-prisoner-apples",
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3585",
+          "count": 7
+        }
+      ],
+      "give": null,
+      "reply": [
+        "Fine apples. Are you sure you want the key?"
+      ],
+      "failure_reply": [
+        "Bring more apples first."
+      ],
+      "counter": {
+        "track": "oteryn:quest-progress/l6/mad-mage/prisoner/payments",
+        "maximum": 2147483647
+      }
+    },
+    {
+      "quest": "oteryn:quest.mad_mage_room_quest",
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "yes"
+      ],
+      "outfit": null,
+      "achievement": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_prisoner.lua:59-104:sha256:a3b582c47aabc693835fe18959ba03e58100602779df215315627e613502e9e4"
+      ],
+      "key": "oteryn:quest-reward/l6-mad-mage-prisoner-key",
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/mad-mage/prisoner",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i2969",
+        "count": 1,
+        "contents": [],
+        "key_number": 3666
+      },
+      "reply": [
+        "Take it, then. Good luck surviving what is behind that door."
+      ]
     }
   ]
 }

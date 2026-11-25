@@ -147,6 +147,11 @@ CHECKS = (
     ["python3", "tools/content-migration/regional_npc_prices.py", "--check"],
     [
         "python3",
+        "tools/content-schema/world-authoring/quest_access_bindings.py",
+        "--check",
+    ],
+    [
+        "python3",
         "tools/content-schema/world-object-authoring/spawn_ground.py",
         "--check",
     ],
@@ -164,7 +169,10 @@ CHECKS = (
     ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/spirit_will_pickups.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/native_scene_callbacks.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/qengine_access.py", "--check"],
     [
         "python3",
         "tools/content-migration/refresh_season_creature_inventory.py",
@@ -1113,6 +1121,7 @@ def main() -> int:
     refresh_starter_attack_profiles()
     run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
+    run(["python3", "tools/content-schema/world-authoring/quest_access_bindings.py"])
     run(
         [
             "python3",
@@ -1120,6 +1129,7 @@ def main() -> int:
             "--apply",
         ]
     )
+    run(["python3", "tools/content-schema/quest-authoring/native_scene_callbacks.py"])
     run(
         [
             "python3",
@@ -1194,6 +1204,7 @@ def main() -> int:
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
     run(["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py"])
+    run(["python3", "tools/content-schema/world-authoring/spirit_will_pickups.py"])
     for tool in AUTHORING_TOOLS:
         if tool.endswith("/reward_claim_authoring.py"):
             run(

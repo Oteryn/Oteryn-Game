@@ -301,6 +301,11 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
             }
             deps.initialize(&owner).await;
             admit_reward_character(&owner, &admitted, &chest.claim).await?;
+            if super::source_quest_rewards_fixtures::paradox_reward(&chest.claim) {
+                super::source_quest_rewards_fixtures::seed_paradox_riddle(
+                    &owner, &admitted, &h, &authority,
+                ).await?;
+            }
             let mut stale = admitted;
             let mut stale_fence = fence;
             stale_fence.character_lease_generation += 1;

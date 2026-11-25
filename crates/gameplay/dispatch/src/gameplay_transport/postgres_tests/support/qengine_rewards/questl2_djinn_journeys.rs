@@ -48,6 +48,9 @@ pub(super) async fn exercise(
         "the_orc_king",
         "haroun",
         "nah_bob",
+        "melchior",
+        "umar",
+        "maryza",
     ];
     let refs = keys.map(|k| format!("oteryn:npc.{k}"));
     let npcs = super::super::questl2_fixture::install_at(
@@ -60,6 +63,7 @@ pub(super) async fn exercise(
             (33294, 31675), (33295, 31675), (33291, 31676),
             (33292, 31676), (33293, 31676), (33294, 31676),
             (33295, 31676), (33291, 31677), (33295, 31677),
+            (33291, 31678), (33295, 31678), (33296, 31677),
         ].map(|(x, y)| Position { x, y, floor: -15 }),
     )
     .await?;
@@ -128,6 +132,32 @@ pub(super) async fn exercise(
     )
     .await?;
     act!(faction, "finish", NpcIntentDisposition::Rejected);
+    if !efreet {
+        act!(faction, "enlist", NpcIntentDisposition::Rejected);
+        for (command, npc, text) in [
+            (18100, npcs[12], "hi"),
+            (18101, npcs[12], "word of greeting"),
+            (18102, npcs[12], "bye"),
+            (18103, npcs[13], "djanni'hah"),
+            (18104, npcs[13], "passage"),
+            (18105, npcs[13], "yes"),
+            (18106, npcs[13], "yes"),
+            (18107, npcs[13], "bye"),
+        ] {
+            assert_eq!(
+                talk(owner, admitted, npc, command, text).await?,
+                NpcIntentDisposition::Ok,
+                "Marid introduction: {text}"
+            );
+        }
+        let door: i64 = sqlx::query_scalar(
+            "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+        )
+        .bind(format!("{ROOT}faction/marid_door"))
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(door, 1);
+    }
     act!(faction, "enlist", NpcIntentDisposition::Ok);
     act!(other, "enlist", NpcIntentDisposition::Rejected);
     assert_eq!(track(h, other, "start").await?, 0, "exclusive faction");
@@ -154,11 +184,24 @@ pub(super) async fn exercise(
         assert_eq!(quantity(h, 3233).await?, 0);
     } else {
         act!(faction, "cookbook", NpcIntentDisposition::Rejected);
-        supply(owner, admitted, 3234, 19000).await?;
+        let purchase = callbacks.iter().find(|c| c.key.ends_with("/marid-maryza-cookbook"))
+            .ok_or("Maryza cookbook purchase")?;
+        let buy = || vec!["hi maryza", "cookbook", "yes"];
+        assert_eq!(wire_conversation(owner, admitted, npcs[14], purchase, false, buy()).await?.0,
+                   NpcIntentDisposition::Ok);
+        assert_eq!(quantity(h, 3234).await?, 1);
+        assert_eq!(talk(owner, admitted, npcs[14], 18108, "hi maryza").await?,
+                   NpcIntentDisposition::Ok);
+        assert_eq!(talk(owner, admitted, npcs[14], 18109, "cookbook").await?,
+                   NpcIntentDisposition::Ok);
+        assert_eq!(talk(owner, admitted, npcs[14], 18110, "bye").await?,
+                   NpcIntentDisposition::Ok);
+        assert_eq!(quantity(h, 3234).await?, 1);
         act!(faction, "cookbook", NpcIntentDisposition::Ok);
         assert_eq!(quantity(h, 3234).await?, 0);
         assert_eq!(quantity(h, 3029).await?, 3);
         act!(faction, "spy-mission", NpcIntentDisposition::Ok);
+        assert_eq!(track(h, faction, "door_to_efreet_territory").await?, 1);
         act!(faction, "cheese-request", NpcIntentDisposition::Ok);
         act!(faction, "spy-report-issue", NpcIntentDisposition::Rejected);
         supply(owner, admitted, 3607, 19001).await?;
@@ -180,6 +223,7 @@ pub(super) async fn exercise(
     };
     use_at(owner, admitted, right, UseDisposition::Rejected).await?;
     act!(faction, "lamp-issue", NpcIntentDisposition::Ok);
+    assert_eq!(track(h, faction, "door_to_lamp").await?, 1);
     assert_eq!(quantity(h, 3231).await?, 1);
     act!(faction, "lamp-issue", NpcIntentDisposition::Rejected);
     assert_eq!(quantity(h, 3231).await?, 1, "lamp issued exactly once");

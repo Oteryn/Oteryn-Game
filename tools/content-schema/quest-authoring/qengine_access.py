@@ -1,6 +1,7 @@
 """Exact pinned source bindings for the QENGINE-1 shared access operations."""
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -62,9 +63,7 @@ def callback(
 
 def document():
     thais = "data-global/scripts/quests/thais_lighthouse/"
-    stairs = [
-        {"position": position(32225, 32282, 9), "appearance": 429, "replacement": 7767}
-    ]
+    stairs = [{"position": position(32225, 32282, 9), "appearance": 429, "replacement": 7767}]
     rows = [
         callback(
             "thais-lighthouse-plate" + suffix,
@@ -127,6 +126,19 @@ def document():
             },
         )
     )
+    for x, appearance in [(32353, 1930), (32354, 1931)]:
+        rows.append(
+            callback(
+                f"scale-armor-well-{x}",
+                "scale_armor_quest",
+                "use",
+                "data-global/scripts/actions/other/down_floor.lua:1-11",
+                action=102,
+                at=position(x, 32131, 8),
+                appearance=appearance,
+                teleport=position(x + 1, 32131, 9),
+            )
+        )
     for name, at, to, facing, splash in [
         ("cliff", (32966, 32626, 5), (32968, 32626, 5), None, (32968, 32626, 5)),
         ("splash", (32968, 32630, 7), None, None, (32968, 32630, 7)),
@@ -226,6 +238,37 @@ def document():
             "selected_instance": True,
         }
         rows.append(gas)
+    classic = (
+        ROOT
+        / "tools/content-schema/world-authoring/samples/quest-chest-bindings/classic-quests.json"
+    )
+    quest_shard = "content/quests/definitions/quests-00000-00099.json"
+    quest_bytes = (ROOT / quest_shard).read_bytes()
+    quest_digest = hashlib.sha256(quest_bytes).hexdigest()
+    quest_indices = {
+        row["definition"]["identity"]["key"]: index
+        for index, row in enumerate(json.loads(quest_bytes)["records"])
+    }
+    for prop in json.loads(classic.read_bytes())["wiki_items"]:
+        if "read_callback" not in prop:
+            continue
+        (item,) = prop["items"]
+        row = callback(
+            prop["read_callback"],
+            prop["quest"],
+            "use",
+            "",
+            at=position(*prop["position"]),
+            appearance=item["appearance"],
+        )
+        index = quest_indices[row["quest"]]
+        row["sources"] = [
+            f"canonical:{quest_shard}:1#/records/{index}/definition:sha256:{quest_digest}",
+            prop["source"],
+            classic.relative_to(ROOT).as_posix(),
+        ]
+        row["success_message"] = item["attrs"]["text"]
+        rows.append(row)
     import questpc2_access
 
     questpc2_access.extend(rows, callback, position)
@@ -249,9 +292,9 @@ def document():
 
     for row in questpc_explore_bindings.callbacks(ROOT):
         if row["key"] == engenc_asura_entry.ENTRY:
-            asura = json.loads((ROOT / engenc_asura_entry.OUTPUT).read_bytes())[
-                "quests"
-            ][0]["stages"][0]["trigger"]["callback"]
+            asura = json.loads((ROOT / engenc_asura_entry.OUTPUT).read_bytes())["quests"][0][
+                "stages"
+            ][0]["trigger"]["callback"]
             if {key: value for key, value in row.items() if key != "sources"} != {
                 key: value for key, value in asura.items() if key != "sources"
             }:
@@ -276,9 +319,7 @@ def registered_callbacks():
 
     authored = qm03_world_admission.machine_document(ROOT)
     return document()["callbacks"] + [
-        stage["trigger"]["callback"]
-        for quest in authored["quests"]
-        for stage in quest["stages"]
+        stage["trigger"]["callback"] for quest in authored["quests"] for stage in quest["stages"]
     ]
 
 
@@ -290,10 +331,7 @@ def main():
 
     machine = ROOT / "content/quests/authored-bindings/m03-25-years-time-machine.json"
     machine_text = (
-        json.dumps(
-            qm03_world_admission.machine_document(ROOT), ensure_ascii=False, indent=2
-        )
-        + "\n"
+        json.dumps(qm03_world_admission.machine_document(ROOT), ensure_ascii=False, indent=2) + "\n"
     )
     if args.check:
         if machine.read_text() != machine_text:

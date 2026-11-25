@@ -41,8 +41,10 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
+    include_str!("../../../../content/quests/npc-callbacks/nomads-land.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
+    include_str!("../../../../content/quests/npc-callbacks/classic-quests.json"),
     include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
@@ -55,11 +57,13 @@ const REWARD_CALLBACKS: &[&str] = &[
 mod m09_rookie_tests;
 const REWARD_GREETINGS: &[&str] = &[
     include_str!("../../../../content/dialogues/quests/chosen-reward-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/classic-quest-greetings.json"),
     include_str!("../../../../content/dialogues/quests/qd-greetings.json"),
     include_str!("../../../../content/dialogues/quests/qnpcfx-m10-greetings.json"),
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
     include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
     include_str!("../../../../content/dialogues/quests/m09-rookie-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/nomads-land-greetings.json"),
     include_str!("../../../../content/dialogues/quests/questpc5-targuna-map-greetings.json"),
     include_str!("../../../../content/dialogues/quests/m13-goblin-greetings.json"),
 ];
@@ -1121,7 +1125,12 @@ impl NpcTalkBook {
                     greetings: source_dialogue
                         .and_then(|source| source.greetings.clone())
                         .unwrap_or_else(|| {
-                            GREETINGS
+match reference.key.as_str() {
+                        "oteryn:npc.bo_ques" | "oteryn:npc.umar" => &["djanni'hah"][..],
+                        "oteryn:npc.maryza" => &["hi maryza"],
+                        "oteryn:npc.rata_mari" => &["piedpiper", "hi", "hello", "hail"],
+                        _ => &GREETINGS[..],
+                    }
                                 .iter()
                                 .map(|word| (*word).to_owned())
                                 .chain(

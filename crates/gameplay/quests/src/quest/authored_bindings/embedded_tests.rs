@@ -617,8 +617,19 @@ mod main_native_contract {
         let after = explicit.catalogue();
         // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
-        // Source quest routes and Benjamin's measurement track extend the legacy tracks.
-        assert_eq!(before.tracks.len(), 2137 + 7 + 12 + 1);
+        // A Prisoner records apple payments and the one-time key.
+        // Maryza adds the cookbook track. The remaining package 4 routes add 50 tracks.
+        assert_eq!(before.tracks.len(), 2137 + 7 + 2 + 1 + 50 + 12 + 1);
+        assert_eq!(
+            before.track("oteryn:quest-progress/storage/30022"),
+            Some(&QuestTrack {
+                key: "oteryn:quest-progress/storage/30022".into(),
+                quest: "oteryn:quest.the_djinn_war_marid_faction".into(),
+                initial: 0,
+                min: 0,
+                max: 1,
+            })
+        );
         for pharaoh in ["omruc", "vashresamun"] {
             let key = format!(
                 "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/{pharaoh}_sarcophagus_claim"

@@ -59,6 +59,41 @@ const PAIRS: &[(&str, &str)] = &[
     ("l2-tome-top-tower", "tomes_of_knowledge.top_tower"),
 ];
 
+const PARADOX_CALLBACKS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/quests/world-callbacks/l6-world-puzzles.json"
+));
+const PARADOX_CLAIMS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/interactions/reward_claims/reward-claims-00100-00199.json"
+));
+const PARADOX_PAIRS: &[(&str, &str, &str, u16)] = &[
+    (
+        "paradox-claim-egg",
+        "u7_24.the_paradox_tower.reward.egg",
+        "oteryn:item.tibia.i3215",
+        1,
+    ),
+    (
+        "paradox-claim-gold",
+        "u7_24.the_paradox_tower.reward.gold",
+        "oteryn:item.tibia.i3035",
+        100,
+    ),
+    (
+        "paradox-claim-talon",
+        "u7_24.the_paradox_tower.reward.talon",
+        "oteryn:item.tibia.i3034",
+        32,
+    ),
+    (
+        "paradox-claim-wand",
+        "u7_24.the_paradox_tower.reward.wand",
+        "oteryn:item.tibia.i3073",
+        1,
+    ),
+];
+
 struct Binding {
     callback: Callback,
     claim: NativeClaimBinding,
@@ -71,12 +106,22 @@ fn only(value: &Value, fields: &[&str]) -> bool {
         .is_some_and(|object| object.keys().all(|key| fields.contains(&key.as_str())))
 }
 
-fn bind(
+fn bind(callbacks: &str, claims: &str) -> Result<Vec<Binding>, String> {
+    let pairs = PAIRS.iter().map(|&(callback, claim)| {
+        (
+            callback,
+            format!("oteryn:reward-claim.quest.u8_54.{claim}"),
+            "oteryn:item.tibia.i10217",
+            1,
+        )
+    });
+    bind_pairs(&super::parse(callbacks)?, claims, pairs)
+}
+
+fn bind_pairs<'a>(
     callbacks: &[Callback],
     claims: &str,
-    prefix: &str,
-    pairs: &[(&str, &str)],
-    reward_item: &str,
+    pairs: impl IntoIterator<Item = (&'a str, String, &'a str, u16)>,
 ) -> Result<Vec<Binding>, String> {
     let claims: Value = serde_json::from_str(claims).map_err(|error| error.to_string())?;
     if claims["schema"] != "OTERYN_REWARD_CLAIM_SHARD/v1" || claims["family"] != "RewardClaim" {
@@ -87,17 +132,16 @@ fn bind(
         .ok_or("legacy World claim records")?;
     let mut bindings = Vec::new();
     let mut positions = BTreeSet::new();
-    let reward: ItemReward = serde_json::from_value(json!({
-        "item": reward_item, "count": 1, "contents": [],
-    }))
-    .map_err(|error| error.to_string())?;
-    for (callback_suffix, claim_suffix) in pairs {
+    for (callback_suffix, claim_key, item, count) in pairs {
+        let reward: ItemReward = serde_json::from_value(json!({
+            "item": item, "count": count, "contents": [],
+        }))
+        .map_err(|error| error.to_string())?;
         let key = format!("oteryn:quest-callback/{callback_suffix}");
         let callback = callbacks
             .iter()
             .find(|callback| callback.key == key)
             .ok_or("legacy World callback missing")?;
-        let claim_key = format!("{prefix}{claim_suffix}");
         let matching: Vec<_> = records
             .iter()
             .map(|row| &row["definition"])
@@ -163,8 +207,8 @@ fn bind(
             || placement["appearance_tibia_id"] != appearance
             || placement["reward"]
                 != json!({"items": [{"item": {
-                "family": "Item", "key": reward_item, "revision": "definition-r1"
-            }, "count": 1}]})
+                "family": "Item", "key": item, "revision": "definition-r1"
+            }, "count": count}]})
             || !only(source, &["legacy_unique_ids", "project_position"])
             || source["project_position"]
                 != json!({"x": position.x, "y": position.y, "z": -i16::from(position.floor)})
@@ -210,26 +254,31 @@ fn bind(
     Ok(bindings)
 }
 
-fn bind_tomes(claims: &str) -> Result<Vec<Binding>, String> {
-    bind(
-        &super::parse(CALLBACKS)?,
-        claims,
-        "oteryn:reward-claim.quest.u8_54.",
-        PAIRS,
-        "oteryn:item.tibia.i10217",
-    )
-}
-
 fn load() -> Result<Vec<Binding>, String> {
-    let mut bindings = bind_tomes(CLAIMS)?;
+    let mut bindings = bind(CALLBACKS, CLAIMS)?;
     let tower = crate::quest::authored_bindings::Bindings::parse(SERPENTINE_BINDING.as_bytes())?;
     let tower_callbacks = tower.world_callbacks().cloned().collect::<Vec<_>>();
-    bindings.extend(bind(
+    bindings.extend(bind_pairs(
         &tower_callbacks,
         SERPENTINE_CLAIMS,
-        SERPENTINE_PEARL_CLAIM,
-        &[("authored-serpentine-tower-pearl", "")],
-        "oteryn:item.tibia.i3026",
+        [(
+            "authored-serpentine-tower-pearl",
+            SERPENTINE_PEARL_CLAIM.to_owned(),
+            "oteryn:item.tibia.i3026",
+            1,
+        )],
+    )?);
+    bindings.extend(bind_pairs(
+        &super::parse(PARADOX_CALLBACKS)?,
+        PARADOX_CLAIMS,
+        PARADOX_PAIRS.iter().map(|&(callback, claim, item, count)| {
+            (
+                callback,
+                format!("oteryn:reward-claim.quest.{claim}"),
+                item,
+                count,
+            )
+        }),
     )?);
     Ok(bindings)
 }
@@ -328,7 +377,7 @@ mod tests {
 
     #[test]
     fn a_changed_callback_cannot_borrow_or_escape_the_legacy_identity() -> Result<(), String> {
-        let bindings = bind_tomes(CLAIMS)?;
+        let bindings = bind(CALLBACKS, CLAIMS)?;
         for binding in bindings {
             for mutation in 0..9 {
                 let mut changed = binding.callback.clone();
@@ -388,7 +437,7 @@ mod tests {
                 _ => records.push(records[index].clone()),
             }
             assert!(
-                bind_tomes(&changed.to_string()).is_err(),
+                bind(CALLBACKS, &changed.to_string()).is_err(),
                 "mutation {mutation}"
             );
         }

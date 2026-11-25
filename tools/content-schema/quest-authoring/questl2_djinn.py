@@ -47,6 +47,11 @@ def append(add, state, callbacks, offers, inputs, pin):
                                  ('marid', 'bo_ques', 'Are you interested?')]:
         other = 'marid' if faction == 'efreet' else 'efreet'
         exclusive = [requirement(other, 'start', 0)]
+        if faction == 'marid':
+            exclusive += [
+                {'track': ROOT + 'faction/marid_door', 'minimum': 1, 'maximum': 1},
+                {'track': ROOT + 'faction/efreet_door', 'minimum': 0, 'maximum': 0},
+            ]
         pending = [s(faction, 'start', 0), s(faction, 'mission01', 0)]
         offer(faction, npc, ['mission'], 1, pending, needle, exclusive)
         grant('enlist', faction, npc, ['yes'],
@@ -76,10 +81,10 @@ def append(add, state, callbacks, offers, inputs, pin):
     grant('spy-mission', 'marid', 'fa_hradin', ['mission', 'spy report'],
           [s('marid', 'mission02', 0, 1), s('marid', 'door_to_efreet_territory', 0, 1)],
           'The password is {PIEDPIPER}', requires=[requirement('marid', 'mission01', 2)])
-    grant('cheese-request', 'marid', 'rata_mari', ['spyreport', 'mission'],
+    grant('cheese-request', 'marid', 'rata_mari', ['spyreport', 'mission', 'spy report'],
           [s('marid', 'rata_mari', 0, 1)], 'I need some cheese!',
           requires=[requirement('marid', 'mission02', 1)])
-    offer('marid', 'rata_mari', ['spyreport', 'mission'], 1, [s('marid', 'rata_mari', 1)],
+    offer('marid', 'rata_mari', ['spyreport', 'mission', 'spy report'], 1, [s('marid', 'rata_mari', 1)],
           'have you brought me the cheese', [requirement('marid', 'mission02', 1)])
     grant('spy-report-issue', 'marid', 'rata_mari', ['yes'], [s('marid', 'rata_mari', 1, 2)],
           'Here is the spyreport', topic=1, take=[(3607, 1)], give=(3232, 1),

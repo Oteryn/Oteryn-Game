@@ -1157,8 +1157,10 @@ def test_downstream_quest_producers_follow_inputs_and_precede_consumers() -> Non
     matrix = ("python3", quest_prefix + "quest_completion_matrix.py")
     callback_runs = [index for index, command in enumerate(events) if command == callbacks]
     rooms = ("python3", quest_prefix + "grizzly_rooms.py")
-    assert any(tree < index < events.index(native) for index in callback_runs)
-    assert events.index(("world-metadata",)) < callback_runs[-1] < events.index(rooms)
+    metadata = events.index(("world-metadata",))
+    final_props_before_metadata = max(index for index in callback_runs if index < metadata)
+    assert tree < final_props_before_metadata < events.index(native)
+    assert metadata < callback_runs[-1] < events.index(rooms)
     assert events.count(completion) == 1
     assert tree < events.index(completion) < min(events.index(commands[1]), events.index(matrix))
     final_inputs = max(
