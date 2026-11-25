@@ -317,7 +317,11 @@ def source_cohorts(root):
             ):
                 row["authoring"]["taxonomy"] = copy.deepcopy(taxonomy[key])
         previous = {f"oteryn:item.tibia.i{item}" for item in previous_ids}
-        result.append((name, registered_source_document(root, document), previous))
+        document = registered_source_document(root, document)
+        if module_name == "boss_reward_yield_profiles":
+            from crystal_equipment_slice import complete_boss_yield_pairs
+            complete_boss_yield_pairs(root, document)
+        result.append((name, document, previous))
     return result
 
 

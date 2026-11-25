@@ -44,6 +44,10 @@ fn native_aim(
 #[path = "aim_tests.rs"]
 mod aim_tests;
 
+#[cfg(test)]
+#[path = "weapon_damage_tests.rs"]
+mod weapon_damage_tests;
+
 #[allow(clippy::too_many_arguments)]
 pub async fn prepare_from_owners(
     tx: &mut Transaction<'_, Postgres>,
@@ -734,6 +738,37 @@ fn collect_targets(
 }
 
 #[allow(clippy::too_many_arguments)]
+fn qualify_magnitude(
+    runtime: &ChannelRuntimeV1,
+    before: &PlayerSpellState,
+    owned: &OwnedCastFacts,
+    (actor, session): (ExactActorRef, GameSessionId),
+    spell: &SpellDefinition,
+    content: &NativeGameplayState,
+    plan: &NativeCombatPlan,
+    bindings: &[LiveActorBinding],
+    players: &[(ExactActorRef, &PlayerSpellState)],
+    now_ms: u64,
+) -> Result<PreparedMagnitudeOwner, SpellCastDisposition> {
+    let mut owner = PreparedMagnitudeOwner::qualify(
+        runtime,
+        before,
+        actor,
+        session,
+        owned.magnitude(),
+        plan,
+        bindings,
+        players,
+        now_ms,
+    )
+    .map_err(|_| SpellCastDisposition::Rejected)?;
+    if let Some(weapon) = owned.intrinsic_weapon_for_spell(spell, content) {
+        owner.bind_intrinsic_weapon_damage(weapon);
+    }
+    Ok(owner)
+}
+
+#[allow(clippy::too_many_arguments)]
 fn prepare_preview(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
@@ -791,20 +826,18 @@ fn prepare_preview(
         NativeCombatPlan::Combat(_) | NativeCombatPlan::MassSpiritMend { .. }
     );
     let mut preview_magnitude = if needs_magnitude {
-        Some(
-            PreparedMagnitudeOwner::qualify(
-                runtime,
-                before,
-                actor,
-                session,
-                owned.magnitude(),
-                &preview_plan,
-                bindings,
-                players,
-                facts.now_ms,
-            )
-            .map_err(|_| SpellCastDisposition::Rejected)?,
-        )
+        Some(qualify_magnitude(
+            runtime,
+            before,
+            owned,
+            (actor, session),
+            spell,
+            content,
+            &preview_plan,
+            bindings,
+            players,
+            facts.now_ms,
+        )?)
     } else {
         None
     };
@@ -1033,20 +1066,18 @@ fn prepare_payment(
         return reject();
     };
     let mut magnitude = if needs_magnitude {
-        Some(
-            PreparedMagnitudeOwner::qualify(
-                runtime,
-                before,
-                actor,
-                session,
-                owned.magnitude(),
-                plan,
-                bindings,
-                players,
-                facts.now_ms,
-            )
-            .map_err(|_| SpellCastDisposition::Rejected)?,
-        )
+        Some(qualify_magnitude(
+            runtime,
+            before,
+            owned,
+            (actor, session),
+            spell,
+            content,
+            plan,
+            bindings,
+            players,
+            facts.now_ms,
+        )?)
     } else {
         None
     };
@@ -1315,18 +1346,21 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         .filter(|(a, s, _)| states.get(runtime, *a, *s).is_some())
         .map(|(a, _, state)| (*a, state))
         .collect();
-    let mut magnitude = PreparedMagnitudeOwner::qualify(
+    let mut magnitude = qualify_magnitude(
         runtime,
         &before,
-        saved.binding.caster,
-        saved.binding.command.game_session_id(),
-        owned.magnitude(),
+        owned,
+        (
+            saved.binding.caster,
+            saved.binding.command.game_session_id(),
+        ),
+        spell,
+        content,
         &plan,
         &spatial.bindings,
         &players,
         now.get() / 1000,
-    )
-    .map_err(|_| SpellCastDisposition::Rejected)?;
+    )?;
     magnitude
         .bind_native_health_observations(runtime, owned.native_health_observations())
         .map_err(|_| SpellCastDisposition::Rejected)?;
@@ -1402,7 +1436,6 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         &lowered.batch,
     )
     .await?;
-    states.apply_prey_spell_damage(runtime, &mut lowered.batch);
     let bounty_leech =
         crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses_with_leech(
             runtime,
@@ -1413,6 +1446,7 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
             ),
             decision,
             &mut leech,
+            (states, Some(&mut magnitude)),
         )
         .ok_or(SpellCastDisposition::Rejected)?;
     let cues = delayed_strikes::strike_cues(room, runtime, Some(strike), &spatial.bindings)?;

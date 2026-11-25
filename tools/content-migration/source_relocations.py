@@ -8,13 +8,28 @@ transition once: the pinned path and digest, and the exact current path and dige
 A pin resolves through an entry only when it matches the recorded pinned digest and
 the current file matches the recorded current digest exactly. Any further edit to a
 relocated source therefore fails closed until that edit is reviewed and recorded here.
+Receipts that also require the original byte count can use an exact frozen copy.
 """
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import re
 from pathlib import Path
+
+# Successor8 receipts check both the original digest and byte count.
+# Preserve the exact reviewed packets alongside the live promotion.
+FROZEN_COMPRESSED_SOURCES = {
+    (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
+    ): "tools/content-migration/historical-item-stats-promotion-v2.json.gz",
+    (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "5ef32cfa01e7a319e4ef056592df1aa66e7fbff30b6d86604f5354316436aa3d",
+    ): "tools/content-migration/historical-item-stats-promotion-v2-successor8-v17.json.gz",
+}
 
 # The reviewed spawn map revisions preserve the bound quest placements.
 QUEST_PLAN_PLACEMENT_RELOCATIONS = {
@@ -133,14 +148,7 @@ RELOCATIONS = {
         "82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "5ef32cfa01e7a319e4ef056592df1aa66e7fbff30b6d86604f5354316436aa3d",
-    ),
-    (
-        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
-    ): (
-        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "5ef32cfa01e7a319e4ef056592df1aa66e7fbff30b6d86604f5354316436aa3d",
+        "8d7a7406daf2bc488096475edf6239da26cae30b7ff1f41fc8bade9a83d2ef80",
     ),
     # Numeric17 reuses the Mantra/Bond compiler's source readers. Their behavior
     # is unchanged by the exact Global overlay check on live Mantra/Bond rows.
@@ -370,6 +378,15 @@ def read_text(root: Path, path: str) -> str:
 
 def read_pinned(root: Path, path: str, expected: str) -> bytes | None:
     """The current bytes of a pinned source, or None when its pin does not hold."""
+    frozen = FROZEN_COMPRESSED_SOURCES.get((path, expected))
+    if frozen is not None:
+        archive = Path(root) / frozen
+        if archive.is_file():
+            try:
+                data = gzip.decompress(archive.read_bytes())
+            except (OSError, EOFError):
+                return None
+            return data if digest(data) == expected else None
     relocated = RELOCATIONS.get((path, expected))
     current, current_digest = relocated if relocated else (current_path(path), expected)
     target = Path(root) / current

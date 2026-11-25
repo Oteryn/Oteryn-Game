@@ -3,7 +3,7 @@
 //! from the actual owners; the client supplies only a spatial proposal.
 use super::*;
 use crate::gameplay_transport::spell_presentations::{
-    CueTarget, LocatedCueRequest, QualifiedCueTile,
+    CueTarget, LocatedCueRequest, QualifiedCueTile, monk_bond_impact, uses_elemental_bond,
 };
 use crate::spell::ResolvedEffect;
 use crate::spell::cast::PaidOrdinaryCast;
@@ -65,6 +65,73 @@ fn element(key: &str) -> Result<Element, SpellCastDisposition> {
         _ => return reject(),
     })
 }
+fn impact_asset_binding<'a>(
+    spell: &SpellDefinition,
+    damage_element: Option<Element>,
+    authored: &'a str,
+) -> &'a str {
+    if authored == "canary.appearance:effect/claw_white"
+        && let Some(bond) = damage_element.and_then(|element| monk_bond_impact(spell, element))
+    {
+        return bond;
+    }
+    authored
+}
+
+fn spell_damage_element(
+    content: &NativeGameplayState,
+    equipment: &crate::durability::character_equipment::EquipmentSnapshot,
+    spell: &SpellDefinition,
+    damage_type: &str,
+) -> Result<Element, SpellCastDisposition> {
+    use crate::content::{
+        ReferenceItemField as F, ReferenceModifierElement, ReferenceModifierParameter,
+        ReferenceSkillModifierKind, ReferenceWeaponType,
+    };
+
+    let base = element(damage_type)?;
+    if base != Element::Physical || !uses_elemental_bond(spell) {
+        return Ok(base);
+    }
+    if equipment.content_digest != content.source_digest() {
+        return reject();
+    }
+    // Crystal 201189f8 Monk spenders read the held fist weapon's elemental
+    // bond. Oteryn's canonical weapon claim occupies hand 5.
+    let Some(item) = equipment.items.iter().find(|item| item.slot == 5) else {
+        return Ok(base);
+    };
+    let item = content
+        .item_policy(
+            &item.definition.production_key,
+            &item.definition.revision_ref,
+        )
+        .ok_or(SpellCastDisposition::Rejected)?;
+    let semantics = &item.record().semantics;
+    if !matches!(&semantics.weapon, F::Known(weapon) if weapon.weapon_type == F::Known(ReferenceWeaponType::Fist))
+    {
+        return Ok(base);
+    }
+    let F::Known(group) = &semantics.skill_modifiers else {
+        return Ok(base);
+    };
+    let F::Known(modifiers) = &group.modifiers else {
+        return Ok(base);
+    };
+    Ok(modifiers
+        .iter()
+        .find(|modifier| modifier.kind == ReferenceSkillModifierKind::ElementalBond)
+        .map_or(base, |modifier| match modifier.parameter {
+            F::Known(ReferenceModifierParameter::Element(ReferenceModifierElement::Earth)) => {
+                Element::Earth
+            }
+            F::Known(ReferenceModifierParameter::Element(ReferenceModifierElement::Energy)) => {
+                Element::Energy
+            }
+            _ => base,
+        }))
+}
+
 fn heals_health(effect: &ResolvedEffect) -> bool {
     match effect {
         ResolvedEffect::Heal { .. } => true,
@@ -497,7 +564,7 @@ fn lower(
                     damage_type,
                     magnitude,
                 } => {
-                    let e = element(damage_type)?;
+                    let e = spell_damage_element(content, owned.equipment(), spell, damage_type)?;
                     if healing == Some(true) || damage_element.is_some_and(|old| old != e) {
                         return reject();
                     }
@@ -533,7 +600,10 @@ fn lower(
             }
         }
     }
-    let block_armor = rules::block_armor(spell).map_err(|_| SpellCastDisposition::Rejected)?;
+    let block_armor = rules::block_armor(spell).map_err(|_| SpellCastDisposition::Rejected)?
+        && !(uses_elemental_bond(spell)
+            && damage_element
+                .is_some_and(|element| matches!(element, Element::Earth | Element::Energy)));
     let source_delays = hits
         .iter()
         .map(|h| (h.target, h.delay_ms))
@@ -584,6 +654,9 @@ fn lower(
         None
     };
     if let Some(owner) = magnitude.as_mut() {
+        if let Some(weapon) = owned.intrinsic_weapon_for_spell(spell, content) {
+            owner.bind_intrinsic_weapon_damage(weapon);
+        }
         owner
             .bind_native_health_observations(runtime, owned.native_health_observations())
             .map_err(|_| SpellCastDisposition::Rejected)?;
@@ -867,6 +940,7 @@ fn lower(
                 });
             }
             if let Some(binding) = &p.impact_asset_binding {
+                let binding = impact_asset_binding(spell, damage_element, binding);
                 if is_area || tile_target {
                     for tile in &geometry {
                         if world
@@ -876,7 +950,7 @@ fn lower(
                             && world.area_sight_clear(*tile)
                         {
                             cues.push(LocatedCueRequest {
-                                binding: binding.clone(),
+                                binding: binding.into(),
                                 target: CueTarget::Tile(
                                     QualifiedCueTile::from_owners(room, runtime, cell(*tile)).map_err(|_reason| {
                     #[cfg(test)]
@@ -894,7 +968,7 @@ fn lower(
                             .find(|b| b.source_id == *id)
                             .ok_or(SpellCastDisposition::Rejected)?;
                         cues.push(LocatedCueRequest {
-                            binding: binding.clone(),
+                            binding: binding.into(),
                             target: CueTarget::Actor(target.actor),
                         });
                     }
@@ -1120,6 +1194,95 @@ mod tests {
             &row["dependencies"],
         )
         .unwrap()
+    }
+
+    #[test]
+    fn crystal_equipment_monk_spenders_select_bond_and_impact()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::native_gameplay::{
+            NativeGameplayInput, compile_native_gameplay, decode,
+        };
+        use crate::durability::{
+            character_equipment::{EquipmentSnapshot, EquippedItem},
+            item_mint::TypedDefinitionRef,
+        };
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let mut input =
+            NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))?;
+        input.source_world = None;
+        let room = crate::content::qualify_native_entry_room(
+            crate::content::native_gameplay_test_world_id()?,
+        )?;
+        let artifact = compile_native_gameplay(room.compiled(), &input)?;
+        let state = decode(&artifact.server_artifact)?.state;
+        let mut equipment = EquipmentSnapshot {
+            character: [1; 16],
+            content_digest: state.source_digest(),
+            character_revision: 1,
+            revision: 1,
+            combat_mode: None,
+            items: vec![EquippedItem {
+                slot: 5,
+                item_instance_id: [2; 16],
+                tier: 0,
+                quantity: 1,
+                state_revision: 1,
+                definition: TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: "oteryn:item.tibia.i50167".into(),
+                    revision_ref: "definition-r1".into(),
+                },
+            }],
+        };
+        for (weapon, expected, cue) in [
+            (
+                "oteryn:item.tibia.i50167",
+                Element::Earth,
+                "green_tigerclash",
+            ),
+            (
+                "oteryn:item.tibia.i50251",
+                Element::Energy,
+                "pink_tigerclash",
+            ),
+            ("oteryn:item.tibia.i50157", Element::Physical, "claw_white"),
+        ] {
+            equipment.items[0].definition.production_key = weapon.into();
+            for key in ["tiger_clash", "greater_tiger_clash", "devastating_knockout"] {
+                let key = format!("candidate:spell/{key}");
+                let spell = state
+                    .spell_book()
+                    .spells
+                    .iter()
+                    .find(|spell| spell.key == key)
+                    .ok_or("published Monk spell")?;
+                let (damage_type, authored_impact) = spell
+                    .authored
+                    .as_ref()
+                    .and_then(|source| {
+                        source.dependencies.effects.iter().find_map(|effect| {
+                            Some((
+                                effect.damage_type.as_deref()?,
+                                effect
+                                    .presentation
+                                    .as_ref()?
+                                    .impact_asset_binding
+                                    .as_deref()?,
+                            ))
+                        })
+                    })
+                    .ok_or("published spell damage and impact")?;
+                let actual = spell_damage_element(&state, &equipment, spell, damage_type)
+                    .map_err(|error| format!("{error:?}"))?;
+                assert_eq!(actual, expected, "{key} with {weapon}");
+                assert_eq!(
+                    impact_asset_binding(spell, Some(actual), authored_impact),
+                    format!("canary.appearance:effect/{cue}"),
+                    "{key} with {weapon}"
+                );
+            }
+        }
+        Ok(())
     }
 
     #[test]
@@ -2517,6 +2680,9 @@ pub(in crate::gameplay_transport) async fn prepare_due(
         )
         .map_err(|_| SpellCastDisposition::Rejected)
         .and_then(|mut owner| {
+            if let Some(weapon) = owned.intrinsic_weapon_for_spell(spell, content) {
+                owner.bind_intrinsic_weapon_damage(weapon);
+            }
             owner
                 .bind_native_health_observations(runtime, owned.native_health_observations())
                 .map_err(|_| SpellCastDisposition::Rejected)?;

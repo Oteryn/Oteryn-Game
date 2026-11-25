@@ -96,7 +96,11 @@ mod tests {
     use super::*;
 
     const fn melee(skill: MeleeSkill) -> SwingWeapon {
-        SwingWeapon::Melee { attack: 7, skill }
+        SwingWeapon::Melee {
+            attack: 7,
+            skill,
+            elemental: None,
+        }
     }
 
     #[test]

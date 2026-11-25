@@ -1773,9 +1773,32 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
+    existing_items = {"records": items["records"].copy()}
+    import crystal_equipment_quarter_1
+    crystal_equipment_quarter_1.apply(root, items, provider_order)
+    import crystal_equipment_slice
+    crystal_equipment_slice.admit(root, items, provider_order)
+    import crystal_equipment_profiles
+    crystal_equipment_profiles.apply_native(root, items, provider_order)
+    import crystal_equipment_slice_4
+    crystal_equipment_slice_4.apply(root, items, provider_order)
+    # Apply displayed stats to existing Items after Crystal supplies the
+    # concrete equipment patterns, including launcher and quiver compatibility.
+    from import_cyclopedia_global import load_capture
+
+    capture = load_capture(root)
+    # These three Crystal vectors are qualified in full. Keep the captured
+    # Cyclopedia details for all other fields on their records.
+    for identifier in (34088, 34089, 43880):
+        row = capture[identifier]
+        basic = row["basic"].copy()
+        del basic["Skill Boost"]
+        capture[identifier] = {**row, "basic": basic}
+    item_detail_source_facts.apply_capture_stats(existing_items, capture)
     import forge_item_profiles
 
-    forge_item_profiles.project(items, forge_item_profiles.owners(root))
+    # The Crystal equipment admissions do not extend the existing Forge policy.
+    forge_item_profiles.project(existing_items, forge_item_profiles.owners(root))
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
@@ -1789,8 +1812,15 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
-    # Complete ranged authoring for every admitted Item, including late loot yields.
-    ranged_item_profiles.apply_native(root, generated)
+    # Keep the qualified Crystal rod costs where Global does not show a mana value.
+    ranged_item_profiles.apply_native(
+        root,
+        generated,
+        retained_keys={
+            crystal_equipment_slice_4.item_key(identifier)
+            for identifier in (49529, 49885, 49886, 49887)
+        },
+    )
     # SRX-1 keeps the historical single-line provider byte-identical. The loader
     # composes only the changed records from a separately pinned small supplement.
     import srx1_profile_updates

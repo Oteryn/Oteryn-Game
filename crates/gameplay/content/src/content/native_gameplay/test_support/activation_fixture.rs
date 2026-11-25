@@ -329,6 +329,12 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         "oteryn:creature.demodras",
         "oteryn:creature.the_percht_queen",
         "oteryn:creature.goshnar_s_spite",
+        // Crystal equipment admits their three remaining source yields (31577–31579).
+        "oteryn:creature.count_vlarkorth",
+        "oteryn:creature.duke_krule",
+        "oteryn:creature.earl_osam",
+        "oteryn:creature.lord_azaram",
+        "oteryn:creature.sir_baeloc",
     ];
     let mut missing = 0;
     let mut inadmissible = 0;
@@ -640,7 +646,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 260, 38, 39)
+        (52, 260, 33, 44)
     );
     assert_eq!(
         admitted,
@@ -654,9 +660,12 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.bakragore",
             "oteryn:creature.chagorz",
             "oteryn:creature.chayenne",
+            "oteryn:creature.count_vlarkorth",
             "oteryn:creature.demodras",
             "oteryn:creature.dragonking_zyrtarch",
             "oteryn:creature.dreadful_disruptor",
+            "oteryn:creature.duke_krule",
+            "oteryn:creature.earl_osam",
             "oteryn:creature.enraged_arbaziloth",
             "oteryn:creature.eradicator",
             "oteryn:creature.eradicator2",
@@ -672,10 +681,12 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.ice_overlord",
             "oteryn:creature.ichgahal",
             "oteryn:creature.koshei_the_deathless",
+            "oteryn:creature.lord_azaram",
             "oteryn:creature.mitmah_vanguard",
             "oteryn:creature.murcion",
             "oteryn:creature.outburst",
             "oteryn:creature.rupture",
+            "oteryn:creature.sir_baeloc",
             "oteryn:creature.sugar_daddy",
             "oteryn:creature.tazhadur",
             "oteryn:creature.the_first_dragon",
@@ -692,20 +703,15 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         [
             "oteryn:creature.black_vixen",
             "oteryn:creature.bloodback",
-            "oteryn:creature.count_vlarkorth",
             "oteryn:creature.darkfang",
-            "oteryn:creature.duke_krule",
-            "oteryn:creature.earl_osam",
             "oteryn:creature.ferumbras",
             "oteryn:creature.ferumbras_mortal_shell",
             "oteryn:creature.glooth_fairy",
             "oteryn:creature.king_zelos",
-            "oteryn:creature.lord_azaram",
             "oteryn:creature.lord_retro",
             "oteryn:creature.professor_maxxen",
             "oteryn:creature.scarlett_etzel",
             "oteryn:creature.sharpclaw",
-            "oteryn:creature.sir_baeloc",
             "oteryn:creature.the_blazing_time_guardian",
             "oteryn:creature.the_freezing_time_guardian",
             "oteryn:creature.the_time_guardian",

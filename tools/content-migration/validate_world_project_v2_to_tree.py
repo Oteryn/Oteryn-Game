@@ -663,8 +663,10 @@ def validate_item_enrichment(
     effective_items: list[Any],
 ) -> tuple[int, int, int, int]:
     """Round-trip Item authoring/taxonomy/relations and prove per-fact provenance."""
+    from crystal_equipment_profiles import source_profiles
     from quest_reward_item_semantics import load_admissions
 
+    crystal_equipment = source_profiles(ROOT)
     reward_admissions = load_admissions(ROOT)
     loot_stack_promotions = source_loot_stack_promotions(ROOT)
     staged = load(
@@ -947,6 +949,16 @@ def validate_item_enrichment(
             require(
                 known.get("equipment.patterns") == equipment,
                 "EQUIPMENT_WITHOUT_QUALIFIED_WIKI_PATTERN",
+            )
+        # The historical receipts retain the Wiki facts. Crystal's qualified
+        # equipment patterns belong to the effective Item view.
+        crystal_pattern = known_paths(crystal_equipment.get(key[1], {})).get(
+            "equipment.patterns"
+        )
+        if crystal_pattern is not None:
+            require(
+                known_paths(effective[key]).get("equipment.patterns") == crystal_pattern,
+                "EQUIPMENT_WITHOUT_QUALIFIED_SOURCE_PATTERN",
             )
     require(
         fact_count
@@ -1700,6 +1712,9 @@ def _main() -> int:
     from healing_global_overrides import apply_definitions as apply_global_potions
 
     apply_global_potions(effective_items)
+    from crystal_equipment_profiles import apply_admissions as apply_crystal_equipment
+
+    apply_crystal_equipment(effective_items, ROOT)
     require(
         migrated_items == effective_items and expected_start == expected_item_count,
         "ITEM_DEFINITION_ROUNDTRIP",
