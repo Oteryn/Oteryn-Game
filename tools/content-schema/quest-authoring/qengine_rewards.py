@@ -136,6 +136,36 @@ def load_module(name, path):
     return module
 
 
+def cover_legacy_addon_slots(outfits, legacy_outfits, mappings):
+    by_key = {outfit['key']: outfit for outfit in outfits}
+    addon_mappings = {}
+    covered = set()
+    for mapping in mappings:
+        target = mapping['target']
+        if target['kind'] != 'Addon':
+            continue
+        key, addon = target['outfit_key'], target['addon']
+        addon_mappings.setdefault((key, addon), []).append(mapping)
+        covered.add((key, addon))
+        covered.update((alias, addon) for alias in mapping.get('outfit_aliases', []))
+
+    for alias in legacy_outfits:
+        key = alias['key']
+        prefix, suffix = 'oteryn:content.outfit.', '_outfits'
+        if not key.startswith(prefix) or not key.endswith(suffix):
+            continue
+        canonical_key = 'oteryn:outfit.' + key.removeprefix(prefix).removesuffix(suffix)
+        canonical = by_key.get(canonical_key)
+        if canonical is None or any(alias[sex] != canonical[sex] for sex in ('female', 'male')):
+            continue
+        for addon in range(1, alias['addon_count'] + 1):
+            if (key, addon) in covered:
+                continue
+            # Reuse the earned receipt and its existing sex and provenance checks.
+            for mapping in addon_mappings.get((canonical_key, addon), []):
+                mapping['outfit_aliases'] = sorted([*mapping.get('outfit_aliases', []), key])
+
+
 def build():
     rottin = ROOT/'content/quests/npc-callbacks/rottin-wood.json'
     validate_callbacks(json.loads(rottin.read_bytes()))
@@ -293,6 +323,7 @@ def build():
             existing = next(m for m in mappings if m['grant_key'] == row['grant_key'])
             if existing['target'] != row['target']:
                 existing['outfit_aliases'] = [row['target']['outfit_key']]
+    cover_legacy_addon_slots(outfits, nx5_doc['outfits'], mappings)
     # Taming uses the same production cosmetics owner as quest/item grants.
     taming_cosmetics.append(ROOT, doc, looks)
     nx5_promotions = {row['path']: row for row in nx5['promotions']}
