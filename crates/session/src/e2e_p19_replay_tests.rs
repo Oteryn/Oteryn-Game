@@ -2,7 +2,7 @@
 //!
 //! p19-appearance-snapshot.bin is the unmodified appearance snapshot payload.
 //! p19-appearance-deltas.bin uses the OTR1 little-endian transcript format
-//! documented in e2e_c16c.rs, with the appearance snapshot as the external
+//! documented in e2e_c16c_replay_tests.rs, with the appearance snapshot as the external
 //! entry. The world snapshot and world deltas are included to reconstruct
 //! visibility and appearance references, in order with the appearance deltas.
 //! p19-expected.txt records the 32 hex identity digits, decimal generation and

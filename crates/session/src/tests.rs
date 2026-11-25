@@ -84,7 +84,7 @@ mod e2e_m09;
 mod e2e_m11a;
 #[path = "tests/e2e_p11.rs"]
 mod e2e_p11;
-#[path = "e2e_p19.rs"]
+#[path = "e2e_p19_replay_tests.rs"]
 mod e2e_p19;
 #[cfg(test)]
 #[path = "tests/e2e_s04c.rs"]
@@ -351,7 +351,7 @@ mod spell_aim_mode;
 #[path = "tests/wheel_presentation_gated.rs"]
 mod wheel_presentation_gated;
 
-#[path = "e2e_c16c.rs"]
+#[path = "e2e_c16c_replay_tests.rs"]
 mod c16c_summon_replay;
 #[cfg(test)]
 #[path = "e2e_c16d.rs"]
