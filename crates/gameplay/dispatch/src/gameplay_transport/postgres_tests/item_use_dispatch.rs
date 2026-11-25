@@ -167,6 +167,19 @@ fn scenario(key: &'static str, expected_capacity: Option<u8>) -> TestResult {
                 crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
                 &[4, 6, 12, 14, 15, 18, 22, 49, 445, 446],
             ).ok_or("capabilities")?;
+            let steak = expected_capacity.is_none();
+            let food_remaining = async || -> TestResult<Option<i32>> {
+                let runtime = deps.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                let state = states.get(&runtime, deps.actor, session).ok_or("food owner")?;
+                let now = owner.owner_ms() * 1_000;
+                Ok(state.owned_conditions()
+                    .active_at(crate::domain::condition::ConflictKey::FoodRegeneration, now)
+                    .and_then(|condition| condition.remaining_duration_ms(condition.started_at())))
+            };
+            if steak {
+                assert_eq!(food_remaining().await?, None);
+            }
             let target = reference(key)?;
             // mode=seeded gives the actor one steak and leaves its food condition empty.
             let steak_quantity_and_custody = || async {
@@ -249,6 +262,7 @@ fn scenario(key: &'static str, expected_capacity: Option<u8>) -> TestResult {
                     match envelope.message_type() {
                         protocol::MessageType::CommandResult => {
                             let reply = protocol::decode_command_result(envelope.payload()).map_err(debug)?;
+                            assert_eq!(reply.command_id, 1);
                             let disposition = protocol::world_object::decode_use_result(reply.payload).map_err(debug)?;
                             assert_eq!((reply.status, disposition), (protocol::CommandStatus::Accepted, UseDisposition::Committed));
                             accepted = true;
@@ -264,6 +278,16 @@ fn scenario(key: &'static str, expected_capacity: Option<u8>) -> TestResult {
                     }
                 }
                 assert_eq!(capacity, expected_capacity);
+                if steak {
+                    // Crystal 201189f8 data/scripts/actions/items/foods.lua:88,150-154
+                    // feeds for 10 * 12 seconds and removes one crocodile steak.
+                    assert_eq!(food_remaining().await?, Some(120_000));
+                    let backpack = h.root.read_character_backpack(&authority, fence.character_id)
+                        .await?.ok_or("steak backpack")?;
+                    assert!(!backpack.entries.iter().any(|entry| {
+                        entry.item.definition.production_key == key
+                    }), "the only steak must be debited from the backpack");
+                }
                 if expected_capacity.is_none() {
                     assert_eq!(steak_quantity_and_custody().await?, (0, false), "steak must be consumed in PostgreSQL");
                     // Crystal 201189f8 foods.lua:88,150–154 adds 10 × 12 seconds and removes one steak.
