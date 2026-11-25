@@ -1,21 +1,10 @@
 //! Bigfoot source-only qualification; no production caller.
 use super::input;
+use crate::quest::npc_rules::item_exchange::matchmaker_target;
 use crate::quest::npc_rules::{NpcInventorySnapshot, NpcRuleCatalog, NpcRuleEffect, NpcRuleError};
 use std::collections::BTreeMap;
 
 pub const BIGFOOT_TRACK_PREFIX: &str = "oteryn:quest-progress/quest/u9_60/bigfoots_burden/";
-
-/// Resolve the typed matchmaker obligation using the fenced request's draw.
-/// Crystal 201189f871d23597b82caf88fd611454a2ddefb8:
-/// data-global/npc/gnomeral.lua:85.
-pub fn bigfoot_matchmaker_target(draw: u8) -> Result<Vec<NpcRuleEffect>, NpcRuleError> {
-    let target = matchmaker_target(draw)
-        .ok_or_else(|| NpcRuleError::Invalid("Bigfoot matchmaker draw".into()))?;
-    Ok(vec![NpcRuleEffect::Set {
-        track: format!("{BIGFOOT_TRACK_PREFIX}matchmaker_id_needed"),
-        value: i64::from(target),
-    }])
-}
 
 /// Validate every draw before publishing any of the seven persistent tones.
 /// Crystal 201189f871d23597b82caf88fd611454a2ddefb8:
@@ -31,12 +20,6 @@ pub fn bigfoot_soul_melody(draws: [u8; 7]) -> Result<Vec<NpcRuleEffect>, NpcRule
             value: i64::from(tone),
         })
         .collect())
-}
-
-/// `data-global/npc/gnomeral.lua:85`: one of the seven crystal appearances.
-#[must_use]
-pub fn matchmaker_target(draw: u8) -> Option<u16> {
-    (draw < 7).then(|| 15809 + u16::from(draw))
 }
 
 /// `data-global/npc/gnomelvis.lua:75`: seven independent four-way tones.

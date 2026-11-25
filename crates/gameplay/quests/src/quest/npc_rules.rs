@@ -10,7 +10,7 @@ mod equipped_storage;
 pub use calendar::NpcUtcCalendar;
 mod evaluate;
 mod hidden_threats;
-mod item_exchange;
+pub(in crate::quest) mod item_exchange;
 mod keyword;
 
 /// Crystal's literal conversation matcher, shared by source reward dialogue.

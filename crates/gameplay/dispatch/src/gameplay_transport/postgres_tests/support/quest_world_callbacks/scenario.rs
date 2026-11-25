@@ -327,7 +327,8 @@ fn scenario_case(
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends";
-    let classic_npc = shared_rewards
+    let bigfoot_daily = name.starts_with("bigfoot-daily-");
+    let classic_npc = bigfoot_daily || shared_rewards
         || name.starts_with("engoutfit-")
         || qengine_reward
         || name.starts_with("npcfix-m38-mistrock")
@@ -1077,7 +1078,11 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if alawars_vault {
+        let world = if bigfoot_daily {
+            super::super::bigfoot_dailies_fixtures::world(
+                name, generation.native_gameplay().ok_or("Bigfoot native content")?,
+            )?
+        } else if alawars_vault {
             super::super::alawars_vault_journey_fixtures::world(generation.native_gameplay().ok_or("Alawar native content")?)?
         } else if koshei {
             super::super::koshei_the_deathless_journey_fixtures::world(generation.native_gameplay().ok_or("Koshei native content")?)?
@@ -3089,6 +3094,8 @@ fn scenario_case(
                 origin,
             ))
             .await?;
+        } else if bigfoot_daily {
+            Box::pin(super::super::bigfoot_dailies_fixtures::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if name == "authored-wrath-crystals" {
             super::super::questpc8_wrath_crystals_fixtures::exercise(
                 &mut owner,
