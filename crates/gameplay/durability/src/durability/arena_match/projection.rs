@@ -48,12 +48,14 @@ impl RelocationKind {
 impl DurabilityRoot {
     /// The active-pit census and unacknowledged relocations in this Channel.
     /// Only admitted and positioned sessions can consume the pending batch.
+    /// The pending page starts after the supplied character ID.
     pub async fn read_arena_projection_leases(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         scope: RuntimeScopeRefV1,
         generation: u64,
         positioned: &[GameSessionId],
+        pending_after: Option<CharacterId>,
     ) -> Result<(i64, Vec<ArenaProjection>), DurabilityError> {
         let RuntimeScopeRefV1::Channel {
             world_id,
@@ -86,6 +88,7 @@ impl DurabilityRoot {
                     WHERE p.world_id=encode($1,'hex')::uuid AND p.channel_id=encode($2,'hex')::uuid
                       AND p.scope_generation<=$3::text::numeric AND p.relocated_at IS NULL AND p.superseded_at IS NULL
                       AND a.session_state=2 AND a.current_transport_ref IS NOT NULL AND a.game_session_id=ANY($4)
+                      AND ($6::uuid IS NULL OR p.character_id>$6)
                     ORDER BY p.character_id LIMIT $5
                 ), active AS (
                     SELECT l.character_id,l.game_session_id,l.run_id,s.body FROM game_svargrond_pit_leases l
@@ -102,6 +105,7 @@ impl DurabilityRoot {
              .bind(generation.to_string())
              .bind(positioned)
              .bind(i64::try_from(donor::CENTERS.len()).map_err(|_| DurabilityError::InvalidStoredState)?)
+             .bind(pending_after.map(|character| sqlx::types::Uuid::from_bytes(*character.as_bytes())))
              .fetch_all(&mut *tx).await?;
             let now_ms = now(&mut tx).await?;
             let states = states.into_iter().map(|(character, session, run, body, legacy_victory_pit, relocation_pending)| {
@@ -155,10 +159,17 @@ impl DurabilityRoot {
                 return Ok(None);
             }
             let current = load_state(&mut tx, fence).await?;
-            if current != snapshot
-                || !pending_relocation(&mut tx, fence, &current).await?
-                || dead_since_entry(&mut tx, fence.character_id, &current).await?
+            if current != snapshot || !pending_relocation(&mut tx, fence, &current).await? {
+                return Ok(None);
+            }
+            // A completed victory survives a death. A dead active run has
+            // lost its pit and must stop advertising its old destination.
+            if matches!(current.phase, 1 | 2)
+                && dead_since_entry(&mut tx, fence.character_id, &current).await?
             {
+                pit_lease::release(&mut tx, fence).await?;
+                supersede_relocation(&mut tx, fence.character_id).await?;
+                commit_semantic_transaction(tx, deadline).await?;
                 return Ok(None);
             }
             let mut rebound = current.clone();
@@ -256,7 +267,8 @@ impl DurabilityRoot {
                         return Ok(false);
                     }
                     let current = load_state(&mut tx, fence).await? == state;
-                    let dead = dead_since_entry(&mut tx, fence.character_id, &state).await?;
+                    let dead = matches!(state.phase, 1 | 2)
+                        && dead_since_entry(&mut tx, fence.character_id, &state).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(current && !dead)
                 })
@@ -342,7 +354,7 @@ pub(super) async fn pending_relocation(
     .fetch_one(&mut **tx).await?)
 }
 
-async fn dead_since_entry(
+pub(super) async fn dead_since_entry(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
     state: &MatchState,
@@ -371,12 +383,7 @@ pub(super) async fn record_relocation(
     };
     // The Character root lock serializes transitions. A newer destination
     // replaces an unresolved one, for example a timeout after an advance.
-    sqlx::query(
-        "UPDATE game_arena_relocations SET superseded_at=statement_timestamp()
-         WHERE character_id=encode($1,'hex')::uuid AND relocated_at IS NULL AND superseded_at IS NULL"
-    )
-    .bind(fence.character_id.as_bytes().as_slice())
-    .execute(&mut **tx).await?;
+    supersede_relocation(tx, fence.character_id).await?;
     sqlx::query(
         "INSERT INTO game_arena_relocations(character_id,game_session_id,command_id,world_id,channel_id,scope_generation,kind)
          VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,$7)"
@@ -389,6 +396,20 @@ pub(super) async fn record_relocation(
     .bind(fence.scope_ownership_generation.get().to_string())
     .bind(kind.label())
     .execute(&mut **tx).await?;
+    Ok(())
+}
+
+async fn supersede_relocation(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+) -> Result<(), DurabilityError> {
+    sqlx::query(
+        "UPDATE game_arena_relocations SET superseded_at=statement_timestamp()
+         WHERE character_id=encode($1,'hex')::uuid AND relocated_at IS NULL AND superseded_at IS NULL",
+    )
+    .bind(character.as_bytes().as_slice())
+    .execute(&mut **tx)
+    .await?;
     Ok(())
 }
 

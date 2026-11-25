@@ -74,6 +74,7 @@ pub(in crate::gameplay_transport) struct Matches {
     command: tokio::sync::Mutex<()>,
     live: Mutex<HashMap<GameSessionId, LiveMatch>>,
     victory_poll: Mutex<Option<(u64, u64)>>,
+    pending_census_after: Mutex<Option<crate::domain::CharacterId>>,
     #[cfg(test)]
     fixture_pit_ms: std::sync::atomic::AtomicU64,
 }
@@ -437,7 +438,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || (read.dead && matches!(after.phase, 1 | 2))
                 || (!read.pit_owned && matches!(after.phase, 1 | 2)));
         let expired = matches!(after.phase, 1 | 2) && after.deadline_ms <= read.now_ms;
-        if stale && read.relocation_pending {
+        if stale && read.relocation_blocks_reset {
             disposition = D::Busy;
         } else if stale || expired {
             after = after.idle();
@@ -664,11 +665,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         fence: CurrentCharacterGameplayFence,
     ) -> bool {
+        self.arena_poll_fenced(runtime, actor, fence, true)
+    }
+
+    fn arena_poll_fenced(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        require_alive: bool,
+    ) -> bool {
         let Ok(_gate) = self.states.arena_matches.command.try_lock() else {
             return false;
         };
         current_arena_actor(runtime, actor, fence)
-            && self.states.spell_states.try_lock().is_ok_and(|states| !states.is_dead(actor))
+            && (!require_alive || self.states.spell_states.try_lock().is_ok_and(|states| !states.is_dead(actor)))
     }
 
     async fn restore_arena_projection(

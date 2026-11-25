@@ -143,6 +143,207 @@ enum PortalRecovery {
 }
 
 #[test]
+fn arena_pending_victory_after_death_and_relog_allows_leave() -> TestResult {
+    pending_relocation_case("arena_pending_victory_after_death_and_relog_allows_leave", true)
+}
+
+#[test]
+fn arena_relocation_census_reaches_rows_past_unactionable_ones() -> TestResult {
+    pending_relocation_case("arena_relocation_census_reaches_rows_past_unactionable_ones", false)
+}
+
+fn pending_relocation_case(test: &'static str, after_death: bool) -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || {
+            run(async move |admin| {
+                let h = Harness::create_with_admission_seed(admin, "arena_pending", false, false).await?;
+                eprintln!("arenapkg-marker: {test} db ready");
+                super::reset();
+                prepare_current_session(&h).await?;
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+                let mut deps = Dependencies::new()?;
+                let (controller, pin) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                    deps.admitted.world_id, "content-1",
+                )?;
+                let active = controller.active().ok_or("active arena content")?;
+                let native = active.native_gameplay().ok_or("native arena content")?;
+                let (bytes, pins) = fixture::bundle(native)?;
+                let map = fixture::boot_world(&deps, native, &bytes, &pins)?;
+                fixture::runtime(&mut deps, active, &pin, &map)?;
+                let cells = map.movement_cells(deps.room.movement_cells()).map_err(debug)?;
+                let mut owner = deps.owner(&h, &authority);
+                owner.active_generation = Some(active);
+                owner.movement_cells = (&cells).into();
+                deps.initialize(&owner).await;
+                let mut admitted = deps.admitted;
+                admitted.item_fence = Some(owner.current_quest_fence(admitted.game_session_id)
+                    .await.map_err(|_| "admission fence")?.ok_or("current session")?.item_fence());
+                admitted.first_entry = FirstEntryOutcome::Positioned;
+                admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                    crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                    &[wire::CAPABILITY_ARENA_V1],
+                ).ok_or("arena capability")?;
+
+                seed_pending_match(&h, 41, 49, 1, true).await?;
+                if after_death {
+                    seed_pending_match_death(&h).await?;
+                    owner.drain_arena_matches(owner.owner_now().get()).await;
+                    let leave = restarted_command(&owner, &mut admitted, A::Leave).await?;
+                    assert_eq!(leave.disposition, D::Applied, "death must not strand the victory after relog");
+                    assert_eq!(leave.state.phase, 0);
+                    assert_eq!(leave.state.completed_rank, 1);
+                    assert!(pending_match_resolved(&h, 1, false).await?);
+
+                    // A command can arrive before the recovery poll after relog.
+                    seed_pending_match(&h, 41, 49, 2, true).await?;
+                    let leave = restarted_command(&owner, &mut admitted, A::Leave).await?;
+                    assert_eq!(leave.disposition, D::WrongState);
+                    assert_eq!(leave.state.phase, 0);
+                    assert!(pending_match_resolved(&h, 2, true).await?);
+
+                    seed_pending_match(&h, 41, 49, 3, false).await?;
+                    owner.drain_arena_matches(owner.owner_now().get() + 3_000_000).await;
+                    assert!(pending_match_resolved(&h, 3, true).await?, "the poll must retire a dead active relocation");
+                    let leave = restarted_command(&owner, &mut admitted, A::Leave).await?;
+                    assert_eq!(leave.disposition, D::WrongState);
+                    assert_eq!(leave.state.phase, 0);
+                } else {
+                    seed_unactionable_relocations(&h, &deps).await?;
+                    let now = owner.owner_now().get();
+                    owner.drain_arena_matches(now).await;
+                    owner.drain_arena_matches(now + 3_000_000).await;
+                    assert!(pending_match_resolved(&h, 1, false).await?, "the second page must process the admitted Character");
+                    let blocked: i64 = sqlx::query_scalar(
+                        "SELECT count(*) FROM game_arena_relocations WHERE relocated_at IS NULL AND superseded_at IS NULL",
+                    ).fetch_one(&h.pool).await?;
+                    assert_eq!(blocked, 11, "the positioned candidates without current Character fences stay unactionable");
+                }
+                Ok(())
+            }).map_err(|err| err.to_string())
+        })?
+        .join()
+        .map_err(|_| "pending arena relocation scenario panicked")??;
+    Ok(())
+}
+
+async fn seed_pending_match(h: &Harness, character: u8, session: u8, command: i64, victory: bool) -> TestResult {
+    use crate::durability::arena_match::MatchState;
+    let mut tx = h.pool.begin().await?;
+    let now_ms: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint")
+        .fetch_one(&mut *tx).await?;
+    let after = MatchState {
+        completed: u8::from(victory),
+        entry_revision: 1,
+        rank: 1,
+        pit: if victory { 0 } else { 1 },
+        phase: if victory { 3 } else { 1 },
+        deadline_ms: if victory { 0 } else { now_ms + i64::from(donor::PIT_SECONDS) * 1000 },
+        session: id(session),
+        scope_generation: 1,
+        run: id(character),
+    };
+    let body = serde_json::to_value(&after)?;
+    sqlx::query("INSERT INTO game_arena_match_receipts
+        (character_id,game_session_id,command_id,payload,before_state,after_state,reply)
+        VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,
+            COALESCE((SELECT body FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid), $5),
+            $6,$7)")
+        .bind(id(character).as_slice()).bind(id(session).as_slice()).bind(command)
+        .bind(wire::encode_match_request(if victory { A::Advance } else { A::Enter }).map_err(debug)?)
+        .bind(serde_json::to_value(MatchState {
+            phase: 2, pit: 10, completed: 0, ..after.clone()
+        })?)
+        .bind(&body)
+        .bind(wire::encode_match_result(&wire::ArenaResult {
+            disposition: D::Applied, state: after.wire(now_ms, [0; 3]),
+        }).map_err(debug)?)
+        .execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_character_arena_matches(character_id,body,game_session_id,command_id)
+        VALUES (encode($1,'hex')::uuid,$4,encode($2,'hex')::uuid,$3)
+        ON CONFLICT (character_id) DO UPDATE SET body=EXCLUDED.body,game_session_id=EXCLUDED.game_session_id,command_id=EXCLUDED.command_id")
+        .bind(id(character).as_slice()).bind(id(session).as_slice()).bind(command).bind(body)
+        .execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_arena_relocations
+        (character_id,game_session_id,command_id,world_id,channel_id,scope_generation,kind,legacy_victory_pit)
+        VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,$6,$7)")
+        .bind(id(character).as_slice()).bind(id(session).as_slice()).bind(command)
+        .bind(id(42).as_slice()).bind(id(43).as_slice())
+        .bind(if victory { "VICTORY" } else { "ENTRY" })
+        .bind(victory.then_some(10_i16)).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn pending_match_resolved(h: &Harness, command: i64, superseded: bool) -> TestResult<bool> {
+    Ok(sqlx::query_scalar(
+        "SELECT CASE WHEN $3 THEN superseded_at IS NOT NULL ELSE relocated_at IS NOT NULL END
+         FROM game_arena_relocations WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2",
+    ).bind(id(49).as_slice()).bind(command).bind(superseded).fetch_one(&h.pool).await?)
+}
+
+async fn seed_pending_match_death(h: &Harness) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    // Seed the persisted history of a Character who already respawned and relogged.
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_character_death_receipts(
+        death_occurrence_id,command_binding,policy_digest,character_id,
+        original_character_revision,committed_character_revision,level_before,level_after,
+        experience_before,experience_after,experience_lost,blessings_before,blessings_after,lost_item_ids,
+        death_world_id,death_channel_id,death_spatial_position,death_map_revision,respawn_position,
+        death_policy_revision,profile_revision,ruleset_revision,content_revision,simulation_revision,
+        evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at)
+        VALUES (encode($1,'hex')::uuid,decode('01','hex'),decode(repeat('01',32),'hex'),encode($2,'hex')::uuid,
+            1,2,20,20,0,0,0,'{}','{}','{}',encode($3,'hex')::uuid,encode($4,'hex')::uuid,
+            decode('01','hex'),'fixture',decode('01','hex'),'fixture','fixture','fixture','fixture',
+            'fixture','fixture','fixture','fixture','fixture',1)")
+        .bind(id(221).as_slice()).bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice())
+        .execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn seed_unactionable_relocations(h: &Harness, deps: &Dependencies) -> TestResult {
+    for seed in 1_u8..=11 {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_roots
+            (character_id,account_id,world_id,lifecycle,character_revision,profile_revision,
+             ruleset_revision,content_revision,starter_template_revision,name,sex)
+            SELECT encode($1,'hex')::uuid,encode($2,'hex')::uuid,world_id,lifecycle,character_revision,
+                profile_revision,ruleset_revision,content_revision,starter_template_revision,$3,sex
+            FROM game_character_roots WHERE character_id=encode($4,'hex')::uuid")
+            .bind(id(seed).as_slice()).bind(id(seed + 60).as_slice())
+            .bind(format!("Arena Blocker {}", char::from(b'A' + seed - 1))).bind(id(41).as_slice())
+            .execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_durability_reconnect_sessions
+            (game_session_id,account_id,character_id,world_id,runtime_scope_kind,runtime_scope_world_id,
+             runtime_scope_channel_id,character_lease_generation,scope_ownership_generation,
+             current_generation,session_state,current_transport_ref,
+             control_loss_epoch,original_grace_deadline,predecessor_generation)
+            SELECT encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,
+                world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,
+                character_lease_generation,scope_ownership_generation,current_generation+1,2,$4,
+                1,floor(extract(epoch FROM statement_timestamp()))::bigint,current_generation
+            FROM game_durability_reconnect_sessions WHERE game_session_id=encode($5,'hex')::uuid")
+            .bind(id(seed + 100).as_slice()).bind(id(seed + 60).as_slice()).bind(id(seed).as_slice())
+            .bind(id(seed + 150).as_slice()).bind(id(50).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        seed_pending_match(h, seed, seed + 100, 1, true).await?;
+        let mut runtime = deps.runtime.lock().await;
+        let session = crate::foundation::GameSessionId::decode(&id(seed + 100)).map_err(debug)?;
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime.initialize_first_entry_position(actor).map_err(debug)?;
+    }
+    Ok(())
+}
+
+#[test]
 fn arena_victory_committed_before_relocation_is_relocated_by_recovery() -> TestResult {
     portal_case(10, PortalRecovery::Poll, "arena_victory_committed_before_relocation_is_relocated_by_recovery")
 }

@@ -125,7 +125,7 @@ pub struct MatchRead {
     pub now_ms: i64,
     pub replay: Option<Vec<u8>>,
     pub dead: bool,
-    pub relocation_pending: bool,
+    pub relocation_blocks_reset: bool,
 }
 
 /// Native movement and client commands occupy disjoint durable cause domains.
@@ -267,18 +267,24 @@ impl DurabilityRoot {
                         return Ok(Err(error));
                     }
                     let state = load_state(&mut tx, fence).await?;
-                    let relocation_pending = projection::pending_relocation(&mut tx, fence, &state).await?;
+                    let relocation_pending =
+                        projection::pending_relocation(&mut tx, fence, &state).await?;
                     let masks = claimed_masks(&mut tx, fence).await?;
                     let now_ms = now(&mut tx).await?;
-                    let replay = replay_origin(&mut tx, fence, cause, &payload, origin.as_deref()).await?;
-                    let dead: bool = matches!(state.phase,1|2) && sqlx::query_scalar::<_,bool>("SELECT EXISTS(SELECT 1 FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND committed_character_revision>$2::text::numeric)")
-                        .bind(fence.character_id.as_bytes().as_slice()).bind(state.entry_revision.to_string()).fetch_one(&mut *tx).await?;
-                    let pit_owned = !matches!(state.phase,1|2) || (!dead &&
-                        (pit_lease::owned(&mut tx,fence,&state,now_ms).await?
-                         || pit_lease::claim(&mut tx,fence,&state,now_ms).await?));
+                    let replay =
+                        replay_origin(&mut tx, fence, cause, &payload, origin.as_deref()).await?;
+                    let active = matches!(state.phase, 1 | 2);
+                    let died = (active || relocation_pending)
+                        && projection::dead_since_entry(&mut tx, fence.character_id, &state)
+                            .await?;
+                    let dead = active && died;
+                    let pit_owned = !matches!(state.phase, 1 | 2)
+                        || (!dead
+                            && (pit_lease::owned(&mut tx, fence, &state, now_ms).await?
+                                || pit_lease::claim(&mut tx, fence, &state, now_ms).await?));
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(MatchRead {
-                        relocation_pending,
+                        relocation_blocks_reset: relocation_pending && !died,
                         pit_owned,
                         state,
                         masks,
@@ -335,7 +341,8 @@ impl DurabilityRoot {
             if prior.rank > 0 && request.after.rank == 0
                 && (prior.session != *fence.game_session_id.as_bytes()
                     || prior.scope_generation != fence.scope_ownership_generation.get())
-                && projection::pending_relocation(&mut tx,fence,&prior).await? {
+                && projection::pending_relocation(&mut tx,fence,&prior).await?
+                && !projection::dead_since_entry(&mut tx,fence.character_id,&prior).await? {
                 return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
             }
             let now_ms=now(&mut tx).await?;

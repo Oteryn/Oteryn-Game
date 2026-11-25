@@ -63,10 +63,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .into_iter().filter_map(|(_, _, session)| session).collect();
             (binding.runtime_scope(), binding.scope_generation().get(), positioned)
         };
-        let read = self.root.read_arena_projection_leases(self.character, scope, generation, &positioned);
+        let after = *self.states.arena_matches.pending_census_after.lock().ok()?;
+        let read = self.root.read_arena_projection_leases(self.character, scope, generation, &positioned, after);
         #[cfg(test)]
         let read = pause_poll_read(read);
         let (now_ms, leased) = read.await.ok()?;
+        {
+            // Advance past a full page even when an actor cannot be fenced
+            // or placed. A short page wraps so blocked actors can be retried.
+            let pending = leased.iter().filter(|projection| projection.relocation_pending);
+            let mut cursor = self.states.arena_matches.pending_census_after.lock().ok()?;
+            if *cursor == after {
+                *cursor = if pending.clone().count() == donor::CENTERS.len() {
+                    pending.map(|projection| projection.character)
+                        .max_by_key(|character| *character.as_bytes())
+                } else {
+                    None
+                };
+            }
+        }
         let mut resumed = Vec::new();
         for projection in leased {
             let state = projection.state;
@@ -90,7 +105,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             {
                 let runtime = self.runtime.lock().await;
-                if !self.arena_poll_current(&runtime, actor, fence) {
+                // A pending dead run can be retired under its current fence.
+                // Movement still requires a live actor after preparation.
+                if !self.arena_poll_fenced(&runtime, actor, fence, !projection.relocation_pending) {
                     continue;
                 }
             }
