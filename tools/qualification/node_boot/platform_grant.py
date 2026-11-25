@@ -50,6 +50,48 @@ def loopback(url):
     return url.rstrip("/")
 
 
+def grant_premium(public, account, proposer, approver, *, days=1):
+    """Grant on the disposable Platform through two authenticated staff sessions.
+
+    The two openers carry separate authenticated sessions and reject redirects.
+    Callers still need to verify Game's native Premium overview after approval.
+    """
+    public = loopback(public)
+    account = str(uuid.UUID(account))
+    if proposer is approver or not 1 <= days <= 366:
+        raise ValueError("invalid Premium grant parameters")
+    commerce = public + "/admin/commerce"
+    page, _ = request(proposer, commerce)
+    grant = re.search(rb'<form\b[^>]*action="/admin/commerce/grant"[^>]*>(.*?)</form>', page, re.S)
+    if grant is None:
+        raise RuntimeError("Platform Premium grant form unavailable")
+    request_id = re.search(rb'name="request_id"[^>]*value="([0-9a-f-]{36})"', grant[1])
+    if request_id is None:
+        raise RuntimeError("Platform Premium grant request ID unavailable")
+    operation = str(uuid.UUID(request_id[1].decode("ascii")))
+    _, headers = request(
+        proposer, commerce + "/grant",
+        data=form(dict(target=account, days=days, request_id=operation,
+                       reason="Disposable qualification Premium grant", _csrf=csrf(grant[1]))),
+        headers={"Origin": public}, statuses=(303,),
+    )
+    if headers.get("Location") != "/admin/commerce":
+        raise RuntimeError("Platform Premium proposal was not accepted")
+    page, _ = request(approver, commerce)
+    approval_path = f"/admin/commerce/approvals/{operation}"
+    approval = re.search(rb'<form\b[^>]*action="' + re.escape(approval_path.encode("ascii"))
+                         + rb'"[^>]*>(.*?)</form>', page, re.S)
+    if approval is None:
+        raise RuntimeError("Platform Premium approval form unavailable")
+    _, headers = request(
+        approver, public + approval_path, data=form({"_csrf": csrf(approval[1])}),
+        headers={"Origin": public}, statuses=(303,),
+    )
+    if headers.get("Location") != "/admin/commerce":
+        raise RuntimeError("Platform Premium approval was not accepted")
+    return operation
+
+
 def main():
     work, account, character, world, channel, authority = sys.argv[1:]
     work = Path(work)
