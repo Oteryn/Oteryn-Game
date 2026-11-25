@@ -143,7 +143,7 @@ async fn own(
         admitted,
         admitted.continuity.next_command_id,
         COMMAND_TYPE_GUILD_QUERY,
-        |_| Ok(encode_guild_query(&GuildQuery::Own).map_err(debug)?),
+        |_| encode_guild_query(&GuildQuery::Own).map_err(debug),
         false,
         &mut frames,
     )
