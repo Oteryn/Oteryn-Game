@@ -25,7 +25,7 @@ fn direct_use_opens_carried_backpack() -> TestResult {
 
 #[test]
 fn direct_use_consumes_admitted_crocodile_steak() -> TestResult {
-    super::kill_reward_e2e_fixtures::scenario_thread::run("use-crocodile-steak", || {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("use-crocodile-steak-mode=seeded", || {
         scenario("oteryn:item.tibia.i10219", None)
     })
 }
@@ -168,6 +168,41 @@ fn scenario(key: &'static str, expected_capacity: Option<u8>) -> TestResult {
                 &[4, 6, 12, 14, 15, 18, 22, 49, 445, 446],
             ).ok_or("capabilities")?;
             let target = reference(key)?;
+            // mode=seeded gives the actor one steak and leaves its food condition empty.
+            let steak_quantity_and_custody = || async {
+                sqlx::query_as::<_, (i64, bool)>(
+                    "SELECT item.quantity, EXISTS (
+                        SELECT 1 FROM game_item_container_entries AS entry
+                        WHERE entry.item_instance_id = item.item_instance_id
+                          AND entry.character_id = encode($1, 'hex')::uuid
+                    )
+                    FROM game_item_instances AS item
+                    WHERE item.definition_production_key = $2",
+                )
+                .bind(id(41).to_vec())
+                .bind(key)
+                .fetch_one(&h.pool)
+                .await
+            };
+            use oteryn_gameplay_domain::domain::condition::ConflictKey;
+            let food_regeneration = async || -> TestResult<Option<i32>> {
+                let runtime = deps.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                let state = states.get(&runtime, deps.actor, session).ok_or("actor spell state")?;
+                let Some(condition) = state
+                    .owned_conditions()
+                    .active_at(ConflictKey::FoodRegeneration, owner.owner_now().get())
+                else {
+                    return Ok(None);
+                };
+                let duration = condition.remaining_duration_ms(condition.started_at())
+                    .ok_or("food condition duration")?;
+                Ok(Some(duration))
+            };
+            if expected_capacity.is_none() {
+                assert_eq!(steak_quantity_and_custody().await?, (1, true), "seeded steak missing");
+                assert_eq!(food_regeneration().await?, None, "actor must start unfed");
+            }
             let (mut server, mut client) = tokio::io::duplex(1 << 20);
             let serve = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS);
             let exercise = async {
@@ -229,6 +264,11 @@ fn scenario(key: &'static str, expected_capacity: Option<u8>) -> TestResult {
                     }
                 }
                 assert_eq!(capacity, expected_capacity);
+                if expected_capacity.is_none() {
+                    assert_eq!(steak_quantity_and_custody().await?, (0, false), "steak must be consumed in PostgreSQL");
+                    // Crystal 201189f8 foods.lua:88,150–154 adds 10 × 12 seconds and removes one steak.
+                    assert_eq!(food_regeneration().await?, Some(120_000));
+                }
                 client.shutdown().await?;
                 Ok::<_, Box<dyn std::error::Error>>(())
             };
