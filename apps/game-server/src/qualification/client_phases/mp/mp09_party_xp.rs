@@ -1114,8 +1114,9 @@ mod qualification_review_tests {
             ("oteryn:creature.crazed_beggar", 35),
             ("oteryn:creature.bonelord", 170),
         ] {
-            let refusal = check_hunt_reward(rewards, creature, xp)
-                .expect_err("the former hunt target must fail closed");
+            let Err(refusal) = check_hunt_reward(rewards, creature, xp) else {
+                return Err(format!("former hunt target must fail closed: {creature}").into());
+            };
             assert!(refusal.to_string().contains("corpse_item_inadmissible"));
         }
         check_hunt_reward(rewards, LEVEL_PROBE.0, LEVEL_PROBE.1)?;

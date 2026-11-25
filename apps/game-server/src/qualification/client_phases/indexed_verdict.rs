@@ -173,6 +173,46 @@ mod tests {
     }
 
     #[test]
+    fn concurrent_watches_restore_row_on_each_poll() -> TestResult {
+        runtime()?.block_on(async {
+            let harness = Box::leak(Box::new(Harness::new(true, None)));
+            let first = Watch::new("MP01.full", harness);
+            let second = Watch::new("MP09.full", harness);
+            let (first_result, second_result) = tokio::join!(
+                biased;
+                first.run(None, "first", async {
+                    tokio::task::yield_now().await;
+                    Err::<(), _>(harness.fixture_failed(
+                        test_fixture(0),
+                        0,
+                        &std::io::Error::other("first error"),
+                    ))
+                }),
+                second.run(None, "second", async {
+                    tokio::task::yield_now().await;
+                    Err::<(), _>(harness.fixture_failed(
+                        test_fixture(1),
+                        1,
+                        &std::io::Error::other("second error"),
+                    ))
+                }),
+            );
+            assert!(first_result.is_err());
+            assert!(second_result.is_err());
+            assert_eq!(
+                harness.health().get(&test_fixture(0)).map(String::as_str),
+                Some("MP01.full/fixture0-released")
+            );
+            assert_eq!(
+                harness.health().get(&test_fixture(1)).map(String::as_str),
+                Some("MP09.full/fixture1-released")
+            );
+            assert!(harness.active().is_none());
+            Ok(())
+        })
+    }
+
+    #[test]
     fn typed_first_error_and_originating_root_survive_cleanup() -> TestResult {
         runtime()?.block_on(async {
             let harness = Box::leak(Box::new(Harness::new(true, None)));

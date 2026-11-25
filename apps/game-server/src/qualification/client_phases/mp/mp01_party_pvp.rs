@@ -33,7 +33,7 @@ pub(super) async fn run(
     packets: &SeamClients<'_>,
     world: &BundleWorld,
     towns: &oteryn_world_bundle::subarea::Table,
-    profiles_confirmed: &mut bool,
+    profiles_confirmed: tokio::sync::oneshot::Sender<bool>,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let mut failures = Vec::new();
@@ -125,7 +125,7 @@ pub(super) async fn run(
         bounded("release", 1800, bots::release_all(&mut bots, core, packets)).await,
         &mut failures,
     );
-    *profiles_confirmed = profiled && released;
+    let _ = profiles_confirmed.send(profiled && released);
     // The no-PvP bots are released; the Open PvP World runs next on its own node.
     pvp_world_rows(core, world, towns, &mut failures).await;
     let status = if failures.is_empty() { "PASS" } else { "FAIL" };

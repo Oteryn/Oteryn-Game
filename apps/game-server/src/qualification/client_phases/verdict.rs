@@ -337,8 +337,13 @@ impl Watch {
                 format!("not run: blocked by {root}"),
             ));
         }
-        let _active = Active::enter(self);
         self.touch("start");
+        let mut journey = std::pin::pin!(journey);
+        let journey = std::future::poll_fn(|cx| {
+            // The shared evidence helpers see this row only while it is polled.
+            let _active = self.enter();
+            journey.as_mut().poll(cx)
+        });
         let watchdog = async {
             let Some(limit) = self.harness.no_progress else {
                 return std::future::pending().await;
