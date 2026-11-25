@@ -791,13 +791,14 @@ pub(crate) mod tests {
             ][..]
         };
         let count = points.len();
-        for (position, delay, creature, health, _) in points {
+        for point in points {
+            let position = point.position;
             assert!((33330..=33350).contains(&position.0));
             assert!((31670..=31690).contains(&position.1));
             assert_eq!(position.2, 7);
-            assert!(allowed.contains(&creature.as_str()));
-            assert_eq!(*health, 100);
-            assert_eq!(*delay, 90_000);
+            assert!(allowed.contains(&point.creature.as_str()));
+            assert_eq!(point.initial_health, 100);
+            assert_eq!(point.respawn_ms, 90_000);
         }
         let channel_pin = oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
                 world(),pin.activation_sequence(),pin.identity().server_artifact_digest(),
