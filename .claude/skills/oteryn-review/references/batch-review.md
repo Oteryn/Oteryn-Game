@@ -32,19 +32,29 @@ self-refute rules of §2 target it, and a run that sees the whole diff and its
 callers can apply them. One whole-diff round on the integrated head also
 found the cross-cutting P0 that per-area loops missed (retro 2026-11-18).
 
-Split only when the diff is too large for one run (above about 1500 changed
-lines): chunks of about 400-500 lines by file group, each chunk run with the
-whole diff as read-only context, plus the one holistic whole-diff run in the
-same round. Chunk runs alone are not a covered review. The second review
-(delta only) is one holistic run over the fix commits and the code they
-touch, plus the astra run when the repair is in a risk class.
+Split only when the diff is too large for one run (above about 1500
+hand-written changed lines; generated data, pins and regenerated registries
+do not count). Split by area (persistence and migrations, dispatch and
+gameplay crates, content data, tools and shared files), not by a fixed line
+count. Each chunk prompt names its own files as the focus, carries the whole
+diff as read-only context, tells the reviewer to open callers outside the
+chunk and includes the severity rubric. The same round also has one
+whole-diff integration run by `gpt-6.2-astra` at `high` that skips generated
+data and checks the seams: writer keys against migration guards, dispatch
+filters, registrations, files shared by the units, migration order
+(calibration 2026-11-25: sol alone missed exactly such a seam on a large
+diff, astra caught it). Every run of the round starts on ONE frozen head in
+one burst (at most 10 tasks); a writer loop on the branch pauses until the
+merged packet is ready. Chunk runs alone are not a covered review. The
+second review (delta only) is one holistic run over the fix commits and the
+code they touch, plus the astra run when the repair is in a risk class.
 
 Model and effort (owner decision 2026-11-25, calibration): every review run
 is a Codex Cloud task, read-only, model `gpt-6.2-sol` at reasoning effort
-`high`. A PR with code in a risk class (persistence, session fencing,
-protocol, authority, durable value, migrations, several consumers) also gets
-one `gpt-6.2-astra` run at effort `high` on the same head, with the same
-prompt; the two runs together are the one covered review of that head. An
+`high`, plus the `gpt-6.2-astra` runs at effort `high` on the same head that
+the run-selection table below names, each with the §2 prompt plus its role
+from the table; all runs of the
+round together are the one covered review of that head. An
 astra P0/P1 counts only after the review owner traced it (input, caller,
 wrong result) to a REAL verdict (§3); one disproved is recorded FALSE and
 closed, one that cannot be traced either way goes to the P2 backlog.
@@ -54,6 +64,30 @@ owner of `SKILL.md` §5 starts it from its own chat session with
 `scripts/codex-cloud.mjs` (`oteryn-waves` `references/delegation.md`), never
 `codex exec` on the PC and never through the PC as a launch relay. The
 native `@codex review` comment route is one run.
+
+### Choosing the runs (owner decision 2026-11-25, calibration)
+
+Every session picks the runs of a round from this table; the other rule files
+point here, and `docs/agents/OWNER_FUNDED_AI_POLICY.md` authorizes the runs it
+names. "Lines" are hand-written changed lines (generated data, pins and
+regenerated registries excluded). "Measured" rows rest on the calibration of
+2026-11-25 (mostly one run per model and PR; the large content diff had two
+holistic runs per model and one plain-prompt sol run); "default" rows are not measured yet.
+
+| Situation | Runs of the round | Basis |
+| --- | --- | --- |
+| Code PR up to about 1500 lines, no risk class | `gpt-6.2-sol` high, one holistic run | measured: sol found the real P1s with little noise on small and medium diffs |
+| Risk class (persistence, session fencing, protocol, authority, durable value, migrations, a symbol with several consumers) | sol high + `gpt-6.2-astra` high on the same head | measured: astra finds cross-module seams; its P0/P1 count only after a traced REAL verdict |
+| Content train (any size) or content diff above about 1500 lines | sol high per area (one holistic sol run below about 1500 lines) + one astra high whole-diff integration run (seams) + one astra high content-fidelity run with external sources | measured: on the large content diff holistic sol missed a writer-key/guard seam in 2 of 2 runs (one plain-prompt sol run found it); astra found it in 2 of 2 |
+| Code diff above about 1500 lines | sol high per area + one astra high whole-diff integration run | default (by analogy with the content row) |
+| Docs, rules, skills, workflows or agent definitions | sol high + astra high | measured: on a rules PR astra found real P1s (an agent file that does not parse, a gate that passed unreviewed PRs) |
+| Small data-only PR | sol high | default |
+| Delta review (second round) | sol high over the fix commits; + astra when the repair is in a risk class | default |
+| CI-failure fix | sol high with the failing log lines in the prompt | default |
+
+When rows overlap (a workflow fix for red CI, a content-train delta), run the
+union of their runs. Never astra alone (it missed a known bug that sol found) and never effort
+`medium`.
 
 ## 2. The prompt: all findings, no cap
 
@@ -65,6 +99,27 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
 - For each finding, also list every other place in the diff with the same
   defect class (the pattern sweep).
 - Format: `P0|P1|P2|P3 path:line - problem - concrete failure path`.
+- Grade with the severity rubric at the top of
+  `docs/agents/review/CODEX-CHECKLIST.md`: P1 is a wrong result a real caller
+  (a player, tool, workflow, gate or agent) reaches, P2 is content fidelity or
+  a contained defect. A real but non-breaking
+  content gap is P2.
+- For content data (prices, loot, outfits, spells, NPC text and placement,
+  quest steps), check the values against external sources, not only the
+  Crystal/Canary donors, in the owner's source order
+  (`docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md`, S24): an official
+  tibia.com announcement dated on or before the target date (news through
+  the TibiaData API; a later official source such as the tibia.com spell list
+  supersedes an earlier announcement), then the wiki at the target date, then
+  Canary/Crystal as hypothesis only. For bulk static content (items, NPCs,
+  map objects) the order is the source registry's
+  (`docs/agents/programs/OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md`
+  §6a and §7): TibiaWiki BR, then a second structured cross-check, then public official
+  evidence for exact conflicts, else `UNKNOWN`/`CONFLICT`. A value already
+  accepted under that order with its cited source is not re-flagged. Cite the URL or
+  the `docs/reference/` file for each value; when sources disagree, report
+  the disagreement and which source wins. Never bypass a site's protection;
+  a source the run cannot reach is named as unchecked, not guessed.
 - A P0 or P1 states its evidence: `path:line` of the input or state, of the
   caller that reaches the changed code, and of the line that gives the wrong
   result. Without a caller you opened and quoted, it is at most P2.
@@ -80,7 +135,7 @@ Use this text in the Codex Cloud review packet or a subagent prompt:
 
 ## 3. Merge, verify, sweep
 
-1. Merge the run outputs (the astra run too, on a risk-class PR). Remove
+1. Merge the run outputs (the astra runs too, when the table names them). Remove
    duplicates by `path:line` and defect class.
 2. Give every finding a verdict (`SKILL.md` §6). Verify each P0/P1 against
    the code: trace a real caller or input to the failure. For the ones that
@@ -125,7 +180,7 @@ start a third round.
 
 A packet that delegates review or fixing points to this file and states:
 
-- the head SHA, whether the astra run is due (risk class) and, for big
+- the head SHA, which astra runs the table names and, for big
   diffs, the chunks;
 - "report every finding, no cap; sweep each class across the diff";
 - the failing CI log lines, when there are any;
