@@ -841,6 +841,16 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
+    import wayland_boss_corpse_profiles
+
+    wayland_boss_corpse_profiles.admit(
+        root,
+        generated,
+        spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST,
+        provider_order,
+        spell_import.canonical_bytes,
+    )
     # M25 preserves Crystal Ahau and the independently qualified Canary Mitmah
     # corpse policies; the Crystal room does not select another donor's Items.
     import m25_corpse_items

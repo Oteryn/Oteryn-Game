@@ -2094,9 +2094,7 @@
       "requirements": {
         "min_level": 1000,
         "premium": true,
-        "completed_quests": [
-          "oteryn:quest.authored.make_believe_quest"
-        ]
+        "completed_quests": []
       },
       "take": [
         {
@@ -2142,9 +2140,7 @@
       "requirements": {
         "min_level": 1000,
         "premium": true,
-        "completed_quests": [
-          "oteryn:quest.authored.make_believe_quest"
-        ]
+        "completed_quests": []
       },
       "take": [
         {
@@ -2203,9 +2199,7 @@
       "requirements": {
         "min_level": 1000,
         "premium": true,
-        "completed_quests": [
-          "oteryn:quest.authored.make_believe_quest"
-        ]
+        "completed_quests": []
       },
       "take": [
         {
@@ -2242,7 +2236,8 @@
       "quest": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
       "npc": "oteryn:npc.wayland_smythers",
       "keywords": [
-        "illuminated commission"
+        "illuminated commission",
+        "outfit"
       ],
       "topic": 0,
       "next_topic": 0,
@@ -2257,9 +2252,7 @@
       "requirements": {
         "min_level": 1000,
         "premium": true,
-        "completed_quests": [
-          "oteryn:quest.authored.make_believe_quest"
-        ]
+        "completed_quests": []
       },
       "take": [],
       "give": null,
