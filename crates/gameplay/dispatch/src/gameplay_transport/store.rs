@@ -619,7 +619,7 @@ async fn resume_removed_item(
     Some(())
 }
 
-/// A new confirmation can resume an unfinished purchase on the account. Verify the
+/// A new confirmation can resume an unfinished purchase for its buyer. Verify the
 /// exact original quote and price before repeating a potentially unanswered debit.
 fn retained_binding(
     active: &'static RuntimeCatalogue,
@@ -762,7 +762,7 @@ async fn purchase_retained_or_new(
                         .find(|candidate| retained_binding(catalogue, &confirmed, candidate).is_some())
                 }
             } else if cosmetic.is_some() {
-                owner.root.pending_store_cosmetic_purchase(account, request.offer_key.clone()).await.ok()?
+                owner.root.pending_store_cosmetic_purchase(account, *fence.character_id.as_bytes(), request.offer_key.clone()).await.ok()?
             } else {
                 None
             }
@@ -770,14 +770,14 @@ async fn purchase_retained_or_new(
             pending
         };
         if let Some(pending) = pending {
-            let Some((catalogue, binding)) = retained_binding(catalogue, &confirmed, &pending) else {
-                return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
-            };
-            if ordinary_item && (pending.world_id != *admitted.world_id.as_bytes()
-                || pending.character_id != *fence.character_id.as_bytes())
+            if pending.character_id != *fence.character_id.as_bytes()
+                || (ordinary_item && pending.world_id != *admitted.world_id.as_bytes())
             {
                 return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
             }
+            let Some((catalogue, binding)) = retained_binding(catalogue, &confirmed, &pending) else {
+                return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
+            };
             owner.root.record_store_purchase_retry(retry, pending.purchase_id, pending.world_id).await.ok()?;
             (catalogue, binding, Some(pending))
         } else {

@@ -48,6 +48,7 @@ pub(super) struct Ledger {
     pub(super) malformed: bool,
     pub(super) entitlement_override: Option<String>,
     pub(super) unit_kind_override: Option<&'static str>,
+    pub(super) enforce_active_import: bool,
     pub(super) fail_before_debit: bool,
     pub(super) answers: BTreeMap<String, (String, serde_json::Value)>,
 }
@@ -89,6 +90,27 @@ impl StoreTransport for FakePlatform {
                         else { Err(TransportFailure::Conflict) };
                     return Box::pin(async move { result });
                 }
+                let imported_kind = if ledger.enforce_active_import {
+                    let bytes = include_bytes!(
+                        "../../../../../../../rulesets/economy/store/platform-catalogue.json"
+                    );
+                    let imported: serde_json::Value = serde_json::from_slice(bytes).expect("Platform import");
+                    let row = imported["offers"].as_array().expect("imported offers").iter()
+                        .find(|row| row["offer_key"] == request["offer_key"]);
+                    let kind = row.filter(|row| {
+                        request["catalog_revision"] == sha256(bytes)
+                            && request["currency"] == row["currency"]
+                            && request["unit_price"] == row["unit_price"]
+                    }).and_then(|row| row["units"][0]["unit_kind"].as_str());
+                    let Some(kind) = kind else {
+                        let mut answer = platform_answer(&request, None, ledger.balance, body);
+                        answer["result"] = "STALE_QUOTE".into();
+                        return Box::pin(async move { Ok(platform_bytes(&answer)) });
+                    };
+                    Some(kind.to_owned())
+                } else {
+                    None
+                };
                 let price = request["unit_price"].as_str().expect("price string").parse::<u64>().expect("price") * request["quantity"].as_u64().expect("quantity");
                 if price > ledger.balance {
                     platform_answer(&request, None, ledger.balance, body)
@@ -100,7 +122,7 @@ impl StoreTransport for FakePlatform {
                     let order = uuid(&id(120 + n));
                     let mut intent = platform_intent(&request, &operation, &order);
                     let mut answer = platform_answer(&request, Some((&order, &operation)), ledger.balance, body);
-                    if let Some(kind) = ledger.unit_kind_override {
+                    if let Some(kind) = imported_kind.as_deref().or(ledger.unit_kind_override) {
                         intent["unit_kind"] = kind.into();
                         answer["units"][0]["unit_kind"] = kind.into();
                     }

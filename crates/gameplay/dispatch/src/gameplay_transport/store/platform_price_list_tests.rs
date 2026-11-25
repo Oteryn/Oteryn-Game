@@ -93,7 +93,12 @@ fn active_platform_import_covers_every_dispatch_quote() -> TestResult {
     let active: PlatformPriceList = serde_json::from_slice(bytes)?;
     let revision = super::active_catalogue_revision();
     let mut quoted = BTreeSet::new();
-    for catalogue in [&CATALOGUE, &COSMETIC_CATALOGUE, &HIRELING_CATALOGUE] {
+    for catalogue in [
+        &CATALOGUE,
+        &COSMETIC_CATALOGUE,
+        &HIRELING_CATALOGUE,
+        &super::BLESSING_CATALOGUE,
+    ] {
         let catalogue = catalogue.as_ref().ok_or("dispatch catalogue")?;
         assert_eq!(catalogue.rules.revision(), revision);
         for offer in catalogue.entries() {
@@ -104,6 +109,13 @@ fn active_platform_import_covers_every_dispatch_quote() -> TestResult {
                 .ok_or_else(|| format!("Platform import is missing {}", offer.key))?;
             assert_eq!(imported.currency, "COINS");
             assert_eq!(imported.unit_price.parse::<u64>()?, offer.price_coins);
+            let [unit] = imported.units.as_slice() else {
+                return Err(format!("expected one imported unit for {}", offer.key).into());
+            };
+            assert_eq!(
+                super::platform_unit_kind(revision, &offer.key),
+                Some(unit.unit_kind.as_str())
+            );
             assert!(quoted.insert(&offer.key));
         }
     }
@@ -225,23 +237,40 @@ fn platform_price_list_checker_rejects_invalid_offers() -> TestResult {
 fn retained_runtime_cosmetics_use_the_platform_unit_kind() -> TestResult {
     use super::rules::DeliveryKind;
 
-    let mut cosmetics = 0;
+    let mut legacy_cosmetics = 0;
+    let mut imported_cosmetics = 0;
     for catalogue in super::PREDECESSOR_CATALOGUES.iter().flatten() {
+        let revision = catalogue.rules.revision();
+        // Retained Runtime cosmetics CI finding: legacy confirmations were
+        // sent as ITEM, while retained Platform imports bind COSMETIC.
+        let kind = if super::PLATFORM_PREDECESSORS
+            .iter()
+            .any(|(old, _)| old == revision)
+        {
+            "COSMETIC"
+        } else {
+            "ITEM"
+        };
         for offer in catalogue.entries() {
             if matches!(&offer.delivery, DeliveryKind::Unlock { unlock_key }
                 if unlock_key.starts_with("oteryn:outfit.") || unlock_key.starts_with("oteryn:mount."))
             {
-                cosmetics += 1;
+                if kind == "COSMETIC" {
+                    imported_cosmetics += 1;
+                } else {
+                    legacy_cosmetics += 1;
+                }
                 assert_eq!(
-                    super::platform_unit_kind(catalogue.rules.revision(), &offer.key),
-                    Some("COSMETIC"),
+                    super::platform_unit_kind(revision, &offer.key),
+                    Some(kind),
                     "{}",
                     offer.key
                 );
             }
         }
     }
-    assert!(cosmetics > 0);
+    assert!(legacy_cosmetics > 0);
+    assert!(imported_cosmetics > 0);
     Ok(())
 }
 

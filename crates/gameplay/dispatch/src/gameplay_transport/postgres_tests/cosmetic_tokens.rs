@@ -57,6 +57,8 @@ enum Regression {
     Transfer,
     Earned,
     AccountOwnedToken,
+    SiblingPending { tokens: bool },
+    BlessingImport,
 }
 
 fn regression(name: &str, case: Regression) -> TestResult {
@@ -65,7 +67,9 @@ fn regression(name: &str, case: Regression) -> TestResult {
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
         scenario(false, false, Some(case))
-    })
+    })?;
+    eprintln!("POSTGRES_CASE_COMPLETED {name}");
+    Ok(())
 }
 
 #[test]
@@ -132,8 +136,23 @@ fn already_earned_mount_refuses_coin_payment() -> TestResult {
 }
 
 #[test]
-fn account_owned_coin_cosmetic_refuses_token_payment_on_another_character() -> TestResult {
+fn sibling_completed_coin_cosmetic_allows_token_payment() -> TestResult {
     regression("cosmetic-account-owned-token", Regression::AccountOwnedToken)
+}
+
+#[test]
+fn sibling_pending_coin_cosmetic_allows_a_separate_coin_purchase() -> TestResult {
+    regression("cosmetic-sibling-coins", Regression::SiblingPending { tokens: false })
+}
+
+#[test]
+fn sibling_pending_coin_cosmetic_allows_a_separate_token_purchase() -> TestResult {
+    regression("cosmetic-sibling-tokens", Regression::SiblingPending { tokens: true })
+}
+
+#[test]
+fn store_blessing_page_quotes_buy_each_imported_blessing() -> TestResult {
+    regression("store-blessing-import", Regression::BlessingImport)
 }
 
 fn scenario(tokens: bool, previous_revision: bool, regression: Option<Regression>) -> TestResult {
@@ -202,6 +221,14 @@ fn scenario(tokens: bool, previous_revision: bool, regression: Option<Regression
             &[wire::CAPABILITY_STORE_V1, 479],
         )
         .ok_or("Store history selection")?;
+
+        if matches!(regression, Some(Regression::BlessingImport)) {
+            blessing_import(&harness, &owner, &mut admitted, &ledger).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
 
         let values = serve(&owner, &mut admitted, &[(6187, vec![])]).await?;
         assert_eq!(values[0].0, CommandStatus::Accepted);
@@ -711,6 +738,313 @@ async fn transfer_cosmetic_character(
     Ok(())
 }
 
+async fn blessing_import(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    ledger: &Arc<SyncMutex<Ledger>>,
+) -> TestResult {
+    ledger.lock().map_err(|_| "ledger")?.enforce_active_import = true;
+    let replies = serve(
+        owner,
+        admitted,
+        &[(
+            wire::COMMAND_TYPE_STORE_CATALOGUE_PAGE,
+            wire::encode_catalogue_request(&wire::StoreCatalogueRequest {
+                category: "consumables.blessings".into(),
+                page_cursor: String::new(),
+            })
+            .map_err(debug)?,
+        )],
+    )
+    .await?;
+    assert_eq!(replies[0].0, CommandStatus::Accepted);
+    let page = wire::decode_catalogue_page(&replies[0].1).map_err(debug)?;
+    assert!(page.next_page_cursor.is_empty());
+    let catalogue = crate::content::blessing_catalogue::BlessingCatalogue::load().map_err(debug)?;
+    assert_eq!(page.offers.len(), catalogue.blessings.len());
+    for (index, blessing) in catalogue.blessings.iter().enumerate() {
+        let suffix = blessing
+            .storage_key
+            .strip_prefix("oteryn:blessing.")
+            .ok_or("blessing key")?;
+        let key = format!("store:blessing:{suffix}");
+        let offer = page
+            .offers
+            .iter()
+            .find(|offer| offer.offer_key == key)
+            .ok_or("blessing offer")?;
+        let request = wire::StorePurchaseRequest {
+            purchase_request_id: id(80 + u8::try_from(index)?),
+            offer_key: offer.offer_key.clone(),
+            catalog_revision: page.catalog_revision.clone(),
+            price: offer.price,
+            currency: offer.currency.clone(),
+        };
+        let result = super::store_fixtures::purchase(
+            owner,
+            admitted,
+            (
+                wire::COMMAND_TYPE_STORE_PURCHASE,
+                wire::encode_purchase_request(&request).map_err(debug)?,
+            ),
+        )
+        .await?;
+        assert_eq!(result.code, wire::StorePurchaseCode::Accepted, "{key}");
+        let copies: i64 = sqlx::query_scalar(
+            "SELECT copies FROM game_character_store_blessing_copies
+             WHERE character_id=$1 AND blessing_key=$2",
+        )
+        .bind(sqlx::types::Uuid::from_bytes(
+            *admitted.item_fence.ok_or("fence")?.character_id.as_bytes(),
+        ))
+        .bind(&blessing.storage_key)
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(copies, 1, "{key}");
+    }
+    assert_eq!(
+        ledger.lock().map_err(|_| "ledger")?.debits.len(),
+        catalogue.blessings.len()
+    );
+    Ok(())
+}
+
+async fn seed_sibling(harness: &Harness, character: [u8; 16]) -> TestResult<sqlx::types::Uuid> {
+    let sibling = sqlx::types::Uuid::from_bytes(id(93));
+    sqlx::query(
+        "INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,
+             character_revision,profile_revision,ruleset_revision,content_revision,
+             starter_template_revision,name,sex)
+         SELECT $1,account_id,world_id,lifecycle,character_revision,profile_revision,
+             ruleset_revision,content_revision,starter_template_revision,'Store Sibling',sex
+           FROM game_character_roots WHERE character_id=$2",
+    )
+    .bind(sibling)
+    .bind(sqlx::types::Uuid::from_bytes(character))
+    .execute(&harness.pool)
+    .await?;
+    Ok(sibling)
+}
+
+fn token_command(request: &wire::StorePurchaseRequest) -> TestResult<(u32, Vec<u8>)> {
+    Ok((wire::cosmetic_tokens::PURCHASE, wire::encode_purchase_request(request).map_err(debug)?))
+}
+
+async fn fund_tokens(harness: &Harness, admitted: &AdmittedSession, price: u64) -> TestResult {
+    let character = *admitted.item_fence.ok_or("fence")?.character_id.as_bytes();
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_cosmetic_tokens(character_id,world_id,balance,last_claim_id)
+         VALUES($1,$2,$3,uuidv7())",
+    )
+    .bind(sqlx::types::Uuid::from_bytes(character))
+    .bind(sqlx::types::Uuid::from_bytes(*admitted.world_id.as_bytes()))
+    .bind(i64::try_from(price)?)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn assert_token_grant(
+    harness: &Harness,
+    character: [u8; 16],
+    request: &wire::StorePurchaseRequest,
+) -> TestResult {
+    let spends: Vec<(sqlx::types::Uuid, i64)> =
+        sqlx::query_as("SELECT character_id, price FROM game_cosmetic_token_purchases")
+            .fetch_all(&harness.pool)
+            .await?;
+    assert_eq!(
+        spends,
+        [(
+            sqlx::types::Uuid::from_bytes(character),
+            i64::try_from(request.price)?
+        )]
+    );
+    assert!(has_cosmetic_grant(harness, character, request.purchase_request_id).await?);
+    Ok(())
+}
+
+async fn has_cosmetic_grant(
+    harness: &Harness,
+    character: [u8; 16],
+    purchase: [u8; 16],
+) -> TestResult<bool> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_store_cosmetics
+         WHERE character_id=$1 AND purchase_id=$2 AND operation_id IS NOT NULL)",
+    )
+    .bind(sqlx::types::Uuid::from_bytes(character))
+    .bind(sqlx::types::Uuid::from_bytes(purchase))
+    .fetch_one(&harness.pool)
+    .await?)
+}
+
+async fn sibling_pending(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    ledger: &Arc<SyncMutex<Ledger>>,
+    mut request: wire::StorePurchaseRequest,
+    tokens: bool,
+) -> TestResult {
+    use super::store_fixtures::purchase;
+    use crate::durability::store::{
+        PaidStoreCosmeticIntent, PurchaseRequest, PurchaseRequestState, StorePurchaseHistoryEntry,
+    };
+    use crate::native_admission_source::store::{
+        OperationKind, PurchaseResult, PurchaseStoreOffer,
+    };
+    use oteryn_gameplay_economy::store as rules;
+
+    let character = *admitted.item_fence.ok_or("fence")?.character_id.as_bytes();
+    let account = admitted.controller.ok_or("controller")?.account_id;
+    let sibling = seed_sibling(harness, character).await?;
+    let original = request.purchase_request_id;
+    let binding = rules::PurchaseStoreOffer {
+        purchase_request_id: rules::PurchaseRequestId::from_bytes(original).map_err(debug)?,
+        account_id: crate::domain::AccountId::from_bytes(account).map_err(debug)?,
+        character_id: crate::domain::CharacterId::from_bytes(*sibling.as_bytes()).map_err(debug)?,
+        offer_key: request.offer_key.clone(),
+        catalog_revision: request.catalog_revision.clone(),
+        price: request.price,
+        currency: rules::CurrencyKind::TibiaCoin,
+    };
+    let journal = PurchaseRequest {
+        purchase_request_id: original,
+        account_id: account,
+        character_id: *sibling.as_bytes(),
+        binding: binding.binding_digest().into(),
+    };
+    assert_eq!(
+        owner
+            .root
+            .record_purchase_request(journal.clone())
+            .await
+            .map_err(debug)?,
+        PurchaseRequestState::Sent
+    );
+    sqlx::query(
+        "INSERT INTO game_character_store_cosmetics(character_id,world_id,offer_key,purchase_id)
+         VALUES($1,$2,$3,$4)",
+    )
+    .bind(sibling)
+    .bind(sqlx::types::Uuid::from_bytes(*admitted.world_id.as_bytes()))
+    .bind(&request.offer_key)
+    .bind(sqlx::types::Uuid::from_bytes(original))
+    .execute(&harness.pool)
+    .await?;
+    ledger.lock().map_err(|_| "ledger")?.balance = request.price * 2;
+    let mut platform = StoreClient::new(
+        Box::new(FakePlatform(ledger.clone())),
+        "oteryn-game/store-consumer".into(),
+    );
+    let answer = platform
+        .purchase(
+            &PurchaseStoreOffer {
+                purchase_request_id: uuid(&original),
+                account_id: uuid(&account),
+                character_id: sibling.to_string(),
+                world_id: uuid(admitted.world_id.as_bytes()),
+                catalog_revision: request.catalog_revision.clone(),
+                offer_key: request.offer_key.clone(),
+                unit_price: request.price.to_string(),
+                quantity: 1,
+                currency: "COINS".into(),
+            },
+            "COSMETIC",
+        )
+        .await
+        .map_err(debug)?;
+    let PurchaseResult::Accepted {
+        order_id,
+        operation_ids,
+    } = answer
+    else {
+        return Err(format!("sibling debit: {answer:?}").into());
+    };
+    let [operation] = operation_ids.as_slice() else {
+        return Err("expected one cosmetic operation".into());
+    };
+    let order = *sqlx::types::Uuid::parse_str(&order_id)?.as_bytes();
+    owner
+        .root
+        .record_store_answer_with_history(
+            journal,
+            serde_json::to_vec(&serde_json::json!({
+                "result": "ACCEPTED", "order_id": order_id, "operation_ids": operation_ids,
+            }))?,
+            Some(StorePurchaseHistoryEntry {
+                order_id: order,
+                offer_key: request.offer_key.clone(),
+                catalog_revision: request.catalog_revision.clone(),
+                price: request.price,
+                currency: "TIBIA_COIN".into(),
+            }),
+        )
+        .await
+        .map_err(debug)?;
+
+    request.purchase_request_id = id(81);
+    let command = if tokens {
+        fund_tokens(harness, admitted, request.price).await?;
+        request.currency = "COSMETIC_TOKEN".into();
+        token_command(&request)?
+    } else {
+        (
+            wire::COMMAND_TYPE_STORE_PURCHASE,
+            wire::encode_purchase_request(&request).map_err(debug)?,
+        )
+    };
+    let result = purchase(owner, admitted, command.clone()).await?;
+    assert_eq!(result.code, wire::StorePurchaseCode::Accepted);
+    if tokens {
+        assert_token_grant(harness, character, &request).await?;
+    } else {
+        assert!(
+            has_cosmetic_grant(harness, character, request.purchase_request_id).await?,
+            "a fresh coin confirmation must grant the cosmetic to its buyer"
+        );
+    }
+    assert!(!has_cosmetic_grant(harness, *sibling.as_bytes(), original).await?);
+    assert_eq!(purchase(owner, admitted, command).await?, result);
+
+    let intent = platform
+        .read_intent(OperationKind::Deliver, operation)
+        .await
+        .map_err(debug)?;
+    assert!(
+        owner
+            .root
+            .recover_paid_store_cosmetic(
+                owner.character,
+                PaidStoreCosmeticIntent {
+                    operation: *sqlx::types::Uuid::parse_str(operation)?.as_bytes(),
+                    account,
+                    order,
+                    fulfilment: intent.entitlement_id,
+                    offer: request.offer_key,
+                    catalogue: request.catalog_revision,
+                }
+            )
+            .await
+            .map_err(debug)?
+    );
+    assert!(has_cosmetic_grant(harness, *sibling.as_bytes(), original).await?);
+    let debits = if tokens {
+        vec![request.price]
+    } else {
+        vec![request.price; 2]
+    };
+    assert_eq!(ledger.lock().map_err(|_| "ledger")?.debits, debits);
+    Ok(())
+}
+
 async fn cosmetic_regression(
     case: Regression,
     harness: &Harness,
@@ -728,6 +1062,10 @@ async fn cosmetic_regression(
     let account = admitted.controller.ok_or("controller")?.account_id;
     match case {
         Regression::RestoreReservations => return Err("restore needs the recovery transition fixture".into()),
+        Regression::BlessingImport => return Err("blessing import requires its own catalogue page".into()),
+        Regression::SiblingPending { tokens } => {
+            sibling_pending(harness, owner, admitted, ledger, request, tokens).await?;
+        }
         Regression::Inbox => {
             let entitlement = id(201);
             {
@@ -920,30 +1258,30 @@ async fn cosmetic_regression(
         Regression::AccountOwnedToken => {
             let accepted = purchase(owner, admitted, command(&request)?).await?;
             assert_eq!(accepted.code, wire::StorePurchaseCode::Accepted);
-            // Retain the paid account grant with a different character as its
-            // historical recipient. Give the current character enough tokens.
+            fund_tokens(harness, admitted, request.price).await?;
+            request.purchase_request_id = id(81);
+            request.currency = "COSMETIC_TOKEN".into();
+            let duplicate = purchase(owner, admitted, token_command(&request)?).await?;
+            assert_eq!(duplicate.code, wire::StorePurchaseCode::OfferUnavailable);
+
+            // Cosmetic tokens review P1: coin ownership follows the purchasing
+            // character, so a sibling with funds can buy the same offer.
+            let sibling = seed_sibling(harness, character).await?;
             let mut tx = harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
             for sql in [
-                "UPDATE game_character_store_cosmetics SET character_id=encode($1,'hex')::uuid",
-                "UPDATE store_delivery_receipts SET character_id=encode($1,'hex')::uuid",
-                "UPDATE store_purchase_requests SET character_id=encode($1,'hex')::uuid",
+                "UPDATE game_character_store_cosmetics SET character_id=$1",
+                "UPDATE store_delivery_receipts SET character_id=$1",
+                "UPDATE store_purchase_requests SET character_id=$1",
+                "UPDATE game_store_purchase_history SET character_id=$1",
             ] {
-                sqlx::query(sql).bind(id(93).as_slice()).execute(&mut *tx).await?;
+                sqlx::query(sql).bind(sibling).execute(&mut *tx).await?;
             }
-            sqlx::query(
-                "INSERT INTO game_character_cosmetic_tokens(character_id,world_id,balance,last_claim_id)
-                 VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,uuidv7())"
-            ).bind(character.as_slice()).bind(admitted.world_id.as_bytes().as_slice())
-                .bind(i64::try_from(request.price)?).execute(&mut *tx).await?;
             tx.commit().await?;
-            request.purchase_request_id = id(81);
-            request.currency = "COSMETIC_TOKEN".into();
-            let result = purchase(owner, admitted, (6188, wire::encode_purchase_request(&request).map_err(debug)?)).await?;
-            assert_eq!(result.code, wire::StorePurchaseCode::OfferUnavailable);
-            let spends: i64 = sqlx::query_scalar("SELECT count(*) FROM game_cosmetic_token_purchases")
-                .fetch_one(&harness.pool).await?;
-            assert_eq!(spends, 0);
+            request.purchase_request_id = id(82);
+            let result = purchase(owner, admitted, token_command(&request)?).await?;
+            assert_eq!(result.code, wire::StorePurchaseCode::Accepted);
+            assert_token_grant(harness, character, &request).await?;
         }
         Regression::Transfer => {
             use crate::domain::appearance::{
